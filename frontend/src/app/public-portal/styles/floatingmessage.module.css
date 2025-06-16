@@ -1,0 +1,174 @@
+.floatingWrapper {
+  position: fixed;
+  bottom: 1.8rem;
+  right: 1.5rem;
+  z-index: 1000;
+}
+
+.chatBtn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: linear-gradient(90deg, #1CBFA4 0%, #41AA27 100%);
+  color: white;
+  border: none;
+  border-radius: 9999px;
+  padding: 1rem;
+  font-size: 1.5rem;
+  box-shadow: 0 4px 12px rgba(103, 130, 123, 0.2);
+  cursor: pointer;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.chatBtn:hover {
+  transform: scale(1.07);
+  filter: brightness(1.1);
+}
+
+.messageBox {
+  position: absolute;
+  bottom: 4.5rem;
+  right: 0;
+  height: 36rem;
+  width: 400px;
+  background: linear-gradient(to bottom, #1CBFA4, #2a9652, #ffffff);
+  border-radius: 16px;
+  padding: 2rem 1.5rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+}
+
+.messageBox h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #b5f1da;
+  font-weight: 600;
+}
+
+.subtext {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #ffffff;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.customDropdown {
+  position: relative;
+  width: 100%;
+  font-size: 0.95rem;
+  margin-top: 0.4rem;
+}
+
+.selected {
+  background: white;
+  border: 1px solid #ccc;
+  padding: 0.7rem 2.5rem 0.7rem 0.7rem;
+  border-radius: 8px;
+  cursor: pointer;
+  position: relative;
+  color: #1A685B;
+  font-weight: 500;
+}
+
+.dropdownIcon {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #059d59;
+  font-size: 1rem;
+}
+
+.dropdownList {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin-top: 0.3rem;
+  max-height: 265px;
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dropdownItem {
+  padding: 0.6rem;
+  cursor: pointer;
+  color: #1A685B;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.dropdownItem:hover {
+  background: #1ab097;
+  color: white;
+}
+
+.selected {
+  background: white;
+  border: 3px solid white;
+  padding: 0.7rem 2.5rem 0.7rem 0.7rem;
+  border-radius: 8px;
+  cursor: pointer;
+  position: relative;
+  color: #999;
+  font-weight: 500;
+}
+
+.selectedFilled {
+  color: #1A685B;
+  font-weight: 600;
+  border: 3px solid #1A685B;
+}
+
+.messageBox textarea {
+  font-family: 'Arial', sans-serif;
+  margin-top: 0.8rem;
+  min-height: 280px;
+  background-color: white !important;
+  width: 100%;
+  padding: 1rem;
+  border: none;
+  border-radius: 8px;
+  resize: none;
+  outline: none;
+}
+
+.messageBox textarea::placeholder {
+  font-family: 'Arial', sans-serif;
+  font-size: 14px;
+  color: #999;
+}
+
+.messageBox button {
+  user-select: none;
+  margin-top: 1rem;
+  width: 100%;
+  padding: 0.7rem;
+  background-color: #1A685B;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, filter 0.3s ease;
+}
+
+.messageBox button:hover {
+  filter: brightness(1.15);
+}

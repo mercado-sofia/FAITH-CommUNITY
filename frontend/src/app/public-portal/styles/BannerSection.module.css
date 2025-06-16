@@ -1,0 +1,74 @@
+.inviteSection {
+  position: relative;
+  height: 55vh;
+  background-image: url('/sample/sample4.jpg'); /* Set background image here */
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed; /* 💥 Parallax scroll effect */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  overflow: hidden;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(1, 22, 20, 0.85); /* Dark overlay */
+  z-index: 1;
+}
+
+.wrapper {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  padding: 2rem;
+  text-align: center;
+}
+
+.inviteContent {
+  max-width: 800px;
+  margin: auto;
+}
+
+.inviteHeading {
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.orange {
+  color: #f8aa00;
+}
+
+.green {
+  color: #2f8f7f;
+}
+
+.inviteBtn {
+  margin-top: 1.8rem;
+  background: linear-gradient(to right, #f8aa00, #ffd470);
+  color: #fff;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.inviteBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.2);
+}
+
+.arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -1,0 +1,317 @@
+.footerWrapper {
+  background: #06100f;
+  color: #ffffff;
+}
+
+.footerContent {
+  padding: 5rem 10rem 6rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.about {
+  width: 280px;
+}
+
+.about h3 {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.about p {
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: #6D7D75;
+}
+
+.contactInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.contactItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.iconCircle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.phone {
+  background-color: #1A685B;
+}
+
+.email {
+  background-color: #fbbf24;
+}
+
+.contactText small {
+  font-size: 12px;
+  color: #cccccc;
+}
+
+.contactText p {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.linksSection h4,
+.newsletter h4 {
+  font-size: 18px;
+  margin-bottom: 1.6rem;
+}
+
+.linksSection ul {
+  list-style: none;
+  padding: 0;
+}
+
+.linksSection li {
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #6D7D75;
+}
+
+.linksSection a {
+  text-decoration: none;
+  color: #6D7D75;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.2s ease;
+}
+
+.linksSection a:hover {
+  color: #fbbf24;
+}
+
+.linkIcon {
+  font-size: 14px;
+  color: #fbbf24;
+  transform: rotate(-45deg);
+  transition: transform 0.4s ease;
+}
+
+.linksSection a:hover .linkIcon {
+  transform: rotate(0deg);
+}
+
+.newsletter {
+  width: 360px;
+}
+
+.newsletter p {
+  font-size: 14px;
+  margin-bottom: 1.2rem;
+  color: #6D7D75;
+}
+
+.subscribeForm {
+  display: flex;
+  margin-bottom: 1rem;
+}
+
+.subscribeForm input {
+  padding: 0 1.2rem;
+  border: none;
+  background-color: #FFF;
+  color: #000;
+  border-radius: 999px 0 0 999px;
+  height: 45px;
+  outline: none;
+  flex: 1;
+}
+
+.subscribeForm button {
+  padding: 12px;
+  width: 50px;
+  background: #FFAC00;
+  border: none;
+  border-radius: 0 999px 999px 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  cursor: pointer;
+}
+
+.submitIcon {
+  color: #fff;
+  width: 18px;
+  height: 18px;
+}
+
+.socials {
+  display: flex;
+  gap: 10px;
+}
+
+.socials a {
+  width: 32px;
+  height: 32px;
+  background-color: #fff;
+  color: #06100f;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.socials a:hover {
+  background-color: #fbbf24;
+  color: #fff;
+}
+
+.bottomBar {
+  height: 65px;
+  text-align: center;
+  padding-top: 20px;
+  background-color: #1A685B;
+  font-size: 13px;
+}
+
+.bottomBar span {
+  color: #FFAC00;
+}
+
+.sectionHeading {
+  position: relative;
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+/* LINE EFFECT */
+.sectionHeading::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background-color: #FFAC00;
+  transition: width 0.6s ease-out;
+}
+
+.sectionHeading.visible::after {
+  width: 50px;
+}
+
+@media (max-width: 1024px) {
+  .footerContent {
+    padding: 4rem 3rem 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    justify-content: flex-start;
+  }
+
+  .about {
+    width: 100%;
+  }
+
+  /* ✅ Reduce to ~45% to give breathing space */
+  .linksSection {
+    width: 45%;
+    min-width: 200px;
+    margin-top: 1rem;
+  }
+
+  .linksSection:nth-of-type(2) {
+    order: 1;
+  }
+
+  .linksSection:nth-of-type(3) {
+    order: 1;
+  }
+
+  .newsletter {
+    width: 100%;
+    order: 2;
+    margin-top: 1rem;
+  }
+
+  .subscribeForm input {
+    font-size: 14px;
+  }
+
+  .bottomBar {
+    font-size: 12px;
+  }
+}
+
+/* Small devices (phones) */
+@media (max-width: 640px) {
+  .footerContent {
+    flex-direction: column;
+    padding: 3rem 2rem 2rem;
+    gap: 1.4rem;
+    align-items: flex-start;
+  }
+
+  .about,
+  .linksSection,
+  .newsletter {
+    width: 100%;
+  }
+
+  .about h3 {
+    font-size: 20px;
+  }
+
+  .about p,
+  .newsletter p,
+  .linksSection li,
+  .linksSection a {
+    font-size: 13px;
+  }
+
+  .linksSection h4,
+  .newsletter h4,
+  .sectionHeading {
+    font-size: 16px;
+  }
+
+  .subscribeForm {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .subscribeForm input {
+    border-radius: 999px;
+    height: 42px;
+    width: 100%;
+    padding: 0.8rem 1rem;
+    font-size: 14px;
+  }
+
+  .subscribeForm button {
+    width: 100%;
+    border-radius: 999px;
+    justify-content: center;
+  }
+
+  .socials {
+    margin-top: 1rem;
+  }
+
+  .bottomBar {
+    font-size: 12px;
+    padding: 1rem 1rem;
+    height: auto;
+  }
+}

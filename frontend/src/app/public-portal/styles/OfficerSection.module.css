@@ -1,0 +1,207 @@
+.officerSection {
+  padding: 6rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.officerHeading {
+  margin-bottom: 3rem;
+}
+
+.officerSubtitle {
+  color: #f8aa00;
+  font-weight: 600;
+  font-style: italic;
+  font-size: 1rem;
+  margin-bottom: 10px;
+}
+
+.officerTitle {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.officerCarousel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  position: relative;
+}
+
+.officerNavBtn {
+  background: #1A685B;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.officerNavBtn:hover {
+  background-color: #1b8271;
+}
+
+.officerSliderWrapper {
+  width: calc((280px + 24px) * 3 - 24px);
+  overflow: hidden;
+}
+
+.officerNavBtn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.officerSliderTrack {
+  display: flex;
+  gap: 1.5rem;
+  transition: transform 0.3s ease;
+  width: max-content;
+}
+
+.officerSliderTrack::-webkit-scrollbar {
+  display: none;
+}
+
+.officerCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  width: 280px;
+}
+
+.officerPhotoWrapper {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  width: 280px;
+  height: 340px;
+  border-bottom: 7px solid #FFAC00;
+  transition: border-color 0.3s ease, transform 0.3s ease;
+}
+
+.officerPhotoWrapper:hover {
+  border-bottom-color: #1A685B;
+}
+
+.officerImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
+  transition: filter 0.3s ease;
+}
+
+.officerPhotoWrapper:hover .officerImage {
+  filter: grayscale(100%);
+}
+
+.officerOverlay {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  z-index: 2;
+}
+
+.officerIcon {
+  background: white;
+  color: #1A685B;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: .8rem;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s, color 0.3s, transform 0.3s;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.officerMainIcon {
+  display: flex !important;
+  font-size: .8rem;
+  background: #1A685B;
+  color: white;
+}
+
+.officerOverlay:hover .officerIcon {
+  display: flex;
+}
+
+.officerOverlay:hover .officerMainIcon {
+  background: #FFAC00;
+  transform: rotate(45deg);
+}
+
+.officerIcon:hover {
+  background: #FFAC00;
+  color: white;
+}
+
+.officerName {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+  text-align: center;
+  cursor: default;
+}
+
+.officerRole {
+  font-size: 0.95rem;
+  color: #333;
+  margin: 0;
+  text-align: center;
+  cursor: default;
+}
+
+@media (max-width: 900px) {
+  .officerSliderWrapper {
+    width: calc((280px + 24px) * 2 - 24px);
+  }
+
+  .officerTitle {
+    font-size: 2rem;
+  }
+
+  .officerSubtitle {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .officerSliderWrapper {
+    width: 100%;
+  }
+
+  .officerCard {
+    flex: 0 0 100%;
+    width: 100%;
+  }
+
+  .officerTitle {
+    font-size: 1.6rem;
+    line-height: 1.3;
+  }
+
+  .officerSubtitle {
+    font-size: 0.95rem;
+  }
+}

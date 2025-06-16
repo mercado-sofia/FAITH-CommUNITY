@@ -1,0 +1,202 @@
+.orgAdviserSection {
+  padding: 0 2rem 6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.orgAdviserHeading {
+  margin-bottom: 3rem;
+}
+
+.orgAdviserTitle {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.orgAdviserCarousel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  position: relative;
+}
+
+.orgAdviserNavBtn {
+  background: #1A685B;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.orgAdviserNavBtn:hover {
+  background-color: #1b8271;
+}
+
+.orgAdviserSliderWrapper {
+  width: 1032px;
+  overflow: hidden;
+}
+
+.orgAdviserSliderTrack {
+  display: flex;
+  gap: 1.5rem;
+  transition: transform 0.3s ease;
+  width: max-content;
+}
+
+.orgAdviserSliderTrack::-webkit-scrollbar {
+  display: none;
+}
+
+.orgAdviserCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  width: 240px;
+}
+
+.orgAdviserPhotoWrapper {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  width: 240px;
+  height: 280px;
+  border-bottom: 7px solid #FFAC00;
+  transition: border-color 0.3s ease, transform 0.3s ease;
+}
+
+.orgAdviserPhotoWrapper:hover {
+  border-bottom-color: #1A685B;
+}
+
+.orgAdviserImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
+  transition: filter 0.3s ease;
+}
+
+.orgAdviserPhotoWrapper:hover .orgAdviserImage {
+  filter: grayscale(100%);
+}
+
+.orgAdviserOverlay {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  z-index: 2;
+}
+
+.orgAdviserIcon {
+  background: white;
+  color: #1A685B;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: .8rem;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.4s, color 0.4s, transform 0.4s;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.orgAdviserMainIcon {
+  display: flex !important;
+  font-size: .8rem;
+  background: #1A685B;
+  color: white;
+}
+
+.orgAdviserOverlay:hover .orgAdviserIcon {
+  display: flex;
+}
+
+.orgAdviserOverlay:hover .orgAdviserMainIcon {
+  background: #FFAC00;
+  transform: rotate(45deg);
+}
+
+.orgAdviserIcon:hover {
+  background: #FFAC00;
+  color: white;
+}
+
+.orgAdviserName {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+  text-align: center;
+  cursor: default;
+}
+
+.orgAdviserRole {
+  font-size: 0.95rem;
+  color: #333;
+  margin: 0;
+  text-align: center;
+  cursor: default;
+}
+
+/* Disabled state like others */
+.orgAdviserNavBtn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Responsive font size + layout */
+@media (max-width: 1200px) {
+  .orgAdviserSliderWrapper {
+    width: calc((240px + 24px) * 3 - 24px);
+  }
+
+  .orgAdviserTitle {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .orgAdviserSliderWrapper {
+    width: calc((240px + 24px) * 2 - 24px);
+  }
+
+  .orgAdviserTitle {
+    font-size: 1.8rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .orgAdviserSliderWrapper {
+    width: 100%;
+  }
+
+  .orgAdviserCard {
+    flex: 0 0 100%;
+    width: 100%;
+  }
+
+  .orgAdviserTitle {
+    font-size: 1.5rem;
+  }
+}

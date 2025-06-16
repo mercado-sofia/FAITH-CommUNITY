@@ -6,10 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "tailwind:init": "tailwindcss init -p"
   },
   "dependencies": {
-    "@next/font": "^14.2.15",
     "lucide-react": "^0.515.0",
     "next": "15.3.3",
     "react": "^19.0.0",
@@ -18,9 +18,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
     "eslint": "^9",
-    "eslint-config-next": "15.3.3",
-    "tailwindcss": "^4"
+    "eslint-config-next": "15.3.3"
   }
 }

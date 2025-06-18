@@ -1,5 +1,5 @@
 .orgAdviserSection {
-  padding: 0 2rem 6rem;
+  padding: 0 2rem 7rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -7,7 +7,7 @@
 }
 
 .orgAdviserHeading {
-  margin-bottom: 3rem;
+  margin-bottom: 4rem;
 }
 
 .orgAdviserTitle {
@@ -39,20 +39,25 @@
   transition: background 0.3s ease;
 }
 
-.orgAdviserNavBtn:hover {
+.orgAdviserNavBtn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.orgAdviserNavBtn:not(:disabled):hover {
   background-color: #1b8271;
 }
 
 .orgAdviserSliderWrapper {
-  width: 1032px;
   overflow: hidden;
+  width: calc((240px + 24px) * 4 - 24px);
 }
 
 .orgAdviserSliderTrack {
   display: flex;
-  gap: 1.5rem;
   transition: transform 0.3s ease;
-  width: max-content;
+  gap: 24px;
+  will-change: transform;
 }
 
 .orgAdviserSliderTrack::-webkit-scrollbar {
@@ -60,22 +65,22 @@
 }
 
 .orgAdviserCard {
+  flex: 0 0 auto;
+  width: 240px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  scroll-snap-align: start;
-  flex-shrink: 0;
-  width: 240px;
+  text-align: center;
 }
 
 .orgAdviserPhotoWrapper {
   position: relative;
-  border-radius: 18px;
-  overflow: hidden;
   width: 240px;
   height: 280px;
+  border-radius: 18px;
+  overflow: hidden;
   border-bottom: 7px solid #FFAC00;
-  transition: border-color 0.3s ease, transform 0.3s ease;
+  transition: border-color 0.3s ease;
 }
 
 .orgAdviserPhotoWrapper:hover {
@@ -86,8 +91,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-bottom-left-radius: 18px;
-  border-bottom-right-radius: 18px;
   transition: filter 0.3s ease;
 }
 
@@ -111,19 +114,19 @@
   border-radius: 50%;
   width: 32px;
   height: 32px;
-  font-size: .8rem;
+  font-size: 0.8rem;
   display: none;
   align-items: center;
   justify-content: center;
-  transition: background 0.4s, color 0.4s, transform 0.4s;
   border: none;
   cursor: pointer;
   text-decoration: none;
+  transition: background 0.4s, color 0.4s, transform 0.4s;
 }
 
 .orgAdviserMainIcon {
   display: flex !important;
-  font-size: .8rem;
+  font-size: 0.8rem;
   background: #1A685B;
   color: white;
 }
@@ -147,7 +150,6 @@
   font-weight: 700;
   margin-top: 0.75rem;
   margin-bottom: 0.25rem;
-  text-align: center;
   cursor: default;
 }
 
@@ -155,18 +157,11 @@
   font-size: 0.95rem;
   color: #333;
   margin: 0;
-  text-align: center;
   cursor: default;
 }
 
-/* Disabled state like others */
-.orgAdviserNavBtn:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
-/* Responsive font size + layout */
-@media (max-width: 1200px) {
+/* Responsive Adjustments */
+@media (max-width: 1160px) {
   .orgAdviserSliderWrapper {
     width: calc((240px + 24px) * 3 - 24px);
   }
@@ -176,9 +171,31 @@
   }
 }
 
-@media (max-width: 900px) {
+/* Tablets and medium screens */
+@media (max-width: 964px) {
+  .orgAdviserSection {
+    padding: 1rem 0 4rem;
+  }
+
+  .orgAdviserCarousel {
+    padding: 0 20px;
+    justify-content: center;
+  }
+
   .orgAdviserSliderWrapper {
-    width: calc((240px + 24px) * 2 - 24px);
+    width: auto;
+    max-width: calc((240px * 2) + 20px);
+    overflow: hidden;
+  }
+
+  .orgAdviserSliderTrack {
+    gap: 20px;
+  }
+
+  .orgAdviserCard,
+  .orgAdviserPhotoWrapper {
+    width: 240px;
+    height: 328px;
   }
 
   .orgAdviserTitle {
@@ -186,17 +203,52 @@
   }
 }
 
-@media (max-width: 600px) {
-  .orgAdviserSliderWrapper {
-    width: 100%;
+/* Small devices (phones) */
+@media (max-width: 640px) {
+  .orgAdviserSection {
+    padding: 1rem 1rem 3rem;
   }
 
-  .orgAdviserCard {
-    flex: 0 0 100%;
+  .orgAdviserCarousel {
+    justify-content: space-between;
+  }
+
+  .orgAdviserSliderWrapper {
+    max-width: 220px;
     width: 100%;
+    margin: 0 auto;
+  }
+
+  .orgAdviserSliderTrack {
+    gap: 16px;
+  }
+
+  .orgAdviserCard,
+  .orgAdviserPhotoWrapper {
+    width: 220px;
+    height: 320px;
+  }
+
+  .orgAdviserNavBtn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .orgAdviserHeading {
+    margin-bottom: 2rem;
   }
 
   .orgAdviserTitle {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
+  }
+
+  .orgAdviserName {
+    font-size: 15px;
+  }
+
+  .orgAdviserRole {
+    font-size: 14px;
   }
 }

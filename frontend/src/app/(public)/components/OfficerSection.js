@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import styles from '../styles/OfficerSection.module.css';
 import {
@@ -50,45 +50,58 @@ const officers = [
 ];
 
 export default function OfficerSection() {
-  const [officerStart, setOfficerStart] = useState(0);
+  const [startIndex, setStartIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(3);
-  const cardWidth = 280;
-  const cardGap = 24;
+  const [cardWidth, setCardWidth] = useState(280);
+  const [cardGap, setCardGap] = useState(24);
 
-  // Handle window resize for responsive visible count
   useEffect(() => {
-    const updateVisibleCount = () => {
-      if (window.innerWidth < 600) setVisibleCount(1);
-      else if (window.innerWidth < 900) setVisibleCount(2);
-      else setVisibleCount(3);
-    };
-    updateVisibleCount();
-    window.addEventListener('resize', updateVisibleCount);
-    return () => window.removeEventListener('resize', updateVisibleCount);
-  }, []);
+    const updateResponsive = () => {
+      const width = window.innerWidth;
 
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKey = (e) => {
-      if (e.key === 'ArrowRight' && officerStart < officers.length - visibleCount) {
-        setOfficerStart((prev) => prev + 1);
-      } else if (e.key === 'ArrowLeft' && officerStart > 0) {
-        setOfficerStart((prev) => prev - 1);
+      if (width < 640) {
+        setVisibleCount(1);
+        setCardWidth(220);
+        setCardGap(16);
+      } else if (width < 964) {
+        setVisibleCount(2);
+        setCardWidth(240);
+        setCardGap(20);
+      } else if (width < 1160) {
+        setVisibleCount(3);
+        setCardWidth(280);
+        setCardGap(24);
+      } else {
+        setVisibleCount(3);
+        setCardWidth(280);
+        setCardGap(24);
       }
     };
+
+    updateResponsive();
+    window.addEventListener('resize', updateResponsive);
+    return () => window.removeEventListener('resize', updateResponsive);
+  }, []);
+
+  const handlePrev = useCallback(() => {
+    setStartIndex((prev) => Math.max(prev - 1, 0));
+  }, []);
+
+  const handleNext = useCallback(() => {
+    setStartIndex((prev) => Math.min(prev + 1, officers.length - visibleCount));
+  }, [visibleCount]);
+
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === 'ArrowRight') handleNext();
+      else if (e.key === 'ArrowLeft') handlePrev();
+    };
+
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [officerStart, visibleCount]);
+  }, [handleNext, handlePrev]);
 
-  const handlePrev = () => {
-    if (officerStart > 0) setOfficerStart(officerStart - 1);
-  };
-
-  const handleNext = () => {
-    if (officerStart < officers.length - visibleCount) {
-      setOfficerStart(officerStart + 1);
-    }
-  };
+  const translateX = startIndex * (cardWidth + cardGap);
 
   return (
     <section className={styles.officerSection}>
@@ -101,7 +114,7 @@ export default function OfficerSection() {
         <button
           className={styles.officerNavBtn}
           onClick={handlePrev}
-          disabled={officerStart === 0}
+          disabled={startIndex === 0}
           aria-label="Scroll Left"
         >
           <FaChevronLeft />
@@ -110,30 +123,30 @@ export default function OfficerSection() {
         <div className={styles.officerSliderWrapper}>
           <div
             className={styles.officerSliderTrack}
-            style={{ transform: `translateX(-${officerStart * (cardWidth + cardGap)}px)` }}
+            style={{ transform: `translateX(-${translateX}px)` }}
           >
             {officers.map((officer, index) => (
               <div className={styles.officerCard} key={index}>
-                <div className={styles.officerPhotoWrapper}>
-                  <Image
-                    src={officer.image}
-                    alt={officer.name}
-                    width={240}
-                    height={240}
-                    className={styles.officerImage}
-                  />
-                  <div className={styles.officerOverlay}>
-                    <a href={officer.facebook} target="_blank" rel="noreferrer" className={styles.officerIcon}>
-                      <FaFacebookF />
-                    </a>
-                    <button className={`${styles.officerIcon} ${styles.officerMainIcon}`}>
-                      <FaPlus />
-                    </button>
-                    <a href={`mailto:${officer.email}`} className={styles.officerIcon}>
-                      <FaEnvelope />
-                    </a>
-                  </div>
+              <div className={styles.officerPhotoWrapper}>
+                <Image
+                  src={officer.image}
+                  alt={officer.name}
+                  fill
+                  className={styles.officerImage}
+                  sizes="(max-width: 640px) 220px, (max-width: 964px) 240px, (max-width: 1160px) 280px, 280px"
+                />
+                <div className={styles.officerOverlay}>
+                  <a href={officer.facebook} target="_blank" rel="noreferrer" className={styles.officerIcon}>
+                    <FaFacebookF />
+                  </a>
+                  <button className={`${styles.officerIcon} ${styles.officerMainIcon}`}>
+                    <FaPlus />
+                  </button>
+                  <a href={`mailto:${officer.email}`} className={styles.officerIcon}>
+                    <FaEnvelope />
+                  </a>
                 </div>
+              </div>
                 <p className={styles.officerName}>{officer.name}</p>
                 <p className={styles.officerRole}>{officer.role}</p>
               </div>
@@ -144,7 +157,7 @@ export default function OfficerSection() {
         <button
           className={styles.officerNavBtn}
           onClick={handleNext}
-          disabled={officerStart >= officers.length - visibleCount}
+          disabled={startIndex >= officers.length - visibleCount}
           aria-label="Scroll Right"
         >
           <FaChevronRight />

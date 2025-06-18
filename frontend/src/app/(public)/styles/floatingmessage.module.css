@@ -2,7 +2,7 @@
   position: fixed;
   bottom: 1.8rem;
   right: 1.5rem;
-  z-index: 1000;
+  z-index: 999;
 }
 
 .chatBtn {
@@ -155,7 +155,7 @@
   color: #999;
 }
 
-.messageBox button {
+.sendBtn {
   user-select: none;
   margin-top: 1rem;
   width: 100%;
@@ -163,12 +163,75 @@
   background-color: #1A685B;
   color: white;
   font-weight: bold;
+  font-size: 14px;
+  letter-spacing: .5px;
   border: none;
   border-radius: 9999px;
   cursor: pointer;
   transition: background-color 0.3s ease, filter 0.3s ease;
 }
 
-.messageBox button:hover {
+.sendBtn:hover {
   filter: brightness(1.15);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .chatBtn {
+    bottom: 1.2rem;
+    right: 1.2rem;
+    padding: 0.7rem;
+    font-size: 1.6rem;
+  }
+
+  .messageBox {
+    width: 82vw;
+    height: 28rem;
+    padding: 1.6rem 1rem;
+    bottom: 3.4rem;
+    right: 0;
+    border-radius: 14px;
+  }
+
+  .messageBox h2 {
+    font-size: 1.2rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .subtext {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .label, 
+  .customDropdown,
+  .messageBox textarea::placeholder {
+    font-size: 14px;
+  }
+
+  .selected {
+    padding: 0.6rem 2.2rem 0.6rem 0.6rem;
+    font-size: 14px;
+  }
+
+  .dropdownIcon {
+    font-size: 0.85rem;
+  }
+
+  .dropdownItem {
+    font-size: 14px;
+    padding: 0.5rem;
+  }
+
+  .messageBox textarea {
+    min-height: 200px;
+    font-size: 14px;
+    padding: 0.8rem;
+  }
+
+  .sendBtn {
+    font-size: 14px;
+    padding: 0.6rem;
+    margin-top: 0.9rem;
+  }
 }

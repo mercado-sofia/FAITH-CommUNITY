@@ -1,10 +1,10 @@
 .inviteSection {
   position: relative;
-  height: 55vh;
-  background-image: url('/sample/sample4.jpg'); /* Set background image here */
+  height: 60vh;
+  background-image: url('/sample/sample4.jpg');
   background-size: cover;
   background-position: center;
-  background-attachment: fixed; /* 💥 Parallax scroll effect */
+  background-attachment: fixed;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -15,7 +15,7 @@
 .overlay {
   position: absolute;
   inset: 0;
-  background-color: rgba(1, 22, 20, 0.85); /* Dark overlay */
+  background-color: rgba(1, 22, 20, 0.85);
   z-index: 1;
 }
 
@@ -47,7 +47,7 @@
 }
 
 .inviteBtn {
-  margin-top: 1.8rem;
+  margin-top: 2rem;
   background: linear-gradient(to right, #f8aa00, #ffd470);
   color: #fff;
   font-weight: 600;
@@ -63,7 +63,7 @@
 }
 
 .inviteBtn:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
   box-shadow: 0 5px 12px rgba(0, 0, 0, 0.2);
 }
 
@@ -71,4 +71,58 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Tablet styles */
+@media (max-width: 1160px) {
+  .inviteHeading {
+    font-size: 2rem;
+    line-height: 1.3;
+  }
+
+  .inviteBtn {
+    font-size: 0.95rem;
+    padding: 0.65rem 1.3rem;
+  }
+}
+
+/* Small tablets / large phones */
+@media (max-width: 964px) {
+  .inviteHeading {
+    font-size: 1.75rem;
+    line-height: 1.3;
+  }
+
+  .inviteBtn {
+    font-size: 0.9rem;
+    padding: 0.6rem 1.2rem;
+  }
+
+  .inviteBtn {
+    margin-top: 1.6rem;
+  }
+}
+
+/* Mobile phones */
+@media (max-width: 640px) {
+  .inviteSection {
+    height: auto;
+    padding: 4rem 0;
+  }
+
+  .wrapper {
+    padding: 1.5rem;
+  }
+
+  .inviteHeading {
+    font-size: 1.4rem;
+    line-height: 1.3;
+  }
+
+  .inviteBtn {
+    font-size: 0.9rem;
+    padding: 0.6rem 1.1rem;
+    flex-direction: row;
+    flex-wrap: nowrap;
+  }
 }

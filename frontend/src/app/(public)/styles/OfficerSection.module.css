@@ -7,7 +7,7 @@
 }
 
 .officerHeading {
-  margin-bottom: 3rem;
+  margin: 1rem 0 4rem;
 }
 
 .officerSubtitle {
@@ -47,48 +47,44 @@
   transition: background 0.3s ease;
 }
 
-.officerNavBtn:hover {
-  background-color: #1b8271;
-}
-
-.officerSliderWrapper {
-  width: calc((280px + 24px) * 3 - 24px);
-  overflow: hidden;
-}
-
 .officerNavBtn:disabled {
   background-color: #ccc;
   cursor: not-allowed;
 }
 
-.officerSliderTrack {
-  display: flex;
-  gap: 1.5rem;
-  transition: transform 0.3s ease;
-  width: max-content;
+.officerNavBtn:disabled:hover {
+  background-color: #ccc;
 }
 
-.officerSliderTrack::-webkit-scrollbar {
-  display: none;
+.officerSliderWrapper {
+  overflow: hidden;
+  width: calc((280px + 24px) * 3 - 24px);
+}
+
+.officerSliderTrack {
+  display: flex;
+  transition: transform 0.3s ease;
+  gap: 24px;
+  will-change: transform;
 }
 
 .officerCard {
+  flex: 0 0 auto;
+  width: 280px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  scroll-snap-align: start;
-  flex-shrink: 0;
-  width: 280px;
+  text-align: center;
 }
 
 .officerPhotoWrapper {
   position: relative;
-  border-radius: 18px;
-  overflow: hidden;
   width: 280px;
   height: 340px;
+  border-radius: 18px;
+  overflow: hidden;
   border-bottom: 7px solid #FFAC00;
-  transition: border-color 0.3s ease, transform 0.3s ease;
+  transition: border-color 0.3s ease;
 }
 
 .officerPhotoWrapper:hover {
@@ -99,9 +95,9 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: filter 0.3s ease;
   border-bottom-left-radius: 18px;
   border-bottom-right-radius: 18px;
-  transition: filter 0.3s ease;
 }
 
 .officerPhotoWrapper:hover .officerImage {
@@ -128,7 +124,7 @@
   display: none;
   align-items: center;
   justify-content: center;
-  transition: background 0.3s, color 0.3s, transform 0.3s;
+  transition: background 0.4s, color 0.4s, transform 0.4s;
   border: none;
   cursor: pointer;
   text-decoration: none;
@@ -172,36 +168,104 @@
   cursor: default;
 }
 
-@media (max-width: 900px) {
+/* 1160px */
+@media (max-width: 1160px) {
   .officerSliderWrapper {
     width: calc((280px + 24px) * 2 - 24px);
   }
 
   .officerTitle {
-    font-size: 2rem;
-  }
-
-  .officerSubtitle {
-    font-size: 1rem;
+    font-size: 2.2rem;
   }
 }
 
-@media (max-width: 600px) {
-  .officerSliderWrapper {
-    width: 100%;
+/* Tablets and medium screens */
+@media (max-width: 964px) {
+  .officerSection {
+    padding: 3rem 2rem;
   }
 
-  .officerCard {
-    flex: 0 0 100%;
-    width: 100%;
+  .officerCarousel {
+    padding: 0 20px;
+    justify-content: center;
+  }
+
+  .officerSliderWrapper {
+    width: auto;
+    max-width: calc((240px * 2) + 20px);
+    overflow: hidden;
+  }
+
+  .officerSliderTrack {
+    gap: 20px;
+  }
+
+  .officerCard,
+  .officerPhotoWrapper {
+    width: 240px;
+    height: 340px;
   }
 
   .officerTitle {
-    font-size: 1.6rem;
-    line-height: 1.3;
+    font-size: 1.8rem;
   }
 
   .officerSubtitle {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Small devices (phones) */
+@media (max-width: 640px) {
+  .officerSection {
+    padding: 3rem 1rem 2rem;
+  }
+
+  .officerCarousel {
+    justify-content: space-between;
+  }
+
+  .officerSliderWrapper {
+    max-width: 220px;
+    margin: 0 auto;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .officerSliderTrack {
+    gap: 16px;
+  }
+
+  .officerCard,
+  .officerPhotoWrapper {
+    width: 220px;
+    height: 320px;
+  }
+
+  .officerHeading {
+    margin-bottom: 2rem;
+  }
+
+  .officerTitle {
+    font-size: 1.4rem;
+  }
+
+  .officerSubtitle {
+    font-size: 0.9rem;
+  }
+
+  .officerNavBtn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .officerName {
+    font-size: 15px;
+  }
+
+  .officerRole {
+    font-size: 14px;
   }
 }

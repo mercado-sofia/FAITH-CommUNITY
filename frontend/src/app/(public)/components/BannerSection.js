@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import styles from '../styles/BannerSection.module.css';
 
@@ -17,10 +16,9 @@ useEffect(() => {
     const sectionTop = section.getBoundingClientRect().top;
     const sectionHeight = section.offsetHeight;
 
-    // Only apply if section is in viewport
     if (sectionTop < window.innerHeight && sectionTop + sectionHeight > 0) {
       const scrollY = window.scrollY;
-      const translateY = scrollY * 0.5; // 👈 stronger movement (adjust to taste)
+      const translateY = scrollY * 0.5;
       imageRef.current.style.transform = `translateY(${translateY}px)`;
     }
   };

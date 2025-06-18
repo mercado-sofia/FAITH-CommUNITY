@@ -43,7 +43,7 @@ export default function Footer() {
       <div className={styles.footerContent}>
         <div className={styles.about}>
           <h3>FAITH CommUNITY</h3>
-          <p>Our secure online donation platform allows you to make contributions quickly.</p>
+          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam pulvinar ac.</p>
           <div className={styles.contactInfo}>
             <div className={styles.contactItem}>
               <div className={`${styles.iconCircle} ${styles.phone}`}>
@@ -95,21 +95,21 @@ export default function Footer() {
               </Link>
             </li>
             <li>
+              <Link href="/apply" className={styles.link}>
+                <FaArrowRight className={styles.linkIcon} />
+                Apply Now
+              </Link>
+            </li>
+            <li>
               <Link href="/faqs" className={styles.link}>
                 <FaArrowRight className={styles.linkIcon} />
                 FAQs
               </Link>
             </li>
-            <li>
-              <Link href="/privacy" className={styles.link}>
-                <FaArrowRight className={styles.linkIcon} />
-                Privacy Policy
-              </Link>
-            </li>
           </ul>
         </div>
 
-        <div className={styles.linksSection}>
+        <div className={styles.servicesSection}>
           <h4
             ref={servicesRef}
             data-id="services"
@@ -137,7 +137,14 @@ export default function Footer() {
           <p>Join our mailing list for updates on programs, volunteer opportunities, and stories that make a difference.</p>
           
           <form className={styles.subscribeForm} onSubmit={(e) => e.preventDefault()}>
-            <input type="email" placeholder="Enter your email" required />
+            <input
+              type="email"
+              id="newsletter-email"
+              name="email"
+              placeholder="Enter your email"
+              required
+              autoComplete="email"
+            />
             <button type="submit">
               <Send className={styles.submitIcon} />
             </button>

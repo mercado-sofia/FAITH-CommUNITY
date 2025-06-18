@@ -9,7 +9,7 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 1.2rem;
+  gap: 1rem;
 }
 
 .hero {
@@ -81,16 +81,16 @@
   color: white;
   z-index: 1;
 }
+
 .cardText h2 {
   font-size: 1.5rem;
   font-weight: bold;
 }
+
 .cardText p {
   font-size: 1rem;
 }
 
-/* Vertical card text */
-/* Base hidden state */
 .cardOverlayText {
   opacity: 0;
   transition: opacity 0.3s ease, transform 0.3s ease;
@@ -104,21 +104,17 @@
   transform: translateY(10px);
 }
 
-/* Fade and slide in on hover */
 .cardVertical:hover .cardOverlayText {
   opacity: 1;
   transform: translateY(0);
 }
 
-
-/* Hide first card's text when hovering any vertical card */
 .rightColumn:has(.cardVertical:hover) .card.first .cardText {
   opacity: 0;
   transform: translateY(10px);
   transition: all 0.3s ease;
 }
 
-/* Button & heading section (unchanged) */
 .welcome {
   font-size: 1rem;
   color: #FFAC00;
@@ -140,7 +136,7 @@
 }
 
 .herotitle {
-  font-size: 54px !important;
+  font-size: 46px;
   font-weight: 800;
   line-height: 1.2;
   color: #122F2A;
@@ -153,7 +149,6 @@
   margin-top: 3.2rem;
 }
 
-/* Now position cta normally */
 .cta {
   position: relative;
   display: flex;
@@ -331,45 +326,247 @@
   color: #FFAC00;
 }
 
+@media (max-width: 1300px) {
+  .hero {
+    padding: 7rem 2rem 3rem 3rem;
+  }
 
-@media (max-width: 768px) {
+  .leftColumn {
+    max-width: 40%;
+  }
+
   .herotitle {
-    font-size: 2rem !important;
-    line-height: 1.2;
+    font-size: 2.6rem;
+  }
+
+  .card.first {
+    width: 360px;
+    height: 560px;
+    transition: all 0.3s ease;
+  }
+
+  .cardVertical {
+    width: 120px;
+    height: 560px;
+    transition: all 0.3s ease;
+  }
+
+  .cardVertical:hover {
+    width: 360px;
+  }
+
+  .rightColumn:has(.cardVertical:hover) .card.first {
+    width: 120px;
+  }
+
+  .cardImage {
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.3s ease;
+  }
+
+  .rightColumn {
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+}
+
+@media (max-width: 1270px) {
+  .wrapper {
+    width: 100%;  
+    padding: 0;
+  }
+
+  .hero {
+    padding: 7rem 1rem 3rem;
     text-align: center;
   }
 
-  .cta {
+  .heroWrapper {
     flex-direction: column;
-    width: 100%;
-    gap: 1rem;
+    align-items: center;
+    gap: 2.5rem;
   }
 
-  .cta span {
-    padding-left: 0;
-    text-align: center;
-  }
-
-  .cta button {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .buttons {
+  .leftColumn {
+    max-width: 100%;
+    display: flex;
     flex-direction: column;
     align-items: center;
   }
 
+  .herotitle {
+    font-size: 38px;
+    max-width: 720px;
+    padding: 0 2rem;
+  }
+
+  .ctaContainer {
+    margin-top: 1.6rem;
+    width: 80%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .cta {
+    width: 100%;
+    max-width: 720px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.2rem;
+    text-align: left;
+  }
+
+  .cta span {
+    padding-left: 1rem;
+    font-size: 15px;
+  }
+
+  .buttons {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .discover {
+    padding: 1rem 1.5rem;
+  }
+
   .playCircle {
-    margin-top: 0.5rem;
+    width: 52px;
+    height: 52px;
+  }
+
+  .rightColumn {
+    width: 100%;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: stretch;
+    gap: clamp(0.5rem, 1vw, 1rem);
+    overflow-x: auto;
+    margin-top: 1rem;
+  }
+
+  .card,
+  .card.first,
+  .cardVertical {
+    flex-shrink: 0;
+    flex-basis: 20%;
+    min-width: 120px;
+    max-width: 420px;
+    height: 340px;
+    transition: flex-basis 0.5s ease, transform 0.3s ease;
+  }
+
+  .rightColumn > .card:hover,
+  .rightColumn > .cardVertical:hover {
+    flex-basis: 50%;
+  }
+
+  .rightColumn:has(.card:hover) > .card:not(:hover),
+  .rightColumn:has(.cardVertical:hover) > .cardVertical:not(:hover) {
+    flex-basis: 20%;
+  }
+
+  .cardImage {
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.3s ease;
+  }
+
+  /* Hide card text by default */
+  .cardText {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+  }
+
+  /* Show only on hover */
+  .card:hover .cardText,
+  .card.first:hover .cardText {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@media (max-width: 768px) {
-  .card,
-  .cardVertical {
+@media (max-width: 640px) {
+  .hero {
+    padding: 8rem 1.2rem 3rem;
+    text-align: center;
+    min-height: auto;
+  }
+
+  .herotitle {
+    font-size: 30px;
+    line-height: 1.3;
+  }
+
+  .welcome {
+    font-size: 0.9rem;
+  }
+
+  .ctaContainer {
+    margin-top: 3rem;
     width: 100%;
-    max-width: 320px;
-    height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .cta {
+    width: 100%;
+    max-width: 420px;
+    padding: 0.8rem 1rem;
+    background-color: #f0f3f3;
+    border-radius: 9999px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .cta span {
+    flex: 1;
+    font-size: 0.9rem;
+    color: #a4aba9;
+    text-align: left;
+  }
+
+  .cta button {
+    white-space: nowrap;
+    font-size: 0.85rem;
+    padding: 0.8rem 1.2rem;
+  }
+
+  .buttons {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .discover {
+    font-size: 0.9rem;
+    padding: 0.9rem 1.4rem;
+  }
+
+  .playCircle {
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
+  }
+
+  .rightColumn {
+    display: none;
   }
 }

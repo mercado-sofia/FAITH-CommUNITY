@@ -1,0 +1,264 @@
+/* Green top bar with fixed behavior */
+.navbarWrapper {
+  background-color: #0c4b3a;
+  padding-top: 0.6rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+/* Navbar inner layout */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 3rem;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  gap: 0.8rem;
+}
+
+.navLinks {
+  display: flex;
+  flex: 1;
+  justify-content: flex-start;
+  background: linear-gradient(to right, #1A685B, #238172);
+  padding: 0.7rem 2.4rem;
+  border-radius: 9999px;
+  gap: 2.4rem;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: .5px;
+  align-items: center;
+}
+
+.navLink {
+  color: white;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.navLink:hover {
+  color: #FFAC00;
+}
+
+/* Logo Section */
+.logoContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  color: inherit;
+  width: 200px;
+}
+
+.logoTextWrapper {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.logoTop {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #1A685B;
+}
+
+.logoBottom {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: black;
+}
+
+.orange {
+  color: #FFAC00;
+}
+
+/* Right side buttons */
+.rightActions {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+}
+
+.faithBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(to right, #DBEDE9, #489285, #0D594C);
+  border: none;
+  border-radius: 9999px;
+  font-weight: 600;
+  color: white;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 0.5rem 1.6rem;
+  width: auto;
+  height: 40px;
+}
+
+.applyBtn {
+  background: linear-gradient(to right, #FFAC00, #FFCE6A);
+  color: white;
+  font-weight: bold;
+  padding: 0.5rem 2.5rem;
+  border-radius: 9999px;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+}
+
+/* Hamburger */
+.hamburgerBtn {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  color: #1A685B;
+  cursor: pointer;
+}
+
+/* Sidebar */
+.mobileSidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 260px;
+  height: 100vh;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  padding: 6rem 2rem 2rem;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  z-index: 9999;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.2);
+  border-radius: 12px 0 0 12px;
+}
+
+.showSidebar {
+  transform: translateX(0);
+}
+
+.mobileNavLink {
+  color: #0c4b3a;
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 1.6rem;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.mobileNavLink:hover {
+  color: #ffac00;
+}
+
+.closeSidebarBtn {
+  position: absolute;
+  top: 2.2rem;
+  left: -20px;
+  background-color: #0c4b3a;
+  color: white;
+  border: none;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+}
+
+.closeSidebarBtn:hover {
+  background-color: #145847;
+}
+
+/* Buttons inside sidebar (only visible under 640px) */
+.mobileButtons {
+  display: none;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 1264px) {
+  .rightActions {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .hamburgerBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.5rem;
+    order: 3;
+  }
+
+  .navLinks {
+    display: none;
+  }
+}
+
+/* Mobile (640px and below) */
+@media (max-width: 730px) {
+  .navbar {
+    padding: 0.6rem 1.4rem;
+    justify-content: space-between;
+  }
+
+  .logoContainer {
+    width: auto;
+    gap: 0.5rem;
+  }
+
+  .logoTextWrapper {
+    line-height: 1.1;
+  }
+
+  .rightActions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  
+  .faithBtn,
+  .applyBtn {
+    display: none;
+  }
+
+  .hamburgerBtn {
+    display: flex;
+    font-size: 1.4rem;
+  }
+
+ .mobileButtons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 2.5rem;
+  }
+
+  .mobileButtons .faithBtn,
+  .mobileButtons .applyBtn {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    height: 40px;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    border-radius: 9999px;
+  }
+}

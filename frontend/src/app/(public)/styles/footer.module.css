@@ -57,7 +57,7 @@
 }
 
 .contactText small {
-  font-size: 12px;
+  font-size: 13px;
   color: #cccccc;
 }
 
@@ -69,17 +69,20 @@
 }
 
 .linksSection h4,
+.servicesSection h4,
 .newsletter h4 {
   font-size: 18px;
   margin-bottom: 1.6rem;
 }
 
-.linksSection ul {
+.linksSection ul,
+.servicesSection ul {
   list-style: none;
   padding: 0;
 }
 
-.linksSection li {
+.linksSection li,
+.servicesSection li {
   margin-bottom: 10px;
   font-size: 14px;
   color: #6D7D75;
@@ -137,7 +140,7 @@
 }
 
 .subscribeForm button {
-  padding: 12px;
+  padding: 13px;
   width: 50px;
   background: #FFAC00;
   border: none;
@@ -211,7 +214,19 @@
   width: 50px;
 }
 
-@media (max-width: 1024px) {
+/* Responsive */
+@media (max-width: 1160px) {
+  .footerContent {
+    padding: 5rem 6rem 6rem;
+  }
+
+  .newsletter {
+    margin-top: 2rem;
+  }
+}
+
+/* Tablets and medium screens */
+@media (max-width: 880px) {
   .footerContent {
     padding: 4rem 3rem 2rem;
     display: flex;
@@ -224,63 +239,74 @@
     width: 100%;
   }
 
-  /* ✅ Reduce to ~45% to give breathing space */
-  .linksSection {
+  .linksSection,
+  .servicesSection {
     width: 45%;
     min-width: 200px;
     margin-top: 1rem;
   }
 
-  .linksSection:nth-of-type(2) {
-    order: 1;
-  }
-
-  .linksSection:nth-of-type(3) {
+  .linksSection,
+  .servicesSection {
     order: 1;
   }
 
   .newsletter {
-    width: 100%;
+    width: 70%;
     order: 2;
     margin-top: 1rem;
   }
 
   .subscribeForm input {
-    font-size: 14px;
+    font-size: 15px;
   }
 
   .bottomBar {
-    font-size: 12px;
+    font-size: 13px;
   }
 }
 
 /* Small devices (phones) */
 @media (max-width: 640px) {
   .footerContent {
-    flex-direction: column;
-    padding: 3rem 2rem 2rem;
-    gap: 1.4rem;
-    align-items: flex-start;
+    padding: 3rem 2.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    justify-content: flex-start;
   }
 
   .about,
-  .linksSection,
   .newsletter {
     width: 100%;
   }
 
+  .linksSection,
+  .servicesSection {
+    width: 45%;
+    min-width: 140px;
+    margin-top: 1rem;
+  }
+
+  .linksSection,
+  .servicesSection {
+    order: 1;
+  }
+
   .about h3 {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .about p,
   .newsletter p,
   .linksSection li,
+  .servicesSection li,
   .linksSection a {
     font-size: 13px;
   }
 
   .linksSection h4,
+  .servicesSection h4,
   .newsletter h4,
   .sectionHeading {
     font-size: 16px;
@@ -306,12 +332,12 @@
   }
 
   .socials {
-    margin-top: 1rem;
+    margin-top: 1.2rem;
   }
 
   .bottomBar {
-    font-size: 12px;
-    padding: 1rem 1rem;
+    font-size: 12.5px;
+    padding: 1rem;
     height: auto;
   }
 }

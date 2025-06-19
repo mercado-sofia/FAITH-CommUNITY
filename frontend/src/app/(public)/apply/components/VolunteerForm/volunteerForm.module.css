@@ -6,7 +6,7 @@
 }
 
 .formContainer * {
-  font-family: 'Arial', sans-serif;
+  font-family: var(--font-roboto);
 }
 
 /* === Dropdown Section === */
@@ -19,22 +19,22 @@
   flex-wrap: wrap;
 }
 
+.programLabelBox,
+.customDropdown {
+  font-weight: 700;
+  font-size: 17px;
+  border-radius: .5rem;
+}
+
 .programLabelBox {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   padding: 1rem 2rem;
   border: 3px solid #1F1F1F;
-  border-radius: .5rem;
-  font-weight: 600;
-  font-size: 18px;
   background-color: white;
   height: 60px;
   min-width: 300px;
-}
-
-.programLabelText {
-  text-align: center;
 }
 
 .dropdownWrapper {
@@ -48,17 +48,13 @@
   height: 60px;
   background-color: white;
   border: 3px solid #1A685B;
-  border-radius: .5rem;
   padding: 1rem 3rem 1rem 1.25rem;
-  font-weight: 600;
-  font-size: 16px;
   color: #1A685B;
   box-shadow: 0 4px 6px rgba(26, 104, 91, 0.2);
-  cursor: pointer;
-  user-select: none;
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  cursor: pointer;
 }
 
 .dropdownIcon {
@@ -210,25 +206,53 @@
 }
 
 /* === Submit Button === */
-.formContainer button[type="submit"] {
+.formContainer button[type="submit"].submitBtn {
   background-color: #237c68;
   color: white;
   padding: 1rem;
   border-radius: 0.5rem;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 15px;
   border: none;
   width: 100%;
   cursor: pointer;
   transition: background-color 0.3s ease;
+
+  display: inline-flex; /* NEW */
+  align-items: center;   /* NEW */
+  justify-content: center; /* NEW */
+  gap: 0.5rem;           /* NEW */
 }
 
-.formContainer button[type="submit"]:hover {
+.formContainer button[type="submit"].submitBtn:hover {
   background-color: #1a6251;
+}
+
+.submitBtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.loader {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  border-top: 2px solid #0f5132;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* === Upload === */
 .uploadSection {
+  border: 2px solid transparent;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -284,8 +308,8 @@
 }
 
 .uploadText {
-  font-size: 0.95rem;
-  color: #444;
+  font-size: 14px;
+  color: #515151;
   font-weight: 500;
   transition: color 0.3s ease;
 }
@@ -295,19 +319,33 @@
   font-weight: 600;
 }
 
+.uploadBox.dragging {
+  border: 2px dashed #FFAC00;
+  background-color: #fdf6e9;
+}
+
 .browseBtn {
   background-color: #1a685b;
-  color: white;
-  padding: 0.6rem 1.8rem;
+  color: #fff;
+  padding: 0.75rem 1.6rem;
   border-radius: 999px;
   cursor: pointer;
   font-weight: 500;
-  font-size: 0.95rem;
+  font-size: 14px;
+  font-family: var(--font-roboto);
   transition: background-color 0.3s ease;
 }
 
 .browseBtn:hover {
-  background-color: #134e4a;
+  background-color: #248978;
+}
+
+.fileNoteInline {
+  font-size: 12px;
+  margin-top: 0.5rem;
+  color: #444;
+  text-align: center;
+  line-height: 1.3;
 }
 
 .fileName {
@@ -422,12 +460,22 @@
 /* === Terms & Checkbox === */
 .checkboxContainer {
   margin-top: 1rem;
+  border: 2px solid transparent;
 }
 
 .checkboxRow {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.checkboxLabel {
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1.4;
+  margin: 0;
 }
 
 .customCheckbox {
@@ -435,6 +483,7 @@
   display: inline-block;
   width: 16px;
   height: 16px;
+  margin-top: 2px;
 }
 
 .customCheckbox input {
@@ -479,14 +528,8 @@
 }
 
 .labelWrapper {
-  display: flex;
-  flex-direction: column;
-}
-
-.checkboxLabel {
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
+  flex: 1;
+  min-width: 0;
 }
 
 .termsNote {
@@ -524,7 +567,6 @@
   position: relative;
   background: white;
   padding: 2rem;
-  border-radius: 10px;
   max-width: 500px;
   width: 100%;
   max-height: 80vh;
@@ -542,6 +584,11 @@
   font-size: 1rem;
   cursor: pointer;
   z-index: 1;
+}
+
+.headingText {
+  font-size: 16px;
+  color: #0fa05f;
 }
 
 .placeholderText {
@@ -569,4 +616,18 @@
   background-color: #fee2e2;
   color: #b91c1c;
   border: 1px solid #fca5a5;
+}
+
+.highlightError {
+  border: 2px solid #e53935;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: border 0.3s ease;
+}
+
+.inlineError {
+  color: #e53935;
+  font-size: 13px;
+  margin-top: 0.5rem;
+  font-weight: 500;
 }

@@ -3,7 +3,7 @@
   min-height: 580px;
   max-width: 1200px;
   margin: auto;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-roboto);
 }
 
 .hero {

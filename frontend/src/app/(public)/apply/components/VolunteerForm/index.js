@@ -41,7 +41,29 @@ export default function VolunteerForm() {
     message: "",
   });
 
+  useEffect(() => {
+    if (submitStatus.submitted) {
+      const timer = setTimeout(() => {
+        setSubmitStatus({
+          submitted: false,
+          success: false,
+          message: "",
+        });
+      }, 4000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [submitStatus]);
+
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [errorTarget, setErrorTarget] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const programRef = useRef(null);
+  const personalInfoRef = useRef(null);
+  const uploadRef = useRef(null);
+  const termsRef = useRef(null);
+
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -54,31 +76,78 @@ export default function VolunteerForm() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const showError = (ref, message, targetKey) => {
+    setErrorMessage(message);
+    setErrorTarget(targetKey);
+
+    if (ref?.current) {
+      ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      ref.current.classList.add(styles.highlightError);
+    }
+
+    setTimeout(() => {
+      ref?.current?.classList.remove(styles.highlightError);
+      setErrorMessage("");
+      setErrorTarget(null);
+    }, 2000);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorMessage("");
+    setErrorTarget(null);
 
-    if (!formData.agreeToTerms) {
-      setSubmitStatus({
-        submitted: true,
-        success: false,
-        message: "Please agree to the terms and conditions to proceed.",
-      });
-      document.getElementById("termsBox")?.scrollIntoView({ behavior: "smooth" });
-      setIsLoading(false);
-      return;
-    }
-
+    // ✅ Validation – Program
     if (!formData.program?.id) {
-      setSubmitStatus({
-        submitted: true,
-        success: false,
-        message: "Please select a valid program before submitting.",
-      });
+      showError(programRef, "Please select a valid program.", "program");
       setIsLoading(false);
       return;
     }
 
+    // ✅ Validation – All personal info fields
+    const personalFields = [
+      "fullName",
+      "age",
+      "gender",
+      "email",
+      "phoneNumber",
+      "address",
+      "occupation",
+      "citizenship",
+      "reason",
+    ];
+
+    const missingField = personalFields.find((field) => {
+      const value = formData[field];
+      return value === null || value === undefined || value.toString().trim() === "";
+    });
+
+    if (missingField) {
+      showError(
+        personalInfoRef,
+        "Please fill out all required personal information.",
+        "personalInfo"
+      );
+      setIsLoading(false);
+      return;
+    }
+
+    // ✅ Validation – Valid ID
+    if (!formData.validId) {
+      showError(uploadRef, "Please upload your valid ID.", "upload");
+      setIsLoading(false);
+      return;
+    }
+
+    // ✅ Validation – Agree to terms
+    if (!formData.agreeToTerms) {
+      showError(termsRef, "You must agree to the terms and conditions.", "terms");
+      setIsLoading(false);
+      return;
+    }
+
+    // ✅ Submit form
     try {
       const form = new FormData();
       form.append("program_id", formData.program.id);
@@ -143,31 +212,40 @@ export default function VolunteerForm() {
       onSubmit={handleSubmit}
       noValidate
     >
-      <SubmitStatus status={submitStatus} />
 
       <ProgramSelect
+        ref={programRef}
         programOptions={mockProgramOptions}
         formData={formData}
         setFormData={setFormData}
         dropdownOpen={dropdownOpen}
         setDropdownOpen={setDropdownOpen}
+        errorMessage={errorTarget === "program" ? errorMessage : ""}
       />
 
       <PersonalInfoSection
+        ref={personalInfoRef}
         formData={formData}
         handleChange={handleChange(setFormData)}
+        errorMessage={errorTarget === "personalInfo" ? errorMessage : ""}
       />
 
       <UploadValidID
+        ref={uploadRef}
         formData={formData}
         handleChange={handleChange(setFormData)}
+        errorMessage={errorTarget === "upload" ? errorMessage : ""}
       />
 
       <TermsCheckbox
+        ref={termsRef}
         formData={formData}
         handleChange={handleChange(setFormData)}
         isLoading={isLoading}
+        errorMessage={errorTarget === "terms" ? errorMessage : ""}
       />
+      
+      <SubmitStatus status={submitStatus} />
     </form>
   );
 }

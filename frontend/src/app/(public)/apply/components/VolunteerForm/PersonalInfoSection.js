@@ -1,8 +1,17 @@
+"use client";
+
+import { forwardRef } from "react";
 import styles from "./volunteerForm.module.css";
 
-export default function PersonalInfoSection({ formData, handleChange }) {
+const PersonalInfoSection = forwardRef(function PersonalInfoSection(
+  { formData, handleChange, errorMessage },
+  ref
+) {
   return (
-    <div className={styles.sectionCard}>
+    <div
+      className={`${styles.sectionCard} ${errorMessage ? styles.highlightError : ""}`}
+      ref={ref}
+    >
       <h3>Personal Information</h3>
 
       <div className={styles.threeCol}>
@@ -115,9 +124,10 @@ export default function PersonalInfoSection({ formData, handleChange }) {
         </div>
       </div>
 
-        <div className={styles.fullRow}>
-        <label htmlFor="reason">Why are you interested in volunteering?</label>
-        <textarea
+      <div className={styles.fullRow}>
+        <div className={styles.inputGroup}>
+          <label htmlFor="reason">Why are you interested in volunteering?</label>
+          <textarea
             id="reason"
             name="reason"
             value={formData.reason}
@@ -126,11 +136,16 @@ export default function PersonalInfoSection({ formData, handleChange }) {
             maxLength={800}
             autoComplete="off"
             required
-        />
-        <div className={styles.charCount}>
+          />
+          <div className={styles.charCount}>
             {formData.reason.length} / 800
+          </div>
         </div>
-        </div>
+      </div>
+
+      {errorMessage && <p className={styles.inlineError}>{errorMessage}</p>}
     </div>
   );
-}
+});
+
+export default PersonalInfoSection;

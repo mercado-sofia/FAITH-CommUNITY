@@ -187,6 +187,10 @@
   .impactSection {
     padding: 1rem 2rem 6rem;
   }
+
+  .impactCarousel {
+    gap: 1.2rem;
+  }
   
   .impactSliderWrapper {
     width: calc((400px + 14px + 13px) * 2 - 14px);

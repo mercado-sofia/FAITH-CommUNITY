@@ -498,14 +498,13 @@
 
 @media (max-width: 640px) {
   .hero {
-    padding: 8rem 1.2rem 3rem;
+    padding: 8rem 0 0;
     text-align: center;
     min-height: auto;
   }
 
   .herotitle {
-    font-size: 30px;
-    line-height: 1.3;
+    display: none;
   }
 
   .welcome {
@@ -513,37 +512,11 @@
   }
 
   .ctaContainer {
-    margin-top: 3rem;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    margin: 0;
   }
 
   .cta {
-    width: 100%;
-    max-width: 420px;
-    padding: 0.8rem 1rem;
-    background-color: #f0f3f3;
-    border-radius: 9999px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-
-  .cta span {
-    flex: 1;
-    font-size: 0.9rem;
-    color: #a4aba9;
-    text-align: left;
-  }
-
-  .cta button {
-    white-space: nowrap;
-    font-size: 0.85rem;
-    padding: 0.8rem 1.2rem;
+    display: none;
   }
 
   .buttons {
@@ -552,12 +525,11 @@
     align-items: center;
     justify-content: center;
     gap: 1rem;
-    margin-top: 2rem;
   }
 
   .discover {
-    font-size: 0.9rem;
-    padding: 0.9rem 1.4rem;
+    font-size: 14px;
+    padding: 0.9rem 1.6rem;
   }
 
   .playCircle {

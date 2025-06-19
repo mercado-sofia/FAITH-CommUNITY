@@ -138,6 +138,9 @@ export default function Footer() {
           <p>Join our mailing list for updates on programs, volunteer opportunities, and stories that make a difference.</p>
           
           <form className={styles.subscribeForm} onSubmit={(e) => e.preventDefault()}>
+            <label htmlFor="newsletter-email" className={styles.visuallyHidden}>
+              Email address for newsletter
+            </label>
             <input
               type="email"
               id="newsletter-email"

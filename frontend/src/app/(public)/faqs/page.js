@@ -6,10 +6,8 @@ import PageBanner from '../components/PageBanner';
 import Loader from '../../../components/Loader';
 import styles from './faqs.module.css';
 
-// ✅ Tracks first-time visit
 let hasVisitedFaqs = false;
 
-// ✅ Simulated mock data
 const mockFaqData = [
   {
     question: "What is the CommUNITY platform all about?",
@@ -42,12 +40,10 @@ export default function FaqPage() {
   const [loading, setLoading] = useState(!hasVisitedFaqs);
   const [activeIndex, setActiveIndex] = useState(null);
 
-  // ✅ Toggle FAQ answer
   const toggleFaq = (index) => {
     setActiveIndex(index === activeIndex ? null : index);
   };
 
-  // ✅ Simulate loading + set mock data only on first visit
   useEffect(() => {
     if (hasVisitedFaqs) return;
 
@@ -61,7 +57,6 @@ export default function FaqPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  // ✅ If user has already visited, skip loading delay
   useEffect(() => {
     if (hasVisitedFaqs && faqs.length === 0) {
       setFaqs(mockFaqData);

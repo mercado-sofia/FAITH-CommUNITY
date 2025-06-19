@@ -1,12 +1,17 @@
-import { useState, useEffect } from "react";
+"use client";
+
+import { useState, useEffect, forwardRef } from "react";
 import styles from "./volunteerForm.module.css";
 import { FiX } from "react-icons/fi";
 
-export default function TermsCheckbox({ formData, handleChange, isLoading }) {
+const TermsCheckbox = forwardRef(function TermsCheckbox(
+  { formData, handleChange, isLoading, errorMessage },
+  ref
+) {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
-  // ✅ ESC key closes modal
+  // ESC key to close modals
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === "Escape") {
@@ -18,7 +23,7 @@ export default function TermsCheckbox({ formData, handleChange, isLoading }) {
     return () => window.removeEventListener("keydown", handleEsc);
   }, []);
 
-  // ✅ Prevent scroll when modals are open
+  // Prevent background scroll when modal is open
   useEffect(() => {
     const hasModal = showTermsModal || showPrivacyModal;
     document.body.style.overflow = hasModal ? "hidden" : "auto";
@@ -29,52 +34,63 @@ export default function TermsCheckbox({ formData, handleChange, isLoading }) {
 
   return (
     <>
-      <div className={styles.checkboxContainer}>
-        <div className={styles.checkboxRow}>
-          <label className={styles.customCheckbox}>
-            <input
-              id="agreeToTerms"
-              type="checkbox"
-              name="agreeToTerms"
-              checked={formData.agreeToTerms}
-              onChange={handleChange}
-              required
-            />
-            <span className={styles.checkmark}></span>
-          </label>
+    <div
+      className={`${styles.checkboxContainer} ${
+        errorMessage ? styles.highlightError : ""
+      }`}
+      ref={ref}
+    >
+    <div className={styles.checkboxRow}>
+      <label htmlFor="agreeToTerms" className={styles.customCheckbox}>
+        <input
+          id="agreeToTerms"
+          type="checkbox"
+          name="agreeToTerms"
+          checked={formData.agreeToTerms}
+          onChange={handleChange}
+          required
+        />
+        <span className={styles.checkmark}></span>
+      </label>
 
-          <div className={styles.labelWrapper}>
-            <label htmlFor="agreeToTerms" className={styles.checkboxLabel}>
-              I agree to the terms and conditions
-            </label>
-            <p className={styles.termsNote}>
-              By checking this box, you agree to our{" "}
-              <button
-                type="button"
-                className={styles.link}
-                onClick={() => setShowTermsModal(true)}
-              >
-                Terms of Service
-              </button>{" "}
-              and{" "}
-              <button
-                type="button"
-                className={styles.link}
-                onClick={() => setShowPrivacyModal(true)}
-              >
-                Privacy Policy
-              </button>.
-            </p>
-          </div>
-        </div>
+      <div className={styles.labelWrapper}>
+        <label htmlFor="agreeToTerms" className={styles.checkboxLabel}>
+          I agree to the terms and conditions
+        </label>
+        <p className={styles.termsNote}>
+          By checking this box, you agree to our{" "}
+          <button
+            type="button"
+            className={styles.link}
+            onClick={() => setShowTermsModal(true)}
+          >
+            Terms of Service
+          </button>{" "}
+          and{" "}
+          <button
+            type="button"
+            className={styles.link}
+            onClick={() => setShowPrivacyModal(true)}
+          >
+            Privacy Policy
+          </button>.
+        </p>
       </div>
+    </div>
+
+      {errorMessage && <p className={styles.inlineError}>{errorMessage}</p>}
+    </div>
 
       <button
         type="submit"
         disabled={isLoading}
         aria-busy={isLoading}
+        className={styles.submitBtn}
       >
-        {isLoading ? "Submitting..." : "Submit Application"}
+        Submit Application
+        {isLoading && (
+          <span className={styles.loader} aria-hidden="true"></span>
+        )}
       </button>
 
       {/* ✅ Terms Modal */}
@@ -93,7 +109,9 @@ export default function TermsCheckbox({ formData, handleChange, isLoading }) {
             >
               <FiX size={20} />
             </button>
-            <h3 id="termsHeading">Terms of Service</h3>
+            <h3 className={styles.headingText} id="termsHeading">
+              Terms of Service
+            </h3>
             <p className={styles.placeholderText}>
               Terms of Service content goes here (to be updated later).
             </p>
@@ -117,7 +135,9 @@ export default function TermsCheckbox({ formData, handleChange, isLoading }) {
             >
               <FiX size={20} />
             </button>
-            <h3 id="privacyHeading">Privacy Policy</h3>
+            <h3 className={styles.headingText} id="privacyHeading">
+              Privacy Policy
+            </h3>
             <p className={styles.placeholderText}>
               Privacy Policy content goes here (to be updated later).
             </p>
@@ -126,4 +146,6 @@ export default function TermsCheckbox({ formData, handleChange, isLoading }) {
       )}
     </>
   );
-}
+});
+
+export default TermsCheckbox;

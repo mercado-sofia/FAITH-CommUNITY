@@ -1,0 +1,572 @@
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin: 2rem 8rem;
+}
+
+.formContainer * {
+  font-family: 'Arial', sans-serif;
+}
+
+/* === Dropdown Section === */
+.topTwoCol {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.programLabelBox {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 1rem 2rem;
+  border: 3px solid #1F1F1F;
+  border-radius: .5rem;
+  font-weight: 600;
+  font-size: 18px;
+  background-color: white;
+  height: 60px;
+  min-width: 300px;
+}
+
+.programLabelText {
+  text-align: center;
+}
+
+.dropdownWrapper {
+  position: relative;
+  width: 100%;
+  max-width: 450px;
+}
+
+.customDropdown {
+  width: 100%;
+  height: 60px;
+  background-color: white;
+  border: 3px solid #1A685B;
+  border-radius: .5rem;
+  padding: 1rem 3rem 1rem 1.25rem;
+  font-weight: 600;
+  font-size: 16px;
+  color: #1A685B;
+  box-shadow: 0 4px 6px rgba(26, 104, 91, 0.2);
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.dropdownIcon {
+  position: absolute;
+  top: 50%;
+  right: 1.25rem;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 1rem;
+  color: #1A685B;
+}
+
+.dropdownList {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  width: 100%;
+  background: white;
+  border: 2px solid #1A685B;
+  border-radius: .5rem;
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0.25rem 0;
+  scrollbar-width: thin;
+  scrollbar-color: #1A685B transparent;
+}
+
+.dropdownItem {
+  padding: 0.6rem 1rem;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1A685B;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+}
+
+.dropdownItem:hover {
+  background: #51a08f;
+  color: white;
+}
+
+.dropdownList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdownList::-webkit-scrollbar-thumb {
+  background-color: #1A685B;
+  border-radius: 4px;
+}
+
+.filled {
+  color: #1A685B;
+}
+
+/* === Section Card Layout === */
+.sectionCard {
+  padding: 2.5rem 2.5rem .5rem;
+  border-radius: 1rem;
+  border: 2px solid #d1d5db;
+}
+
+.sectionCard h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+.threeCol {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 197px 197px;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.twoCol {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.fullRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* === Inputs === */
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inputGroup label {
+  font-size: 15px;
+}
+
+.formContainer input,
+.formContainer select,
+.formContainer textarea {
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.formContainer input::placeholder,
+.formContainer textarea::placeholder {
+  font-size: 14px;
+  color: #bababa;
+}
+
+.formContainer textarea {
+  min-height: 200px;
+  padding: 1rem;
+  line-height: 1.4;
+  resize: none;
+}
+
+.formContainer input:focus,
+.formContainer textarea:focus {
+  border-color: #1A685B;
+  box-shadow: 0 0 0 2px rgba(26, 104, 91, 0.2);
+}
+
+/* Remove spinners in number fields */
+.formContainer input[type="number"]::-webkit-inner-spin-button,
+.formContainer input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.formContainer input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.charCount {
+  font-size: 13px;
+  color: #666;
+  margin-top: 2px;
+  text-align: right;
+}
+
+/* === Submit Button === */
+.formContainer button[type="submit"] {
+  background-color: #237c68;
+  color: white;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 16px;
+  border: none;
+  width: 100%;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.formContainer button[type="submit"]:hover {
+  background-color: #1a6251;
+}
+
+/* === Upload === */
+.uploadSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.uploadLabel {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #134e4a;
+  margin-bottom: 0.25rem;
+}
+
+.uploadBox {
+  position: relative;
+  border: 2px dashed #1a685b;
+  border-radius: 1rem;
+  background-color: #f9fbfb;
+  padding: 2rem 1rem;
+  text-align: center;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+  height: 280px;
+  overflow: hidden;
+}
+
+.uploadBox:hover {
+  border-color: #51a08f;
+  background-color: #f1fdfb;
+}
+
+/* ✅ Uploaded state */
+.uploadBox.uploaded {
+  border-color: #15803d;
+  background-color: #f0fdf4;
+}
+
+.uploadInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  justify-content: center;
+  min-height: 100%;
+}
+
+.uploadIcon {
+  font-size: 2.2rem;
+  color: #3bb49a;
+  transition: color 0.3s ease;
+}
+
+.uploadIcon.uploaded {
+  color: #c4e0da;
+}
+
+.uploadText {
+  font-size: 0.95rem;
+  color: #444;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.uploadText.uploaded {
+  color: #166534;
+  font-weight: 600;
+}
+
+.browseBtn {
+  background-color: #1a685b;
+  color: white;
+  padding: 0.6rem 1.8rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: background-color 0.3s ease;
+}
+
+.browseBtn:hover {
+  background-color: #134e4a;
+}
+
+.fileName {
+  font-size: 0.9rem;
+  color: #15803d;
+  word-break: break-word;
+  max-width: 100%;
+  font-weight: 600;
+  margin: 0;
+  height: 0;
+  visibility: hidden;
+}
+
+.fileNote {
+  font-size: 0.85rem;
+  color: #515151;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+/* === File link button === */
+.fileLink {
+  margin-top: 0.7rem;
+  font-size: 0.9rem;
+  color: #3bb49a;
+  font-weight: 600;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.fileLink:hover {
+  color: #0f5132;
+}
+
+/* === Overlay === */
+.overlayPreview {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.overlayBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.overlayContent {
+  position: relative;
+  width: 90%;
+  max-width: 800px;
+  height: 80%;
+  border-radius: 10px;
+  overflow: hidden;
+  z-index: 1001;
+}
+
+.overlayContent img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.overlayClose {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 1.6rem;
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  z-index: 1002;
+}
+
+.shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    #f0f0f0 0%,
+    #e0e0e0 20%,
+    #f0f0f0 40%,
+    #f0f0f0 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+  z-index: 2;
+  border-radius: 10px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* === Terms & Checkbox === */
+.checkboxContainer {
+  margin-top: 1rem;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.customCheckbox {
+  position: relative;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+}
+
+.customCheckbox input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 16px;
+  width: 16px;
+  background-color: #fff;
+  border: 2px solid #0fa05f;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.customCheckbox input:checked + .checkmark {
+  background-color: #3bb49a;
+}
+
+.checkmark::after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 4px;
+  top: 1px;
+  width: 3px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.customCheckbox input:checked + .checkmark::after {
+  display: block;
+}
+
+.labelWrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.checkboxLabel {
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.termsNote {
+  font-size: 13px;
+  color: #444;
+  margin: 0;
+  margin-top: 0.2rem;
+}
+
+.link {
+  color: #0fa05f;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modalContent {
+  position: relative;
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.closeIcon {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  color: #333;
+  font-size: 1rem;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.placeholderText {
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: 0.5rem;
+  line-height: 1.5;
+}
+
+/* === Status Message === */
+.statusMessage {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.success {
+  background-color: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.error {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import FloatingMessage from './FloatingMessage';
-import styles from '../styles/HeroSection.module.css';
+import styles from './styles/HeroSection.module.css';
 
 export default function HeroSection() {
   const router = useRouter();

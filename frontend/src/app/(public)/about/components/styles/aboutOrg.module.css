@@ -1,0 +1,86 @@
+.orgSection {
+  padding: 1.8rem 2rem 2.6rem;
+  background: linear-gradient(
+    90deg,
+    rgba(33, 165, 143, 0.85) 40.87%,
+    rgba(255, 172, 0, 0.95) 100%
+  ),
+  url("/sample/sample4.jpg") center/cover no-repeat;
+  color: white;
+  text-align: center;
+}
+
+.orgHeading {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 1.6rem;
+}
+
+.orgHeading span {
+  color: #ffac00;
+  font-size: 2.8rem;
+  margin-right: 4px;
+  font-family: 'Inter', sans-serif;
+  font-style: italic;
+  font-weight: 700;
+}
+
+.orgCarouselWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  position: relative;
+}
+
+.orgSliderWrapper {
+  width: calc((140px + 2px) * 7 - 2px);
+  overflow: hidden;
+}
+
+.orgSliderTrack {
+  display: flex;
+  gap: 2px;
+  transition: transform 0.4s ease;
+  width: max-content;
+}
+
+.orgItem {
+  flex: 0 0 140px;
+  text-align: center;
+}
+
+.orgItem img {
+  border-radius: 50%;
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+}
+
+.orgItem p {
+  margin-top: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: white;
+}
+
+.orgNavBtn {
+  background-color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #1a685b;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.orgNavBtn:hover {
+  background-color: #ffac00;
+  color: white;
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import styles from "../styles/floatingMessage.module.css";
+import styles from "./styles/floatingMessage.module.css";
 import { FiMessageCircle } from "react-icons/fi";
 import { FaChevronDown } from "react-icons/fa";
 

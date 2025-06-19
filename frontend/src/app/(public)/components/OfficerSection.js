@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import styles from '../styles/OfficerSection.module.css';
+import styles from './styles/OfficerSection.module.css';
 import {
   FaChevronLeft,
   FaChevronRight,

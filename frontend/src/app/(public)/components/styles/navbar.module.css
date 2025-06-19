@@ -64,7 +64,7 @@
 .logoTop {
   font-size: 1.15rem;
   font-weight: 800;
-  color: #1A685B;
+  color: #15803d;
 }
 
 .logoBottom {
@@ -103,18 +103,40 @@
 }
 
 .applyBtn {
+  position: relative;
   background: linear-gradient(to right, #FFAC00, #FFCE6A);
   color: white;
-  font-weight: bold;
-  padding: 0.5rem 2.5rem;
-  border-radius: 9999px;
+  font-weight: 600;
   font-size: 14px;
-  text-decoration: none;
+  padding: 0.5rem 2.5rem;
+  border: none;
+  border-radius: 999px;
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   height: 40px;
+  text-decoration: none;
+  z-index: 0;
+}
+
+.applyBtn::before {
+  content: "";
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #FFAC00;
+  z-index: -1;
+  transition: top 0.3s ease;
+  border-radius: 999px;
+}
+
+.applyBtn:hover::before {
+  top: 0;
 }
 
 /* Hamburger */

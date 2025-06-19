@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import styles from '../styles/navbar.module.css';
+import styles from './styles/navbar.module.css';
 import { FaBars, FaChevronRight } from 'react-icons/fa';
 
 export default function Navbar() {

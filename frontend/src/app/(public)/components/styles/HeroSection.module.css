@@ -13,9 +13,9 @@
 }
 
 .hero {
-  padding: 7rem 2rem 4rem 5rem;
+  padding: 7rem 2rem 2.4rem 5rem;
   background: #ffffff;
-  min-height: 100vh;
+  min-height: auto;
 }
 
 .leftColumn {
@@ -193,7 +193,7 @@
   height: 100%;
   background-color: #0FA05F;
   z-index: -1;
-  transition: top 0.4s ease;
+  transition: top 0.3s ease;
   border-radius: 999px;
 }
 

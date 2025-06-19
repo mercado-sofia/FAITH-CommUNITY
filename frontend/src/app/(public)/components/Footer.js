@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import styles from "../styles/footer.module.css";
-import { FaFacebookF, FaPhoneAlt, FaEnvelope, FaArrowRight } from "react-icons/fa";
+import styles from "./styles/footer.module.css";
+import { FaFacebookF, FaPhoneAlt, FaEnvelope } from "react-icons/fa";
 import { FaInstagram, FaXTwitter } from "react-icons/fa6";
+import { HiMiniArrowRight } from "react-icons/hi2";
 import { Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -78,31 +79,31 @@ export default function Footer() {
           <ul>
             <li>
               <Link href="/about" className={styles.link}>
-                <FaArrowRight className={styles.linkIcon} />
+                <HiMiniArrowRight className={styles.linkIcon} />
                 About Us
               </Link>
             </li>
             <li>
               <Link href="/programs" className={styles.link}>
-                <FaArrowRight className={styles.linkIcon} />
+                <HiMiniArrowRight className={styles.linkIcon} />
                 Programs & Services
               </Link>
             </li>
             <li>
               <Link href="/faithree" className={styles.link}>
-                <FaArrowRight className={styles.linkIcon} />
+                <HiMiniArrowRight className={styles.linkIcon} />
                 Faithree
               </Link>
             </li>
             <li>
               <Link href="/apply" className={styles.link}>
-                <FaArrowRight className={styles.linkIcon} />
+                <HiMiniArrowRight className={styles.linkIcon} />
                 Apply Now
               </Link>
             </li>
             <li>
               <Link href="/faqs" className={styles.link}>
-                <FaArrowRight className={styles.linkIcon} />
+                <HiMiniArrowRight className={styles.linkIcon} />
                 FAQs
               </Link>
             </li>

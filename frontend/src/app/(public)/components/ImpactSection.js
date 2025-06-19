@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import styles from '../styles/ImpactSection.module.css';
-import { FaChevronLeft, FaChevronRight, FaCalendarAlt } from 'react-icons/fa';
+import styles from './styles/ImpactSection.module.css';
+import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { LuCalendarCheck2 } from "react-icons/lu";
 
 const impactCards = [
   {
-    image: '/sample/sample6.jpg',
+    image: '/sample/sample9.jpg',
     title: 'Poultry Farming Myths You Should Stop Believing',
     date: '10 April 2025',
     description: 'Common myths about poultry farming and the real facts behind them.',
@@ -109,7 +110,7 @@ export default function ImpactSection() {
 
   function getRandomColor() {
     const colors = {
-      FACTS: '#E70004',
+      FACTS: '#ec0000',
       JPIA: '#FFB300',
       FABCOMMS: '#058C00',
       FTL: '#100DBE',
@@ -178,7 +179,7 @@ export default function ImpactSection() {
               </div>
                 <h3 className={styles.impactcardTitle}>{card.title}</h3>
                 <p className={styles.impactdate}>
-                  <FaCalendarAlt className={styles.impactcalendarIcon} />
+                  <LuCalendarCheck2 className={styles.impactcalendarIcon} />
                   {card.date}
                 </p>
                 <p className={styles.impactdesc}>{card.description}</p>

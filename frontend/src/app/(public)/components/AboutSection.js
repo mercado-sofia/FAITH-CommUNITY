@@ -1,6 +1,6 @@
 'use client';
 
-import styles from '../styles/AboutSection.module.css';
+import styles from './styles/AboutSection.module.css';
 import Image from 'next/image';
 import { FaHeart, FaCube } from 'react-icons/fa';
 

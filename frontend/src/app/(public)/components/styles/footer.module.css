@@ -1,5 +1,5 @@
 .footerWrapper {
-  background: #06100f;
+  background: #06100f;  
   color: #ffffff;
 }
 
@@ -23,6 +23,7 @@
 .about p {
   margin-bottom: 20px;
   font-size: 14px;
+  line-height: 1.4;
   color: #6D7D75;
 }
 
@@ -57,12 +58,12 @@
 }
 
 .contactText small {
-  font-size: 13px;
+  font-size: 14px;
   color: #cccccc;
 }
 
 .contactText p {
-  margin: 0;
+  margin: 2px 0 0;
   font-size: 16px;
   font-weight: 600;
   color: #ffffff;
@@ -103,7 +104,7 @@
 }
 
 .linkIcon {
-  font-size: 14px;
+  font-size: 16px;
   color: #fbbf24;
   transform: rotate(-45deg);
   transition: transform 0.4s ease;
@@ -119,6 +120,7 @@
 
 .newsletter p {
   font-size: 14px;
+  line-height: 1.4;
   margin-bottom: 1.2rem;
   color: #6D7D75;
 }
@@ -182,10 +184,12 @@
 
 .bottomBar {
   height: 65px;
-  text-align: center;
-  padding-top: 20px;
   background-color: #1A685B;
   font-size: 13px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 }
 
 .bottomBar span {
@@ -205,7 +209,8 @@
   bottom: -6px;
   left: 0;
   width: 0;
-  height: 1px;
+  height: .5px !important;
+  border-radius: 999px;
   background-color: #FFAC00;
   transition: width 0.6s ease-out;
 }
@@ -263,6 +268,8 @@
 
   .bottomBar {
     font-size: 13px;
+    padding: 1.2rem;
+    height: auto;
   }
 }
 

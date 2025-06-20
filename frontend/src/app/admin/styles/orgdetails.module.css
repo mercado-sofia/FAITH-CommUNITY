@@ -1,0 +1,284 @@
+.container {
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+}
+
+.headerSection {
+  margin-bottom: 1.5rem;
+}
+
+.heading {
+  font-size: 1.6rem;
+  margin-bottom: .4rem;
+  font-weight: 700;
+  color: #19a48d;
+}
+
+.subheading {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #74aba3;
+  margin-bottom: 2.8rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.headcard {
+  background-color: #f0f9f7;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  border: 1px solid #c5e6e0;
+}
+
+.headcard p {
+  color: #1bb39c;
+}
+
+.editButton {
+  display: inline-block;
+  background-color: #1bb39c;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: .9rem;
+  margin-top: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.editButton:hover {
+  background-color: #159b86;
+}
+
+.card {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.sectionTitle {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #127766;
+  margin-bottom: 2rem;
+}
+
+.infoGroup {
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #eee;
+}
+
+.infoGroup:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.orgRow {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.orgLogo {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid #eee;
+}
+
+.infoLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.infoText {
+  font-size: 0.95rem;
+  color: #333;
+  line-height: 1.6;
+}
+
+.infoText_orgname {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.acronym {
+  color: #666;
+  font-weight: normal;
+  margin-left: 0.5rem;
+}
+
+.contactLink {
+  margin: 0.5rem 0;
+}
+
+.contactLink a {
+  color: #1bb39c;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.contactLink a:hover {
+  text-decoration: underline;
+}
+
+.contactEmail {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.headsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.headCard {
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  padding: 1.2rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  border: 1px solid #eee;
+}
+
+.headPhoto {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.headInfo {
+  flex: 1;
+}
+
+.headName {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.3rem;
+  font-size: 0.95rem;
+}
+
+.headRole {
+  color: #666;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.headSocial {
+  display: inline-block;
+  color: #1bb39c;
+  text-decoration: none;
+  font-size: 0.85rem;
+  margin-bottom: 0.3rem;
+}
+
+.headSocial:hover {
+  text-decoration: underline;
+}
+
+.headEmail {
+  color: #666;
+  font-size: 0.85rem;
+  word-break: break-all;
+}
+
+.formGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.subcard,
+.subcard_head {
+  background: #ffffff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 1rem;
+  width: 100%;
+  max-width: 220px;
+  text-align: center;
+}
+
+.subcard p {
+  margin: 0.25rem 0;
+}
+
+.subcard img {
+  width: 100%;
+  border-radius: 8px;
+  object-fit: cover;
+  margin-bottom: 0.5rem;
+}
+
+.subcard_head img {
+  width: 100%;
+  border-radius: 12px;
+  height: 240px;
+  object-fit: cover;
+  margin-bottom: 0.5rem;
+  border-bottom: 6px solid #1A685B;
+  transition: border-bottom 0.3s ease;
+}
+
+.subcard_head img:hover {
+  border-bottom: 6px solid #FFAC00;
+}
+
+.projectList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.projectCard {
+  display: flex;
+  background: #f9fcfb;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(99, 101, 101, 0.227);
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 1.5rem;
+}
+
+.projectImage {
+  width: 240px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.projectContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.projectTitle {
+  font-size: 1rem;
+  color: #122F2A;
+  font-weight: 600;
+}
+
+.projectDescription {
+  font-size: 0.85rem;
+  color: #444;
+}

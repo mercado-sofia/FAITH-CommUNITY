@@ -1,0 +1,48 @@
+.mainContent {
+  margin-left: 260px;
+  padding: 3rem;
+  min-height: 100vh;
+  background-color: #f1f7f7;
+}
+
+.mainArea {
+  font-family: 'Inter', sans-serif;
+}
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+}
+
+.pageTitle {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 2rem;
+}
+
+.cardContainer {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  padding: 1.5rem;
+  flex: 1;
+  min-width: 220px;
+  text-align: center;
+}
+
+.card h3 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.card p {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #3C91E6;
+}

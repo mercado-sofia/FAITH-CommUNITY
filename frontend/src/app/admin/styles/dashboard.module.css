@@ -1,0 +1,130 @@
+.mainContent {
+  margin-left: 260px;
+  padding: 3rem;
+  min-height: 100vh;
+  background-color: #f1f7f7;
+}
+
+.mainArea {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Header */
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #19a48d;
+}
+
+.header p {
+  color: #0d6455;
+  font-size: .9rem;
+  margin-top: 0.5rem;
+}
+
+/* Dashboard Cards */
+.cardRow {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin-bottom: 2.5rem;
+}
+
+.card {
+  flex: 1;
+  min-width: 260px;
+  background: linear-gradient(to bottom, #ecfaf7, #ffffff);
+  padding: 1.8rem;
+  border-radius: 20px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  transition: transform 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-6px);
+}
+
+.card h3 {
+  font-size: 1.5rem;
+  color: #207266;
+  margin-bottom: 0.5rem;
+}
+
+.card p {
+  color: #207266;
+}
+
+.linkCard {
+  text-decoration: none;
+}
+
+/* 🌿 Programs Gradient Card */
+.programCard {
+  background: linear-gradient(90deg, #1CBFA4 0%, #27aa57 100%);
+  color: white;
+}
+
+.programCard h3,
+.programCard p {
+  color: white;
+}
+
+/* Section Heading */
+.section h2 {
+  font-size: 1.3rem;
+  color: #19a48d;
+  margin-bottom: 1rem;
+}
+
+/* Table Wrapper */
+.tableWrapper {
+  overflow-x: auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+}
+
+/* Table */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tableHeader,
+.tableData {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.tableHeader {
+  color: #207266;
+  font-weight: 600;
+}
+
+.tableData {
+  color: #1ea288;
+  font-size: 0.9rem;
+}
+
+/* Status Badges */
+.badge {
+  background: #1FB88D;
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+
+.badgePending {
+  background: #FFAC00;
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+}

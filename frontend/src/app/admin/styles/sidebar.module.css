@@ -1,0 +1,189 @@
+.sidebar {
+  width: 260px;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: #ffffff;
+  padding: 1.2rem 0;
+  overflow-y: auto;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Logo stays on top */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.2rem;
+  padding: 0 2.8rem;
+}
+
+.logoText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.faith {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #087d77;
+  margin: 0;
+}
+
+.community {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1bb39c;
+  margin: 0;
+}
+
+.menuLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #999;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 1.5rem 2.8rem 0.6rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Default nav item */
+.navItem,
+.navLogout {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: .7rem 2.8rem;
+  font-size: 0.8rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  color: #737c86;
+  text-decoration: none;
+  position: relative;
+  transition: all 0.3s ease;
+  width: 100%;
+  border-radius: 0;
+}
+
+/* Icon container */
+.navItem .icon {
+  background-color: #edf3f3;
+  padding: 0.25rem;
+  border-radius: 6px;
+  font-size: 1.45rem;
+  transition: all 0.3s ease;
+}
+
+/* Active state styles */
+.navItem.active {
+  background-color: #e6f7f4;
+  color: #2ac4ad;
+  font-weight: 700;
+  border-left: 4px solid #20bea6;
+  width: 100%;
+  padding-left: 2.4rem;
+}
+
+.navItem.active .icon {
+  background-color: #20bea6;
+  color: white;
+}
+
+.navItem:hover {
+  color: #2ac4ad;
+  font-weight: 700;
+}
+
+.logoutLink {
+  margin-top: auto;
+  margin-bottom: 2rem;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  padding: 1rem 3.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 0.8rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  color: #737c86;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.logoutLink:hover {
+  color: #2ac4ad;
+}
+
+/* Logout Modal Styling */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modal {
+  background-color: white;
+  padding: 2.2rem 2rem;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 320px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.buttonGroup {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 2rem;
+}
+
+.confirmBtn {
+  background-color: #15bea2;
+  color: white;
+  width: 110px;
+  padding: 0.6rem 0;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.confirmBtn:hover {
+  background-color: #23a28d;
+}
+
+.cancelBtn {
+  background-color: #dae2e3;
+  color: #0a4e4b;
+  width: 110px;
+  padding: 0.6rem 0;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.cancelBtn:hover {
+  background-color: #bec6c7;
+}

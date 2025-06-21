@@ -19,6 +19,7 @@ export default function PendingApprovalsPage() {
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [selectedApproveId, setSelectedApproveId] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
 
   const { data, error, isLoading, refetch } = useGetPendingApprovalsQuery();
   const [actOnUpdate] = useActOnUpdateMutation();
@@ -41,7 +42,7 @@ export default function PendingApprovalsPage() {
           id: item.id,
           orgName: item.organization_name,
           section: item.section,
-          submittedAt: new Date(item.submitted_at).toLocaleDateString(),
+          submittedAt: new Date(item.submitted_at), // store as Date object
           status: item.status,
           rejectionComment: item.rejection_comment,
           details: {
@@ -183,9 +184,7 @@ export default function PendingApprovalsPage() {
       item.section.toLowerCase().includes(searchQuery)
     )
     .sort((a, b) => {
-      const dateA = new Date(a.submittedAt);
-      const dateB = new Date(b.submittedAt);
-      return sortOrder === 'Newest' ? dateB - dateA : dateA - dateB;
+      return sortOrder === 'Newest' ? b.submittedAt - a.submittedAt : a.submittedAt - b.submittedAt;
     });
 
   if (isLoading) return <div>Loading...</div>;
@@ -237,115 +236,162 @@ export default function PendingApprovalsPage() {
       <div className={styles.cardList}>
         {filteredApprovals.map((item) => (
           <div key={item.id} className={styles.card}>
-            <div className={styles.header}>
-              <div className={styles.headerInfo}>
-                <h3>{item.orgName}</h3>
-                <span className={styles.section}>{item.section}</span>
-                <span className={`${styles.status} ${styles[item.status.toLowerCase()]}`}>
-                  Status: {item.status}
-                </span>
+            {/* --- Summary Row --- */}
+            <div className={styles.summaryRow}>
+              <div className={styles.logoCol}>
+                <img
+                  src={
+                    item.details.logo.proposed
+                      ? `http://localhost:8080/uploads/${item.details.logo.proposed}`
+                      : '/logo/faith_community_logo.png'
+                  }
+                  alt={item.orgName}
+                  className={styles.orgLogo}
+                  style={{ width: 56, height: 56, objectFit: 'cover' }} // Add this line
+                  onError={e => {
+                    e.target.onerror = null;
+                    e.target.src = '/logo/faith_community_logo.png';
+                  }}
+                />
               </div>
-              <div className={styles.actionButtons}>
-                <button className={styles.approveBtn} onClick={() => handleApproveClick(item.id)}>
-                  Accept & Approve
-                </button>
-                <button className={styles.rejectBtn} onClick={() => handleRejectClick(item.id)}>
-                  Reject
+              <div className={styles.infoCol}>
+                <h3 className={styles.orgName}>{item.orgName}</h3>
+                <div className={styles.metaRow}>
+                  <span className={styles.submitted}>
+                    {item.submittedAt.toLocaleDateString()}
+                  </span>
+                  <span className={`${styles.status} ${styles[item.status.toLowerCase()]}`}>
+                    {item.status}
+                  </span>
+                </div>
+              </div>
+              <div className={styles.actionCol}>
+                <button
+                  className={styles.viewBtn}
+                  onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                >
+                  {expandedId === item.id ? 'Hide' : 'View'}
                 </button>
               </div>
             </div>
-            <p className={styles.submitted}>Submitted: {item.submittedAt}</p>
-            <div className={styles.contentPreview}>
-              {Object.entries(item.details).map(([field, value]) => (
-                <div key={field} className={styles.fieldBlock}>
-                  <p><strong>{field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</strong></p>
-                  
-                  <div className={styles.compareBlock}>
-                    <div className={styles.previousVersion}>
-                      <p><span className={styles.label}>Previous:</span></p>
-                      {field === 'logo' && value.previous ? (
-                        <img
-                          src={`http://localhost:8080/uploads/${value.previous}`}
-                          alt="Previous"
-                          className={styles.thumbnail}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = '/logo/faith_community_logo.png';
-                          }}
-                        />
-                      ) : field === 'heads' ? (
-                        <div className={styles.headsList}>
-                          {value.previous.length > 0 ? value.previous.map((head, idx) => (
-                            <div key={idx} className={styles.headItem}>
-                              {head.image && (
-                                <img
-                                  src={`http://localhost:8080/uploads/${head.image}`}
-                                  alt={head.name}
-                                  className={styles.headThumbnail}
-                                  onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src = '/logo/faith_community_logo.png';
-                                  }}
-                                />
-                              )}
-                              <div className={styles.headInfo}>
-                                <p><strong>Name:</strong> {head.name}</p>
-                                <p><strong>Role:</strong> {head.role}</p>
-                                <p><strong>Email:</strong> {head.email}</p>
-                                <p><strong>Facebook:</strong> {head.facebook}</p>
-                              </div>
-                            </div>
-                          )) : <p className={styles.value}>No previous heads</p>}
-                        </div>
-                      ) : (
-                        <p className={styles.value}>{value.previous}</p>
-                      )}
-                    </div>
 
-                    <div className={styles.proposedVersion}>
-                      <p><span className={styles.label}>Proposed:</span></p>
-                      {field === 'logo' && value.proposed ? (
-                        <img
-                          src={`http://localhost:8080/uploads/${value.proposed}`}
-                          alt="Proposed"
-                          className={styles.thumbnail}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = '/logo/faith_community_logo.png';
-                          }}
-                        />
-                      ) : field === 'heads' ? (
-                        <div className={styles.headsList}>
-                          {value.proposed.length > 0 ? value.proposed.map((head, idx) => (
-                            <div key={idx} className={styles.headItem}>
-                              {head.image && (
-                                <img
-                                  src={`http://localhost:8080/uploads/${head.image}`}
-                                  alt={head.name}
-                                  className={styles.headThumbnail}
-                                  onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src = '/logo/faith_community_logo.png';
-                                  }}
-                                />
-                              )}
-                              <div className={styles.headInfo}>
-                                <p><strong>Name:</strong> {head.name}</p>
-                                <p><strong>Role:</strong> {head.role}</p>
-                                <p><strong>Email:</strong> {head.email}</p>
-                                <p><strong>Facebook:</strong> {head.facebook}</p>
+            {/* --- Detailed View --- */}
+            {expandedId === item.id && (
+              <div className={styles.detailsSection}>
+                {Object.entries(item.details).map(([field, value]) => (
+                  <div key={field} className={styles.fieldBlock}>
+                    <p className={styles.fieldLabel}>
+                      <strong>
+                        {field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
+                      </strong>
+                    </p>
+                    <div className={styles.compareBlock}>
+                      <div className={styles.previousVersion}>
+                        <p><span className={styles.label}>Previous:</span></p>
+                        {field === 'logo' && value.previous ? (
+                          <img
+                            src={`http://localhost:8080/uploads/${value.previous}`}
+                            alt="Previous"
+                            className={styles.thumbnail}
+                            onError={e => {
+                              e.target.onerror = null;
+                              e.target.src = '/logo/faith_community_logo.png';
+                            }}
+                          />
+                        ) : field === 'heads' ? (
+                          <div className={styles.headsList}>
+                            {value.previous.length > 0 ? value.previous.map((head, idx) => (
+                              <div key={idx} className={styles.headItem}>
+                                {head.image && (
+                                  <img
+                                    src={`http://localhost:8080/uploads/${head.image}`}
+                                    alt={head.name}
+                                    className={styles.headThumbnail}
+                                    onError={e => {
+                                      e.target.onerror = null;
+                                      e.target.src = '/logo/faith_community_logo.png';
+                                    }}
+                                  />
+                                )}
+                                <div className={styles.headInfo}>
+                                  <p><strong>Name:</strong> {head.name}</p>
+                                  <p><strong>Role:</strong> {head.role}</p>
+                                  <p><strong>Email:</strong> {head.email}</p>
+                                  <p><strong>Facebook:</strong> {head.facebook}</p>
+                                </div>
                               </div>
-                            </div>
-                          )) : <p className={styles.value}>No proposed heads</p>}
-                        </div>
-                      ) : (
-                        <p className={styles.value}>{value.proposed}</p>
-                      )}
+                            )) : <p className={styles.value}>No previous heads</p>}
+                          </div>
+                        ) : Array.isArray(value.previous) ? (
+                          <ul className={styles.valueList}>
+                            {value.previous.length > 0
+                              ? value.previous.map((v, i) => <li key={i}>{v}</li>)
+                              : <li>N/A</li>}
+                          </ul>
+                        ) : (
+                          <p className={styles.value}>{value.previous}</p>
+                        )}
+                      </div>
+                      <div className={styles.proposedVersion}>
+                        <p><span className={styles.label}>Proposed:</span></p>
+                        {field === 'logo' && value.proposed ? (
+                          <img
+                            src={`http://localhost:8080/uploads/${value.proposed}`}
+                            alt="Proposed"
+                            className={styles.thumbnail}
+                            onError={e => {
+                              e.target.onerror = null;
+                              e.target.src = '/logo/faith_community_logo.png';
+                            }}
+                          />
+                        ) : field === 'heads' ? (
+                          <div className={styles.headsList}>
+                            {value.proposed.length > 0 ? value.proposed.map((head, idx) => (
+                              <div key={idx} className={styles.headItem}>
+                                {head.image && (
+                                  <img
+                                    src={`http://localhost:8080/uploads/${head.image}`}
+                                    alt={head.name}
+                                    className={styles.headThumbnail}
+                                    onError={e => {
+                                      e.target.onerror = null;
+                                      e.target.src = '/logo/faith_community_logo.png';
+                                    }}
+                                  />
+                                )}
+                                <div className={styles.headInfo}>
+                                  <p><strong>Name:</strong> {head.name}</p>
+                                  <p><strong>Role:</strong> {head.role}</p>
+                                  <p><strong>Email:</strong> {head.email}</p>
+                                  <p><strong>Facebook:</strong> {head.facebook}</p>
+                                </div>
+                              </div>
+                            )) : <p className={styles.value}>No proposed heads</p>}
+                          </div>
+                        ) : Array.isArray(value.proposed) ? (
+                          <ul className={styles.valueList}>
+                            {value.proposed.length > 0
+                              ? value.proposed.map((v, i) => <li key={i}>{v}</li>)
+                              : <li>N/A</li>}
+                          </ul>
+                        ) : (
+                          <p className={styles.value}>{value.proposed}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
+                ))}
+                {/* You can keep your approve/reject buttons here if you want them in the expanded view */}
+                <div className={styles.actionButtons}>
+                  <button className={styles.approveBtn} onClick={() => handleApproveClick(item.id)}>
+                    Accept & Approve
+                  </button>
+                  <button className={styles.rejectBtn} onClick={() => handleRejectClick(item.id)}>
+                    Reject
+                  </button>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -372,14 +418,8 @@ export default function PendingApprovalsPage() {
             <div className={styles.buttonGroupCenter}>
               <button
                 className={styles.confirmBtn}
-                onClick={() => {
-                  if (comment.trim()) {
-                    submitRejection(true);
-                    setRejectError('');
-                  } else {
-                    setRejectError('Please enter a reason before submitting.');
-                  }
-                }}
+                onClick={() => submitRejection(true)}
+                disabled={!comment.trim()}
               >
                 Reject with Comment
               </button>
@@ -405,7 +445,7 @@ export default function PendingApprovalsPage() {
             <div className={styles.approvalNote}>
               <p>By approving these changes:</p>
               <ul>
-                <li>The organization's information will be immediately updated</li>
+                <li>The organizatioss information will be immediately updated</li>
                 <li>The changes will be reflected on their public page</li>
                 <li>The admin will be notified of the approval</li>
               </ul>

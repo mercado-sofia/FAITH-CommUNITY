@@ -9,7 +9,7 @@ import LogoutModalTrigger from '../logout/page.js';
 import { TbChecklist } from "react-icons/tb";
 import { RiTreeFill } from "react-icons/ri";
 import { HiViewGrid } from 'react-icons/hi';
-import { FaUsersCog, FaUserCheck, FaClipboardCheck, FaRegQuestionCircle, FaRegAddressBook } from 'react-icons/fa';
+import { FaUsersCog, FaUserCheck, FaClipboardCheck, FaRegQuestionCircle, FaRegAddressBook, FaAddressCard } from 'react-icons/fa';
 import { MdSettings } from 'react-icons/md';
 
 import '@fontsource/inter/400.css';
@@ -67,6 +67,11 @@ export default function Sidebar() {
           <Link href="/superadmin/accounts" className={`${styles.navItem} ${pathname.startsWith('/superadmin/accounts') ? styles.active : ''}`}>
             <FaRegAddressBook className={styles.icon} />
             <span>Accounts</span>
+          </Link>
+
+          <Link href="/superadmin/manageProfiles" className={`${styles.navItem} ${pathname.startsWith('/superadmin/manageprofiles') ? styles.active : ''}`}>
+            <FaAddressCard className={styles.icon} />
+            <span>Manage Profiles</span>
           </Link>
 
           <p className={styles.menuLabel}>Visual</p>

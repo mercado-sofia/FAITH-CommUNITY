@@ -41,7 +41,7 @@ export default function PendingApprovalsPage() {
           id: item.id,
           orgName: item.organization_name,
           section: item.section,
-          submittedAt: new Date(item.submitted_at).toLocaleDateString(),
+          submittedAt: new Date(item.submitted_at), // store as Date object
           status: item.status,
           rejectionComment: item.rejection_comment,
           details: {
@@ -183,9 +183,7 @@ export default function PendingApprovalsPage() {
       item.section.toLowerCase().includes(searchQuery)
     )
     .sort((a, b) => {
-      const dateA = new Date(a.submittedAt);
-      const dateB = new Date(b.submittedAt);
-      return sortOrder === 'Newest' ? dateB - dateA : dateA - dateB;
+      return sortOrder === 'Newest' ? b.submittedAt - a.submittedAt : a.submittedAt - b.submittedAt;
     });
 
   if (isLoading) return <div>Loading...</div>;
@@ -254,9 +252,9 @@ export default function PendingApprovalsPage() {
                 </button>
               </div>
             </div>
-            <p className={styles.submitted}>Submitted: {item.submittedAt}</p>
+            <p className={styles.submitted}>Submitted: {item.submittedAt.toLocaleDateString()}</p>
             <div className={styles.contentPreview}>
-              {Object.entries(item.details).map(([field, value]) => (
+              {item.details && Object.entries(item.details).map(([field, value]) => (
                 <div key={field} className={styles.fieldBlock}>
                   <p><strong>{field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</strong></p>
                   
@@ -372,14 +370,8 @@ export default function PendingApprovalsPage() {
             <div className={styles.buttonGroupCenter}>
               <button
                 className={styles.confirmBtn}
-                onClick={() => {
-                  if (comment.trim()) {
-                    submitRejection(true);
-                    setRejectError('');
-                  } else {
-                    setRejectError('Please enter a reason before submitting.');
-                  }
-                }}
+                onClick={() => submitRejection(true)}
+                disabled={!comment.trim()}
               >
                 Reject with Comment
               </button>
@@ -405,7 +397,7 @@ export default function PendingApprovalsPage() {
             <div className={styles.approvalNote}>
               <p>By approving these changes:</p>
               <ul>
-                <li>The organization's information will be immediately updated</li>
+                <li>The organizatioss information will be immediately updated</li>
                 <li>The changes will be reflected on their public page</li>
                 <li>The admin will be notified of the approval</li>
               </ul>

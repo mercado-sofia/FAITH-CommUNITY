@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import styles from '../styles/organizations.module.css';
+import styles from './organizations.module.css';
 
 export default function OrganizationManagement() {
   const [organizations, setOrganizations] = useState([]);

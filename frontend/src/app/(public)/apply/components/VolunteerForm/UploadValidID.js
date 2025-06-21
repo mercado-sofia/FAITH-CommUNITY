@@ -188,6 +188,7 @@ const UploadValidID = forwardRef(function UploadValidID(
                 height={600}
                 style={{ objectFit: "contain", borderRadius: "10px" }}
                 onLoad={() => setIsLoading(false)}
+                unoptimized
               />
             </div>
           </div>

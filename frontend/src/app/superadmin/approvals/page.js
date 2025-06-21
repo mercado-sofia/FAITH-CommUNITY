@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import styles from '../styles/approvals.module.css';
+import styles from './approvals.module.css';
 import { FaChevronDown } from 'react-icons/fa';
 import { useGetPendingApprovalsQuery, useActOnUpdateMutation } from '@/rtk/admin/approvalApi';
 
@@ -405,7 +405,7 @@ export default function PendingApprovalsPage() {
             <div className={styles.approvalNote}>
               <p>By approving these changes:</p>
               <ul>
-                <li>The organization's information will be immediately updated</li>
+                <li>The organizations information will be immediately updated</li>
                 <li>The changes will be reflected on their public page</li>
                 <li>The admin will be notified of the approval</li>
               </ul>

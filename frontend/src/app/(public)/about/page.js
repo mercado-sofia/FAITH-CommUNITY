@@ -33,6 +33,7 @@ export default function AboutPage() {
           { label: 'About Us' },
         ]}
       />
+      
       <AboutMissionVision />
       <AboutMore />
       <AboutOrg />

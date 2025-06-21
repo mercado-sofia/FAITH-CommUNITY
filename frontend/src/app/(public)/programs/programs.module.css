@@ -1,0 +1,392 @@
+/* Search Container holds both search bar and sort dropdown */
+.searchContainer {
+  position: relative;
+  top: -2.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  z-index: 5;
+}
+
+/* Main Search Bar */
+.searchBar {
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 1rem;
+  padding: 0;
+  width: 85%;
+  height: 5rem;
+  max-width: 1000px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 1;
+  flex-grow: 1;
+}
+
+/* Search Input Field */
+.searchInput {
+  flex: 3;
+  padding: 1.2rem 1.5rem;
+  border: none;
+  font-size: 1rem;
+  color: #333;
+  border-left: 1px solid #e5e7eb;
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: #aaa;
+  font-weight: 400;
+}
+
+/* Search Button */
+.searchBtn {
+  padding: 0 1.5rem;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #238172;
+  cursor: pointer;
+}
+
+/* Filter Dropdown */
+.customSelectWrapper {
+  position: relative;
+  flex: 1;
+  margin-right: 20px;
+  font-size: 1rem;
+  user-select: none;
+  max-width: 200px;
+}
+
+.customSelectHeader {
+  padding: 1.2rem 2rem;
+  font-weight: 700;
+  color: #004c3f;
+  background: transparent;
+  border: none;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dropdownIcon {
+  font-size: 0.85rem;
+  margin-left: 0.5rem;
+}
+
+.customSelectOptions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+  overflow: hidden;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.optionItem {
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  color: #004c3f;
+}
+
+.optionItem:hover {
+  background-color: #f1f5f9;
+}
+
+/* Sort Dropdown */
+.sortSelectWrapper {
+  position: relative;
+  width: 140px;
+  height: 50px;
+  font-size: 14px;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* ✅ ensures centered content */
+}
+
+.sortSelectHeader {
+  padding: 1rem 1.4rem;
+  font-weight: 600;
+  background: #fff;
+  color: #004c3f;
+  border: none;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sortSelectOptions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+  overflow: hidden;
+}
+
+.sortOptionItem {
+  padding: 1rem 1.8rem;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #004c3f;
+  transition: background 0.2s ease;
+}
+
+.sortOptionItem:hover {
+  background-color: #f1f5f9;
+}
+
+.sortdropdownIcon {
+  font-size: 10px;
+  margin-left: 0.5rem;
+}
+
+.orgSection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+ 
+.orgLabel {
+  font-weight: 600;
+  color: #111827;
+}
+ 
+.orgList {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+}
+  
+.orgItem {
+  background: none;
+  border: none;
+  text-decoration: none;
+  color: #22c55e;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+ 
+.orgItem:hover {
+  color: #15803d;
+  text-decoration: underline;
+}
+
+/* Project section */
+.projectSection {
+  padding: 4rem 12rem;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.projectGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); 
+  gap: 2rem;
+  background-color: #f9fafb;
+  border-radius: 1rem;
+  min-height: 720px;
+  align-items: start;
+}
+
+.projectHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.projectHeader h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.projectHeader select {
+  outline: none;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease;
+  height: 460px;
+  display: flex;
+  flex-direction: column;
+}
+  
+.card:hover {
+  transform: translateY(-4px);
+}
+  
+.cardImage {
+  width: 100%;
+  height: 230px;
+  object-fit: cover;
+}
+  
+.cardContent {
+  padding: 1.2rem 1.8rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.cardCategory {
+  color: #22c55e;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.cardTitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0.6rem 0 0.8rem;
+}
+
+.cardOrg {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.8rem;
+  color: #1d1d1d;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+  
+.cardOrgIcon {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  object-fit: contain;
+}
+  
+.cardDesc {
+  font-size: 0.9rem;
+  color: #6b7280;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-clamp: 2;
+}
+
+.cardDate {
+  font-size: 12.5px;
+  color: #666;
+  margin-top: auto;
+}
+  
+/* Pagination */
+.pagination {
+  margin-top: 3rem;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Page buttons */
+.pageBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  background: transparent;
+  color: #06100f;
+  border-radius: 4px;
+  border: 1px solid #d1d2d2;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.pageBtn:hover {
+  background-color: #ecefef;
+}
+
+.pageBtn.active {
+  background-color: #1686733b;
+  border: 1px solid #328f7f;
+  color: #328f7f;
+}
+
+.pageBtn.disabled {
+  background-color: #fff;
+  border: 1px solid #d1d2d2;
+  color: #7d9591;
+  cursor: not-allowed;
+  font-weight: 500;
+}
+
+/* Ellipsis */
+.pageDots {
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  font-weight: bold;
+  color: #444;
+  font-size: 0.9rem;
+  user-select: none;
+}
+
+/* Loader */
+.loaderWrapper {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.loader {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #ddd;
+  border-top-color: #0fa05f;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

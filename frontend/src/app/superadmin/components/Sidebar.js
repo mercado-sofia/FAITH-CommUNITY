@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import styles from '../styles/sidebar.module.css';
+import styles from './sidebar.module.css';
 import LogoutModalTrigger from '../logout/page.js';
 
 import { TbChecklist } from "react-icons/tb";

@@ -1,0 +1,474 @@
+.manageProfilesContainer {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+}
+
+.heading {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  color: #003366;
+  letter-spacing: 1px;
+}
+
+.adminForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-bottom: 2.5rem;
+  background: #f7f9fa;
+  padding: 1.5rem 1rem;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.adminForm input,
+.adminForm select {
+  flex: 1 1 180px;
+  padding: 0.7em 1em;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: #fff;
+  transition: border 0.2s;
+}
+
+.adminForm input:focus,
+.adminForm select:focus {
+  border-color: #0057b8;
+  outline: none;
+}
+
+.btnCreate {
+  background: #0057b8;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.7em 1.5em;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btnCreate:hover {
+  background: #003a75;
+}
+
+.btnCancel {
+  background: #e0e7ef;
+  color: #333;
+  border: none;
+  border-radius: 8px;
+  padding: 0.7em 1.5em;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-left: 0.5rem;
+  transition: background 0.2s;
+}
+
+.btnCancel:hover {
+  background: #cbd5e1;
+}
+
+.adminCardsWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.adminCard {
+  background: #f9fafb;
+  border-radius: 12px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.adminCard h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #0057b8;
+  margin-bottom: 0.2rem;
+}
+
+.adminCard p {
+  margin: 0.1rem 0;
+  color: #444;
+  font-size: 1rem;
+}
+
+.cardActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.btnEdit {
+  background: #e6f4ff;
+  color: #0057b8;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5em 1.2em;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btnEdit:hover {
+  background: #b6e0fe;
+}
+
+.btnDelete {
+  background: #fff1f0;
+  color: #cf1322;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5em 1.2em;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btnDelete:hover {
+  background: #ffa39e;
+}
+
+@media (max-width: 700px) {
+  .manageProfilesContainer {
+    padding: 1rem;
+  }
+  .adminForm {
+    flex-direction: column;
+    gap: 0.7rem;
+    padding: 1rem 0.5rem;
+  }
+  .adminCard {
+    padding: 1rem;
+  }
+}
+
+/* Add these styles to your ManageProfiles.module.css file */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+/* Create Section Styles */
+.createSection {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border: 1px solid #dee2e6;
+}
+
+.createSection h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #495057;
+  font-size: 1.2rem;
+}
+
+/* Card Header Styles */
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.cardHeader h2 {
+  margin: 0;
+  color: #495057;
+  font-size: 1.3rem;
+}
+
+.roleTag {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.roleTag.admin {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.roleTag.superadmin {
+  background-color: #fce4ec;
+  color: #c2185b;
+}
+
+.cardContent {
+  margin-bottom: 1rem;
+}
+
+.cardContent p {
+  margin: 0.5rem 0;
+  color: #6c757d;
+}
+
+.cardContent strong {
+  color: #495057;
+}
+
+/* Editing Card Styles */
+.editingCard {
+  background-color: #fff3cd;
+  border: 2px solid #ffeaa7;
+  transform: scale(1.02);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.editField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.editField label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.editInput,
+.editSelect {
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease;
+}
+
+.editInput:focus,
+.editSelect:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.editInput:disabled,
+.editSelect:disabled {
+  background-color: #f8f9fa;
+  opacity: 0.7;
+}
+
+.editActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.btnSave {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+  flex: 1;
+}
+
+.btnSave:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.btnSave:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.editNote {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dee2e6;
+}
+
+.editNote small {
+  color: #6c757d;
+  font-style: italic;
+}
+
+.btnRefresh {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+}
+
+.btnRefresh:hover {
+  background-color: #0056b3;
+}
+
+.btnRefresh:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.btnRefresh:hover {
+  background-color: #0056b3;
+}
+
+.btnRefresh:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.notification {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  font-weight: 500;
+  animation: slideIn 0.3s ease-out;
+}
+
+.notification.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.notification.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.2rem;
+  color: #6c757d;
+}
+
+.error {
+  text-align: center;
+  padding: 2rem;
+  color: #721c24;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  margin: 1rem 0;
+}
+
+.error h2 {
+  margin-bottom: 1rem;
+  color: #721c24;
+}
+
+.formButtons {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.adminStats {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #007bff;
+}
+
+.adminStats p {
+  margin: 0;
+  font-weight: 500;
+  color: #495057;
+}
+
+.noData {
+  text-align: center;
+  padding: 3rem;
+  color: #6c757d;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 2px dashed #dee2e6;
+}
+
+.noData p {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.adminCard {
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.adminCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.cardActions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.adminForm input:disabled,
+.adminForm select:disabled,
+.adminForm button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .formButtons {
+    flex-direction: column;
+  }
+  
+  .formButtons button {
+    width: 100%;
+  }
+}

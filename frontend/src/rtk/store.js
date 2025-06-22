@@ -8,7 +8,7 @@ import { headsApi } from "./admin/headsApi";
 import { organizationApi } from "./admin/organizationApi";
 import { approvalApi } from './admin/approvalApi';
 import { submissionApi } from './admin/submissionApi';
-
+import { manageProfilesApi } from './superadmin/manageProfilesApi';
 
 export const store = configureStore({
   reducer: {
@@ -19,6 +19,7 @@ export const store = configureStore({
     [organizationApi.reducerPath]: organizationApi.reducer,
     [approvalApi.reducerPath]: approvalApi.reducer,
     [submissionApi.reducerPath]: submissionApi.reducer,
+    [manageProfilesApi.reducerPath]: manageProfilesApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -29,6 +30,7 @@ export const store = configureStore({
       organizationApi.middleware,
       approvalApi.middleware,
       submissionApi.middleware,
+      manageProfilesApi.middleware,
     ),
 });
 

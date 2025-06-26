@@ -1,0 +1,469 @@
+.orgSection {
+  background-color: #F0F3F3;
+  padding: 3rem 1rem;
+  display: flex;
+  justify-content: center;
+  cursor: default;
+}
+
+.orgCard {
+  background: white;
+  display: flex;
+  align-items: center;
+  padding: 2.5rem 4rem;
+  border-radius: 2rem;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.07);
+  max-width: 1100px;
+  width: 100%;
+  gap: 2rem;
+}
+
+.logoWrapper {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  margin-right: 16px;
+  border-radius: 100%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.orgLogo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.orgText {
+  flex: 1;
+}
+
+.orgTag {
+  color: #1A685B;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.orgTitle {
+  font-size: 2.2rem;
+  font-weight: bolder;
+  margin-bottom: .5rem;
+}
+
+.orgDesc {
+  font-size: 1rem;
+  line-height: 2;
+  margin-bottom: 1.5rem;
+}
+
+.orgIcons {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.orgIcons a {
+  background-color: #A3C7C4;
+  padding: 0.4rem;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.orgIcons a svg {
+  color: white;
+  width: 16px;
+  height: 16px;
+}
+
+.orgIcons a:hover {
+  transform: scale(1.02);
+}
+
+/* Section 2 */
+.details {
+  padding: 4rem 2rem;
+  text-align: center;
+  cursor: default;
+}
+
+.sectionTag {
+  color: #ffac00;
+  font-weight: bold;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.sectionTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 4.2rem;
+}
+
+.cardWrapper {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+
+.card {
+  background: white;
+  width: 420px;
+  padding: 2.5rem 4rem;
+  border-radius: 2rem;
+  box-shadow: 0 8px 35px rgba(0, 0, 0, 0.12);
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.18);
+}
+
+.iconCircle {
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  width: 85px;
+  height: 85px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.iconReact {
+  color: #1A685B;
+  font-size: 32px;
+}
+
+.card:hover .iconReact {
+  color: #FFAC00;
+}
+
+.card h4 {
+  color: #1A685B;
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-top: 1.8rem;
+  margin-bottom: 1rem;
+}
+
+.card p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* Section 3 */
+.featuredSection {
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.subheading {
+  color: #1a685b;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.heading {
+  font-size: 2.4rem;
+  font-weight: 800;
+  margin-bottom: 2rem;
+}
+
+.projectGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.projectCard {
+  position: relative;
+  border-radius: 1rem;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.projectImage {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+  border-radius: 1rem;
+}
+
+.projectoverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.15), rgba(0, 64, 53, 0.8));
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.5rem;
+  border-radius: 1rem;
+}
+/* .playBtn {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: white;
+  color: #ffac00;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+} */
+
+.projectText h4 {
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 0.3rem;
+}
+
+.projectText p {
+  font-size: 0.9rem;
+}
+
+/* Section 4 */
+.volunteerBanner {
+  background: #0f3d35;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  color: white;
+}
+
+.bannerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.bannerContent p {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.joinBtn {
+  background: #ffac00;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.joinBtn:hover {
+  background: #ffbe33;
+  transform: scale(1.05);
+}
+
+/* ORG HEADS SECTION */
+.orgheadsSection {
+  padding: 4rem 2rem 4rem 8rem;
+}
+
+.orgheadsWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+/* Left Text */
+.orgheadsText {
+  flex: 1;
+  max-width: 400px;
+}
+
+.orgheadsText p {
+  color: #1A685B;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.orgheadsText h2 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+/* Carousel Container */
+.orgheadsCarousel {
+  flex: 2.5;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+}
+
+/* NEW: Carousel window to limit visible cards */
+.carouselWindow {
+  width: 780px;
+  overflow: hidden;
+}
+
+/* Arrow Buttons */
+.orgheadsNavBtn {
+  width: 35px;
+  height: 35px;
+  padding: 8px;
+  background-color: #1a685b;
+  color: white;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.4s ease;
+}
+
+.orgheadsNavBtn:hover {
+  background-color: #1b8271;
+}
+
+/* Horizontal scroll area */
+.orgheadsCards {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1rem 0;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  transition: transform 0.4s ease;
+}
+
+.orgheadsCards::-webkit-scrollbar {
+  display: none;
+}
+
+/* Card Wrapper */
+.orgheadsWrapperItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  width: 240px;
+}
+
+/* IMAGE CONTAINER */
+.imageContainer {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  width: 240px;
+  height: 280px;
+  border-bottom: 7px solid #FFAC00;
+  transition: border-color 0.4s ease, transform 0.4s ease;
+}
+
+/* Lift effect on hover */
+.imageContainer:hover {
+  border-bottom-color: #1A685B;
+}
+
+/* IMAGE */
+.headImage {
+  object-fit: cover;
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
+  transition: filter 0.4s ease;
+}
+
+.imageContainer:hover .headImage {
+  filter: grayscale(100%);
+}
+
+/* ICON BAR */
+.iconBar {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  z-index: 2;
+}
+
+/* ICON BUTTONS */
+.iconBtn {
+  background: white;
+  color: #1A685B;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: .8rem;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.4s, color 0.4s, transform 0.4s;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.plusBtn {
+  display: flex !important;
+  font-size: 0.8rem;
+  background: #1A685B;
+  color: white;
+}
+
+.iconBar:hover .iconBtn {
+  display: flex;
+}
+
+.iconBar:hover .plusBtn {
+  background: #FFAC00;
+  transform: rotate(45deg);
+}
+
+.iconBtn:hover {
+  background: #FFAC00;
+  color: white;
+}
+
+/* TEXT BELOW IMAGE */
+.orgheadsTextInfo {
+  text-align: center;
+  margin-top: 0.75rem;
+  cursor: default;
+}
+
+.orgheadsTextInfo h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.orgheadsTextInfo p {
+  font-size: 0.95rem;
+  margin: 0;
+  color: #333;
+}

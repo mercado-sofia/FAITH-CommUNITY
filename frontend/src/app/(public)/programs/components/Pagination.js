@@ -6,93 +6,98 @@ import { PiCaretDoubleLeft, PiCaretDoubleRight } from 'react-icons/pi';
 import { useState, useEffect } from 'react';
 
 export default function Pagination({ currentPage = 1, totalPages = 1, onPageChange }) {
+  const visibleCount = Math.min(5, totalPages); // Ensure not more than total pages
   const [startPage, setStartPage] = useState(1);
-  const visibleCount = 5;
 
-  // Adjust startPage if currentPage is outside the range
   useEffect(() => {
-    if (currentPage < startPage) {
-      setStartPage(currentPage);
-    } else if (currentPage >= startPage + visibleCount) {
-      setStartPage(currentPage - visibleCount + 1);
-    }
-  }, [currentPage, startPage]); 
+    const maxStart = Math.max(1, totalPages - visibleCount + 1);
+    const clampedStart = Math.min(currentPage, maxStart);
+    setStartPage(clampedStart);
+  }, [currentPage, totalPages, visibleCount]);
 
   const handleShift = (step) => {
     let newStart = startPage + step;
-    if (newStart < 1) newStart = 1;
-    if (newStart > totalPages - visibleCount + 1) {
-      newStart = Math.max(1, totalPages - visibleCount + 1);
-    }
+    newStart = Math.max(1, Math.min(newStart, totalPages - visibleCount + 1));
     setStartPage(newStart);
   };
 
-  const pages = [];
+  const pageButtons = [];
 
-  // Double left
-  pages.push(
+  // First page set
+  pageButtons.push(
     <button
       key="first"
       className={`${styles.pageBtn} ${startPage === 1 ? styles.disabled : ''}`}
       onClick={() => handleShift(-visibleCount)}
       disabled={startPage === 1}
-      aria-label="Jump Back"
+      aria-label="Jump to first set of pages"
+      aria-disabled={startPage === 1}
     >
       <PiCaretDoubleLeft size={15} />
     </button>
   );
 
-  // Single left
-  pages.push(
+  // Previous page
+  pageButtons.push(
     <button
       key="prev"
-      className={`${styles.pageBtn} ${startPage === 1 ? styles.disabled : ''}`}
-      onClick={() => handleShift(-1)}
-      disabled={startPage === 1}
-      aria-label="Previous"
+      className={`${styles.pageBtn} ${currentPage === 1 ? styles.disabled : ''}`}
+      onClick={() => onPageChange(currentPage - 1)}
+      disabled={currentPage === 1}
+      aria-label="Go to previous page"
+      aria-disabled={currentPage === 1}
     >
       <FiChevronLeft size={15} />
     </button>
   );
 
-  // Page buttons
+  // Numbered buttons
   for (let i = startPage; i < startPage + visibleCount && i <= totalPages; i++) {
-    pages.push(
+    pageButtons.push(
       <button
         key={i}
         className={`${styles.pageBtn} ${currentPage === i ? styles.active : ''}`}
-        onClick={() => onPageChange?.(i)}
+        onClick={() => onPageChange(i)}
+        aria-label={`Page ${i}`}
+        aria-current={currentPage === i ? 'page' : undefined}
+        aria-disabled={currentPage === i}
       >
         {i}
       </button>
     );
   }
 
-  // Single right
-  pages.push(
+  // Next page
+  pageButtons.push(
     <button
       key="next"
-      className={`${styles.pageBtn} ${startPage + visibleCount - 1 >= totalPages ? styles.disabled : ''}`}
-      onClick={() => handleShift(1)}
-      disabled={startPage + visibleCount - 1 >= totalPages}
-      aria-label="Next"
+      className={`${styles.pageBtn} ${currentPage === totalPages ? styles.disabled : ''}`}
+      onClick={() => onPageChange(currentPage + 1)}
+      disabled={currentPage === totalPages}
+      aria-label="Go to next page"
+      aria-disabled={currentPage === totalPages}
     >
       <FiChevronRight size={15} />
     </button>
   );
 
-  // Double right
-  pages.push(
+  // Last page set
+  pageButtons.push(
     <button
       key="last"
       className={`${styles.pageBtn} ${startPage + visibleCount - 1 >= totalPages ? styles.disabled : ''}`}
       onClick={() => handleShift(visibleCount)}
       disabled={startPage + visibleCount - 1 >= totalPages}
-      aria-label="Jump Forward"
+      aria-label="Jump to last set of pages"
+      aria-disabled={startPage + visibleCount - 1 >= totalPages}
     >
       <PiCaretDoubleRight size={15} />
     </button>
   );
 
-  return <div className={styles.pagination}>{pages}</div>;
+  return (
+    <nav className={styles.pagination} role="navigation" aria-label="Pagination">
+      {pageButtons}
+    </nav>
+  );
 }

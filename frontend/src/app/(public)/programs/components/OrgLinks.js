@@ -4,9 +4,19 @@ import styles from '../programs.module.css';
 import Link from 'next/link';
 
 const orgList = [
-  'JMAP', 'FACTS', 'JPIA', 'FAIEES', 'FAIIES',
-  'IIEE-FSC', 'FTL', 'UTHYP', 'FAIPS',
-  'FABCOMMS', 'FAICES', 'FAPSS', 'FAHSS', 
+  { acronym: 'JMAP', id: 'jmap' },
+  { acronym: 'FACTS', id: 'facts' },
+  { acronym: 'JPIA', id: 'jpia' },
+  { acronym: 'FAIEES', id: 'faiees' },
+  { acronym: 'FAIIES', id: 'faiies' },
+  { acronym: 'IIEE-FSC', id: 'iiee-fsc' },
+  { acronym: 'FTL', id: 'ftl' },
+  { acronym: 'UTHYP', id: 'uthyp' },
+  { acronym: 'FAIPS', id: 'faips' },
+  { acronym: 'FABCOMMS', id: 'fabcomms' },
+  { acronym: 'FAICES', id: 'faices' },
+  { acronym: 'FAPSS', id: 'fapss' },
+  { acronym: 'FAHSS', id: 'fahss' },
 ];
 
 export default function OrgLinks() {
@@ -16,11 +26,11 @@ export default function OrgLinks() {
       <div className={styles.orgList}>
         {orgList.map((org) => (
           <Link
-            key={org}
-            href={`/programs/org/${org.toLowerCase()}`}
+            key={org.id}
+            href={`/programs/org/${org.id}`}
             className={styles.orgItem}
           >
-            {org}
+            {org.acronym}
           </Link>
         ))}
       </div>

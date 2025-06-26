@@ -99,7 +99,7 @@ app.use((req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`)
-  console.log('Available routes:')
-  console.log('- GET /api/test')
-  console.log('- GET /api/admin/project')
+  // console.log('Available routes:')
+  // console.log('- GET /api/test')
+  // console.log('- GET /api/admin/project')
 })

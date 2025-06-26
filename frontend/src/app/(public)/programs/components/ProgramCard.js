@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import styles from '../programs.module.css';
 
 export default function ProgramCard({ project }) {
@@ -17,9 +18,12 @@ export default function ProgramCard({ project }) {
 
       <div className={styles.cardContent}>
         <p className={styles.cardCategory}>{project.category}</p>
-        <h3 className={styles.cardTitle}>{project.title}</h3>
 
-        <div className={styles.cardOrg}>
+        <Link href={`/programs/view/${project.id}`} className={styles.cardTitle}>
+          {project.title}
+        </Link>
+
+        <Link href={`/programs/org/${project.orgID}`} className={styles.cardOrg}>
           <Image
             src={project.icon}
             alt={`${project.orgName} logo`}
@@ -28,11 +32,10 @@ export default function ProgramCard({ project }) {
             className={styles.cardOrgIcon}
           />
           <span>{project.orgName}</span>
-        </div>
+        </Link>
 
         <p className={styles.cardDesc}>{project.description}</p>
 
-        {/* Optional: Add visible date */}
         <p className={styles.cardDate}>
           Posted on {new Date(project.date).toLocaleDateString('en-PH', {
             year: 'numeric',

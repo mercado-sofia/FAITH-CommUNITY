@@ -91,7 +91,7 @@
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
   z-index: 10;
   overflow: hidden;
-  max-height: 200px;
+  max-height: 220px;
   overflow-y: auto;
 }
 
@@ -116,7 +116,7 @@
   user-select: none;
   display: flex;
   align-items: center;
-  justify-content: center; /* ✅ ensures centered content */
+  justify-content: center;
 }
 
 .sortSelectHeader {
@@ -165,16 +165,19 @@
 }
 
 .orgSection {
+  top: -1rem;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   flex-wrap: wrap;
 }
  
 .orgLabel {
   font-weight: 600;
+  font-size: 14px;
   color: #111827;
 }
  
@@ -192,7 +195,7 @@
   color: #22c55e;
   font-weight: 600;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   padding: 0;
   transition: color 0.2s ease;
 }
@@ -204,7 +207,7 @@
 
 /* Project section */
 .projectSection {
-  padding: 4rem 12rem;
+  padding: 2rem 12rem;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -229,7 +232,7 @@
 }
 
 .projectHeader h2 {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   font-weight: 700;
 }
 
@@ -274,7 +277,15 @@
 .cardTitle {
   font-size: 1.2rem;
   font-weight: 700;
+  color: #000;
   margin: 0.6rem 0 0.8rem;
+  text-decoration: none;
+  outline: none;
+}
+
+.cardTitle:hover {
+  text-decoration: underline;
+  color: #004c3f;
 }
 
 .cardOrg {
@@ -285,6 +296,12 @@
   color: #1d1d1d;
   font-size: 12.5px;
   font-weight: 600;
+  text-decoration: none;
+  outline: none;
+}
+
+.cardOrg:hover {
+  text-decoration: underline;
 }
   
 .cardOrgIcon {

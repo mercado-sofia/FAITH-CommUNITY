@@ -5,10 +5,17 @@ import { FiSearch, FiX } from 'react-icons/fi';
 import { FaChevronDown } from 'react-icons/fa';
 import { useState, useRef, useEffect } from 'react';
 
-export default function SearchAndFilterBar({ onSearch, onSortChange, onFilterChange }) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sort, setSort] = useState('Newest');
-  const [filter, setFilter] = useState('All');
+export default function SearchAndFilterBar({
+  onSearch,
+  onSortChange,
+  onFilterChange,
+  initialSearchTerm = '',
+  initialFilter = 'All',
+  initialSort = 'Newest',
+}) {
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
+  const [sort, setSort] = useState(initialSort);
+  const [filter, setFilter] = useState(initialFilter);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
 
@@ -16,7 +23,7 @@ export default function SearchAndFilterBar({ onSearch, onSortChange, onFilterCha
   const sortRef = useRef(null);
 
   const handleSearch = () => {
-    onSearch?.(searchTerm);
+    onSearch?.(searchTerm.trim());
   };
 
   const handleClear = () => {
@@ -37,6 +44,13 @@ export default function SearchAndFilterBar({ onSearch, onSortChange, onFilterCha
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Update sort & filter state when props change (e.g. on initial page load)
+  useEffect(() => {
+    setSort(initialSort);
+    setFilter(initialFilter);
+    setSearchTerm(initialSearchTerm);
+  }, [initialSort, initialFilter, initialSearchTerm]);
+
   return (
     <div className={styles.searchContainer}>
       {/* Search bar with filter and input */}
@@ -52,7 +66,7 @@ export default function SearchAndFilterBar({ onSearch, onSortChange, onFilterCha
 
           {dropdownOpen && (
             <div className={styles.customSelectOptions}>
-              {['All', 'Active', 'Completed'].map((option) => (
+              {['All', 'Upcoming', 'Active', 'Completed'].map((option) => (
                 <div
                   key={option}
                   className={styles.optionItem}

@@ -62,7 +62,7 @@ const initializeDatabase = async () => {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      console.log("✅ featured_projects table created successfully!");
+      console.log("✅ Featured_projects table created successfully!");
     }
 
     connection.release();

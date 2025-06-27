@@ -1,56 +1,59 @@
-'use client';
+"use client"
 
-import React, { useState, useEffect } from "react";
-import { 
-  useGetAllAdminsQuery, 
-  useCreateAdminMutation, 
-  useUpdateAdminMutation, 
-  useDeleteAdminMutation 
-} from '../../../rtk/superadmin/manageProfilesApi';
-import styles from '../styles/ManageProfiles.module.css';
+import { useState, useMemo } from "react"
+import {
+  useGetAllAdminsQuery,
+  useCreateAdminMutation,
+  useUpdateAdminMutation,
+  useDeleteAdminMutation,
+} from "../../../rtk/superadmin/manageProfilesApi"
+import styles from "../styles/ManageProfiles.module.css"
 
-const AdminCard = ({ admin, onUpdate, onDelete, isDeleting, isUpdating }) => {
-  const [isEditing, setIsEditing] = useState(false);
+const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
+  const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({
     org_name: admin.org_name,
     email: admin.email,
-    password: '',
-    role: admin.role
-  });
+    password: "",
+    role: admin.role,
+    status: admin.status,
+  })
 
   const handleInputChange = (e) => {
-    setEditForm({ ...editForm, [e.target.name]: e.target.value });
-  };
+    setEditForm({ ...editForm, [e.target.name]: e.target.value })
+  }
 
   const handleEdit = () => {
-    setIsEditing(true);
+    setIsEditing(true)
     setEditForm({
       org_name: admin.org_name,
       email: admin.email,
-      password: '',
-      role: admin.role
-    });
-  };
+      password: "",
+      role: admin.role,
+      status: admin.status,
+    })
+  }
 
   const handleSave = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
     try {
-      await onUpdate({ id: admin.id, ...editForm });
-      setIsEditing(false);
+      await onUpdate({ id: admin.id, ...editForm })
+      setIsEditing(false)
     } catch (error) {
-      console.error('Update failed:', error);
+      console.error("Update failed:", error)
     }
-  };
+  }
 
   const handleCancel = () => {
-    setIsEditing(false);
+    setIsEditing(false)
     setEditForm({
       org_name: admin.org_name,
       email: admin.email,
-      password: '',
-      role: admin.role
-    });
-  };
+      password: "",
+      role: admin.role,
+      status: admin.status,
+    })
+  }
 
   if (isEditing) {
     return (
@@ -68,7 +71,7 @@ const AdminCard = ({ admin, onUpdate, onDelete, isDeleting, isUpdating }) => {
               className={styles.editInput}
             />
           </div>
-          
+
           <div className={styles.editField}>
             <label>Email:</label>
             <input
@@ -81,7 +84,7 @@ const AdminCard = ({ admin, onUpdate, onDelete, isDeleting, isUpdating }) => {
               className={styles.editInput}
             />
           </div>
-          
+
           <div className={styles.editField}>
             <label>New Password:</label>
             <input
@@ -94,7 +97,7 @@ const AdminCard = ({ admin, onUpdate, onDelete, isDeleting, isUpdating }) => {
               className={styles.editInput}
             />
           </div>
-          
+
           <div className={styles.editField}>
             <label>Role:</label>
             <select
@@ -108,186 +111,212 @@ const AdminCard = ({ admin, onUpdate, onDelete, isDeleting, isUpdating }) => {
               <option value="superadmin">Super Admin</option>
             </select>
           </div>
-          
+
+          <div className={styles.editField}>
+            <label>Status:</label>
+            <select
+              name="status"
+              value={editForm.status}
+              onChange={handleInputChange}
+              disabled={isUpdating}
+              className={styles.editSelect}
+            >
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="INACTIVE">INACTIVE</option>
+            </select>
+          </div>
+
           <div className={styles.editActions}>
-            <button 
-              type="submit" 
-              className={styles.btnSave}
-              disabled={isUpdating}
-            >
-              {isUpdating ? 'Saving...' : 'Save'}
+            <button type="submit" className={styles.btnSave} disabled={isUpdating}>
+              {isUpdating ? "Saving..." : "Save"}
             </button>
-            <button 
-              type="button" 
-              className={styles.btnCancel}
-              onClick={handleCancel}
-              disabled={isUpdating}
-            >
+            <button type="button" className={styles.btnCancel} onClick={handleCancel} disabled={isUpdating}>
               Cancel
             </button>
           </div>
-          
+
           <div className={styles.editNote}>
             <small>Created: {new Date(admin.created_at).toLocaleString()}</small>
           </div>
         </form>
       </div>
-    );
+    )
   }
 
   return (
     <div className={styles.adminCard}>
       <div className={styles.cardHeader}>
         <h2>{admin.org_name}</h2>
-        <span className={`${styles.roleTag} ${styles[admin.role]}`}>
-          {admin.role}
-        </span>
+        <div className={styles.cardTags}>
+          <span className={`${styles.roleTag} ${styles[admin.role]}`}>{admin.role}</span>
+          <span className={`${styles.statusTag} ${styles[admin.status.toLowerCase()]}`}>{admin.status}</span>
+        </div>
       </div>
-      
+
       <div className={styles.cardContent}>
-        <p><strong>Email:</strong> {admin.email}</p>
-        <p><strong>Created:</strong> {new Date(admin.created_at).toLocaleString()}</p>
+        <p>
+          <strong>Email:</strong> {admin.email}
+        </p>
+        <p>
+          <strong>Created:</strong> {new Date(admin.created_at).toLocaleString()}
+        </p>
       </div>
-      
+
       <div className={styles.cardActions}>
-        <button 
-          onClick={handleEdit} 
-          className={styles.btnEdit}
-          disabled={isDeleting || isUpdating}
-        >
+        <button onClick={handleEdit} className={styles.btnEdit} disabled={isRemoving || isUpdating}>
           Edit
         </button>
-        <button 
-          onClick={() => onDelete(admin.id)} 
-          className={styles.btnDelete}
-          disabled={isDeleting || isUpdating}
-        >
-          {isDeleting ? 'Deleting...' : 'Delete'}
-        </button>
+        {admin.status === "ACTIVE" && (
+          <button onClick={() => onRemove(admin.id)} className={styles.btnRemove} disabled={isRemoving || isUpdating}>
+            {isRemoving ? "Removing..." : "Remove"}
+          </button>
+        )}
       </div>
     </div>
-  );
-};
+  )
+}
 
 const ManageProfiles = () => {
-  const [form, setForm] = useState({ org_name: "", email: "", password: "", role: "admin" });
-  const [notification, setNotification] = useState({ message: '', type: '' });
-  
-  // RTK Query hooks
-  const { 
-    data: admins = [], 
-    error: fetchError, 
-    isLoading: isFetching,
-    refetch
-  } = useGetAllAdminsQuery();
-  
-  const [createAdmin, { isLoading: isCreating }] = useCreateAdminMutation();
-  const [updateAdmin, { isLoading: isUpdating }] = useUpdateAdminMutation();
-  const [deleteAdmin, { isLoading: isDeleting }] = useDeleteAdminMutation();
+  const [form, setForm] = useState({ org_name: "", email: "", password: "", role: "admin" })
+  const [notification, setNotification] = useState({ message: "", type: "" })
+  const [statusFilter, setStatusFilter] = useState("all") // 'all', 'active', 'inactive'
 
-  // Show notification
-  const showNotification = (message, type = 'success') => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification({ message: '', type: '' }), 5000);
-  };
+  const { data: admins = [], error: fetchError, isLoading: isFetching, refetch } = useGetAllAdminsQuery()
+
+  const [createAdmin, { isLoading: isCreating }] = useCreateAdminMutation()
+  const [updateAdmin, { isLoading: isUpdating }] = useUpdateAdminMutation()
+  const [deleteAdmin, { isLoading: isRemoving }] = useDeleteAdminMutation()
+
+  // Filter admins based on status
+  const filteredAdmins = useMemo(() => {
+    if (statusFilter === "all") return admins
+    if (statusFilter === "active") return admins.filter((admin) => admin.status === "ACTIVE")
+    if (statusFilter === "inactive") return admins.filter((admin) => admin.status === "INACTIVE")
+    return admins
+  }, [admins, statusFilter])
+
+  // Count active and inactive admins
+  const adminCounts = useMemo(() => {
+    const active = admins.filter((admin) => admin.status === "ACTIVE").length
+    const inactive = admins.filter((admin) => admin.status === "INACTIVE").length
+    return { active, inactive, total: admins.length }
+  }, [admins])
+
+  const showNotification = (message, type = "success") => {
+    setNotification({ message, type })
+    setTimeout(() => setNotification({ message: "", type: "" }), 5000)
+  }
 
   const handleInputChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+    setForm({ ...form, [e.target.name]: e.target.value })
+  }
 
   const handleCreateAdmin = async (e) => {
-    e.preventDefault();
-    
+    e.preventDefault()
+
     try {
-      await createAdmin(form).unwrap();
-      showNotification('Admin created successfully!');
-      setForm({ org_name: "", email: "", password: "", role: "admin" });
+      await createAdmin(form).unwrap()
+      showNotification("Admin created successfully!")
+      setForm({ org_name: "", email: "", password: "", role: "admin" })
     } catch (error) {
-      const errorMessage = error?.data?.error || error?.message || 'An error occurred';
-      showNotification(errorMessage, 'error');
-      console.error('Error:', error);
+      const errorMessage = error?.data?.error || error?.message || "An error occurred"
+      showNotification(errorMessage, "error")
+      console.error("Error:", error)
     }
-  };
+  }
 
   const handleUpdateAdmin = async (updateData) => {
     try {
-      // If password is empty, remove it from the update data
-      if (!updateData.password || updateData.password.trim() === '') {
-        const { password, ...dataWithoutPassword } = updateData;
-        await updateAdmin(dataWithoutPassword).unwrap();
+      if (!updateData.password || updateData.password.trim() === "") {
+        const { password, ...dataWithoutPassword } = updateData
+        await updateAdmin(dataWithoutPassword).unwrap()
       } else {
-        await updateAdmin(updateData).unwrap();
+        await updateAdmin(updateData).unwrap()
       }
-      showNotification('Admin updated successfully!');
+      showNotification("Admin updated successfully!")
     } catch (error) {
-      const errorMessage = error?.data?.error || error?.message || 'Failed to update admin';
-      showNotification(errorMessage, 'error');
-      console.error('Update error:', error);
-      throw error; // Re-throw to handle in the card component
+      const errorMessage = error?.data?.error || error?.message || "Failed to update admin"
+      showNotification(errorMessage, "error")
+      console.error("Update error:", error)
+      throw error
     }
-  };
+  }
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this admin?')) {
-      return;
-    }
-    
+  const handleRemove = async (id) => {
+    if (!window.confirm("Are you sure you want to remove this admin? This will deactivate their account.")) return
+
     try {
-      await deleteAdmin(id).unwrap();
-      showNotification('Admin deleted successfully!');
+      // Soft delete by updating status to INACTIVE
+      await updateAdmin({ id, status: "INACTIVE" }).unwrap()
+      showNotification("Admin removed successfully! Account has been deactivated.")
     } catch (error) {
-      const errorMessage = error?.data?.error || error?.message || 'Failed to delete admin';
-      showNotification(errorMessage, 'error');
-      console.error('Delete error:', error);
+      const errorMessage = error?.data?.error || error?.message || "Failed to remove admin"
+      showNotification(errorMessage, "error")
+      console.error("Remove error:", error)
     }
-  };
+  }
 
   const handleRefresh = () => {
-    refetch();
-    showNotification('Data refreshed!');
-  };
+    refetch()
+    showNotification("Data refreshed!")
+  }
 
-  // Loading state
+  const handleStatusFilterChange = (e) => {
+    setStatusFilter(e.target.value)
+  }
+
   if (isFetching) {
     return (
       <div className={styles.manageProfilesContainer}>
         <div className={styles.loading}>Loading admin profiles...</div>
       </div>
-    );
+    )
   }
 
-  // Error state
   if (fetchError) {
     return (
       <div className={styles.manageProfilesContainer}>
         <div className={styles.error}>
           <h2>Error loading admin profiles</h2>
-          <p>{fetchError?.data?.error || fetchError?.message || 'Failed to fetch data'}</p>
+          <p>{fetchError?.data?.error || fetchError?.message || "Failed to fetch data"}</p>
           <button onClick={handleRefresh} className={styles.btnRefresh}>
             Try Again
           </button>
         </div>
       </div>
-    );
+    )
   }
 
   return (
     <div className={styles.manageProfilesContainer}>
       <div className={styles.header}>
         <h1 className={styles.heading}>Manage Admin Profiles</h1>
-        <button onClick={handleRefresh} className={styles.btnRefresh}>
-          Refresh Data
-        </button>
+        <div className={styles.headerActions}>
+          <div className={styles.filterSection}>
+            <label htmlFor="statusFilter" className={styles.filterLabel}>
+              Filter by Status:
+            </label>
+            <select
+              id="statusFilter"
+              value={statusFilter}
+              onChange={handleStatusFilterChange}
+              className={styles.filterSelect}
+            >
+              <option value="all">All Admins ({adminCounts.total})</option>
+              <option value="active">Active ({adminCounts.active})</option>
+              <option value="inactive">Inactive ({adminCounts.inactive})</option>
+            </select>
+          </div>
+          <button onClick={handleRefresh} className={styles.btnRefresh}>
+            Refresh Data
+          </button>
+        </div>
       </div>
 
-      {/* Notification */}
       {notification.message && (
-        <div className={`${styles.notification} ${styles[notification.type]}`}>
-          {notification.message}
-        </div>
+        <div className={`${styles.notification} ${styles[notification.type]}`}>{notification.message}</div>
       )}
 
-      {/* Create Admin Form */}
       <div className={styles.createSection}>
         <h2>Create New Admin</h2>
         <form className={styles.adminForm} onSubmit={handleCreateAdmin}>
@@ -318,50 +347,57 @@ const ManageProfiles = () => {
             required
             disabled={isCreating}
           />
-          <select 
-            name="role" 
-            value={form.role} 
-            onChange={handleInputChange}
-            disabled={isCreating}
-          >
+          <select name="role" value={form.role} onChange={handleInputChange} disabled={isCreating}>
             <option value="admin">Admin</option>
             <option value="superadmin">Super Admin</option>
           </select>
-          
-          <button 
-            type="submit" 
-            className={styles.btnCreate}
-            disabled={isCreating}
-          >
+          <button type="submit" className={styles.btnCreate} disabled={isCreating}>
             {isCreating ? "Creating..." : "Create Admin"}
           </button>
         </form>
       </div>
 
       <div className={styles.adminStats}>
-        <p>Total Admins: {admins.length}</p>
+        <div className={styles.statsGrid}>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Total Admins:</span>
+            <span className={styles.statValue}>{adminCounts.total}</span>
+          </div>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Active:</span>
+            <span className={`${styles.statValue} ${styles.activeCount}`}>{adminCounts.active}</span>
+          </div>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Inactive:</span>
+            <span className={`${styles.statValue} ${styles.inactiveCount}`}>{adminCounts.inactive}</span>
+          </div>
+        </div>
       </div>
 
       <div className={styles.adminCardsWrapper}>
-        {admins.length === 0 ? (
+        {filteredAdmins.length === 0 ? (
           <div className={styles.noData}>
-            <p>No admin profiles found. Create your first admin profile above.</p>
+            <p>
+              {statusFilter === "all"
+                ? "No admin profiles found. Create your first admin profile above."
+                : `No ${statusFilter} admin profiles found.`}
+            </p>
           </div>
         ) : (
-          admins.map((admin) => (
-            <AdminCard 
-              key={admin.id} 
-              admin={admin} 
+          filteredAdmins.map((admin) => (
+            <AdminCard
+              key={admin.id}
+              admin={admin}
               onUpdate={handleUpdateAdmin}
-              onDelete={handleDelete}
-              isDeleting={isDeleting}
+              onRemove={handleRemove}
+              isRemoving={isRemoving}
               isUpdating={isUpdating}
             />
           ))
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default ManageProfiles;
+export default ManageProfiles

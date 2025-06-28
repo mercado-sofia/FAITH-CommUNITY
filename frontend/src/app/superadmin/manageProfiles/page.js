@@ -15,7 +15,7 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
     org_name: admin.org_name,
     email: admin.email,
     password: "",
-    role: admin.role,
+    role: "admin", // Always admin
     status: admin.status,
   })
 
@@ -29,7 +29,7 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
       org_name: admin.org_name,
       email: admin.email,
       password: "",
-      role: admin.role,
+      role: "admin", // Always admin
       status: admin.status,
     })
   }
@@ -37,7 +37,9 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
   const handleSave = async (e) => {
     e.preventDefault()
     try {
-      await onUpdate({ id: admin.id, ...editForm })
+      // Ensure role is always admin
+      const updateData = { ...editForm, role: "admin" }
+      await onUpdate({ id: admin.id, ...updateData })
       setIsEditing(false)
     } catch (error) {
       console.error("Update failed:", error)
@@ -50,7 +52,7 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
       org_name: admin.org_name,
       email: admin.email,
       password: "",
-      role: admin.role,
+      role: "admin", // Always admin
       status: admin.status,
     })
   }
@@ -100,16 +102,14 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
 
           <div className={styles.editField}>
             <label>Role:</label>
-            <select
-              name="role"
-              value={editForm.role}
-              onChange={handleInputChange}
-              disabled={isUpdating}
-              className={styles.editSelect}
-            >
-              <option value="admin">Admin</option>
-              <option value="superadmin">Super Admin</option>
-            </select>
+            <input
+              type="text"
+              value="Admin"
+              disabled
+              className={`${styles.editInput} ${styles.disabledField}`}
+              style={{ backgroundColor: "#f8f9fa", color: "#6c757d" }}
+            />
+            <small style={{ color: "#6c757d", fontSize: "0.8rem" }}>Role is fixed as Admin for this interface</small>
           </div>
 
           <div className={styles.editField}>
@@ -148,7 +148,7 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
       <div className={styles.cardHeader}>
         <h2>{admin.org_name}</h2>
         <div className={styles.cardTags}>
-          <span className={`${styles.roleTag} ${styles[admin.role]}`}>{admin.role}</span>
+          <span className={`${styles.roleTag} ${styles.admin}`}>Admin</span>
           <span className={`${styles.statusTag} ${styles[admin.status.toLowerCase()]}`}>{admin.status}</span>
         </div>
       </div>
@@ -215,7 +215,9 @@ const ManageProfiles = () => {
     e.preventDefault()
 
     try {
-      await createAdmin(form).unwrap()
+      // Ensure role is always admin
+      const adminData = { ...form, role: "admin" }
+      await createAdmin(adminData).unwrap()
       showNotification("Admin created successfully!")
       setForm({ org_name: "", email: "", password: "", role: "admin" })
     } catch (error) {
@@ -227,11 +229,14 @@ const ManageProfiles = () => {
 
   const handleUpdateAdmin = async (updateData) => {
     try {
-      if (!updateData.password || updateData.password.trim() === "") {
-        const { password, ...dataWithoutPassword } = updateData
+      // Ensure role is always admin
+      const dataWithAdminRole = { ...updateData, role: "admin" }
+
+      if (!dataWithAdminRole.password || dataWithAdminRole.password.trim() === "") {
+        const { password, ...dataWithoutPassword } = dataWithAdminRole
         await updateAdmin(dataWithoutPassword).unwrap()
       } else {
-        await updateAdmin(updateData).unwrap()
+        await updateAdmin(dataWithAdminRole).unwrap()
       }
       showNotification("Admin updated successfully!")
     } catch (error) {
@@ -247,7 +252,7 @@ const ManageProfiles = () => {
 
     try {
       // Soft delete by updating status to INACTIVE
-      await updateAdmin({ id, status: "INACTIVE" }).unwrap()
+      await updateAdmin({ id, status: "INACTIVE", role: "admin" }).unwrap()
       showNotification("Admin removed successfully! Account has been deactivated.")
     } catch (error) {
       const errorMessage = error?.data?.error || error?.message || "Failed to remove admin"
@@ -347,10 +352,10 @@ const ManageProfiles = () => {
             required
             disabled={isCreating}
           />
-          <select name="role" value={form.role} onChange={handleInputChange} disabled={isCreating}>
-            <option value="admin">Admin</option>
-            <option value="superadmin">Super Admin</option>
-          </select>
+          <div className={styles.roleDisplay}>
+            <span className={styles.roleLabel}>Role: </span>
+            <span className={styles.roleValue}>Admin</span>
+          </div>
           <button type="submit" className={styles.btnCreate} disabled={isCreating}>
             {isCreating ? "Creating..." : "Create Admin"}
           </button>

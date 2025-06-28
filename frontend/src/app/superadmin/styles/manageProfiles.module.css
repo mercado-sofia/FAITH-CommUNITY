@@ -45,6 +45,30 @@
   outline: none;
 }
 
+/* Role display styles for create form */
+.roleDisplay {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7em 1em;
+  background: #e8f4fd;
+  border: 1px solid #b3d9f7;
+  border-radius: 8px;
+  flex: 1 1 180px;
+}
+
+.roleLabel {
+  font-weight: 600;
+  color: #0057b8;
+  font-size: 0.9rem;
+}
+
+.roleValue {
+  font-weight: 700;
+  color: #003a75;
+  font-size: 1rem;
+}
+
 .btnCreate {
   background: #0057b8;
   color: #fff;
@@ -163,6 +187,9 @@
   }
   .adminCard {
     padding: 1rem;
+  }
+  .roleDisplay {
+    flex: 1 1 auto;
   }
 }
 
@@ -346,6 +373,12 @@
 .editSelect:disabled {
   background-color: #f8f9fa;
   opacity: 0.7;
+}
+
+.disabledField {
+  background-color: #f8f9fa !important;
+  color: #6c757d !important;
+  cursor: not-allowed;
 }
 
 .editActions {

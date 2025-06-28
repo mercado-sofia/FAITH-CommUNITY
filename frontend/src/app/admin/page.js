@@ -1,24 +1,54 @@
-'use client'
+"use client"
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import styles from './styles/dashboard.module.css'
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useSelector, useDispatch } from "react-redux"
+import { initializeAuth, selectIsAuthenticated, selectCurrentAdmin } from "../../rtk/superadmin/adminSlice"
+import Link from "next/link"
+import styles from "./styles/dashboard.module.css"
 
 export default function AdminDashboard() {
   const router = useRouter()
+  const dispatch = useDispatch()
   const [isAuthChecked, setIsAuthChecked] = useState(false)
+  const isAuthenticated = useSelector(selectIsAuthenticated)
+  const currentAdmin = useSelector(selectCurrentAdmin)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (!token || token !== 'admin') {
-      router.push('/login')
+    console.log("🔍 Admin Dashboard - Checking authentication")
+
+    // Initialize auth from localStorage
+    dispatch(initializeAuth())
+
+    // Check for admin authentication
+    const adminToken = localStorage.getItem("adminToken")
+    const adminData = localStorage.getItem("adminData")
+    const userRole = document.cookie.includes("userRole=admin")
+
+    console.log("🔍 Auth Check:", {
+      adminToken: adminToken ? "Present" : "Missing",
+      adminData: adminData ? "Present" : "Missing",
+      userRole: userRole,
+    })
+
+    if (!adminToken || !adminData || !userRole) {
+      console.log("❌ Admin authentication failed - redirecting to login")
+      router.push("/login")
     } else {
+      console.log("✅ Admin authentication successful")
       setIsAuthChecked(true)
     }
-  }, [])
+  }, [dispatch, router]) // Removed isAuthenticated and currentAdmin from dependencies
 
-  if (!isAuthChecked) return null 
+  if (!isAuthChecked) {
+    return (
+      <div className={styles.mainArea}>
+        <div style={{ padding: "2rem", textAlign: "center" }}>
+          <p>Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   // Placeholder numbers
   const programCount = 8
@@ -29,8 +59,13 @@ export default function AdminDashboard() {
     <div className={styles.mainArea}>
       {/* Header */}
       <div className={styles.header}>
-        <h1>Welcome back, Org Admin!</h1>
-        <p>Manage your organization’s content easily from this dashboard.</p>
+        <h1>Welcome back, {currentAdmin?.org_name || "Admin"}!</h1>
+        <p>{"Manage your organization's content easily from this dashboard."}</p>
+        {currentAdmin && (
+          <div style={{ marginTop: "0.5rem", fontSize: "0.9rem", color: "#666" }}>
+            Logged in as: {currentAdmin.email}
+          </div>
+        )}
       </div>
 
       {/* Cards */}

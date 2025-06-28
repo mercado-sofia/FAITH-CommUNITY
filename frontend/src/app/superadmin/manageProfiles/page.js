@@ -1,12 +1,14 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
+import { useSelector, useDispatch } from "react-redux"
 import {
   useGetAllAdminsQuery,
   useCreateAdminMutation,
   useUpdateAdminMutation,
   useDeleteAdminMutation,
 } from "../../../rtk/superadmin/manageProfilesApi"
+import { initializeAuth, selectCurrentAdmin, selectIsAuthenticated } from "../../../rtk/superadmin/adminSlice"
 import styles from "../styles/ManageProfiles.module.css"
 
 const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
@@ -181,6 +183,15 @@ const ManageProfiles = () => {
   const [notification, setNotification] = useState({ message: "", type: "" })
   const [statusFilter, setStatusFilter] = useState("all") // 'all', 'active', 'inactive'
 
+  const dispatch = useDispatch()
+  const currentAdmin = useSelector(selectCurrentAdmin)
+  const isAuthenticated = useSelector(selectIsAuthenticated)
+
+  // Initialize auth state from localStorage
+  useEffect(() => {
+    dispatch(initializeAuth())
+  }, [dispatch])
+
   const { data: admins = [], error: fetchError, isLoading: isFetching, refetch } = useGetAllAdminsQuery()
 
   const [createAdmin, { isLoading: isCreating }] = useCreateAdminMutation()
@@ -296,6 +307,13 @@ const ManageProfiles = () => {
     <div className={styles.manageProfilesContainer}>
       <div className={styles.header}>
         <h1 className={styles.heading}>Manage Admin Profiles</h1>
+        {currentAdmin && (
+          <div className={styles.currentUserInfo}>
+            <span>
+              Logged in as: {currentAdmin.org_name} ({currentAdmin.email})
+            </span>
+          </div>
+        )}
         <div className={styles.headerActions}>
           <div className={styles.filterSection}>
             <label htmlFor="statusFilter" className={styles.filterLabel}>

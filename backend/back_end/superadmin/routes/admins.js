@@ -1,18 +1,23 @@
-import express from 'express';
+import express from "express"
 import {
   createAdmin,
   getAllAdmins,
   getAdminById,
   updateAdmin,
-  deleteAdmin
-} from '../controllers/adminController.js';
+  deleteAdmin,
+  loginAdmin,
+} from "../controllers/adminController.js"
 
-const router = express.Router();
+const router = express.Router()
 
-router.post('/', createAdmin);
-router.get('/', getAllAdmins);
-router.get('/:id', getAdminById);
-router.put('/:id', updateAdmin);
-router.delete('/:id', deleteAdmin);
+// Public routes
+router.post("/login", loginAdmin)
 
-export default router;
+// Protected routes (require JWT token)
+router.post("/", createAdmin)
+router.get("/", getAllAdmins)
+router.get("/:id", getAdminById)
+router.put("/:id", updateAdmin)
+router.delete("/:id", deleteAdmin)
+
+export default router

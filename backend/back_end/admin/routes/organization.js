@@ -1,6 +1,6 @@
 import express from 'express';
 import { submitOrganization } from '../controllers/organizationController.js';
-import db from '../../database.js'; // adjust path based on your structure
+import db from '../../database.js';
 
 const router = express.Router();
 
@@ -49,7 +49,7 @@ router.get('/:id', async (req, res) => {
 
     // Get organization heads
     const [heads] = await db.execute(
-      'SELECT name, role, facebook, email, photo FROM organization_heads WHERE organization_id = ?',
+      'SELECT orgName, role, facebook, email, photo FROM organization_heads WHERE organization_id = ?',
       [id]
     );
 
@@ -98,7 +98,7 @@ router.get('/:id/competencies', async (req, res) => {
 router.get('/:id/heads', async (req, res) => {
   try {
     const [rows] = await db.execute(
-      'SELECT name, role, facebook, email, photo FROM organization_heads WHERE organization_id = ?',
+      'SELECT orgName, role, facebook, email, photo FROM organization_heads WHERE organization_id = ?',
       [req.params.id]
     );
     res.json({ success: true, data: rows });
@@ -107,15 +107,15 @@ router.get('/:id/heads', async (req, res) => {
   }
 });
 
-// Get organization by acronym
-router.get('/acronym/:acronym', async (req, res) => {
-  const { acronym } = req.params;
+// Get organization by org
+router.get('/org/:org', async (req, res) => {
+  const { org } = req.params;
 
   try {
     // Get organization details
     const [rows] = await db.execute(
-      'SELECT * FROM organizations WHERE LOWER(acronym) = LOWER(?)', 
-      [acronym]
+      'SELECT * FROM organizations WHERE LOWER(org) = LOWER(?)', 
+      [org]
     );
 
     if (rows.length === 0) {
@@ -138,7 +138,7 @@ router.get('/acronym/:acronym', async (req, res) => {
 
     // Get organization heads
     const [heads] = await db.execute(
-      'SELECT name, role, facebook, email, photo FROM organization_heads WHERE organization_id = ?',
+      'SELECT orgName, role, facebook, email, photo FROM organization_heads WHERE organization_id = ?',
       [org.id]
     );
 

@@ -3,7 +3,7 @@ import db from '../../database.js';
 // CREATE
 export const createFooterInfo = async (req, res) => {
   const {
-    organization_name,
+    orgName,
     description,
     phone_number,
     email,
@@ -17,11 +17,11 @@ export const createFooterInfo = async (req, res) => {
   try {
     const [result] = await db.execute(
       `INSERT INTO footer_info (
-        organization_name, description, phone_number, email, address,
+        orgName, description, phone_number, email, address,
         facebook_link, instagram_link, twitter_link, status
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        organization_name,
+        orgName,
         description,
         phone_number,
         email,
@@ -42,7 +42,7 @@ export const createFooterInfo = async (req, res) => {
 export const updateFooterInfo = async (req, res) => {
   const { id } = req.params;
   const {
-    organization_name,
+    orgName,
     description,
     phone_number,
     email,
@@ -56,11 +56,11 @@ export const updateFooterInfo = async (req, res) => {
   try {
     await db.execute(
       `UPDATE footer_info SET
-        organization_name = ?, description = ?, phone_number = ?, email = ?, address = ?,
+        orgName = ?, description = ?, phone_number = ?, email = ?, address = ?,
         facebook_link = ?, instagram_link = ?, twitter_link = ?, status = ?
        WHERE id = ?`,
       [
-        organization_name,
+        orgName,
         description,
         phone_number,
         email,

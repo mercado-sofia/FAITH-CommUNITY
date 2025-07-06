@@ -147,9 +147,7 @@ export const getAdminById = async (req, res) => {
   }
 
   try {
-    const [rows] = await db.execute("SELECT id, org, email, role, status, created_at FROM admins WHERE id = ?", [
-      id,
-    ])
+    const [rows] = await db.execute("SELECT id, org, email, role, status, created_at FROM admins WHERE id = ?", [id])
 
     if (rows.length === 0) {
       return res.status(404).json({ message: "Admin not found" })

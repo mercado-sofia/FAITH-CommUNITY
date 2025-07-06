@@ -14,12 +14,15 @@ import styles from "../styles/ManageProfiles.module.css"
 const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({
-    org_name: admin.org_name,
+    org: admin.org,
     email: admin.email,
     password: "",
+    confirmPassword: "",
     role: "admin", // Always admin
     status: admin.status,
   })
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const handleInputChange = (e) => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value })
@@ -28,20 +31,30 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
   const handleEdit = () => {
     setIsEditing(true)
     setEditForm({
-      org_name: admin.org_name,
+      org: admin.org,
       email: admin.email,
       password: "",
-      role: "admin", // Always admin
+      confirmPassword: "",
+      role: "admin",
       status: admin.status,
     })
   }
 
   const handleSave = async (e) => {
     e.preventDefault()
+
+    // Validate password confirmation if new password is provided
+    if (editForm.password && editForm.password !== editForm.confirmPassword) {
+      alert("Passwords do not match!")
+      return
+    }
+
     try {
       // Ensure role is always admin
       const updateData = { ...editForm, role: "admin" }
-      await onUpdate({ id: admin.id, ...updateData })
+      // Remove confirmPassword from the data sent to server
+      const { confirmPassword, ...dataToSend } = updateData
+      await onUpdate({ id: admin.id, ...dataToSend })
       setIsEditing(false)
     } catch (error) {
       console.error("Update failed:", error)
@@ -51,12 +64,15 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
   const handleCancel = () => {
     setIsEditing(false)
     setEditForm({
-      org_name: admin.org_name,
+      org: admin.org,
       email: admin.email,
       password: "",
-      role: "admin", // Always admin
+      confirmPassword: "",
+      role: "admin",
       status: admin.status,
     })
+    setShowNewPassword(false)
+    setShowConfirmPassword(false)
   }
 
   if (isEditing) {
@@ -64,11 +80,11 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
       <div className={`${styles.adminCard} ${styles.editingCard}`}>
         <form onSubmit={handleSave} className={styles.editForm}>
           <div className={styles.editField}>
-            <label>Organization Name:</label>
+            <label>Organization:</label>
             <input
               type="text"
-              name="org_name"
-              value={editForm.org_name}
+              name="org"
+              value={editForm.org}
               onChange={handleInputChange}
               required
               disabled={isUpdating}
@@ -91,15 +107,80 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
 
           <div className={styles.editField}>
             <label>New Password:</label>
-            <input
-              type="password"
-              name="password"
-              value={editForm.password}
-              onChange={handleInputChange}
-              placeholder="Leave blank to keep current password"
-              disabled={isUpdating}
-              className={styles.editInput}
-            />
+            <div className={styles.passwordInputWrapper}>
+              <input
+                type={showNewPassword ? "text" : "password"}
+                name="password"
+                value={editForm.password}
+                onChange={handleInputChange}
+                placeholder="Leave blank to keep current password"
+                disabled={isUpdating}
+                className={styles.editInput}
+              />
+              {editForm.password && (
+                <button
+                  type="button"
+                  className={styles.eyeIcon}
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  disabled={isUpdating}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+                      fill="currentColor"
+                    />
+                    {!showNewPassword && (
+                      <path
+                        d="M2 2l20 20M9.9 4.24A9.12 9.12 0 0112 4c5 0 9.27 3.11 11 7.5a11.79 11.79 0 01-4 5.19m-5.6.36A9.12 9.12 0 0112 20c-5 0-9.27-3.11-11-7.5 1.64-4.24 5.81-7.5 10.99-7.5z"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    )}
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className={styles.editField}>
+            <label>Confirm New Password:</label>
+            <div className={styles.passwordInputWrapper}>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                value={editForm.confirmPassword}
+                onChange={handleInputChange}
+                placeholder="Confirm new password"
+                disabled={isUpdating}
+                className={styles.editInput}
+              />
+              {editForm.confirmPassword && (
+                <button
+                  type="button"
+                  className={styles.eyeIcon}
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  disabled={isUpdating}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+                      fill="currentColor"
+                    />
+                    {!showConfirmPassword && (
+                      <path
+                        d="M2 2l20 20M9.9 4.24A9.12 9.12 0 0112 4c5 0 9.27 3.11 11 7.5a11.79 11.79 0 01-4 5.19m-5.6.36A9.12 9.12 0 0112 20c-5 0-9.27-3.11-11-7.5 1.64-4.24 5.81-7.5 10.99-7.5z"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    )}
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
 
           <div className={styles.editField}>
@@ -148,7 +229,7 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
   return (
     <div className={styles.adminCard}>
       <div className={styles.cardHeader}>
-        <h2>{admin.org_name}</h2>
+        <h2>{admin.org}</h2>
         <div className={styles.cardTags}>
           <span className={`${styles.roleTag} ${styles.admin}`}>Admin</span>
           <span className={`${styles.statusTag} ${styles[admin.status.toLowerCase()]}`}>{admin.status}</span>
@@ -178,10 +259,50 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
   )
 }
 
+const ConfirmationModal = ({ isOpen, onClose, onConfirm, orgName, email, isCreating }) => {
+  if (!isOpen) return null
+
+  return (
+    <div className={styles.modalOverlay}>
+      <div className={styles.modalContent}>
+        <h2 className={styles.modalTitle}>Confirm Admin Account Creation</h2>
+        <div className={styles.modalBody}>
+          <p>Please confirm the details for the new admin account:</p>
+          <div className={styles.confirmDetails}>
+            <p>
+              <strong>Organization:</strong> {orgName}
+            </p>
+            <p>
+              <strong>Email:</strong> {email}
+            </p>
+          </div>
+        </div>
+        <div className={styles.modalActions}>
+          <button onClick={onConfirm} className={styles.btnConfirm} disabled={isCreating}>
+            {isCreating ? "Creating..." : "Confirm"}
+          </button>
+          <button onClick={onClose} className={styles.btnCancel} disabled={isCreating}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const ManageProfiles = () => {
-  const [form, setForm] = useState({ org_name: "", email: "", password: "", role: "admin" })
+  const [form, setForm] = useState({
+    org: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    role: "admin",
+  })
   const [notification, setNotification] = useState({ message: "", type: "" })
   const [statusFilter, setStatusFilter] = useState("all") // 'all', 'active', 'inactive'
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
 
   const dispatch = useDispatch()
   const currentAdmin = useSelector(selectCurrentAdmin)
@@ -225,12 +346,31 @@ const ManageProfiles = () => {
   const handleCreateAdmin = async (e) => {
     e.preventDefault()
 
+    // Validate password confirmation
+    if (form.password !== form.confirmPassword) {
+      showNotification("Passwords do not match!", "error")
+      return
+    }
+
+    // Show confirmation modal
+    setShowConfirmModal(true)
+  }
+
+  const handleConfirmCreate = async () => {
     try {
       // Ensure role is always admin
-      const adminData = { ...form, role: "admin" }
+      const adminData = {
+        org: form.org,
+        email: form.email,
+        password: form.password,
+        role: "admin",
+      }
       await createAdmin(adminData).unwrap()
       showNotification("Admin created successfully!")
-      setForm({ org_name: "", email: "", password: "", role: "admin" })
+      setForm({ org: "", email: "", password: "", confirmPassword: "", role: "admin" })
+      setShowConfirmModal(false)
+      setShowPassword(false)
+      setShowConfirmPassword(false)
     } catch (error) {
       const errorMessage = error?.data?.error || error?.message || "An error occurred"
       showNotification(errorMessage, "error")
@@ -310,7 +450,7 @@ const ManageProfiles = () => {
         {currentAdmin && (
           <div className={styles.currentUserInfo}>
             <span>
-              Logged in as: {currentAdmin.org_name} ({currentAdmin.email})
+              Logged in as: {currentAdmin.org} ({currentAdmin.email})
             </span>
           </div>
         )}
@@ -345,9 +485,9 @@ const ManageProfiles = () => {
         <form className={styles.adminForm} onSubmit={handleCreateAdmin}>
           <input
             type="text"
-            name="org_name"
-            placeholder="Organization Name"
-            value={form.org_name}
+            name="org"
+            placeholder="Organization"
+            value={form.org}
             onChange={handleInputChange}
             required
             disabled={isCreating}
@@ -361,15 +501,76 @@ const ManageProfiles = () => {
             required
             disabled={isCreating}
           />
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleInputChange}
-            required
-            disabled={isCreating}
-          />
+          <div className={styles.passwordInputWrapper}>
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder="Password"
+              value={form.password}
+              onChange={handleInputChange}
+              required
+              disabled={isCreating}
+            />
+            {form.password && (
+              <button
+                type="button"
+                className={styles.eyeIcon}
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={isCreating}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+                    fill="currentColor"
+                  />
+                  {!showPassword && (
+                    <path
+                      d="M2 2l20 20M9.9 4.24A9.12 9.12 0 0112 4c5 0 9.27 3.11 11 7.5a11.79 11.79 0 01-4 5.19m-5.6.36A9.12 9.12 0 0112 20c-5 0-9.27-3.11-11-7.5 1.64-4.24 5.81-7.5 10.99-7.5z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  )}
+                </svg>
+              </button>
+            )}
+          </div>
+          <div className={styles.passwordInputWrapper}>
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              name="confirmPassword"
+              placeholder="Confirm Password"
+              value={form.confirmPassword}
+              onChange={handleInputChange}
+              required
+              disabled={isCreating}
+            />
+            {form.confirmPassword && (
+              <button
+                type="button"
+                className={styles.eyeIcon}
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                disabled={isCreating}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+                    fill="currentColor"
+                  />
+                  {!showConfirmPassword && (
+                    <path
+                      d="M2 2l20 20M9.9 4.24A9.12 9.12 0 0112 4c5 0 9.27 3.11 11 7.5a11.79 11.79 0 01-4 5.19m-5.6.36A9.12 9.12 0 0112 20c-5 0-9.27-3.11-11-7.5 1.64-4.24 5.81-7.5 10.99-7.5z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  )}
+                </svg>
+              </button>
+            )}
+          </div>
           <div className={styles.roleDisplay}>
             <span className={styles.roleLabel}>Role: </span>
             <span className={styles.roleValue}>Admin</span>
@@ -419,6 +620,15 @@ const ManageProfiles = () => {
           ))
         )}
       </div>
+
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={handleConfirmCreate}
+        orgName={form.org}
+        email={form.email}
+        isCreating={isCreating}
+      />
     </div>
   )
 }

@@ -64,11 +64,6 @@ export default function Sidebar() {
             <span>FAQs</span>
           </Link>
 
-          <Link href="/superadmin/accounts" className={`${styles.navItem} ${pathname.startsWith('/superadmin/accounts') ? styles.active : ''}`}>
-            <FaRegAddressBook className={styles.icon} />
-            <span>Accounts</span>
-          </Link>
-
           <Link href="/superadmin/manageProfiles" className={`${styles.navItem} ${pathname.startsWith('/superadmin/manageprofiles') ? styles.active : ''}`}>
             <FaAddressCard className={styles.icon} />
             <span>Manage Profiles</span>

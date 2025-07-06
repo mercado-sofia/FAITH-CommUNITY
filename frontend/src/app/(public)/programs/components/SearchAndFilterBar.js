@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import styles from '../programs.module.css';
 import { FiSearch, FiX } from 'react-icons/fi';

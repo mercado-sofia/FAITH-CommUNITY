@@ -2,10 +2,10 @@
 import db from '../../database.js';
 
 export const addHead = async (req, res) => {
-  const { organization_id, name, role, facebook, email, photo } = req.body;
+  const { organization_id, head_name, role, facebook, email, photo } = req.body;
   try {
-    await db.execute(`INSERT INTO organization_heads (organization_id, name, role, facebook, email, photo)
-      VALUES (?, ?, ?, ?, ?, ?)`, [organization_id, name, role, facebook, email, photo]);
+    await db.execute(`INSERT INTO organization_heads (organization_id, head_name, role, facebook, email, photo)
+      VALUES (?, ?, ?, ?, ?, ?)`, [organization_id, head_name, role, facebook, email, photo]);
     res.json({ message: 'Organization head added' });
   } catch (error) {
     res.status(500).json({ error });

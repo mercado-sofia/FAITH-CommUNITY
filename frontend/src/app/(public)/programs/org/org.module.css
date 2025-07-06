@@ -449,6 +449,11 @@
   color: white;
 }
 
+.orgheadsNavBtn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
 /* TEXT BELOW IMAGE */
 .orgheadsTextInfo {
   text-align: center;

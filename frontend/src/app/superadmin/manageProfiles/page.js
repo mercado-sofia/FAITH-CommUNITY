@@ -15,6 +15,7 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({
     org: admin.org,
+    orgName: admin.orgName,
     email: admin.email,
     password: "",
     confirmPassword: "",
@@ -32,6 +33,7 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
     setIsEditing(true)
     setEditForm({
       org: admin.org,
+      orgName: admin.orgName,
       email: admin.email,
       password: "",
       confirmPassword: "",
@@ -65,6 +67,7 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
     setIsEditing(false)
     setEditForm({
       org: admin.org,
+      orgName: admin.orgName,
       email: admin.email,
       password: "",
       confirmPassword: "",
@@ -80,7 +83,7 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
       <div className={`${styles.adminCard} ${styles.editingCard}`}>
         <form onSubmit={handleSave} className={styles.editForm}>
           <div className={styles.editField}>
-            <label>Organization:</label>
+            <label>Organization Acronym:</label>
             <input
               type="text"
               name="org"
@@ -89,6 +92,21 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
               required
               disabled={isUpdating}
               className={styles.editInput}
+              placeholder="e.g., FAIPS, FTL, FAHSS"
+            />
+          </div>
+
+          <div className={styles.editField}>
+            <label>Organization Name:</label>
+            <input
+              type="text"
+              name="orgName"
+              value={editForm.orgName}
+              onChange={handleInputChange}
+              required
+              disabled={isUpdating}
+              className={styles.editInput}
+              placeholder="Full organization name"
             />
           </div>
 
@@ -229,7 +247,10 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
   return (
     <div className={styles.adminCard}>
       <div className={styles.cardHeader}>
-        <h2>{admin.org}</h2>
+        <div className={styles.orgInfo}>
+          <h2>{admin.orgName}</h2>
+          <span className={styles.orgAcronym}>({admin.org})</span>
+        </div>
         <div className={styles.cardTags}>
           <span className={`${styles.roleTag} ${styles.admin}`}>Admin</span>
           <span className={`${styles.statusTag} ${styles[admin.status.toLowerCase()]}`}>{admin.status}</span>
@@ -239,6 +260,9 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
       <div className={styles.cardContent}>
         <p>
           <strong>Email:</strong> {admin.email}
+        </p>
+        <p>
+          <strong>Organization:</strong> {admin.orgName} ({admin.org})
         </p>
         <p>
           <strong>Created:</strong> {new Date(admin.created_at).toLocaleString()}
@@ -259,7 +283,7 @@ const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
   )
 }
 
-const ConfirmationModal = ({ isOpen, onClose, onConfirm, orgName, email, isCreating }) => {
+const ConfirmationModal = ({ isOpen, onClose, onConfirm, orgAcronym, orgName, email, isCreating }) => {
   if (!isOpen) return null
 
   return (
@@ -270,7 +294,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, orgName, email, isCreat
           <p>Please confirm the details for the new admin account:</p>
           <div className={styles.confirmDetails}>
             <p>
-              <strong>Organization:</strong> {orgName}
+              <strong>Organization:</strong> {orgName} ({orgAcronym})
             </p>
             <p>
               <strong>Email:</strong> {email}
@@ -293,6 +317,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, orgName, email, isCreat
 const ManageProfiles = () => {
   const [form, setForm] = useState({
     org: "",
+    orgName: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -361,13 +386,14 @@ const ManageProfiles = () => {
       // Ensure role is always admin
       const adminData = {
         org: form.org,
+        orgName: form.orgName,
         email: form.email,
         password: form.password,
         role: "admin",
       }
       await createAdmin(adminData).unwrap()
       showNotification("Admin created successfully!")
-      setForm({ org: "", email: "", password: "", confirmPassword: "", role: "admin" })
+      setForm({ org: "", orgName: "", email: "", password: "", confirmPassword: "", role: "admin" })
       setShowConfirmModal(false)
       setShowPassword(false)
       setShowConfirmPassword(false)
@@ -450,7 +476,7 @@ const ManageProfiles = () => {
         {currentAdmin && (
           <div className={styles.currentUserInfo}>
             <span>
-              Logged in as: {currentAdmin.org} ({currentAdmin.email})
+              Logged in as: {currentAdmin.orgName || currentAdmin.org} ({currentAdmin.email})
             </span>
           </div>
         )}
@@ -486,8 +512,17 @@ const ManageProfiles = () => {
           <input
             type="text"
             name="org"
-            placeholder="Organization"
+            placeholder="Organization Acronym (e.g., FAIPS)"
             value={form.org}
+            onChange={handleInputChange}
+            required
+            disabled={isCreating}
+          />
+          <input
+            type="text"
+            name="orgName"
+            placeholder="Organization Name"
+            value={form.orgName}
             onChange={handleInputChange}
             required
             disabled={isCreating}
@@ -625,7 +660,8 @@ const ManageProfiles = () => {
         isOpen={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}
         onConfirm={handleConfirmCreate}
-        orgName={form.org}
+        orgAcronym={form.org}
+        orgName={form.orgName}
         email={form.email}
         isCreating={isCreating}
       />

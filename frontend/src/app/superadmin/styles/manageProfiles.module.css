@@ -250,6 +250,7 @@
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 1rem;
+  gap: 1rem;
 }
 
 .cardHeader h2 {
@@ -310,6 +311,7 @@
 .cardContent p {
   margin: 0.5rem 0;
   color: #6c757d;
+  font-size: 1rem;
 }
 
 .cardContent strong {
@@ -800,5 +802,47 @@
   .cardTags {
     flex-direction: row;
     align-items: flex-start;
+  }
+}
+
+/* Organization info styling */
+.orgInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.orgInfo h2 {
+  margin: 0;
+  color: #495057;
+  font-size: 1.3rem;
+  line-height: 1.2;
+}
+
+.orgAcronym {
+  font-size: 0.9rem;
+  color: #6c757d;
+  font-weight: 500;
+  font-style: italic;
+}
+
+/* Responsive adjustments for organization info */
+@media (max-width: 480px) {
+  .cardHeader {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .cardTags {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .orgInfo h2 {
+    font-size: 1.1rem;
+  }
+
+  .orgAcronym {
+    font-size: 0.8rem;
   }
 }

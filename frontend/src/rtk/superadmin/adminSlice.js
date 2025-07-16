@@ -26,7 +26,8 @@ const adminSlice = createSlice({
       state.admin = {
         email: "superadmin@faith.com",
         role: "superadmin",
-        org: "FAITH Community System",
+        org: "FAITH",
+        orgName: "FAITH Community System",
       }
       state.userType = "superadmin"
       state.error = null
@@ -69,7 +70,8 @@ const adminSlice = createSlice({
           state.admin = {
             email: "superadmin@faith.com",
             role: "superadmin",
-            org: "FAITH Community System",
+            org: "FAITH",
+            orgName: "FAITH Community System",
           }
           state.userType = "superadmin"
         } else if (adminToken && adminData) {

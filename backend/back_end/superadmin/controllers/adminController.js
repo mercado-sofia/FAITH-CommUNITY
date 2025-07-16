@@ -16,7 +16,7 @@ export const loginAdmin = async (req, res) => {
 
   try {
     const [adminRows] = await db.execute(
-      'SELECT id, org, email, password, role, status FROM admins WHERE email = ? AND status = "ACTIVE"',
+      'SELECT id, org, orgName, email, password, role, status FROM admins WHERE email = ? AND status = "ACTIVE"',
       [email],
     )
 
@@ -38,6 +38,7 @@ export const loginAdmin = async (req, res) => {
         email: admin.email,
         role: admin.role,
         org: admin.org,
+        orgName: admin.orgName,
       },
       JWT_SECRET,
       { expiresIn: "24h" },
@@ -49,6 +50,7 @@ export const loginAdmin = async (req, res) => {
       admin: {
         id: admin.id,
         org: admin.org,
+        orgName: admin.orgName,
         email: admin.email,
         role: admin.role,
         status: admin.status,
@@ -79,9 +81,9 @@ export const verifyAdminToken = (req, res, next) => {
 }
 
 export const createAdmin = async (req, res) => {
-  const { org, email, password, role } = req.body
+  const { org, orgName, email, password, role } = req.body
 
-  if (!org || !email || !password || !role) {
+  if (!org || !orgName || !email || !password || !role) {
     return res.status(400).json({ error: "All fields are required" })
   }
 
@@ -105,9 +107,9 @@ export const createAdmin = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, saltRounds)
 
     const [result] = await db.execute(
-      `INSERT INTO admins (org, email, password, role, status, created_at) 
-       VALUES (?, ?, ?, ?, 'ACTIVE', NOW())`,
-      [org, email, hashedPassword, role],
+      `INSERT INTO admins (org, orgName, email, password, role, status, created_at) 
+       VALUES (?, ?, ?, ?, ?, 'ACTIVE', NOW())`,
+      [org, orgName, email, hashedPassword, role],
     )
 
     res.status(201).json({
@@ -116,6 +118,7 @@ export const createAdmin = async (req, res) => {
       admin: {
         id: result.insertId,
         org,
+        orgName,
         email,
         role,
         status: "ACTIVE",
@@ -130,7 +133,7 @@ export const createAdmin = async (req, res) => {
 export const getAllAdmins = async (req, res) => {
   try {
     const [rows] = await db.execute(
-      "SELECT id, org, email, role, status, created_at FROM admins ORDER BY created_at DESC",
+      "SELECT id, org, orgName, email, role, status, created_at FROM admins ORDER BY created_at DESC",
     )
     res.json(rows)
   } catch (err) {
@@ -147,7 +150,10 @@ export const getAdminById = async (req, res) => {
   }
 
   try {
-    const [rows] = await db.execute("SELECT id, org, email, role, status, created_at FROM admins WHERE id = ?", [id])
+    const [rows] = await db.execute(
+      "SELECT id, org, orgName, email, role, status, created_at FROM admins WHERE id = ?",
+      [id],
+    )
 
     if (rows.length === 0) {
       return res.status(404).json({ message: "Admin not found" })
@@ -162,14 +168,14 @@ export const getAdminById = async (req, res) => {
 
 export const updateAdmin = async (req, res) => {
   const { id } = req.params
-  const { org, email, password, role, status } = req.body
+  const { org, orgName, email, password, role, status } = req.body
 
   if (!id || isNaN(id)) {
     return res.status(400).json({ error: "Invalid admin ID" })
   }
 
-  if (!org || !email || !role) {
-    return res.status(400).json({ error: "Organization name, email, and role are required" })
+  if (!org || !orgName || !email || !role) {
+    return res.status(400).json({ error: "Organization acronym, organization name, email, and role are required" })
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -200,11 +206,11 @@ export const updateAdmin = async (req, res) => {
       const saltRounds = 10
       const hashedPassword = await bcrypt.hash(password, saltRounds)
 
-      query = "UPDATE admins SET org = ?, email = ?, password = ?, role = ?, status = ? WHERE id = ?"
-      params = [org, email, hashedPassword, role, status || "ACTIVE", id]
+      query = "UPDATE admins SET org = ?, orgName = ?, email = ?, password = ?, role = ?, status = ? WHERE id = ?"
+      params = [org, orgName, email, hashedPassword, role, status || "ACTIVE", id]
     } else {
-      query = "UPDATE admins SET org = ?, email = ?, role = ?, status = ? WHERE id = ?"
-      params = [org, email, role, status || "ACTIVE", id]
+      query = "UPDATE admins SET org = ?, orgName = ?, email = ?, role = ?, status = ? WHERE id = ?"
+      params = [org, orgName, email, role, status || "ACTIVE", id]
     }
 
     await db.execute(query, params)
@@ -214,6 +220,7 @@ export const updateAdmin = async (req, res) => {
       admin: {
         id: Number.parseInt(id),
         org,
+        orgName,
         email,
         role,
         status: status || "ACTIVE",

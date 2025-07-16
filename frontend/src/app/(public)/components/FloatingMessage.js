@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import styles from "./styles/floatingMessage.module.css";
 import { FiMessageCircle } from "react-icons/fi";
-import { FaChevronDown } from "react-icons/fa";
+import { FaAngleDown, FaChevronDown } from "react-icons/fa";
+import { IoChevronDown } from "react-icons/io5";
 
 const orgOptions = [
   "JMAP", "FACTS", "JPIA", "FAICEPS", "FTL",
@@ -52,8 +53,8 @@ export default function FloatingMessage() {
     setOrg("");
     setMessage("");
 
-    setClickLocked(true); // prevent quick reopen
-    setTimeout(() => setClickLocked(false), 300); // adjust to match your close animation
+    setClickLocked(true);
+    setTimeout(() => setClickLocked(false), 300);
   };
 
   const handleToggleChat = () => {
@@ -77,8 +78,8 @@ export default function FloatingMessage() {
     <div className={styles.floatingWrapper}>
       {isOpen && (
         <div className={styles.messageBox} ref={boxRef}>
-          <h2>Hi There</h2>
-          <p className={styles.subtext}>How can we help?</p>
+          <h2>Good to see you!</h2>
+          <p className={styles.subtext}>Tell us how we can help.</p>
           <form onSubmit={handleSubmit}>
             <label className={styles.label}>Select an Organization</label>
 
@@ -144,7 +145,7 @@ export default function FloatingMessage() {
         onClick={handleToggleChat}
         aria-label="Chat"
       >
-        <FiMessageCircle />
+        {isOpen ? <IoChevronDown /> : <FiMessageCircle />}
       </button>
     </div>
   );

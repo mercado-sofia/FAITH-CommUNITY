@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import styles from '../../org.module.css';
 import Image from 'next/image';
 import { FaFacebookF, FaEnvelope, FaPlus } from 'react-icons/fa';
@@ -8,9 +8,36 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function OrgHeadsCarousel({ heads }) {
   const scrollRef = useRef(null);
+  const [disableLeft, setDisableLeft] = useState(true);
+  const [disableRight, setDisableRight] = useState(false);
 
-  const scrollLeft = () => scrollRef.current?.scrollBy({ left: -300, behavior: 'smooth' });
-  const scrollRight = () => scrollRef.current?.scrollBy({ left: 300, behavior: 'smooth' });
+  const checkScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    setDisableLeft(el.scrollLeft === 0);
+    setDisableRight(el.scrollLeft + el.clientWidth >= el.scrollWidth - 1);
+  };
+
+  const scrollLeft = () => {
+    scrollRef.current?.scrollBy({ left: -300, behavior: 'smooth' });
+    setTimeout(checkScroll, 300);
+  };
+
+  const scrollRight = () => {
+    scrollRef.current?.scrollBy({ left: 300, behavior: 'smooth' });
+    setTimeout(checkScroll, 300);
+  };
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    checkScroll(); // Check on load
+    el.addEventListener('scroll', checkScroll);
+
+    return () => el.removeEventListener('scroll', checkScroll);
+  }, []);
 
   return (
     <section className={styles.orgheadsSection}>
@@ -21,7 +48,14 @@ export default function OrgHeadsCarousel({ heads }) {
         </div>
 
         <div className={styles.orgheadsCarousel}>
-          <button onClick={scrollLeft} className={styles.orgheadsNavBtn}><ChevronLeft /></button>
+          <button
+            onClick={scrollLeft}
+            className={styles.orgheadsNavBtn}
+            disabled={disableLeft}
+          >
+            <ChevronLeft />
+          </button>
+
           <div className={styles.carouselWindow}>
             <div ref={scrollRef} className={styles.orgheadsCards}>
               {heads.length ? (
@@ -62,7 +96,14 @@ export default function OrgHeadsCarousel({ heads }) {
               )}
             </div>
           </div>
-          <button onClick={scrollRight} className={styles.orgheadsNavBtn}><ChevronRight /></button>
+
+          <button
+            onClick={scrollRight}
+            className={styles.orgheadsNavBtn}
+            disabled={disableRight}
+          >
+            <ChevronRight />
+          </button>
         </div>
       </div>
     </section>

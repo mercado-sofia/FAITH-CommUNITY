@@ -428,8 +428,24 @@ const ManageProfiles = () => {
     if (!window.confirm("Are you sure you want to remove this admin? This will deactivate their account.")) return
 
     try {
-      // Soft delete by updating status to INACTIVE
-      await updateAdmin({ id, status: "INACTIVE", role: "admin" }).unwrap()
+      // Find the admin to get their current data
+      const adminToRemove = admins.find((admin) => admin.id === id)
+      if (!adminToRemove) {
+        showNotification("Admin not found", "error")
+        return
+      }
+
+      // Soft delete by updating status to INACTIVE with all required fields
+      const updateData = {
+        id: adminToRemove.id,
+        org: adminToRemove.org,
+        orgName: adminToRemove.orgName,
+        email: adminToRemove.email,
+        role: "admin",
+        status: "INACTIVE",
+      }
+
+      await updateAdmin(updateData).unwrap()
       showNotification("Admin removed successfully! Account has been deactivated.")
     } catch (error) {
       const errorMessage = error?.data?.error || error?.message || "Failed to remove admin"

@@ -174,6 +174,44 @@ export const updateAdmin = async (req, res) => {
     return res.status(400).json({ error: "Invalid admin ID" })
   }
 
+  // For status-only updates (like soft delete), we need to get existing data
+  if (status && (!org || !orgName || !email || !role)) {
+    try {
+      const [existingAdmin] = await db.execute("SELECT org, orgName, email, role FROM admins WHERE id = ?", [id])
+
+      if (existingAdmin.length === 0) {
+        return res.status(404).json({ error: "Admin not found" })
+      }
+
+      const admin = existingAdmin[0]
+      // Use existing data for missing fields
+      const updateData = {
+        org: org || admin.org,
+        orgName: orgName || admin.orgName,
+        email: email || admin.email,
+        role: role || admin.role,
+        status: status,
+      }
+
+      const query = "UPDATE admins SET org = ?, orgName = ?, email = ?, role = ?, status = ? WHERE id = ?"
+      const params = [updateData.org, updateData.orgName, updateData.email, updateData.role, updateData.status, id]
+
+      await db.execute(query, params)
+
+      return res.json({
+        message: "Admin updated successfully",
+        admin: {
+          id: Number.parseInt(id),
+          ...updateData,
+        },
+      })
+    } catch (err) {
+      console.error("Update admin error:", err)
+      return res.status(500).json({ error: "Internal server error while updating admin" })
+    }
+  }
+
+  // Continue with normal validation for full updates
   if (!org || !orgName || !email || !role) {
     return res.status(400).json({ error: "Organization acronym, organization name, email, and role are required" })
   }

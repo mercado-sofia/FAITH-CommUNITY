@@ -1,10 +1,16 @@
-import express from "express";
-import { getAllFaqs, createFaq, deleteFaq } from "../controllers/faqController.js";
+import express from "express"
+import { getAllFaqs, getActiveFaqs, getFaqById, createFaq, updateFaq, deleteFaq } from "../controllers/faqController.js"
 
-const router = express.Router();
+const router = express.Router()
 
-router.get("/", getAllFaqs);
-router.post("/", createFaq);
-router.delete("/:id", deleteFaq);
+// Public routes
+router.get("/active", getActiveFaqs)
 
-export default router;
+// Admin routes (you can add JWT middleware here if needed)
+router.get("/", getAllFaqs)
+router.get("/:id", getFaqById)
+router.post("/", createFaq)
+router.put("/:id", updateFaq)
+router.delete("/:id", deleteFaq)
+
+export default router

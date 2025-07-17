@@ -49,11 +49,6 @@ export default function Sidebar() {
             <span>Pending Approvals</span>
           </Link>
 
-          <Link href="/superadmin/volunteers" className={`${styles.navItem} ${pathname.startsWith('/superadmin/volunteers') ? styles.active : ''}`}>
-            <FaUserCheck className={styles.icon} />
-            <span>Volunteers</span>
-          </Link>
-
           <Link href="/superadmin/programs" className={`${styles.navItem} ${pathname.startsWith('/superadmin/programs') ? styles.active : ''}`}>
             <TbChecklist className={styles.icon} />
             <span>Programs</span>

@@ -1,0 +1,65 @@
+.cardGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-bottom: 2.5rem;
+}
+
+.cardWrapper {
+  flex: 1;
+  min-width: 260px;
+  text-decoration: none;
+}
+
+.statCard {
+  height: 100%;
+  background: linear-gradient(to bottom, #ecfaf7, #ffffff);
+  padding: 1.8rem;
+  border-radius: 20px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  transition: transform 0.3s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cardWrapper:hover .statCard {
+  transform: translateY(-6px);
+  cursor: pointer;
+}
+
+.cardContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.count {
+  font-size: 2rem;
+  font-weight: 800;
+  font-family: var(--font-inter), sans-serif;
+  color: #050809;
+  margin: 0;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-family: var(--font-poppins), sans-serif;
+  color: #96969b;
+  margin-top: 0.3rem;
+}
+
+.iconWrapper {
+  background-color: #e2f7f0;
+  padding: 0.85rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon {
+  font-size: 1rem;
+  color: #1d9782;
+}

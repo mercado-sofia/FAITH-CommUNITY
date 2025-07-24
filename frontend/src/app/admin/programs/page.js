@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import styles from '../styles/programs.module.css';
+import styles from './programs.module.css';
 import { FaSearch, FaTrash, FaEdit } from 'react-icons/fa';
 import AddProjectModal from './components/AddProjectModal';
 import EditProjectModal from './components/EditProjectModal';

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import styles from './modal.module.css';
+import styles from './styles/modal.module.css';
 
 const EditProjectModal = ({ project, onClose, onSave }) => {
   const [formData, setFormData] = useState({

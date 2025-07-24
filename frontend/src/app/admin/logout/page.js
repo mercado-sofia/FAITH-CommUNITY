@@ -1,8 +1,8 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { FaSignOutAlt } from 'react-icons/fa'
-import styles from '../styles/sidebar.module.css'
+import { FiLogOut } from 'react-icons/fi'
+import styles from '../components/sidebar.module.css'
 
 export default function LogoutModalTrigger() {
   const [showModal, setShowModal] = useState(false)
@@ -16,24 +16,26 @@ export default function LogoutModalTrigger() {
   return (
     <>
       <button
-        className={`${styles.navLogout} ${styles.logoutLink}`}
+        type="button"
+        className={`${styles.navBase} ${styles.logoutLink}`}
         onClick={() => setShowModal(true)}
+        id="logout-modal-trigger"
       >
-        <FaSignOutAlt className={styles.icon} />
+        <FiLogOut className={styles.icon} />
         <span>Logout</span>
       </button>
 
       {showModal && (
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
-            <p>Are you sure you want to log out?</p>
+            <div className={styles.logoutIconWrapper}>
+              <FiLogOut />
+            </div>
+            <div className={styles.modalTitle}>Logout</div>
+            <div className={styles.modalText}>Are you sure you want to logout?</div>
             <div className={styles.buttonGroup}>
-              <button className={styles.confirmBtn} onClick={handleLogout}>
-                Yes
-              </button>
-              <button className={styles.cancelBtn} onClick={() => setShowModal(false)}>
-                Cancel
-              </button>
+              <button className={styles.logoutTextBtn} onClick={handleLogout}>Logout</button>
+              <button className={styles.cancelBtn} onClick={() => setShowModal(false)}>Cancel</button>
             </div>
           </div>
         </div>

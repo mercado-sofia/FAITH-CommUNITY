@@ -1,0 +1,272 @@
+/* Shared Sidebar Layout */
+.sidebar {
+  width: 260px;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: #ffffff;
+  padding: 1.2rem 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 14px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.menuWrapper {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+/* Logo */
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 0.85rem;
+  padding: 0 2.6rem;
+}
+
+.logoGradientBorder {
+  background: linear-gradient(90deg, #1D9782 0%, #26B92D 67%, #1CBFA4 100%);
+  padding: 2px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.logoInnerWhite {
+  background: white;
+  padding: 3px;
+  border-radius: 50%;
+}
+
+.logoInnerWhite img {
+  display: block;
+  border-radius: 50%;
+}
+
+/* Admin Info */
+.heading {
+  font-size: 1.2rem;
+  font-weight: 400;
+  font-family: var(--font-urbanist), sans-serif;
+  margin-bottom: 4px;
+}
+
+.helloText {
+  color: #050809;
+}
+
+.adminText {
+  color: #35d2ba;
+}
+
+.emailText {
+  font-size: 12px;
+  color: #a5abb9;
+}
+
+/* Section Label */
+.menuLabel {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #babec8;
+  text-transform: uppercase;
+  padding: 0.6rem 2.8rem;
+  font-family: var(--font-poppins), sans-serif;
+}
+
+/* Nav Layout */
+.nav {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.65rem;
+  flex-shrink: 1;
+}
+
+/* Shared base styles for nav items and logout button */
+.navBase {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 0.75rem;
+  font-family: var(--font-poppins), sans-serif;
+  font-weight: 500;
+  color: #050809;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+} 
+
+/* Specific styles */
+.navItem, .logoutLink {
+  padding: 0.7rem 2.8rem;
+  width: 100%;
+}
+
+@keyframes slideUpOnce {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0%);
+    opacity: 1;
+  }
+}
+
+.updateText {
+  display: inline-block;
+  color: #35d2ba;
+  font-weight: 600;
+  margin-left: 2px;
+  animation: slideUpOnce 0.6s ease-out forwards;
+}
+
+/* Icon Styles */
+.icon {
+  background-color: #f1f1f3;
+  color: #a5abb9;
+  padding: 0.3rem;
+  border-radius: 6px;
+  font-size: 1.4rem;
+  transition: all 0.3s ease;
+}
+
+.dashbIcon {
+  background-color: #f1f1f3;
+  color: #a5abb9;
+  padding: 0.25rem;
+  border-radius: 6px;
+  font-size: 1.4rem;
+  transition: all 0.3s ease;
+}
+
+.logoutLink .icon {
+  background: transparent;
+  color: #303440;
+}
+
+/* Active nav */
+.navItem.active {
+  background-color: #e6f7f4;
+  color: #35d2ba;
+  border-left: 4px solid #20bea6;
+  padding-left: 2.4rem;
+}
+
+.navItem.active .icon,
+.navItem.active .dashbIcon {
+  background-color: #20bea6;
+  color: white;
+}
+
+.navItem:hover,
+.logoutLink:hover, 
+.logoutLink:hover .icon {
+  color: #2ac4ad;
+}
+
+/* Logout Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modal {
+  background: linear-gradient(to bottom right, #f9fffe, #ffffff);
+  padding: 2.6rem 2rem 2.2rem;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 320px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  color: #000;
+}
+
+.logoutIconWrapper {
+  background-color: #e6fcf9;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  margin: 0 auto 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  color: #20bea6;
+}
+
+.modalTitle {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 0.65rem;
+  color: #000;
+}
+
+.modalText {
+  font-size: 14px;
+  font-weight: 500;
+  color: #2c2c2c;
+}
+
+.buttonGroup {
+  display: flex;
+  justify-content: center;
+  margin-top: 2.4rem;
+  gap: 20px;
+}
+
+.logoutTextBtn {
+  background: none;
+  border: none;
+  color: #20bea6;
+  font-weight: 600;
+  font-size: 13.5px;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  padding: 0.75rem 1rem;
+  width: 114px;
+  text-align: center;
+  letter-spacing: .2px;
+}
+
+.logoutTextBtn:hover {
+  color: #3ec7b3;
+}
+
+.cancelBtn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #20bea6;
+  color: white;
+  font-weight: 600;
+  font-size: 13.5px;
+  font-family: var(--font-inter);
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: 114px;
+  text-align: center;
+  letter-spacing: .2px;
+}
+
+.cancelBtn:hover {
+  background-color: #3ec7b3;
+}

@@ -1,0 +1,46 @@
+.mainContent {
+  margin-left: 260px;
+  padding: 3rem 3rem 1rem 4.5rem;
+  min-height: 100vh;
+  background-color: #F0F4F7;
+}
+
+.mainArea {
+  width: 100%;
+}
+
+/* Header */
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: var(--font-poppins), sans-serif;
+  color: #050809;
+}
+
+/* Section Heading */
+.section h2 {
+  font-size: 1.3rem;
+  color: #19a48d;
+  margin-bottom: 1rem;
+}
+
+/* 🔹 Layout for Recent Apps + Activities */
+.recentRow {
+  display: flex;
+  gap: 2rem;
+  width: 100%;
+}
+
+.leftColumn {
+  flex: 2;
+  min-width: 0;
+}
+
+.rightColumn {
+  flex: 1;
+  min-width: 0;
+}

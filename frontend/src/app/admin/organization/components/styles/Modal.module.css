@@ -1,0 +1,274 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.modalHeader {
+  padding: 24px 24px 0 24px;
+  border-bottom: 1px solid #e9ecef;
+  margin-bottom: 24px;
+}
+
+.modalHeader h2 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.modalSubtitle {
+  margin: 0 0 16px 0;
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.modalCloseBtn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6c757d;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.modalCloseBtn:hover {
+  background-color: #f8f9fa;
+  color: #495057;
+}
+
+.modalBody {
+  padding: 0 24px;
+}
+
+.modalFooter {
+  padding: 24px;
+  border-top: 1px solid #e9ecef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+}
+
+.footerNote {
+  flex: 1;
+  margin-right: 16px;
+}
+
+.footerNote p {
+  margin: 0;
+  font-size: 13px;
+  color: #6c757d;
+}
+
+.modalButtons {
+  display: flex;
+  gap: 12px;
+}
+
+.submissionInfo {
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 6px;
+  margin-bottom: 24px;
+  border-left: 4px solid #007bff;
+}
+
+.submissionInfo p {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+}
+
+.submissionInfo p:last-child {
+  margin-bottom: 0;
+}
+
+.formFields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.headEditItem {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.headEditItem .headHeader {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.headEditItem .headHeader h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.changesDetected {
+  color: #28a745;
+  font-weight: 500;
+}
+
+.noChanges {
+  color: #6c757d;
+}
+
+.saving {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.submitting {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Summary modal specific styles */
+.summaryContent {
+  margin-bottom: 24px;
+}
+
+.summarySection {
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.summarySection .sectionHeader {
+  background: #f8f9fa;
+  padding: 16px;
+  cursor: pointer;
+  margin: 0;
+  border-bottom: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+
+.summarySection .sectionHeader:hover {
+  background: #e9ecef;
+}
+
+.summarySection .sectionHeader h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.expandBtn {
+  background: none;
+  border: none;
+  color: #6c757d;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.expandBtn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #495057;
+}
+
+.sectionChanges {
+  padding: 16px;
+  border-top: 1px solid #e9ecef;
+}
+
+.diffContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.diffField {
+  margin-bottom: 8px;
+}
+
+.diffField:last-child {
+  margin-bottom: 0;
+}
+
+.diffValue {
+  background: #f8f9fa;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-top: 4px;
+  font-family: "Monaco", "Menlo", monospace;
+  font-size: 13px;
+  border-left: 3px solid #dee2e6;
+}
+
+.fieldChange {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.fieldChange strong {
+  min-width: 80px;
+  color: #495057;
+}
+
+.headDiff {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 4px solid #007bff;
+}
+
+.headDiff > strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #495057;
+}
+
+.headChanges {
+  margin-left: 12px;
+}
+
+.emptyValue {
+  font-style: italic;
+  color: #adb5bd;
+}

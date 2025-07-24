@@ -1,0 +1,162 @@
+.tableContainer {
+  margin-bottom: 2.5rem;
+  font-family: var(--font-inter);
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.2rem;
+}
+
+.sectionTitle {
+  font-size: 1rem;
+  color: #050809;
+  font-weight: 700;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.iconButton {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: white;
+  border: 1px solid #ccc;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #050809;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.iconButton:hover {
+  background: #f3f3f3;
+}
+
+.icon {
+  font-size: 1rem;
+}
+
+/* Dropdown */
+.dropdownWrapper {
+  position: relative;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: 110%;
+  right: 0;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 0.3rem 0;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+  width: 130px;
+  list-style: none;
+  animation: fadeSlideIn 0.25s ease-out;
+}
+
+.dropdownItem {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  color: #050809;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dropdownItem:hover {
+  background: #f3f3f3;
+}
+
+.active {
+  font-weight: 600;
+  background-color: #eeeff0;
+}
+
+/* 📋 Table Style */
+.tableWrapper {
+  overflow-x: auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+  padding: 1rem 1.5rem;
+  min-height: 390px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.table th,
+.table td {
+  font-size: 13px;
+  padding: 0.8rem 1rem;
+  font-weight: 400;
+  text-align: left;
+  color: #414143;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+}
+
+.table th {
+  color: #050809;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.table tbody tr:hover {
+  background-color: #f9fbfd;
+}
+
+/* ✅ Status Badges */
+.statusBadge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 1.1rem;
+  border-radius: 28px;
+  display: inline-block;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.approved {
+  background-color: #e2f7f0;
+  color: #53ac87;
+}
+
+.pending {
+  background-color: #fbe6e8;
+  color: #cd6d79;
+}
+
+.declined {
+  background-color: #fdece8;
+  color: #cea077;
+}
+
+/* 📏 Truncation */
+.truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

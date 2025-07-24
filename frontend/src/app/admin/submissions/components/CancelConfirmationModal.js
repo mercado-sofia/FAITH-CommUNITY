@@ -1,14 +1,13 @@
-'use client';
 import styles from './cancelModal.module.css';
 
-export default function CancelConfirmationModal({ onConfirm, onClose }) {
+export default function CancelConfirmation({ onConfirm, onCancel }) {
   return (
-    <div className={styles.overlay}>
-      <div className={styles.modal}>
-        <p className={styles.message}>Are you sure you want to cancel this submission?</p>
-        <div className={styles.actions}>
-          <button onClick={onConfirm} className={styles.confirmBtn}>Yes</button>
-          <button onClick={onClose} className={styles.cancelBtn}>Cancel</button>
+    <div className={styles.modalBackdrop}>
+      <div className={styles.modalBox}>
+        <h3>Are you sure you want to cancel this submission?</h3>
+        <div className={styles.actionButtons}>
+          <button onClick={onConfirm} className={styles.confirmBtn}>Yes, Cancel</button>
+          <button onClick={onCancel} className={styles.cancelBtn}>No, Go Back</button>
         </div>
       </div>
     </div>

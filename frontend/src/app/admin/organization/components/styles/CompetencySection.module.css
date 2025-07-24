@@ -1,0 +1,21 @@
+/* Specific styles for competency section */
+.competencyTextarea {
+  min-height: 120px;
+}
+
+.competencyCounter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.competencyCounter .characterCount {
+  margin: 0;
+}
+
+.competencyHint {
+  font-size: 12px;
+  color: #6c757d;
+  font-style: italic;
+}

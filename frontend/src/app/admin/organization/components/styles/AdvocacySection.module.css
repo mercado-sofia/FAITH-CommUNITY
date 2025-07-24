@@ -1,0 +1,21 @@
+/* Specific styles for advocacy section */
+.advocacyTextarea {
+  min-height: 120px;
+}
+
+.advocacyCounter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.advocacyCounter .characterCount {
+  margin: 0;
+}
+
+.advocacyHint {
+  font-size: 12px;
+  color: #6c757d;
+  font-style: italic;
+}

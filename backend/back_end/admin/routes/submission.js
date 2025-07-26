@@ -1,21 +1,27 @@
-import express from 'express';
+import express from "express"
 import {
-  createSubmission,
-  getSubmissionsByAdmin,
-  getSubmissionById,
-  updateSubmissionStatus,
+  submitChanges,
+  getSubmissionsByOrg,
   cancelSubmission,
   updateSubmission,
-  upload
-} from '../controllers/submissionController.js';
+  getSubmissionById,
+} from "../controllers/submissionController.js"
 
-const router = express.Router();
+const router = express.Router()
 
-router.post('/', createSubmission); // Submit update
-router.get('/', getSubmissionsByAdmin); // List all by admin
-router.get('/:id', getSubmissionById); // View details
-router.put('/:id', upload.any(), updateSubmission); // Update submission data with file upload support
-router.put('/:id/status', updateSubmissionStatus); // Approve/Reject
-router.delete('/:id', cancelSubmission); // Cancel
+// ✅ Create a new batch of submissions (used when admin clicks "Submit for Approval")
+router.post("/", submitChanges)
 
-export default router;
+// ✅ Get submission by ID (for detailed view)
+router.get("/details/:id", getSubmissionById)
+
+// ✅ Fetch all submissions related to a specific org acronym (used for right panel display)
+router.get("/:orgAcronym", getSubmissionsByOrg)
+
+// ✅ Update a pending submission (admin re-edits before superadmin approval)
+router.put("/:id", updateSubmission)
+
+// ✅ Cancel (delete) a pending submission (admin clicks cancel)
+router.delete("/:id", cancelSubmission)
+
+export default router

@@ -1,16 +1,23 @@
-import express from 'express';
+import express from "express"
 import {
   addCompetency,
   getCompetencies,
   getAllCompetencies,
-  deleteCompetency
-} from '../controllers/competencyController.js';
+  deleteCompetency,
+} from "../controllers/competencyController.js"
 
-const router = express.Router();
+const router = express.Router()
 
-router.post('/', addCompetency);
-router.get('/', getAllCompetencies); // ✅ NEW
-router.get('/:organization_id', getCompetencies);
-router.delete('/:id', deleteCompetency);
+// GET all competencies (admin use)
+router.get("/", getAllCompetencies)
 
-export default router;
+// GET competency by organization ID
+router.get("/:organization_id", getCompetencies)
+
+// POST create/update competency by organization
+router.post("/", addCompetency)
+
+// DELETE competency by ID
+router.delete("/:id", deleteCompetency)
+
+export default router

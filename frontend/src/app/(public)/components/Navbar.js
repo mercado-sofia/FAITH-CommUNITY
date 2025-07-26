@@ -15,7 +15,7 @@ export default function Navbar() {
     setTimeout(() => {
       setMenuOpen(false);
       setIsSlidingOut(false);
-    }, 300); // Should match your CSS transition duration
+    }, 300);
   };
 
   const toggleMenu = () => {

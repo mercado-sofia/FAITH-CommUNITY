@@ -1,308 +1,280 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useSelector } from "react-redux"
-import OrgInfoSection from "./components/OrgInfoSection"
-import AdvocacySection from "./components/AdvocacySection"
-import CompetencySection from "./components/CompetencySection"
-import OrgHeadsSection from "./components/OrgHeadsSection"
-import UpdateSummaryModal from "./components/UpdateSummaryModal"
-import SubmissionStatusPanel from "./components/SubmissionStatusPanel"
-import EditSubmissionModal from "./components/EditSubmissionModal"
-import Toast from "./components/Toast"
-import sharedStyles from "./components/styles/shared.module.css"
-import styles from "./organization.module.css"
+import { useState, useEffect, useCallback } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { loginAdmin } from "../../../rtk/superadmin/adminSlice";
+import OrgHeader from "./components/OrgHeader";
+import OrgInfoSection from "./components/OrgInfoSection";
+import SummaryModal from "./components/SummaryModal";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-export default function ManageOrganizationPage() {
-  const [orgData, setOrgData] = useState(null)
-  const [changes, setChanges] = useState({})
-  const [showSummary, setShowSummary] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  const [loadingFailed, setLoadingFailed] = useState(false)
-  const [toast, setToast] = useState({ show: false, message: "", type: "success" })
-  const [editMode, setEditMode] = useState({
-    orgInfo: false,
-    advocacies: false,
-    competencies: false,
-    orgHeads: false,
-  })
-  const [editingSubmission, setEditingSubmission] = useState(null)
-  const [refreshSubmissions, setRefreshSubmissions] = useState(Date.now())
+export default function OrganizationPage() {
+  const [orgData, setOrgData] = useState({
+    id: null,
+    logo: "",
+    org: "",
+    orgName: "",
+    email: "",
+    facebook: "",
+    description: ""
+  });
 
-  const user = useSelector((state) => state.admin.admin)
-  const orgAcronym = user?.org_name || user?.organization || user?.org || ""
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [message, setMessage] = useState({ text: "", type: "" });
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [originalData, setOriginalData] = useState(null);
+  const [pendingChanges, setPendingChanges] = useState(null);
 
-  // Toast helper function
-  const showToast = (message, type = "success") => {
-    setToast({ show: true, message, type })
-  }
+  const admin = useSelector((state) => state.admin.admin);
+  const dispatch = useDispatch();
 
-  const closeToast = () => {
-    setToast({ show: false, message: "", type: "success" })
-  }
+  const showMessage = (text, type) => {
+    setMessage({ text, type });
+    setTimeout(() => setMessage({ text: "", type: "" }), 5000);
+  };
 
-  useEffect(() => {
-    if (!user?.id || !orgAcronym) {
-      // Check for user.id and orgAcronym
-      if (!user?.id) {
-        // Only show toast if user is truly not available
-        setLoadingFailed(true)
-        showToast("Admin user information not found. Please ensure you are logged in.", "error")
-      } else if (!orgAcronym) {
-        showToast("Organization acronym not found for this admin.", "error")
-      }
-      setLoading(false)
-      return
-    }
+  const validateForm = () => {
+    const newErrors = {};
+    if (!orgData.org.trim()) newErrors.org = "Organization acronym is required";
+    if (!orgData.orgName.trim()) newErrors.orgName = "Organization name is required";
+    if (orgData.email && !/\S+@\S+\.\S+/.test(orgData.email)) newErrors.email = "Please enter a valid email address";
+    if (orgData.facebook && !orgData.facebook.includes("facebook.com")) newErrors.facebook = "Please enter a valid Facebook URL";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-    const fetchOrgData = async () => {
-      try {
-        setLoading(true)
-        setLoadingFailed(false)
-
-        const res = await fetch(`${API_BASE_URL}/api/organization/org/${orgAcronym}`)
-        const data = await res.json()
-
-        if (data.success && data.data) {
-          setOrgData(data.data)
-          setLoadingFailed(false)
-        } else {
-          setOrgData(null)
-          setLoadingFailed(true)
-          showToast(data.message || "Failed to load organization data", "error")
-        }
-      } catch (err) {
-        console.error("❌ Fetch error:", err)
-        setOrgData(null)
-        setLoadingFailed(true)
-        showToast("Network error while loading data", "error")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchOrgData()
-  }, [user, orgAcronym])
-
-  const handleSectionSave = (section, updatedData) => {
-    if (!orgData) {
-      showToast("Organization data not available", "error")
-      return
-    }
-
-    // For orgInfo and orgHeads, the API call was already made in the component
-    // We just need to update local state and exit edit mode
-    if (section === "orgInfo" || section === "orgHeads") {
-      setOrgData((prev) => {
-        if (section === "orgInfo") {
-          return { ...prev, ...updatedData }
-        } else if (section === "orgHeads") {
-          return { ...prev, heads: updatedData }
-        }
-        return prev
-      })
-
-      setEditMode((prev) => ({ ...prev, [section]: false }))
-      return
-    }
-
-    // For advocacy and competency, continue with the approval process
-    const originalData = {
-      advocacies: orgData.advocacies || "",
-      competencies: orgData.competencies || "",
-    }
-
-    const oldData = originalData[section]
-    let hasChange = false
-
-    if (typeof updatedData === "string") {
-      hasChange = updatedData !== oldData
-    }
-
-    if (!hasChange) {
-      showToast("No changes detected", "info")
-      setEditMode((prev) => ({ ...prev, [section]: false }))
-      return
-    }
-
-    setChanges((prev) => ({
-      ...prev,
-      [section]: {
-        previous_data: oldData,
-        proposed_data: updatedData,
-      },
-    }))
-
-    setEditMode((prev) => ({ ...prev, [section]: false }))
-    setShowSummary(true)
-    showToast("Changes saved for review", "success")
-  }
-
-  const handleSectionCancel = (section) => {
-    setEditMode((prev) => ({ ...prev, [section]: false }))
-    showToast("Edit cancelled", "info")
-  }
-
-  const handleSubmitForApproval = async () => {
-    if (!orgData || Object.keys(changes).length === 0 || !user?.id) {
-      showToast("Missing data for submission", "error")
-      return
+  const fetchOrganizationData = useCallback(async () => {
+    if (!admin?.org) {
+      setLoading(false);
+      showMessage("Admin organization information not found", "error");
+      return;
     }
 
     try {
-      setSubmitting(true)
-      const submissionPayload = []
-      const sectionMapping = {
-        orgInfo: "organization",
-        advocacies: "advocacy",
-        competencies: "competency",
-        orgHeads: "org_heads",
+      setLoading(true);
+      const response = await fetch(`${API_BASE_URL}/api/organization/org/${admin.org}`);
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        setOrgData({
+          id: result.data.id,
+          logo: result.data.logo || "",
+          org: result.data.org || admin.org,
+          orgName: result.data.orgName || admin.orgName || "",
+          email: result.data.email || admin.email || "",
+          facebook: result.data.facebook || "",
+          description: result.data.description || ""
+        });
+      } else {
+        setOrgData({
+          id: null,
+          logo: "",
+          org: admin.org || "",
+          orgName: admin.orgName || "",
+          email: admin.email || "",
+          facebook: "",
+          description: ""
+        });
+        showMessage("Organization data initialized from admin account", "info");
       }
+    } catch (error) {
+      console.error("Error fetching organization data:", error);
+      showMessage("Failed to load organization data", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [admin]);
 
-      for (const section in changes) {
-        if (!changes.hasOwnProperty(section)) continue
+  useEffect(() => {
+    fetchOrganizationData();
+  }, [fetchOrganizationData]);
 
-        const { previous_data, proposed_data } = changes[section]
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setOrgData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
 
-        submissionPayload.push({
-          organization_id: orgData.id,
-          section: sectionMapping[section] || section,
-          previous_data,
-          proposed_data,
-          submitted_by: user.id,
-        })
-      }
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    console.log('🔍 File selected:', file);
+    
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return showMessage("Please select an image file", "error");
+    if (file.size > 5 * 1024 * 1024) return showMessage("File size must be less than 5MB", "error");
 
-      const res = await fetch(`${API_BASE_URL}/api/submissions`, {
+    try {
+      console.log('📤 Starting upload process...');
+      setUploading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", "logo");
+
+      console.log('🌐 Making request to:', `${API_BASE_URL}/api/upload`);
+      const response = await fetch(`${API_BASE_URL}/api/upload`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ submissions: submissionPayload }),
-      })
+        body: formData
+      });
 
-      const result = await res.json()
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response ok:', response.ok);
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Upload result:', result);
+        console.log('🖼️ Setting logo URL:', result.url);
+        setOrgData((prev) => ({ ...prev, logo: result.url }));
+        showMessage("Logo uploaded successfully", "success");
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Upload failed with status:', response.status, 'Error:', errorText);
+        throw new Error(`Upload failed: ${response.status} - ${errorText}`);
+      }
+    } catch (error) {
+      console.error("❌ Upload error:", error);
+      showMessage("Failed to upload logo", "error");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) {
+      showMessage("Please fix the errors before saving", "error");
+      return;
+    }
+
+    const hasChanges = originalData && Object.keys(orgData).some((key) => key !== "id" && orgData[key] !== originalData[key]);
+
+    if (!hasChanges) {
+      showMessage("No changes detected", "info");
+      setIsEditing(false);
+      return;
+    }
+
+    setPendingChanges({ ...orgData });
+    setShowSummaryModal(true);
+  };
+
+  const handleConfirmChanges = async () => {
+    if (!pendingChanges) return;
+    try {
+      setSaving(true);
+      setShowSummaryModal(false);
+      const method = pendingChanges.id ? "PUT" : "POST";
+      const url = pendingChanges.id
+        ? `${API_BASE_URL}/api/organization/${pendingChanges.id}`
+        : `${API_BASE_URL}/api/organization`;
+
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          logo: pendingChanges.logo || null,
+          org: pendingChanges.org,
+          orgName: pendingChanges.orgName,
+          email: pendingChanges.email || null,
+          facebook: pendingChanges.facebook || null,
+          description: pendingChanges.description || null,
+          status: "ACTIVE"
+        })
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const result = await response.json();
 
       if (result.success) {
-        showToast(result.message || "Changes submitted for approval successfully!", "success")
-        setShowSummary(false)
-        setChanges({})
-        setRefreshSubmissions(Date.now())
+        if (!pendingChanges.id && result.data?.id) {
+          setOrgData((prev) => ({ ...prev, id: result.data.id }));
+        }
+
+        const updatedAdmin = {
+          ...admin,
+          org: pendingChanges.org,
+          orgName: pendingChanges.orgName,
+          email: pendingChanges.email || admin.email
+        };
+
+        dispatch(loginAdmin({ token: admin.token || localStorage.getItem("adminToken"), admin: updatedAdmin }));
+        if (typeof window !== "undefined") {
+          localStorage.setItem("adminData", JSON.stringify(updatedAdmin));
+        }
+
+        setIsEditing(false);
+        setPendingChanges(null);
+        setOriginalData(null);
+        showMessage("Organization information saved successfully", "success");
       } else {
-        console.error("❌ Submission error (API response):", result)
-        showToast(result.message || "Failed to submit changes", "error")
+        throw new Error(result.message || "Failed to save organization information");
       }
-    } catch (err) {
-      console.error("❌ Submission error (network/client-side):", err)
-      showToast("Network error during submission", "error")
+    } catch (error) {
+      console.error("Save error:", error);
+      showMessage(error.message || "Failed to save organization information", "error");
+      setShowSummaryModal(true);
     } finally {
-      setSubmitting(false)
+      setSaving(false);
     }
-  }
+  };
+
+  const handleCancelModal = () => {
+    setShowSummaryModal(false);
+    setPendingChanges(null);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setErrors({});
+    fetchOrganizationData();
+  };
 
   if (loading) {
     return (
-      <div className={sharedStyles.loadingContainer}>
-        <div className={sharedStyles.spinner}></div>
-        <p>Loading organization data...</p>
+      <div style={{ padding: "4rem", textAlign: "center" }}>
+        <div className="spinner" style={{ width: 40, height: 40, border: "4px solid #f1f5f9", borderTop: "4px solid #16a085", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+        <p style={{ marginTop: "1rem", color: "#64748b", fontSize: "1.1rem" }}>Loading organization data...</p>
       </div>
-    )
-  }
-
-  if (loadingFailed) {
-    return (
-      <div className={sharedStyles.errorContainer}>
-        <p className={sharedStyles.errorMessage}>❌ Failed to load organization data.</p>
-        <button onClick={() => window.location.reload()} className={sharedStyles.retryBtn}>
-          Retry
-        </button>
-      </div>
-    )
-  }
-
-  if (!orgData) {
-    return (
-      <div className={sharedStyles.errorContainer}>
-        <p>No organization data found.</p>
-      </div>
-    )
+    );
   }
 
   return (
-    <div className={styles.manageOrgPageWrapper}>
-      {toast.show && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
+    <div style={{ maxWidth: 800, margin: "0 auto", padding: "2rem" }}>
+      <OrgHeader
+        isEditing={isEditing}
+        setIsEditing={setIsEditing}
+        orgData={orgData}
+        setOriginalData={setOriginalData}
+      />
 
-      <div className={styles.leftColumn}>
-        <OrgInfoSection
-          data={orgData}
-          isEditMode={editMode.orgInfo}
-          onEdit={() => setEditMode((prev) => ({ ...prev, orgInfo: true }))}
-          onCancel={() => handleSectionCancel("orgInfo")}
-          onSectionSave={(updatedData) => handleSectionSave("orgInfo", updatedData)}
-          showToast={showToast}
-        />
-        <AdvocacySection
-          data={orgData.advocacies}
-          isEditMode={editMode.advocacies}
-          onEdit={() => setEditMode((prev) => ({ ...prev, advocacies: true }))}
-          onCancel={() => handleSectionCancel("advocacies")}
-          onSectionSave={(updatedData) => handleSectionSave("advocacies", updatedData)}
-          showToast={showToast}
-        />
-        <CompetencySection
-          data={orgData.competencies}
-          isEditMode={editMode.competencies}
-          onEdit={() => setEditMode((prev) => ({ ...prev, competencies: true }))}
-          onCancel={() => handleSectionCancel("competencies")}
-          onSectionSave={(updatedData) => handleSectionSave("competencies", updatedData)}
-          showToast={showToast}
-        />
-        <OrgHeadsSection
-          data={orgData.heads}
-          organizationId={orgData.id}
-          isEditMode={editMode.orgHeads}
-          onEdit={() => setEditMode((prev) => ({ ...prev, orgHeads: true }))}
-          onCancel={() => handleSectionCancel("orgHeads")}
-          onSectionSave={(updatedData) => handleSectionSave("orgHeads", updatedData)}
-          showToast={showToast}
-        />
+      <OrgInfoSection
+        orgData={orgData}
+        setOrgData={setOrgData}
+        isEditing={isEditing}
+        errors={errors}
+        setErrors={setErrors}
+        uploading={uploading}
+        setUploading={setUploading}
+        message={message}
+        handleInputChange={handleInputChange}
+        handleFileUpload={handleFileUpload}
+        handleSave={handleSave}
+        handleCancel={handleCancel}
+        saving={saving}
+      />
 
-        {showSummary && Object.keys(changes).some((key) => key === "advocacies" || key === "competencies") && (
-          <UpdateSummaryModal
-            changes={changes}
-            onCancel={() => setShowSummary(false)}
-            onSubmit={handleSubmitForApproval}
-            submitting={submitting}
-            title="Submit Changes for Approval"
-            subtitle="Review your changes before submitting for approval"
-            note="These changes will be sent to the superadmin for approval. Your organization data will only be updated after approval."
-            confirmButtonText="Submit for Approval"
-          />
-        )}
-      </div>
-
-      <div className={styles.rightColumn}>
-        <SubmissionStatusPanel
-          orgAcronym={String(orgAcronym)}
-          refreshTrigger={refreshSubmissions}
-          onEditRequest={(submission) => setEditingSubmission(submission)}
-          showToast={showToast}
-        />
-      </div>
-
-      {editingSubmission && (
-        <EditSubmissionModal
-          submission={editingSubmission}
-          onClose={() => setEditingSubmission(null)}
-          onUpdate={() => {
-            setEditingSubmission(null)
-            setRefreshSubmissions(Date.now())
-            showToast("Submission updated successfully", "success")
-          }}
-          showToast={showToast}
+      {showSummaryModal && originalData && pendingChanges && (
+        <SummaryModal
+          originalData={originalData}
+          pendingChanges={pendingChanges}
+          saving={saving}
+          handleCancelModal={handleCancelModal}
+          handleConfirmChanges={handleConfirmChanges}
         />
       )}
     </div>
-  )
+  );
 }

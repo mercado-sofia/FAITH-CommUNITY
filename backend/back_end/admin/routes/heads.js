@@ -1,14 +1,21 @@
-import express from 'express';
-import {
-  addHead,
-  getHeads,
-  deleteHead
-} from '../controllers/headController.js';
+import express from "express"
+import { getHeads, addHead, updateHead, deleteHead, bulkUpdateHeads } from "../controllers/headController.js"
 
-const router = express.Router();
+const router = express.Router()
 
-router.post('/', addHead);
-router.get('/:organization_id', getHeads);
-router.delete('/:id', deleteHead);
+// GET heads by organization_id
+router.get("/:organization_id", getHeads)
 
-export default router;
+// POST new head
+router.post("/", addHead)
+
+// PUT bulk update heads for an organization
+router.put("/bulk", bulkUpdateHeads)
+
+// PUT update head by ID
+router.put("/:id", updateHead)
+
+// DELETE head by ID
+router.delete("/:id", deleteHead)
+
+export default router

@@ -1,16 +1,16 @@
-//db table: volunteers
+// db table: volunteers
 import db from "../../database.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 
-// ✅ Ensure upload folder exists
+// Ensure upload folder exists
 const uploadsDir = path.join(process.cwd(), "uploads", "ids");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// ✅ File upload config
+// File upload config
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/ids/"),
   filename: (req, file, cb) => {
@@ -44,7 +44,15 @@ export const submitVolunteer = async (req, res) => {
       program,
     } = req.body;
 
-    // Program mapping
+    // Validate gender (dropdown should only allow Male or Female)
+    const validGenders = ["Male", "Female"];
+    if (!validGenders.includes(gender)) {
+      return res.status(400).json({
+        error: "Invalid gender. Only 'Male' or 'Female' are accepted.",
+      });
+    }
+
+    // Map program string to corresponding program_id
     const programMap = {
       CLIQUE: 1,
       LinkUp: 2,

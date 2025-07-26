@@ -5,21 +5,26 @@ import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { initializeAuth } from "../../rtk/superadmin/adminSlice";
 import Sidebar from "./components/Sidebar";
+import TopBar from "./components/TopBar";
 import styles from "./dashboard/dashboard.module.css";
-import { Poppins, Inter } from 'next/font/google';
+import { Poppins, Inter, Urbanist } from 'next/font/google';
 
-// Load Poppins font
 const poppins = Poppins({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800', '900'],
   variable: '--font-poppins',
 });
 
-// Load Inter font
 const inter = Inter({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-inter',
+});
+
+const urbanist = Urbanist({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  variable: '--font-urbanist',
 });
 
 export default function AdminLayout({ children }) {
@@ -52,8 +57,9 @@ export default function AdminLayout({ children }) {
   }
 
   return (
-    <div className={`${poppins.variable} ${inter.variable}`}>
+    <div className={`${poppins.variable} ${inter.variable} ${urbanist.variable}`}>
       <Sidebar />
+      <TopBar />
       <main className={`${styles.mainContent} ${poppins.className}`}>
         {children}
       </main>

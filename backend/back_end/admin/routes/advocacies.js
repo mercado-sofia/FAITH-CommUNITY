@@ -1,16 +1,18 @@
-import express from 'express';
-import {
-    addAdvocacy,
-    getAdvocacies,
-    deleteAdvocacy,
-    getAllAdvocacies // ✅ Add this
-} from '../controllers/advocacyController.js';
+import express from "express"
+import { addAdvocacy, getAdvocacies, deleteAdvocacy, getAllAdvocacies } from "../controllers/advocacyController.js"
 
-const router = express.Router();
+const router = express.Router()
 
-router.post('/', addAdvocacy);
-router.get('/', getAllAdvocacies); // ✅ New route
-router.get('/:organization_id', getAdvocacies);
-router.delete('/:id', deleteAdvocacy);
+// GET all advocacies (admin use)
+router.get("/", getAllAdvocacies)
 
-export default router;
+// GET advocacy by organization ID
+router.get("/:organization_id", getAdvocacies)
+
+// POST create/update advocacy by organization
+router.post("/", addAdvocacy)
+
+// DELETE advocacy by ID
+router.delete("/:id", deleteAdvocacy)
+
+export default router

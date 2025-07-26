@@ -13,8 +13,9 @@
 
 .statCard {
   height: 100%;
-  background: linear-gradient(to bottom, #ecfaf7, #ffffff);
-  padding: 1.8rem;
+  background-color: #fff;
+  font-family: var(--font-inter), sans-serif;
+  padding: 1.4rem 1.8rem;
   border-radius: 20px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
   transition: transform 0.3s ease;
@@ -36,17 +37,15 @@
 }
 
 .count {
-  font-size: 2rem;
+  font-size: 28px;
   font-weight: 800;
-  font-family: var(--font-inter), sans-serif;
   color: #050809;
   margin: 0;
 }
 
 .label {
-  font-size: 0.85rem;
-  font-family: var(--font-poppins), sans-serif;
-  color: #96969b;
+  font-size: 13px;
+  color: #8b8e8d;
   margin-top: 0.3rem;
 }
 
@@ -60,6 +59,6 @@
 }
 
 .icon {
-  font-size: 1rem;
+  font-size: 1.2rem;
   color: #1d9782;
 }

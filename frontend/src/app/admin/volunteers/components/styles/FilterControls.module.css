@@ -1,0 +1,86 @@
+.filtersRow {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.4rem;
+  gap: 1rem;
+}
+
+.inlineLabelDropdown {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inlineLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #0c1b1a;
+  margin-right: 8px;
+}
+
+.dropdownWrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.dropdownButtonWrapper {
+  position: relative;
+}
+
+.dropdown {
+  background: #fff;
+  padding: 0.5rem 0.85rem 0.5rem 1rem;
+  min-width: 60px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #0c1b1a;
+  box-shadow: 0 6px 12px rgba(7, 42, 46, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease-in-out;
+}
+
+.icon {
+  margin-left: 8px;
+  color: #777d8a;
+}
+
+.options {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  z-index: 10;
+  background: #fff;
+  box-shadow: 0 6px 24px rgba(7, 42, 46, 0.06);
+  border-radius: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 0;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.options li {
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.options li:hover {
+  background-color: #f3f3f3;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

@@ -1,6 +1,5 @@
 .tableContainer {
   margin-bottom: 2.5rem;
-  font-family: var(--font-inter);
 }
 
 .sectionHeader {
@@ -12,8 +11,10 @@
 
 .sectionTitle {
   font-size: 1rem;
+  font-family: var(--font-poppins);
   color: #050809;
   font-weight: 700;
+  cursor: default;
 }
 
 .buttonGroup {
@@ -25,11 +26,14 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  text-decoration: none;
   background: white;
-  border: 1px solid #ccc;
+  border: 2px solid #06100f;
   padding: 0.45rem 0.9rem;
   border-radius: 8px;
   font-size: 0.85rem;
+  font-weight: 500;
+  font-family: var(--font-inter);
   color: #050809;
   cursor: pointer;
   transition: background 0.2s ease;
@@ -77,6 +81,7 @@
 .dropdownItem {
   padding: 0.5rem 1rem;
   font-size: 0.85rem;
+  font-family: var(--font-inter);
   color: #050809;
   cursor: pointer;
   transition: background 0.2s;
@@ -112,6 +117,7 @@
   font-size: 13px;
   padding: 0.8rem 1rem;
   font-weight: 400;
+  font-family: var(--font-inter);
   text-align: left;
   color: #414143;
   border-bottom: 1px solid #f0f0f0;
@@ -122,6 +128,8 @@
   color: #050809;
   font-weight: 600;
   font-size: 0.8rem;
+  font-family: var(--font-inter);
+  cursor: default;
 }
 
 .table tbody tr:hover {
@@ -132,11 +140,13 @@
 .statusBadge {
   font-size: 0.75rem;
   font-weight: 600;
+  font-family: var(--font-inter);
   padding: 0.35rem 1.1rem;
   border-radius: 28px;
   display: inline-block;
   text-align: center;
   white-space: nowrap;
+  user-select: none;
 }
 
 .approved {

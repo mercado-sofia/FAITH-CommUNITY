@@ -1,9 +1,11 @@
 'use client';
 
+import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react';
-import styles from './styles/RecentTables.module.css';
 import { recentApplications } from '../data/mockData';
 import { FiFilter, FiEye } from 'react-icons/fi';
+import { IoFilter } from "react-icons/io5";
+import styles from './styles/RecentTables.module.css';
 
 export default function RecentApplicationsTable() {
   const [filter, setFilter] = useState('All');
@@ -50,7 +52,7 @@ export default function RecentApplicationsTable() {
                 className={styles.iconButton}
                 onClick={() => setShowOptions((prev) => !prev)}
               >
-                <FiFilter className={styles.icon} />
+                <IoFilter className={styles.icon} />
                 Filter
               </button>
               {showOptions && (
@@ -70,10 +72,10 @@ export default function RecentApplicationsTable() {
               )}
             </div>
 
-            <button className={styles.iconButton}>
+            <Link href="/admin/volunteers" className={styles.iconButton}>
               <FiEye className={styles.icon} />
               View All
-            </button>
+            </Link>
           </div>
         </div>
 

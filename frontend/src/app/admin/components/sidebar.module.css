@@ -6,12 +6,13 @@
   top: 0;
   left: 0;
   background-color: #ffffff;
-  padding: 1.2rem 0;
+  padding: 1.6rem 0 0.5rem;
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 14px rgba(0, 0, 0, 0.05);
+  box-shadow: 2px 2px 14px rgba(0, 0, 0, 0.06);
   overflow: hidden;
+  transition: width 0.3s ease;
 }
 
 .menuWrapper {
@@ -24,10 +25,14 @@
 /* Logo */
 .logo {
   display: flex;
+  justify-content: center;
   align-items: center;
-  justify-content: flex-start;
-  margin-bottom: 0.85rem;
-  padding: 0 2.6rem;
+  margin: 0.2rem 0 0.5rem;
+}
+
+.adminInfo {
+  padding: 0 2.8rem 1.4rem;
+  text-align: center;
 }
 
 .logoGradientBorder {
@@ -50,10 +55,11 @@
 
 /* Admin Info */
 .heading {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 400;
   font-family: var(--font-urbanist), sans-serif;
   margin-bottom: 4px;
+  text-align: center;
 }
 
 .helloText {
@@ -67,6 +73,7 @@
 .emailText {
   font-size: 12px;
   color: #a5abb9;
+  text-align: center;
 }
 
 /* Section Label */
@@ -75,7 +82,7 @@
   font-weight: 500;
   color: #babec8;
   text-transform: uppercase;
-  padding: 0.6rem 2.8rem;
+  padding: 0.45rem 2.8rem;
   font-family: var(--font-poppins), sans-serif;
 }
 
@@ -194,7 +201,7 @@
   max-width: 320px;
   text-align: center;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  color: #000;
+  color: #050609;
 }
 
 .logoutIconWrapper {
@@ -214,7 +221,7 @@
   font-size: 20px;
   font-weight: 700;
   margin-bottom: 0.65rem;
-  color: #000;
+  color: #050809;
 }
 
 .modalText {

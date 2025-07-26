@@ -1,0 +1,34 @@
+/* OrgHeader.module.css */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.editBtn {
+  background: linear-gradient(135deg, #16a085, #1abc9c);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.editBtn:hover {
+  background: linear-gradient(135deg, #138d75, #17a589);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(22, 160, 133, 0.3);
+}

@@ -4,6 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSelector } from "react-redux"
+import { useState, useEffect } from "react"
 import { selectCurrentAdmin } from "../../../rtk/superadmin/adminSlice"
 import styles from "./sidebar.module.css"
 import LogoutModalTrigger from "../logout/page.js"
@@ -13,9 +14,32 @@ import { HiViewGrid, HiOfficeBuilding } from "react-icons/hi"
 import { TbChecklist } from "react-icons/tb"
 import { FaRegFolderOpen } from "react-icons/fa6"
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+
 export default function Sidebar() {
   const pathname = usePathname()
   const currentAdmin = useSelector(selectCurrentAdmin)
+  const [orgLogo, setOrgLogo] = useState(null)
+
+  // Fetch organization logo
+  useEffect(() => {
+    const fetchOrgLogo = async () => {
+      if (!currentAdmin?.org) return
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/organization/org/${currentAdmin.org}`)
+        const result = await response.json()
+        
+        if (result.success && result.data?.logo) {
+          setOrgLogo(result.data.logo)
+        }
+      } catch (error) {
+        console.error('Failed to fetch organization logo:', error)
+      }
+    }
+
+    fetchOrgLogo()
+  }, [currentAdmin?.org])
 
   return (
     <aside className={styles.sidebar}>
@@ -24,10 +48,15 @@ export default function Sidebar() {
         <div className={styles.logoGradientBorder}>
           <div className={styles.logoInnerWhite}>
             <Image
-              src={currentAdmin?.org_logo || "/logo/faith_community_logo.png"}
+              src={orgLogo || "/logo/faith_community_logo.png"}
               width={45}
               height={45}
               alt="Organization Logo"
+              unoptimized={true}
+              onError={(e) => {
+                console.error('Sidebar logo failed to load:', orgLogo);
+                e.target.src = "/logo/faith_community_logo.png";
+              }}
             />
           </div>
         </div>
@@ -35,7 +64,7 @@ export default function Sidebar() {
 
       {/* Admin info */}
       {currentAdmin && (
-        <div style={{ padding: "0 2.8rem 1.4rem" }}>
+        <div className={styles.adminInfo}>
           <div className={styles.heading}>
             <span className={styles.helloText}>Hello, </span>
             <span className={styles.adminText}>Admin</span>
@@ -71,7 +100,7 @@ export default function Sidebar() {
 
           <Link
             href="/admin/organization"
-            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith("/admin/orgdetails") ? styles.active : ""}`}
+            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith("/admin/organization") ? styles.active : ""}`}
           >
             <HiOfficeBuilding className={styles.icon} />
             <span>Organization</span>
@@ -115,7 +144,7 @@ export default function Sidebar() {
             <span>Settings</span>
           </Link>
 
-          {/* Logout Button as standalone, not inside another button */}
+          {/* Logout Button */}
           <LogoutModalTrigger />
         </nav>
       </div>

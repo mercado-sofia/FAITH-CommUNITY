@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { TbMail } from "react-icons/tb";
 import { MdNotificationsNone } from "react-icons/md";
 import styles from './topbar.module.css';
@@ -13,14 +13,45 @@ export default function TopBar() {
   const [hasUnreadMessages, setHasUnreadMessages] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    // Get admin data from localStorage
     const storedAdminData = localStorage.getItem('adminData');
     if (storedAdminData) {
       setAdminData(JSON.parse(storedAdminData));
     }
   }, []);
+
+  const getBreadcrumbParts = () => {
+    const pathSegments = pathname.split('/').filter(segment => segment !== '');
+
+    if (pathSegments.length <= 1 || pathSegments[0] !== 'admin') {
+      return { category: 'General', section: 'Dashboard' };
+    }
+
+    const adminSection = pathSegments[1];
+
+    switch (adminSection) {
+      case 'dashboard':
+        return { category: 'General', section: 'Dashboard' };
+      case 'volunteers':
+        return { category: 'Management', section: 'Volunteers' };
+      case 'organization':
+        return { category: 'Management', section: 'Organization' };
+      case 'programs':
+        return { category: 'Management', section: 'Programs' };
+      case 'news':
+        return { category: 'Management', section: 'News' };
+      case 'submissions':
+        return { category: 'Management', section: 'Submissions' };
+      case 'settings':
+        return { category: 'Account', section: 'Settings' };
+      case 'inbox':
+        return { category: 'General', section: 'Inbox' };
+      default:
+        return { category: 'General', section: 'Dashboard' };
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
@@ -36,7 +67,7 @@ export default function TopBar() {
   const toggleNotifications = () => {
     setShowNotifications(!showNotifications);
     if (!showNotifications && hasUnreadNotifications) {
-      setHasUnreadNotifications(false); // Mark as read when opened
+      setHasUnreadNotifications(false);
     }
   };
 
@@ -44,26 +75,35 @@ export default function TopBar() {
     router.push('/admin/inbox');
   };
 
+  const { category, section } = getBreadcrumbParts();
+
   return (
     <div className={styles.topBar}>
       <div className={styles.topBarContent}>
+        <div className={styles.leftSection}>
+          <span className={styles.breadcrumbText}>
+            <span className={styles.breadcrumbCategory}>{category}</span>
+            <span className={styles.breadcrumbSeparator}> &gt; </span>
+            <span className={styles.breadcrumbSection}>{section}</span>
+          </span>
+        </div>
         <div className={styles.rightSection}>
           {/* Inbox Icon */}
           <div className={styles.iconButton} onClick={handleInboxClick}>
-            <TbMail size={18} color="#272728" />
+            <TbMail size={18} color="#06100f" />
           </div>
 
           {/* Notifications Icon */}
           <div className={styles.iconButton} onClick={toggleNotifications}>
             <div className={styles.notificationWrapper}>
-              <MdNotificationsNone size={18} color="#272728" />
+              <MdNotificationsNone size={18} color="#06100f" />
               {hasUnreadNotifications && <div className={styles.notificationBadge}></div>}
             </div>
           </div>
 
           {/* Notifications Dropdown */}
           {showNotifications && (
-  <div className={`${styles.notificationsDropdown} ${styles.popEffect}`}>
+            <div className={`${styles.notificationsDropdown} ${styles.popEffect}`}>
               <div className={styles.notificationsHeader}>
                 <h3>Notifications</h3>
               </div>
@@ -71,8 +111,8 @@ export default function TopBar() {
                 <div className={styles.notificationItem}>
                   <div className={styles.notificationIcon}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M9 12L11 14L15 10" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="12" cy="12" r="9" stroke="#10b981" strokeWidth="2"/>
+                      <path d="M9 12L11 14L15 10" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <circle cx="12" cy="12" r="9" stroke="#3b82f6" strokeWidth="2" />
                     </svg>
                   </div>
                   <div className={styles.notificationContent}>
@@ -83,8 +123,8 @@ export default function TopBar() {
                 <div className={styles.notificationItem}>
                   <div className={styles.notificationIcon}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <polyline points="22,6 12,13 2,6" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <polyline points="22,6 12,13 2,6" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
                   <div className={styles.notificationContent}>
@@ -95,9 +135,9 @@ export default function TopBar() {
                 <div className={styles.notificationItem}>
                   <div className={styles.notificationIcon}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="12" r="10" stroke="#f59e0b" strokeWidth="2"/>
-                      <line x1="12" y1="8" x2="12" y2="12" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round"/>
-                      <line x1="12" y1="16" x2="12.01" y2="16" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round"/>
+                      <circle cx="12" cy="12" r="10" stroke="#f59e0b" strokeWidth="2" />
+                      <line x1="12" y1="8" x2="12" y2="12" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" />
                     </svg>
                   </div>
                   <div className={styles.notificationContent}>

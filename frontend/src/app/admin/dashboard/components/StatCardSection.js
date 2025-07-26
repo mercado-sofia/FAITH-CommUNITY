@@ -8,14 +8,14 @@ import Link from 'next/link';
 export default function StatCardSection() {
   return (
     <div className={styles.cardGrid}>
-      <Link href="/admin/members?filter=pending" className={styles.cardWrapper}>
+      <Link href="/admin/volunteers?filter=pending" className={styles.cardWrapper}>
         <StatCard
           label="Pending Applications"
           count={dashboardStats.pendingApplications}
           iconKey="pending"
         />
       </Link>
-      <Link href="/admin/members" className={styles.cardWrapper}>
+      <Link href="/admin/volunteers" className={styles.cardWrapper}>
         <StatCard
           label="Total Applications"
           count={dashboardStats.totalApplications}

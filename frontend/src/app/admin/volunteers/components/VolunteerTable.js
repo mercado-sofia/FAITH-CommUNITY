@@ -2,8 +2,9 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { HiOutlineDotsHorizontal } from "react-icons/hi";
+import { HiOutlineDotsHorizontal } from "react-icons/hi"
 import PaginationControls from "./PaginationControls"
+import ViewDetailsModal from "./ViewDetailsModal"
 import styles from "./styles/VolunteerTable.module.css"
 
 export default function VolunteerTable({ volunteers, onStatusUpdate }) {
@@ -20,14 +21,10 @@ export default function VolunteerTable({ volunteers, onStatusUpdate }) {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (showDropdown !== null) {
-        const dropdownElement = document.querySelector(`.${styles.actionDropdown}`)
-        const buttonElement = dropdownRefs.current[showDropdown]
-
+        const dropdownWrapper = dropdownRefs.current[showDropdown]
         if (
-          dropdownElement &&
-          !dropdownElement.contains(event.target) &&
-          buttonElement &&
-          !buttonElement.contains(event.target)
+          dropdownWrapper &&
+          !dropdownWrapper.contains(event.target)
         ) {
           setShowDropdown(null)
         }
@@ -35,7 +32,9 @@ export default function VolunteerTable({ volunteers, onStatusUpdate }) {
     }
 
     document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
   }, [showDropdown])
 
   const toggleSelectAll = () => {
@@ -79,7 +78,6 @@ export default function VolunteerTable({ volunteers, onStatusUpdate }) {
       const rect = buttonElement.getBoundingClientRect()
       const top = rect.bottom + 4
       const left = rect.right - 192
-
       setDropdownPosition({ [volunteerId]: { top, left } })
     }
 
@@ -119,63 +117,50 @@ export default function VolunteerTable({ volunteers, onStatusUpdate }) {
                     onChange={() => toggleSelectOne(volunteer.id)}
                   />
                 </td>
-                <td>{volunteer.name}</td>
-                <td style={{ color: "#777d8a" }}>{volunteer.email}</td>
-                <td>{volunteer.program}</td>
-                <td style={{ color: "#777d8a" }}>{volunteer.date}</td>
+                <td className={styles.truncatedText} style={{ color: "#2e3136", fontWeight: "500" }}>
+                  {volunteer.name}
+                </td>
+                <td className={styles.truncatedText} style={{ color: "#8a919c", fontWeight: "400" }}>
+                  {volunteer.email}
+                </td>
+                <td className={styles.truncatedText} style={{ color: "#2e3136", fontWeight: "500" }}>
+                  {volunteer.program}
+                </td>
+                <td style={{ color: "#8a919c", fontWeight: "400" }}>{volunteer.date}</td>
                 <td>
-                  <span className={styles.status}>
-                    <span
-                      className={`${styles.dot} ${
-                        styles[`dot${volunteer.status.toLowerCase().replace(/\s/g, "")}`]
-                      }`}
-                    />
+                  <span className={`${styles.statusBadge} ${styles[volunteer.status.toLowerCase()]}`}>
                     {volunteer.status}
                   </span>
                 </td>
                 <td>
                   <div
-                    className={styles.actionContainer}
+                    className={styles.dropdownWrapper}
                     ref={(el) => (dropdownRefs.current[volunteer.id] = el)}
                   >
-                    <button
-                      onClick={() => handleDropdownToggle(volunteer.id)}
-                      className={styles.actionButton}
-                    >
-                      <HiOutlineDotsHorizontal />
-                    </button>
-                    {showDropdown === volunteer.id && (
+                    <div className={styles.dropdownButtonWrapper}>
                       <div
-                        className={styles.actionDropdown}
-                        style={{
-                          top: `${dropdownPosition[volunteer.id]?.top || 0}px`,
-                          left: `${dropdownPosition[volunteer.id]?.left || 0}px`,
-                        }}
+                        className={styles.dropdown}
+                        onClick={() => handleDropdownToggle(volunteer.id)}
                       >
-                        <button
-                          onClick={() => handleAction(volunteer, "view")}
-                          className={styles.dropdownItem}
-                        >
-                          View Details
-                        </button>
-                        {volunteer.status !== "Approved" && (
-                          <button
-                            onClick={() => handleAction(volunteer, "approve")}
-                            className={styles.dropdownItemGreen}
-                          >
-                            Approve
-                          </button>
-                        )}
-                        {volunteer.status !== "Declined" && (
-                          <button
-                            onClick={() => handleAction(volunteer, "reject")}
-                            className={styles.dropdownItemRed}
-                          >
-                            Decline
-                          </button>
-                        )}
+                        <HiOutlineDotsHorizontal className={styles.icon} />
                       </div>
-                    )}
+
+                      {showDropdown === volunteer.id && (
+                        <ul className={styles.options}>
+                          <li onClick={() => handleAction(volunteer, "view")}>View Details</li>
+                          {volunteer.status !== "Approved" && (
+                            <li onClick={() => handleAction(volunteer, "approve")}>
+                              Approve
+                            </li>
+                          )}
+                          {volunteer.status !== "Declined" && (
+                            <li onClick={() => handleAction(volunteer, "reject")}>
+                              Decline
+                            </li>
+                          )}
+                        </ul>
+                      )}
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -194,9 +179,11 @@ export default function VolunteerTable({ volunteers, onStatusUpdate }) {
       />
 
       {modalType === "view" && selectedVolunteer && (
-        <div className={styles.modalOverlay}>
-          {/* Modal for view action */}
-        </div>
+        <ViewDetailsModal
+          app={selectedVolunteer}
+          onClose={closeModal}
+          onUpdate={onStatusUpdate}
+        />
       )}
 
       {(modalType === "approve" || modalType === "reject") && selectedVolunteer && (

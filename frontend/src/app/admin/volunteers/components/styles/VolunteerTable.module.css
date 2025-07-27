@@ -5,7 +5,7 @@
     0 8px 20px rgba(83, 96, 97, 0.06),
     0 4px 10px rgba(83, 96, 97, 0.04);
   border: none;
-  overflow: hidden;
+  overflow: visible;
   padding: 4px 1rem;
   font-family: var(--font-inter);
 }
@@ -29,101 +29,113 @@
 
 .tableBody td {
   font-size: 13px;
-  font-weight: 400;
   color: #2e3136;
   padding: 12px 14px;
   border-top: 1px solid #e5e7eb;
   background-color: white;
 }
 
-.tableBody tr:hover {
-  background-color: #f3f4f6;
+.tableBody tr {
+  position: relative;
 }
 
-.emailText,
-.dateText {
-  color: #777d8a;
-  font-size: 13px;
+.truncatedText {
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 500;
-  text-transform: capitalize;
+.statusBadge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  padding: 0.35rem 1rem;
+  border-radius: 28px;
+  display: inline-block;
+  text-align: center;
+  white-space: nowrap;
+  user-select: none;
 }
 
-.dot {
-  width: 5.7px;
-  height: 6px;
-  border-radius: 50%;
+.approved {
+  background-color: #e2f7f0;
+  color: #53ac87;
 }
 
-.dotapproved {
-  background-color: #0cb95c;
-  box-shadow: 0 0 10px rgba(12, 185, 92, 0.6);
+.pending {
+  background-color: #fbe6e8;
+  color: #cd6d79;
 }
 
-.dotdeclined {
-  background-color: #ef2929;
-  box-shadow: 0 0 10px rgba(239, 41, 41, 0.6);
-}
-
-.dotpending {
-  background-color: #f78d41;
-  box-shadow: 0 0 10px rgba(247, 141, 65, 0.6);
+.declined {
+  background-color: #fdece8;
+  color: #cea077;
 }
 
 /* Action Dropdown */
-.actionContainer {
-  position: relative;
+.dropdownWrapper {
   display: flex;
-  justify-content: center;
+  align-items: center;
+  position: relative;
 }
 
-.actionButton {
+.dropdownButtonWrapper {
+  position: relative;
+}
+
+.dropdown {
   background: transparent;
-  color: #777d8a;
-  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.icon {
+  color: #0c1b1a;
   font-size: 16px;
-  cursor: pointer;
 }
 
-.actionDropdown {
-  position: fixed;
-  background-color: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.05);
-  width: 180px;
-  z-index: 999;
+.options {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 9999;
+  background: #fff;
+  box-shadow: 0 2px 6px 2px rgba(7, 42, 46, 0.1);
+  border-radius: 6px;
+  list-style: none;
+  margin: 0;
   padding: 0.5rem 0;
+  animation: fadeIn 0.2s ease-in-out;
+  min-width: 140px;
+  user-select: none;
 }
 
-.dropdownItem,
-.dropdownItemGreen,
-.dropdownItemRed {
-  display: block;
-  width: 100%;
-  padding: 8px 16px;
-  background: none;
-  border: none;
-  text-align: left;
-  font-size: 13px;
+.options li {
+  padding: 0.6rem 1.2rem;
+  color: #06100f;
   cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 500;
+  transition: background 0.2s;
 }
 
-.dropdownItem:hover {
-  background-color: #f9fafb;
+.options li:hover {
+  background-color: #f3f3f3;
 }
 
-.dropdownItemGreen {
-  color: #22c55e;
-}
-
-.dropdownItemRed {
-  color: #ef4444;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .modalOverlay {

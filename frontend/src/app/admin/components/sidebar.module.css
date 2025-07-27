@@ -132,13 +132,13 @@
   display: inline-block;
   color: #1de7c6;
   font-weight: 600;
-  margin-left: 2px;
+  margin-left: 3px;
   animation: slideUpOnce 0.6s ease-out forwards;
 }
 
 /* Icon Styles */
 .icon {
-  background-color: #232e2b;
+  background-color: #142220;
   color: #a5abb9;
   padding: 0.3rem;
   border-radius: 6px;
@@ -147,7 +147,7 @@
 }
 
 .dashbIcon {
-  background-color: #232e2b;
+  background-color: #142220;
   color: #a5abb9;
   padding: 0.25rem;
   border-radius: 6px;
@@ -162,7 +162,7 @@
 
 /* Active nav */
 .navItem.active {
-  background-color: #232e2b;
+  background-color: #142220;
   color: #fff;
   border-left: 4px solid #10c4a6;
   padding-left: 2.4rem;
@@ -183,7 +183,7 @@
 
 .navItem.active:hover {
   color: #fff;
-  background-color: #232e2b;
+  background-color: #142220;
   cursor: default;
 }
 

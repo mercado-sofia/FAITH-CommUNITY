@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import FilterControls from './components/FilterControls'
+import SearchAndFilterControls from './components/SearchAndFilterControls'
 import VolunteerTable from './components/VolunteerTable'
 import applications from './data/mockData'
 import styles from './volunteers.module.css'
@@ -11,41 +11,60 @@ export default function VolunteersPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const initialFilter = searchParams.get('filter') || 'all status'
-
-  const [searchQuery, setSearchQuery] = useState('') // kept for future use
-  const [statusFilter, setStatusFilter] = useState(initialFilter)
-  const [programFilter, setProgramFilter] = useState('All')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState(
+    searchParams.get('filter') ? capitalizeFirstLetter(searchParams.get('filter')) : 'All status'
+  )
+  const [sortOrder, setSortOrder] = useState(
+    searchParams.get('sort') === 'oldest' ? 'oldest' : 'latest'
+  )
+  const [programFilter, setProgramFilter] = useState('All Programs')
   const [volunteers, setVolunteers] = useState(applications)
   const [showCount, setShowCount] = useState(10)
 
+  function capitalizeFirstLetter(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+  }
+
   useEffect(() => {
     const params = new URLSearchParams()
-    if (statusFilter && statusFilter !== 'all status') {
+
+    if (statusFilter.toLowerCase() !== 'all status') {
       params.set('filter', statusFilter.toLowerCase())
     }
-    router.push(`?${params.toString()}`, { scroll: false })
-  }, [statusFilter, router]) 
+
+    if (sortOrder && sortOrder !== 'latest') {
+      params.set('sort', sortOrder)
+    }
+
+    router.replace(`?${params.toString()}`, { scroll: false })
+  }, [router, statusFilter, sortOrder])
 
   const filteredVolunteers = useMemo(() => {
-    return volunteers
-      .filter((volunteer) => {
-        const matchesSearch =
-          volunteer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          volunteer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          volunteer.program.toLowerCase().includes(searchQuery.toLowerCase())
+    const filtered = volunteers.filter((volunteer) => {
+      const matchesSearch =
+        volunteer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        volunteer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        volunteer.program.toLowerCase().includes(searchQuery.toLowerCase())
 
-        const matchesStatus =
-          statusFilter === 'all status' ||
-          volunteer.status.toLowerCase() === statusFilter.toLowerCase()
+      const matchesStatus =
+        statusFilter.toLowerCase() === 'all status' ||
+        volunteer.status.toLowerCase() === statusFilter.toLowerCase()
 
-        const matchesProgram =
-          programFilter === 'All' || volunteer.program === programFilter
+      const matchesProgram =
+        programFilter === 'All Programs' || volunteer.program === programFilter
 
-        return matchesSearch && matchesStatus && matchesProgram
-      })
-      .slice(0, showCount)
-  }, [volunteers, searchQuery, statusFilter, programFilter, showCount])
+      return matchesSearch && matchesStatus && matchesProgram
+    })
+
+    const sorted = filtered.sort((a, b) => {
+      const dateA = new Date(a.date)
+      const dateB = new Date(b.date)      
+      return sortOrder === 'latest' ? dateB - dateA : dateA - dateB
+    })
+
+    return sorted.slice(0, showCount)
+  }, [volunteers, searchQuery, statusFilter, programFilter, showCount, sortOrder])
 
   const handleStatusUpdate = (id, newStatus) => {
     setVolunteers((prev) =>
@@ -61,13 +80,17 @@ export default function VolunteersPage() {
         <h1>Volunteer Applications</h1>
       </div>
 
-      <FilterControls
+      <SearchAndFilterControls
         showCount={showCount}
         onShowCountChange={setShowCount}
         programFilter={programFilter}
         onProgramFilterChange={setProgramFilter}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        sortOrder={sortOrder}
+        onSortOrderChange={setSortOrder}
       />
 
       <VolunteerTable

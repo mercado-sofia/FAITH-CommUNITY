@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { TbMail } from "react-icons/tb";
 import { MdNotificationsNone } from "react-icons/md";
@@ -12,6 +12,8 @@ export default function TopBar() {
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
   const [hasUnreadMessages, setHasUnreadMessages] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
+  const notificationsRef = useRef(null); // <--- Added
+
   const router = useRouter();
   const pathname = usePathname();
 
@@ -32,24 +34,15 @@ export default function TopBar() {
     const adminSection = pathSegments[1];
 
     switch (adminSection) {
-      case 'dashboard':
-        return { category: 'General', section: 'Dashboard' };
-      case 'volunteers':
-        return { category: 'Management', section: 'Volunteers' };
-      case 'organization':
-        return { category: 'Management', section: 'Organization' };
-      case 'programs':
-        return { category: 'Management', section: 'Programs' };
-      case 'news':
-        return { category: 'Management', section: 'News' };
-      case 'submissions':
-        return { category: 'Management', section: 'Submissions' };
-      case 'settings':
-        return { category: 'Account', section: 'Settings' };
-      case 'inbox':
-        return { category: 'General', section: 'Inbox' };
-      default:
-        return { category: 'General', section: 'Dashboard' };
+      case 'dashboard': return { category: 'General', section: 'Dashboard' };
+      case 'volunteers': return { category: 'Management', section: 'Volunteers' };
+      case 'organization': return { category: 'Management', section: 'Organization' };
+      case 'programs': return { category: 'Management', section: 'Programs' };
+      case 'news': return { category: 'Management', section: 'News' };
+      case 'submissions': return { category: 'Management', section: 'Submissions' };
+      case 'settings': return { category: 'Account', section: 'Settings' };
+      case 'inbox': return { category: 'General', section: 'Inbox' };
+      default: return { category: 'General', section: 'Dashboard' };
     }
   };
 
@@ -60,20 +53,38 @@ export default function TopBar() {
     router.push('/login');
   };
 
-  const toggleDropdown = () => {
-    setShowDropdown(!showDropdown);
-  };
-
   const toggleNotifications = () => {
-    setShowNotifications(!showNotifications);
-    if (!showNotifications && hasUnreadNotifications) {
-      setHasUnreadNotifications(false);
-    }
+    setShowNotifications(prev => {
+      if (!prev && hasUnreadNotifications) {
+        setHasUnreadNotifications(false);
+      }
+      return !prev;
+    });
   };
 
   const handleInboxClick = () => {
     router.push('/admin/inbox');
   };
+
+  // ❗ Detect click outside notification dropdown
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(e.target)
+      ) {
+        setShowNotifications(false);
+      }
+    };
+
+    if (showNotifications) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNotifications]);
 
   const { category, section } = getBreadcrumbParts();
 
@@ -103,11 +114,15 @@ export default function TopBar() {
 
           {/* Notifications Dropdown */}
           {showNotifications && (
-            <div className={`${styles.notificationsDropdown} ${styles.popEffect}`}>
+            <div
+              className={`${styles.notificationsDropdown} ${styles.popEffect}`}
+              ref={notificationsRef}
+            >
               <div className={styles.notificationsHeader}>
                 <h3>Notifications</h3>
               </div>
               <div className={styles.notificationsList}>
+                {/* Example Notifications */}
                 <div className={styles.notificationItem}>
                   <div className={styles.notificationIcon}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -120,6 +135,7 @@ export default function TopBar() {
                     <span className={styles.notificationTime}>2 hours ago</span>
                   </div>
                 </div>
+
                 <div className={styles.notificationItem}>
                   <div className={styles.notificationIcon}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -132,6 +148,7 @@ export default function TopBar() {
                     <span className={styles.notificationTime}>5 hours ago</span>
                   </div>
                 </div>
+
                 <div className={styles.notificationItem}>
                   <div className={styles.notificationIcon}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">

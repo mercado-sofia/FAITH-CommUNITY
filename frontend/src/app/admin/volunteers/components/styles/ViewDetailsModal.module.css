@@ -1,0 +1,138 @@
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 4rem;
+  overflow-y: auto;
+}
+
+.modalContentScrollable {
+  background-color: #fff;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 768px;
+  padding: 2rem;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.closeIcon {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.2rem;
+  background: none;
+  border: none;
+  font-size: 16px;
+  font-family: var(--font-inter);
+  color: #333;
+  cursor: pointer;
+}
+
+.modalHeading {
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  margin-bottom: 1.5rem;
+  color: #2e3136;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 600px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.formGroup,
+.formGroupFull {
+  display: flex;
+  flex-direction: column;
+}
+
+.formGroupFull {
+  grid-column: span 2;
+}
+
+.label {
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  color: #555;
+  margin-bottom: 0.4rem;
+}
+
+.input,
+.textarea {
+  font-size: 13px;
+  font-family: var(--font-inter);
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  color: #333;
+  resize: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.textarea {
+  min-height: 100px;
+}
+
+.readOnly {
+  background-color: #f2f2f2;
+  color: #555;
+}
+
+.validIdLink {
+  color: #2e5aac;
+  text-decoration: underline;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.actionButton {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.approve {
+  background-color: #2e7d32;
+  color: #fff;
+}
+
+.approve:hover {
+  background-color: #256b27;
+}
+
+.reject {
+  background-color: #c62828;
+  color: #fff;
+}
+
+.reject:hover {
+  background-color: #a62020;
+}

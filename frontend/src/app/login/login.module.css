@@ -1,7 +1,6 @@
 .container {
     display: flex;
     height: 100vh;
-    font-family: Arial, Helvetica, sans-serif;
 }
 
 .leftPane {
@@ -53,6 +52,7 @@
   border-bottom-left-radius: 14px;
   font-size: 14px;
   font-weight: 600;
+  font-family: var(--font-inter);
   color: #145c4e;
   cursor: default;
   box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
@@ -78,6 +78,7 @@
   margin-bottom: 3rem;
   color: #1A685B;
   font-weight: bold;
+  font-family: var(--font-inter);
   text-align: left;
   align-self: flex-start;
   width: 100%;
@@ -86,8 +87,8 @@
 
 .label {
   font-size: 13px;
-  color: #778583;
-  font-weight: 600;
+  color: #b4b6b9;
+  font-weight: 400;
   align-self: flex-start;
 }
 
@@ -112,6 +113,7 @@
   background: #FFF;
   box-shadow: 0px 4px 16px 0px rgba(164, 164, 164, 0.20);
   font-size: 14px;
+  font-family: Arial, Helvetica, sans-serif;
   color: #000;
 }
 
@@ -153,4 +155,17 @@
   margin-top: -0.5rem;
   margin-bottom: 0.5rem;
   align-self: flex-start;
+}
+
+.passwordToggle {
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  color: #CFCFCF;
+  padding: 0;
 }

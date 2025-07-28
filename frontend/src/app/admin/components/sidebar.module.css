@@ -216,6 +216,8 @@
   text-align: center;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   color: #050609;
+  
+  animation: popIn 0.2s ease-out;
 }
 
 .logoutIconWrapper {
@@ -290,4 +292,14 @@
 
 .cancelBtn:hover {
   background-color: #3ec7b3;
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+  }
 }

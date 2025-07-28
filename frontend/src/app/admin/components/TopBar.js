@@ -101,13 +101,13 @@ export default function TopBar() {
         <div className={styles.rightSection}>
           {/* Inbox Icon */}
           <div className={styles.iconButton} onClick={handleInboxClick}>
-            <TbMail size={18} color="#06100f" />
+            <TbMail size={20} color="#06100f" />
           </div>
 
           {/* Notifications Icon */}
           <div className={styles.iconButton} onClick={toggleNotifications}>
             <div className={styles.notificationWrapper}>
-              <MdNotificationsNone size={18} color="#06100f" />
+              <MdNotificationsNone size={20} color="#06100f" />
               {hasUnreadNotifications && <div className={styles.notificationBadge}></div>}
             </div>
           </div>

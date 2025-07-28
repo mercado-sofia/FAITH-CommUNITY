@@ -43,7 +43,7 @@ export default function Sidebar() {
 
   return (
     <aside className={styles.sidebar}>
-      {/* Logo */}
+      {/* Admin */}
       <div className={styles.logo}>
         <div className={styles.logoGradientBorder}>
           <div className={styles.logoInnerWhite}>

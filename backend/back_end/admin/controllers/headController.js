@@ -11,9 +11,10 @@ export const getHeads = async (req, res) => {
   }
 
   try {
-    const [rows] = await db.execute("SELECT * FROM organization_heads WHERE organization_id = ? ORDER BY id", [
-      organization_id,
-    ])
+    const [rows] = await db.execute(
+      "SELECT * FROM organization_heads WHERE organization_id = ? ORDER BY priority ASC, display_order ASC, id ASC", 
+      [organization_id]
+    )
     res.json({
       success: true,
       data: rows,
@@ -29,7 +30,7 @@ export const getHeads = async (req, res) => {
 }
 
 export const addHead = async (req, res) => {
-  const { organization_id, head_name, role, facebook, email, photo } = req.body
+  const { organization_id, head_name, role, facebook, email, photo, priority, display_order } = req.body
 
   // Input validation
   if (!organization_id || !head_name || !role) {
@@ -64,9 +65,18 @@ export const addHead = async (req, res) => {
     }
 
     const [result] = await db.execute(
-      `INSERT INTO organization_heads (organization_id, head_name, role, facebook, email, photo)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [organization_id, head_name.trim(), role.trim(), facebook || null, email || null, photo || null],
+      `INSERT INTO organization_heads (organization_id, head_name, role, priority, display_order, facebook, email, photo)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        organization_id, 
+        head_name.trim(), 
+        role.trim(), 
+        priority || 999, 
+        display_order || 999, 
+        facebook?.trim() || '', 
+        email?.trim() || null, 
+        photo?.trim() || null
+      ],
     )
 
     res.status(201).json({
@@ -86,7 +96,7 @@ export const addHead = async (req, res) => {
 
 export const updateHead = async (req, res) => {
   const { id } = req.params
-  const { head_name, role, facebook, email, photo } = req.body
+  const { head_name, role, facebook, email, photo, priority, display_order } = req.body
 
   if (!id) {
     return res.status(400).json({
@@ -119,9 +129,18 @@ export const updateHead = async (req, res) => {
   try {
     const [result] = await db.execute(
       `UPDATE organization_heads 
-       SET head_name = ?, role = ?, facebook = ?, email = ?, photo = ?, updated_at = NOW() 
+       SET head_name = ?, role = ?, priority = ?, display_order = ?, facebook = ?, email = ?, photo = ?, updated_at = NOW() 
        WHERE id = ?`,
-      [head_name.trim(), role.trim(), facebook || null, email || null, photo || null, id],
+      [
+        head_name.trim(), 
+        role.trim(), 
+        priority || 999, 
+        display_order || 999, 
+        facebook?.trim() || '', 
+        email?.trim() || null, 
+        photo?.trim() || null, 
+        id
+      ],
     )
 
     if (result.affectedRows === 0) {
@@ -179,10 +198,92 @@ export const deleteHead = async (req, res) => {
   }
 }
 
+export const bulkDeleteHeads = async (req, res) => {
+  const { organization_id, head_ids } = req.body
+
+  console.log('Bulk delete heads request:');
+  console.log('Organization ID:', organization_id);
+  console.log('Head IDs:', head_ids);
+
+  if (!organization_id || !Array.isArray(head_ids) || head_ids.length === 0) {
+    console.log('Validation failed: Missing organization_id or head_ids is not array or empty');
+    return res.status(400).json({
+      success: false,
+      message: "Organization ID and head IDs array are required",
+    })
+  }
+
+  try {
+    // Verify organization exists first
+    console.log('Checking if organization exists with ID:', organization_id);
+    const [orgCheck] = await db.execute("SELECT id FROM organizations WHERE id = ?", [organization_id])
+    console.log('Organization check result:', orgCheck);
+    
+    if (orgCheck.length === 0) {
+      console.log('Organization not found');
+      return res.status(404).json({
+        success: false,
+        message: "Organization not found",
+      })
+    }
+
+    // Verify all heads belong to this organization
+    const placeholders = head_ids.map(() => '?').join(',');
+    const [headsCheck] = await db.execute(
+      `SELECT id FROM organization_heads WHERE id IN (${placeholders}) AND organization_id = ?`,
+      [...head_ids, organization_id]
+    );
+
+    if (headsCheck.length !== head_ids.length) {
+      console.log('Some heads do not belong to this organization or do not exist');
+      return res.status(400).json({
+        success: false,
+        message: "Some heads do not belong to this organization or do not exist",
+      })
+    }
+
+    // Delete the heads
+    console.log('Deleting heads with IDs:', head_ids);
+    const [result] = await db.execute(
+      `DELETE FROM organization_heads WHERE id IN (${placeholders}) AND organization_id = ?`,
+      [...head_ids, organization_id]
+    );
+
+    console.log('Delete result:', result);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No heads were deleted",
+      })
+    }
+
+    console.log(`Successfully deleted ${result.affectedRows} heads`);
+    res.json({
+      success: true,
+      message: `Successfully deleted ${result.affectedRows} organization head(s)`,
+      deletedCount: result.affectedRows,
+    })
+  } catch (error) {
+    console.error("Bulk delete heads error:", error)
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete organization heads",
+      error: error.message,
+    })
+  }
+}
+
 export const bulkUpdateHeads = async (req, res) => {
   const { organization_id, heads } = req.body
 
+  console.log('Bulk update heads request:');
+  console.log('Organization ID:', organization_id);
+  console.log('Heads array:', heads);
+  console.log('Request body:', req.body);
+
   if (!organization_id || !Array.isArray(heads)) {
+    console.log('Validation failed: Missing organization_id or heads is not array');
     return res.status(400).json({
       success: false,
       message: "Organization ID and heads array are required",
@@ -190,13 +291,13 @@ export const bulkUpdateHeads = async (req, res) => {
   }
 
   try {
-    // Start transaction
-    await db.execute("START TRANSACTION")
-
-    // Verify organization exists
+    // Verify organization exists first
+    console.log('Checking if organization exists with ID:', organization_id);
     const [orgCheck] = await db.execute("SELECT id FROM organizations WHERE id = ?", [organization_id])
+    console.log('Organization check result:', orgCheck);
+    
     if (orgCheck.length === 0) {
-      await db.execute("ROLLBACK")
+      console.log('Organization not found');
       return res.status(404).json({
         success: false,
         message: "Organization not found",
@@ -204,12 +305,18 @@ export const bulkUpdateHeads = async (req, res) => {
     }
 
     // Delete existing heads for this organization
+    console.log('Deleting existing heads for organization:', organization_id);
     await db.execute("DELETE FROM organization_heads WHERE organization_id = ?", [organization_id])
+    console.log('Existing heads deleted successfully');
 
     // Insert new heads
-    for (const head of heads) {
+    console.log('Inserting', heads.length, 'new heads');
+    for (let i = 0; i < heads.length; i++) {
+      const head = heads[i];
+      console.log(`Processing head ${i + 1}:`, head);
+      
       if (!head.head_name || !head.role) {
-        await db.execute("ROLLBACK")
+        console.log('Validation failed: missing name or role for head', i + 1);
         return res.status(400).json({
           success: false,
           message: "Each head must have a name and role",
@@ -218,7 +325,6 @@ export const bulkUpdateHeads = async (req, res) => {
 
       // Validate email if provided
       if (head.email && !/\S+@\S+\.\S+/.test(head.email)) {
-        await db.execute("ROLLBACK")
         return res.status(400).json({
           success: false,
           message: "Please provide a valid email address",
@@ -227,37 +333,65 @@ export const bulkUpdateHeads = async (req, res) => {
 
       // Validate Facebook URL if provided
       if (head.facebook && !head.facebook.includes("facebook.com")) {
-        await db.execute("ROLLBACK")
         return res.status(400).json({
           success: false,
           message: "Please provide a valid Facebook URL",
         })
       }
 
+      // Auto-assign priority based on role if not provided
+      const getRolePriority = (role) => {
+        const roleStr = role.toLowerCase();
+        if (roleStr.includes('president') && !roleStr.includes('vice')) return 1;
+        if (roleStr.includes('vice') && roleStr.includes('president')) return 2;
+        if (roleStr.includes('secretary')) return 3;
+        if (roleStr.includes('treasurer')) return 4;
+        if (roleStr.includes('director')) return 5;
+        if (roleStr.includes('manager')) return 6;
+        if (roleStr.includes('coordinator')) return 7;
+        if (roleStr.includes('member')) return 8;
+        return 999;
+      };
+
+      const priority = head.priority || getRolePriority(head.role);
+      const display_order = head.display_order || priority;
+
+      console.log('Inserting head with data:', {
+        organization_id,
+        head_name: head.head_name.trim(),
+        role: head.role.trim(),
+        priority,
+        display_order,
+        facebook: head.facebook?.trim() || '',
+        email: head.email?.trim() || null,
+        photo: head.photo?.trim() || null,
+      });
+      
       await db.execute(
-        `INSERT INTO organization_heads (organization_id, head_name, role, facebook, email, photo, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        `INSERT INTO organization_heads (organization_id, head_name, role, priority, display_order, facebook, email, photo)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           organization_id,
           head.head_name.trim(),
           head.role.trim(),
-          head.facebook || null,
-          head.email || null,
-          head.photo || null,
+          priority,
+          display_order,
+          head.facebook?.trim() || '',
+          head.email?.trim() || null,
+          head.photo?.trim() || null,
         ],
       )
+      
+      console.log(`Head ${i + 1} inserted successfully`);
     }
 
-    // Commit transaction
-    await db.execute("COMMIT")
-
+    console.log('All heads inserted successfully');
     res.json({
       success: true,
       message: "Organization heads updated successfully",
       count: heads.length,
     })
   } catch (error) {
-    await db.execute("ROLLBACK")
     console.error("Bulk update heads error:", error)
     res.status(500).json({
       success: false,

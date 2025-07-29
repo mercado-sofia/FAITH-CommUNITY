@@ -53,7 +53,9 @@ app.get("/api/test", (req, res) => {
 
 // Public Routes
 import applyRoutes from "./back_end/for_public/routes/apply.js"
+import organizationsRoutes from "./back_end/for_public/routes/organizations.js"
 app.use("/apply", applyRoutes)
+app.use("/api", organizationsRoutes)
 
 // ADMIN ROUTES
 import activitiesRoutes from "./back_end/admin/routes/activities.js"

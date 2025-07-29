@@ -33,7 +33,7 @@ export const addAdvocacy = async (req, res) => {
 
     if (existing.length > 0) {
       // Update if it exists
-      await db.execute("UPDATE advocacies SET advocacy = ?, updated_at = NOW() WHERE organization_id = ?", [
+      await db.execute("UPDATE advocacies SET advocacy = ? WHERE organization_id = ?", [
         advocacy.trim(),
         organization_id,
       ])

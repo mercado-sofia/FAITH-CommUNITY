@@ -12,7 +12,7 @@
   padding: 1rem;
 }
 
-.modal {
+.modalContainer {
   background-color: #ffffff;
   border-radius: 12px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
@@ -20,6 +20,9 @@
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  position: relative;
 }
 
 .modalHeader {
@@ -27,7 +30,7 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
-.modalHeader h2 {
+.modalTitle {
   font-size: 1.5rem;
   font-weight: 600;
   color: #1e293b;
@@ -67,7 +70,8 @@
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   gap: 1rem;
-  align-items: center;
+  align-items: flex-start;
+  margin-top: 0.5rem;
 }
 
 .previousValue,
@@ -99,12 +103,12 @@
 }
 
 .newValue .value {
-  border-left: 3px solid #10b981;
+  border-left: 3px solid #06100f;
 }
 
 .arrow {
   font-size: 1.25rem;
-  color: #16a085;
+  color: #06100f;
   font-weight: bold;
   text-align: center;
 }
@@ -149,6 +153,8 @@
   justify-content: flex-end;
   padding: 1rem 2rem 2rem 2rem;
   border-top: 1px solid #e2e8f0;
+  margin-top: auto;
+  flex-shrink: 0;
 }
 
 .modalCancelBtn,
@@ -193,4 +199,184 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+/* Additional classes for SectionSummaryModal */
+.warningSection {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: #fef3cd;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+}
+
+.warningText {
+  margin: 0;
+  color: #92400e;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.changesSection {
+  margin-bottom: 1.5rem;
+}
+
+.changesTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #334155;
+  margin: 0 0 1rem 0;
+}
+
+.changesList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.fieldLabel {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #334155;
+  margin: 0 0 0.75rem 0;
+}
+
+.beforeSection,
+.afterSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sectionLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.buttonSection {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.cancelButton {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid #cbd5e1;
+  background-color: #f1f5f9;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background-color: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+.confirmButton {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  background: linear-gradient(135deg, #06100f, #06100f);
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.confirmButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #041008, #041008);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(22, 160, 133, 0.3);
+}
+
+.cancelButton:disabled,
+.confirmButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.noChangesText {
+  text-align: center;
+  color: #64748b;
+  font-size: 1rem;
+  margin: 2rem 0;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modalContainer {
+    max-width: 95vw;
+    margin: 1rem;
+  }
+  
+  .modalHeader {
+    padding: 1.5rem 1.5rem 1rem 1.5rem;
+  }
+  
+  .modalContent {
+    padding: 1rem 1.5rem;
+  }
+  
+  .modalActions {
+    padding: 1rem 1.5rem 1.5rem 1.5rem;
+  }
+  
+  .comparison {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .arrow {
+    transform: rotate(90deg);
+    justify-self: center;
+  }
+  
+  .modalTitle {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .modalActions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .modalCancelBtn,
+  .modalConfirmBtn,
+  .cancelButton,
+  .confirmButton {
+    width: 100%;
+    justify-content: center;
+  }
 }

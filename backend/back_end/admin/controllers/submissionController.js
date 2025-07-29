@@ -321,7 +321,7 @@ export const updateSubmission = async (req, res) => {
 
     // Update the submission
     const [result] = await db.execute(
-      'UPDATE submissions SET proposed_data = ?, updated_at = NOW() WHERE id = ? AND status = "pending"',
+      'UPDATE submissions SET proposed_data = ? WHERE id = ? AND status = "pending"',
       [JSON.stringify(proposed_data), id],
     )
 

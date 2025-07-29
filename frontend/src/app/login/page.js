@@ -22,8 +22,15 @@ export default function LoginPage() {
   const clearAllSessionData = () => {
     console.log("🧹 Clearing all session data")
 
+    // Clear admin tokens
     localStorage.removeItem("adminToken")
     localStorage.removeItem("adminData")
+    
+    // Clear superadmin tokens
+    localStorage.removeItem("superAdminToken")
+    localStorage.removeItem("superAdminData")
+    
+    // Clear general tokens
     localStorage.removeItem("token")
     localStorage.removeItem("userRole")
     localStorage.removeItem("userEmail")
@@ -49,7 +56,15 @@ export default function LoginPage() {
     if (email === "superadmin@faith.com" && password === "super123") {
       console.log("👑 Superadmin login detected")
 
+      // Set the correct localStorage keys that superadmin layout expects
       document.cookie = "userRole=superadmin; path=/; max-age=86400"
+      localStorage.setItem("superAdminToken", "superadmin-token-123")
+      localStorage.setItem("superAdminData", JSON.stringify({
+        id: 1,
+        email: "superadmin@faith.com",
+        name: "Super Administrator",
+        role: "superadmin"
+      }))
       localStorage.setItem("token", "superadmin")
       localStorage.setItem("userRole", "superadmin")
 

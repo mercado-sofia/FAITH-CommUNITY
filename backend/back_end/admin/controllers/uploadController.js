@@ -62,6 +62,7 @@ export const handleFileUpload = (req, res) => {
     res.json({
       success: true,
       message: "File uploaded successfully",
+      filePath: fileUrl,
       url: fileUrl,
       filename: req.file.filename,
       originalName: req.file.originalname,

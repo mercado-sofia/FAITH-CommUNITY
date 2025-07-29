@@ -1,13 +1,23 @@
-import styles from './cancelModal.module.css';
+import styles from './styles/ConfirmationModal.module.css';
 
 export default function CancelConfirmation({ onConfirm, onCancel }) {
   return (
-    <div className={styles.modalBackdrop}>
-      <div className={styles.modalBox}>
-        <h3>Are you sure you want to cancel this submission?</h3>
-        <div className={styles.actionButtons}>
-          <button onClick={onConfirm} className={styles.confirmBtn}>Yes, Cancel</button>
-          <button onClick={onCancel} className={styles.cancelBtn}>No, Go Back</button>
+    <div className={styles.overlay}>
+      <div className={styles.modal}>
+        <div className={styles.header}>
+          <h3>Cancel Submission</h3>
+        </div>
+        <div className={styles.body}>
+          <p>Are you sure you want to cancel this submission?</p>
+          <p>This will withdraw the submission from superadmin review.</p>
+        </div>
+        <div className={styles.footer}>
+          <button className={styles.cancelBtn} onClick={onCancel}>
+            Keep Submission
+          </button>
+          <button className={styles.deleteBtn} onClick={onConfirm}>
+            Cancel Submission
+          </button>
         </div>
       </div>
     </div>

@@ -17,11 +17,18 @@ export const approvalApi = createApi({
       query: () => 'pending',
       providesTags: ['Approvals'],
     }),
-    actOnUpdate: builder.mutation({
-      query: ({ id, action, rejection_comment }) => ({
-        url: `${id}/action`,
+    approveSubmission: builder.mutation({
+      query: (id) => ({
+        url: `${id}/approve`,
         method: 'PUT',
-        body: { action, rejection_comment },
+      }),
+      invalidatesTags: ['Approvals'],
+    }),
+    rejectSubmission: builder.mutation({
+      query: ({ id, rejection_comment }) => ({
+        url: `${id}/reject`,
+        method: 'PUT',
+        body: { rejection_comment },
       }),
       invalidatesTags: ['Approvals'],
     }),
@@ -31,5 +38,6 @@ export const approvalApi = createApi({
 export const {
   useSubmitUpdateMutation,
   useGetPendingApprovalsQuery,
-  useActOnUpdateMutation,
+  useApproveSubmissionMutation,
+  useRejectSubmissionMutation,
 } = approvalApi;

@@ -1,5 +1,5 @@
 import express from "express"
-import { getHeads, addHead, updateHead, deleteHead, bulkUpdateHeads } from "../controllers/headController.js"
+import { getHeads, addHead, updateHead, deleteHead, bulkUpdateHeads, bulkDeleteHeads } from "../controllers/headController.js"
 
 const router = express.Router()
 
@@ -11,6 +11,9 @@ router.post("/", addHead)
 
 // PUT bulk update heads for an organization
 router.put("/bulk", bulkUpdateHeads)
+
+// DELETE bulk delete heads for an organization
+router.delete("/bulk", bulkDeleteHeads)
 
 // PUT update head by ID
 router.put("/:id", updateHead)

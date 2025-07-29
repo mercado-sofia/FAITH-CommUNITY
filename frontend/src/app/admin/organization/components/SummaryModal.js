@@ -21,7 +21,7 @@ export default function SummaryModal({
 
   return (
     <div className={styles.modalOverlay}>
-      <div className={styles.modal}>
+      <div className={styles.modalContainer}>
         <div className={styles.modalHeader}>
           <h2>Confirm Changes</h2>
           <p className={styles.modalSubtitle}>

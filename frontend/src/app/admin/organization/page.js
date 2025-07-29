@@ -1,11 +1,18 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { loginAdmin } from "../../../rtk/superadmin/adminSlice";
+import { useSelector } from "react-redux";
 import OrgHeader from "./components/OrgHeader";
 import OrgInfoSection from "./components/OrgInfoSection";
+import AdvocacySection from "./components/AdvocacySection";
+import CompetencySection from "./components/CompetencySection";
+import OrgHeadsSection from "./components/OrgHeadsSection";
+import EditModal from "./components/EditModal";
+import SectionEditModal from "./components/SectionEditModal";
+import OrgHeadsEditModal from "./components/OrgHeadsEditModal";
 import SummaryModal from "./components/SummaryModal";
+import SectionSummaryModal from "./components/SectionSummaryModal";
+import pageStyles from "./page.module.css";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -20,22 +27,42 @@ export default function OrganizationPage() {
     description: ""
   });
 
+  const [advocacyData, setAdvocacyData] = useState({
+    id: null,
+    advocacy: ""
+  });
+
+  const [competencyData, setCompetencyData] = useState({
+    id: null,
+    competency: ""
+  });
+
+  const [orgHeadsData, setOrgHeadsData] = useState([]);
+
+  // Temporary state for editing advocacy/competency without affecting main display
+  const [tempEditData, setTempEditData] = useState({});
+  const [reEditSubmissionId, setReEditSubmissionId] = useState(null); // Track if we're re-editing an existing submission
+
   const [isEditing, setIsEditing] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showSectionEditModal, setShowSectionEditModal] = useState(false);
+  const [showOrgHeadsEditModal, setShowOrgHeadsEditModal] = useState(false);
+  const [currentSection, setCurrentSection] = useState('organization'); // 'organization', 'advocacy', 'competency', 'orgHeads'
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [message, setMessage] = useState({ text: "", type: "" });
+  const [message, setMessage] = useState({ text: "", type: "", section: "" });
   const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [showSectionSummaryModal, setShowSectionSummaryModal] = useState(false);
   const [originalData, setOriginalData] = useState(null);
   const [pendingChanges, setPendingChanges] = useState(null);
 
   const admin = useSelector((state) => state.admin.admin);
-  const dispatch = useDispatch();
 
-  const showMessage = (text, type) => {
-    setMessage({ text, type });
-    setTimeout(() => setMessage({ text: "", type: "" }), 5000);
+  const showMessage = (text, type, section = "") => {
+    setMessage({ text, type, section });
+    setTimeout(() => setMessage({ text: "", type: "", section: "" }), 5000);
   };
 
   const validateForm = () => {
@@ -57,18 +84,20 @@ export default function OrganizationPage() {
 
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/organization/org/${admin.org}`);
-      const result = await response.json();
+      
+      // Fetch organization data
+      const orgResponse = await fetch(`${API_BASE_URL}/api/organization/org/${admin.org}`);
+      const orgResult = await orgResponse.json();
 
-      if (result.success && result.data) {
+      if (orgResult.success && orgResult.data) {
         setOrgData({
-          id: result.data.id,
-          logo: result.data.logo || "",
-          org: result.data.org || admin.org,
-          orgName: result.data.orgName || admin.orgName || "",
-          email: result.data.email || admin.email || "",
-          facebook: result.data.facebook || "",
-          description: result.data.description || ""
+          id: orgResult.data.id,
+          logo: orgResult.data.logo || "",
+          org: orgResult.data.org || admin.org,
+          orgName: orgResult.data.orgName || admin.orgName || "",
+          email: orgResult.data.email || admin.email || "",
+          facebook: orgResult.data.facebook || "",
+          description: orgResult.data.description || ""
         });
       } else {
         setOrgData({
@@ -82,6 +111,64 @@ export default function OrganizationPage() {
         });
         showMessage("Organization data initialized from admin account", "info");
       }
+
+      // Fetch advocacy data
+      try {
+        const advocacyResponse = await fetch(`${API_BASE_URL}/api/advocacies/${orgResult.data?.id || admin.id}`);
+        const advocacyResult = await advocacyResponse.json();
+        
+        if (advocacyResult.success && advocacyResult.data && advocacyResult.data.length > 0) {
+          setAdvocacyData({
+            id: advocacyResult.data[0].id,
+            advocacy: advocacyResult.data[0].advocacy || ""
+          });
+        } else {
+          setAdvocacyData({
+            id: null,
+            advocacy: ""
+          });
+        }
+      } catch (advocacyError) {
+        console.error("Error fetching advocacy data:", advocacyError);
+        setAdvocacyData({ id: null, advocacy: "" });
+      }
+
+      // Fetch competency data
+      try {
+        const competencyResponse = await fetch(`${API_BASE_URL}/api/competencies/${orgResult.data?.id || admin.id}`);
+        const competencyResult = await competencyResponse.json();
+        
+        if (competencyResult.success && competencyResult.data && competencyResult.data.length > 0) {
+          setCompetencyData({
+            id: competencyResult.data[0].id,
+            competency: competencyResult.data[0].competency || ""
+          });
+        } else {
+          setCompetencyData({
+            id: null,
+            competency: ""
+          });
+        }
+      } catch (competencyError) {
+        console.error("Error fetching competency data:", competencyError);
+        setCompetencyData({ id: null, competency: "" });
+      }
+
+      // Fetch organization heads data
+      try {
+        const headsResponse = await fetch(`${API_BASE_URL}/api/heads/${orgResult.data?.id || admin.id}`);
+        const headsResult = await headsResponse.json();
+        
+        if (headsResult.success && headsResult.data) {
+          setOrgHeadsData(headsResult.data);
+        } else {
+          setOrgHeadsData([]);
+        }
+      } catch (headsError) {
+        console.error("Error fetching organization heads data:", headsError);
+        setOrgHeadsData([]);
+      }
+
     } catch (error) {
       console.error("Error fetching organization data:", error);
       showMessage("Failed to load organization data", "error");
@@ -94,40 +181,81 @@ export default function OrganizationPage() {
     fetchOrganizationData();
   }, [fetchOrganizationData]);
 
+  // Handle re-edit from submissions page
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const isReEdit = urlParams.get('reEdit');
+    
+    if (isReEdit === 'true') {
+      const reEditData = sessionStorage.getItem('reEditSubmission');
+      if (reEditData) {
+        try {
+          const submission = JSON.parse(reEditData);
+          
+          // Set up for re-editing the specific section
+          setCurrentSection(submission.section);
+          setIsEditing(true);
+          setReEditSubmissionId(submission.id); // Store the submission ID for updating
+          
+          // Initialize temp data with the submission's proposed data
+          if (submission.section === 'advocacy') {
+            setTempEditData({ advocacy: submission.data });
+            setOriginalData({ ...advocacyData });
+            setShowSectionEditModal(true);
+          } else if (submission.section === 'competency') {
+            setTempEditData({ competency: submission.data });
+            setOriginalData({ ...competencyData });
+            setShowSectionEditModal(true);
+          }
+          
+          // Clear the session storage
+          sessionStorage.removeItem('reEditSubmission');
+          
+          // Show message
+          showMessage(`Re-editing ${submission.section} submission`, "info", submission.section);
+          
+        } catch (error) {
+          console.error('Error parsing re-edit data:', error);
+          showMessage('Error loading submission for re-edit', "error");
+        }
+      }
+    }
+  }, [advocacyData, competencyData]); // Dependencies to ensure data is loaded first
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setOrgData((prev) => ({ ...prev, [name]: value }));
+    
+    // Handle different sections
+    if (currentSection === 'organization') {
+      setOrgData((prev) => ({ ...prev, [name]: value }));
+    } else {
+      // For advocacy and competency, store changes in temporary editing state
+      setTempEditData((prev) => ({ ...prev, [name]: value }));
+    }
+    
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
-    console.log('🔍 File selected:', file);
     
     if (!file) return;
     if (!file.type.startsWith("image/")) return showMessage("Please select an image file", "error");
     if (file.size > 5 * 1024 * 1024) return showMessage("File size must be less than 5MB", "error");
 
     try {
-      console.log('📤 Starting upload process...');
       setUploading(true);
+      
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("type", "logo");
-
-      console.log('🌐 Making request to:', `${API_BASE_URL}/api/upload`);
+      
       const response = await fetch(`${API_BASE_URL}/api/upload`, {
         method: "POST",
-        body: formData
+        body: formData,
       });
-
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response ok:', response.ok);
-
+      
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ Upload result:', result);
-        console.log('🖼️ Setting logo URL:', result.url);
         setOrgData((prev) => ({ ...prev, logo: result.url }));
         showMessage("Logo uploaded successfully", "success");
       } else {
@@ -143,22 +271,46 @@ export default function OrganizationPage() {
     }
   };
 
-  const handleSave = async () => {
-    if (!validateForm()) {
-      showMessage("Please fix the errors before saving", "error");
-      return;
+  const handleSave = () => {
+    if (currentSection === 'organization') {
+      if (!validateForm()) {
+        showMessage("Please fix the errors before saving", "error");
+        return;
+      }
+
+      const hasChanges = originalData && Object.keys(orgData).some((key) => key !== "id" && orgData[key] !== originalData[key]);
+
+      if (!hasChanges) {
+        showMessage("No changes detected", "info");
+        setShowEditModal(false);
+        setIsEditing(false);
+        return;
+      }
+
+      setPendingChanges({ ...orgData });
+      setShowEditModal(false);
+      setShowSummaryModal(true);
+    } else if (currentSection === 'orgHeads') {
+      // Handle organization heads section - immediate save like organization
+      handleOrgHeadsSave();
+    } else {
+      // Handle advocacy and competency sections
+      const currentData = currentSection === 'advocacy' ? advocacyData : competencyData;
+      const editedData = { ...currentData, ...tempEditData };
+      const hasChanges = originalData && Object.keys(editedData).some((key) => key !== "id" && editedData[key] !== originalData[key]);
+
+      if (!hasChanges) {
+        showMessage("No changes detected", "info", currentSection);
+        setShowSectionEditModal(false);
+        setIsEditing(false);
+        setTempEditData({});
+        return;
+      }
+
+      setPendingChanges({ ...editedData });
+      setShowSectionEditModal(false);
+      setShowSectionSummaryModal(true);
     }
-
-    const hasChanges = originalData && Object.keys(orgData).some((key) => key !== "id" && orgData[key] !== originalData[key]);
-
-    if (!hasChanges) {
-      showMessage("No changes detected", "info");
-      setIsEditing(false);
-      return;
-    }
-
-    setPendingChanges({ ...orgData });
-    setShowSummaryModal(true);
   };
 
   const handleConfirmChanges = async () => {
@@ -193,15 +345,15 @@ export default function OrganizationPage() {
           setOrgData((prev) => ({ ...prev, id: result.data.id }));
         }
 
-        const updatedAdmin = {
-          ...admin,
-          org: pendingChanges.org,
-          orgName: pendingChanges.orgName,
-          email: pendingChanges.email || admin.email
-        };
-
-        dispatch(loginAdmin({ token: admin.token || localStorage.getItem("adminToken"), admin: updatedAdmin }));
+        // Update local storage with the new organization data
         if (typeof window !== "undefined") {
+          const currentAdminData = JSON.parse(localStorage.getItem("adminData") || "{}");
+          const updatedAdmin = {
+            ...currentAdminData,
+            org: pendingChanges.org,
+            orgName: pendingChanges.orgName,
+            email: pendingChanges.email || currentAdminData.email
+          };
           localStorage.setItem("adminData", JSON.stringify(updatedAdmin));
         }
 
@@ -227,8 +379,163 @@ export default function OrganizationPage() {
   };
 
   const handleCancel = () => {
+    if (currentSection === 'organization') {
+      setShowEditModal(false);
+    } else {
+      setShowSectionEditModal(false);
+    }
     setIsEditing(false);
     setErrors({});
+    setCurrentSection('organization');
+    setPendingChanges(null);
+    setOriginalData(null);
+    setTempEditData({}); // Clear temporary editing data
+    setReEditSubmissionId(null); // Clear re-edit submission ID
+    fetchOrganizationData();
+  };
+
+  const handleSectionConfirmChanges = async () => {
+    if (!pendingChanges || !admin?.id) return;
+    
+    try {
+      setSaving(true);
+      setShowSectionSummaryModal(false);
+      
+      // Prepare submission data
+      const submissions = [];
+      
+      if (currentSection === 'advocacy') {
+        submissions.push({
+          organization_id: orgData.id || admin.id,
+          section: 'advocacy',
+          previous_data: originalData.advocacy || "",
+          proposed_data: pendingChanges.advocacy || "",
+          submitted_by: admin.id
+        });
+      } else if (currentSection === 'competency') {
+        submissions.push({
+          organization_id: orgData.id || admin.id,
+          section: 'competency',
+          previous_data: originalData.competency || "",
+          proposed_data: pendingChanges.competency || "",
+          submitted_by: admin.id
+        });
+      }
+      
+      if (submissions.length === 0) {
+        throw new Error('No changes to submit');
+      }
+      
+      // Submit to backend - either create new or update existing submission
+      let response;
+      if (reEditSubmissionId) {
+        // Update existing submission
+        response = await fetch(`${API_BASE_URL}/api/submissions/${reEditSubmissionId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            proposed_data: submissions[0].proposed_data,
+            section: submissions[0].section
+          })
+        });
+      } else {
+        // Create new submission
+        response = await fetch(`${API_BASE_URL}/api/submissions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ submissions })
+        });
+      }
+      
+      const result = await response.json();
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to submit changes for approval');
+      }
+      
+      // Reset form state
+      setIsEditing(false);
+      setPendingChanges(null);
+      setOriginalData(null);
+      setCurrentSection('organization');
+      setTempEditData({}); // Clear temporary editing data
+      
+      const actionText = reEditSubmissionId ? 'updated' : 'submitted';
+      setReEditSubmissionId(null); // Clear re-edit submission ID
+      
+      showMessage(`${currentSection.charAt(0).toUpperCase() + currentSection.slice(1)} changes ${actionText} for approval successfully`, "success", currentSection);
+      
+    } catch (error) {
+      console.error("Submit error:", error);
+      showMessage(error.message || "Failed to submit changes for approval", "error", currentSection);
+      setShowSectionSummaryModal(true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSectionCancelModal = () => {
+    setShowSectionSummaryModal(false);
+    setPendingChanges(null);
+    setCurrentSection('organization');
+  };
+
+  // Organization Heads CRUD handlers
+  const handleOrgHeadsSave = async () => {
+    try {
+      setSaving(true);
+      setShowOrgHeadsEditModal(false);
+      
+      const orgId = orgData.id || admin.id;
+      
+      console.log('Saving org heads data:');
+      console.log('Organization ID:', orgId);
+      console.log('Heads data:', orgHeadsData);
+      console.log('Request payload:', {
+        organization_id: orgId,
+        heads: orgHeadsData
+      });
+      
+      const response = await fetch(`${API_BASE_URL}/api/heads/bulk`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          organization_id: orgId,
+          heads: orgHeadsData
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        showMessage('Organization heads updated successfully', 'success', 'orgHeads');
+        // Refresh the data
+        await fetchOrganizationData();
+      } else {
+        throw new Error(result.message || 'Failed to update organization heads');
+      }
+    } catch (error) {
+      console.error('Organization heads save error:', error);
+      showMessage(error.message || 'Failed to update organization heads', 'error', 'orgHeads');
+      setShowOrgHeadsEditModal(true); // Reopen modal on error
+    } finally {
+      setSaving(false);
+      setIsEditing(false);
+      setCurrentSection('organization');
+    }
+  };
+
+  const handleOrgHeadsCancel = () => {
+    setShowOrgHeadsEditModal(false);
+    setIsEditing(false);
+    setCurrentSection('organization');
+    // Reset orgHeadsData to original state
     fetchOrganizationData();
   };
 
@@ -242,27 +549,84 @@ export default function OrganizationPage() {
   }
 
   return (
-    <div style={{ maxWidth: 800, margin: "0 auto", padding: "2rem" }}>
-      <OrgHeader
-        isEditing={isEditing}
-        setIsEditing={setIsEditing}
-        orgData={orgData}
-        setOriginalData={setOriginalData}
-      />
+    <div>
+      <OrgHeader />
 
       <OrgInfoSection
         orgData={orgData}
-        setOrgData={setOrgData}
-        isEditing={isEditing}
-        errors={errors}
-        setErrors={setErrors}
-        uploading={uploading}
-        setUploading={setUploading}
         message={message}
+        isEditing={isEditing}
+        setIsEditing={setIsEditing}
+        setShowEditModal={setShowEditModal}
+        setOriginalData={setOriginalData}
+      />
+
+      <div className={pageStyles.sectionsContainer}>
+        <div className={pageStyles.sectionColumn}>
+          <AdvocacySection
+            advocacyData={advocacyData}
+            message={message}
+            setIsEditing={setIsEditing}
+            setShowEditModal={setShowSectionEditModal}
+            setOriginalData={setOriginalData}
+            setCurrentSection={setCurrentSection}
+            setTempEditData={setTempEditData}
+          />
+        </div>
+        
+        <div className={pageStyles.sectionColumn}>
+          <CompetencySection
+            competencyData={competencyData}
+            message={message}
+            setIsEditing={setIsEditing}
+            setShowEditModal={setShowSectionEditModal}
+            setOriginalData={setOriginalData}
+            setCurrentSection={setCurrentSection}
+            setTempEditData={setTempEditData}
+          />
+        </div>
+      </div>
+
+      <OrgHeadsSection
+        orgHeadsData={orgHeadsData}
+        message={message}
+        setIsEditing={setIsEditing}
+        setShowEditModal={setShowOrgHeadsEditModal}
+        setOriginalData={setOriginalData}
+        setCurrentSection={setCurrentSection}
+        setTempEditData={setTempEditData}
+      />
+
+      <EditModal
+        isOpen={showEditModal}
+        orgData={orgData}
+        setOrgData={setOrgData}
+        errors={errors}
+        uploading={uploading}
         handleInputChange={handleInputChange}
         handleFileUpload={handleFileUpload}
         handleSave={handleSave}
         handleCancel={handleCancel}
+        saving={saving}
+      />
+
+      <SectionEditModal
+        isOpen={showSectionEditModal}
+        currentSection={currentSection}
+        advocacyData={{ ...advocacyData, ...tempEditData }}
+        competencyData={{ ...competencyData, ...tempEditData }}
+        handleInputChange={handleInputChange}
+        handleSave={handleSave}
+        handleCancel={handleCancel}
+        saving={saving}
+      />
+
+      <OrgHeadsEditModal
+        isOpen={showOrgHeadsEditModal}
+        orgHeadsData={orgHeadsData}
+        setOrgHeadsData={setOrgHeadsData}
+        handleSave={handleSave}
+        handleCancel={handleOrgHeadsCancel}
         saving={saving}
       />
 
@@ -273,6 +637,18 @@ export default function OrganizationPage() {
           saving={saving}
           handleCancelModal={handleCancelModal}
           handleConfirmChanges={handleConfirmChanges}
+        />
+      )}
+
+      {showSectionSummaryModal && originalData && pendingChanges && (
+        <SectionSummaryModal
+          isOpen={showSectionSummaryModal}
+          currentSection={currentSection}
+          originalData={originalData}
+          pendingChanges={pendingChanges}
+          saving={saving}
+          handleCancelModal={handleSectionCancelModal}
+          handleConfirmChanges={handleSectionConfirmChanges}
         />
       )}
     </div>

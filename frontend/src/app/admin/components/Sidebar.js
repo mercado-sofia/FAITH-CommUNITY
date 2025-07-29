@@ -48,14 +48,14 @@ export default function Sidebar() {
         <div className={styles.logoGradientBorder}>
           <div className={styles.logoInnerWhite}>
             <Image
-              src={orgLogo || "/logo/faith_community_logo.png"}
+              src={orgLogo || "/default-profile.png"}
               width={45}
               height={45}
               alt="Organization Logo"
               unoptimized={true}
               onError={(e) => {
                 console.error('Sidebar logo failed to load:', orgLogo);
-                e.target.src = "/logo/faith_community_logo.png";
+                e.target.src = "/default-profile.png";
               }}
             />
           </div>

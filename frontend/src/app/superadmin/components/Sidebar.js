@@ -12,10 +12,6 @@ import { HiViewGrid } from 'react-icons/hi';
 import { FaUsersCog, FaUserCheck, FaClipboardCheck, FaRegQuestionCircle, FaRegAddressBook, FaAddressCard } from 'react-icons/fa';
 import { MdSettings } from 'react-icons/md';
 
-import '@fontsource/inter/400.css';
-import '@fontsource/inter/600.css';
-import '@fontsource/inter/700.css';
-
 export default function Sidebar() {
   const pathname = usePathname();
 
@@ -23,64 +19,112 @@ export default function Sidebar() {
     <aside className={styles.sidebar}>
       {/* Logo */}
       <div className={styles.logo}>
-        <Image src="/logo/faith_community_logo.png" width={40} height={40} alt="FAITH Logo" />
-        <div className={styles.logoText}>
-          <span className={styles.faith}>FAITH</span>
-          <span className={styles.community}>CommUNITY</span>
+        <div className={styles.logoGradientBorder}>
+          <div className={styles.logoInnerWhite}>
+            <Image 
+              src="/default-profile.png" 
+              width={45} 
+              height={45} 
+              alt="FAITH Logo" 
+              unoptimized={true}
+              onError={(e) => {
+                console.error('Superadmin sidebar logo failed to load');
+                e.target.src = "/default-profile.png";
+              }}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Main Nav Items */}
-      <div className={styles.navSection}>
-        <p className={styles.menuLabel}>Menu</p>
+      {/* SuperAdmin info */}
+      <div className={styles.adminInfo}>
+        <div className={styles.heading}>
+          <span className={styles.helloText}>Hello, </span>
+          <span className={styles.adminText}>SuperAdmin</span>
+        </div>
+        <div className={styles.emailText}>superadmin@faith.com</div>
+      </div>
+
+      {/* Menu Wrapper */}
+      <div className={styles.menuWrapper}>
+        {/* === GENERAL === */}
+        <p className={styles.menuLabel}>General</p>
         <nav className={styles.nav}>
-          <Link href="/superadmin" className={`${styles.navItem} ${pathname === '/superadmin' ? styles.active : ''}`}>
-            <HiViewGrid className={styles.icon} />
+          <Link
+            href="/superadmin"
+            className={`${styles.navBase} ${styles.navItem} ${pathname === '/superadmin' ? styles.active : ''}`}
+          >
+            <HiViewGrid className={styles.dashbIcon} />
             <span>Dashboard</span>
           </Link>
+        </nav>
 
-          <Link href="/superadmin/organizations" className={`${styles.navItem} ${pathname.startsWith('/superadmin/organizations') ? styles.active : ''}`}>
+        {/* === MANAGEMENT === */}
+        <p className={styles.menuLabel}>Management</p>
+        <nav className={styles.nav}>
+          <Link
+            href="/superadmin/organizations"
+            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith('/superadmin/organizations') ? styles.active : ''}`}
+          >
             <FaUsersCog className={styles.icon} />
             <span>Organizations</span>
           </Link>
 
-          <Link href="/superadmin/approvals" className={`${styles.navItem} ${pathname.startsWith('/superadmin/approvals') ? styles.active : ''}`}>
+          <Link
+            href="/superadmin/approvals"
+            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith('/superadmin/approvals') ? styles.active : ''}`}
+          >
             <FaClipboardCheck className={styles.icon} />
             <span>Pending Approvals</span>
           </Link>
 
-          <Link href="/superadmin/programs" className={`${styles.navItem} ${pathname.startsWith('/superadmin/programs') ? styles.active : ''}`}>
+          <Link
+            href="/superadmin/programs"
+            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith('/superadmin/programs') ? styles.active : ''}`}
+          >
             <TbChecklist className={styles.icon} />
             <span>Programs</span>
           </Link>
 
-          <Link href="/superadmin/faqs" className={`${styles.navItem} ${pathname.startsWith('/superadmin/faqs') ? styles.active : ''}`}>
+          <Link
+            href="/superadmin/faqs"
+            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith('/superadmin/faqs') ? styles.active : ''}`}
+          >
             <FaRegQuestionCircle className={styles.icon} />
             <span>FAQs</span>
           </Link>
 
-          <Link href="/superadmin/manageProfiles" className={`${styles.navItem} ${pathname.startsWith('/superadmin/manageprofiles') ? styles.active : ''}`}>
+          <Link
+            href="/superadmin/manageProfiles"
+            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith('/superadmin/manageprofiles') ? styles.active : ''}`}
+          >
             <FaAddressCard className={styles.icon} />
             <span>Manage Profiles</span>
           </Link>
 
-          <p className={styles.menuLabel}>Visual</p>
-          <Link href="/admin/faithree" className={`${styles.navItem} ${pathname.startsWith('/admin/faithree') ? styles.active : ''}`}>
+          <Link
+            href="/admin/faithree"
+            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith('/admin/faithree') ? styles.active : ''}`}
+          >
             <RiTreeFill className={styles.icon} />
             <span>FAITHree</span>
           </Link>
         </nav>
-      </div>
 
-      {/* Bottom Section: Settings + Logout */}
-      <div className={styles.bottomSection}>
-        <Link href="/superadmin/settings" className={`${styles.navItem} ${pathname.startsWith('/superadmin/settings') ? styles.active : ''}`}>
-          <MdSettings className={styles.icon} />
-          <span>Settings</span>
-        </Link>
+        {/* === SETTINGS & ACCOUNT === */}
+        <p className={styles.menuLabel} style={{ marginTop: "0.4rem" }}>Account</p>
+        <nav className={styles.nav}>
+          <Link
+            href="/superadmin/settings"
+            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith('/superadmin/settings') ? styles.active : ''}`}
+          >
+            <MdSettings className={styles.icon} />
+            <span>Settings</span>
+          </Link>
 
-        {/* Uncomment once your modal works */}
-        <LogoutModalTrigger />
+          {/* Logout Button */}
+          <LogoutModalTrigger />
+        </nav>
       </div>
     </aside>
   );

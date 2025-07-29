@@ -33,7 +33,7 @@ export const addCompetency = async (req, res) => {
 
     if (existing.length > 0) {
       // Update if it exists
-      await db.execute("UPDATE competencies SET competency = ?, updated_at = NOW() WHERE organization_id = ?", [
+      await db.execute("UPDATE competencies SET competency = ? WHERE organization_id = ?", [
         competency.trim(),
         organization_id,
       ])

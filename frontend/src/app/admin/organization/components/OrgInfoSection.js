@@ -1,56 +1,56 @@
 'use client'
 
+import Image from 'next/image'
+import { FaEdit } from 'react-icons/fa'
 import styles from './styles/OrgInfoSection.module.css'
 
 export default function OrgInfoSection({
   orgData,
-  setOrgData,
-  isEditing,
-  errors,
-  setErrors,
-  uploading,
-  setUploading,
   message,
-  handleInputChange,
-  handleFileUpload,
-  handleSave,
-  handleCancel,
-  saving
+  isEditing,
+  setIsEditing,
+  setShowEditModal,
+  setOriginalData
 }) {
+  const handleEditClick = () => {
+    setOriginalData({ ...orgData })
+    setIsEditing(true)
+    setShowEditModal(true)
+  }
+
   return (
     <div className={styles.section}>
-      <h2 className={styles.sectionTitle}>Organization Details</h2>
+      <div className={styles.header}>
+        <h2 className={styles.sectionTitle}>Organization Details</h2>
+        {!isEditing && (
+          <button
+            onClick={handleEditClick}
+            className={styles.editIcon}
+            title="Edit Organization Information"
+          >
+            <FaEdit />
+          </button>
+        )}
+      </div>
 
-
-      {message.text && (
+      {message.text && !message.section && (
         <div className={`${styles.message} ${styles[message.type]}`}>
           {message.text}
         </div>
       )}
 
-      <div className={styles.formGroup}>
-        <label className={styles.label}>
-          Organization Logo:
-          {isEditing ? (
-            <div className={styles.fileUpload}>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileUpload}
-                disabled={uploading}
-                className={styles.fileInput}
-              />
-              {uploading && <span className={styles.uploadingText}>Uploading...</span>}
-            </div>
-          ) : null}
+      <div className={styles.contentLayout}>
+        {/* Logo Section */}
+        <div className={styles.logoSection}>
           <div className={styles.logoContainer}>
             {orgData.logo ? (
-              <img
+              <Image
                 src={orgData.logo}
                 alt="Organization Logo"
                 width={120}
                 height={120}
                 className={styles.logo}
+                priority
                 onError={(e) => {
                   console.error('Image failed to load:', orgData.logo);
                   e.target.style.display = 'none';
@@ -62,112 +62,39 @@ export default function OrgInfoSection({
               </div>
             )}
           </div>
-        </label>
-      </div>
-
-      <div className={styles.formGroup}>
-        <label className={styles.label}>
-          Organization Acronym: <span className={styles.required}>*</span>
-        </label>
-        <input
-          type="text"
-          id="org"
-          value={orgData.org}
-          onChange={(e) => setOrgData({...orgData, org: e.target.value})}
-          className={`${styles.input} ${errors.org ? styles.inputError : ""}`}
-          placeholder="e.g., FAITH"
-          autoComplete="organization"
-        />
-        {errors.org && <span className={styles.errorText}>{errors.org}</span>}
-      </div>
-
-      <div className={styles.formGroup}>
-        <label className={styles.label}>
-          Organization Name: <span className={styles.required}>*</span>
-        </label>
-        <input
-          type="text"
-          id="orgName"
-          value={orgData.orgName}
-          onChange={(e) => setOrgData({...orgData, orgName: e.target.value})}
-          className={`${styles.input} ${errors.orgName ? styles.inputError : ""}`}
-          placeholder="e.g., FAITH Community Organization"
-          autoComplete="organization-title"
-        />
-        {errors.orgName && <span className={styles.errorText}>{errors.orgName}</span>}
-      </div>
-
-      <div className={styles.formGroup}>
-        <label className={styles.label}>Email:</label>
-        <input
-          type="email"
-          id="email"
-          value={orgData.email}
-          onChange={(e) => setOrgData({...orgData, email: e.target.value})}
-          className={`${styles.input} ${errors.email ? styles.inputError : ""}`}
-          placeholder="organization@example.com"
-          autoComplete="email"
-        />
-        {errors.email && <span className={styles.errorText}>{errors.email}</span>}
-      </div>
-
-      <div className={styles.formGroup}>
-        <label className={styles.label}>Facebook Link:</label>
-        <input
-          type="url"
-          id="facebook"
-          value={orgData.facebook}
-          onChange={(e) => setOrgData({...orgData, facebook: e.target.value})}
-          className={`${styles.input} ${errors.facebook ? styles.inputError : ""}`}
-          placeholder="https://facebook.com/yourorganization"
-          autoComplete="url"
-        />
-        {errors.facebook && <span className={styles.errorText}>{errors.facebook}</span>}
-      </div>
-
-      <div className={styles.formGroup}>
-        <label className={styles.label}>
-          Description:
-          {isEditing ? (
-            <textarea
-              name="description"
-              value={orgData.description}
-              onChange={handleInputChange}
-              className={styles.textarea}
-              placeholder="Brief description of your organization"
-              rows={4}
-            />
-          ) : (
-            <p className={styles.displayText}>{orgData.description || "No description provided"}</p>
-          )}
-        </label>
-      </div>
-
-      {isEditing && (
-        <div className={styles.actionButtons}>
-          <button 
-            onClick={handleCancel} 
-            className={styles.cancelBtn}
-            disabled={saving}
-          >
-            Cancel
-          </button>
-          <button 
-            onClick={handleSave} 
-            className={styles.saveBtn}
-            disabled={saving || uploading}
-          >
-            {saving ? (
-              <>
-                <span className={styles.spinner}></span>
-                Saving...
-              </>
-            ) : (
-              "Save Changes"
-            )}
-          </button>
         </div>
-      )}
+
+        {/* Organization Details Section */}
+        <div className={styles.detailsSection}>
+          <div className={styles.orgNameDisplay}>
+            <div className={styles.orgAcronym}>{orgData.org || "Not specified"}</div>
+            <div className={styles.orgFullName}>{orgData.orgName || "Not specified"}</div>
+          </div>
+
+          <div className={styles.inlineGroup}>
+            <span className={styles.inlineLabel}>Email:</span>
+            <span className={styles.inlineData}>{orgData.email || "Not specified"}</span>
+          </div>
+
+          <div className={styles.inlineGroup}>
+            <span className={styles.inlineLabel}>Facebook:</span>
+            <span className={styles.inlineData}>
+              {orgData.facebook ? (
+                <a href={orgData.facebook} target="_blank" rel="noopener noreferrer" className={styles.link}>
+                  {orgData.facebook}
+                </a>
+              ) : (
+                "Not specified"
+              )}
+            </span>
+          </div>
+
+          <div className={styles.inlineGroup}>
+            <span className={styles.inlineLabel}>Description:</span>
+            <span className={styles.inlineData}>{orgData.description || "No description provided"}</span>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

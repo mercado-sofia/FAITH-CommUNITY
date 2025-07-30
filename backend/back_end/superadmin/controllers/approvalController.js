@@ -124,6 +124,23 @@ export const approveSubmission = async (req, res) => {
       }
     }
 
+    if (section === 'programs') {
+      // Insert new program into programs table
+      await db.execute(
+        `INSERT INTO programs (organization_id, title, description, category, status, date, image, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [
+          orgId,
+          data.title,
+          data.description,
+          data.category,
+          data.status,
+          data.date,
+          data.image
+        ]
+      );
+    }
+
     await db.execute(`UPDATE submissions SET status = 'approved' WHERE id = ?`, [id]);
     res.json({ success: true, message: 'Submission approved and applied.' });
   } catch (err) {

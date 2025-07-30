@@ -27,7 +27,7 @@ const validateSubmissionItem = (item) => {
   }
 
   // Validate section types
-  const validSections = ["organization", "advocacy", "competency", "org_heads"]
+  const validSections = ["organization", "advocacy", "competency", "org_heads", "programs"]
   if (item.section && !validSections.includes(item.section)) {
     errors.push(`Invalid section. Must be one of: ${validSections.join(", ")}`)
   }
@@ -306,6 +306,8 @@ export const updateSubmission = async (req, res) => {
       } else if (["advocacy", "competency"].includes(section) && typeof proposed_data !== "string") {
         isValidData = false
       } else if (section === "organization" && typeof proposed_data !== "object") {
+        isValidData = false
+      } else if (section === "programs" && typeof proposed_data !== "object") {
         isValidData = false
       }
     } catch (validationError) {

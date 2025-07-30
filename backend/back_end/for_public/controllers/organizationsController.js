@@ -2,17 +2,24 @@ import db from '../../database.js';
 
 export const getAllOrganizations = async (req, res) => {
   try {
-    // Fetch organizations from admins table where admin accounts exist
+    // Fetch organizations from organizations table
     const [rows] = await db.execute(`
-      SELECT DISTINCT org as acronym, org as id, orgName as name 
-      FROM admins 
-      WHERE org IS NOT NULL AND org != '' 
+      SELECT id, org as acronym, orgName as name, logo 
+      FROM organizations 
+      WHERE org IS NOT NULL AND org != '' AND orgName IS NOT NULL
       ORDER BY org ASC
     `);
 
+    // Format the data for the frontend
+    const formattedData = rows.map(row => ({
+      id: row.id,
+      name: row.acronym, // Use acronym as display name for consistency with mock data
+      logo: row.logo || `/logo/${row.acronym.toLowerCase()}_logo.jpg` // Fallback to expected logo path
+    }));
+
     res.json({
       success: true,
-      data: rows
+      data: formattedData
     });
   } catch (error) {
     console.error('❌ Error fetching organizations:', error);

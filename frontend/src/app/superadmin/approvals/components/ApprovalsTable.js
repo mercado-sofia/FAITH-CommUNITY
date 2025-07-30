@@ -36,6 +36,7 @@ export default function ApprovalsTable({ approvals, onApprove, onReject }) {
       case 'competency': return 'Competency';
       case 'organization': return 'Organization';
       case 'org_heads': return 'Org Heads';
+      case 'programs': return 'Programs';
       default: return section;
     }
   };

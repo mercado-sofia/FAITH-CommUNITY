@@ -111,8 +111,20 @@ export default function OrgPage() {
                 role: head.role,
                 photo: head.photo || '/default.png',
                 facebook: head.facebook,
-                email: head.email
+                email: head.email,
+                display_order: head.display_order
               }));
+              
+              // Sort heads by display_order (same logic as admin page)
+              headsData.sort((a, b) => {
+                const orderA = a.display_order || 999;
+                const orderB = b.display_order || 999;
+                if (orderA !== orderB) {
+                  return orderA - orderB;
+                }
+                // Fallback to name sorting for same/missing orders
+                return (a.name || '').localeCompare(b.name || '');
+              });
             }
           } catch (headsError) {
             console.error('Error fetching heads data:', headsError);

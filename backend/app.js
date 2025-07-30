@@ -66,10 +66,14 @@ import headsRoutes from "./back_end/admin/routes/heads.js"
 import organizationRoutes from "./back_end/admin/routes/organization.js"
 import programProjectRoutes from "./back_end/admin/routes/programProjects.js"
 import projectRoutes from "./back_end/admin/routes/project.js"
+import programsRoutes from "./back_end/admin/routes/programsRoutes.js"
 import submissionRoutes from "./back_end/admin/routes/submission.js"
 import uploadRoutes from "./back_end/admin/routes/upload.js"
 import volunteersRoutes from "./back_end/admin/routes/volunteers.js"
 import orgSyncRoutes from "./back_end/admin/routes/orgSync.js"
+
+// PUBLIC ROUTES
+import publicOrganizationsRoutes from "./back_end/for_public/routes/organizations.js"
 
 app.use("/api/activities", activitiesRoutes)
 app.use("/api/advocacies", advocaciesRoutes)
@@ -79,10 +83,14 @@ app.use("/api/heads", headsRoutes)
 app.use("/api/organization", organizationRoutes)
 app.use("/api/projects", programProjectRoutes)
 app.use("/api/admin/project", projectRoutes)
+app.use("/api", programsRoutes)
 app.use("/api/submissions", submissionRoutes)
 app.use("/api/upload", uploadRoutes)
 app.use("/api/volunteers", volunteersRoutes)
 app.use("/api", orgSyncRoutes)
+
+// Public routes
+app.use("/api", publicOrganizationsRoutes)
 
 // SUPERADMIN ROUTES
 import adminsRoutes from "./back_end/superadmin/routes/admins.js"

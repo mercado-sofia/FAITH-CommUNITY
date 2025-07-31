@@ -9,9 +9,9 @@ import SearchAndFilterBar from './components/SearchAndFilterBar';
 import OrgLinks from './components/OrgLinks';
 import ProgramCard from './components/ProgramCard';
 import Pagination from './components/Pagination';
-import { mockProjects } from './mockProjects';
 
 const CARDS_PER_PAGE = 6;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 let hasVisited = false;
 
 export default function ProgramsPage() {
@@ -29,7 +29,36 @@ export default function ProgramsPage() {
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [isLoading, setIsLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(!hasVisited);
+  const [programs, setPrograms] = useState([]);
+  const [error, setError] = useState(null);
   const timerRef = useRef(null);
+
+  const fetchPrograms = async () => {
+    try {
+      setError(null);
+      const response = await fetch(`${API_BASE_URL}/api/programs`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch programs');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setPrograms(result.data || []);
+      } else {
+        throw new Error(result.message || 'Failed to fetch programs');
+      }
+    } catch (error) {
+      console.error('Error fetching programs:', error);
+      setError(error.message);
+      setPrograms([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchPrograms();
+  }, []);
 
   useEffect(() => {
     if (!hasVisited && typeof window !== 'undefined') {
@@ -83,7 +112,7 @@ export default function ProgramsPage() {
   };
 
   const filteredProjects = useMemo(() => {
-    let result = [...mockProjects];
+    let result = [...programs];
 
     if (filter !== 'All') {
       result = result.filter((proj) => proj.status === filter);
@@ -92,17 +121,19 @@ export default function ProgramsPage() {
     if (submittedSearch.trim() !== '') {
       result = result.filter((proj) =>
         proj.title.toLowerCase().includes(submittedSearch.toLowerCase()) ||
-        proj.description.toLowerCase().includes(submittedSearch.toLowerCase())
+        proj.description.toLowerCase().includes(submittedSearch.toLowerCase()) ||
+        proj.orgName?.toLowerCase().includes(submittedSearch.toLowerCase()) ||
+        proj.category?.toLowerCase().includes(submittedSearch.toLowerCase())
       );
     }
 
     result.sort((a, b) => {
-      if (sort === 'Newest') return new Date(b.date) - new Date(a.date);
-      return new Date(a.date) - new Date(b.date);
+      if (sort === 'Newest') return new Date(b.date || b.created_at) - new Date(a.date || a.created_at);
+      return new Date(a.date || a.created_at) - new Date(b.date || b.created_at);
     });
 
     return result;
-  }, [submittedSearch, filter, sort]);
+  }, [programs, submittedSearch, filter, sort]);
 
   const calculateTotalPages = (projects) => {
     return Math.ceil(projects.length / CARDS_PER_PAGE);
@@ -139,29 +170,48 @@ export default function ProgramsPage() {
       <OrgLinks />
 
       <section id="projectSection" className={styles.projectSection}>
-        {submittedSearch.trim() !== '' && !isLoading && (
-          <div className={styles.projectHeader}>
-            <h2>{filteredProjects.length} Projects Found</h2>
-          </div>
-        )}
-
-        {isLoading ? (
-          <div className={styles.loaderWrapper}>
-            <span className={styles.loader}></span>
+        {error ? (
+          <div className={styles.errorMessage}>
+            <p>Error loading programs: {error}</p>
+            <button onClick={fetchPrograms} className={styles.retryButton}>
+              Try Again
+            </button>
           </div>
         ) : (
           <>
-            <div className={styles.projectGrid}>
-              {currentProjects.map((project) => (
-                <ProgramCard key={project.id} project={project} />
-              ))}
-            </div>
+            {submittedSearch.trim() !== '' && !isLoading && (
+              <div className={styles.projectHeader}>
+                <h2>{filteredProjects.length} Programs Found</h2>
+              </div>
+            )}
 
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-            />
+            {isLoading ? (
+              <div className={styles.loaderWrapper}>
+                <span className={styles.loader}></span>
+              </div>
+            ) : (
+              <>
+                {filteredProjects.length === 0 ? (
+                  <div className={styles.emptyState}>
+                    <p>No programs found{submittedSearch.trim() ? ' matching your search' : ''}.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className={styles.projectGrid}>
+                      {currentProjects.map((project) => (
+                        <ProgramCard key={project.id} project={project} />
+                      ))}
+                    </div>
+
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={handlePageChange}
+                    />
+                  </>
+                )}
+              </>
+            )}
           </>
         )}
       </section>

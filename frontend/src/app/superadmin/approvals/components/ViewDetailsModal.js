@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import styles from './styles/ViewDetailsModal.module.css';
 
 const ViewDetailsModal = ({ 
@@ -24,7 +25,8 @@ const ViewDetailsModal = ({
     const sectionMap = {
       'organization': 'Organization Information',
       'advocacy': 'Advocacy Information',
-      'competency': 'Competency Information'
+      'competency': 'Competency Information',
+      'programs': 'Program Information'
     };
     return sectionMap[section] || section;
   };
@@ -99,6 +101,60 @@ const ViewDetailsModal = ({
                   <h5>Proposed Data:</h5>
                   <div className={styles.dataContent}>
                     {submissionData.proposed_data || "No proposed data"}
+                  </div>
+                </div>
+              </div>
+            ) : submissionData.section === 'programs' ? (
+              <div className={styles.programComparison}>
+                <div className={styles.comparisonSection}>
+                  <h5>Program Details:</h5>
+                  <div className={styles.programDetails}>
+                    {(() => {
+                      try {
+                        const programData = typeof submissionData.data === 'string' 
+                          ? JSON.parse(submissionData.data) 
+                          : submissionData.data;
+                        return (
+                          <div className={styles.programInfo}>
+                            <div className={styles.programField}>
+                              <strong>Title:</strong> {programData.title || 'N/A'}
+                            </div>
+                            <div className={styles.programField}>
+                              <strong>Description:</strong> {programData.description || 'N/A'}
+                            </div>
+                            <div className={styles.programField}>
+                              <strong>Category:</strong> {programData.category || 'N/A'}
+                            </div>
+                            <div className={styles.programField}>
+                              <strong>Status:</strong> {programData.status || 'N/A'}
+                            </div>
+                            <div className={styles.programField}>
+                              <strong>Date:</strong> {programData.date || 'N/A'}
+                            </div>
+                            {programData.image && (
+                              <div className={styles.programField}>
+                                <strong>Image:</strong>
+                                <div className={styles.programImage}>
+                                  <Image 
+                                    src={programData.image} 
+                                    alt="Program" 
+                                    width={200}
+                                    height={150}
+                                    style={{objectFit: 'cover', borderRadius: '4px'}} 
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      } catch (error) {
+                        return (
+                          <div className={styles.errorMessage}>
+                            Error parsing program data: {error.message}
+                          </div>
+                        );
+                      }
+                    })()} 
                   </div>
                 </div>
               </div>

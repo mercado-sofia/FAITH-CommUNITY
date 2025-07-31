@@ -1,256 +1,344 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './programs.module.css';
-import { FaSearch, FaTrash, FaEdit } from 'react-icons/fa';
-import AddProjectModal from './components/AddProjectModal';
-import EditProjectModal from './components/EditProjectModal';
+import { FaPlus, FaEdit, FaTrash, FaEye } from 'react-icons/fa';
+import AddProgramModal from './components/AddProgramModal';
+import EditProgramModal from './components/EditProgramModal';
+import SearchAndFilterControls from './components/SearchAndFilterControls';
+import ProgramCard from './components/ProgramCard';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 export default function ProgramsPage() {
-  const [projects, setProjects] = useState([]);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // State management
+  const [programs, setPrograms] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingProject, setEditingProject] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingProgram, setEditingProgram] = useState(null);
+  const [message, setMessage] = useState({ type: '', text: '' });
+  
+  // Filter and search states
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all');
+  const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || 'all');
+  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'latest');
+  const [showCount, setShowCount] = useState(parseInt(searchParams.get('show')) || 10);
 
-  // Fetch projects from the database
-  const fetchProjects = async () => {
+  // Fetch submitted programs (pending approval)
+  const fetchPrograms = async () => {
     try {
-      console.log('Attempting to fetch projects...');
+      setIsLoading(true);
+      const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
+      const orgId = adminData.org;
       
-      // Try the main endpoint first
-      let response = await fetch('http://localhost:8080/api/admin/project', {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
-
-      // If main endpoint fails, try the test endpoint
-      if (!response.ok) {
-        console.log('Main endpoint failed, trying test endpoint...');
-        response = await fetch('http://localhost:8080/projects-test', {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        });
-      }
-
-      console.log('Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        throw new Error(`Failed to fetch projects: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('Fetched data:', data);
-      
-      if (!Array.isArray(data)) {
-        console.error('Expected array but got:', typeof data);
-        setProjects([]);
+      if (!orgId) {
+        console.error('No organization ID found');
+        setPrograms([]);
         return;
       }
 
-      setProjects(data);
+      const response = await fetch(`${API_BASE_URL}/api/admin/programs/${orgId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch programs');
+      }
+
+      const data = await response.json();
+      setPrograms(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Fetch error:', error);
-      setProjects([]);
+      console.error('Error fetching programs:', error);
+      setPrograms([]);
+      setMessage({ type: 'error', text: 'Failed to load programs. Please try again.' });
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchProjects();
+    fetchPrograms();
   }, []);
 
-  const handleAddProject = async (formData) => {
+  // Handle program submission for approval
+  const handleSubmitProgram = async (programData) => {
     try {
-      const response = await fetch('http://localhost:8080/api/admin/project', {
+      const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
+      const orgId = adminData.org;
+      
+      if (!orgId) {
+        setMessage({ type: 'error', text: 'Organization not found. Please log in again.' });
+        return;
+      }
+
+      const submissionData = {
+        organization_id: orgId,
+        section: 'programs',
+        data: programData,
+        status: 'pending'
+      };
+
+      const response = await fetch(`${API_BASE_URL}/api/submission`, {
         method: 'POST',
-        body: formData, // FormData will automatically set the correct Content-Type
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submissionData),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to add project');
+        throw new Error('Failed to submit program');
       }
 
-      setIsModalOpen(false);
-      fetchProjects();
+      setMessage({ 
+        type: 'success', 
+        text: 'Program submitted for approval! You can track its status in the submissions page.' 
+      });
+      setIsAddModalOpen(false);
+      fetchPrograms();
+      
+      // Clear message after 5 seconds
+      setTimeout(() => setMessage({ type: '', text: '' }), 5000);
     } catch (error) {
-      console.error('Error adding project:', error);
-      alert('Failed to add project. Please try again.');
+      console.error('Error submitting program:', error);
+      setMessage({ type: 'error', text: 'Failed to submit program. Please try again.' });
     }
   };
 
-  const handleUpdateProject = async (formData) => {
+  // Handle program update submission
+  const handleUpdateProgram = async (programData) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/admin/project/${formData.get('id')}`, {
-        method: 'PUT',
-        body: formData,
+      const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
+      const orgId = adminData.org;
+      
+      const submissionData = {
+        organization_id: orgId,
+        section: 'programs',
+        data: programData,
+        status: 'pending',
+        program_id: editingProgram.id // Include original program ID for updates
+      };
+
+      const response = await fetch(`${API_BASE_URL}/api/submission`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submissionData),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update project');
+        throw new Error('Failed to submit program update');
       }
 
-      setEditingProject(null);
-      fetchProjects();
+      setMessage({ 
+        type: 'success', 
+        text: 'Program update submitted for approval!' 
+      });
+      setEditingProgram(null);
+      fetchPrograms();
+      
+      setTimeout(() => setMessage({ type: '', text: '' }), 5000);
     } catch (error) {
-      console.error('Error updating project:', error);
-      alert('Failed to update project. Please try again.');
+      console.error('Error updating program:', error);
+      setMessage({ type: 'error', text: 'Failed to submit program update. Please try again.' });
     }
   };
 
-  const handleDeleteProject = async (projectId) => {
-    if (!window.confirm('Are you sure you want to delete this project?')) {
+  // Handle program deletion
+  const handleDeleteProgram = async (programId) => {
+    if (!window.confirm('Are you sure you want to delete this program submission?')) {
       return;
     }
 
     try {
-      setIsDeleting(true);
-      const response = await fetch(`http://localhost:8080/api/admin/project/${projectId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/programs/${programId}`, {
         method: 'DELETE',
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete project');
+        throw new Error('Failed to delete program');
       }
 
-      // Refresh the projects list
-      fetchProjects();
+      setMessage({ type: 'success', text: 'Program deleted successfully!' });
+      fetchPrograms();
+      
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (error) {
-      console.error('Error deleting project:', error);
-      alert('Failed to delete project. Please try again.');
-    } finally {
-      setIsDeleting(false);
+      console.error('Error deleting program:', error);
+      setMessage({ type: 'error', text: 'Failed to delete program. Please try again.' });
     }
   };
 
-  const filteredProjects = projects.filter((project) => {
-    const matchesSearch = 
-      project.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = 
-      statusFilter === 'all' || 
-      project.status === statusFilter;
+  // Filter and sort programs
+  const filteredAndSortedPrograms = useMemo(() => {
+    let filtered = programs.filter((program) => {
+      const matchesSearch = 
+        program.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        program.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        program.category?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'all' || program.status === statusFilter;
+      const matchesCategory = categoryFilter === 'all' || program.category === categoryFilter;
 
-    return matchesSearch && matchesStatus;
-  });
+      return matchesSearch && matchesStatus && matchesCategory;
+    });
+
+    // Sort programs
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'latest':
+          return new Date(b.created_at || b.date) - new Date(a.created_at || a.date);
+        case 'oldest':
+          return new Date(a.created_at || a.date) - new Date(b.created_at || b.date);
+        case 'title':
+          return a.title.localeCompare(b.title);
+        case 'status':
+          return a.status.localeCompare(b.status);
+        default:
+          return 0;
+      }
+    });
+
+    return filtered.slice(0, showCount);
+  }, [programs, searchQuery, statusFilter, categoryFilter, sortBy, showCount]);
+
+  // Update URL parameters
+  const updateURLParams = (params) => {
+    const newSearchParams = new URLSearchParams(searchParams);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value && value !== 'all' && value !== '') {
+        newSearchParams.set(key, value);
+      } else {
+        newSearchParams.delete(key);
+      }
+    });
+    router.push(`?${newSearchParams.toString()}`, { scroll: false });
+  };
+
+  const handleSearchChange = (value) => {
+    setSearchQuery(value);
+    updateURLParams({ search: value });
+  };
+
+  const handleFilterChange = (filterType, value) => {
+    switch (filterType) {
+      case 'status':
+        setStatusFilter(value);
+        updateURLParams({ status: value });
+        break;
+      case 'category':
+        setCategoryFilter(value);
+        updateURLParams({ category: value });
+        break;
+      case 'sort':
+        setSortBy(value);
+        updateURLParams({ sort: value });
+        break;
+      case 'show':
+        setShowCount(parseInt(value));
+        updateURLParams({ show: value });
+        break;
+    }
+  };
 
   if (isLoading) {
-    return <div className={styles.loadingContainer}>Loading...</div>;
+    return (
+      <div className={styles.container}>
+        <div className={styles.loadingContainer}>
+          <div className={styles.spinner}></div>
+          <p>Loading programs...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className={styles.container}>
+      {/* Header Section */}
       <div className={styles.headerSection}>
-        <h2 className={styles.heading}>Featured Projects</h2>
-        <p className={styles.subheading}>
-          Manage all projects that were already approved and posted to your public page.
-        </p>
-      </div>
-
-      <div className={styles.controls}>
-        <div className={styles.searchBar}>
-          <input
-            type="text"
-            placeholder="Search by name or description..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className={styles.searchInput}
-          />
-          <FaSearch className={styles.searchIcon} />
+        <div className={styles.headerContent}>
+          <h1 className={styles.pageTitle}>Programs Management</h1>
+          <p className={styles.pageDescription}>
+            Submit programs for approval. Once approved by superadmin, they will appear on your public organization page.
+          </p>
         </div>
-
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className={styles.statusFilter}
-        >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="completed">Completed</option>
-          <option value="pending">Pending</option>
-        </select>
-
         <button 
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => setIsAddModalOpen(true)}
           className={styles.addButton}
         >
-          Add Project
+          <FaPlus /> Add Program
         </button>
       </div>
 
-      <div className={styles.projectGrid}>
-        {filteredProjects.map((project) => (
-          <div key={project.id} className={styles.projectCard}>
-            {project.image && (
-              <div className={styles.imageContainer}>
-                <img
-                  src={project.image}
-                  alt={project.title}
-                  className={styles.projectImage}
-                />
-              </div>
-            )}
-            <div className={styles.projectContent}>
-              <h3 className={styles.projectTitle}>{project.title}</h3>
-              <p className={styles.projectDescription}>{project.description}</p>
-              
-              <div className={styles.projectMeta}>
-                <span className={`${styles.statusBadge} ${styles[project.status]}`}>
-                  {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
-                </span>
-                
-                {project.completed_date && (
-                  <span className={styles.completedDate}>
-                    Completed: {new Date(project.completed_date).toLocaleDateString()}
-                  </span>
-                )}
-              </div>
+      {/* Message Display */}
+      {message.text && (
+        <div className={`${styles.message} ${styles[message.type]}`}>
+          {message.text}
+        </div>
+      )}
 
-              <div className={styles.actionButtons}>
-                <button
-                  onClick={() => setEditingProject(project)}
-                  className={styles.editButton}
-                  disabled={isDeleting}
-                >
-                  <FaEdit /> Edit
-                </button>
-                <button
-                  onClick={() => handleDeleteProject(project.id)}
-                  className={styles.deleteButton}
-                  disabled={isDeleting}
-                >
-                  <FaTrash /> Delete
-                </button>
-              </div>
-            </div>
+      {/* Search and Filter Controls */}
+      <SearchAndFilterControls
+        searchQuery={searchQuery}
+        statusFilter={statusFilter}
+        categoryFilter={categoryFilter}
+        sortBy={sortBy}
+        showCount={showCount}
+        onSearchChange={handleSearchChange}
+        onFilterChange={handleFilterChange}
+        totalCount={programs.length}
+        filteredCount={filteredAndSortedPrograms.length}
+      />
+
+      {/* Programs Grid */}
+      <div className={styles.programsSection}>
+        {filteredAndSortedPrograms.length === 0 ? (
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}>📋</div>
+            <h3>No programs found</h3>
+            <p>
+              {programs.length === 0 
+                ? "You haven't submitted any programs yet. Click 'Add Program' to get started!"
+                : "No programs match your current filters. Try adjusting your search criteria."
+              }
+            </p>
           </div>
-        ))}
+        ) : (
+          <div className={styles.programsGrid}>
+            {filteredAndSortedPrograms.map((program) => (
+              <ProgramCard
+                key={program.id}
+                program={program}
+                onEdit={() => setEditingProgram(program)}
+                onDelete={() => handleDeleteProgram(program.id)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {isModalOpen && (
-        <AddProjectModal
-          onClose={() => setIsModalOpen(false)}
-          onSave={handleAddProject}
+      {/* Modals */}
+      {isAddModalOpen && (
+        <AddProgramModal
+          onClose={() => setIsAddModalOpen(false)}
+          onSubmit={handleSubmitProgram}
         />
       )}
 
-      {editingProject && (
-        <EditProjectModal
-          project={editingProject}
-          onClose={() => setEditingProject(null)}
-          onSave={handleUpdateProject}
+      {editingProgram && (
+        <EditProgramModal
+          program={editingProgram}
+          onClose={() => setEditingProgram(null)}
+          onSubmit={handleUpdateProgram}
         />
       )}
     </div>

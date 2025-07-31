@@ -12,8 +12,9 @@ export const getAllOrganizations = async (req, res) => {
 
     // Format the data for the frontend
     const formattedData = rows.map(row => ({
-      id: row.id,
-      name: row.acronym, // Use acronym as display name for consistency with mock data
+      id: row.acronym, // Use acronym as ID for URL routing
+      acronym: row.acronym, // Organization acronym for display
+      name: row.name, // Full organization name for tooltips
       logo: row.logo || `/logo/${row.acronym.toLowerCase()}_logo.jpg` // Fallback to expected logo path
     }));
 

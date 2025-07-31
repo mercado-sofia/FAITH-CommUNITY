@@ -9,9 +9,9 @@ import SearchAndFilterBar from './components/SearchAndFilterBar';
 import OrgLinks from './components/OrgLinks';
 import ProgramCard from './components/ProgramCard';
 import Pagination from './components/Pagination';
+import { usePublicPrograms } from '../../../hooks/usePublicData';
 
 const CARDS_PER_PAGE = 6;
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 let hasVisited = false;
 
 export default function ProgramsPage() {
@@ -29,43 +29,17 @@ export default function ProgramsPage() {
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [isLoading, setIsLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(!hasVisited);
-  const [programs, setPrograms] = useState([]);
-  const [error, setError] = useState(null);
   const timerRef = useRef(null);
 
-  const fetchPrograms = async () => {
-    try {
-      setError(null);
-      const response = await fetch(`${API_BASE_URL}/api/programs`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch programs');
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        setPrograms(result.data || []);
-      } else {
-        throw new Error(result.message || 'Failed to fetch programs');
-      }
-    } catch (error) {
-      console.error('Error fetching programs:', error);
-      setError(error.message);
-      setPrograms([]);
-    }
-  };
-
-  useEffect(() => {
-    fetchPrograms();
-  }, []);
+  // Use SWR hook for data fetching with caching
+  const { programs, isLoading: dataLoading, error } = usePublicPrograms();
 
   useEffect(() => {
     if (!hasVisited && typeof window !== 'undefined') {
       hasVisited = true;
       timerRef.current = setTimeout(() => {
         setInitialLoading(false);
-      }, 1000);
+      }, 500); // Reduced timeout since data loads faster with caching
     } else {
       setInitialLoading(false);
     }
@@ -88,7 +62,7 @@ export default function ProgramsPage() {
     const controller = new AbortController();
     setIsLoading(true);
     setCurrentPage(1);
-    await new Promise((res) => setTimeout(res, 500));
+    await new Promise((res) => setTimeout(res, 300)); // Reduced delay
     setSubmittedSearch(term);
     setIsLoading(false);
     return () => controller.abort();
@@ -98,7 +72,7 @@ export default function ProgramsPage() {
     const controller = new AbortController();
     setIsLoading(true);
     setCurrentPage(page);
-    await new Promise((res) => setTimeout(res, 300));
+    await new Promise((res) => setTimeout(res, 200)); // Reduced delay
 
     const section = document.getElementById('projectSection');
     if (section) {
@@ -145,7 +119,7 @@ export default function ProgramsPage() {
     currentPage * CARDS_PER_PAGE
   );
 
-  if (initialLoading) return <Loader small />;
+  if (initialLoading || dataLoading) return <Loader small />;
 
   return (
     <>
@@ -172,8 +146,8 @@ export default function ProgramsPage() {
       <section id="projectSection" className={styles.projectSection}>
         {error ? (
           <div className={styles.errorMessage}>
-            <p>Error loading programs: {error}</p>
-            <button onClick={fetchPrograms} className={styles.retryButton}>
+            <p>Error loading programs: {error.message}</p>
+            <button onClick={() => window.location.reload()} className={styles.retryButton}>
               Try Again
             </button>
           </div>

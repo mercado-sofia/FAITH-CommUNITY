@@ -1,42 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import styles from '../programs.module.css';
 import Link from 'next/link';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+import { usePublicOrganizations } from '../../../../hooks/usePublicData';
 
 export default function OrgLinks() {
-  const [organizations, setOrganizations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { organizations, isLoading, error } = usePublicOrganizations();
 
-  useEffect(() => {
-    const fetchOrganizations = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/api/organizations`);
-        const data = await response.json();
-        
-        if (data.success && Array.isArray(data.data)) {
-          setOrganizations(data.data);
-          setError(null);
-        } else {
-          throw new Error(data.message || 'Failed to fetch organizations');
-        }
-      } catch (err) {
-        console.error('Error fetching organizations:', err);
-        setError(err.message);
-        setOrganizations([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrganizations();
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className={styles.orgSection}>
         <span className={styles.orgLabel}>Organizations:</span>

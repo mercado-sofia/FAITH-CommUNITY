@@ -125,9 +125,10 @@ export const approveSubmission = async (req, res) => {
     }
 
     if (section === 'programs') {
-      // Insert new program into programs table
+      // Insert new program into programs_projects table with automatic publication date
+      const currentDate = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
       await db.execute(
-        `INSERT INTO programs (organization_id, title, description, category, status, date, image, created_at)
+        `INSERT INTO programs_projects (organization_id, title, description, category, status, date, image, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
         [
           orgId,
@@ -135,7 +136,7 @@ export const approveSubmission = async (req, res) => {
           data.description,
           data.category,
           data.status,
-          data.date,
+          currentDate, // Automatically set to current date when approved
           data.image
         ]
       );

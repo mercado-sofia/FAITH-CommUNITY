@@ -20,7 +20,7 @@ export const getOrganizationByName = async (req, res) => {
     const [advocacies] = await db.execute("SELECT advocacy FROM advocacies WHERE organization_id = ?", [org.id])
     const [competencies] = await db.execute("SELECT competency FROM competencies WHERE organization_id = ?", [org.id])
     const [heads] = await db.execute(
-      "SELECT head_name, role, facebook, email, photo FROM organization_heads WHERE organization_id = ?",
+      "SELECT head_name, role, facebook, email, photo, display_order FROM organization_heads WHERE organization_id = ?",
       [org.id],
     )
 

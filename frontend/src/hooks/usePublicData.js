@@ -21,30 +21,46 @@ const fetcher = async (url) => {
 // Custom hook for public organization data (optimized for public pages)
 export const usePublicOrganizationData = (orgID) => {
   const { data, error, isLoading } = useSWR(
-    orgID ? `${API_BASE_URL}/api/org-data/${orgID}` : null,
+    orgID ? `${API_BASE_URL}/api/organization/org/${orgID}` : null,
     fetcher,
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      dedupingInterval: 600000, // Cache for 10 minutes (public data changes less frequently)
+      dedupingInterval: 60000, // Cache for 1 minute (to reflect admin changes quickly)
       errorRetryCount: 2,
       errorRetryInterval: 2000,
       fallbackData: null, // Provide fallback while loading
     }
   );
 
+  // Sort heads by display_order (same logic as admin section)
+  const sortHeadsByOrder = (heads) => {
+    return [...heads].sort((a, b) => {
+      // Sort by display_order if available
+      const orderA = a.display_order || 999;
+      const orderB = b.display_order || 999;
+      
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      
+      // If same order or no order, sort by name
+      return (a.head_name || '').localeCompare(b.head_name || '');
+    });
+  };
+
   // Transform data for public consumption with fallbacks
-  const organizationData = data ? {
-    name: data.orgName || 'Organization Not Found',
-    acronym: data.org || orgID?.toUpperCase() || 'ORG',
-    description: data.description || '',
-    facebook: data.facebook || '',
-    email: data.email || '',
-    logo: data.logo || '/logo/faith_community_logo.png',
-    advocacies: data.advocacies || [],
-    competencies: data.competencies || [],
-    heads: data.heads || [],
-    featuredProjects: data.featuredProjects || [],
+  const organizationData = data?.data ? {
+    name: data.data.orgName || 'Organization Not Found',
+    acronym: data.data.org || orgID?.toUpperCase() || 'ORG',
+    description: data.data.description || '',
+    facebook: data.data.facebook || '',
+    email: data.data.email || '',
+    logo: data.data.logo || '/logo/faith_community_logo.png',
+    advocacies: data.data.advocacies || '', // Backend returns string, not array
+    competencies: data.data.competencies || '', // Backend returns string, not array
+    heads: sortHeadsByOrder(data.data.heads || []), // Apply same sorting as admin section
+    featuredProjects: data.data.featuredProjects || [],
   } : null;
 
   return {

@@ -104,7 +104,7 @@ export default function AboutOrg() {
                       e.target.src = '/logo/default_org_logo.png'; // Fallback image
                     }}
                   />
-                  <p>{org.name}</p>
+                  <p>{org.acronym}</p>
                 </div>
               ))}
             </div>

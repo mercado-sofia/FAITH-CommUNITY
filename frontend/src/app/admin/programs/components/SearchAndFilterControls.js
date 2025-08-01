@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { FaSearch, FaTimes, FaFilter, FaSort } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
+import { FiChevronDown, FiSearch, FiX } from 'react-icons/fi';
 import styles from './styles/SearchAndFilterControls.module.css';
 
 const SearchAndFilterControls = ({
@@ -15,11 +15,23 @@ const SearchAndFilterControls = ({
   totalCount,
   filteredCount
 }) => {
-  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(null);
+  const [localQuery, setLocalQuery] = useState(searchQuery || '');
 
-  const handleClearSearch = () => {
-    onSearchChange('');
+  const toggleDropdown = (key) => {
+    setShowDropdown((prev) => (prev === key ? null : key));
   };
+
+  const handleClickOutside = (e) => {
+    if (!e.target.closest(`.${styles.dropdownWrapper}`)) {
+      setShowDropdown(null);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const categories = [
     { value: 'all', label: 'All Categories' },
@@ -36,17 +48,16 @@ const SearchAndFilterControls = ({
   ];
 
   const statuses = [
-    { value: 'all', label: 'All Status' },
-    { value: 'pending', label: 'Pending' },
-    { value: 'approved', label: 'Approved' },
-    { value: 'rejected', label: 'Rejected' }
+    { value: 'all', label: 'All status' },
+    { value: 'upcoming', label: 'Upcoming' },
+    { value: 'active', label: 'Active' },
+    { value: 'completed', label: 'Completed' }
   ];
 
   const sortOptions = [
     { value: 'latest', label: 'Latest First' },
     { value: 'oldest', label: 'Oldest First' },
-    { value: 'title', label: 'Title A-Z' },
-    { value: 'status', label: 'Status' }
+    { value: 'title', label: 'Title A-Z' }
   ];
 
   const showOptions = [
@@ -58,109 +69,83 @@ const SearchAndFilterControls = ({
   ];
 
   return (
-    <div className={styles.controlsContainer}>
-      {/* Search Bar */}
-      <div className={styles.searchSection}>
-        <div className={styles.searchBar}>
-          <FaSearch className={styles.searchIcon} />
+    <div className={styles.controlsRow}>
+      {/* Search, Sort, and Status Filter on the left */}
+      <div className={styles.filtersRow}>
+        {/* Search input */}
+        <div className={styles.searchInputContainer}>
           <input
             type="text"
-            placeholder="Search by title, description, or category..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Search"
+            value={localQuery}
+            onChange={(e) => setLocalQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                onSearchChange(localQuery);
+              }
+            }}
             className={styles.searchInput}
           />
-          {searchQuery && (
-            <button
-              onClick={handleClearSearch}
-              className={styles.clearButton}
-              type="button"
-            >
-              <FaTimes />
-            </button>
+          {localQuery ? (
+            <FiX className={styles.clearIcon} onClick={() => {
+              setLocalQuery('');
+              onSearchChange('');
+            }} />
+          ) : (
+            <FiSearch className={styles.searchIcon} onClick={() => onSearchChange(localQuery)} />
           )}
         </div>
-        
-        <button
-          onClick={() => setIsFilterExpanded(!isFilterExpanded)}
-          className={`${styles.filterToggle} ${isFilterExpanded ? styles.active : ''}`}
-        >
-          <FaFilter /> Filters
-        </button>
-      </div>
 
-      {/* Filter Controls */}
-      <div className={`${styles.filtersSection} ${isFilterExpanded ? styles.expanded : ''}`}>
-        <div className={styles.filterRow}>
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>Show:</label>
-            <select
-              value={showCount}
-              onChange={(e) => onFilterChange('show', e.target.value)}
-              className={styles.filterSelect}
-            >
-              {showOptions.map(option => (
-                <option key={option.value} value={option.value}>
+        {/* Sort Dropdown */}
+        <div className={styles.dropdownWrapper} style={{ marginLeft: '1rem' }}>
+          <div
+            className={styles.dropdown}
+            onClick={() => toggleDropdown("sort")}
+          >
+            Sort: {sortOptions.find(opt => opt.value === sortBy)?.label || 'Latest First'}
+            <FiChevronDown className={styles.icon} />
+          </div>
+          {showDropdown === "sort" && (
+            <ul className={styles.options}>
+              {sortOptions.map((option) => (
+                <li key={option.value} onClick={() => {
+                  onFilterChange('sort', option.value);
+                  setShowDropdown(null);
+                }}>
                   {option.label}
-                </option>
+                </li>
               ))}
-            </select>
-          </div>
+            </ul>
+          )}
+        </div>
 
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>Category:</label>
-            <select
-              value={categoryFilter}
-              onChange={(e) => onFilterChange('category', e.target.value)}
-              className={styles.filterSelect}
-            >
-              {categories.map(category => (
-                <option key={category.value} value={category.value}>
-                  {category.label}
-                </option>
-              ))}
-            </select>
+        {/* Status Filter */}
+        <div className={styles.dropdownWrapper} style={{ marginLeft: '1rem' }}>
+          <div
+            className={styles.dropdown}
+            onClick={() => toggleDropdown("status")}
+          >
+            {statuses.find(status => status.value === statusFilter)?.label || 'All status'}
+            <FiChevronDown className={styles.icon} />
           </div>
-
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>Status:</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => onFilterChange('status', e.target.value)}
-              className={styles.filterSelect}
-            >
-              {statuses.map(status => (
-                <option key={status.value} value={status.value}>
+          {showDropdown === "status" && (
+            <ul className={styles.options}>
+              {statuses.map((status) => (
+                <li key={status.value} onClick={() => {
+                  onFilterChange('status', status.value);
+                  setShowDropdown(null);
+                }}>
                   {status.label}
-                </option>
+                </li>
               ))}
-            </select>
-          </div>
-
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>
-              <FaSort /> Sort by:
-            </label>
-            <select
-              value={sortBy}
-              onChange={(e) => onFilterChange('sort', e.target.value)}
-              className={styles.filterSelect}
-            >
-              {sortOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
+            </ul>
+          )}
         </div>
       </div>
 
-      {/* Results Summary */}
-      <div className={styles.resultsInfo}>
-        <span className={styles.resultsText}>
-          Showing {filteredCount} of {totalCount} programs
-        </span>
+      {/* Empty right side */}
+      <div className={styles.searchWrapper}>
+        {/* Empty - moved search and sort to left */}
       </div>
     </div>
   );

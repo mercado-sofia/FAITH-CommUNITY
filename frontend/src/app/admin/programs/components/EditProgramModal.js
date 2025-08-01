@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { FaTimes, FaUpload, FaImage, FaCalendar } from 'react-icons/fa';
+import { FaTimes, FaUpload, FaImage } from 'react-icons/fa';
 import styles from './styles/ProgramModal.module.css';
 
 const EditProgramModal = ({ program, onClose, onSubmit }) => {
@@ -11,7 +11,6 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
     description: program?.description || '',
     category: program?.category || 'outreach',
     status: program?.status || 'active',
-    date: program?.date || '',
     image: null
   });
   const [imagePreview, setImagePreview] = useState(program?.image || null);
@@ -47,7 +46,6 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
       formData.description !== (program?.description || '') ||
       formData.category !== (program?.category || 'outreach') ||
       formData.status !== (program?.status || 'active') ||
-      formData.date !== (program?.date || '') ||
       formData.image !== null;
     
     setHasChanges(hasFormChanges);
@@ -138,9 +136,7 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
       newErrors.description = 'Description must be at least 10 characters long';
     }
 
-    if (!formData.date) {
-      newErrors.date = 'Program date is required';
-    }
+
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -168,7 +164,7 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
         description: formData.description.trim(),
         category: formData.category,
         status: formData.status,
-        date: formData.date,
+
         image: formData.image ? await convertImageToBase64(formData.image) : imagePreview
       };
 
@@ -283,21 +279,7 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
             </div>
           </div>
 
-          {/* Date Field */}
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>
-              <FaCalendar className={styles.labelIcon} />
-              Program Date <span className={styles.required}>*</span>
-            </label>
-            <input
-              type="date"
-              name="date"
-              value={formData.date}
-              onChange={handleInputChange}
-              className={`${styles.formInput} ${errors.date ? styles.error : ''}`}
-            />
-            {errors.date && <span className={styles.errorText}>{errors.date}</span>}
-          </div>
+
 
           {/* Image Upload */}
           <div className={styles.formGroup}>

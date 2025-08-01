@@ -40,7 +40,7 @@ export const getProgramsByOrg = async (req, res) => {
     const [approvedRows] = await db.execute(
       `SELECT p.*, 'approved' as source_type, p.created_at as submitted_at
        FROM programs_projects p 
-       WHERE p.organization_id = ?
+       WHERE p.organization_id = ? AND p.status = 'approved'
        ORDER BY p.created_at DESC`,
       [organization.id]
     );
@@ -108,9 +108,10 @@ export const getProgramsByOrg = async (req, res) => {
 export const getApprovedPrograms = async (req, res) => {
   try {
     const [rows] = await db.execute(`
-      SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
+      SELECT p.*, a.orgName, a.org as orgAcronym, a.logo as orgLogo
       FROM programs_projects p
-      LEFT JOIN organizations o ON p.organization_id = o.id
+      LEFT JOIN admins a ON p.organization_id = a.id
+      WHERE p.status = 'approved'
       ORDER BY p.created_at DESC
     `);
 
@@ -120,7 +121,7 @@ export const getApprovedPrograms = async (req, res) => {
       description: program.description,
       category: program.category,
       status: program.status,
-      date: program.date_completed || program.date_created,
+      date: program.date || program.created_at,
       image: program.image,
       orgID: program.orgAcronym,
       orgName: program.orgName,
@@ -170,14 +171,13 @@ export const getApprovedProgramsByOrg = async (req, res) => {
     const organization = orgRows[0];
 
     // Get approved programs for this organization
-    const [rows] = await db.execute(
-      `SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
+    const [rows] = await db.execute(`
+       SELECT p.*, a.orgName, a.org as orgAcronym, a.logo as orgLogo
        FROM programs_projects p
-       LEFT JOIN organizations o ON p.organization_id = o.id
-       WHERE o.org = ?
-       ORDER BY p.created_at DESC`,
-      [orgId]
-    );
+       LEFT JOIN admins a ON p.organization_id = a.id
+       WHERE a.org = ? AND p.status = 'approved'
+       ORDER BY p.created_at DESC
+    `, [orgId]);
 
     const programs = rows.map(program => ({
       id: program.id,

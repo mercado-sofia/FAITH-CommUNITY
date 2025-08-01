@@ -400,3 +400,40 @@ export const bulkUpdateHeads = async (req, res) => {
     })
   }
 }
+
+// Reorder heads for an organization
+export const reorderHeads = async (req, res) => {
+  const { heads } = req.body;
+
+  if (!heads || !Array.isArray(heads)) {
+    return res.status(400).json({
+      success: false,
+      message: "Heads array is required"
+    });
+  }
+
+  try {
+    // Update display_order for each head
+    for (const head of heads) {
+      if (head.id && head.display_order !== undefined) {
+        await db.execute(
+          "UPDATE organization_heads SET display_order = ? WHERE id = ?",
+          [head.display_order, head.id]
+        );
+      }
+    }
+
+    console.log('Heads reordered successfully');
+    res.json({
+      success: true,
+      message: "Organization heads reordered successfully"
+    });
+  } catch (error) {
+    console.error("Reorder heads error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to reorder organization heads",
+      error: error.message
+    });
+  }
+}

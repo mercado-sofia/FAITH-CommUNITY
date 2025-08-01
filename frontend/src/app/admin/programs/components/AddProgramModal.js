@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import Image from 'next/image';
-import { FaTimes, FaUpload, FaImage, FaCalendar } from 'react-icons/fa';
+import { FaTimes, FaUpload, FaImage } from 'react-icons/fa';
 import styles from './styles/ProgramModal.module.css';
 
 const AddProgramModal = ({ onClose, onSubmit }) => {
@@ -11,7 +11,6 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
     description: '',
     category: 'outreach',
     status: 'active',
-    date: '',
     image: null
   });
   const [imagePreview, setImagePreview] = useState(null);
@@ -124,9 +123,7 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
       newErrors.description = 'Description must be at least 10 characters long';
     }
 
-    if (!formData.date) {
-      newErrors.date = 'Program date is required';
-    }
+
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -148,7 +145,7 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
         description: formData.description.trim(),
         category: formData.category,
         status: formData.status,
-        date: formData.date,
+
         image: formData.image ? await convertImageToBase64(formData.image) : null
       };
 
@@ -253,21 +250,7 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
             </div>
           </div>
 
-          {/* Date Field */}
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>
-              <FaCalendar className={styles.labelIcon} />
-              Program Date <span className={styles.required}>*</span>
-            </label>
-            <input
-              type="date"
-              name="date"
-              value={formData.date}
-              onChange={handleInputChange}
-              className={`${styles.formInput} ${errors.date ? styles.error : ''}`}
-            />
-            {errors.date && <span className={styles.errorText}>{errors.date}</span>}
-          </div>
+
 
           {/* Image Upload */}
           <div className={styles.formGroup}>

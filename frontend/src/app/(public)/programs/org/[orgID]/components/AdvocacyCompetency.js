@@ -13,7 +13,7 @@ export default function AdvocacyCompetency({ acronym, advocacies, competencies }
             <FaHeart className={styles.iconReact} />
           </div>
           <h4>Advocacies</h4>
-          <p>{advocacies.length ? advocacies.join(', ') : 'No advocacies listed.'}</p>
+          <p>{advocacies ? advocacies : 'No advocacies listed.'}</p>
         </div>
 
         <div className={styles.card}>
@@ -21,7 +21,7 @@ export default function AdvocacyCompetency({ acronym, advocacies, competencies }
             <FaBrain className={styles.iconReact} />
           </div>
           <h4>Competencies</h4>
-          <p>{competencies.length ? competencies.join(', ') : 'No competencies listed.'}</p>
+          <p>{competencies ? competencies : 'No competencies listed.'}</p>
         </div>
       </div>
     </section>

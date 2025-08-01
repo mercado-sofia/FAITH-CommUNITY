@@ -117,7 +117,7 @@ export default function SearchAndFilterControls({
         <div className={styles.searchInputContainer}>
           <input
             type="text"
-            placeholder="Search by section, status, or date"
+            placeholder="Search"
             value={localQuery}
             onChange={(e) => setLocalQuery(e.target.value)}
             onKeyDown={(e) => {

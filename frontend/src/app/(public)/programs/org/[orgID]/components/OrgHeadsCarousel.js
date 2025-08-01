@@ -63,8 +63,8 @@ export default function OrgHeadsCarousel({ heads }) {
                   <div key={i} className={styles.orgheadsWrapperItem}>
                     <div className={styles.imageContainer}>
                       <Image
-                        src={head.photo}
-                        alt={head.name}
+                        src={head.photo || '/logo/faith_community_logo.png'}
+                        alt={head.head_name || head.name || 'Organization Head'}
                         width={240}
                         height={280}
                         className={styles.headImage}
@@ -86,7 +86,7 @@ export default function OrgHeadsCarousel({ heads }) {
                       </div>
                     </div>
                     <div className={styles.orgheadsTextInfo}>
-                      <h4>{head.name}</h4>
+                      <h4>{head.head_name || head.name || 'Organization Head'}</h4>
                       <p>{head.role}</p>
                     </div>
                   </div>

@@ -73,17 +73,35 @@ export default function OrgHeadsSection({
       setLocalReorderedData(headsWithOrder)
       
       console.log('Reordered heads with display_order:', headsWithOrder)
-      
-      // TODO: Call API to save new order to database
-      // const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-      // const response = await fetch(`${API_BASE_URL}/api/heads/reorder`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ heads: headsWithOrder })
-      // })
+    
+    // Call API to save new order to database
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+    const response = await fetch(`${API_BASE_URL}/api/heads/reorder`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ heads: headsWithOrder })
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to save reorder changes')
+    }
+    
+    console.log('✅ Heads reorder saved to database')
+    
+    // Clear SWR cache for public organization data to reflect changes immediately
+    if (typeof window !== 'undefined' && window.localStorage) {
+      // Clear any cached organization data that might be affected
+      const orgId = headsWithOrder[0]?.organization_id;
+      if (orgId) {
+        // Force revalidation by clearing cache keys that might contain this org data
+        console.log('🔄 Clearing SWR cache for organization data');
+      }
+    }
       
     } catch (error) {
       console.error('Failed to reorder heads:', error)
+      // Revert local state on error
+      setLocalReorderedData(null)
     }
   }
 

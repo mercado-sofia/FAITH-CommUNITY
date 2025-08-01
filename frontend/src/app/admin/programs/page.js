@@ -263,20 +263,20 @@ export default function ProgramsPage() {
 
   return (
     <div className={styles.container}>
-      {/* Header Section */}
-      <div className={styles.headerSection}>
-        <div className={styles.headerContent}>
-          <h1 className={styles.pageTitle}>Programs Management</h1>
-          <p className={styles.pageDescription}>
-            Submit programs for approval. Once approved by superadmin, they will appear on your public organization page.
-          </p>
+      {/* Header Section - Consistent with other admin pages */}
+      <div className={styles.header}>
+        <div className={styles.headerTop}>
+          <h1>Programs</h1>
+          <button 
+            onClick={() => setIsAddModalOpen(true)}
+            className={styles.addButton}
+          >
+            <FaPlus /> Add Program
+          </button>
         </div>
-        <button 
-          onClick={() => setIsAddModalOpen(true)}
-          className={styles.addButton}
-        >
-          <FaPlus /> Add Program
-        </button>
+        <p className={styles.subheader}>
+          Submit programs for approval. Once approved by superadmin, they will appear on your public organization page.
+        </p>
       </div>
 
       {/* Message Display */}

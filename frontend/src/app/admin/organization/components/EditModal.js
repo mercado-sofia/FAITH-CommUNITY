@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { FaCamera } from 'react-icons/fa'
 import styles from './styles/EditModal.module.css'
@@ -15,8 +15,26 @@ export default function EditModal({
   handleFileUpload,
   handleSave,
   handleCancel,
-  saving
+  saving,
+  modalMessage,
+  setModalMessage
 }) {
+  // Auto-clear modal message after 3 seconds
+  useEffect(() => {
+    if (modalMessage?.text) {
+      const timer = setTimeout(() => {
+        setModalMessage({ text: "", type: "" });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [modalMessage, setModalMessage]);
+  // Clear modal message when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setModalMessage({ text: "", type: "" });
+    }
+  }, [isOpen, setModalMessage]);
+
   // Lock body scroll when modal is open to prevent background shifting
   useEffect(() => {
     if (isOpen) {
@@ -61,6 +79,13 @@ export default function EditModal({
         </div>
 
         <div className={styles.modalContent}>
+          {/* Modal Message */}
+          {modalMessage?.text && (
+            <div className={`${styles.modalMessage} ${styles[modalMessage.type]}`}>
+              {modalMessage.text}
+            </div>
+          )}
+          
           {/* Main Content Area */}
           <div className={styles.mainContent}>
             {/* Profile Photo Section */}

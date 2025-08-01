@@ -116,7 +116,7 @@ export default function SearchAndFilterControls({
         <div className={styles.searchInputContainer}>
           <input
             type="text"
-            placeholder="Search by name, email, or program"
+            placeholder="Search"
             value={localQuery}
             onChange={(e) => setLocalQuery(e.target.value)}
             onKeyDown={(e) => {

@@ -10,10 +10,12 @@ export default function OrgInfoSection({
   isEditing,
   setIsEditing,
   setShowEditModal,
-  setOriginalData
+  setOriginalData,
+  setEditPreviewData
 }) {
   const handleEditClick = () => {
     setOriginalData({ ...orgData })
+    setEditPreviewData({ ...orgData }) // Initialize preview data with current org data
     setIsEditing(true)
     setShowEditModal(true)
   }

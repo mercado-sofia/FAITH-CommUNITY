@@ -27,6 +27,12 @@ export default function OrganizationPage() {
     description: ""
   });
 
+  // Separate state for edit modal preview (doesn't affect main display)
+  const [editPreviewData, setEditPreviewData] = useState(null);
+  
+  // Modal-specific message state
+  const [modalMessage, setModalMessage] = useState({ text: "", type: "" });
+
   const [advocacyData, setAdvocacyData] = useState({
     id: null,
     advocacy: ""
@@ -227,7 +233,15 @@ export default function OrganizationPage() {
     
     // Handle different sections
     if (currentSection === 'organization') {
-      setOrgData((prev) => ({ ...prev, [name]: value }));
+      // When editing organization data, update preview data instead of main orgData
+      if (showEditModal) {
+        setEditPreviewData((prev) => ({ 
+          ...(prev || orgData), 
+          [name]: value 
+        }));
+      } else {
+        setOrgData((prev) => ({ ...prev, [name]: value }));
+      }
     } else {
       // For advocacy and competency, store changes in temporary editing state
       setTempEditData((prev) => ({ ...prev, [name]: value }));
@@ -240,8 +254,14 @@ export default function OrganizationPage() {
     const file = e.target.files?.[0];
     
     if (!file) return;
-    if (!file.type.startsWith("image/")) return showMessage("Please select an image file", "error");
-    if (file.size > 5 * 1024 * 1024) return showMessage("File size must be less than 5MB", "error");
+    if (!file.type.startsWith("image/")) {
+      setModalMessage({ text: "Please select an image file", type: "error" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setModalMessage({ text: "File size must be less than 5MB", type: "error" });
+      return;
+    }
 
     try {
       setUploading(true);
@@ -256,8 +276,12 @@ export default function OrganizationPage() {
       
       if (response.ok) {
         const result = await response.json();
-        setOrgData((prev) => ({ ...prev, logo: result.url }));
-        showMessage("Logo uploaded successfully", "success");
+        // Only update the edit preview data, not the main orgData
+        setEditPreviewData((prev) => ({ 
+          ...(prev || orgData), 
+          logo: result.url 
+        }));
+        setModalMessage({ text: "Logo uploaded successfully", type: "success" });
       } else {
         const errorText = await response.text();
         console.error('❌ Upload failed with status:', response.status, 'Error:', errorText);
@@ -265,7 +289,7 @@ export default function OrganizationPage() {
       }
     } catch (error) {
       console.error("❌ Upload error:", error);
-      showMessage("Failed to upload logo", "error");
+      setModalMessage({ text: "Failed to upload logo", type: "error" });
     } finally {
       setUploading(false);
     }
@@ -278,16 +302,18 @@ export default function OrganizationPage() {
         return;
       }
 
-      const hasChanges = originalData && Object.keys(orgData).some((key) => key !== "id" && orgData[key] !== originalData[key]);
+      const currentOrgData = editPreviewData || orgData;
+      const hasChanges = originalData && Object.keys(currentOrgData).some((key) => key !== "id" && currentOrgData[key] !== originalData[key]);
 
       if (!hasChanges) {
         showMessage("No changes detected", "info");
         setShowEditModal(false);
         setIsEditing(false);
+        setEditPreviewData(null);
         return;
       }
 
-      setPendingChanges({ ...orgData });
+      setPendingChanges({ ...currentOrgData });
       setShowEditModal(false);
       setShowSummaryModal(true);
     } else if (currentSection === 'orgHeads') {
@@ -341,9 +367,12 @@ export default function OrganizationPage() {
       const result = await response.json();
 
       if (result.success) {
-        if (!pendingChanges.id && result.data?.id) {
-          setOrgData((prev) => ({ ...prev, id: result.data.id }));
-        }
+        // Apply the confirmed changes to the main orgData
+        setOrgData((prev) => ({
+          ...prev,
+          ...pendingChanges,
+          id: result.data?.id || prev.id
+        }));
 
         // Update local storage with the new organization data
         if (typeof window !== "undefined") {
@@ -360,6 +389,7 @@ export default function OrganizationPage() {
         setIsEditing(false);
         setPendingChanges(null);
         setOriginalData(null);
+        setEditPreviewData(null); // Reset preview data after successful save
         showMessage("Organization information saved successfully", "success");
       } else {
         throw new Error(result.message || "Failed to save organization information");
@@ -381,6 +411,7 @@ export default function OrganizationPage() {
   const handleCancel = () => {
     if (currentSection === 'organization') {
       setShowEditModal(false);
+      setEditPreviewData(null); // Reset edit preview data
     } else {
       setShowSectionEditModal(false);
     }
@@ -559,6 +590,7 @@ export default function OrganizationPage() {
         setIsEditing={setIsEditing}
         setShowEditModal={setShowEditModal}
         setOriginalData={setOriginalData}
+        setEditPreviewData={setEditPreviewData}
       />
 
       <div className={pageStyles.sectionsContainer}>
@@ -599,8 +631,8 @@ export default function OrganizationPage() {
 
       <EditModal
         isOpen={showEditModal}
-        orgData={orgData}
-        setOrgData={setOrgData}
+        orgData={editPreviewData || orgData}
+        setOrgData={setEditPreviewData}
         errors={errors}
         uploading={uploading}
         handleInputChange={handleInputChange}
@@ -608,6 +640,8 @@ export default function OrganizationPage() {
         handleSave={handleSave}
         handleCancel={handleCancel}
         saving={saving}
+        modalMessage={modalMessage}
+        setModalMessage={setModalMessage}
       />
 
       <SectionEditModal

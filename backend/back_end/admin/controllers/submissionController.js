@@ -99,6 +99,8 @@ export const submitChanges = async (req, res) => {
       )
     })
 
+    console.log("🔍 Incoming submission payload:", req.body);
+
     await Promise.all(insertPromises)
 
     // Commit transaction

@@ -73,28 +73,39 @@ export default function ProgramsPage() {
     try {
       const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
       const orgId = adminData.org;
-      
-      if (!orgId) {
-        setMessage({ type: 'error', text: 'Organization not found. Please log in again.' });
+      const adminId = adminData.id;
+
+      if (!orgId || !adminId) {
+        setMessage({ type: 'error', text: 'Missing organization or admin ID. Please log in again.' });
         return;
       }
 
-      const submissionData = {
-        organization_id: orgId,
-        section: 'programs',
-        data: programData,
-        status: 'pending'
+      // Wrap data inside a `submissions` array as required by backend
+      const submissionPayload = {
+        submissions: [
+          {
+            organization_id: orgId,
+            section: 'programs',
+            previous_data: {}, // no previous data since it's new
+            proposed_data: programData,
+            submitted_by: adminId,
+          },
+        ],
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/submission`, {
+      console.log("📦 Payload to be submitted:", submissionPayload);
+
+      const response = await fetch(`${API_BASE_URL}/api/submissions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(submissionData),
+        body: JSON.stringify(submissionPayload),
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ Submission failed: ${response.status} - ${errorText}`);
         throw new Error('Failed to submit program');
       }
 
@@ -102,13 +113,13 @@ export default function ProgramsPage() {
         type: 'success', 
         text: 'Program submitted for approval! You can track its status in the submissions page.' 
       });
+
       setIsAddModalOpen(false);
       fetchPrograms();
       
-      // Clear message after 5 seconds
       setTimeout(() => setMessage({ type: '', text: '' }), 5000);
     } catch (error) {
-      console.error('Error submitting program:', error);
+      console.error('❌ Error submitting program:', error);
       setMessage({ type: 'error', text: 'Failed to submit program. Please try again.' });
     }
   };
@@ -127,7 +138,7 @@ export default function ProgramsPage() {
         program_id: editingProgram.id // Include original program ID for updates
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/submission`, {
+      const response = await fetch(`${API_BASE_URL}/api/submissions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -54,6 +54,7 @@ app.get("/api/test", (req, res) => {
 // Public Routes
 import applyRoutes from "./back_end/for_public/routes/apply.js"
 import organizationsRoutes from "./back_end/for_public/routes/organizations.js"
+
 app.use("/apply", applyRoutes)
 app.use("/api", organizationsRoutes)
 
@@ -72,9 +73,6 @@ import uploadRoutes from "./back_end/admin/routes/upload.js"
 import volunteersRoutes from "./back_end/admin/routes/volunteers.js"
 import orgSyncRoutes from "./back_end/admin/routes/orgSync.js"
 
-// PUBLIC ROUTES
-import publicOrganizationsRoutes from "./back_end/for_public/routes/organizations.js"
-
 app.use("/api/activities", activitiesRoutes)
 app.use("/api/advocacies", advocaciesRoutes)
 app.use("/api/competencies", competenciesRoutes)
@@ -89,7 +87,9 @@ app.use("/api/upload", uploadRoutes)
 app.use("/api/volunteers", volunteersRoutes)
 app.use("/api", orgSyncRoutes)
 
-// Public routes
+// PUBLIC ROUTES
+import publicOrganizationsRoutes from "./back_end/for_public/routes/organizations.js"
+
 app.use("/api", publicOrganizationsRoutes)
 
 // SUPERADMIN ROUTES
@@ -136,3 +136,5 @@ app.listen(PORT, () => {
   console.log(`📁 Uploads directory: ${uploadsDir}`)
   console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`)
 })
+
+app.use(cors());

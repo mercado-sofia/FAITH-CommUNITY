@@ -142,7 +142,7 @@ export default function LoginPage() {
               name="email"
               placeholder="Enter your email"
               aria-label="Email"
-              autoComplete="email"
+              autoComplete="off"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value)
@@ -161,9 +161,11 @@ export default function LoginPage() {
             <input
               id="password"
               type={showPassword ? "text" : "password"}
-              name="password"
+              // name="password"
+              name={process.env.NODE_ENV === "development" ? `dev-password-${Math.random()}` : "password"}
               placeholder="Enter your password"
               aria-label="Password"
+              autoComplete="off"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value)

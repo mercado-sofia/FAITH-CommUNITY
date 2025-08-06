@@ -153,16 +153,37 @@ export default function SubmissionTable({ orgAcronym, submissions = [], loading 
 
   const handleBulkDelete = async () => {
     try {
-      const promises = Array.from(selectedItems).map(id => 
-        fetch(`http://localhost:8080/api/submissions/${id}/delete`, { method: 'DELETE' })
-      );
+      console.log('[DEBUG] Bulk delete - Selected IDs:', Array.from(selectedItems));
+      
+      const promises = Array.from(selectedItems).map(async (id) => {
+        console.log(`[DEBUG] Deleting submission ID: ${id}`);
+        const response = await fetch(`http://localhost:8080/api/submissions/${id}`, { 
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log(`[DEBUG] Delete response for ID ${id}:`, response.status, response.statusText);
+        
+        if (!response.ok) {
+          const errorData = await response.text();
+          console.error(`[DEBUG] Delete failed for ID ${id}:`, errorData);
+          throw new Error(`Failed to delete submission ${id}: ${response.status} ${response.statusText}`);
+        }
+        
+        return response;
+      });
+      
       await Promise.all(promises);
-      fetchData();
+      console.log('[DEBUG] All deletions completed successfully');
+      
+      if (onRefresh) onRefresh(); // Refresh data from server
       setSelectedItems(new Set());
       setShowBulkActions(false);
     } catch (err) {
       console.error('Bulk delete error:', err);
-      alert('Failed to delete some submissions');
+      alert(`Failed to delete some submissions: ${err.message}`);
     }
   };
 

@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useSelector } from 'react-redux';
+import { selectCurrentAdmin } from '../../../rtk/superadmin/adminSlice';
 import styles from './programs.module.css';
 import { FaPlus, FaEdit, FaTrash, FaEye } from 'react-icons/fa';
 import AddProgramModal from './components/AddProgramModal';
@@ -9,11 +11,12 @@ import EditProgramModal from './components/EditProgramModal';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
 import ProgramCard from './components/ProgramCard';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 export default function ProgramsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const currentAdmin = useSelector(selectCurrentAdmin);
   
   // State management
   const [programs, setPrograms] = useState([]);
@@ -30,17 +33,16 @@ export default function ProgramsPage() {
   const [showCount, setShowCount] = useState(parseInt(searchParams.get('show')) || 10);
 
   // Fetch submitted programs (pending approval)
-  const fetchPrograms = async () => {
+  const fetchPrograms = useCallback(async () => {
     try {
       setIsLoading(true);
-      const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
-      const orgId = adminData.org;
-      
-      if (!orgId) {
-        console.error('No organization ID found');
+      if (!currentAdmin?.org) {
+        console.error('No organization ID found in admin session');
         setPrograms([]);
         return;
       }
+      
+      const orgId = currentAdmin.org;
 
       const response = await fetch(`${API_BASE_URL}/api/admin/programs/${orgId}`, {
         method: 'GET',
@@ -62,29 +64,30 @@ export default function ProgramsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentAdmin?.org]);
 
   useEffect(() => {
     fetchPrograms();
-  }, []);
+  }, [fetchPrograms]);
+
+
 
   // Handle program submission for approval
   const handleSubmitProgram = async (programData) => {
     try {
-      const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
-      const orgId = adminData.org;
-      const adminId = adminData.id;
-
-      if (!orgId || !adminId) {
+      if (!currentAdmin?.org || !currentAdmin?.id) {
         setMessage({ type: 'error', text: 'Missing organization or admin ID. Please log in again.' });
         return;
       }
+      
+      const orgAcronym = currentAdmin.org;
+      const adminId = currentAdmin.id;
 
       // Wrap data inside a `submissions` array as required by backend
       const submissionPayload = {
         submissions: [
           {
-            organization_id: orgId,
+            organization_id: orgAcronym, // Send org acronym - backend will convert to numeric ID
             section: 'programs',
             previous_data: {}, // no previous data since it's new
             proposed_data: programData,
@@ -94,6 +97,7 @@ export default function ProgramsPage() {
       };
 
       console.log("📦 Payload to be submitted:", submissionPayload);
+      console.log("🌐 Submitting to URL:", `${API_BASE_URL}/api/submissions`);
 
       const response = await fetch(`${API_BASE_URL}/api/submissions`, {
         method: 'POST',
@@ -102,6 +106,9 @@ export default function ProgramsPage() {
         },
         body: JSON.stringify(submissionPayload),
       });
+      
+      console.log("📡 Response status:", response.status);
+      console.log("📡 Response ok:", response.ok);
 
       if (!response.ok) {
         const errorText = await response.text();

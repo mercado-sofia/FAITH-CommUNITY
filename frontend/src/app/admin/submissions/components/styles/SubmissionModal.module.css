@@ -308,6 +308,81 @@
   }
 }
 
+/* Programs Section Styles */
+.programData {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.programData .dataField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.programData .fieldLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.statusIndicator {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.statusIndicator.upcoming {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+.statusIndicator.active {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+.statusIndicator.completed {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.imagePreview {
+  margin-top: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+}
+
+.programImage {
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+  max-height: 150px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.imageError {
+  padding: 20px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .modalContainer {

@@ -3,13 +3,13 @@
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { FaTimes, FaUpload, FaImage } from 'react-icons/fa';
-import styles from './styles/ProgramModal.module.css';
+import styles from './styles/addModal.module.css';
 
 const AddProgramModal = ({ onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: 'outreach',
+    category: '',
     status: 'active',
     image: null
   });
@@ -18,24 +18,10 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
   const [errors, setErrors] = useState({});
   const fileInputRef = useRef(null);
 
-  const categories = [
-    { value: 'outreach', label: 'Outreach' },
-    { value: 'education', label: 'Education' },
-    { value: 'health', label: 'Health' },
-    { value: 'environment', label: 'Environment' },
-    { value: 'community', label: 'Community Development' },
-    { value: 'youth', label: 'Youth Programs' },
-    { value: 'women', label: 'Women Empowerment' },
-    { value: 'elderly', label: 'Elderly Care' },
-    { value: 'disaster', label: 'Disaster Relief' },
-    { value: 'other', label: 'Other' }
-  ];
-
   const statusOptions = [
+    { value: 'upcoming', label: 'Upcoming' },
     { value: 'active', label: 'Active' },
     { value: 'completed', label: 'Completed' },
-    { value: 'ongoing', label: 'Ongoing' },
-    { value: 'planned', label: 'Planned' }
   ];
 
   const handleInputChange = (e) => {
@@ -121,6 +107,12 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
       newErrors.description = 'Program description is required';
     } else if (formData.description.length < 10) {
       newErrors.description = 'Description must be at least 10 characters long';
+    }
+
+    if (!formData.category.trim()) {
+      newErrors.category = 'Program category is required';
+    } else if (formData.category.length < 2) {
+      newErrors.category = 'Category must be at least 2 characters long';
     }
 
 
@@ -219,18 +211,16 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Category</label>
-              <select
+              <input
+                type="text"
                 name="category"
                 value={formData.category}
                 onChange={handleInputChange}
-                className={styles.formSelect}
-              >
-                {categories.map(category => (
-                  <option key={category.value} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
+                className={styles.formInput}
+                placeholder="e.g. Outreach, Education, Health, Community Development"
+                maxLength={50}
+              />
+              {errors.category && <span className={styles.errorText}>{errors.category}</span>}
             </div>
 
             <div className={styles.formGroup}>

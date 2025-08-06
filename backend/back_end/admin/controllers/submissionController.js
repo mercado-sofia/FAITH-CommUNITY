@@ -36,6 +36,7 @@ const validateSubmissionItem = (item) => {
 }
 
 export const submitChanges = async (req, res) => {
+  console.log("[DEBUG] submitChanges called with body:", JSON.stringify(req.body, null, 2))
   const { submissions } = req.body
 
   // Input validation
@@ -67,35 +68,55 @@ export const submitChanges = async (req, res) => {
     // Start transaction
     await db.query("START TRANSACTION")
 
-    // Verify all organizations exist
-    const orgIds = [...new Set(submissions.map((item) => item.organization_id))]
+    // Get unique organization identifiers from submissions
+    const orgIdentifiers = [...new Set(submissions.map((item) => item.organization_id))]
+    console.log("[DEBUG] Organization identifiers to validate:", orgIdentifiers)
+    
+    // Query organizations table to get numeric IDs for both numeric IDs and acronyms
+    const placeholders = orgIdentifiers.map(() => "?").join(",")
     const [orgCheck] = await db.execute(
-      `SELECT id FROM organizations WHERE id IN (${orgIds.map(() => "?").join(",")})`,
-      orgIds,
+      `SELECT id, org FROM organizations WHERE id IN (${placeholders}) OR org IN (${placeholders})`,
+      [...orgIdentifiers, ...orgIdentifiers]
     )
-
-    if (orgCheck.length !== orgIds.length) {
+    
+    console.log("[DEBUG] Found organizations:", orgCheck)
+    
+    // Create mapping from identifier to numeric ID
+    const orgIdMap = new Map()
+    orgCheck.forEach(org => {
+      orgIdMap.set(org.id.toString(), org.id)
+      orgIdMap.set(org.org, org.id)
+    })
+    
+    console.log("[DEBUG] Organization ID mapping:", Object.fromEntries(orgIdMap))
+    
+    // Check if all identifiers were found
+    const missingOrgs = orgIdentifiers.filter(id => !orgIdMap.has(id.toString()))
+    if (missingOrgs.length > 0) {
       await db.query("ROLLBACK")
       return res.status(404).json({
         success: false,
         message: "One or more organizations not found",
+        missing: missingOrgs
       })
     }
 
-    // Insert submissions
+    // Insert submissions with converted numeric organization IDs
     const insertPromises = submissions.map((item) => {
+      const numericOrgId = orgIdMap.get(item.organization_id.toString())
+      console.log(`[DEBUG] Converting org identifier ${item.organization_id} to numeric ID ${numericOrgId}`)
+      
       return db.execute(
         `INSERT INTO submissions (organization_id, section, previous_data, proposed_data, submitted_by, status, submitted_at)
          VALUES (?, ?, ?, ?, ?, ?, NOW())`,
         [
-          item.organization_id,
+          numericOrgId,
           item.section,
-          // Ensure data is stringified before saving to LONGTEXT
           JSON.stringify(item.previous_data),
           JSON.stringify(item.proposed_data),
           item.submitted_by,
           "pending",
-        ],
+        ]
       )
     })
 
@@ -144,6 +165,7 @@ export const getSubmissionsByOrg = async (req, res) => {
     }
 
     const org = orgRows[0]
+    console.log(`[DEBUG] Fetching submissions for org: ${orgAcronym}, numeric ID: ${org.id}`)
 
     // Get submissions with additional info
     const [rows] = await db.execute(
@@ -154,6 +176,11 @@ export const getSubmissionsByOrg = async (req, res) => {
        ORDER BY s.submitted_at DESC`,
       [org.id],
     )
+    
+    console.log(`[DEBUG] Found ${rows.length} submissions for org ${orgAcronym}:`)
+    rows.forEach(row => {
+      console.log(`[DEBUG] - ID: ${row.id}, Section: ${row.section}, Status: ${row.status}, OrgID: ${row.organization_id}`)
+    })
 
     // Parse JSON data and add metadata
     const parsedRows = rows.map((row) => {
@@ -220,7 +247,7 @@ export const cancelSubmission = async (req, res) => {
   }
 
   try {
-    // First check if submission exists and is pending
+    // First check if submission exists
     const [existing] = await db.execute("SELECT id, status, section FROM submissions WHERE id = ?", [id])
 
     if (existing.length === 0) {
@@ -230,15 +257,8 @@ export const cancelSubmission = async (req, res) => {
       })
     }
 
-    if (existing[0].status !== "pending") {
-      return res.status(400).json({
-        success: false,
-        message: `Cannot cancel submission with status: ${existing[0].status}`,
-      })
-    }
-
-    // Delete the submission
-    const [result] = await db.execute('DELETE FROM submissions WHERE id = ? AND status = "pending"', [id])
+    // Delete the submission (allow deletion regardless of status)
+    const [result] = await db.execute('DELETE FROM submissions WHERE id = ?', [id])
 
     if (result.affectedRows === 0) {
       return res.status(500).json({
@@ -249,7 +269,7 @@ export const cancelSubmission = async (req, res) => {
 
     res.json({
       success: true,
-      message: `Submission for ${existing[0].section} cancelled successfully`,
+      message: `Submission for ${existing[0].section} deleted successfully`,
     })
   } catch (error) {
     await db.query("ROLLBACK")

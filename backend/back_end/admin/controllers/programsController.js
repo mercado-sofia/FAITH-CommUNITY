@@ -13,70 +13,95 @@ export const getProgramsByOrg = async (req, res) => {
   }
 
   try {
-    // Get organization info first
-    const [orgRows] = await db.execute(
-      "SELECT id, orgName, org FROM admins WHERE org = ?",
+    console.log(`[DEBUG] Fetching programs for org ID: ${orgId}`);
+    
+    // First try to get organization by ID (numeric)
+    let [orgRows] = await db.execute(
+      "SELECT id, orgName, org FROM admins WHERE id = ?",
       [orgId]
     );
 
+    // If not found by ID, try by org acronym
     if (orgRows.length === 0) {
+      [orgRows] = await db.execute(
+        "SELECT id, orgName, org FROM admins WHERE org = ?",
+        [orgId]
+      );
+    }
+
+    if (orgRows.length === 0) {
+      console.error(`[ERROR] Organization not found for ID/acronym: ${orgId}`);
       return res.status(404).json({
         success: false,
-        message: "Organization not found",
+        message: `Organization not found: ${orgId}`,
       });
     }
 
     const organization = orgRows[0];
+    console.log(`[DEBUG] Found organization:`, organization);
 
-    // Get programs from submissions table (pending approval) and programs table (approved)
+    // Get programs from submissions table (pending approval)
     const [submissionRows] = await db.execute(
       `SELECT s.*, 'pending' as source_type
        FROM submissions s 
-       WHERE s.organization_id = ? AND s.section = 'programs' AND s.status = 'pending'
+       WHERE s.organization_id = ? 
+         AND s.section = 'programs' 
+         AND s.status = 'pending'
        ORDER BY s.submitted_at DESC`,
       [organization.id]
     );
+    console.log(`[DEBUG] Found ${submissionRows.length} pending submissions`);
 
+    // Get approved programs from programs_projects table
     const [approvedRows] = await db.execute(
-      `SELECT p.*, 'approved' as source_type, p.created_at as submitted_at
-       FROM programs_projects p 
-       WHERE p.organization_id = ? AND p.status = 'approved'
+      `SELECT p.*, 'approved' as source_type, o.org as orgAcronym, o.logo as orgLogo
+       FROM programs_projects p
+       LEFT JOIN organizations o ON p.organization_id = o.id
+       WHERE p.organization_id = ? 
        ORDER BY p.created_at DESC`,
       [organization.id]
     );
+    console.log(`[DEBUG] Found ${approvedRows.length} approved programs`);
 
-    // Parse submission data and combine with approved programs
+    // Parse submission data for pending programs
     const pendingPrograms = submissionRows.map(submission => {
       try {
-        const data = JSON.parse(submission.data || submission.proposed_data);
+        const data = JSON.parse(submission.data || submission.proposed_data || '{}');
         return {
           id: `submission_${submission.id}`,
           submission_id: submission.id,
-          title: data.title,
-          description: data.description,
-          category: data.category,
-          status: data.status,
-          date: data.date,
-          image: data.image,
-          created_at: submission.submitted_at,
+          title: data.title || 'Untitled Program',
+          description: data.description || '',
+          category: data.category || 'Uncategorized',
+          status: data.status || 'pending',
+          date: data.date || new Date().toISOString().split('T')[0],
+          image: data.image || null,
+          created_at: submission.submitted_at || new Date().toISOString(),
+          orgID: organization.org,
+          orgName: organization.orgName,
+          icon: null,
           approval_status: 'pending',
           source_type: 'pending'
         };
       } catch (error) {
-        console.error('Error parsing submission data:', error);
+        console.error('Error parsing submission data:', error, submission);
         return null;
       }
     }).filter(Boolean);
 
+    // Map approved programs with organization info
     const approvedPrograms = approvedRows.map(program => ({
       id: program.id,
       title: program.title,
       description: program.description,
       category: program.category,
-      status: program.status,
-      date: program.date_completed || program.date_created,
+      status: program.status || 'approved',
+      date: program.date || program.date_completed || program.date_created || program.created_at,
       image: program.image,
       created_at: program.created_at,
+      orgID: program.orgAcronym || organization.org,
+      orgName: program.orgName || organization.orgName,
+      icon: program.orgLogo || null,
       approval_status: 'approved',
       source_type: 'approved'
     }));
@@ -108,10 +133,9 @@ export const getProgramsByOrg = async (req, res) => {
 export const getApprovedPrograms = async (req, res) => {
   try {
     const [rows] = await db.execute(`
-      SELECT p.*, a.orgName, a.org as orgAcronym, a.logo as orgLogo
+      SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
       FROM programs_projects p
-      LEFT JOIN admins a ON p.organization_id = a.id
-      WHERE p.status = 'approved'
+      LEFT JOIN organizations o ON p.organization_id = o.id
       ORDER BY p.created_at DESC
     `);
 
@@ -172,10 +196,10 @@ export const getApprovedProgramsByOrg = async (req, res) => {
 
     // Get approved programs for this organization
     const [rows] = await db.execute(`
-       SELECT p.*, a.orgName, a.org as orgAcronym, a.logo as orgLogo
+       SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
        FROM programs_projects p
-       LEFT JOIN admins a ON p.organization_id = a.id
-       WHERE a.org = ? AND p.status = 'approved'
+       LEFT JOIN organizations o ON p.organization_id = o.id
+       WHERE o.org = ?
        ORDER BY p.created_at DESC
     `, [orgId]);
 

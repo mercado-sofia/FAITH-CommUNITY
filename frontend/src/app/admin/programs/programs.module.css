@@ -33,13 +33,14 @@
 }
 
 .addButton {
-  background: #3b82f6;
+  background: #06100f;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
+  padding: 0.65rem 1.2rem;
   border-radius: 0.375rem;
-  font-size: 0.875rem;
+  font-size: 12px;
   font-weight: 500;
+  font-family: var(--font-inter);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -47,8 +48,9 @@
   transition: background-color 0.2s;
 }
 
-.addButton:active {
-  background: #1d4ed8;
+.addButton:hover {
+  background: #142220;
+  border-color: #0b1b19;
 }
 
 /* Message Display */

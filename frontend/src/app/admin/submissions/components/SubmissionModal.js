@@ -23,6 +23,33 @@ export default function SubmissionModal({ data, onClose }) {
           <p className={styles.textContent}>{dataObj}</p>
         </div>
       );
+    } else if (data.section === 'programs') {
+      return (
+        <div className={styles.programData}>
+          {dataObj.title && <div className={styles.dataField}><span className={styles.fieldLabel}>Title:</span> {dataObj.title}</div>}
+          {dataObj.description && <div className={styles.dataField}><span className={styles.fieldLabel}>Description:</span> {dataObj.description}</div>}
+          {dataObj.category && <div className={styles.dataField}><span className={styles.fieldLabel}>Category:</span> {dataObj.category}</div>}
+          {dataObj.status && <div className={styles.dataField}><span className={styles.fieldLabel}>Status:</span> <span className={`${styles.statusIndicator} ${styles[dataObj.status?.toLowerCase()]}`}>{dataObj.status}</span></div>}
+          {dataObj.date && <div className={styles.dataField}><span className={styles.fieldLabel}>Date:</span> {new Date(dataObj.date).toLocaleDateString()}</div>}
+          {dataObj.image && (
+            <div className={styles.dataField}>
+              <span className={styles.fieldLabel}>Image:</span>
+              <div className={styles.imagePreview}>
+                <img 
+                  src={dataObj.image} 
+                  alt="Program image" 
+                  className={styles.programImage}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'block';
+                  }}
+                />
+                <div className={styles.imageError} style={{display: 'none'}}>Image preview unavailable</div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
     }
 
     // Fallback to JSON display

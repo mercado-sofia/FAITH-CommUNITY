@@ -125,21 +125,33 @@ export const approveSubmission = async (req, res) => {
     }
 
     if (section === 'programs') {
+      console.log('[DEBUG] Approving program submission:', {
+        orgId,
+        submissionId: id,
+        programData: data
+      });
+      
       // Insert new program into programs_projects table with automatic publication date
       const currentDate = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
-      await db.execute(
-        `INSERT INTO programs_projects (organization_id, title, description, category, status, date, image, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-        [
-          orgId,
-          data.title,
-          data.description,
-          data.category,
-          data.status,
-          currentDate, // Automatically set to current date when approved
-          data.image
-        ]
-      );
+      
+      try {
+        await db.execute(
+          `INSERT INTO programs_projects (organization_id, title, description, category, status, image)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            orgId,
+            data.title,
+            data.description,
+            data.category,
+            data.status,
+            data.image
+          ]
+        );
+        console.log('[DEBUG] Program successfully inserted into programs_projects table');
+      } catch (insertError) {
+        console.error('[ERROR] Failed to insert program into programs_projects:', insertError);
+        throw insertError;
+      }
     }
 
     await db.execute(`UPDATE submissions SET status = 'approved' WHERE id = ?`, [id]);

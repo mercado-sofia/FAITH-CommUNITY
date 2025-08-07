@@ -4,13 +4,15 @@ import {
   getProgramsByOrg, 
   getApprovedPrograms, 
   getApprovedProgramsByOrg,
-  deleteProgramSubmission 
+  deleteProgramSubmission,
+  updateProgram
 } from '../controllers/programsController.js';
 
 const router = express.Router();
 
 // Admin routes
 router.get('/admin/programs/:orgId', getProgramsByOrg);
+router.put('/admin/programs/:id', updateProgram);
 router.delete('/admin/programs/:id', deleteProgramSubmission);
 
 // Public routes

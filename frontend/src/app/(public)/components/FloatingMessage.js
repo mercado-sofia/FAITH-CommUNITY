@@ -15,10 +15,30 @@ export default function FloatingMessage() {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [org, setOrg] = useState("");
+  const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [clickLocked, setClickLocked] = useState(false);
 
   const boxRef = useRef(null);
+
+  // Email validation function
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Handle email change with validation
+  const handleEmailChange = (e) => {
+    const value = e.target.value;
+    setEmail(value);
+    
+    if (value && !validateEmail(value)) {
+      setEmailError("Please enter a valid email address");
+    } else {
+      setEmailError("");
+    }
+  };
 
   // Handle outside click, ESC press
   useEffect(() => {
@@ -51,7 +71,9 @@ export default function FloatingMessage() {
     setIsOpen(false);
     setDropdownOpen(false);
     setOrg("");
+    setEmail("");
     setMessage("");
+    setEmailError("");
 
     setClickLocked(true);
     setTimeout(() => setClickLocked(false), 300);
@@ -69,7 +91,14 @@ export default function FloatingMessage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(`Message to ${org}: ${message}`);
+    
+    // Validate email before submission
+    if (!email || !validateEmail(email)) {
+      setEmailError("Please enter a valid email address");
+      return;
+    }
+
+    console.log(`Message to ${org} from ${email}: ${message}`);
     alert("Message sent successfully!");
     closeMessageBox();
   };
@@ -118,10 +147,24 @@ export default function FloatingMessage() {
 
             <input type="hidden" name="organization" value={org} />
 
+            <label className={styles.label}>Email Address</label>
+            <input
+              type="email"
+              id="user-email"
+              name="email"
+              placeholder="Enter your email address"
+              value={email}
+              onChange={handleEmailChange}
+              className={`${styles.emailInput} ${emailError ? styles.emailError : ""}`}
+              required
+              autoComplete="email"
+            />
+            {emailError && <span className={styles.errorMessage}>{emailError}</span>}
+
             <textarea
               id="user-message"
               name="message"
-              rows={5}
+              rows={4}
               placeholder="Write your message here"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -132,7 +175,7 @@ export default function FloatingMessage() {
             <button
               className={styles.sendBtn}
               type="submit"
-              disabled={!org || !message.trim()}
+              disabled={!org || !email || !message.trim() || emailError}
             >
               Send
             </button>

@@ -21,16 +21,26 @@
   background: #f5f7f6;
   overflow: hidden;
   margin-bottom: 1rem;
+  position: relative;
 }
 
 .orgNavInner {
   max-width: 1250px;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  display: flex;
   align-items: center;
-  justify-items: center;
-  padding: 1rem 0;
+  justify-content: flex-start;
+  padding: 1rem 0 1rem;
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.orgNavInner::-webkit-scrollbar {
+  display: none;
 }
 
 .orgItem {
@@ -42,11 +52,14 @@
   font-weight: 500;
   color: #333;
   position: relative;
-  width: 100%;
+  min-width: 170px;
   justify-content: center;
   user-select: none;
   outline: none;
   transition: color 0.2s ease, font-weight 0.2s ease;
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
 }
 
 .orgItem:hover {

@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { FaEdit } from 'react-icons/fa'
+import { FaEdit, FaEnvelope, FaFacebookF } from 'react-icons/fa'
 import styles from './styles/OrgInfoSection.module.css'
 
 export default function OrgInfoSection({
@@ -73,22 +73,22 @@ export default function OrgInfoSection({
             <div className={styles.orgFullName}>{orgData.orgName || "Not specified"}</div>
           </div>
 
-          <div className={styles.inlineGroup}>
-            <span className={styles.inlineLabel}>Email:</span>
-            <span className={styles.inlineData}>{orgData.email || "Not specified"}</span>
-          </div>
-
-          <div className={styles.inlineGroup}>
-            <span className={styles.inlineLabel}>Facebook:</span>
-            <span className={styles.inlineData}>
-              {orgData.facebook ? (
-                <a href={orgData.facebook} target="_blank" rel="noopener noreferrer" className={styles.link}>
-                  {orgData.facebook}
-                </a>
-              ) : (
-                "Not specified"
-              )}
-            </span>
+          <div className={styles.contactIcons}>
+            {orgData.email && (
+              <a href={`mailto:${orgData.email}`} className={styles.iconLink}>
+                <FaEnvelope className={styles.contactIcon} />
+              </a>
+            )}
+            {orgData.facebook && (
+              <a 
+                href={orgData.facebook} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className={styles.iconLink}
+              >
+                <FaFacebookF className={styles.contactIcon} />
+              </a>
+            )}
           </div>
 
           <div className={styles.inlineGroup}>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { FaEdit, FaTrash, FaCalendar, FaClock, FaTag, FaExclamationTriangle } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaCalendar, FaTag } from 'react-icons/fa';
 import styles from './styles/ProgramCard.module.css';
 
 const ProgramCard = ({ program, onEdit, onDelete }) => {
@@ -15,24 +15,6 @@ const ProgramCard = ({ program, onEdit, onDelete }) => {
     } finally {
       setIsDeleting(false);
     }
-  };
-
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      pending: { label: 'Pending', class: 'pending', icon: FaClock },
-      approved: { label: 'Approved', class: 'approved', icon: FaCalendar },
-      rejected: { label: 'Rejected', class: 'rejected', icon: FaExclamationTriangle }
-    };
-
-    const config = statusConfig[status] || statusConfig.pending;
-    const IconComponent = config.icon;
-
-    return (
-      <span className={`${styles.statusBadge} ${styles[config.class]}`}>
-        <IconComponent className={styles.statusIcon} />
-        {config.label}
-      </span>
-    );
   };
 
   const formatDate = (dateString) => {
@@ -80,9 +62,6 @@ const ProgramCard = ({ program, onEdit, onDelete }) => {
               e.target.style.display = 'none';
             }}
           />
-          <div className={styles.imageOverlay}>
-            {getStatusBadge(program.status)}
-          </div>
         </div>
       )}
 
@@ -90,11 +69,6 @@ const ProgramCard = ({ program, onEdit, onDelete }) => {
       <div className={styles.programContent}>
         <div className={styles.programHeader}>
           <h3 className={styles.programTitle}>{program.title}</h3>
-          {!program.image && (
-            <div className={styles.statusContainer}>
-              {getStatusBadge(program.status)}
-            </div>
-          )}
         </div>
 
         <p className={styles.programDescription}>
@@ -124,24 +98,13 @@ const ProgramCard = ({ program, onEdit, onDelete }) => {
 
           {program.created_at && (
             <div className={styles.metaItem}>
-              <FaClock className={styles.metaIcon} />
+              <FaCalendar className={styles.metaIcon} />
               <span className={styles.metaText}>
-                Submitted: {formatDate(program.created_at)}
+                Created: {formatDate(program.created_at)}
               </span>
             </div>
           )}
         </div>
-
-        {/* Rejection Feedback */}
-        {program.status === 'rejected' && program.feedback && (
-          <div className={styles.rejectionFeedback}>
-            <FaExclamationTriangle className={styles.feedbackIcon} />
-            <div className={styles.feedbackContent}>
-              <strong>Rejection Reason:</strong>
-              <p>{program.feedback}</p>
-            </div>
-          </div>
-        )}
 
         {/* Action Buttons */}
         <div className={styles.actionButtons}>

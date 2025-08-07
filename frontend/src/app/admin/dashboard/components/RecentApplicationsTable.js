@@ -3,8 +3,8 @@
 import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react';
 import { recentApplications } from '../data/mockData';
-import { FiFilter, FiEye } from 'react-icons/fi';
-import { IoFilter } from "react-icons/io5";
+import { FiEye } from 'react-icons/fi';
+import { CgOptions } from "react-icons/cg";
 import styles from './styles/RecentTables.module.css';
 
 export default function RecentApplicationsTable() {
@@ -52,7 +52,7 @@ export default function RecentApplicationsTable() {
                 className={styles.iconButton}
                 onClick={() => setShowOptions((prev) => !prev)}
               >
-                <IoFilter className={styles.icon} />
+                <CgOptions className={styles.icon} />
                 Filter
               </button>
               {showOptions && (

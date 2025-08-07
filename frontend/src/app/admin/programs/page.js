@@ -27,7 +27,6 @@ export default function ProgramsPage() {
   
   // Filter and search states
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
-  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all');
   const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || 'all');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'latest');
   const [showCount, setShowCount] = useState(parseInt(searchParams.get('show')) || 10);
@@ -131,43 +130,41 @@ export default function ProgramsPage() {
     }
   };
 
-  // Handle program update submission
+  // Handle program update
   const handleUpdateProgram = async (programData) => {
     try {
-      const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
-      const orgId = adminData.org;
-      
-      const submissionData = {
-        organization_id: orgId,
-        section: 'programs',
-        data: programData,
-        status: 'pending',
-        program_id: editingProgram.id // Include original program ID for updates
-      };
+      if (!editingProgram?.id) {
+        setMessage({ type: 'error', text: 'Program ID not found. Please try again.' });
+        return;
+      }
 
-      const response = await fetch(`${API_BASE_URL}/api/submissions`, {
-        method: 'POST',
+      const response = await fetch(`${API_BASE_URL}/api/admin/programs/${editingProgram.id}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(submissionData),
+        body: JSON.stringify(programData),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit program update');
+        const errorText = await response.text();
+        console.error(`❌ Update failed: ${response.status} - ${errorText}`);
+        throw new Error('Failed to update program');
       }
 
+      const result = await response.json();
+      
       setMessage({ 
         type: 'success', 
-        text: 'Program update submitted for approval!' 
+        text: 'Program updated successfully!' 
       });
       setEditingProgram(null);
       fetchPrograms();
       
-      setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (error) {
       console.error('Error updating program:', error);
-      setMessage({ type: 'error', text: 'Failed to submit program update. Please try again.' });
+      setMessage({ type: 'error', text: 'Failed to update program. Please try again.' });
     }
   };
 
@@ -204,10 +201,9 @@ export default function ProgramsPage() {
         program.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         program.category?.toLowerCase().includes(searchQuery.toLowerCase());
       
-      const matchesStatus = statusFilter === 'all' || program.status === statusFilter;
       const matchesCategory = categoryFilter === 'all' || program.category === categoryFilter;
 
-      return matchesSearch && matchesStatus && matchesCategory;
+      return matchesSearch && matchesCategory;
     });
 
     // Sort programs
@@ -219,15 +215,13 @@ export default function ProgramsPage() {
           return new Date(a.created_at || a.date) - new Date(b.created_at || b.date);
         case 'title':
           return a.title.localeCompare(b.title);
-        case 'status':
-          return a.status.localeCompare(b.status);
         default:
           return 0;
       }
     });
 
     return filtered.slice(0, showCount);
-  }, [programs, searchQuery, statusFilter, categoryFilter, sortBy, showCount]);
+  }, [programs, searchQuery, categoryFilter, sortBy, showCount]);
 
   // Update URL parameters
   const updateURLParams = (params) => {
@@ -249,10 +243,6 @@ export default function ProgramsPage() {
 
   const handleFilterChange = (filterType, value) => {
     switch (filterType) {
-      case 'status':
-        setStatusFilter(value);
-        updateURLParams({ status: value });
-        break;
       case 'category':
         setCategoryFilter(value);
         updateURLParams({ category: value });
@@ -293,7 +283,7 @@ export default function ProgramsPage() {
           </button>
         </div>
         <p className={styles.subheader}>
-          Submit programs for approval. Once approved by superadmin, they will appear on your public organization page.
+          View your approved programs. These programs are visible on your public organization page.
         </p>
       </div>
 
@@ -307,7 +297,6 @@ export default function ProgramsPage() {
       {/* Search and Filter Controls */}
       <SearchAndFilterControls
         searchQuery={searchQuery}
-        statusFilter={statusFilter}
         categoryFilter={categoryFilter}
         sortBy={sortBy}
         showCount={showCount}

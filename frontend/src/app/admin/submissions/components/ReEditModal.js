@@ -128,7 +128,15 @@ export default function ReEditModal({ submission, onClose, onSave }) {
 
     setIsLoading(true);
     try {
-      await onSave(submission.id, formData);
+      // Trim whitespace for advocacy and competency content before saving
+      const trimmedFormData = { ...formData };
+      if (submission?.section === 'advocacy' && trimmedFormData.advocacy) {
+        trimmedFormData.advocacy = trimmedFormData.advocacy.trim();
+      } else if (submission?.section === 'competency' && trimmedFormData.competency) {
+        trimmedFormData.competency = trimmedFormData.competency.trim();
+      }
+      
+      await onSave(submission.id, trimmedFormData);
       onClose();
     } catch (error) {
       console.error('Error saving changes:', error);

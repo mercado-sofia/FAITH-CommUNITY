@@ -6,7 +6,7 @@
   border: 1px solid #e2e8f0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   font-family: var(--font-inter), sans-serif;
-  min-height: 300px;
+  min-height: 280px;
   height: auto;
 }
 
@@ -93,9 +93,7 @@
 
 /* Organization Name Display */
 .orgNameDisplay {
-  margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 1rem;
 }
 
 .orgAcronym {
@@ -112,6 +110,12 @@
   color: #6b7280;
   font-family: var(--font-inter), sans-serif;
   line-height: 1.4;
+}
+
+.contactIcons {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.4rem;
 }
 
 .formGroup {
@@ -210,6 +214,33 @@
 .link:hover {
   color: #1d4ed8;
   text-decoration: underline;
+}
+
+.iconLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  color: #374151;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.iconLink:hover {
+  background-color: #e5e7eb;
+  border-color: #d1d5db;
+  color: #167c59;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.contactIcon {
+  font-size: 0.75rem;
+  color: inherit;
 }
 
 .errorText {

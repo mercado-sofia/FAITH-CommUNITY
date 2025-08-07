@@ -9,10 +9,10 @@
   background: #f8fafc;
   border: 2px solid #e2e8f0;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 2rem;
   display: flex;
   align-items: flex-start;
-  gap: 1rem;
+  gap: 1.5rem;
   transition: all 0.3s ease;
   cursor: grab;
   position: relative;
@@ -89,12 +89,12 @@
 /* Head Photo */
 .headPhoto {
   flex-shrink: 0;
-  width: 80px;
-  height: 100px;
+  width: 120px;
+  height: 150px;
 }
 
 .photo {
-  border-radius: 6px;
+  border-radius: 8px;
   object-fit: cover;
   border: 2px solid #06100f;
   width: 100%;
@@ -246,7 +246,7 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .headCard {
-    padding: 1rem;
+    padding: 1.5rem;
     flex-direction: column;
     text-align: center;
   }
@@ -262,8 +262,8 @@
   }
   
   .headPhoto {
-    width: 60px;
-    height: 75px;
+    width: 100px;
+    height: 125px;
     align-self: center;
   }
   

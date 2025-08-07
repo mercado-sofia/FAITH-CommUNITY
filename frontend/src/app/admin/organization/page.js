@@ -323,6 +323,14 @@ export default function OrganizationPage() {
       // Handle advocacy and competency sections
       const currentData = currentSection === 'advocacy' ? advocacyData : competencyData;
       const editedData = { ...currentData, ...tempEditData };
+      
+      // Trim whitespace for advocacy and competency content
+      if (currentSection === 'advocacy' && editedData.advocacy) {
+        editedData.advocacy = editedData.advocacy.trim();
+      } else if (currentSection === 'competency' && editedData.competency) {
+        editedData.competency = editedData.competency.trim();
+      }
+      
       const hasChanges = originalData && Object.keys(editedData).some((key) => key !== "id" && editedData[key] !== originalData[key]);
 
       if (!hasChanges) {
@@ -440,7 +448,7 @@ export default function OrganizationPage() {
           organization_id: orgData.id || admin.id,
           section: 'advocacy',
           previous_data: originalData.advocacy || "",
-          proposed_data: pendingChanges.advocacy || "",
+          proposed_data: (pendingChanges.advocacy || "").trim(),
           submitted_by: admin.id
         });
       } else if (currentSection === 'competency') {
@@ -448,7 +456,7 @@ export default function OrganizationPage() {
           organization_id: orgData.id || admin.id,
           section: 'competency',
           previous_data: originalData.competency || "",
-          proposed_data: pendingChanges.competency || "",
+          proposed_data: (pendingChanges.competency || "").trim(),
           submitted_by: admin.id
         });
       }

@@ -27,7 +27,7 @@ const validateSubmissionItem = (item) => {
   }
 
   // Validate section types
-  const validSections = ["organization", "advocacy", "competency", "org_heads", "programs"]
+  const validSections = ["organization", "advocacy", "competency", "org_heads", "programs", "news"]
   if (item.section && !validSections.includes(item.section)) {
     errors.push(`Invalid section. Must be one of: ${validSections.join(", ")}`)
   }
@@ -384,12 +384,11 @@ export const getSubmissionById = async (req, res) => {
 
   try {
     const [rows] = await db.execute(
-      `SELECT s.*, o.orgName, o.org, a.orgName as submitted_by_name 
-       FROM submissions s 
-       LEFT JOIN organizations o ON s.organization_id = o.id 
-       LEFT JOIN admins a ON s.submitted_by = a.id 
+      `SELECT s.*, o.orgName, o.org 
+       FROM submissions s
+       LEFT JOIN organizations o ON s.organization_id = o.id
        WHERE s.id = ?`,
-      [id],
+      [id]
     )
 
     if (rows.length === 0) {
@@ -400,17 +399,17 @@ export const getSubmissionById = async (req, res) => {
     }
 
     const submission = rows[0]
-
+    
     // Parse JSON data
     try {
-      submission.previous_data = JSON.parse(submission.previous_data)
-      submission.proposed_data = JSON.parse(submission.proposed_data)
+      if (submission.previous_data) {
+        submission.previous_data = JSON.parse(submission.previous_data)
+      }
+      if (submission.proposed_data) {
+        submission.proposed_data = JSON.parse(submission.proposed_data)
+      }
     } catch (parseError) {
-      console.error("JSON parse error:", parseError)
-      return res.status(500).json({
-        success: false,
-        message: "Data parsing error",
-      })
+      console.error("Error parsing JSON data:", parseError)
     }
 
     res.json({
@@ -418,10 +417,10 @@ export const getSubmissionById = async (req, res) => {
       data: submission,
     })
   } catch (error) {
-    console.error("❌ Error fetching submission:", error)
+    console.error("❌ Error getting submission by ID:", error)
     res.status(500).json({
       success: false,
-      message: "Failed to fetch submission",
+      message: "Failed to get submission",
       error: error.message,
     })
   }

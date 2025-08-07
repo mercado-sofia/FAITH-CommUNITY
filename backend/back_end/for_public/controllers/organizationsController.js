@@ -12,7 +12,7 @@ export const getAllOrganizations = async (req, res) => {
 
     // Format the data for the frontend
     const formattedData = rows.map(row => ({
-      id: row.acronym, // Use acronym as ID for URL routing
+      id: row.id, // Use numeric ID for proper integration with news
       acronym: row.acronym, // Organization acronym for display
       name: row.name, // Full organization name for tooltips
       logo: row.logo || `/logo/${row.acronym.toLowerCase()}_logo.jpg` // Fallback to expected logo path

@@ -33,12 +33,6 @@
   transform: scale(1.05);
 }
 
-.imageOverlay {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-}
-
 .programContent {
   padding: 20px;
 }
@@ -58,10 +52,6 @@
   margin: 0;
   line-height: 1.4;
   flex: 1;
-}
-
-.statusContainer {
-  flex-shrink: 0;
 }
 
 .programDescription {
@@ -93,70 +83,6 @@
 }
 
 .metaText {
-  line-height: 1.4;
-}
-
-.statusBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.statusBadge.pending {
-  background: #fef3c7;
-  color: #d97706;
-  border: 1px solid #fbbf24;
-}
-
-.statusBadge.approved {
-  background: #d1fae5;
-  color: #059669;
-  border: 1px solid #34d399;
-}
-
-.statusBadge.rejected {
-  background: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #f87171;
-}
-
-.statusIcon {
-  font-size: 10px;
-}
-
-.rejectionFeedback {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 16px;
-}
-
-.feedbackIcon {
-  color: #ef4444;
-  margin-right: 8px;
-  font-size: 14px;
-}
-
-.feedbackContent {
-  font-size: 13px;
-  color: #7f1d1d;
-}
-
-.feedbackContent strong {
-  display: block;
-  margin-bottom: 4px;
-  color: #991b1b;
-}
-
-.feedbackContent p {
-  margin: 0;
   line-height: 1.4;
 }
 
@@ -208,19 +134,18 @@
 
 .editButton:disabled,
 .deleteButton:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
   transform: none;
 }
 
-/* Mobile Responsive */
 @media (max-width: 768px) {
   .programCard {
     margin-bottom: 16px;
   }
 
   .imageContainer {
-    height: 160px;
+    height: 180px;
   }
 
   .programContent {
@@ -247,13 +172,11 @@
 
   .actionButtons {
     flex-direction: column;
-    gap: 8px;
   }
 
   .editButton,
   .deleteButton {
-    padding: 12px 16px;
-    font-size: 14px;
+    width: 100%;
   }
 }
 
@@ -268,10 +191,5 @@
 
   .programDescription {
     font-size: 13px;
-  }
-
-  .statusBadge {
-    font-size: 11px;
-    padding: 4px 8px;
   }
 }

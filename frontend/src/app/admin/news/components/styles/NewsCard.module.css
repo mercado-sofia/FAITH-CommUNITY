@@ -1,0 +1,154 @@
+.newsCard {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  height: fit-content;
+}
+
+.newsCard:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border-color: #d1d5db;
+}
+
+.newsContent {
+  padding: 1.5rem;
+}
+
+.newsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.newsMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.dateContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.dateIcon {
+  color: #167c59;
+  font-size: 0.75rem;
+}
+
+.date {
+  font-weight: 500;
+}
+
+.actions {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.editButton,
+.deleteButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.editButton {
+  background: #167c59;
+  color: white;
+}
+
+.editButton:hover {
+  background: #0f5a3f;
+  transform: scale(1.05);
+  opacity: 1;
+}
+
+.deleteButton {
+  background: #dc3545;
+  color: white;
+}
+
+.deleteButton:hover {
+  background: #c82333;
+  transform: scale(1.05);
+  opacity: 1;
+}
+
+.deleteButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  opacity: 0.5;
+}
+
+.newsTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.4;
+  letter-spacing: -0.025em;
+}
+
+.newsDescription {
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .newsContent {
+    padding: 1.25rem;
+  }
+
+  .newsHeader {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .actions {
+    align-self: flex-end;
+  }
+
+  .newsTitle {
+    font-size: 1rem;
+  }
+
+  .newsDescription {
+    font-size: 0.8125rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .newsContent {
+    padding: 1rem;
+  }
+
+  .newsTitle {
+    font-size: 0.9375rem;
+  }
+
+  .newsDescription {
+    font-size: 0.75rem;
+  }
+}

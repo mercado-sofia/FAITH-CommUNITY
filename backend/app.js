@@ -72,6 +72,7 @@ import submissionRoutes from "./back_end/admin/routes/submission.js"
 import uploadRoutes from "./back_end/admin/routes/upload.js"
 import volunteersRoutes from "./back_end/admin/routes/volunteers.js"
 import orgSyncRoutes from "./back_end/admin/routes/orgSync.js"
+import newsRoutes from "./back_end/admin/routes/newsRoutes.js"
 
 app.use("/api/activities", activitiesRoutes)
 app.use("/api/advocacies", advocaciesRoutes)
@@ -86,6 +87,7 @@ app.use("/api/submissions", submissionRoutes)
 app.use("/api/upload", uploadRoutes)
 app.use("/api/volunteers", volunteersRoutes)
 app.use("/api", orgSyncRoutes)
+app.use("/api", newsRoutes)
 
 // PUBLIC ROUTES
 import publicOrganizationsRoutes from "./back_end/for_public/routes/organizations.js"

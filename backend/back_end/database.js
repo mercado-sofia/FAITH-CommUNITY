@@ -39,7 +39,7 @@ console.log("Database Configuration:", {
 const pool = mysql.createPool(dbConfig);
 const promisePool = pool.promise();
 
-// Test the connection and create table if it doesn't exist
+// Initialize database function
 const initializeDatabase = async () => {
   try {
     const connection = await promisePool.getConnection();
@@ -65,6 +65,26 @@ const initializeDatabase = async () => {
       console.log("✅ Featured_projects table created successfully!");
     }
 
+    // Check if news table exists
+    const [newsTables] = await connection.query('SHOW TABLES LIKE "news"');
+    
+    if (newsTables.length === 0) {
+      console.log("Creating news table...");
+      await connection.query(`
+        CREATE TABLE news (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          organization_id INT NOT NULL,
+          title VARCHAR(255) NOT NULL,
+          description TEXT NOT NULL,
+          date DATE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
+        )
+      `);
+      console.log("✅ News table created successfully!");
+    }
+
     connection.release();
     return promisePool;
   } catch (error) {
@@ -73,5 +93,23 @@ const initializeDatabase = async () => {
   }
 };
 
-// Initialize database and export promise pool
-export default await initializeDatabase();
+// Initialize database immediately and export
+let dbInstance = null;
+
+const getDb = async () => {
+  if (!dbInstance) {
+    dbInstance = await initializeDatabase();
+  }
+  return dbInstance;
+};
+
+// Initialize the database
+initializeDatabase().then(db => {
+  dbInstance = db;
+  console.log("✅ Database initialization completed!");
+}).catch(error => {
+  console.error("❌ Database initialization failed:", error);
+});
+
+// Export the promise pool directly for backward compatibility
+export default promisePool;

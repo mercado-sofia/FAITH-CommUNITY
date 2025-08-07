@@ -1,0 +1,469 @@
+// controllers/newsController.js
+import db from "../../database.js";
+
+// Create news directly (for admin)
+export const createNews = async (req, res) => {
+  const { title, description, date } = req.body;
+  const { orgId } = req.params;
+
+  if (!orgId) {
+    return res.status(400).json({
+      success: false,
+      message: "Organization ID is required",
+    });
+  }
+
+  if (!title || !description) {
+    return res.status(400).json({
+      success: false,
+      message: "Title and description are required",
+    });
+  }
+
+  try {
+    console.log(`[DEBUG] Creating news for org ID: ${orgId}`);
+    
+    // First try to get organization by ID (numeric) from organizations table
+    let [orgRows] = await db.execute(
+      "SELECT id, orgName, org FROM organizations WHERE id = ?",
+      [orgId]
+    );
+
+    // If not found by ID, try by acronym
+    if (orgRows.length === 0) {
+      [orgRows] = await db.execute(
+        "SELECT id, orgName, org FROM organizations WHERE org = ?",
+        [orgId]
+      );
+    }
+
+    // If still not found, check admins table and sync
+    if (orgRows.length === 0) {
+      const [adminRows] = await db.execute(
+        "SELECT id, orgName, org FROM admins WHERE org = ?",
+        [orgId]
+      );
+      
+      if (adminRows.length > 0) {
+        // Sync organization to organizations table
+        const [syncResult] = await db.execute(
+          "INSERT INTO organizations (orgName, org) VALUES (?, ?) ON DUPLICATE KEY UPDATE orgName = VALUES(orgName)",
+          [adminRows[0].orgName, adminRows[0].org]
+        );
+        
+        [orgRows] = await db.execute(
+          "SELECT id, orgName, org FROM organizations WHERE org = ?",
+          [orgId]
+        );
+      }
+    }
+
+    if (orgRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Organization not found",
+      });
+    }
+
+    const organization = orgRows[0];
+    console.log(`[DEBUG] Found organization:`, organization);
+
+    // Insert news directly into news table
+    const [result] = await db.execute(
+      `INSERT INTO news (organization_id, title, description, date)
+       VALUES (?, ?, ?, ?)`,
+      [organization.id, title, description, date || null]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to create news",
+      });
+    }
+
+    const newsId = result.insertId;
+    console.log(`[DEBUG] News created with ID: ${newsId}`);
+
+    res.json({
+      success: true,
+      message: "News created successfully",
+      data: {
+        id: newsId,
+        title,
+        description,
+        date: date || null,
+        organization_id: organization.id
+      }
+    });
+  } catch (error) {
+    console.error("❌ Error creating news:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create news",
+      error: error.message,
+    });
+  }
+};
+
+// Get news for a specific organization (for admin view) - Only approved news
+export const getNewsByOrg = async (req, res) => {
+  const { orgId } = req.params;
+
+  if (!orgId) {
+    return res.status(400).json({
+      success: false,
+      message: "Organization ID is required",
+    });
+  }
+
+  try {
+    console.log(`[DEBUG] Fetching news for org ID: ${orgId}`);
+    
+    // First try to get organization by ID (numeric) from organizations table
+    let [orgRows] = await db.execute(
+      "SELECT id, orgName, org FROM organizations WHERE id = ?",
+      [orgId]
+    );
+
+    // If not found by ID, try by acronym
+    if (orgRows.length === 0) {
+      [orgRows] = await db.execute(
+        "SELECT id, orgName, org FROM organizations WHERE org = ?",
+        [orgId]
+      );
+    }
+
+    // If still not found, check admins table and sync
+    if (orgRows.length === 0) {
+      const [adminRows] = await db.execute(
+        "SELECT id, orgName, org FROM admins WHERE org = ?",
+        [orgId]
+      );
+      
+      if (adminRows.length > 0) {
+        // Sync organization to organizations table
+        const [syncResult] = await db.execute(
+          "INSERT INTO organizations (orgName, org) VALUES (?, ?) ON DUPLICATE KEY UPDATE orgName = VALUES(orgName)",
+          [adminRows[0].orgName, adminRows[0].org]
+        );
+        
+        [orgRows] = await db.execute(
+          "SELECT id, orgName, org FROM organizations WHERE org = ?",
+          [orgId]
+        );
+      }
+    }
+
+    if (orgRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Organization not found",
+      });
+    }
+
+    const organization = orgRows[0];
+    console.log(`[DEBUG] Found organization:`, organization);
+
+    // Get only approved news from news table (no pending submissions)
+    const [newsRows] = await db.execute(
+      `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
+       FROM news n
+       LEFT JOIN organizations o ON n.organization_id = o.id
+       WHERE n.organization_id = ? 
+       ORDER BY n.created_at DESC`,
+      [organization.id]
+    );
+    console.log(`[DEBUG] Found ${newsRows.length} news items`);
+
+    // Map news with organization info
+    const news = newsRows.map(news => ({
+      id: news.id,
+      title: news.title,
+      description: news.description,
+      date: news.date || news.created_at,
+      created_at: news.created_at,
+      orgID: news.orgAcronym || organization.org,
+      orgName: news.orgName || organization.orgName,
+      icon: news.orgLogo || null
+    }));
+
+    res.json(news);
+  } catch (error) {
+    console.error("❌ Error fetching news:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch news",
+      error: error.message,
+    });
+  }
+};
+
+// Get all approved news (for public view)
+export const getApprovedNews = async (req, res) => {
+  try {
+    const [rows] = await db.execute(
+      `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
+       FROM news n
+       LEFT JOIN organizations o ON n.organization_id = o.id
+       ORDER BY n.created_at DESC`
+    );
+
+    const news = rows.map(news => ({
+      id: news.id,
+      title: news.title,
+      description: news.description,
+      date: news.date || news.date_published || news.created_at,
+      created_at: news.created_at,
+      orgID: news.orgAcronym || `Org-${news.organization_id}`,
+      orgName: news.orgName || `Organization ${news.organization_id}`,
+      icon: news.orgLogo || null
+    }));
+
+    console.log('📰 Fetched news for public view:', news);
+    res.json(news);
+  } catch (error) {
+    console.error("❌ Error fetching approved news:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch news",
+      error: error.message,
+    });
+  }
+};
+
+// Get approved news for a specific organization (for public view)
+export const getApprovedNewsByOrg = async (req, res) => {
+  const { orgId } = req.params;
+
+  if (!orgId) {
+    return res.status(400).json({
+      success: false,
+      message: "Organization ID is required",
+    });
+  }
+
+  try {
+    // First try to get organization by ID (numeric) from organizations table
+    let [orgRows] = await db.execute(
+      "SELECT id, orgName, org FROM organizations WHERE id = ?",
+      [orgId]
+    );
+
+    // If not found by ID, try by acronym
+    if (orgRows.length === 0) {
+      [orgRows] = await db.execute(
+        "SELECT id, orgName, org FROM organizations WHERE org = ?",
+        [orgId]
+      );
+    }
+
+    if (orgRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Organization not found",
+      });
+    }
+
+    const organization = orgRows[0];
+
+    const [rows] = await db.execute(
+      `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
+       FROM news n
+       LEFT JOIN organizations o ON n.organization_id = o.id
+       WHERE n.organization_id = ?
+       ORDER BY n.created_at DESC`,
+      [organization.id]
+    );
+
+    const news = rows.map(news => ({
+      id: news.id,
+      title: news.title,
+      description: news.description,
+      date: news.date || news.date_published || news.created_at,
+      created_at: news.created_at,
+      orgID: news.orgAcronym || organization.org || `Org-${news.organization_id}`,
+      orgName: news.orgName || organization.orgName || `Organization ${news.organization_id}`,
+      icon: news.orgLogo || null
+    }));
+
+    console.log('📰 Fetched news for organization:', news);
+    res.json(news);
+  } catch (error) {
+    console.error("❌ Error fetching approved news by org:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch news",
+      error: error.message,
+    });
+  }
+};
+
+// Get a single news item by ID (for public view)
+export const getNewsById = async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "News ID is required",
+    });
+  }
+
+  try {
+    const [rows] = await db.execute(
+      `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
+       FROM news n
+       LEFT JOIN organizations o ON n.organization_id = o.id
+       WHERE n.id = ?`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "News not found",
+      });
+    }
+
+    const news = rows[0];
+    const newsData = {
+      id: news.id,
+      title: news.title,
+      description: news.description,
+      date: news.date || news.date_published || news.created_at,
+      created_at: news.created_at,
+      orgID: news.orgAcronym || `Org-${news.organization_id}`,
+      orgName: news.orgName || `Organization ${news.organization_id}`,
+      icon: news.orgLogo || null
+    };
+
+    console.log('📰 Fetched news detail:', newsData);
+    res.json(newsData);
+  } catch (error) {
+    console.error("❌ Error fetching news by ID:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch news",
+      error: error.message,
+    });
+  }
+};
+
+// Delete news submission (for admin)
+export const deleteNewsSubmission = async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "News ID is required",
+    });
+  }
+
+  try {
+    // Check if it's a submission ID or approved news ID
+    if (id.startsWith('submission_')) {
+      // Delete from submissions table
+      const submissionId = id.replace('submission_', '');
+      const [result] = await db.execute(
+        "DELETE FROM submissions WHERE id = ? AND section = 'news'",
+        [submissionId]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "News submission not found",
+        });
+      }
+    } else {
+      // Delete from news table
+      const [result] = await db.execute(
+        "DELETE FROM news WHERE id = ?",
+        [id]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "News not found",
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: "News deleted successfully",
+    });
+  } catch (error) {
+    console.error("❌ Error deleting news:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete news",
+      error: error.message,
+    });
+  }
+};
+
+// Update news (for admin)
+export const updateNews = async (req, res) => {
+  const { id } = req.params;
+  const { title, description, date } = req.body;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "News ID is required",
+    });
+  }
+
+  if (!title || !description) {
+    return res.status(400).json({
+      success: false,
+      message: "Title and description are required",
+    });
+  }
+
+  try {
+    // Check if news exists
+    const [existingNews] = await db.execute(
+      "SELECT id FROM news WHERE id = ?",
+      [id]
+    );
+
+    if (existingNews.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "News not found",
+      });
+    }
+
+    // Update the news
+    const [result] = await db.execute(
+      `UPDATE news 
+       SET title = ?, description = ?, date = ?
+       WHERE id = ?`,
+      [title, description, date || null, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update news",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "News updated successfully",
+    });
+  } catch (error) {
+    console.error("❌ Error updating news:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update news",
+      error: error.message,
+    });
+  }
+};

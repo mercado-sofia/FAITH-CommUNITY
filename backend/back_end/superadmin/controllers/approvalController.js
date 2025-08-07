@@ -71,7 +71,7 @@ export const approveSubmission = async (req, res) => {
       );
       
       // For advocacy, data is already a string from the parsed JSON
-      const advocacyData = typeof data === 'string' ? data : JSON.stringify(data);
+      const advocacyData = typeof data === 'string' ? data.trim() : JSON.stringify(data).trim();
       
       if (existingAdvocacy.length > 0) {
         // Update existing record
@@ -96,7 +96,7 @@ export const approveSubmission = async (req, res) => {
       );
       
       // For competency, data is already a string from the parsed JSON
-      const competencyData = typeof data === 'string' ? data : JSON.stringify(data);
+      const competencyData = typeof data === 'string' ? data.trim() : JSON.stringify(data).trim();
       
       if (existingCompetency.length > 0) {
         // Update existing record
@@ -150,6 +150,32 @@ export const approveSubmission = async (req, res) => {
         console.log('[DEBUG] Program successfully inserted into programs_projects table');
       } catch (insertError) {
         console.error('[ERROR] Failed to insert program into programs_projects:', insertError);
+        throw insertError;
+      }
+    }
+
+    if (section === 'news') {
+      console.log('[DEBUG] Approving news submission:', {
+        orgId,
+        submissionId: id,
+        newsData: data
+      });
+      
+      // Insert new news into news table
+      try {
+        await db.execute(
+          `INSERT INTO news (organization_id, title, description, date)
+           VALUES (?, ?, ?, ?)`,
+          [
+            orgId,
+            data.title,
+            data.description,
+            data.date || new Date().toISOString().split('T')[0]
+          ]
+        );
+        console.log('[DEBUG] News successfully inserted into news table');
+      } catch (insertError) {
+        console.error('[ERROR] Failed to insert news into news table:', insertError);
         throw insertError;
       }
     }

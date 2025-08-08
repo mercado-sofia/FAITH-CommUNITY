@@ -14,11 +14,12 @@
 
 .modalContent {
   background: white;
-  border-radius: 16px;
+  border-radius: 14px;
   width: 100%;
-  max-width: 600px;
+  max-width: 920px;
   max-height: 90vh;
   overflow-y: auto;
+  padding: 0 15px 10px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   animation: modalSlideIn 0.3s ease-out;
 }
@@ -73,8 +74,27 @@
   padding: 0 24px 24px 24px;
 }
 
+/* Two Column Layout */
+.twoColumnLayout {
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: 34px;
+  margin-bottom: 24px;
+}
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+}
+
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
 .formGroup {
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 
 .formLabel {
@@ -124,8 +144,8 @@
 }
 
 .formTextarea {
-  resize: vertical;
-  min-height: 100px;
+  resize: none;
+  min-height: 220px;
   font-family: inherit;
 }
 
@@ -151,15 +171,56 @@
   margin-top: 4px;
 }
 
+/* Status Buttons */
+.statusButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.statusButton {
+  padding: 8px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 6px;
+  background: #f9fafb;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+}
+
+.statusButton:hover {
+  border-color: #d1d5db;
+  background: #f3f4f6;
+}
+
+.statusButton.statusActive {
+  background: #06100f;
+  color: white;
+  border-color: #06100f;
+}
+
+.statusButton.statusActive:hover {
+  background: #081412;
+  border-color: #081412;
+}
+
 .uploadArea {
   position: relative;
-  border: 2px dashed #d1d5db;
+  border: 3px dashed #06100f;
   border-radius: 8px;
   padding: 40px 20px;
+  margin-bottom: 0.65rem;
+  height: 220px;
   text-align: center;
   background: #f9fafb;
   transition: all 0.2s ease;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .uploadArea:hover {
@@ -182,20 +243,20 @@
 }
 
 .uploadIcon {
-  font-size: 32px;
+  font-size: 26px;
   color: #9ca3af;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .uploadText {
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 500;
   color: #374151;
   margin: 0 0 4px 0;
 }
 
 .uploadSubtext {
-  font-size: 14px;
+  font-size: 12px;
   color: #6b7280;
   margin: 0;
 }
@@ -273,7 +334,6 @@
   display: flex;
   gap: 12px;
   justify-content: flex-end;
-  padding-top: 20px;
   border-top: 1px solid #f3f4f6;
 }
 
@@ -281,8 +341,9 @@
 .submitButton {
   padding: 12px 24px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
+  font-family: var(--font-inter);
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
@@ -346,6 +407,12 @@
     padding: 0 20px 20px 20px;
   }
 
+  /* Two Column Layout - Stack on mobile */
+  .twoColumnLayout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
   .formRow {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -368,14 +435,24 @@
   }
 
   .formActions {
-    flex-direction: column-reverse;
+    flex-direction: column;
     gap: 8px;
   }
 
   .cancelButton,
   .submitButton {
     width: 100%;
-    min-width: auto;
+  }
+
+  /* Status buttons - stack on mobile */
+  .statusButtons {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .statusButton {
+    width: 100%;
+    text-align: center;
   }
 }
 

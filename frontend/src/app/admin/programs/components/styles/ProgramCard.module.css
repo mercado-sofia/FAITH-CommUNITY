@@ -48,7 +48,7 @@
 .programTitle {
   font-size: 18px;
   font-weight: 600;
-  color: #1f2937;
+  color: #06100f;
   margin: 0;
   line-height: 1.4;
   flex: 1;
@@ -84,6 +84,53 @@
 
 .metaText {
   line-height: 1.4;
+}
+
+/* Image placeholder */
+.imagePlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  background: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: 0.5rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.placeholderIcon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.5;
+}
+
+/* Status badge */
+.statusBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+}
+
+.statusBadge.upcoming {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.statusBadge.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusBadge.completed {
+  background: #f3f4f6;
+  color: #374151;
 }
 
 .actionButtons {

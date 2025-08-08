@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import styles from './styles/EditModal.module.css'
+import styles from './styles/SectionEditModal.module.css'
 
 export default function SectionEditModal({
   isOpen,
@@ -55,7 +55,7 @@ export default function SectionEditModal({
           onChange={handleInputChange}
           className={styles.textarea}
           placeholder="Enter your organization's advocacy information, mission, vision, goals, programs, and initiatives..."
-          rows={8}
+          rows={6}
         />
       </div>
     </div>
@@ -71,7 +71,7 @@ export default function SectionEditModal({
           onChange={handleInputChange}
           className={styles.textarea}
           placeholder="Enter your organization's competencies, expertise areas, certifications, partnerships, resources, and achievements..."
-          rows={8}
+          rows={6}
         />
       </div>
     </div>

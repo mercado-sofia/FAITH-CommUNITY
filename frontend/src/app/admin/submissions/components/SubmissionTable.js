@@ -7,6 +7,8 @@ import DeleteConfirmation from './DeleteConfirmationModal';
 import BulkActionsBar from './BulkActionsBar';
 import styles from './styles/SubmissionTable.module.css';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 export default function SubmissionTable({ orgAcronym, submissions = [], loading = false, onRefresh }) {
   const [selected, setSelected] = useState(null);
   const [reEditSubmission, setReEditSubmission] = useState(null);
@@ -17,11 +19,16 @@ export default function SubmissionTable({ orgAcronym, submissions = [], loading 
 
   const handleCancel = async (id) => {
     try {
-      await fetch(`http://localhost:8080/api/submissions/${id}`, { method: 'DELETE' });
+      const response = await fetch(`${API_BASE_URL}/api/submissions/${id}`, { method: 'DELETE' });
+      if (!response.ok) {
+        throw new Error(`Failed to cancel submission: ${response.status}`);
+      }
       if (onRefresh) onRefresh();
       setConfirmId(null);
+      alert('Submission cancelled successfully!');
     } catch (err) {
       console.error('Cancel error:', err);
+      alert(`Failed to cancel submission: ${err.message}`);
     }
   };
 
@@ -50,7 +57,7 @@ export default function SubmissionTable({ orgAcronym, submissions = [], loading 
 
       console.log('Sending data:', { proposed_data: formattedData, section: submission.section, type: typeof formattedData });
 
-      const response = await fetch(`http://localhost:8080/api/submissions/${submissionId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/submissions/${submissionId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -103,8 +110,11 @@ export default function SubmissionTable({ orgAcronym, submissions = [], loading 
   // Delete handler (hard delete)
   const handleDelete = async (id) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/submissions/${id}/delete`, {
-        method: 'DELETE'
+      const response = await fetch(`${API_BASE_URL}/api/submissions/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       
       if (response.ok) {
@@ -116,7 +126,9 @@ export default function SubmissionTable({ orgAcronym, submissions = [], loading 
         setSelectedItems(newSelected);
         setShowBulkActions(newSelected.size > 0);
       } else {
-        throw new Error('Failed to delete submission');
+        const errorData = await response.text();
+        console.error(`Delete failed for ID ${id}:`, errorData);
+        throw new Error(`Failed to delete submission: ${response.status} ${response.statusText}`);
       }
     } catch (err) {
       console.error('Delete error:', err);
@@ -139,7 +151,7 @@ export default function SubmissionTable({ orgAcronym, submissions = [], loading 
       }
       
       const promises = pendingIds.map(id => 
-        fetch(`http://localhost:8080/api/submissions/${id}`, { method: 'DELETE' })
+        fetch(`${API_BASE_URL}/api/submissions/${id}`, { method: 'DELETE' })
       );
       await Promise.all(promises);
       if (onRefresh) onRefresh();
@@ -155,27 +167,17 @@ export default function SubmissionTable({ orgAcronym, submissions = [], loading 
     try {
       console.log('[DEBUG] Bulk delete - Selected IDs:', Array.from(selectedItems));
       
-      const promises = Array.from(selectedItems).map(async (id) => {
-        console.log(`[DEBUG] Deleting submission ID: ${id}`);
-        const response = await fetch(`http://localhost:8080/api/submissions/${id}`, { 
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        console.log(`[DEBUG] Delete response for ID ${id}:`, response.status, response.statusText);
-        
-        if (!response.ok) {
-          const errorData = await response.text();
-          console.error(`[DEBUG] Delete failed for ID ${id}:`, errorData);
-          throw new Error(`Failed to delete submission ${id}: ${response.status} ${response.statusText}`);
-        }
-        
-        return response;
+      const response = await fetch(`${API_BASE_URL}/api/submissions/bulk-delete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ids: Array.from(selectedItems) })
       });
       
-      await Promise.all(promises);
+      if (!response.ok) {
+        throw new Error(`Failed to delete submissions: ${response.status}`);
+      }
       console.log('[DEBUG] All deletions completed successfully');
       
       if (onRefresh) onRefresh(); // Refresh data from server
@@ -206,8 +208,6 @@ export default function SubmissionTable({ orgAcronym, submissions = [], loading 
       )}
       {loading ? (
         <p>Loading...</p>
-      ) : !Array.isArray(submissions) || submissions.length === 0 ? (
-        <p>No submissions found.</p>
       ) : (
         <table className={styles.table}>
           <thead className={styles.tableHeader}>
@@ -217,7 +217,7 @@ export default function SubmissionTable({ orgAcronym, submissions = [], loading 
                   type="checkbox" 
                   checked={allSelected}
                   onChange={handleSelectAll}
-                  disabled={submissions.length === 0}
+                  disabled={!Array.isArray(submissions) || submissions.length === 0}
                   className={styles.selectAllCheckbox}
                 />
               </th>
@@ -230,7 +230,14 @@ export default function SubmissionTable({ orgAcronym, submissions = [], loading 
             </tr>
           </thead>
           <tbody className={styles.tableBody}>
-            {submissions.map((s) => (
+            {!Array.isArray(submissions) || submissions.length === 0 ? (
+              <tr>
+                <td colSpan="7" className={styles.emptyState}>
+                  No submissions found.
+                </td>
+              </tr>
+            ) : (
+              submissions.map((s) => (
               <tr key={s.id}>
                 <td className={styles.selectColumn}>
                   <input 
@@ -290,7 +297,8 @@ export default function SubmissionTable({ orgAcronym, submissions = [], loading 
                   </button>
                 </td>
               </tr>
-            ))}
+              ))
+            )}
           </tbody>
         </table>
       )}

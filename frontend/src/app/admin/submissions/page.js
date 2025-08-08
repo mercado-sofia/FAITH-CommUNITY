@@ -6,6 +6,8 @@ import SearchAndFilterControls from './components/SearchAndFilterControls';
 import SubmissionTable from './components/SubmissionTable';
 import styles from './submissions.module.css';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 export default function SubmissionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -21,8 +23,12 @@ export default function SubmissionsPage() {
   const [sortOrder, setSortOrder] = useState(
     searchParams.get('sort') === 'oldest' ? 'oldest' : 'latest'
   );
-  const [sectionFilter, setSectionFilter] = useState('All Sections');
-  const [showCount, setShowCount] = useState(10);
+  const [sectionFilter, setSectionFilter] = useState(
+    searchParams.get('section') ? capitalizeFirstLetter(searchParams.get('section')) : 'All Sections'
+  );
+  const [showCount, setShowCount] = useState(
+    parseInt(searchParams.get('show')) || 10
+  );
 
   function capitalizeFirstLetter(str) {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -33,7 +39,7 @@ export default function SubmissionsPage() {
     
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:8080/api/submissions/${orgAcronym}`);
+      const res = await fetch(`${API_BASE_URL}/api/submissions/${orgAcronym}`);
       const data = await res.json();
       
       // Handle different response formats
@@ -68,8 +74,16 @@ export default function SubmissionsPage() {
       params.set('sort', sortOrder);
     }
 
+    if (sectionFilter.toLowerCase() !== 'all sections') {
+      params.set('section', sectionFilter.toLowerCase());
+    }
+
+    if (showCount && showCount !== 10) {
+      params.set('show', showCount.toString());
+    }
+
     router.replace(`?${params.toString()}`, { scroll: false });
-  }, [router, statusFilter, sortOrder]);
+  }, [router, statusFilter, sortOrder, sectionFilter, showCount]);
 
   const filteredSubmissions = useMemo(() => {
     const filtered = submissions.filter((submission) => {
@@ -106,7 +120,7 @@ export default function SubmissionsPage() {
 
       <SearchAndFilterControls
         showCount={showCount}
-        onShowCountChange={setShowCount}
+        onShowCountChange={(value) => setShowCount(parseInt(value))}
         sectionFilter={sectionFilter}
         onSectionFilterChange={setSectionFilter}
         statusFilter={statusFilter}

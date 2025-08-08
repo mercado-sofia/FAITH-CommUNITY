@@ -7,6 +7,7 @@ import { initializeAuth } from "../../rtk/superadmin/adminSlice";
 import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
 import styles from "./dashboard/dashboard.module.css";
+import scrollStyles from "./components/CustomScrollbar.module.css";
 import { Poppins, Inter, Urbanist } from 'next/font/google';
 
 const poppins = Poppins({
@@ -60,7 +61,7 @@ export default function AdminLayout({ children }) {
     <div className={`${poppins.variable} ${inter.variable} ${urbanist.variable}`}>
       <Sidebar />
       <TopBar />
-      <main className={`${styles.mainContent} ${poppins.className}`}>
+      <main className={`${styles.mainContent} ${scrollStyles.adminScrollContainer} ${poppins.className}`}>
         {children}
       </main>
     </div>

@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { FaEdit, FaTrash, FaCalendar, FaTag } from 'react-icons/fa';
+import { FaEdit, FaCalendar, FaTag } from 'react-icons/fa';
+import { FiTrash2 } from 'react-icons/fi';
 import styles from './styles/ProgramCard.module.css';
 
 const ProgramCard = ({ program, onEdit, onDelete }) => {
@@ -49,7 +50,7 @@ const ProgramCard = ({ program, onEdit, onDelete }) => {
   return (
     <div className={styles.programCard}>
       {/* Program Image */}
-      {program.image && (
+      {program.image ? (
         <div className={styles.imageContainer}>
           <Image
             src={program.image}
@@ -62,6 +63,13 @@ const ProgramCard = ({ program, onEdit, onDelete }) => {
               e.target.style.display = 'none';
             }}
           />
+        </div>
+      ) : (
+        <div className={styles.imageContainer}>
+          <div className={styles.imagePlaceholder}>
+            <FaTag className={styles.placeholderIcon} />
+            <span>No Image</span>
+          </div>
         </div>
       )}
 
@@ -77,6 +85,13 @@ const ProgramCard = ({ program, onEdit, onDelete }) => {
             : program.description || 'No description provided'
           }
         </p>
+
+        {/* Program Status Badge */}
+        {program.status && (
+          <div className={`${styles.statusBadge} ${styles[program.status]}`}>
+            {program.status.charAt(0).toUpperCase() + program.status.slice(1)}
+          </div>
+        )}
 
         {/* Program Meta Information */}
         <div className={styles.programMeta}>
@@ -123,7 +138,7 @@ const ProgramCard = ({ program, onEdit, onDelete }) => {
             disabled={isDeleting}
             title="Delete program"
           >
-            <FaTrash /> {isDeleting ? 'Deleting...' : 'Delete'}
+            <FiTrash2 /> {isDeleting ? 'Deleting...' : 'Delete'}
           </button>
         </div>
       </div>

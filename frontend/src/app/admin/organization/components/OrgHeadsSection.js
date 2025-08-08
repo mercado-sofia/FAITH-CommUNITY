@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Image from 'next/image'
-import { FaEdit, FaPlus, FaTrash, FaFacebook, FaEnvelope, FaSearch, FaTimes, FaCrown, FaUserTie, FaUser, FaGripVertical } from 'react-icons/fa'
+import { FaEdit, FaPlus, FaFacebook, FaEnvelope, FaSearch, FaTimes, FaCrown, FaUserTie, FaUser, FaGripVertical } from 'react-icons/fa'
 import { FaListUl } from 'react-icons/fa6'
 import { BsFillGrid3X3GapFill } from 'react-icons/bs'
 import styles from './styles/OrgHeadsSection.module.css'
@@ -19,8 +19,9 @@ export default function OrgHeadsSection({
   setTempEditData
 }) {
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [isDragMode, setIsDragMode] = useState(false)
-  const [viewMode, setViewMode] = useState('grid') // 'grid' or 'list'
+  const [viewMode, setViewMode] = useState('grid')
   const [localReorderedData, setLocalReorderedData] = useState(null)
   const handleEditClick = () => {
     setOriginalData([...orgHeadsData])
@@ -44,11 +45,23 @@ export default function OrgHeadsSection({
     return filterHeads(sortedHeads, searchQuery)
   }, [orgHeadsData, localReorderedData, searchQuery])
 
-  const handleSearchChange = (e) => {
-    setSearchQuery(e.target.value)
+  const handleSearchInputChange = (e) => {
+    setSearchInput(e.target.value)
+  }
+
+  const applySearch = () => {
+    setSearchQuery(searchInput.trim())
+  }
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      applySearch()
+    }
   }
 
   const clearSearch = () => {
+    setSearchInput('')
     setSearchQuery('')
   }
 
@@ -63,18 +76,15 @@ export default function OrgHeadsSection({
 
   const handleReorder = async (reorderedHeads) => {
     try {
-      // Add display_order to each head based on their new position
       const headsWithOrder = reorderedHeads.map((head, index) => ({
         ...head,
         display_order: index + 1
       }))
       
-      // Update local state immediately for better UX
       setLocalReorderedData(headsWithOrder)
       
       console.log('Reordered heads with display_order:', headsWithOrder)
     
-    // Call API to save new order to database
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
     const response = await fetch(`${API_BASE_URL}/api/heads/reorder`, {
       method: 'PUT',
@@ -88,19 +98,15 @@ export default function OrgHeadsSection({
     
     console.log('✅ Heads reorder saved to database')
     
-    // Clear SWR cache for public organization data to reflect changes immediately
     if (typeof window !== 'undefined' && window.localStorage) {
-      // Clear any cached organization data that might be affected
       const orgId = headsWithOrder[0]?.organization_id;
       if (orgId) {
-        // Force revalidation by clearing cache keys that might contain this org data
         console.log('🔄 Clearing SWR cache for organization data');
       }
     }
       
     } catch (error) {
       console.error('Failed to reorder heads:', error)
-      // Revert local state on error
       setLocalReorderedData(null)
     }
   }
@@ -108,7 +114,7 @@ export default function OrgHeadsSection({
   const toggleDragMode = () => {
     setIsDragMode(!isDragMode)
     if (!isDragMode) {
-      setViewMode('list') // Switch to list view for better drag experience
+      setViewMode('list')
     }
   }
 
@@ -130,7 +136,6 @@ export default function OrgHeadsSection({
                 onClick={toggleViewMode}
                 className={`${styles.viewButton} ${viewMode === 'grid' ? styles.active : ''}`}
                 title="Grid View"
-                disabled={isDragMode}
               >
                 <BsFillGrid3X3GapFill />
               </button>
@@ -138,7 +143,6 @@ export default function OrgHeadsSection({
                 onClick={toggleViewMode}
                 className={`${styles.viewButton} ${viewMode === 'list' ? styles.active : ''}`}
                 title="List View"
-                disabled={isDragMode}
               >
                 <FaListUl />
               </button>
@@ -181,8 +185,9 @@ export default function OrgHeadsSection({
               <input
                 type="text"
                 placeholder="Search by name, role, or email..."
-                value={searchQuery}
-                onChange={handleSearchChange}
+                value={searchInput}
+                onChange={handleSearchInputChange}
+                onKeyDown={handleSearchKeyDown}
                 className={styles.searchInput}
               />
               {searchQuery && (

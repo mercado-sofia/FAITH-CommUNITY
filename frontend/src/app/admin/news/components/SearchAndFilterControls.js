@@ -36,7 +36,7 @@ const SearchAndFilterControls = ({
     setLocalQuery(searchQuery || '');
   }, [searchQuery]);
 
-  const sortOptions = ['Latest', 'Oldest'];
+  const sortOptions = ['Newest', 'Oldest'];
   const showCountOptions = [5, 10, 15, 20];
 
   return (
@@ -65,10 +65,7 @@ const SearchAndFilterControls = ({
             </ul>
           )}
         </div>
-      </div>
 
-      {/* Search and Sort */}
-      <div className={styles.searchWrapper}>
         {/* Search input */}
         <div className={styles.searchInputContainer}>
           <input
@@ -94,7 +91,7 @@ const SearchAndFilterControls = ({
         </div>
 
         {/* Sort Dropdown */}
-        <div className={styles.dropdownWrapper} style={{ marginLeft: '1rem' }}>
+        <div className={styles.dropdownWrapper}>
           <div
             className={styles.dropdown}
             onClick={() => toggleDropdown("sort")}

@@ -3,20 +3,41 @@
 
 import { useState, useRef, useEffect } from "react"
 import { HiOutlineDotsHorizontal } from "react-icons/hi"
+import { IoCloseOutline } from "react-icons/io5";
 import PaginationControls from "./PaginationControls"
 import ViewDetailsModal from "./ViewDetailsModal"
 import styles from "./styles/VolunteerTable.module.css"
 
-export default function VolunteerTable({ volunteers, onStatusUpdate }) {
+export default function VolunteerTable({ volunteers, onStatusUpdate, itemsPerPage = 10 }) {
   const [selectedVolunteer, setSelectedVolunteer] = useState(null)
   const [showDropdown, setShowDropdown] = useState(null)
   const [modalType, setModalType] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [dropdownPosition, setDropdownPosition] = useState({})
   const [selectedVolunteers, setSelectedVolunteers] = useState([])
+  const [showBulkModal, setShowBulkModal] = useState(false)
+  const [bulkAction, setBulkAction] = useState(null)
 
-  const itemsPerPage = 10
+  // itemsPerPage is now passed as a prop with default value of 10
   const dropdownRefs = useRef({})
+
+  // Reset to page 1 when volunteers data changes or when current page exceeds total pages
+  useEffect(() => {
+    const totalPages = Math.ceil(volunteers.length / itemsPerPage)
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1)
+    }
+  }, [volunteers.length, currentPage, itemsPerPage])
+
+  // Reset to page 1 when itemsPerPage changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [itemsPerPage])
+
+  // Reset selections when navigating to a different page
+  useEffect(() => {
+    setSelectedVolunteers([])
+  }, [currentPage])
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -70,6 +91,34 @@ export default function VolunteerTable({ volunteers, onStatusUpdate }) {
     setModalType(null)
   }
 
+  const handleBulkAction = (action) => {
+    if (selectedVolunteers.length === 0) return
+    setBulkAction(action)
+    setShowBulkModal(true)
+  }
+
+  const handleConfirmBulkAction = () => {
+    if (selectedVolunteers.length === 0 || !bulkAction) return
+    
+    const newStatus = bulkAction === 'approve' ? 'Approved' : 'Declined'
+    selectedVolunteers.forEach(volunteerId => {
+      onStatusUpdate(volunteerId, newStatus)
+    })
+    
+    setSelectedVolunteers([])
+    setShowBulkModal(false)
+    setBulkAction(null)
+  }
+
+  const closeBulkModal = () => {
+    setShowBulkModal(false)
+    setBulkAction(null)
+  }
+
+  const cancelSelection = () => {
+    setSelectedVolunteers([])
+  }
+
   const handleDropdownToggle = (volunteerId) => {
     if (showDropdown === volunteerId) return setShowDropdown(null)
 
@@ -86,12 +135,62 @@ export default function VolunteerTable({ volunteers, onStatusUpdate }) {
 
   const totalPages = Math.ceil(volunteers.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
+  const endIndex = Math.min(startIndex + itemsPerPage, volunteers.length)
   const currentVolunteers = volunteers.slice(startIndex, endIndex)
   const isAllSelected = currentVolunteers.length > 0 && selectedVolunteers.length === currentVolunteers.length
 
+  // Get selected volunteers' data and statuses
+  const selectedVolunteersData = volunteers.filter(volunteer => 
+    selectedVolunteers.includes(volunteer.id)
+  )
+  const selectedStatuses = selectedVolunteersData.map(volunteer => volunteer.status)
+
+  // Smart button state logic - Only disable when action would be meaningless
+  const isApproveDisabled = selectedStatuses.length > 0 && selectedStatuses.every(status => status === 'Approved')
+  const isDeclineDisabled = selectedStatuses.length > 0 && selectedStatuses.every(status => status === 'Declined')
+
+  // Count only volunteers that will actually be affected by the action
+  const volunteersToApprove = selectedStatuses.filter(status => status !== 'Approved').length
+  const volunteersToDecline = selectedStatuses.filter(status => status !== 'Declined').length
+
   return (
     <>
+      {/* Bulk Actions Bar */}
+      {selectedVolunteers.length > 0 && (
+        <div className={styles.bulkActionsBar}>
+          <div className={styles.bulkActionsLeft}>
+            <span className={styles.selectedCount}>
+              {selectedVolunteers.length} volunteer{selectedVolunteers.length !== 1 ? 's' : ''} selected
+            </span>
+          </div>
+          <div className={styles.bulkActionsRight}>
+            <button 
+              className={`${styles.bulkButton} ${styles.approveButton} ${isApproveDisabled ? styles.disabled : ''}`}
+              onClick={() => !isApproveDisabled && handleBulkAction('approve')}
+              disabled={isApproveDisabled}
+              title={isApproveDisabled ? 'Cannot approve: All selected volunteers are already approved' : 'Approve selected volunteers'}
+            >
+              Approve Selected
+            </button>
+            <button 
+              className={`${styles.bulkButton} ${styles.declineButton} ${isDeclineDisabled ? styles.disabled : ''}`}
+              onClick={() => !isDeclineDisabled && handleBulkAction('decline')}
+              disabled={isDeclineDisabled}
+              title={isDeclineDisabled ? 'Cannot decline: All selected volunteers are already declined' : 'Decline selected volunteers'}
+            >
+              Decline Selected
+            </button>
+            <button 
+              className={styles.cancelButton}
+              onClick={cancelSelection}
+              title="Cancel selection"
+            >
+              <IoCloseOutline />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className={styles.tableContainer}>
         <table className={styles.table}>
           <thead className={styles.tableHeader}>
@@ -198,6 +297,26 @@ export default function VolunteerTable({ volunteers, onStatusUpdate }) {
               <button onClick={closeModal}>Cancel</button>
               <button onClick={handleConfirmAction}>
                 Yes, {modalType.charAt(0).toUpperCase() + modalType.slice(1)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Action Confirmation Modal */}
+      {showBulkModal && bulkAction && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.confirmModal}>
+            <h2>{bulkAction === 'approve' ? 'Approve' : 'Decline'} Selected Volunteers</h2>
+            <p>
+              Are you sure you want to {bulkAction} <strong>
+                {bulkAction === 'approve' ? volunteersToApprove : volunteersToDecline}
+              </strong> selected volunteer{(bulkAction === 'approve' ? volunteersToApprove : volunteersToDecline) !== 1 ? 's' : ''}?
+            </p>
+            <div className={styles.confirmActions}>
+              <button onClick={closeBulkModal}>Cancel</button>
+              <button onClick={handleConfirmBulkAction}>
+                Yes, {bulkAction === 'approve' ? 'Approve' : 'Decline'} All
               </button>
             </div>
           </div>

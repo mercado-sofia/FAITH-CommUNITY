@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { selectCurrentAdmin } from '../../../rtk/superadmin/adminSlice';
 import NewsCard from './components/NewsCard';
 import AddNewsModal from './components/AddNewsModal';
@@ -15,6 +16,9 @@ const API_BASE_URL = 'http://localhost:8080';
 
 export default function AdminNewsPage() {
   const currentAdmin = useSelector(selectCurrentAdmin);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,24 +28,66 @@ export default function AdminNewsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editingNews, setEditingNews] = useState(null);
   const [deletingNews, setDeletingNews] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('latest');
-  const [showCount, setShowCount] = useState(10);
+  
+  // Initialize state from URL parameters
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+  const [sortBy, setSortBy] = useState(() => {
+    const sortParam = searchParams.get('sort');
+    return sortParam ? sortParam.charAt(0).toUpperCase() + sortParam.slice(1).toLowerCase() : 'Newest';
+  });
+  const [showCount, setShowCount] = useState(parseInt(searchParams.get('show') || '10'));
 
   const orgId = currentAdmin?.org;
 
+  // Auto-clear messages after 5 seconds
   useEffect(() => {
-    if (currentAdmin) {
-      fetchNews();
+    if (message.text) {
+      const timer = setTimeout(() => {
+        setMessage({ type: '', text: '' });
+      }, 3000);
+      
+      return () => clearTimeout(timer);
     }
-  }, [currentAdmin]);
+  }, [message.text]);
 
-  useEffect(() => {
-    console.log('Current admin:', currentAdmin);
-    console.log('Org ID:', orgId);
-  }, [currentAdmin, orgId]);
+  // Function to update URL parameters
+  const updateURLParams = (newParams) => {
+    const current = new URLSearchParams(Array.from(searchParams.entries()));
+    
+    Object.keys(newParams).forEach(key => {
+      const value = newParams[key];
+      // Only add to URL if it's not the default value
+      if (value && value !== '' && 
+          !((key === 'sort' && value.toLowerCase() === 'newest') ||
+            (key === 'show' && value === '10'))) {
+        current.set(key, value);
+      } else {
+        current.delete(key);
+      }
+    });
 
-  const fetchNews = async () => {
+    const search = current.toString();
+    const query = search ? `?${search}` : '';
+    router.push(`/admin/news${query}`, { scroll: false });
+  };
+
+  // Custom setters that update URL
+  const handleSearchChange = (value) => {
+    setSearchQuery(value);
+    updateURLParams({ search: value });
+  };
+
+  const handleSortChange = (value) => {
+    setSortBy(value);
+    updateURLParams({ sort: value.toLowerCase() });
+  };
+
+  const handleShowCountChange = (value) => {
+    setShowCount(value);
+    updateURLParams({ show: value.toString() });
+  };
+
+  const fetchNews = useCallback(async () => {
     if (!orgId) {
       setError('Organization information not found');
       setLoading(false);
@@ -65,7 +111,18 @@ export default function AdminNewsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orgId]);
+  
+  useEffect(() => {
+    if (currentAdmin) {
+      fetchNews();
+    }
+  }, [currentAdmin, fetchNews]);
+
+  useEffect(() => {
+    console.log('Current admin:', currentAdmin);
+    console.log('Org ID:', orgId);
+  }, [currentAdmin, orgId]);
 
   // Handle news submission (direct publishing)
   const handleSubmitNews = async (newsData) => {
@@ -172,15 +229,18 @@ export default function AdminNewsPage() {
 
   // Sort news
   const sortedNews = [...filteredNews].sort((a, b) => {
-    switch (sortBy) {
-      case 'latest':
-        return new Date(b.created_at || b.date) - new Date(a.created_at || a.date);
+    switch (sortBy.toLowerCase()) {
+      case 'newest':
+        // Sort by date field (newest first)
+        return new Date(b.date || b.created_at) - new Date(a.date || a.created_at);
       case 'oldest':
-        return new Date(a.created_at || a.date) - new Date(b.created_at || b.date);
+        // Sort by date field (oldest first)
+        return new Date(a.date || a.created_at) - new Date(b.date || b.created_at);
       case 'title':
         return a.title.localeCompare(b.title);
       default:
-        return 0;
+        // Default to newest
+        return new Date(b.date || b.created_at) - new Date(a.date || a.created_at);
     }
   });
 
@@ -228,9 +288,6 @@ export default function AdminNewsPage() {
             <FaPlus /> Add News
           </button>
         </div>
-        <p className={styles.subheader}>
-          Manage your organization's news and announcements. These news items are visible on your public organization page.
-        </p>
       </div>
 
       {message.text && (
@@ -241,10 +298,13 @@ export default function AdminNewsPage() {
 
       <SearchAndFilterControls
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={handleSearchChange}
         sortBy={sortBy}
-        onSortChange={setSortBy}
-        resultsCount={filteredNews.length}
+        onSortChange={handleSortChange}
+        showCount={showCount}
+        onShowCountChange={handleShowCountChange}
+        totalCount={news.length}
+        filteredCount={filteredNews.length}
       />
 
       {loading && (

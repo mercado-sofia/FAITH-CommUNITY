@@ -1,9 +1,12 @@
 .mainContent {
-  margin-left: 260px;
+  margin-left: 245px;
   margin-top: 55px;
-  padding: 2rem 3rem 1rem 4.5rem;
-  min-height: calc(100vh - 55px);
+  margin-right: 4px;
+  padding: 2rem 3rem 3rem 4.5rem;
+  height: calc(100vh - 55px);
   background-color: #F0F4F7;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .mainArea {

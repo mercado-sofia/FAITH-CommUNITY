@@ -47,9 +47,8 @@ const SearchAndFilterControls = ({
   ];
 
   const sortOptions = [
-    { value: 'latest', label: 'Latest First' },
-    { value: 'oldest', label: 'Oldest First' },
-    { value: 'title', label: 'Title A-Z' }
+    { value: 'newest', label: 'Newest' },
+    { value: 'oldest', label: 'Oldest' }
   ];
 
   const showOptions = [
@@ -62,8 +61,34 @@ const SearchAndFilterControls = ({
 
   return (
     <div className={styles.controlsRow}>
-      {/* Search, Sort, and Category Filter on the left */}
+      {/* Show, Category Filter, Search, and Sort on the left */}
       <div className={styles.filtersRow}>
+        {/* Show Count Filter */}
+        <div className={styles.dropdownWrapper}>
+          <span className={styles.inlineLabel}>Show</span>
+          <div
+            className={styles.dropdown}
+            onClick={() => toggleDropdown("show")}
+          >
+            {showCount}
+            <FiChevronDown className={styles.icon} />
+          </div>
+          {showDropdown === "show" && (
+            <ul className={styles.options}>
+              {showOptions.map((option) => (
+                <li key={option.value} onClick={() => {
+                  onFilterChange('show', option.value);
+                  setShowDropdown(null);
+                }}>
+                  {option.label}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+
+
         {/* Search input */}
         <div className={styles.searchInputContainer}>
           <input
@@ -94,7 +119,7 @@ const SearchAndFilterControls = ({
             className={styles.dropdown}
             onClick={() => toggleDropdown("sort")}
           >
-            Sort: {sortOptions.find(opt => opt.value === sortBy)?.label || 'Latest First'}
+            Sort: {sortOptions.find(opt => opt.value === sortBy)?.label || 'Newest'}
             <FiChevronDown className={styles.icon} />
           </div>
           {showDropdown === "sort" && (
@@ -110,34 +135,10 @@ const SearchAndFilterControls = ({
             </ul>
           )}
         </div>
-
-        {/* Category Filter */}
-        <div className={styles.dropdownWrapper} style={{ marginLeft: '1rem' }}>
-          <div
-            className={styles.dropdown}
-            onClick={() => toggleDropdown("category")}
-          >
-            {categories.find(category => category.value === categoryFilter)?.label || 'All Categories'}
-            <FiChevronDown className={styles.icon} />
-          </div>
-          {showDropdown === "category" && (
-            <ul className={styles.options}>
-              {categories.map((category) => (
-                <li key={category.value} onClick={() => {
-                  onFilterChange('category', category.value);
-                  setShowDropdown(null);
-                }}>
-                  {category.label}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
       </div>
 
-      {/* Empty right side */}
+      {/* Empty right side to match news page layout */}
       <div className={styles.searchWrapper}>
-        {/* Empty - moved search and sort to left */}
       </div>
     </div>
   );

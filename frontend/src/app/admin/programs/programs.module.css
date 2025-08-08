@@ -25,13 +25,6 @@
   margin-bottom: 0.2rem;
 }
 
-.subheader {
-  font-size: 12.5px;
-  color: #6b7280;
-  margin: 0;
-  line-height: 1.5;
-}
-
 .addButton {
   background: #06100f;
   color: white;
@@ -51,6 +44,37 @@
 .addButton:hover {
   background: #142220;
   border-color: #0b1b19;
+}
+
+/* Status Navigation Tabs */
+.statusTabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.statusTab {
+  background: none;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  color: #6b7280;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.statusTab:hover {
+  color: #06100f;
+}
+
+.statusTab.activeTab {
+  color: #06100f;
+  border-bottom-color: #06100f;
 }
 
 /* Message Display */
@@ -91,7 +115,7 @@
 
 /* Programs Section */
 .programsSection {
-  margin-top: 24px;
+  margin-top: 2.4rem;
 }
 
 .programsGrid {
@@ -104,32 +128,21 @@
 .emptyState {
   text-align: center;
   padding: 80px 20px;
-  background: white;
-  border-radius: 16px;
-  border: 2px dashed #d1d5db;
   margin: 40px 0;
 }
 
-.emptyIcon {
-  font-size: 64px;
-  margin-bottom: 16px;
-  opacity: 0.6;
-}
-
-.emptyState h3 {
-  font-size: 20px;
-  font-weight: 600;
+.emptyTitle {
+  font-size: 16px;
+  font-weight: 500;
   color: #374151;
   margin: 0 0 8px 0;
 }
 
-.emptyState p {
-  font-size: 16px;
+.emptyText {
+  font-size: 14px;
   color: #6b7280;
   margin: 0;
   line-height: 1.5;
-  max-width: 500px;
-  margin: 0 auto;
 }
 
 /* Loading State */

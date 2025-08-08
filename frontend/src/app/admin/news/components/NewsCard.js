@@ -1,6 +1,7 @@
 'use client';
 
-import { FaEdit, FaTrash, FaCalendar } from 'react-icons/fa';
+import { FaEdit, FaCalendar } from 'react-icons/fa';
+import { FiTrash2 } from 'react-icons/fi';
 import styles from './styles/NewsCard.module.css';
 
 const NewsCard = ({ news, onEdit, onDelete }) => {
@@ -45,7 +46,7 @@ const NewsCard = ({ news, onEdit, onDelete }) => {
               onClick={() => onDelete(news)}
               title="Delete news"
             >
-              <FaTrash />
+              <FiTrash2 />
             </button>
           </div>
         </div>

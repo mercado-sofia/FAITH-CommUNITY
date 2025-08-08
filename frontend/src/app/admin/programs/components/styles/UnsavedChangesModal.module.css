@@ -1,0 +1,159 @@
+/* Modal Overlay */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 20px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Modal Content */
+.modalContent {
+  background: white;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: modalSlideIn 0.3s ease-out;
+  overflow: hidden;
+}
+
+/* Header */
+.modalHeader {
+  padding: 24px 24px 0 24px;
+  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 24px;
+}
+
+.modalTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+  font-family: var(--font-inter);
+}
+
+/* Body */
+.modalBody {
+  padding: 0 24px 24px 24px;
+}
+
+.message {
+  font-size: 0.9rem;
+  color: #374151;
+  margin: 0 0 12px 0;
+  line-height: 1.5;
+  font-family: var(--font-inter);
+  font-weight: 500;
+}
+
+.submessage {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+  font-family: var(--font-inter);
+}
+
+/* Actions */
+.modalActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 20px 24px 24px 24px;
+  border-top: 1px solid #f3f4f6;
+  background-color: transparent;
+}
+
+.cancelButton,
+.confirmButton {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  min-width: 120px;
+  font-family: var(--font-inter);
+}
+
+.cancelButton {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.confirmButton {
+  background: #06100f;
+  color: white;
+  border: 1px solid #0b1b19;
+}
+
+.confirmButton:hover:not(:disabled) {
+  background: #142220;
+  border-color: #0b1b19;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+  .modalOverlay {
+    padding: 16px;
+  }
+  
+  .modalContent {
+    max-width: 100%;
+  }
+  
+  .modalHeader {
+    padding: 20px 20px 16px 20px;
+  }
+  
+  .modalBody {
+    padding: 16px 20px 20px 20px;
+  }
+  
+  .modalActions {
+    padding: 16px 20px 20px 20px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .cancelButton,
+  .confirmButton {
+    width: 100%;
+  }
+}

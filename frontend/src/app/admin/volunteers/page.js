@@ -20,7 +20,11 @@ export default function VolunteersPage() {
   )
   const [programFilter, setProgramFilter] = useState('All Programs')
   const [volunteers, setVolunteers] = useState(applications)
-  const [showCount, setShowCount] = useState(10)
+  const [showCount, setShowCount] = useState(
+    parseInt(searchParams.get('show')) || 10
+  )
+
+
 
   function capitalizeFirstLetter(str) {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
@@ -37,8 +41,12 @@ export default function VolunteersPage() {
       params.set('sort', sortOrder)
     }
 
+    if (showCount && showCount !== 10) {
+      params.set('show', showCount.toString())
+    }
+
     router.replace(`?${params.toString()}`, { scroll: false })
-  }, [router, statusFilter, sortOrder])
+  }, [router, statusFilter, sortOrder, showCount])
 
   const filteredVolunteers = useMemo(() => {
     const filtered = volunteers.filter((volunteer) => {
@@ -63,8 +71,8 @@ export default function VolunteersPage() {
       return sortOrder === 'latest' ? dateB - dateA : dateA - dateB
     })
 
-    return sorted.slice(0, showCount)
-  }, [volunteers, searchQuery, statusFilter, programFilter, showCount, sortOrder])
+    return sorted
+  }, [volunteers, searchQuery, statusFilter, programFilter, sortOrder])
 
   const handleStatusUpdate = (id, newStatus) => {
     setVolunteers((prev) =>
@@ -96,6 +104,7 @@ export default function VolunteersPage() {
       <VolunteerTable
         volunteers={filteredVolunteers}
         onStatusUpdate={handleStatusUpdate}
+        itemsPerPage={showCount}
       />
     </div>
   )

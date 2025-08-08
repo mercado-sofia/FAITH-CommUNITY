@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FaTimes, FaCalendar, FaSave } from 'react-icons/fa';
+import { FaTimes, FaCalendar } from 'react-icons/fa';
 import styles from './styles/EditNewsModal.module.css';
 
 const EditNewsModal = ({ news, onClose, onSubmit }) => {
@@ -15,10 +15,28 @@ const EditNewsModal = ({ news, onClose, onSubmit }) => {
 
   useEffect(() => {
     if (news) {
+      // Helper function to format date properly without timezone issues
+      const formatDateForInput = (dateString) => {
+        if (!dateString) return new Date().toISOString().split('T')[0];
+        
+        // If the date is already in YYYY-MM-DD format, use it directly
+        if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+          return dateString;
+        }
+        
+        // Parse the date string and extract components to avoid timezone issues
+        const date = new Date(dateString);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        
+        return `${year}-${month}-${day}`;
+      };
+
       setFormData({
         title: news.title || '',
         description: news.description || '',
-        date: news.date ? new Date(news.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+        date: formatDateForInput(news.date)
       });
     }
   }, [news]);
@@ -132,7 +150,7 @@ const EditNewsModal = ({ news, onClose, onSubmit }) => {
               onChange={handleInputChange}
               className={`${styles.textarea} ${errors.description ? styles.error : ''}`}
               placeholder="Enter news description"
-              rows={6}
+              rows={10}
               disabled={isSubmitting}
             />
             {errors.description && <span className={styles.errorText}>{errors.description}</span>}
@@ -178,7 +196,6 @@ const EditNewsModal = ({ news, onClose, onSubmit }) => {
                 </>
               ) : (
                 <>
-                  <FaSave />
                   Update News
                 </>
               )}

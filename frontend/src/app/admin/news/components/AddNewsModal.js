@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FaTimes, FaCalendar, FaSave } from 'react-icons/fa';
+import { FaTimes, FaCalendar } from 'react-icons/fa';
 import styles from './styles/AddNewsModal.module.css';
 
 const AddNewsModal = ({ onClose, onSubmit, orgId }) => {
@@ -118,7 +118,7 @@ const AddNewsModal = ({ onClose, onSubmit, orgId }) => {
               onChange={handleInputChange}
               className={`${styles.textarea} ${errors.description ? styles.error : ''}`}
               placeholder="Enter news description"
-              rows={6}
+              rows={10}
               disabled={isSubmitting}
             />
             {errors.description && <span className={styles.errorText}>{errors.description}</span>}
@@ -163,10 +163,7 @@ const AddNewsModal = ({ onClose, onSubmit, orgId }) => {
                   Submitting...
                 </>
               ) : (
-                <>
-                  <FaSave />
-                  Submit for Approval
-                </>
+                'Submit for Approval'
               )}
             </button>
           </div>

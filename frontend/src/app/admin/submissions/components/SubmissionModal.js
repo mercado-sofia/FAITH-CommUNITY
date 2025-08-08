@@ -114,26 +114,38 @@ export default function SubmissionModal({ data, onClose }) {
           )}
 
           {/* Data Comparison */}
-          <div className={styles.dataComparison}>
-            {/* Previous Data */}
-            <div className={styles.dataSection}>
-              <h3 className={styles.sectionTitle}>Previous Data</h3>
-              <div className={styles.dataContent}>
-                {data.previous_data ? (
-                  formatData(data.previous_data)
-                ) : (
-                  <div className={styles.noData}>No previous data</div>
-                )}
+          <div className={data.section === 'programs' ? styles.dataComparisonSingle : styles.dataComparison}>
+            {/* For programs section, show only proposed data without previous data */}
+            {data.section === 'programs' ? (
+              <div className={styles.dataSection}>
+                <h3 className={styles.sectionTitle}>Proposed Program</h3>
+                <div className={styles.dataContent}>
+                  {formatData(data.proposed_data)}
+                </div>
               </div>
-            </div>
+            ) : (
+              <>
+                {/* Previous Data */}
+                <div className={styles.dataSection}>
+                  <h3 className={styles.sectionTitle}>Previous Data</h3>
+                  <div className={styles.dataContent}>
+                    {data.previous_data ? (
+                      formatData(data.previous_data)
+                    ) : (
+                      <div className={styles.noData}>No previous data</div>
+                    )}
+                  </div>
+                </div>
 
-            {/* Proposed Data */}
-            <div className={styles.dataSection}>
-              <h3 className={styles.sectionTitle}>Proposed Changes</h3>
-              <div className={styles.dataContent}>
-                {formatData(data.proposed_data)}
-              </div>
-            </div>
+                {/* Proposed Data */}
+                <div className={styles.dataSection}>
+                  <h3 className={styles.sectionTitle}>Proposed Changes</h3>
+                  <div className={styles.dataContent}>
+                    {formatData(data.proposed_data)}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

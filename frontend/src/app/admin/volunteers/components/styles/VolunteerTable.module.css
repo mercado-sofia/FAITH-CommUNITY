@@ -1,3 +1,98 @@
+/* Bulk Actions Bar */
+.bulkActionsBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 14px 18px 14px 28px;
+  margin-bottom: 16px;
+  font-family: var(--font-inter);
+}
+
+.bulkActionsLeft {
+  display: flex;
+  align-items: center;
+}
+
+.selectedCount {
+  font-size: 14px;
+  font-weight: 700;
+  color: #06100f;
+}
+
+.bulkActionsRight {
+  display: flex;
+  gap: 8px;
+}
+
+.bulkButton {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  border: 2px solid;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.approveButton {
+  background-color: #fff;
+  color: #10b981;
+  border-color: #10b981;
+  margin-right: 4px;
+}
+
+.approveButton:hover {
+  background-color: #edfff9;
+}
+
+.declineButton {
+  background-color: #fff;
+  color: #d50808;
+  border-color: #d50808;
+}
+
+.declineButton:hover {
+  background-color: #fff2f2;
+}
+
+/* Disabled button states */
+.bulkButton.disabled {
+  background-color: #f3f4f6 !important;
+  color: #9ca3af !important;
+  border-color: #d1d5db !important;
+  cursor: not-allowed !important;
+  pointer-events: auto;
+}
+
+.bulkButton.disabled:hover {
+  background-color: #f3f4f6 !important;
+  color: #9ca3af !important;
+  border-color: #d1d5db !important;
+  cursor: not-allowed !important;
+}
+
+.cancelButton {
+  padding: 8px;
+  border-radius: 6px;
+  color: #92959d;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.cancelButton:hover {
+  color: #374151;
+}
+
 .tableContainer {
   background-color: #fff;
   border-radius: 6px;
@@ -8,6 +103,12 @@
   overflow: visible;
   padding: 4px 1rem;
   font-family: var(--font-inter);
+}
+
+/* Checkbox styling */
+.tableHeader input[type="checkbox"],
+.tableBody input[type="checkbox"] {
+  cursor: pointer;
 }
 
 .table {
@@ -21,7 +122,7 @@
   padding: 14px;
   font-size: 12.5px;
   font-weight: 600;
-  color: #0c1b1a;
+  color: #06100f;
   background-color: #fff;
   border-bottom: 1px solid #e5e7eb;
   text-transform: uppercase;

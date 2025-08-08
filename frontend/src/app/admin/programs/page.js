@@ -8,6 +8,7 @@ import styles from './programs.module.css';
 import { FaPlus, FaEdit, FaTrash, FaEye } from 'react-icons/fa';
 import AddProgramModal from './components/AddProgramModal';
 import EditProgramModal from './components/EditProgramModal';
+import DeleteProgramModal from './components/DeleteProgramModal';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
 import ProgramCard from './components/ProgramCard';
 
@@ -23,12 +24,15 @@ export default function ProgramsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProgram, setEditingProgram] = useState(null);
+  const [deletingProgram, setDeletingProgram] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   
   // Filter and search states
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || 'all');
-  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'latest');
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'active');
+  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
   const [showCount, setShowCount] = useState(parseInt(searchParams.get('show')) || 10);
 
   // Fetch submitted programs (pending approval)
@@ -43,7 +47,7 @@ export default function ProgramsPage() {
       
       const orgId = currentAdmin.org;
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/programs/${orgId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/programs/org/${orgId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -55,7 +59,9 @@ export default function ProgramsPage() {
       }
 
       const data = await response.json();
-      setPrograms(Array.isArray(data) ? data : []);
+      // Handle both direct array and wrapped response formats
+      const programsArray = Array.isArray(data) ? data : (data.programs || data.data || []);
+      setPrograms(programsArray);
     } catch (error) {
       console.error('Error fetching programs:', error);
       setPrograms([]);
@@ -168,14 +174,18 @@ export default function ProgramsPage() {
     }
   };
 
-  // Handle program deletion
-  const handleDeleteProgram = async (programId) => {
-    if (!window.confirm('Are you sure you want to delete this program submission?')) {
-      return;
-    }
+  // Handle program deletion - show modal
+  const handleDeleteProgram = (program) => {
+    setDeletingProgram(program);
+  };
 
+  // Confirm program deletion
+  const confirmDeleteProgram = async () => {
+    if (!deletingProgram) return;
+    
+    setIsDeleting(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/programs/${programId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/programs/${deletingProgram.id}`, {
         method: 'DELETE',
       });
 
@@ -184,13 +194,22 @@ export default function ProgramsPage() {
       }
 
       setMessage({ type: 'success', text: 'Program deleted successfully!' });
+      setDeletingProgram(null);
       fetchPrograms();
       
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (error) {
       console.error('Error deleting program:', error);
       setMessage({ type: 'error', text: 'Failed to delete program. Please try again.' });
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  // Cancel program deletion
+  const cancelDeleteProgram = () => {
+    setDeletingProgram(null);
+    setIsDeleting(false);
   };
 
   // Filter and sort programs
@@ -202,14 +221,15 @@ export default function ProgramsPage() {
         program.category?.toLowerCase().includes(searchQuery.toLowerCase());
       
       const matchesCategory = categoryFilter === 'all' || program.category === categoryFilter;
+      const matchesStatus = program.status?.toLowerCase() === statusFilter.toLowerCase();
 
-      return matchesSearch && matchesCategory;
+      return matchesSearch && matchesCategory && matchesStatus;
     });
 
     // Sort programs
     filtered.sort((a, b) => {
       switch (sortBy) {
-        case 'latest':
+        case 'newest':
           return new Date(b.created_at || b.date) - new Date(a.created_at || a.date);
         case 'oldest':
           return new Date(a.created_at || a.date) - new Date(b.created_at || b.date);
@@ -221,13 +241,13 @@ export default function ProgramsPage() {
     });
 
     return filtered.slice(0, showCount);
-  }, [programs, searchQuery, categoryFilter, sortBy, showCount]);
+  }, [programs, searchQuery, categoryFilter, statusFilter, sortBy, showCount]);
 
   // Update URL parameters
   const updateURLParams = (params) => {
     const newSearchParams = new URLSearchParams(searchParams);
     Object.entries(params).forEach(([key, value]) => {
-      if (value && value !== 'all' && value !== '') {
+      if (value && value !== 'all' && value !== '' && !(key === 'sort' && value === 'newest') && !(key === 'status' && value === 'active') && !(key === 'show' && value === 10)) {
         newSearchParams.set(key, value);
       } else {
         newSearchParams.delete(key);
@@ -246,6 +266,10 @@ export default function ProgramsPage() {
       case 'category':
         setCategoryFilter(value);
         updateURLParams({ category: value });
+        break;
+      case 'status':
+        setStatusFilter(value);
+        updateURLParams({ status: value });
         break;
       case 'sort':
         setSortBy(value);
@@ -282,9 +306,6 @@ export default function ProgramsPage() {
             <FaPlus /> Add Program
           </button>
         </div>
-        <p className={styles.subheader}>
-          View your approved programs. These programs are visible on your public organization page.
-        </p>
       </div>
 
       {/* Message Display */}
@@ -306,18 +327,25 @@ export default function ProgramsPage() {
         filteredCount={filteredAndSortedPrograms.length}
       />
 
+      {/* Status Navigation Tabs */}
+      <div className={styles.statusTabs}>
+        {['active', 'upcoming', 'completed'].map((status) => (
+          <button
+            key={status}
+            className={`${styles.statusTab} ${statusFilter === status ? styles.activeTab : ''}`}
+            onClick={() => handleFilterChange('status', status)}
+          >
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </button>
+        ))}
+      </div>
+
       {/* Programs Grid */}
       <div className={styles.programsSection}>
         {filteredAndSortedPrograms.length === 0 ? (
           <div className={styles.emptyState}>
-            <div className={styles.emptyIcon}>📋</div>
-            <h3>No programs found</h3>
-            <p>
-              {programs.length === 0 
-                ? "You haven't submitted any programs yet. Click 'Add Program' to get started!"
-                : "No programs match your current filters. Try adjusting your search criteria."
-              }
-            </p>
+            <div className={styles.emptyTitle}>No programs found</div>
+            <div className={styles.emptyText}>No programs match your current filters. Try adjusting your search criteria.</div>
           </div>
         ) : (
           <div className={styles.programsGrid}>
@@ -326,7 +354,7 @@ export default function ProgramsPage() {
                 key={program.id}
                 program={program}
                 onEdit={() => setEditingProgram(program)}
-                onDelete={() => handleDeleteProgram(program.id)}
+                onDelete={() => handleDeleteProgram(program)}
               />
             ))}
           </div>
@@ -346,6 +374,15 @@ export default function ProgramsPage() {
           program={editingProgram}
           onClose={() => setEditingProgram(null)}
           onSubmit={handleUpdateProgram}
+        />
+      )}
+
+      {deletingProgram && (
+        <DeleteProgramModal
+          program={deletingProgram}
+          onConfirm={confirmDeleteProgram}
+          onCancel={cancelDeleteProgram}
+          isDeleting={isDeleting}
         />
       )}
     </div>

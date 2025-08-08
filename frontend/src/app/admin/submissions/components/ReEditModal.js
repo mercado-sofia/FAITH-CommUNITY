@@ -55,9 +55,12 @@ export default function ReEditModal({ submission, onClose, onSave }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (field, value) => {
+    // Sanitize input to prevent XSS
+    const sanitizedValue = typeof value === 'string' ? value.replace(/<script[^>]*>.*?<\/script>/gi, '') : value;
+    
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: sanitizedValue
     }));
   };
 
@@ -96,6 +99,13 @@ export default function ReEditModal({ submission, onClose, onSave }) {
     }
 
     if (submission.section === 'organization') {
+      // Validate organization fields
+      if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        return { isValid: false, message: 'Please enter a valid email address' };
+      }
+      if (formData.facebook && !/^https?:\/\/.+/.test(formData.facebook)) {
+        return { isValid: false, message: 'Facebook link must be a valid URL starting with http:// or https://' };
+      }
       // Check if at least one organization field has content
       const hasContent = Object.values(formData || {}).some(value => 
         value && value.toString().trim() !== ''
@@ -107,6 +117,9 @@ export default function ReEditModal({ submission, onClose, onSave }) {
       const advocacyContent = formData?.advocacy?.trim();
       if (!advocacyContent) {
         return { isValid: false, message: 'Advocacy information cannot be empty' };
+      }
+      if (advocacyContent.length < 10) {
+        return { isValid: false, message: 'Advocacy information must be at least 10 characters long' };
       }
     } else if (submission.section === 'competency') {
       const competencyContent = formData?.competency?.trim();

@@ -10,7 +10,7 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
     title: '',
     description: '',
     category: '',
-    status: 'active',
+    status: '',
     image: null
   });
   const [imagePreview, setImagePreview] = useState(null);
@@ -38,6 +38,13 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
         [name]: ''
       }));
     }
+  };
+
+  const handleStatusChange = (status) => {
+    setFormData(prev => ({
+      ...prev,
+      status: status
+    }));
   };
 
   const handleImageChange = (e) => {
@@ -101,21 +108,29 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
       newErrors.title = 'Program title is required';
     } else if (formData.title.length < 3) {
       newErrors.title = 'Title must be at least 3 characters long';
+    } else if (formData.title.length > 100) {
+      newErrors.title = 'Title must be less than 100 characters';
     }
 
     if (!formData.description.trim()) {
       newErrors.description = 'Program description is required';
     } else if (formData.description.length < 10) {
       newErrors.description = 'Description must be at least 10 characters long';
+    } else if (formData.description.length > 800) {
+      newErrors.description = 'Description must be less than 800 characters';
     }
 
     if (!formData.category.trim()) {
       newErrors.category = 'Program category is required';
     } else if (formData.category.length < 2) {
       newErrors.category = 'Category must be at least 2 characters long';
+    } else if (formData.category.length > 50) {
+      newErrors.category = 'Category must be less than 50 characters';
     }
 
-
+    if (!formData.status) {
+      newErrors.status = 'Program status is required';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -137,7 +152,6 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
         description: formData.description.trim(),
         category: formData.category,
         status: formData.status,
-
         image: formData.image ? await convertImageToBase64(formData.image) : null
       };
 
@@ -170,125 +184,132 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
         </div>
 
         <form onSubmit={handleSubmit} className={styles.modalForm}>
-          {/* Title Field */}
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>
-              Program Title <span className={styles.required}>*</span>
-            </label>
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleInputChange}
-              className={`${styles.formInput} ${errors.title ? styles.error : ''}`}
-              placeholder="Enter program title"
-              maxLength={100}
-            />
-            {errors.title && <span className={styles.errorText}>{errors.title}</span>}
-          </div>
+          {/* Two Column Layout */}
+          <div className={styles.twoColumnLayout}>
+            {/* Left Column - Image Upload, Category, Status */}
+            <div className={styles.leftColumn}>
+              {/* Image Upload */}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  <FaImage className={styles.labelIcon} />
+                  Program Image
+                </label>
+                
+                {!imagePreview ? (
+                  <div className={styles.uploadArea}>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className={styles.fileInput}
+                    />
+                    <div className={styles.uploadContent}>
+                      <FaUpload className={styles.uploadIcon} />
+                      <p className={styles.uploadText}>
+                        Click to upload an image or drag and drop
+                      </p>
+                      <p className={styles.uploadSubtext}>
+                        PNG, JPG, GIF up to 5MB
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={styles.imagePreview}>
+                    <Image 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className={styles.previewImage}
+                      width={400}
+                      height={200}
+                      style={{ objectFit: 'cover' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className={styles.removeImageButton}
+                    >
+                      <FaTimes />
+                    </button>
+                  </div>
+                )}
+                
+                {errors.image && <span className={styles.errorText}>{errors.image}</span>}
+              </div>
 
-          {/* Description Field */}
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>
-              Description <span className={styles.required}>*</span>
-            </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              className={`${styles.formTextarea} ${errors.description ? styles.error : ''}`}
-              placeholder="Describe your program, its objectives, and impact"
-              rows={4}
-              maxLength={500}
-            />
-            <div className={styles.charCount}>
-              {formData.description.length}/500 characters
-            </div>
-            {errors.description && <span className={styles.errorText}>{errors.description}</span>}
-          </div>
-
-          {/* Category and Status Row */}
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Category</label>
-              <input
-                type="text"
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                className={styles.formInput}
-                placeholder="e.g. Outreach, Education, Health, Community Development"
-                maxLength={50}
-              />
-              {errors.category && <span className={styles.errorText}>{errors.category}</span>}
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Status</label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleInputChange}
-                className={styles.formSelect}
-              >
-                {statusOptions.map(status => (
-                  <option key={status.value} value={status.value}>
-                    {status.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-
-
-          {/* Image Upload */}
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>
-              <FaImage className={styles.labelIcon} />
-              Program Image
-            </label>
-            
-            {!imagePreview ? (
-              <div className={styles.uploadArea}>
+              {/* Category Field */}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Category</label>
                 <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className={styles.fileInput}
+                  type="text"
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  className={styles.formInput}
+                  placeholder="e.g. Outreach, Education, Health"
+                  maxLength={50}
                 />
-                <div className={styles.uploadContent}>
-                  <FaUpload className={styles.uploadIcon} />
-                  <p className={styles.uploadText}>
-                    Click to upload an image or drag and drop
-                  </p>
-                  <p className={styles.uploadSubtext}>
-                    PNG, JPG, GIF up to 5MB
-                  </p>
+                {errors.category && <span className={styles.errorText}>{errors.category}</span>}
+              </div>
+
+              {/* Status Field */}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Status <span className={styles.required}>*</span></label>
+                <div className={styles.statusButtons}>
+                  {statusOptions.map(status => (
+                    <button
+                      key={status.value}
+                      type="button"
+                      onClick={() => handleStatusChange(status.value)}
+                      className={`${styles.statusButton} ${formData.status === status.value ? styles.statusActive : ''}`}
+                    >
+                      {status.label}
+                    </button>
+                  ))}
                 </div>
+                {errors.status && <span className={styles.errorText}>{errors.status}</span>}
               </div>
-            ) : (
-              <div className={styles.imagePreview}>
-                <Image 
-                  src={imagePreview} 
-                  alt="Preview" 
-                  className={styles.previewImage}
-                  width={400}
-                  height={200}
-                  style={{ objectFit: 'cover' }}
+            </div>
+
+            {/* Right Column - Title and Description */}
+            <div className={styles.rightColumn}>
+              {/* Title Field */}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  Program Title <span className={styles.required}>*</span>
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleInputChange}
+                  className={`${styles.formInput} ${errors.title ? styles.error : ''}`}
+                  placeholder="Enter program title"
+                  maxLength={100}
                 />
-                <button
-                  type="button"
-                  onClick={removeImage}
-                  className={styles.removeImageButton}
-                >
-                  <FaTimes />
-                </button>
+                {errors.title && <span className={styles.errorText}>{errors.title}</span>}
               </div>
-            )}
-            
-            {errors.image && <span className={styles.errorText}>{errors.image}</span>}
+
+              {/* Description Field */}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  Description <span className={styles.required}>*</span>
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  className={`${styles.formTextarea} ${errors.description ? styles.error : ''}`}
+                  placeholder="Describe your program, its objectives, and impact"
+                  rows={4}
+                  maxLength={800}
+                />
+                <div className={styles.charCount}>
+                  {formData.description.length}/800 characters
+                </div>
+                {errors.description && <span className={styles.errorText}>{errors.description}</span>}
+              </div>
+            </div>
           </div>
 
           {/* Submit Error */}

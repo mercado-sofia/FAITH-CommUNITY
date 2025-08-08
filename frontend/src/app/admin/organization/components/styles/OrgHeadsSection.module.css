@@ -46,11 +46,6 @@
   font-size: 0.9rem;
 }
 
-.viewButton:hover:not(:disabled) {
-  background: #f1f5f9;
-  color: #475569;
-}
-
 .viewButton.active {
   background: #06100f;
   color: white;
@@ -77,34 +72,22 @@
   font-family: var(--font-inter), sans-serif;
 }
 
-.dragModeButton:hover {
-  background: #f1f5f9;
-  color: #475569;
-  border-color: #cbd5e1;
-}
-
-.dragModeButton.active {
-  background: #06100f;
-  color: white;
-  border-color: #06100f;
-}
-
 .dragModeNotice {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #fef3c7;
-  color: #92400e;
+  background: #f8fafc;
+  color: #06100f;
   padding: 0.75rem 1rem;
   border-radius: 6px;
   margin-bottom: 1rem;
-  border: 1px solid #fbbf24;
+  border: 2px solid #06100f;
   font-size: 0.9rem;
   font-family: var(--font-inter), sans-serif;
 }
 
 .dragIcon {
-  color: #d97706;
+  color: #06100f;
   font-size: 1rem;
 }
 
@@ -131,9 +114,9 @@
 }
 
 .editIcon:hover {
-  background: #f1f5f9;
+  background: #e6f0f0;
   color: #06100f;
-  border-color: #cbd5e1;
+  border-color: #0a1a1a;
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -413,10 +396,10 @@
 
 .searchInput {
   width: 100%;
-  padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+  padding: 0.7rem 0.75rem 0.7rem 2.4rem;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 13px;
   font-family: var(--font-inter), sans-serif;
   background: white;
   transition: all 0.2s ease;
@@ -425,7 +408,6 @@
 .searchInput:focus {
   outline: none;
   border-color: #06100f;
-  box-shadow: 0 0 0 3px rgba(22, 160, 133, 0.1);
 }
 
 .clearSearchButton {
@@ -446,10 +428,6 @@
   color: #374151;
   background: #f3f4f6;
 }
-
-
-
-
 
 .headCard {
   position: relative;

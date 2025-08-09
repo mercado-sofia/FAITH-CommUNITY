@@ -1,3 +1,5 @@
+//adminSettings.js in the admin and also manageProfiles folder in the superadmin
+
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 
 export const manageProfilesApi = createApi({

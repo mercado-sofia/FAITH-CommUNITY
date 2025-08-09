@@ -1,0 +1,335 @@
+/* Main Layout */
+.mainArea {
+    width: 100%;
+    padding: 0;
+  }
+  
+  /* Header */
+  .header {
+    margin-bottom: 2rem;
+  }
+  
+  .header h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    font-family: var(--font-poppins), sans-serif;
+    color: #050809;
+    user-select: none;
+    margin-bottom: 0.5rem;
+  }
+  
+  .subtitle {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin: 0;
+    font-family: var(--font-poppins), sans-serif;
+  }
+  
+  /* Message Notifications */
+  .message {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    animation: slideIn 0.3s ease-out;
+  }
+  
+  .message.success {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+  }
+  
+  .message.error {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+  }
+
+  /* Loading State */
+  .loading {
+    padding: 1rem;
+    text-align: center;
+    color: #64748b;
+    font-style: italic;
+    background-color: #f8fafc;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+  }
+  
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Settings Container */
+  .settingsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  /* Section Styling */
+  .section {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+  }
+  
+  .sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .sectionHeader h2 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #19a48d;
+    margin: 0;
+    font-family: var(--font-poppins), sans-serif;
+  }
+  
+  /* Edit Button */
+  .editButton {
+    background: #19a48d;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-poppins), sans-serif;
+  }
+  
+  .editButton:hover {
+    background: #16a085;
+    transform: translateY(-1px);
+  }
+  
+  /* Profile Content */
+  .profileContent {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+  }
+  
+
+  
+  /* Profile Fields */
+  .profileFields {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .fieldGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #374151;
+    font-family: var(--font-poppins), sans-serif;
+  }
+  
+  .input {
+    padding: 0.75rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    font-family: var(--font-poppins), sans-serif;
+    background: white;
+  }
+  
+  .input:focus {
+    outline: none;
+    border-color: #19a48d;
+    box-shadow: 0 0 0 3px rgba(25, 164, 141, 0.1);
+  }
+  
+  .input.inputError {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  }
+  
+  .displayValue {
+    padding: 0.75rem;
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #374151;
+    font-family: var(--font-poppins), sans-serif;
+  }
+  
+  .errorText {
+    font-size: 0.8rem;
+    color: #ef4444;
+    font-weight: 500;
+    font-family: var(--font-poppins), sans-serif;
+  }
+  
+  /* Status Badge */
+  .statusBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-poppins), sans-serif;
+  }
+  
+  .statusBadge.active {
+    background: #d1fae5;
+    color: #065f46;
+  }
+  
+  .statusBadge.inactive {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  
+  .statusBadge.pending {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  
+  /* Action Buttons */
+  .actionButtons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  .saveButton {
+    background: #19a48d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-poppins), sans-serif;
+  }
+  
+  .saveButton:hover {
+    background: #16a085;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(25, 164, 141, 0.3);
+  }
+  
+  .cancelButton {
+    background: #f8fafc;
+    color: #475569;
+    border: 2px solid #e2e8f0;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-poppins), sans-serif;
+  }
+  
+  .cancelButton:hover {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+  }
+  
+  /* Password Form */
+  .passwordForm {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .passwordInfo {
+    background: #f8fafc;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .infoText {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    color: #64748b;
+    font-family: var(--font-poppins), sans-serif;
+  }
+  
+  .infoText:last-child {
+    margin-bottom: 0;
+  }
+  
+  .infoText strong {
+    color: #374151;
+    font-weight: 600;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .profileContent {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    
+
+    
+    .profileFields {
+      width: 100%;
+    }
+    
+    .actionButtons {
+      flex-direction: column;
+    }
+    
+    .saveButton,
+    .cancelButton {
+      width: 100%;
+    }
+    
+    .section {
+      padding: 1.5rem;
+    }
+    
+    .sectionHeader {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+    
+    .editButton {
+      align-self: stretch;
+      text-align: center;
+    }
+  }
+  
+  

@@ -112,6 +112,26 @@
   color: #1A685B;
 }
 
+.loading {
+  opacity: 0.7;
+  cursor: not-allowed !important;
+}
+
+.orgName {
+  color: #666;
+  font-weight: 400;
+  margin-left: 0.5rem;
+}
+
+.noPrograms {
+  padding: 0.6rem 1rem;
+  font-size: 15px;
+  font-weight: 400;
+  color: #666;
+  text-align: center;
+  font-style: italic;
+}
+
 /* === Section Card Layout === */
 .sectionCard {
   padding: 2.5rem 2.5rem .5rem;

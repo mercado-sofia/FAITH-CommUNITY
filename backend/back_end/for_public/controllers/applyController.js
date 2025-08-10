@@ -12,7 +12,7 @@ if (!fs.existsSync(uploadsDir)) {
 
 // File upload config
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/ids/"),
+  destination: (req, file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => {
     const uniqueName = `${Date.now()}-${file.originalname}`;
     cb(null, uniqueName);
@@ -32,6 +32,7 @@ export const upload = multer({
 export const submitVolunteer = async (req, res) => {
   try {
     const {
+      program_id,
       fullName,
       age,
       gender,
@@ -41,8 +42,21 @@ export const submitVolunteer = async (req, res) => {
       occupation,
       citizenship,
       reason,
-      program,
     } = req.body;
+
+    console.log("[DEBUG] Volunteer application submission:", {
+      program_id,
+      fullName,
+      email,
+      phoneNumber
+    });
+
+    // Validate required fields
+    if (!program_id) {
+      return res.status(400).json({
+        error: "Program selection is required.",
+      });
+    }
 
     // Validate gender (dropdown should only allow Male or Female)
     const validGenders = ["Male", "Female"];
@@ -51,16 +65,6 @@ export const submitVolunteer = async (req, res) => {
         error: "Invalid gender. Only 'Male' or 'Female' are accepted.",
       });
     }
-
-    // Map program string to corresponding program_id
-    const programMap = {
-      CLIQUE: 1,
-      LinkUp: 2,
-      RiseUp: 3,
-      FaithSteps: 4,
-      ScholarSync: 5,
-    };
-    const program_id = programMap[program] || 1;
 
     const validIdPath = req.file ? `/uploads/ids/${req.file.filename}` : null;
 
@@ -102,7 +106,13 @@ export const submitVolunteer = async (req, res) => {
 
 export const getAllVolunteers = async (req, res) => {
   try {
-    const [results] = await db.query("SELECT * FROM volunteers ORDER BY created_at DESC");
+    const [results] = await db.query(`
+      SELECT v.*, p.title as program_name, p.title as program_title, o.orgName as organization_name
+      FROM volunteers v
+      LEFT JOIN programs_projects p ON v.program_id = p.id
+      LEFT JOIN organizations o ON p.organization_id = o.id
+      ORDER BY v.created_at DESC
+    `);
     res.status(200).json({
       success: true,
       count: results.length,
@@ -113,9 +123,182 @@ export const getAllVolunteers = async (req, res) => {
   }
 };
 
+export const getVolunteersByOrganization = async (req, res) => {
+  try {
+    const { orgId } = req.params;
+    
+    console.log(`[DEBUG] Fetching volunteers for organization ID: ${orgId}`);
+    
+    const [results] = await db.query(`
+      SELECT v.*, p.title as program_name, p.title as program_title, o.orgName as organization_name, o.id as organization_id
+      FROM volunteers v
+      LEFT JOIN programs_projects p ON v.program_id = p.id
+      LEFT JOIN organizations o ON p.organization_id = o.id
+      WHERE o.id = ?
+      ORDER BY v.created_at DESC
+    `, [orgId]);
+    
+    console.log(`[DEBUG] Found ${results.length} volunteers for organization ${orgId}`);
+    
+    res.status(200).json({
+      success: true,
+      count: results.length,
+      data: results,
+    });
+  } catch (err) {
+    console.error("Error fetching volunteers by organization:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getVolunteersByAdminOrg = async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    
+    console.log(`[DEBUG] Fetching volunteers for admin ID: ${adminId}`);
+    
+    // First get the admin's organization
+    const [adminRows] = await db.query(`
+      SELECT org FROM admins WHERE id = ?
+    `, [adminId]);
+    
+    if (adminRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Admin not found"
+      });
+    }
+    
+    const adminOrg = adminRows[0].org;
+    console.log(`[DEBUG] Admin ${adminId} belongs to organization: ${adminOrg}`);
+    
+    // Now get volunteers for programs from that organization
+    const [results] = await db.query(`
+      SELECT v.*, p.title as program_name, p.title as program_title, o.orgName as organization_name, o.id as organization_id
+      FROM volunteers v
+      LEFT JOIN programs_projects p ON v.program_id = p.id
+      LEFT JOIN organizations o ON p.organization_id = o.id
+      WHERE o.org = ?
+      ORDER BY v.created_at DESC
+    `, [adminOrg]);
+    
+    console.log(`[DEBUG] Found ${results.length} volunteers for organization ${adminOrg}`);
+    
+    res.status(200).json({
+      success: true,
+      count: results.length,
+      data: results,
+    });
+  } catch (err) {
+    console.error("Error fetching volunteers by admin organization:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getVolunteerById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const [results] = await db.query(`
+      SELECT v.*, p.title as program_name, p.title as program_title, o.orgName as organization_name, o.id as organization_id
+      FROM volunteers v
+      LEFT JOIN programs_projects p ON v.program_id = p.id
+      LEFT JOIN organizations o ON p.organization_id = o.id
+      WHERE v.id = ?
+    `, [id]);
+    
+    if (results.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Volunteer not found"
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: results[0],
+    });
+  } catch (err) {
+    console.error("Error fetching volunteer by ID:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const updateVolunteerStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    console.log(`[DEBUG] Updating volunteer ${id} status to: ${status}`);
+    
+    const [result] = await db.execute(`
+      UPDATE volunteers 
+      SET status = ?, updated_at = NOW()
+      WHERE id = ?
+    `, [status, id]);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Volunteer not found"
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: "Volunteer status updated successfully"
+    });
+  } catch (err) {
+    console.error("Error updating volunteer status:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 export const testGet = (req, res) => res.send("Hello from apply.js!");
 
 export const testPost = (req, res) => {
   console.log("Test POST in controller hit");
   res.json({ success: true, message: "Test POST successful" });
+};
+
+// Get approved programs with status "Upcoming" for volunteer application dropdown
+export const getApprovedUpcomingPrograms = async (req, res) => {
+  try {
+    console.log("[DEBUG] Fetching approved upcoming programs for volunteer application");
+    
+    const [rows] = await db.execute(`
+      SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
+      FROM programs_projects p
+      LEFT JOIN organizations o ON p.organization_id = o.id
+      WHERE p.status = 'Upcoming'
+      ORDER BY p.created_at DESC
+    `);
+
+    console.log(`[DEBUG] Found ${rows.length} approved upcoming programs`);
+
+    const programs = rows.map(program => ({
+      id: program.id,
+      title: program.title,
+      name: program.title, // Alternative field name for compatibility
+      description: program.description,
+      category: program.category,
+      status: program.status,
+      date: program.date || program.created_at,
+      image: program.image,
+      organization: program.orgAcronym, // Primary org field
+      org: program.orgAcronym, // Alternative org field for compatibility
+      orgName: program.orgName,
+      icon: program.orgLogo,
+      created_at: program.created_at
+    }));
+
+    res.json(programs);
+  } catch (error) {
+    console.error("❌ Error fetching approved upcoming programs:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch approved upcoming programs",
+      error: error.message,
+    });
+  }
 };

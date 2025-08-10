@@ -73,7 +73,11 @@ export const volunteersApi = createApi({
     // Get volunteers by admin's organization for admin view
     getVolunteersByAdminOrg: builder.query({
       query: (adminId) => `/volunteers/admin/${adminId}`,
-      providesTags: (result, error, adminId) => [{ type: "Volunteer", id: `admin-${adminId}` }],
+      keepUnusedDataFor: 0, // Don't cache this data
+      providesTags: (result, error, adminId) => [
+        { type: "Volunteer", id: `admin-${adminId}` },
+        "Volunteer"
+      ],
       transformResponse: (response) => {
         const volunteers = Array.isArray(response?.data) ? response.data : response || []
         return volunteers.map(volunteer => ({
@@ -112,6 +116,15 @@ export const volunteersApi = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [{ type: "Volunteer", id }, "Volunteer"],
     }),
+
+    // Soft delete volunteer (set db_status to inactive)
+    softDeleteVolunteer: builder.mutation({
+      query: (id) => ({
+        url: `/volunteers/${id}/soft-delete`,
+        method: "PUT",
+      }),
+      invalidatesTags: ["Volunteer"],
+    }),
   }),
 })
 
@@ -121,4 +134,5 @@ export const {
   useGetVolunteersByAdminOrgQuery,
   useGetVolunteerByIdQuery,
   useUpdateVolunteerStatusMutation,
+  useSoftDeleteVolunteerMutation,
 } = volunteersApi

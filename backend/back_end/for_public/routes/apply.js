@@ -6,6 +6,7 @@ import {
   getVolunteersByAdminOrg,
   getVolunteerById,
   updateVolunteerStatus,
+  softDeleteVolunteer,
   submitVolunteer,
   testGet,
   testPost,
@@ -22,6 +23,7 @@ router.get('/volunteers/organization/:orgId', getVolunteersByOrganization);
 router.get('/volunteers/admin/:adminId', getVolunteersByAdminOrg);
 router.get('/volunteers/:id', getVolunteerById);
 router.put('/volunteers/:id/status', updateVolunteerStatus);
+router.put('/volunteers/:id/soft-delete', softDeleteVolunteer);
 router.post('/apply', upload, submitVolunteer);
 router.post('/test-post', testPost);
 router.get('/programs/approved/upcoming', getApprovedUpcomingPrograms);

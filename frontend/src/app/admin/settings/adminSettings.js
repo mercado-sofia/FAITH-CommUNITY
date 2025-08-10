@@ -203,7 +203,6 @@ export default function AdminSettings() {
     <div className={styles.mainArea}>
       <div className={styles.header}>
         <h1>Admin Settings</h1>
-        <p className={styles.subtitle}>Manage your admin account settings and preferences</p>
       </div>
 
       {message.text && (

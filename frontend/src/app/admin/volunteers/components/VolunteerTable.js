@@ -8,7 +8,7 @@ import PaginationControls from "./PaginationControls"
 import ViewDetailsModal from "./ViewDetailsModal"
 import styles from "./styles/VolunteerTable.module.css"
 
-export default function VolunteerTable({ volunteers, onStatusUpdate, itemsPerPage = 10 }) {
+export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelete, itemsPerPage = 10 }) {
   const [selectedVolunteer, setSelectedVolunteer] = useState(null)
   const [showDropdown, setShowDropdown] = useState(null)
   const [modalType, setModalType] = useState(null)
@@ -257,6 +257,12 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, itemsPerPag
                               Decline
                             </li>
                           )}
+                          <li 
+                            onClick={() => onSoftDelete && onSoftDelete(volunteer.id, volunteer.name)}
+                            style={{ color: '#dc3545', borderTop: '1px solid #eee', marginTop: '4px', paddingTop: '4px' }}
+                          >
+                            Delete
+                          </li>
                         </ul>
                       )}
                     </div>

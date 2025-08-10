@@ -111,6 +111,7 @@ export const getAllVolunteers = async (req, res) => {
       FROM volunteers v
       LEFT JOIN programs_projects p ON v.program_id = p.id
       LEFT JOIN organizations o ON p.organization_id = o.id
+      WHERE v.db_status = 'active'
       ORDER BY v.created_at DESC
     `);
     res.status(200).json({
@@ -134,7 +135,7 @@ export const getVolunteersByOrganization = async (req, res) => {
       FROM volunteers v
       LEFT JOIN programs_projects p ON v.program_id = p.id
       LEFT JOIN organizations o ON p.organization_id = o.id
-      WHERE o.id = ?
+      WHERE o.id = ? AND v.db_status = 'active'
       ORDER BY v.created_at DESC
     `, [orgId]);
     
@@ -178,7 +179,7 @@ export const getVolunteersByAdminOrg = async (req, res) => {
       FROM volunteers v
       LEFT JOIN programs_projects p ON v.program_id = p.id
       LEFT JOIN organizations o ON p.organization_id = o.id
-      WHERE o.org = ?
+      WHERE o.org = ? AND v.db_status = 'Active'
       ORDER BY v.created_at DESC
     `, [adminOrg]);
     
@@ -234,13 +235,13 @@ export const updateVolunteerStatus = async (req, res) => {
     const [result] = await db.execute(`
       UPDATE volunteers 
       SET status = ?, updated_at = NOW()
-      WHERE id = ?
+      WHERE id = ? AND db_status = 'Active'
     `, [status, id]);
     
     if (result.affectedRows === 0) {
       return res.status(404).json({
         success: false,
-        message: "Volunteer not found"
+        message: "Volunteer not found or inactive"
       });
     }
     
@@ -250,6 +251,35 @@ export const updateVolunteerStatus = async (req, res) => {
     });
   } catch (err) {
     console.error("Error updating volunteer status:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const softDeleteVolunteer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    console.log(`[DEBUG] Soft deleting volunteer ${id} (setting db_status to inactive)`);
+    
+    const [result] = await db.execute(`
+      UPDATE volunteers 
+      SET db_status = 'Inactive', updated_at = NOW()
+      WHERE id = ? AND db_status = 'Active'
+    `, [id]);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Volunteer not found or already inactive"
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: "Volunteer removed from view successfully"
+    });
+  } catch (err) {
+    console.error("Error soft deleting volunteer:", err);
     res.status(500).json({ error: err.message });
   }
 };

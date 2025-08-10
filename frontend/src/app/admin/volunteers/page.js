@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useSelector } from 'react-redux'
 import SearchAndFilterControls from './components/SearchAndFilterControls'
 import VolunteerTable from './components/VolunteerTable'
-import { useGetVolunteersByAdminOrgQuery, useUpdateVolunteerStatusMutation } from '../../../rtk/admin/volunteersApi'
+import { useGetVolunteersByAdminOrgQuery, useUpdateVolunteerStatusMutation, useSoftDeleteVolunteerMutation } from '../../../rtk/admin/volunteersApi'
 import { selectCurrentAdmin, selectIsAuthenticated } from '../../../rtk/superadmin/adminSlice'
 import styles from './volunteers.module.css'
 
@@ -24,10 +24,14 @@ export default function VolunteersPage() {
     error,
     refetch 
   } = useGetVolunteersByAdminOrgQuery(currentAdmin?.id, {
-    skip: !isAuthenticated || !currentAdmin?.id
+    skip: !isAuthenticated || !currentAdmin?.id,
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true
   })
   
   const [updateVolunteerStatus] = useUpdateVolunteerStatusMutation()
+  const [softDeleteVolunteer] = useSoftDeleteVolunteerMutation()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState(
@@ -104,6 +108,19 @@ export default function VolunteersPage() {
     }
   }
 
+  const handleSoftDelete = async (id, volunteerName) => {
+    if (window.confirm(`Are you sure you want to delete ${volunteerName}? This action will hide the volunteer from the list but preserve their data.`)) {
+      try {
+        await softDeleteVolunteer(id).unwrap()
+        // Force refetch data to remove deleted volunteer from list
+        await refetch()
+      } catch (error) {
+        console.error('Failed to delete volunteer:', error)
+        alert('Failed to delete volunteer. Please try again.')
+      }
+    }
+  }
+
   // Handle authentication check
   if (!isAuthenticated || !currentAdmin) {
     return (
@@ -157,9 +174,6 @@ export default function VolunteersPage() {
     <div className={styles.container}>
       <div className={styles.header}>
         <h1>Volunteer Applications</h1>
-        <p style={{ color: '#666', fontSize: '0.9rem', margin: '0.5rem 0' }}>
-          Showing volunteers for {currentAdmin.orgName || currentAdmin.org} ({volunteersData.length} applications)
-        </p>
       </div>
 
       <SearchAndFilterControls
@@ -178,6 +192,7 @@ export default function VolunteersPage() {
       <VolunteerTable
         volunteers={filteredVolunteers}
         onStatusUpdate={handleStatusUpdate}
+        onSoftDelete={handleSoftDelete}
         itemsPerPage={showCount}
       />
     </div>

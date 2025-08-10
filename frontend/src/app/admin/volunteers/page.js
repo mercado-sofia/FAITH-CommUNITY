@@ -2,14 +2,32 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useSelector } from 'react-redux'
 import SearchAndFilterControls from './components/SearchAndFilterControls'
 import VolunteerTable from './components/VolunteerTable'
-import applications from './data/mockData'
+import { useGetVolunteersByAdminOrgQuery, useUpdateVolunteerStatusMutation } from '../../../rtk/admin/volunteersApi'
+import { selectCurrentAdmin, selectIsAuthenticated } from '../../../rtk/superadmin/adminSlice'
 import styles from './volunteers.module.css'
 
 export default function VolunteersPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  
+  // Get current admin data from Redux store
+  const currentAdmin = useSelector(selectCurrentAdmin)
+  const isAuthenticated = useSelector(selectIsAuthenticated)
+
+  // Fetch volunteers from API using admin's organization
+  const { 
+    data: volunteersData = [], 
+    isLoading, 
+    error,
+    refetch 
+  } = useGetVolunteersByAdminOrgQuery(currentAdmin?.id, {
+    skip: !isAuthenticated || !currentAdmin?.id
+  })
+  
+  const [updateVolunteerStatus] = useUpdateVolunteerStatusMutation()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState(
@@ -19,7 +37,6 @@ export default function VolunteersPage() {
     searchParams.get('sort') === 'oldest' ? 'oldest' : 'latest'
   )
   const [programFilter, setProgramFilter] = useState('All Programs')
-  const [volunteers, setVolunteers] = useState(applications)
   const [showCount, setShowCount] = useState(
     parseInt(searchParams.get('show')) || 10
   )
@@ -49,7 +66,9 @@ export default function VolunteersPage() {
   }, [router, statusFilter, sortOrder, showCount])
 
   const filteredVolunteers = useMemo(() => {
-    const filtered = volunteers.filter((volunteer) => {
+    if (!volunteersData || volunteersData.length === 0) return []
+    
+    const filtered = volunteersData.filter((volunteer) => {
       const matchesSearch =
         volunteer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         volunteer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -72,13 +91,65 @@ export default function VolunteersPage() {
     })
 
     return sorted
-  }, [volunteers, searchQuery, statusFilter, programFilter, sortOrder])
+  }, [volunteersData, searchQuery, statusFilter, programFilter, sortOrder])
 
-  const handleStatusUpdate = (id, newStatus) => {
-    setVolunteers((prev) =>
-      prev.map((volunteer) =>
-        volunteer.id === id ? { ...volunteer, status: newStatus } : volunteer
-      )
+  const handleStatusUpdate = async (id, newStatus) => {
+    try {
+      await updateVolunteerStatus({ id, status: newStatus }).unwrap()
+      // Refetch data to get updated status
+      refetch()
+    } catch (error) {
+      console.error('Failed to update volunteer status:', error)
+      // You could add a toast notification here
+    }
+  }
+
+  // Handle authentication check
+  if (!isAuthenticated || !currentAdmin) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <h1>Volunteer Applications</h1>
+        </div>
+        <div style={{ textAlign: 'center', padding: '2rem', color: 'orange' }}>
+          <p>Please log in to view volunteer applications.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <h1>Volunteer Applications</h1>
+          <p style={{ color: '#666', fontSize: '0.9rem' }}>
+            Showing volunteers for {currentAdmin.orgName || currentAdmin.org}
+          </p>
+        </div>
+        <div style={{ textAlign: 'center', padding: '2rem' }}>
+          <p>Loading volunteer applications...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <h1>Volunteer Applications</h1>
+          <p style={{ color: '#666', fontSize: '0.9rem' }}>
+            Showing volunteers for {currentAdmin.orgName || currentAdmin.org}
+          </p>
+        </div>
+        <div style={{ textAlign: 'center', padding: '2rem', color: 'red' }}>
+          <p>Error loading volunteer applications: {error.message}</p>
+          <button onClick={refetch} style={{ marginTop: '1rem', padding: '0.5rem 1rem' }}>
+            Try Again
+          </button>
+        </div>
+      </div>
     )
   }
 
@@ -86,6 +157,9 @@ export default function VolunteersPage() {
     <div className={styles.container}>
       <div className={styles.header}>
         <h1>Volunteer Applications</h1>
+        <p style={{ color: '#666', fontSize: '0.9rem', margin: '0.5rem 0' }}>
+          Showing volunteers for {currentAdmin.orgName || currentAdmin.org} ({volunteersData.length} applications)
+        </p>
       </div>
 
       <SearchAndFilterControls

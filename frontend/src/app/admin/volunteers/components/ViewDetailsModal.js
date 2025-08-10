@@ -1,9 +1,12 @@
 "use client"
 
+import { useState } from 'react'
 import styles from './styles/ViewDetailsModal.module.css'
 import { IoClose } from "react-icons/io5"
 
 export default function VolunteerDetailModal({ app, onClose, onUpdate }) {
+  const [showImageModal, setShowImageModal] = useState(false)
+  const [imageError, setImageError] = useState(false)
   return (
     <div className={styles.modal}>
       <div className={styles.modalContentScrollable}>
@@ -73,14 +76,31 @@ export default function VolunteerDetailModal({ app, onClose, onUpdate }) {
           {app.validIdFilename && (
             <div className={styles.formGroupFull}>
               <label className={styles.label}>Uploaded Valid ID</label>
-              <a
-                href={`http://localhost:8080/uploads/${app.validIdFilename}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.validIdLink}
-              >
-                {app.validIdFilename}
-              </a>
+              <div className={styles.imagePreviewContainer}>
+                {!imageError ? (
+                  <img
+                    src={`http://localhost:8080/uploads/ids/${app.validIdFilename}`}
+                    alt="Valid ID"
+                    className={styles.imagePreview}
+                    onClick={() => setShowImageModal(true)}
+                    onError={() => setImageError(true)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                ) : (
+                  <div className={styles.imageError}>
+                    <p>Image not available</p>
+                    <a
+                      href={`http://localhost:8080/uploads/ids/${app.validIdFilename}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.validIdLink}
+                    >
+                      Download: {app.validIdFilename}
+                    </a>
+                  </div>
+                )}
+                <p className={styles.imageHint}>Click image to view larger</p>
+              </div>
             </div>
           )}
         </form>
@@ -108,6 +128,28 @@ export default function VolunteerDetailModal({ app, onClose, onUpdate }) {
           </div>
         )}
       </div>
+
+      {/* Full-size Image Modal */}
+      {showImageModal && app.validIdFilename && (
+        <div className={styles.imageModal} onClick={() => setShowImageModal(false)}>
+          <div className={styles.imageModalContent} onClick={(e) => e.stopPropagation()}>
+            <button 
+              className={styles.imageModalClose} 
+              onClick={() => setShowImageModal(false)}
+            >
+              <IoClose />
+            </button>
+            <img
+              src={`http://localhost:8080/uploads/ids/${app.validIdFilename}`}
+              alt="Valid ID - Full Size"
+              className={styles.fullSizeImage}
+            />
+            <p className={styles.imageModalCaption}>
+              {app.name}'s Valid ID - {app.validIdFilename}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

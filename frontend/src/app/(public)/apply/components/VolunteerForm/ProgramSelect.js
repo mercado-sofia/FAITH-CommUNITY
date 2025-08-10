@@ -12,6 +12,8 @@ const ProgramSelect = forwardRef(function ProgramSelect(
     dropdownOpen,
     setDropdownOpen,
     errorMessage,
+    isLoading,
+    error,
   },
   ref
 ) {
@@ -61,66 +63,76 @@ const ProgramSelect = forwardRef(function ProgramSelect(
       className={`${styles.topTwoCol} ${errorMessage ? styles.highlightError : ""}`}
       ref={ref}
     >
-    <div className={styles.programLabelBox}>
-      <label htmlFor="program">What program are you interested in joining?</label>
-      <input
-        type="text"
-        id="program"
-        name="program"
-        value={formData.program?.name || ""}
-        readOnly
-        hidden
-      />
-    </div>
+      <div className={styles.programLabelBox}>
+        <label htmlFor="program">What program are you interested in joining?</label>
+        <input
+          type="text"
+          id="program"
+          name="program"
+          value={formData.program?.name || ""}
+          readOnly
+          hidden
+        />
+      </div>
 
       <div className={styles.dropdownWrapper} ref={wrapperRef}>
         <div
           className={`${styles.customDropdown} ${
             formData.program ? styles.filled : ""
-          }`}
+          } ${isLoading ? styles.loading : ""}`}
           id="program"
           role="button"
           tabIndex={0}
           aria-expanded={dropdownOpen}
           aria-controls="program-dropdown"
-          onClick={() => setDropdownOpen(!dropdownOpen)}
+          onClick={() => !isLoading && setDropdownOpen(!dropdownOpen)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
+            if (!isLoading && (e.key === "Enter" || e.key === " ")) {
               e.preventDefault();
               setDropdownOpen((prev) => !prev);
             }
           }}
         >
-          {formData.program?.name || "Choose Program"}
+          {isLoading ? "Loading programs..." : error ? "Error loading programs" : formData.program?.name || "Choose Program"}
           <FaChevronDown className={styles.dropdownIcon} />
         </div>
 
-        {dropdownOpen && (
+        {dropdownOpen && !isLoading && !error && (
           <ul
             className={styles.dropdownList}
             id="program-dropdown"
             ref={dropdownListRef}
           >
-            {programOptions.map((option) => (
-              <li
-                key={option.id}
-                className={styles.dropdownItem}
-                onClick={() => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    program: option,
-                  }));
-                  setDropdownOpen(false);
-                }}
-              >
-                {option.name}
+            {programOptions.length > 0 ? (
+              programOptions.map((option) => (
+                <li
+                  key={option.id}
+                  className={styles.dropdownItem}
+                  onClick={() => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      program: option,
+                    }));
+                    setDropdownOpen(false);
+                  }}
+                >
+                  <div>
+                    <strong>{option.name}</strong>
+                    <small className={styles.orgName}> - {option.org}</small>
+                  </div>
+                </li>
+              ))
+            ) : (
+              <li className={styles.noPrograms}>
+                No upcoming programs available
               </li>
-            ))}
+            )}
           </ul>
         )}
       </div>
 
       {errorMessage && <p className={styles.inlineError}>{errorMessage}</p>}
+      {error && <p className={styles.inlineError}>Failed to load programs. Please try again later.</p>}
     </div>
   );
 });

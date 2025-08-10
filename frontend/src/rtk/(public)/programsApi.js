@@ -1,0 +1,50 @@
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
+
+export const programsApi = createApi({
+  reducerPath: "programsApi",
+  baseQuery: fetchBaseQuery({
+    baseUrl: "http://localhost:8080/api",
+    prepareHeaders: (headers) => {
+      headers.set("Content-Type", "application/json")
+      return headers
+    },
+  }),
+  tagTypes: ["Program"],
+  endpoints: (builder) => ({
+    // Get all approved programs with status "Upcoming" for public display
+    getApprovedUpcomingPrograms: builder.query({
+      query: () => "/programs/approved/upcoming",
+      providesTags: ["Program"],
+      transformResponse: (response) => {
+        // Ensure we return an array and transform the data to match expected format
+        const programs = Array.isArray(response) ? response : response?.data || []
+        return programs.map(program => ({
+          id: program.id || program._id,
+          name: program.title || program.name,
+          org: program.organization || program.org,
+          description: program.description,
+          category: program.category,
+          status: program.status
+        }))
+      },
+    }),
+
+    // Get all programs (for admin use)
+    getAllPrograms: builder.query({
+      query: () => "/programs",
+      providesTags: ["Program"],
+    }),
+
+    // Get programs by organization
+    getProgramsByOrganization: builder.query({
+      query: (orgId) => `/admin/programs/${orgId}`,
+      providesTags: (result, error, orgId) => [{ type: "Program", id: orgId }],
+    }),
+  }),
+})
+
+export const {
+  useGetApprovedUpcomingProgramsQuery,
+  useGetAllProgramsQuery,
+  useGetProgramsByOrganizationQuery,
+} = programsApi

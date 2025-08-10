@@ -8,17 +8,16 @@ import PersonalInfoSection from "./PersonalInfoSection";
 import UploadValidID from "./UploadValidID";
 import TermsCheckbox from "./TermsCheckbox";
 import { handleChange } from "./formUtils";
-
-const mockProgramOptions = [
-  { id: "prog1", name: "CLIQUE", org: "FACTS" },
-  { id: "prog2", name: "LinkUp", org: "JPIA" },
-  { id: "prog3", name: "RiseUp", org: "FAHSS" },
-  { id: "prog4", name: "FaithSteps", org: "FABCOMMS" },
-  { id: "prog5", name: "ScholarSync", org: "FAIPS" },
-  { id: "prog6", name: "LinkUp", org: "JPIA" },
-];
+import { useGetApprovedUpcomingProgramsQuery } from "../../../../../rtk/(public)/programsApi";
 
 export default function VolunteerForm() {
+  // Fetch approved upcoming programs from the API
+  const {
+    data: programOptions = [],
+    isLoading: programsLoading,
+    error: programsError
+  } = useGetApprovedUpcomingProgramsQuery();
+
   const [formData, setFormData] = useState({
     program: null,
     fullName: "",
@@ -98,14 +97,14 @@ export default function VolunteerForm() {
     setErrorMessage("");
     setErrorTarget(null);
 
-    // ✅ Validation – Program
+    // Validation – Program
     if (!formData.program?.id) {
       showError(programRef, "Please select a valid program.", "program");
       setIsLoading(false);
       return;
     }
 
-    // ✅ Validation – All personal info fields
+    // Validation – All personal info fields
     const personalFields = [
       "fullName",
       "age",
@@ -133,21 +132,21 @@ export default function VolunteerForm() {
       return;
     }
 
-    // ✅ Validation – Valid ID
+    // Validation – Valid ID
     if (!formData.validId) {
       showError(uploadRef, "Please upload your valid ID.", "upload");
       setIsLoading(false);
       return;
     }
 
-    // ✅ Validation – Agree to terms
+    // Validation – Agree to terms
     if (!formData.agreeToTerms) {
       showError(termsRef, "You must agree to the terms and conditions.", "terms");
       setIsLoading(false);
       return;
     }
 
-    // ✅ Submit form
+    // Submit form
     try {
       const form = new FormData();
       form.append("program_id", formData.program.id);
@@ -215,12 +214,14 @@ export default function VolunteerForm() {
 
       <ProgramSelect
         ref={programRef}
-        programOptions={mockProgramOptions}
+        programOptions={programOptions}
         formData={formData}
         setFormData={setFormData}
         dropdownOpen={dropdownOpen}
         setDropdownOpen={setDropdownOpen}
         errorMessage={errorTarget === "program" ? errorMessage : ""}
+        isLoading={programsLoading}
+        error={programsError}
       />
 
       <PersonalInfoSection

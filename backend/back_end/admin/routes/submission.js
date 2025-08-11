@@ -16,9 +16,6 @@ router.post("/", submitChanges)
 // ✅ Get submission by ID (for detailed view)
 router.get("/details/:id", getSubmissionById)
 
-// ✅ Fetch all submissions related to a specific org acronym (used for right panel display)
-router.get("/:orgAcronym", getSubmissionsByOrg)
-
 // ✅ Update a pending submission (admin re-edits before superadmin approval)
 router.put("/:id", updateSubmission)
 
@@ -27,5 +24,8 @@ router.delete("/:id", cancelSubmission)
 
 // ✅ Bulk delete multiple submissions
 router.post("/bulk-delete", bulkDeleteSubmissions)
+
+// ✅ Fetch all submissions related to a specific org acronym (used for right panel display)
+router.get("/:orgAcronym", getSubmissionsByOrg)
 
 export default router

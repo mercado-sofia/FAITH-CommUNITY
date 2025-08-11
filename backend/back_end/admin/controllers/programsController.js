@@ -50,7 +50,7 @@ export const getProgramsByOrg = async (req, res) => {
         if (existingOrg.length === 0) {
           // Insert into organizations table
           const [insertResult] = await db.execute(
-            "INSERT INTO organizations (org, orgName, email, description, status) VALUES (?, ?, NULL, NULL, 'ACTIVE')",
+            "INSERT INTO organizations (org, orgName, description, status) VALUES (?, ?, NULL, 'ACTIVE')",
             [adminOrg.org, adminOrg.orgName]
           );
           console.log(`[DEBUG] Synced organization to organizations table with ID: ${insertResult.insertId}`);

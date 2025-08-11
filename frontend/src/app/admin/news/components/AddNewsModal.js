@@ -160,10 +160,10 @@ const AddNewsModal = ({ onClose, onSubmit, orgId }) => {
               {isSubmitting ? (
                 <>
                   <div className={styles.spinner}></div>
-                  Submitting...
+                  Publishing...
                 </>
               ) : (
-                'Submit for Approval'
+                'Publish'
               )}
             </button>
           </div>

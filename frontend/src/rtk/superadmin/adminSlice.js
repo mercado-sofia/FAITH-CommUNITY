@@ -56,6 +56,25 @@ const adminSlice = createSlice({
     clearError: (state) => {
       state.error = null
     },
+    // Update admin email in Redux store
+    updateAdminEmail: (state, action) => {
+      if (state.admin) {
+        state.admin.email = action.payload.email
+        // Also update localStorage to keep it in sync
+        if (typeof window !== "undefined") {
+          const adminData = localStorage.getItem("adminData")
+          if (adminData) {
+            try {
+              const parsedData = JSON.parse(adminData)
+              parsedData.email = action.payload.email
+              localStorage.setItem("adminData", JSON.stringify(parsedData))
+            } catch (error) {
+              console.error("Error updating localStorage:", error)
+            }
+          }
+        }
+      }
+    },
     // Initialize from localStorage
     initializeAuth: (state) => {
       if (typeof window !== "undefined") {
@@ -92,7 +111,7 @@ const adminSlice = createSlice({
   },
 })
 
-export const { loginAdmin, loginSuperAdmin, logoutAdmin, setLoading, setError, clearError, initializeAuth } =
+export const { loginAdmin, loginSuperAdmin, logoutAdmin, setLoading, setError, clearError, initializeAuth, updateAdminEmail } =
   adminSlice.actions
 
 export default adminSlice.reducer

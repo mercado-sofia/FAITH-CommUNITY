@@ -5,30 +5,217 @@ import { useSelector, useDispatch } from 'react-redux';
 import {
   useGetAdminByIdQuery,
   useUpdateAdminMutation,
+  useVerifyPasswordForEmailChangeMutation,
+  useVerifyPasswordForPasswordChangeMutation,
 } from '../../../rtk/superadmin/manageProfilesApi';
-import { selectCurrentAdmin, selectIsAuthenticated } from '../../../rtk/superadmin/adminSlice';
+import { selectCurrentAdmin, updateAdminEmail } from '../../../rtk/superadmin/adminSlice';
 import styles from './adminSettings.module.css';
+
+// Separate component for password change functionality
+const PasswordChangeForm = ({ adminId, onCancel, onSuccess }) => {
+  const [updateAdmin, { isLoading: isUpdating }] = useUpdateAdminMutation();
+  const [verifyPasswordForPasswordChange, { isLoading: isVerifyingPassword }] = useVerifyPasswordForPasswordChangeMutation();
+  
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  
+  const [errors, setErrors] = useState({});
+  const [message, setMessage] = useState({ text: '', type: '' });
+
+  const handlePasswordInputChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const validatePasswordChange = () => {
+    const newErrors = {};
+    
+    if (!passwordData.currentPassword.trim()) {
+      newErrors.currentPassword = 'Current password is required';
+    }
+    
+    if (!passwordData.newPassword.trim()) {
+      newErrors.newPassword = 'New password is required';
+    } else if (passwordData.newPassword.length < 8) {
+      newErrors.newPassword = 'Password must be at least 8 characters long';
+    }
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChangePassword = async () => {
+    if (validatePasswordChange()) {
+      try {
+        // First verify the current password
+        try {
+          await verifyPasswordForPasswordChange({
+            id: adminId,
+            currentPassword: passwordData.currentPassword
+          }).unwrap();
+        } catch (error) {
+          setMessage({
+            text: 'Invalid current password. Please try again.',
+            type: 'error'
+          });
+          setTimeout(() => setMessage({ text: '', type: '' }), 5000);
+          return;
+        }
+
+        // If password verification succeeds, proceed with password update
+        const updateData = {
+          password: passwordData.newPassword,
+          role: 'admin',
+          status: 'ACTIVE'
+        };
+        
+        await updateAdmin({ 
+          id: adminId, 
+          ...updateData 
+        }).unwrap();
+        
+        setMessage({ text: 'Password changed successfully!', type: 'success' });
+        setTimeout(() => {
+          setMessage({ text: '', type: '' });
+          onSuccess();
+        }, 3000);
+      } catch (error) {
+        console.error('Failed to change password:', error);
+        setMessage({ 
+          text: error.data?.message || 'Failed to change password. Please try again.', 
+          type: 'error' 
+        });
+        setTimeout(() => setMessage({ text: '', type: '' }), 5000);
+      }
+    }
+  };
+
+  const handleCancel = () => {
+    setPasswordData({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    });
+    setErrors({});
+    setMessage({ text: '', type: '' });
+    onCancel();
+  };
+
+  return (
+    <div className={styles.passwordForm}>
+      {message.text && (
+        <div className={`${styles.message} ${styles[message.type]}`}>
+          {message.text}
+        </div>
+      )}
+      
+      <div className={styles.fieldGroup}>
+        <label className={styles.label}>Current Password</label>
+        <input
+          type="password"
+          name="currentPassword"
+          value={passwordData.currentPassword}
+          onChange={handlePasswordInputChange}
+          className={`${styles.input} ${errors.currentPassword ? styles.inputError : ''}`}
+          placeholder="Enter your current password"
+          disabled={isUpdating || isVerifyingPassword}
+        />
+        {errors.currentPassword && <span className={styles.errorText}>{errors.currentPassword}</span>}
+      </div>
+
+      <div className={styles.fieldGroup}>
+        <label className={styles.label}>New Password</label>
+        <input
+          type="password"
+          name="newPassword"
+          value={passwordData.newPassword}
+          onChange={handlePasswordInputChange}
+          className={`${styles.input} ${errors.newPassword ? styles.inputError : ''}`}
+          placeholder="Enter your new password"
+          disabled={isUpdating || isVerifyingPassword}
+        />
+        {errors.newPassword && <span className={styles.errorText}>{errors.newPassword}</span>}
+      </div>
+
+      <div className={styles.fieldGroup}>
+        <label className={styles.label}>Confirm New Password</label>
+        <input
+          type="password"
+          name="confirmPassword"
+          value={passwordData.confirmPassword}
+          onChange={handlePasswordInputChange}
+          className={`${styles.input} ${errors.confirmPassword ? styles.inputError : ''}`}
+          placeholder="Confirm your new password"
+          disabled={isUpdating || isVerifyingPassword}
+        />
+        {errors.confirmPassword && <span className={styles.errorText}>{errors.confirmPassword}</span>}
+      </div>
+
+      <div className={styles.actionButtons}>
+        <button 
+          className={styles.saveButton}
+          onClick={handleChangePassword}
+          disabled={isUpdating || isVerifyingPassword}
+        >
+          {isUpdating ? 'Updating...' : isVerifyingPassword ? 'Verifying...' : 'Update Password'}
+        </button>
+        <button 
+          className={styles.cancelButton}
+          onClick={handleCancel}
+          disabled={isUpdating || isVerifyingPassword}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default function AdminSettings() {
   const dispatch = useDispatch();
   const currentAdmin = useSelector(selectCurrentAdmin);
-  const isAuthenticated = useSelector(selectIsAuthenticated);
   
   // Get admin data from API
-  const { data: adminFromApi, isLoading: isLoadingAdmin, refetch } = useGetAdminByIdQuery(
+  const { data: adminFromApi, isLoading: isLoadingAdmin, error: apiError, refetch } = useGetAdminByIdQuery(
     currentAdmin?.id,
-    { skip: !currentAdmin?.id }
+    { 
+      skip: !currentAdmin?.id,
+      // Retry on failure
+      retry: 3,
+      // Don't refetch on window focus if we have data
+      refetchOnWindowFocus: false
+    }
   );
-  
+
+  // Use currentAdmin as primary source, API as enhancement
+  // If API returns empty email but Redux has it, use Redux data
+  const effectiveAdminData = adminFromApi ? {
+    ...adminFromApi,
+    email: adminFromApi.email || currentAdmin?.email || ''
+  } : currentAdmin;
+
   const [updateAdmin, { isLoading: isUpdating }] = useUpdateAdminMutation();
+  const [verifyPassword, { isLoading: isVerifying }] = useVerifyPasswordForEmailChangeMutation();
 
   const [adminData, setAdminData] = useState({
     org: '',
     orgName: '',
     email: '',
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
+    emailChangePassword: '', // New field for email change password verification
     status: 'ACTIVE'
   });
 
@@ -37,31 +224,39 @@ export default function AdminSettings() {
   const [message, setMessage] = useState({ text: '', type: '' });
   const [errors, setErrors] = useState({});
 
+  // Helper function to check if email has changed
+  const hasEmailChanged = () => {
+    // Get the original email from the most reliable source
+    const originalEmail = effectiveAdminData?.email || '';
+    return adminData.email !== originalEmail;
+  };
+
   // Initialize admin data when API data is loaded
   useEffect(() => {
-    if (adminFromApi) {
+    if (effectiveAdminData) {
       setAdminData({
-        org: adminFromApi.org || '',
-        orgName: adminFromApi.orgName || '',
-        email: adminFromApi.email || '',
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-        status: adminFromApi.status || 'ACTIVE'
+        org: effectiveAdminData.org || '',
+        orgName: effectiveAdminData.orgName || '',
+        email: effectiveAdminData.email || '',
+        emailChangePassword: '', // Clear email change password
+        status: effectiveAdminData.status || 'ACTIVE'
       });
-    } else if (currentAdmin) {
-      // Fallback to current admin data from Redux
+    } else {
+      // Set default values to prevent null errors
       setAdminData({
-        org: currentAdmin.org || '',
-        orgName: currentAdmin.orgName || '',
-        email: currentAdmin.email || '',
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-        status: currentAdmin.status || 'ACTIVE'
+        org: '',
+        orgName: '',
+        email: '',
+        emailChangePassword: '',
+        status: 'ACTIVE'
       });
     }
   }, [adminFromApi, currentAdmin]);
+
+  // Clear email change password on mount
+  useEffect(() => {
+    setAdminData(prev => ({ ...prev, emailChangePassword: '' }));
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -75,44 +270,20 @@ export default function AdminSettings() {
     }
   };
 
-
-
-  const validatePasswordChange = () => {
-    const newErrors = {};
-    
-    if (!adminData.currentPassword.trim()) {
-      newErrors.currentPassword = 'Current password is required';
-    }
-    
-    if (!adminData.newPassword.trim()) {
-      newErrors.newPassword = 'New password is required';
-    } else if (adminData.newPassword.length < 8) {
-      newErrors.newPassword = 'Password must be at least 8 characters long';
-    }
-    
-    if (adminData.newPassword !== adminData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   const validateProfile = () => {
     const newErrors = {};
-    
-    if (!adminData.org.trim()) {
-      newErrors.org = 'Organization acronym is required';
-    }
-    
-    if (!adminData.orgName.trim()) {
-      newErrors.orgName = 'Organization name is required';
-    }
     
     if (!adminData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(adminData.email)) {
       newErrors.email = 'Please enter a valid email address';
+    }
+    
+    // Check if email has changed and require password verification
+    if (hasEmailChanged()) {
+      if (!adminData.emailChangePassword.trim()) {
+        newErrors.emailChangePassword = 'Current password is required to change email address';
+      }
     }
     
     setErrors(newErrors);
@@ -122,9 +293,24 @@ export default function AdminSettings() {
   const handleSaveProfile = async () => {
     if (validateProfile()) {
       try {
+        // If email has changed, verify password first
+        if (hasEmailChanged()) {
+          try {
+            await verifyPassword({
+              id: currentAdmin.id,
+              currentPassword: adminData.emailChangePassword
+            }).unwrap();
+          } catch (error) {
+            setMessage({
+              text: 'Invalid current password. Please try again.',
+              type: 'error'
+            });
+            setTimeout(() => setMessage({ text: '', type: '' }), 5000);
+            return;
+          }
+        }
+
         const updateData = {
-          org: adminData.org,
-          orgName: adminData.orgName,
           email: adminData.email,
           role: 'admin', // Ensure role remains admin
           status: adminData.status
@@ -135,51 +321,20 @@ export default function AdminSettings() {
           ...updateData 
         }).unwrap();
         
-        setMessage({ text: 'Profile updated successfully!', type: 'success' });
+        // Update Redux store with new email
+        if (hasEmailChanged()) {
+          dispatch(updateAdminEmail({ email: adminData.email }));
+        }
+        
+        setMessage({ text: 'Email updated successfully!', type: 'success' });
         setIsEditing(false);
+        setAdminData(prev => ({ ...prev, emailChangePassword: '' })); // Clear password field
         refetch(); // Refresh data
         setTimeout(() => setMessage({ text: '', type: '' }), 3000);
       } catch (error) {
         console.error('Failed to update profile:', error);
         setMessage({ 
-          text: error.data?.message || 'Failed to update profile. Please try again.', 
-          type: 'error' 
-        });
-        setTimeout(() => setMessage({ text: '', type: '' }), 5000);
-      }
-    }
-  };
-
-  const handleChangePassword = async () => {
-    if (validatePasswordChange()) {
-      try {
-        const updateData = {
-          org: adminData.org,
-          orgName: adminData.orgName,
-          email: adminData.email,
-          password: adminData.newPassword,
-          role: 'admin',
-          status: adminData.status
-        };
-        
-        await updateAdmin({ 
-          id: currentAdmin.id, 
-          ...updateData 
-        }).unwrap();
-        
-        setMessage({ text: 'Password changed successfully!', type: 'success' });
-        setShowPasswordChange(false);
-        setAdminData(prev => ({
-          ...prev,
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: ''
-        }));
-        setTimeout(() => setMessage({ text: '', type: '' }), 3000);
-      } catch (error) {
-        console.error('Failed to change password:', error);
-        setMessage({ 
-          text: error.data?.message || 'Failed to change password. Please try again.', 
+          text: error.data?.message || 'Failed to update email. Please try again.', 
           type: 'error' 
         });
         setTimeout(() => setMessage({ text: '', type: '' }), 5000);
@@ -193,10 +348,14 @@ export default function AdminSettings() {
     setErrors({});
     setAdminData(prev => ({
       ...prev,
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
+      emailChangePassword: '' // Clear email change password field
     }));
+  };
+
+  const handlePasswordChangeSuccess = () => {
+    setShowPasswordChange(false);
+    setMessage({ text: 'Password changed successfully!', type: 'success' });
+    setTimeout(() => setMessage({ text: '', type: '' }), 3000);
   };
 
   return (
@@ -217,51 +376,36 @@ export default function AdminSettings() {
         </div>
       )}
 
+      {apiError && (
+        <div className={`${styles.message} ${styles.error}`}>
+          <strong>Error loading admin data:</strong> {apiError?.data?.message || apiError?.message || 'Unknown error'}
+          <button 
+            onClick={() => refetch()} 
+            className={styles.retryButton}
+            style={{ marginLeft: '1rem', padding: '0.5rem 1rem', background: '#19a48d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       <div className={styles.settingsContainer}>
         {/* Profile Section */}
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
-            <h2>Profile Information</h2>
+            <h2>Email Settings</h2>
             {!isEditing && (
               <button 
                 className={styles.editButton}
                 onClick={() => setIsEditing(true)}
               >
-                Edit Profile
+                Edit Email
               </button>
             )}
           </div>
 
           {isEditing ? (
             <div className={styles.editForm}>
-              <div className={styles.fieldGroup}>
-                <label className={styles.label}>Organization Acronym</label>
-                <input
-                  type="text"
-                  name="org"
-                  value={adminData.org}
-                  onChange={handleInputChange}
-                  className={`${styles.input} ${errors.org ? styles.inputError : ''}`}
-                  placeholder="e.g., FAITH, FTL, FAHSS"
-                  disabled={isUpdating}
-                />
-                {errors.org && <span className={styles.errorText}>{errors.org}</span>}
-              </div>
-
-              <div className={styles.fieldGroup}>
-                <label className={styles.label}>Organization Name</label>
-                <input
-                  type="text"
-                  name="orgName"
-                  value={adminData.orgName}
-                  onChange={handleInputChange}
-                  className={`${styles.input} ${errors.orgName ? styles.inputError : ''}`}
-                  placeholder="Full organization name"
-                  disabled={isUpdating}
-                />
-                {errors.orgName && <span className={styles.errorText}>{errors.orgName}</span>}
-              </div>
-
               <div className={styles.fieldGroup}>
                 <label className={styles.label}>Email</label>
                 <input
@@ -271,18 +415,40 @@ export default function AdminSettings() {
                   onChange={handleInputChange}
                   className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
                   placeholder="admin@organization.org"
-                  disabled={isUpdating}
+                  disabled={isUpdating || isVerifying}
                 />
                 {errors.email && <span className={styles.errorText}>{errors.email}</span>}
               </div>
+
+              {/* Password verification field - only show when email has changed */}
+              {hasEmailChanged() && (
+                <div className={styles.fieldGroup}>
+                  <label className={styles.label}>
+                    Current Password <span className={styles.required}>*</span>
+                  </label>
+                  <input
+                    type="password"
+                    name="emailChangePassword"
+                    value={adminData.emailChangePassword}
+                    onChange={handleInputChange}
+                    className={`${styles.input} ${errors.emailChangePassword ? styles.inputError : ''}`}
+                    placeholder="Enter your current password to confirm email change"
+                    disabled={isUpdating || isVerifying}
+                  />
+                  {errors.emailChangePassword && <span className={styles.errorText}>{errors.emailChangePassword}</span>}
+                  <div className={styles.helperText}>
+                    Current password is required to change your email address
+                  </div>
+                </div>
+              )}
 
               <div className={styles.actionButtons}>
                 <button 
                   className={styles.saveButton}
                   onClick={handleSaveProfile}
-                  disabled={isUpdating}
+                  disabled={isUpdating || isVerifying}
                 >
-                  {isUpdating ? 'Saving...' : 'Save Changes'}
+                  {isUpdating ? 'Saving...' : isVerifying ? 'Verifying...' : 'Save Changes'}
                 </button>
                 <button 
                   className={styles.cancelButton}
@@ -295,16 +461,6 @@ export default function AdminSettings() {
           ) : (
             <div className={styles.profileContent}>
               <div className={styles.profileFields}>
-                <div className={styles.fieldGroup}>
-                  <label className={styles.label}>Organization Acronym</label>
-                  <div className={styles.displayValue}>{adminData.org}</div>
-                </div>
-
-                <div className={styles.fieldGroup}>
-                  <label className={styles.label}>Organization Name</label>
-                  <div className={styles.displayValue}>{adminData.orgName}</div>
-                </div>
-
                 <div className={styles.fieldGroup}>
                   <label className={styles.label}>Email Address</label>
                   <div className={styles.displayValue}>{adminData.email}</div>
@@ -321,90 +477,36 @@ export default function AdminSettings() {
           )}
         </div>
 
-      {/* Password Section */}
-      <div className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <h2>Password & Security</h2>
-          {!showPasswordChange && (
-            <button 
-              className={styles.editButton}
-              onClick={() => setShowPasswordChange(true)}
-            >
-              Change Password
-            </button>
+        {/* Password Section */}
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2>Password & Security</h2>
+            {!showPasswordChange && (
+              <button 
+                className={styles.editButton}
+                onClick={() => setShowPasswordChange(true)}
+              >
+                Change Password
+              </button>
+            )}
+          </div>
+
+          {showPasswordChange ? (
+            <PasswordChangeForm
+              adminId={currentAdmin?.id}
+              onCancel={() => setShowPasswordChange(false)}
+              onSuccess={handlePasswordChangeSuccess}
+            />
+          ) : (
+            <div className={styles.passwordInfo}>
+              <p className={styles.infoText}>
+                Password last changed: <strong>30 days ago</strong>
+              </p>
+              <p className={styles.infoText}>
+                For security purposes, we recommend changing your password regularly.
+              </p>
+            </div>
           )}
-        </div>
-
-        {showPasswordChange ? (
-          <div className={styles.passwordForm}>
-            <div className={styles.fieldGroup}>
-              <label className={styles.label}>Current Password</label>
-              <input
-                type="password"
-                name="currentPassword"
-                value={adminData.currentPassword}
-                onChange={handleInputChange}
-                className={`${styles.input} ${errors.currentPassword ? styles.inputError : ''}`}
-                placeholder="Enter your current password"
-                disabled={isUpdating}
-              />
-              {errors.currentPassword && <span className={styles.errorText}>{errors.currentPassword}</span>}
-            </div>
-
-            <div className={styles.fieldGroup}>
-              <label className={styles.label}>New Password</label>
-              <input
-                type="password"
-                name="newPassword"
-                value={adminData.newPassword}
-                onChange={handleInputChange}
-                className={`${styles.input} ${errors.newPassword ? styles.inputError : ''}`}
-                placeholder="Enter your new password"
-                disabled={isUpdating}
-              />
-              {errors.newPassword && <span className={styles.errorText}>{errors.newPassword}</span>}
-            </div>
-
-            <div className={styles.fieldGroup}>
-              <label className={styles.label}>Confirm New Password</label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={adminData.confirmPassword}
-                onChange={handleInputChange}
-                className={`${styles.input} ${errors.confirmPassword ? styles.inputError : ''}`}
-                placeholder="Confirm your new password"
-                disabled={isUpdating}
-              />
-              {errors.confirmPassword && <span className={styles.errorText}>{errors.confirmPassword}</span>}
-            </div>
-
-            <div className={styles.actionButtons}>
-              <button 
-                className={styles.saveButton}
-                onClick={handleChangePassword}
-                disabled={isUpdating}
-              >
-                {isUpdating ? 'Updating...' : 'Update Password'}
-              </button>
-              <button 
-                className={styles.cancelButton}
-                onClick={handleCancel}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className={styles.passwordInfo}>
-            <p className={styles.infoText}>
-              Password last changed: <strong>30 days ago</strong>
-            </p>
-            <p className={styles.infoText}>
-              For security purposes, we recommend changing your password regularly.
-            </p>
-          </div>
-        )}
         </div>
       </div>
     </div>

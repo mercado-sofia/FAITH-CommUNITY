@@ -69,6 +69,24 @@ export const manageProfilesApi = createApi({
         body: credentials,
       }),
     }),
+
+    // Verify password for email change
+    verifyPasswordForEmailChange: builder.mutation({
+      query: ({ id, currentPassword }) => ({
+        url: `/${id}/verify-password`,
+        method: "POST",
+        body: { currentPassword },
+      }),
+    }),
+
+    // Verify password for password change
+    verifyPasswordForPasswordChange: builder.mutation({
+      query: ({ id, currentPassword }) => ({
+        url: `/${id}/verify-password-change`,
+        method: "POST",
+        body: { currentPassword },
+      }),
+    }),
   }),
 })
 
@@ -79,4 +97,6 @@ export const {
   useUpdateAdminMutation,
   useDeleteAdminMutation,
   useLoginAdminMutation,
+  useVerifyPasswordForEmailChangeMutation,
+  useVerifyPasswordForPasswordChangeMutation,
 } = manageProfilesApi

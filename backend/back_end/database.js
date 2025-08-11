@@ -85,6 +85,8 @@ const initializeDatabase = async () => {
       console.log("✅ News table created successfully!");
     }
 
+
+
     connection.release();
     return promisePool;
   } catch (error) {

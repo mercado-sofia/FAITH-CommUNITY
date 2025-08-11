@@ -71,12 +71,29 @@ export default function OrganizationPage() {
     setTimeout(() => setMessage({ text: "", type: "", section: "" }), 5000);
   };
 
-  const validateForm = () => {
+    const validateForm = () => {
+    console.log('🔍 validateForm called');
+    console.log('📊 Validation data:', { editPreviewData, orgData });
+    
     const newErrors = {};
-    if (!orgData.org.trim()) newErrors.org = "Organization acronym is required";
-    if (!orgData.orgName.trim()) newErrors.orgName = "Organization name is required";
-    if (orgData.email && !/\S+@\S+\.\S+/.test(orgData.email)) newErrors.email = "Please enter a valid email address";
-    if (orgData.facebook && !orgData.facebook.includes("facebook.com")) newErrors.facebook = "Please enter a valid Facebook URL";
+    // Use editPreviewData if available, otherwise fall back to orgData
+    const dataToValidate = editPreviewData || orgData;
+    console.log('✅ Data being validated:', dataToValidate);
+    
+    if (!dataToValidate.org?.trim()) {
+      newErrors.org = "Organization acronym is required";
+      console.log('❌ org validation failed');
+    }
+    if (!dataToValidate.orgName?.trim()) {
+      newErrors.orgName = "Organization name is required";
+      console.log('❌ orgName validation failed');
+    }
+    if (dataToValidate.facebook && !dataToValidate.facebook.includes("facebook.com")) {
+      newErrors.facebook = "Please enter a valid Facebook URL";
+      console.log('❌ facebook validation failed');
+    }
+    
+    console.log('📝 Validation errors:', newErrors);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -231,15 +248,26 @@ export default function OrganizationPage() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
+    console.log('🔍 handleInputChange called:', { name, value, currentSection, showEditModal });
+    
+    // Skip email field since it's managed in admin settings
+    if (name === 'email') return;
+    
     // Handle different sections
     if (currentSection === 'organization') {
       // When editing organization data, update preview data instead of main orgData
       if (showEditModal) {
-        setEditPreviewData((prev) => ({ 
-          ...(prev || orgData), 
-          [name]: value 
-        }));
+        console.log('📝 Updating editPreviewData for organization section');
+        setEditPreviewData((prev) => {
+          const newData = { 
+            ...(prev || orgData), 
+            [name]: value 
+          };
+          console.log('🔄 New editPreviewData:', newData);
+          return newData;
+        });
       } else {
+        console.log('📝 Updating orgData directly');
         setOrgData((prev) => ({ ...prev, [name]: value }));
       }
     } else {
@@ -297,15 +325,23 @@ export default function OrganizationPage() {
 
   const handleSave = () => {
     if (currentSection === 'organization') {
+      console.log('💾 handleSave called for organization section');
+      console.log('📊 Current state:', { editPreviewData, orgData, originalData });
+      
       if (!validateForm()) {
+        console.log('❌ Validation failed');
         showMessage("Please fix the errors before saving", "error");
         return;
       }
 
       const currentOrgData = editPreviewData || orgData;
-      const hasChanges = originalData && Object.keys(currentOrgData).some((key) => key !== "id" && currentOrgData[key] !== originalData[key]);
+      console.log('🔍 Data to save:', currentOrgData);
+      
+      const hasChanges = originalData && Object.keys(currentOrgData).some((key) => key !== "id" && key !== "email" && currentOrgData[key] !== originalData[key]);
+      console.log('🔄 Has changes:', hasChanges);
 
       if (!hasChanges) {
+        console.log('ℹ️ No changes detected');
         showMessage("No changes detected", "info");
         setShowEditModal(false);
         setIsEditing(false);
@@ -313,6 +349,7 @@ export default function OrganizationPage() {
         return;
       }
 
+      console.log('✅ Changes detected, proceeding to save');
       setPendingChanges({ ...currentOrgData });
       setShowEditModal(false);
       setShowSummaryModal(true);
@@ -348,6 +385,9 @@ export default function OrganizationPage() {
   };
 
   const handleConfirmChanges = async () => {
+    console.log('🚀 handleConfirmChanges called');
+    console.log('📊 pendingChanges:', pendingChanges);
+    
     if (!pendingChanges) return;
     try {
       setSaving(true);
@@ -357,18 +397,21 @@ export default function OrganizationPage() {
         ? `${API_BASE_URL}/api/organization/${pendingChanges.id}`
         : `${API_BASE_URL}/api/organization`;
 
+      const requestBody = {
+        logo: pendingChanges.logo || null,
+        org: pendingChanges.org,
+        orgName: pendingChanges.orgName,
+        facebook: pendingChanges.facebook || null,
+        description: pendingChanges.description || null,
+        status: "ACTIVE"
+      };
+      
+      console.log('🌐 Making API request:', { method, url, body: requestBody });
+
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          logo: pendingChanges.logo || null,
-          org: pendingChanges.org,
-          orgName: pendingChanges.orgName,
-          email: pendingChanges.email || null,
-          facebook: pendingChanges.facebook || null,
-          description: pendingChanges.description || null,
-          status: "ACTIVE"
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -388,8 +431,8 @@ export default function OrganizationPage() {
           const updatedAdmin = {
             ...currentAdminData,
             org: pendingChanges.org,
-            orgName: pendingChanges.orgName,
-            email: pendingChanges.email || currentAdminData.email
+            orgName: pendingChanges.orgName
+            // Email is managed in admin settings, so we don't update it here
           };
           localStorage.setItem("adminData", JSON.stringify(updatedAdmin));
         }

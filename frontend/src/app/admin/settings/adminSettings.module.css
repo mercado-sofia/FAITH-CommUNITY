@@ -127,6 +127,13 @@
     gap: 2rem;
     align-items: flex-start;
   }
+
+  /* Edit Form */
+  .editForm {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
   
 
   
@@ -136,6 +143,7 @@
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    align-items: flex-start;
   }
   
   .fieldGroup {
@@ -180,6 +188,8 @@
     font-size: 0.9rem;
     color: #374151;
     font-family: var(--font-poppins), sans-serif;
+    display: flex;
+    align-items: center;
   }
   
   .errorText {
@@ -188,11 +198,25 @@
     font-weight: 500;
     font-family: var(--font-poppins), sans-serif;
   }
+
+  .required {
+    color: #dc2626;
+    margin-left: 0.25rem;
+  }
+
+  .helperText {
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-style: italic;
+    font-family: var(--font-poppins), sans-serif;
+    margin-top: 0.25rem;
+  }
   
   /* Status Badge */
   .statusBadge {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     padding: 0.5rem 1rem;
     border-radius: 20px;
     font-size: 0.8rem;
@@ -200,6 +224,11 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-family: var(--font-poppins), sans-serif;
+    width: fit-content;
+    min-width: fit-content;
+    white-space: nowrap;
+    flex-shrink: 0;
+    align-self: flex-start;
   }
   
   .statusBadge.active {

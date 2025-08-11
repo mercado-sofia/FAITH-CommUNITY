@@ -174,8 +174,9 @@ export const updateAdmin = async (req, res) => {
     return res.status(400).json({ error: "Invalid admin ID" })
   }
 
-  // For status-only updates (like soft delete), we need to get existing data
-  if (status && (!org || !orgName || !email || !role)) {
+  // For password-only updates or status-only updates, we need to get existing data
+  if ((password && password.trim() !== "" && (!org || !orgName || !email || !role)) || 
+      (status && (!org || !orgName || !email || !role))) {
     try {
       const [existingAdmin] = await db.execute("SELECT org, orgName, email, role FROM admins WHERE id = ?", [id])
 
@@ -190,13 +191,52 @@ export const updateAdmin = async (req, res) => {
         orgName: orgName || admin.orgName,
         email: email || admin.email,
         role: role || admin.role,
-        status: status,
+        status: status || admin.status || "ACTIVE",
       }
 
-      const query = "UPDATE admins SET org = ?, orgName = ?, email = ?, role = ?, status = ? WHERE id = ?"
-      const params = [updateData.org, updateData.orgName, updateData.email, updateData.role, updateData.status, id]
+      // Update admin table (trigger will automatically sync organization email)
+      let adminQuery, adminParams
 
-      await db.execute(query, params)
+      if (password && password.trim() !== "") {
+        if (password.length < 6) {
+          return res.status(400).json({ error: "Password must be at least 6 characters long" })
+        }
+
+        const saltRounds = 10
+        const hashedPassword = await bcrypt.hash(password, saltRounds)
+        
+        console.log(`🔐 Password update for admin ID: ${id}`)
+        console.log(`📝 New password length: ${password.length}`)
+        console.log(`🔒 Hashed password length: ${hashedPassword.length}`)
+
+        adminQuery = "UPDATE admins SET org = ?, orgName = ?, email = ?, password = ?, role = ?, status = ? WHERE id = ?"
+        adminParams = [updateData.org, updateData.orgName, updateData.email, hashedPassword, updateData.role, updateData.status, id]
+      } else {
+        adminQuery = "UPDATE admins SET org = ?, orgName = ?, email = ?, role = ?, status = ? WHERE id = ?"
+        adminParams = [updateData.org, updateData.orgName, updateData.email, updateData.role, updateData.status, id]
+      }
+
+      console.log(`📊 Update query: ${adminQuery}`)
+      console.log(`📋 Update params:`, adminParams)
+
+      await db.execute(adminQuery, adminParams)
+      
+      // Verify the update was successful
+      const [verifyUpdate] = await db.execute("SELECT password FROM admins WHERE id = ?", [id])
+      if (verifyUpdate.length > 0) {
+        console.log(`✅ Password update verified for admin ID: ${id}`)
+        console.log(`🔍 Stored password hash length: ${verifyUpdate[0].password.length}`)
+      }
+
+      // Log the change for debugging
+      if (updateData.email !== admin.email) {
+        console.log(`🔄 Admin email updated from '${admin.email}' to '${updateData.email}' for org: ${updateData.org}`)
+        console.log(`📧 Email is now the single source of truth in admins table`)
+      }
+
+      if (password && password.trim() !== "") {
+        console.log(`🔐 Password updated for admin ID: ${id}`)
+      }
 
       return res.json({
         message: "Admin updated successfully",
@@ -222,19 +262,21 @@ export const updateAdmin = async (req, res) => {
   }
 
   try {
-    const [existingAdmin] = await db.execute("SELECT id FROM admins WHERE id = ?", [id])
+    const [existingAdmin] = await db.execute("SELECT id, email FROM admins WHERE id = ?", [id])
 
     if (existingAdmin.length === 0) {
       return res.status(404).json({ error: "Admin not found" })
     }
 
+    const currentAdmin = existingAdmin[0]
     const [emailCheck] = await db.execute("SELECT id FROM admins WHERE email = ? AND id != ?", [email, id])
 
     if (emailCheck.length > 0) {
       return res.status(409).json({ error: "Email is already taken by another admin" })
     }
 
-    let query, params
+    // Update admin table (trigger will automatically sync organization email)
+    let adminQuery, adminParams
 
     if (password && password.trim() !== "") {
       if (password.length < 6) {
@@ -243,15 +285,40 @@ export const updateAdmin = async (req, res) => {
 
       const saltRounds = 10
       const hashedPassword = await bcrypt.hash(password, saltRounds)
+      
+      console.log(`🔐 Password update for admin ID: ${id}`)
+      console.log(`📝 New password length: ${password.length}`)
+      console.log(`🔒 Hashed password length: ${hashedPassword.length}`)
 
-      query = "UPDATE admins SET org = ?, orgName = ?, email = ?, password = ?, role = ?, status = ? WHERE id = ?"
-      params = [org, orgName, email, hashedPassword, role, status || "ACTIVE", id]
+      adminQuery = "UPDATE admins SET org = ?, orgName = ?, email = ?, password = ?, role = ?, status = ? WHERE id = ?"
+      adminParams = [org, orgName, email, hashedPassword, role, status || "ACTIVE", id]
     } else {
-      query = "UPDATE admins SET org = ?, orgName = ?, email = ?, role = ?, status = ? WHERE id = ?"
-      params = [org, orgName, email, role, status || "ACTIVE", id]
+      adminQuery = "UPDATE admins SET org = ?, orgName = ?, email = ?, role = ?, status = ? WHERE id = ?"
+      adminParams = [org, orgName, email, role, status || "ACTIVE", id]
     }
 
-    await db.execute(query, params)
+    console.log(`📊 Update query: ${adminQuery}`)
+    console.log(`📋 Update params:`, adminParams)
+
+    // Update admin table
+    await db.execute(adminQuery, adminParams)
+    
+    // Verify the update was successful
+    const [verifyUpdate] = await db.execute("SELECT password FROM admins WHERE id = ?", [id])
+    if (verifyUpdate.length > 0) {
+      console.log(`✅ Password update verified for admin ID: ${id}`)
+      console.log(`🔍 Stored password hash length: ${verifyUpdate[0].password.length}`)
+    }
+
+    // Log the change for debugging
+    if (email !== currentAdmin.email) {
+      console.log(`🔄 Admin email updated from '${currentAdmin.email}' to '${email}' for org: ${org}`)
+      console.log(`📧 Email is now the single source of truth in admins table`)
+    }
+
+    if (password && password.trim() !== "") {
+      console.log(`🔐 Password updated for admin ID: ${id}`)
+    }
 
     res.json({
       message: "Admin updated successfully",
@@ -291,5 +358,187 @@ export const deleteAdmin = async (req, res) => {
   } catch (err) {
     console.error("Delete admin error:", err)
     res.status(500).json({ error: "Internal server error while deactivating admin" })
+  }
+}
+
+// Verify password for email change
+export const verifyPasswordForEmailChange = async (req, res) => {
+  const { id } = req.params
+  const { currentPassword } = req.body
+
+  if (!id || isNaN(id)) {
+    return res.status(400).json({ error: "Invalid admin ID" })
+  }
+
+  if (!currentPassword || currentPassword.trim() === "") {
+    return res.status(400).json({ error: "Current password is required" })
+  }
+
+  try {
+    // Get admin data including hashed password
+    const [adminRows] = await db.execute(
+      'SELECT id, password, status FROM admins WHERE id = ? AND status = "ACTIVE"',
+      [id]
+    )
+
+    if (adminRows.length === 0) {
+      return res.status(404).json({ error: "Admin not found or account inactive" })
+    }
+
+    const admin = adminRows[0]
+
+    // Verify the current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, admin.password)
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: "Invalid current password" })
+    }
+
+    res.json({
+      success: true,
+      message: "Password verified successfully"
+    })
+  } catch (err) {
+    console.error("Password verification error:", err)
+    res.status(500).json({ error: "Internal server error during password verification" })
+  }
+}
+
+// Verify password for password change
+export const verifyPasswordForPasswordChange = async (req, res) => {
+  const { id } = req.params
+  const { currentPassword } = req.body
+
+  if (!id || isNaN(id)) {
+    return res.status(400).json({ error: "Invalid admin ID" })
+  }
+
+  if (!currentPassword || currentPassword.trim() === "") {
+    return res.status(400).json({ error: "Current password is required" })
+  }
+
+  try {
+    // Get admin data including hashed password
+    const [adminRows] = await db.execute(
+      'SELECT id, password, status FROM admins WHERE id = ? AND status = "ACTIVE"',
+      [id]
+    )
+
+    if (adminRows.length === 0) {
+      return res.status(404).json({ error: "Admin not found or account inactive" })
+    }
+
+    const admin = adminRows[0]
+
+    // Verify the current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, admin.password)
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: "Invalid current password" })
+    }
+
+    res.json({
+      success: true,
+      message: "Password verified successfully"
+    })
+  } catch (err) {
+    console.error("Password verification error:", err)
+    res.status(500).json({ error: "Internal server error during password verification" })
+  }
+}
+
+// Test function to verify password updates
+export const testPasswordUpdate = async (req, res) => {
+  const { id } = req.params
+  const { testPassword } = req.body
+
+  if (!id || isNaN(id)) {
+    return res.status(400).json({ error: "Invalid admin ID" })
+  }
+
+  if (!testPassword || testPassword.trim() === "") {
+    return res.status(400).json({ error: "Test password is required" })
+  }
+
+  try {
+    // Get current admin data
+    const [existingAdmin] = await db.execute("SELECT id, org, orgName, email, role, status FROM admins WHERE id = ?", [id])
+
+    if (existingAdmin.length === 0) {
+      return res.status(404).json({ error: "Admin not found" })
+    }
+
+    const admin = existingAdmin[0]
+    
+    // Hash the test password
+    const saltRounds = 10
+    const hashedPassword = await bcrypt.hash(testPassword, saltRounds)
+    
+    console.log(`🧪 TEST: Password update for admin ID: ${id}`)
+    console.log(`🧪 TEST: Test password: ${testPassword}`)
+    console.log(`🧪 TEST: Hashed password length: ${hashedPassword.length}`)
+
+    // Update only the password
+    const updateQuery = "UPDATE admins SET password = ? WHERE id = ?"
+    const updateParams = [hashedPassword, id]
+    
+    console.log(`🧪 TEST: Update query: ${updateQuery}`)
+    console.log(`🧪 TEST: Update params:`, updateParams)
+
+    await db.execute(updateQuery, updateParams)
+    
+    // Verify the update
+    const [verifyUpdate] = await db.execute("SELECT password FROM admins WHERE id = ?", [id])
+    if (verifyUpdate.length > 0) {
+      console.log(`🧪 TEST: ✅ Password update verified for admin ID: ${id}`)
+      console.log(`🧪 TEST: 🔍 Stored password hash length: ${verifyUpdate[0].password.length}`)
+      
+      // Test if the password can be verified
+      const isPasswordValid = await bcrypt.compare(testPassword, verifyUpdate[0].password)
+      console.log(`🧪 TEST: 🔐 Password verification test: ${isPasswordValid ? 'PASSED' : 'FAILED'}`)
+      
+      res.json({
+        success: true,
+        message: "Test password update successful",
+        adminId: id,
+        passwordVerified: isPasswordValid,
+        hashLength: verifyUpdate[0].password.length
+      })
+    } else {
+      res.status(500).json({ error: "Failed to verify password update" })
+    }
+  } catch (err) {
+    console.error("Test password update error:", err)
+    res.status(500).json({ error: "Internal server error during test password update" })
+  }
+}
+
+// Test database connection and basic operations
+export const testDatabaseConnection = async (req, res) => {
+  try {
+    // Test basic connection
+    const [result] = await db.execute("SELECT 1 as test")
+    console.log("🧪 TEST: Database connection test result:", result)
+    
+    // Test admin table access
+    const [adminCount] = await db.execute("SELECT COUNT(*) as count FROM admins")
+    console.log("🧪 TEST: Admin table count:", adminCount[0].count)
+    
+    // Test password field access
+    const [passwordTest] = await db.execute("SELECT id, password FROM admins LIMIT 1")
+    if (passwordTest.length > 0) {
+      console.log("🧪 TEST: Password field accessible, sample hash length:", passwordTest[0].password.length)
+    }
+    
+    res.json({
+      success: true,
+      message: "Database connection test successful",
+      connectionTest: result[0],
+      adminCount: adminCount[0].count,
+      passwordFieldAccessible: passwordTest.length > 0
+    })
+  } catch (err) {
+    console.error("Database connection test error:", err)
+    res.status(500).json({ error: "Database connection test failed", details: err.message })
   }
 }

@@ -272,7 +272,6 @@ export const cancelSubmission = async (req, res) => {
       message: `Submission for ${existing[0].section} deleted successfully`,
     })
   } catch (error) {
-    await db.query("ROLLBACK")
     console.error("❌ Error cancelling submission:", error)
     res.status(500).json({
       success: false,
@@ -361,7 +360,6 @@ export const updateSubmission = async (req, res) => {
       message: `Submission for ${section} updated successfully`,
     })
   } catch (error) {
-    await db.query("ROLLBACK")
     console.error("❌ Error updating submission:", error)
     res.status(500).json({
       success: false,

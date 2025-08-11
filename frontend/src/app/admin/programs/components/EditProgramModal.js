@@ -285,7 +285,7 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
                   value={formData.category}
                   onChange={handleInputChange}
                   className={styles.formInput}
-                  placeholder="e.g. Outreach, Education, Health, Cor"
+                  placeholder="e.g. Outreach, Education, Health"
                   maxLength={50}
                 />
                 {errors.category && <span className={styles.errorText}>{errors.category}</span>}

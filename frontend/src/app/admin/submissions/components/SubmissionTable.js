@@ -138,8 +138,8 @@ export default function SubmissionTable({
         // Remove from selected items if it was selected
         const newSelected = new Set(selectedItems);
         newSelected.delete(id);
-        setSelectedItems(newSelected);
-        setShowBulkActions(newSelected.size > 0);
+        onSelectItems(newSelected);
+        onShowBulkActions(newSelected.size > 0);
       } else {
         const errorData = await response.text();
         console.error(`Delete failed for ID ${id}:`, errorData);
@@ -170,8 +170,8 @@ export default function SubmissionTable({
       );
       await Promise.all(promises);
       if (onRefresh) onRefresh();
-      setSelectedItems(new Set());
-      setShowBulkActions(false);
+      onSelectItems(new Set());
+      onShowBulkActions(false);
     } catch (err) {
       console.error('Bulk cancel error:', err);
       alert('Failed to cancel some submissions');
@@ -196,8 +196,8 @@ export default function SubmissionTable({
       console.log('[DEBUG] All deletions completed successfully');
       
       if (onRefresh) onRefresh(); // Refresh data from server
-      setSelectedItems(new Set());
-      setShowBulkActions(false);
+      onSelectItems(new Set());
+      onShowBulkActions(false);
     } catch (err) {
       console.error('Bulk delete error:', err);
       alert(`Failed to delete some submissions: ${err.message}`);

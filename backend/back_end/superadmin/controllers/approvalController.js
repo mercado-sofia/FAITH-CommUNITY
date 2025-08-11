@@ -58,8 +58,8 @@ export const approveSubmission = async (req, res) => {
     // Apply changes based on section
     if (section === 'organization') {
       await db.execute(
-        `UPDATE organizations SET orgName = ?, org = ?, logo = ?, facebook = ?, email = ?, description = ? WHERE id = ?`,
-        [data.orgName, data.org, data.logo, data.facebook, data.email, data.description, orgId]
+        `UPDATE organizations SET orgName = ?, org = ?, logo = ?, facebook = ?, description = ? WHERE id = ?`,
+        [data.orgName, data.org, data.logo, data.facebook, data.description, orgId]
       );
     }
 

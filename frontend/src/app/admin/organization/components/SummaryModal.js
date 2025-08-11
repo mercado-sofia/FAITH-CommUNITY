@@ -32,7 +32,7 @@ export default function SummaryModal({
         <div className={styles.modalContent}>
           <div className={styles.changesContainer}>
             {Object.keys(pendingChanges).map((key) => {
-              if (key === "id" || originalData[key] === pendingChanges[key]) return null;
+              if (key === "id" || key === "email" || originalData[key] === pendingChanges[key]) return null;
 
               return (
                 <div key={key} className={styles.changeItem}>

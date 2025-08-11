@@ -292,6 +292,30 @@
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
+.disabledInput {
+  background-color: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
+  border-color: #e5e7eb;
+}
+
+.disabledInput:hover {
+  border-color: #e5e7eb;
+}
+
+.disabledInput:focus {
+  border-color: #e5e7eb;
+  box-shadow: none;
+}
+
+.helperText {
+  color: #6b7280;
+  font-size: 0.75rem;
+  margin-top: 6px;
+  display: block;
+  font-style: italic;
+}
+
 .textarea {
   width: 100%;
   padding: 12px 14px;

@@ -19,6 +19,13 @@ export const getOrganizationByName = async (req, res) => {
 
     const [advocacies] = await db.execute("SELECT advocacy FROM advocacies WHERE organization_id = ?", [org.id])
     const [competencies] = await db.execute("SELECT competency FROM competencies WHERE organization_id = ?", [org.id])
+    // Get email from admins table (Single Source of Truth)
+    const [adminRows] = await db.execute(
+      'SELECT email FROM admins WHERE org = ? AND status = "ACTIVE" LIMIT 1',
+      [org.org]
+    )
+    const adminEmail = adminRows.length > 0 ? adminRows[0].email : null
+
     const [heads] = await db.execute(
       "SELECT head_name, role, facebook, email, photo, display_order FROM organization_heads WHERE organization_id = ?",
       [org.id],
@@ -28,6 +35,7 @@ export const getOrganizationByName = async (req, res) => {
       success: true,
       data: {
         ...org,
+        email: adminEmail, // Email from admins table
         // Fix: Return single strings instead of arrays
         advocacies: advocacies.length > 0 ? advocacies[0].advocacy : "",
         competencies: competencies.length > 0 ? competencies[0].competency : "",
@@ -41,10 +49,10 @@ export const getOrganizationByName = async (req, res) => {
 }
 
 export const createOrganization = async (req, res) => {
-  const { logo, orgName, org, facebook, email, description, status } = req.body
+  const { logo, orgName, org, facebook, description, status } = req.body
 
   console.log("Backend: Received create request for new organization")
-  console.log("Backend: Received body data:", { logo, orgName, org, facebook, email, description, status })
+  console.log("Backend: Received body data:", { logo, orgName, org, facebook, description, status })
 
   // Validate required fields
   if (!org || !orgName) {
@@ -57,7 +65,6 @@ export const createOrganization = async (req, res) => {
   // Convert empty strings to null for optional fields
   const finalLogo = logo === "" ? null : logo
   const finalFacebook = facebook === "" ? null : facebook
-  const finalEmail = email === "" ? null : email
   const finalDescription = description === "" ? null : description
   const finalStatus = status || "ACTIVE"
 
@@ -77,9 +84,9 @@ export const createOrganization = async (req, res) => {
 
     // Insert new organization
     const [result] = await db.execute(
-      `INSERT INTO organizations (logo, orgName, org, facebook, email, description, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [finalLogo, orgName, org, finalFacebook, finalEmail, finalDescription, finalStatus]
+      `INSERT INTO organizations (logo, orgName, org, facebook, description, status)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [finalLogo, orgName, org, finalFacebook, finalDescription, finalStatus]
     )
 
     console.log("Backend: Successfully created organization with ID:", result.insertId)
@@ -96,16 +103,15 @@ export const createOrganization = async (req, res) => {
 
 export const updateOrganizationInfo = async (req, res) => {
   const { id } = req.params
-  const { logo, orgName, org, facebook, email, description, status } = req.body
+  const { logo, orgName, org, facebook, description, status } = req.body
 
   console.log("Backend: Received update request for Org ID:", id)
-  console.log("Backend: Received body data:", { logo, orgName, org, facebook, email, description, status })
+  console.log("Backend: Received body data:", { logo, orgName, org, facebook, description, status })
 
-  // Convert empty strings to null for optional fields
-  const finalLogo = logo === "" ? null : logo
-  const finalFacebook = facebook === "" ? null : facebook
-  const finalEmail = email === "" ? null : email
-  const finalDescription = description === "" ? null : description
+  // Convert empty strings and undefined values to null for optional fields
+  const finalLogo = (logo === "" || logo === undefined) ? null : logo
+  const finalFacebook = (facebook === "" || facebook === undefined) ? null : facebook
+  const finalDescription = (description === "" || description === undefined) ? null : description
   const finalStatus = status || "ACTIVE" // Ensure status is always a string
 
   console.log("Backend: Prepared values for DB:", {
@@ -113,11 +119,18 @@ export const updateOrganizationInfo = async (req, res) => {
     orgName,
     org,
     finalFacebook,
-    finalEmail,
     finalDescription,
     finalStatus,
     id,
   })
+
+  // Validate required fields
+  if (!orgName || orgName === undefined) {
+    return res.status(400).json({ success: false, error: "Organization name is required" })
+  }
+  if (!org || org === undefined) {
+    return res.status(400).json({ success: false, error: "Organization acronym is required" })
+  }
 
   // Get a connection for transaction
   const connection = await db.getConnection()
@@ -143,9 +156,9 @@ export const updateOrganizationInfo = async (req, res) => {
     // Update the organizations table
     const [orgResult] = await connection.execute(
       `UPDATE organizations
-       SET logo = ?, orgName = ?, org = ?, facebook = ?, email = ?, description = ?, status = ?
+       SET logo = ?, orgName = ?, org = ?, facebook = ?, description = ?, status = ?
        WHERE id = ?`,
-      [finalLogo, orgName, org, finalFacebook, finalEmail, finalDescription, finalStatus, id],
+      [finalLogo, orgName, org, finalFacebook, finalDescription, finalStatus, id],
     )
 
     if (orgResult.affectedRows === 0) {
@@ -155,12 +168,12 @@ export const updateOrganizationInfo = async (req, res) => {
     }
 
     // Update all admins that belong to this organization
-    // Update org, orgName, and email fields in the admins table
+    // Update org and orgName fields in the admins table (email stays in admins table)
     const [adminUpdateResult] = await connection.execute(
       `UPDATE admins 
-       SET org = ?, orgName = ?, email = ?
+       SET org = ?, orgName = ?
        WHERE org = ?`,
-      [org, orgName, finalEmail, currentOrgAcronym]
+      [org, orgName, currentOrgAcronym]
     )
 
     console.log(`Backend: Updated ${adminUpdateResult.affectedRows} admin records`)

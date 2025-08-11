@@ -162,11 +162,11 @@ export default function EditModal({
                   type="email"
                   name="email"
                   value={orgData.email}
-                  onChange={handleInputChange}
-                  className={`${styles.input} ${errors.email ? styles.inputError : ""}`}
-                  placeholder="organization@example.com"
+                  disabled
+                  className={`${styles.input} ${styles.disabledInput}`}
+                  placeholder="Email is managed in Admin Settings"
                 />
-                {errors.email && <span className={styles.errorText}>{errors.email}</span>}
+                <span className={styles.helperText}>Email is managed in Admin Settings</span>
               </div>
 
               <div className={styles.formGroup}>

@@ -5,11 +5,7 @@ import styles from "./styles/floatingMessage.module.css";
 import { FiMessageCircle } from "react-icons/fi";
 import { FaAngleDown, FaChevronDown } from "react-icons/fa";
 import { IoChevronDown } from "react-icons/io5";
-
-const orgOptions = [
-  "JMAP", "FACTS", "JPIA", "FAICEPS", "FTL",
-  "UTHYP", "FAIPS", "FABCOMMS", "FAPSS", "FAHSS"
-];
+import { useGetAllOrganizationsQuery } from "../../../rtk/(public)/organizationsApi";
 
 export default function FloatingMessage() {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,6 +17,13 @@ export default function FloatingMessage() {
   const [clickLocked, setClickLocked] = useState(false);
 
   const boxRef = useRef(null);
+
+  // Fetch organizations from API
+  const { 
+    data: organizations = [], 
+    isLoading: orgsLoading, 
+    error: orgsError 
+  } = useGetAllOrganizationsQuery();
 
   // Email validation function
   const validateEmail = (email) => {
@@ -127,20 +130,36 @@ export default function FloatingMessage() {
 
               {dropdownOpen && (
                 <ul className={styles.dropdownList} role="listbox">
-                  {orgOptions.map((option, index) => (
-                    <li
-                      key={index}
-                      className={styles.dropdownItem}
-                      onClick={() => {
-                        setOrg(option);
-                        setDropdownOpen(false);
-                      }}
-                      role="option"
-                      aria-selected={org === option}
-                    >
-                      {option}
+                  {orgsLoading ? (
+                    <li className={styles.dropdownItem} style={{ textAlign: 'center', color: '#666' }}>
+                      Loading organizations...
                     </li>
-                  ))}
+                  ) : orgsError ? (
+                    <li className={styles.dropdownItem} style={{ textAlign: 'center', color: '#dc3545' }}>
+                      Error loading organizations
+                    </li>
+                  ) : organizations.length === 0 ? (
+                    <li className={styles.dropdownItem} style={{ textAlign: 'center', color: '#666' }}>
+                      No organizations available
+                    </li>
+                  ) : (
+                    organizations.map((organization) => (
+                      <li
+                        key={organization.id}
+                        className={styles.dropdownItem}
+                        onClick={() => {
+                          setOrg(organization.acronym); // Use the 'org' field from DB
+                          setDropdownOpen(false);
+                        }}
+                        role="option"
+                        aria-selected={org === organization.acronym}
+                      >
+                        <span className={styles.orgAcronym}>{organization.acronym}</span>
+                        <span> - </span>
+                        <span className={styles.orgName}>{organization.name}</span>
+                      </li>
+                    ))
+                  )}
                 </ul>
               )}
             </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FiX, FiTrash2 } from 'react-icons/fi';
+import { IoCloseOutline } from 'react-icons/io5';
 import styles from './styles/BulkActionsBar.module.css';
 
 export default function BulkActionsBar({ selectedCount, selectedItems, submissions, onCancel, onDelete, onClearSelection }) {
@@ -25,50 +26,53 @@ export default function BulkActionsBar({ selectedCount, selectedItems, submissio
     onCancel();
   };
 
+  // Build status breakdown text
+  const statusParts = [];
+  if (pendingCount > 0) statusParts.push(`${pendingCount} pending`);
+  if (approvedCount > 0) statusParts.push(`${approvedCount} approved`);
+  if (rejectedCount > 0) statusParts.push(`${rejectedCount} rejected`);
+  
+  const statusText = statusParts.join(', ');
+
   return (
     <div className={styles.bulkActionsBar}>
-      <div className={styles.selectionInfo}>
-        <div className={styles.selectionDetails}>
-          <span className={styles.selectedCount}>
-            {selectedCount} submission{selectedCount !== 1 ? 's' : ''} selected
+      <div className={styles.bulkActionsLeft}>
+        <span className={styles.selectedCount}>
+          {selectedCount} submission{selectedCount !== 1 ? 's' : ''} selected
+        </span>
+        {statusText && (
+          <span className={styles.statusBreakdown}>
+            ({statusText})
           </span>
-          {(pendingCount > 0 || approvedCount > 0 || rejectedCount > 0) && (
-            <span className={styles.statusBreakdown}>
-              {pendingCount > 0 && `${pendingCount} pending`}
-              {pendingCount > 0 && (approvedCount > 0 || rejectedCount > 0) && ', '}
-              {approvedCount > 0 && `${approvedCount} approved`}
-              {approvedCount > 0 && rejectedCount > 0 && ', '}
-              {rejectedCount > 0 && `${rejectedCount} rejected`}
-            </span>
-          )}
-        </div>
-        <button 
-          className={styles.clearSelection}
-          onClick={onClearSelection}
-          title="Clear selection"
-        >
-          <FiX size={16} />
-        </button>
+        )}
       </div>
       
-      <div className={styles.actions}>
+      <div className={styles.bulkActionsRight}>
         {pendingCount > 0 && (
           <button 
-            className={styles.cancelAction}
+            className={`${styles.actionButton} ${styles.cancelAction}`}
             onClick={() => setShowCancelConfirm(true)}
-            title={`Cancel ${pendingCount} pending submission${pendingCount !== 1 ? 's' : ''}`}
+            disabled={pendingCount === 0}
+            title={pendingCount === 0 ? 'No pending submissions selected' : `Cancel ${pendingCount} pending submission${pendingCount !== 1 ? 's' : ''}`}
           >
-            <FiX size={16} />
-            Cancel {pendingCount} Pending
+            <FiX size={14} />
+            <span>Cancel {pendingCount > 0 ? `(${pendingCount})` : ''}</span>
           </button>
         )}
         <button 
-          className={styles.deleteAction}
+          className={`${styles.actionButton} ${styles.deleteAction}`}
           onClick={() => setShowDeleteConfirm(true)}
           title="Delete selected submissions"
         >
-          <FiTrash2 size={16} />
-          Delete Selected
+          <FiTrash2 size={14} />
+          <span>Delete</span>
+        </button>
+        <button 
+          className={styles.cancelButton}
+          onClick={onClearSelection}
+          title="Clear selection"
+        >
+          <IoCloseOutline size={20} />
         </button>
       </div>
 
@@ -80,13 +84,13 @@ export default function BulkActionsBar({ selectedCount, selectedItems, submissio
             <p>This will withdraw the selected submissions from superadmin review.</p>
             <div className={styles.confirmActions}>
               <button 
-                className={styles.confirmCancel}
+                className={`${styles.confirmButton} ${styles.confirmCancel}`}
                 onClick={() => setShowCancelConfirm(false)}
               >
                 Keep Submissions
               </button>
               <button 
-                className={styles.confirmAction}
+                className={`${styles.confirmButton} ${styles.confirmAction}`}
                 onClick={handleBulkCancel}
               >
                 Cancel Submissions
@@ -101,21 +105,19 @@ export default function BulkActionsBar({ selectedCount, selectedItems, submissio
         <div className={styles.confirmOverlay}>
           <div className={styles.confirmModal}>
             <h4>Delete {selectedCount} Submission{selectedCount !== 1 ? 's' : ''}?</h4>
-            <p className={styles.deleteWarning}>
-              <strong>Warning:</strong> This will permanently delete the selected submissions. This action cannot be undone.
-            </p>
+            <p>This action cannot be undone. The selected submissions will be permanently removed.</p>
             <div className={styles.confirmActions}>
               <button 
-                className={styles.confirmCancel}
+                className={`${styles.confirmButton} ${styles.confirmCancel}`}
                 onClick={() => setShowDeleteConfirm(false)}
               >
-                Cancel
+                Keep Submissions
               </button>
               <button 
-                className={styles.confirmDelete}
+                className={`${styles.confirmButton} ${styles.confirmAction}`}
                 onClick={handleBulkDelete}
               >
-                Delete Permanently
+                Delete Submissions
               </button>
             </div>
           </div>

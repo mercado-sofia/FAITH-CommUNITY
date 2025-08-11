@@ -371,6 +371,51 @@ export const updateSubmission = async (req, res) => {
   }
 }
 
+// Bulk delete multiple submissions
+export const bulkDeleteSubmissions = async (req, res) => {
+  const { ids } = req.body;
+  
+  // Input validation
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Submission IDs array is required and cannot be empty",
+    });
+  }
+
+  try {
+    // Start transaction
+    await db.query("START TRANSACTION");
+
+    // Delete all submissions with the given IDs
+    const placeholders = ids.map(() => "?").join(",");
+    const [result] = await db.execute(
+      `DELETE FROM submissions WHERE id IN (${placeholders})`,
+      ids
+    );
+
+    // Commit transaction
+    await db.query("COMMIT");
+
+    console.log(`[DEBUG] Deleted ${result.affectedRows} submissions`);
+    
+    return res.status(200).json({
+      success: true,
+      message: `Successfully deleted ${result.affectedRows} submissions`,
+      deletedCount: result.affectedRows,
+    });
+  } catch (error) {
+    // Rollback transaction on error
+    await db.query("ROLLBACK");
+    console.error("Bulk delete error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete submissions",
+      error: error.message,
+    });
+  }
+};
+
 // Additional endpoint to get submission by ID
 export const getSubmissionById = async (req, res) => {
   const { id } = req.params

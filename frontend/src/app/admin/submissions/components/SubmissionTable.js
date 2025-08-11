@@ -1,21 +1,57 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { FiEdit, FiX, FiTrash2 } from 'react-icons/fi';
 import SubmissionModal from './SubmissionModal';
 import ReEditModal from './ReEditModal';
 import CancelConfirmation from './CancelConfirmationModal';
 import DeleteConfirmation from './DeleteConfirmationModal';
-import BulkActionsBar from './BulkActionsBar';
 import styles from './styles/SubmissionTable.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-export default function SubmissionTable({ orgAcronym, submissions = [], loading = false, onRefresh }) {
+export default function SubmissionTable({ 
+  orgAcronym, 
+  submissions = [], 
+  loading = false, 
+  onRefresh, 
+  currentPage = 1,
+  itemsPerPage = 10,
+  onPageChange = () => {},
+  selectedItems = new Set(),
+  onSelectItems = () => {},
+  onShowBulkActions = () => {}
+}) {
+  const dropdownRefs = useRef({});
   const [selected, setSelected] = useState(null);
   const [reEditSubmission, setReEditSubmission] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
-  const [selectedItems, setSelectedItems] = useState(new Set());
-  const [showBulkActions, setShowBulkActions] = useState(false);
+  const handleSelectItem = (id) => {
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    onSelectItems(newSelected);
+    onShowBulkActions(newSelected.size > 0);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedItems.size === currentSubmissions.length) {
+      onSelectItems(new Set());
+      onShowBulkActions(false);
+    } else {
+      const allIds = new Set(currentSubmissions.map(s => s.id));
+      onSelectItems(allIds);
+      onShowBulkActions(true);
+    }
+  };
+  
+  // Pagination calculations
+  const totalPages = Math.ceil(submissions.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, submissions.length);
+  const currentSubmissions = submissions.slice(startIndex, endIndex);
 
   const handleCancel = async (id) => {
     try {
@@ -84,28 +120,7 @@ export default function SubmissionTable({ orgAcronym, submissions = [], loading 
     }
   };
 
-  // Selection handlers
-  const handleSelectItem = (id) => {
-    const newSelected = new Set(selectedItems);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
-    }
-    setSelectedItems(newSelected);
-    setShowBulkActions(newSelected.size > 0);
-  };
 
-  const handleSelectAll = () => {
-    if (selectedItems.size === submissions.length) {
-      setSelectedItems(new Set());
-      setShowBulkActions(false);
-    } else {
-      const allIds = new Set(submissions.map(s => s.id));
-      setSelectedItems(allIds);
-      setShowBulkActions(true);
-    }
-  };
 
   // Delete handler (hard delete)
   const handleDelete = async (id) => {
@@ -189,23 +204,17 @@ export default function SubmissionTable({ orgAcronym, submissions = [], loading 
     }
   };
 
-  const allSelected = submissions.length > 0 && selectedItems.size === submissions.length;
+  const allSelected = currentSubmissions.length > 0 && selectedItems.size === currentSubmissions.length;
+
+  // Reset selections when page changes
+  useEffect(() => {
+    onSelectItems(new Set());
+    onShowBulkActions(false);
+  }, [currentPage, onSelectItems, onShowBulkActions]);
 
   return (
     <div className={styles.tableContainer}>
-      {showBulkActions && (
-        <BulkActionsBar 
-          selectedCount={selectedItems.size}
-          selectedItems={selectedItems}
-          submissions={submissions}
-          onCancel={handleBulkCancel}
-          onDelete={handleBulkDelete}
-          onClearSelection={() => {
-            setSelectedItems(new Set());
-            setShowBulkActions(false);
-          }}
-        />
-      )}
+
       {loading ? (
         <p>Loading...</p>
       ) : (
@@ -232,12 +241,12 @@ export default function SubmissionTable({ orgAcronym, submissions = [], loading 
           <tbody className={styles.tableBody}>
             {!Array.isArray(submissions) || submissions.length === 0 ? (
               <tr>
-                <td colSpan="7" className={styles.emptyState}>
+                <td colSpan="7" className={styles.noSubmissions}>
                   No submissions found.
                 </td>
               </tr>
             ) : (
-              submissions.map((s) => (
+              currentSubmissions.map((s) => (
               <tr key={s.id}>
                 <td className={styles.selectColumn}>
                   <input 
@@ -312,6 +321,8 @@ export default function SubmissionTable({ orgAcronym, submissions = [], loading 
       )}
       {confirmId && <CancelConfirmation onConfirm={() => handleCancel(confirmId)} onCancel={() => setConfirmId(null)} />}
       {deleteId && <DeleteConfirmation onConfirm={() => handleDelete(deleteId)} onCancel={() => setDeleteId(null)} />}
+      
+
     </div>
   );
 }

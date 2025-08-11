@@ -5,6 +5,7 @@ import {
   cancelSubmission,
   updateSubmission,
   getSubmissionById,
+  bulkDeleteSubmissions,
 } from "../controllers/submissionController.js"
 
 const router = express.Router()
@@ -23,5 +24,8 @@ router.put("/:id", updateSubmission)
 
 // ✅ Cancel (delete) a pending submission (admin clicks cancel)
 router.delete("/:id", cancelSubmission)
+
+// ✅ Bulk delete multiple submissions
+router.post("/bulk-delete", bulkDeleteSubmissions)
 
 export default router

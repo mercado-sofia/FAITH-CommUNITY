@@ -207,7 +207,13 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
             </tr>
           </thead>
           <tbody className={styles.tableBody}>
-            {currentVolunteers.map((volunteer) => (
+            {currentVolunteers.length === 0 ? (
+              <tr>
+                <td colSpan="7" className={styles.noApplicants}>
+                  No applicants found
+                </td>
+              </tr>
+            ) : currentVolunteers.map((volunteer) => (
               <tr key={volunteer.id}>
                 <td>
                   <input
@@ -296,13 +302,15 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
           <div className={styles.confirmModal}>
             <h2>{modalType === "approve" ? "Approve" : "Reject"} Application</h2>
             <p>
-              Are you sure you want to {modalType}{" "}
-              <strong>{selectedVolunteer.name}</strong>&apos;s application?
+              Are you sure you want to {modalType} <strong>{selectedVolunteer.name}</strong>&apos;s application?
             </p>
             <div className={styles.confirmActions}>
               <button onClick={closeModal}>Cancel</button>
-              <button onClick={handleConfirmAction}>
-                Yes, {modalType.charAt(0).toUpperCase() + modalType.slice(1)}
+              <button 
+                onClick={handleConfirmAction}
+                className={modalType === 'approve' ? '' : styles.declineButton}
+              >
+                Yes, {modalType === 'approve' ? 'Approve' : 'Decline'}
               </button>
             </div>
           </div>
@@ -321,7 +329,10 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
             </p>
             <div className={styles.confirmActions}>
               <button onClick={closeBulkModal}>Cancel</button>
-              <button onClick={handleConfirmBulkAction}>
+              <button 
+                onClick={handleConfirmBulkAction}
+                className={bulkAction === 'approve' ? '' : styles.declineButton}
+              >
                 Yes, {bulkAction === 'approve' ? 'Approve' : 'Decline'} All
               </button>
             </div>

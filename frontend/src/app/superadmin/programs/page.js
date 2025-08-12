@@ -4,11 +4,15 @@ import React, { useState } from 'react'
 import { useGetAllProgramsByOrganizationQuery, useGetProgramsStatisticsQuery } from '@/rtk/superadmin/programsApi'
 import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/featuredProjectsApi'
 import StarButton from './components/StarButton'
+import ProgramDetailsModal from './components/ProgramDetailsModal'
+import FeaturedProjects from './components/featuredProjects'
 import styles from './programs.module.css'
 
 const SuperadminProgramsPage = () => {
   const [selectedOrganization, setSelectedOrganization] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
+  const [selectedProgram, setSelectedProgram] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const { 
     data: organizationPrograms = [], 
@@ -76,9 +80,20 @@ const SuperadminProgramsPage = () => {
         </p>
         
         <div className={styles.programFooter}>
-          <span className={`${styles.programStatusBadge} ${styles[program.status?.toLowerCase()]}`}>
-            {program.status}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span className={`${styles.programStatusBadge} ${styles[program.status?.toLowerCase()]}`}>
+              {program.status}
+            </span>
+            <button 
+              className={styles.viewDetailsButton}
+              onClick={() => {
+                setSelectedProgram(program)
+                setIsModalOpen(true)
+              }}
+            >
+              View Details
+            </button>
+          </div>
           <span className={styles.programDate}>
             {program.dateCreated ? new Date(program.dateCreated).toLocaleDateString() : 'N/A'}
           </span>
@@ -150,25 +165,6 @@ const SuperadminProgramsPage = () => {
       <div className={styles.header}>
         <div className={styles.headerTop}>
           <h1 className={styles.pageTitle}>Programs Management</h1>
-          <button 
-            className={styles.featuredProjectsButton}
-            onClick={() => window.location.href = '/superadmin/programs/featured'}
-          >
-            <div className={styles.buttonIcon}>
-              <svg viewBox="0 0 24 24" fill="currentColor" className={styles.starIcon}>
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-            </div>
-            <div className={styles.buttonContent}>
-              <span className={styles.buttonTitle}>Featured Projects</span>
-              <span className={styles.buttonSubtitle}>Manage highlights</span>
-            </div>
-            <div className={styles.buttonArrow}>
-              <svg viewBox="0 0 24 24" fill="currentColor" className={styles.arrowIcon}>
-                <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
-              </svg>
-            </div>
-          </button>
         </div>
         <div className={styles.statsContainer}>
           {!statsLoading && (
@@ -231,6 +227,9 @@ const SuperadminProgramsPage = () => {
         </div>
       </div>
 
+      {/* Featured Projects Section */}
+      <FeaturedProjects />
+
       {/* Programs by Organization */}
       <div className={styles.programsSection}>
         <h2 className={styles.sectionTitle}>Programs by Organization</h2>
@@ -283,6 +282,16 @@ const SuperadminProgramsPage = () => {
           ))
         )}
       </div>
+
+      {/* Program Details Modal */}
+      <ProgramDetailsModal 
+        program={selectedProgram}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false)
+          setSelectedProgram(null)
+        }}
+      />
     </div>
   )
 }

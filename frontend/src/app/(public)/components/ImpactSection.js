@@ -57,20 +57,31 @@ export default function ImpactSection() {
   }, []);
 
   // Transform featured projects data to match the expected format
-  const transformedFeaturedProjects = featuredProjects.map(project => ({
-    image: project.image ? 
-      (project.image.startsWith('data:') ? project.image : `http://localhost:8080/uploads/programs/${project.image}`) 
-      : '/sample/sample1.jpg',
-    title: project.title || 'Featured Project',
-    date: project.completedDate ? new Date(project.completedDate).toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    }) : 'Coming Soon',
-    description: project.description || 'An amazing project making a difference in the community.',
-    organization: project.orgAcronym || 'FAITH',
-    orgColor: project.orgColor || '#444444'
-  }));
+  const transformedFeaturedProjects = featuredProjects.map(project => {
+    // Debug logging for image data
+    console.log('ImpactSection - Processing project:', {
+      id: project.id,
+      title: project.title,
+      hasImage: !!project.image,
+      imageType: project.image ? (project.image.startsWith('data:image') ? 'base64' : 'file') : 'none',
+      imagePreview: project.image ? project.image.substring(0, 50) + '...' : null
+    });
+    
+    return {
+      image: project.image ? 
+        (project.image.startsWith('data:image') ? project.image : `http://localhost:8080/uploads/featured/${project.image}`) 
+        : '/sample/sample1.jpg',
+      title: project.title || 'Featured Project',
+      date: project.completedDate ? new Date(project.completedDate).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      }) : 'Coming Soon',
+      description: project.description || 'An amazing project making a difference in the community.',
+      organization: project.orgAcronym || 'FAITH',
+      orgColor: project.orgColor || '#444444'
+    };
+  });
 
   // Use only the transformed featured projects data
   const dataToDisplay = transformedFeaturedProjects;

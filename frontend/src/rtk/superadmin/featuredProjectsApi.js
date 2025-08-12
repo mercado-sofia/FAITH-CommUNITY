@@ -25,6 +25,17 @@ export const featuredProjectsApi = createApi({
       transformResponse: (response) => {
         console.log('featuredProjectsApi - getAllFeaturedProjects response:', response);
         if (response.success && Array.isArray(response.data)) {
+          // Debug: Log image data for each project
+          response.data.forEach((project, index) => {
+            console.log(`Project ${index + 1} image data:`, {
+              id: project.id,
+              title: project.title,
+              hasImage: !!project.image,
+              imageType: project.image ? (project.image.startsWith('data:') ? 'base64' : 'file') : 'none',
+              imagePreview: project.image ? project.image.substring(0, 100) + '...' : null
+            });
+          });
+          
           return response.data.map(project => ({
             id: project.id,
             organizationId: project.organization_id,

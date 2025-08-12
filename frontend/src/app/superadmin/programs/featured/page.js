@@ -21,6 +21,16 @@ const FeaturedProjectsPage = () => {
         ? `http://localhost:8080/uploads/programs/${project.image}`
         : null;
 
+    // Debug logging for this specific page
+    console.log('Featured Projects Page - Processing project:', {
+      id: project.id,
+      title: project.title,
+      hasImage: !!project.image,
+      isBase64Image,
+      imageSource: imageSource ? imageSource.substring(0, 100) + '...' : null,
+      imageLength: project.image ? project.image.length : 0
+    });
+
     return (
       <div key={project.id} className={styles.projectCard}>
         <div className={styles.projectImageContainer}>

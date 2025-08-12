@@ -12,6 +12,14 @@ const FeaturedProjects = () => {
     refetch 
   } = useGetAllFeaturedProjectsQuery()
 
+  // Debug: Log what the component receives
+  console.log('FeaturedProjects component - Received data:', {
+    featuredProjectsLength: featuredProjects.length,
+    isLoading,
+    error,
+    firstProject: featuredProjects[0] || null
+  });
+
   if (isLoading) {
     return (
       <div className={styles.featuredSection}>
@@ -53,19 +61,56 @@ const FeaturedProjects = () => {
     <div className={styles.featuredSection}>
       <h2 className={styles.sectionTitle}>Featured Projects</h2>
       <div className={styles.featuredGrid}>
-        {featuredProjects.map((project) => (
+        {featuredProjects.map((project) => {
+          // Debug logging for image data
+          console.log('SuperAdmin FeaturedProjects - Processing project:', {
+            id: project.id,
+            title: project.title,
+            hasImage: !!project.image,
+            imageType: project.image ? (project.image.startsWith('data:image') ? 'base64' : 'file') : 'none',
+            imageLength: project.image ? project.image.length : 0,
+            imagePreview: project.image ? project.image.substring(0, 100) + '...' : null,
+            isValidBase64: project.image ? project.image.includes('base64,') : false
+          });
+          
+          return (
           <div key={project.id} className={styles.featuredCard}>
             <div className={styles.cardImageContainer}>
               {project.image ? (
-                <img 
-                  src={`http://localhost:8080/uploads/featured/${project.image}`}
-                  alt={project.title}
-                  className={styles.cardImage}
-                  onError={(e) => {
-                    e.target.style.display = 'none'
-                    e.target.nextSibling.style.display = 'flex'
-                  }}
-                />
+                project.image.startsWith('data:image') ? (
+                  <div>
+                    <img 
+                      src={project.image}
+                      alt={project.title}
+                      className={styles.cardImage}
+                      onLoad={() => {
+                        console.log(`Image loaded successfully for: ${project.title}`);
+                      }}
+                      onError={(e) => {
+                        console.log(`Image failed to load for: ${project.title}`, {
+                          src: e.target.src.substring(0, 100) + '...',
+                          error: e
+                        });
+                        e.target.style.display = 'none'
+                        e.target.nextSibling.style.display = 'flex'
+                      }}
+                    />
+                    {/* Debug: Show first 100 chars of base64 */}
+                    <div style={{fontSize: '10px', color: 'red', padding: '5px'}}>
+                      Debug: {project.image.substring(0, 100)}...
+                    </div>
+                  </div>
+                ) : (
+                  <img 
+                    src={`http://localhost:8080/uploads/featured/${project.image}`}
+                    alt={project.title}
+                    className={styles.cardImage}
+                    onError={(e) => {
+                      e.target.style.display = 'none'
+                      e.target.nextSibling.style.display = 'flex'
+                    }}
+                  />
+                )
               ) : null}
               <div className={styles.imagePlaceholder} style={{ display: project.image ? 'none' : 'flex' }}>
                 <span>No Image</span>
@@ -97,7 +142,8 @@ const FeaturedProjects = () => {
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   )

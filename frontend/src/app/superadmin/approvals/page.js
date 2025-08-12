@@ -84,6 +84,73 @@ export default function PendingApprovalsPage() {
     }
   };
 
+  // Bulk action handlers
+  const handleBulkApprove = async (ids) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/approvals/bulk/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids })
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || 'Bulk approval failed');
+      }
+
+      alert(`Bulk approval completed: ${result.details.successCount} approved, ${result.details.errorCount} failed`);
+      fetchApprovals();
+    } catch (err) {
+      console.error('❌ Bulk approve error:', err);
+      alert('Failed to bulk approve submissions: ' + err.message);
+    }
+  };
+
+  const handleBulkReject = async (ids, rejectComment = '') => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/approvals/bulk/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, rejection_comment: rejectComment })
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || 'Bulk rejection failed');
+      }
+
+      alert(`Bulk rejection completed: ${result.details.successCount} rejected, ${result.details.errorCount} failed`);
+      fetchApprovals();
+    } catch (err) {
+      console.error('❌ Bulk reject error:', err);
+      alert('Failed to bulk reject submissions: ' + err.message);
+    }
+  };
+
+  const handleBulkDelete = async (ids) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/approvals/bulk/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids })
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || 'Bulk deletion failed');
+      }
+
+      alert(`Bulk deletion completed: ${result.details.successCount} deleted, ${result.details.errorCount} failed`);
+      fetchApprovals();
+    } catch (err) {
+      console.error('❌ Bulk delete error:', err);
+      alert('Failed to bulk delete submissions: ' + err.message);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className={styles.container}>
@@ -118,6 +185,9 @@ export default function PendingApprovalsPage() {
           approvals={approvals}
           onApprove={handleApprove}
           onReject={handleReject}
+          onBulkApprove={handleBulkApprove}
+          onBulkReject={handleBulkReject}
+          onBulkDelete={handleBulkDelete}
         />
       )}
     </div>

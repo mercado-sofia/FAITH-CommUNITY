@@ -221,3 +221,208 @@ export const rejectSubmission = async (req, res) => {
     });
   }
 };
+
+// Bulk approve submissions
+export const bulkApproveSubmissions = async (req, res) => {
+  const { ids } = req.body;
+
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'No submission IDs provided'
+    });
+  }
+
+  try {
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+
+    for (const id of ids) {
+      try {
+        const [rows] = await db.execute('SELECT * FROM submissions WHERE id = ?', [id]);
+        
+        if (rows.length === 0) {
+          errors.push(`Submission ${id} not found`);
+          errorCount++;
+          continue;
+        }
+
+        const submission = rows[0];
+        
+        if (submission.status !== 'pending') {
+          errors.push(`Submission ${id} is not pending`);
+          errorCount++;
+          continue;
+        }
+
+        const proposedData = JSON.parse(submission.proposed_data || '{}');
+
+        // Apply the changes to the organizations table
+        const updateFields = [];
+        const updateValues = [];
+
+        Object.keys(proposedData).forEach(key => {
+          if (proposedData[key] !== null && proposedData[key] !== undefined) {
+            updateFields.push(`${key} = ?`);
+            updateValues.push(proposedData[key]);
+          }
+        });
+
+        if (updateFields.length > 0) {
+          updateValues.push(submission.organization_id);
+          const updateQuery = `UPDATE organizations SET ${updateFields.join(', ')} WHERE id = ?`;
+          await db.execute(updateQuery, updateValues);
+        }
+
+        // Update submission status
+        await db.execute(
+          'UPDATE submissions SET status = ?, approved_at = NOW() WHERE id = ?',
+          ['approved', id]
+        );
+
+        successCount++;
+      } catch (error) {
+        console.error(`Error approving submission ${id}:`, error);
+        errors.push(`Failed to approve submission ${id}: ${error.message}`);
+        errorCount++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Bulk approval completed: ${successCount} approved, ${errorCount} failed`,
+      details: {
+        successCount,
+        errorCount,
+        errors: errors.length > 0 ? errors : undefined
+      }
+    });
+  } catch (error) {
+    console.error('❌ Bulk approve error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to bulk approve submissions',
+      error: error.message
+    });
+  }
+};
+
+// Bulk reject submissions
+export const bulkRejectSubmissions = async (req, res) => {
+  const { ids, rejection_comment } = req.body;
+
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'No submission IDs provided'
+    });
+  }
+
+  try {
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+
+    for (const id of ids) {
+      try {
+        const [rows] = await db.execute('SELECT * FROM submissions WHERE id = ?', [id]);
+        
+        if (rows.length === 0) {
+          errors.push(`Submission ${id} not found`);
+          errorCount++;
+          continue;
+        }
+
+        const submission = rows[0];
+        
+        if (submission.status !== 'pending') {
+          errors.push(`Submission ${id} is not pending`);
+          errorCount++;
+          continue;
+        }
+
+        // Update submission status to rejected
+        await db.execute(
+          'UPDATE submissions SET status = ?, rejected_at = NOW(), rejection_comment = ? WHERE id = ?',
+          ['rejected', rejection_comment || '', id]
+        );
+
+        successCount++;
+      } catch (error) {
+        console.error(`Error rejecting submission ${id}:`, error);
+        errors.push(`Failed to reject submission ${id}: ${error.message}`);
+        errorCount++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Bulk rejection completed: ${successCount} rejected, ${errorCount} failed`,
+      details: {
+        successCount,
+        errorCount,
+        errors: errors.length > 0 ? errors : undefined
+      }
+    });
+  } catch (error) {
+    console.error('❌ Bulk reject error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to bulk reject submissions',
+      error: error.message
+    });
+  }
+};
+
+// Bulk delete submissions
+export const bulkDeleteSubmissions = async (req, res) => {
+  const { ids } = req.body;
+
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'No submission IDs provided'
+    });
+  }
+
+  try {
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+
+    for (const id of ids) {
+      try {
+        const [result] = await db.execute('DELETE FROM submissions WHERE id = ?', [id]);
+        
+        if (result.affectedRows === 0) {
+          errors.push(`Submission ${id} not found or already deleted`);
+          errorCount++;
+        } else {
+          successCount++;
+        }
+      } catch (error) {
+        console.error(`Error deleting submission ${id}:`, error);
+        errors.push(`Failed to delete submission ${id}: ${error.message}`);
+        errorCount++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Bulk deletion completed: ${successCount} deleted, ${errorCount} failed`,
+      details: {
+        successCount,
+        errorCount,
+        errors: errors.length > 0 ? errors : undefined
+      }
+    });
+  } catch (error) {
+    console.error('❌ Bulk delete error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to bulk delete submissions',
+      error: error.message
+    });
+  }
+};

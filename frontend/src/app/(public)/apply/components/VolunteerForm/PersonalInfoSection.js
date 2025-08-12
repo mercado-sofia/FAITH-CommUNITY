@@ -2,6 +2,7 @@
 
 import { forwardRef } from "react";
 import styles from "./volunteerForm.module.css";
+import CustomGenderDropdown from "./CustomGenderDropdown";
 
 const PersonalInfoSection = forwardRef(function PersonalInfoSection(
   { formData, handleChange, errorMessage },
@@ -41,17 +42,12 @@ const PersonalInfoSection = forwardRef(function PersonalInfoSection(
         </div>
         <div className={styles.inputGroup}>
           <label htmlFor="gender">Gender</label>
-          <select
-            id="gender"
+          <CustomGenderDropdown
             name="gender"
             value={formData.gender}
             onChange={handleChange}
             required
-          >
-            <option value="" disabled>Select Gender</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-          </select>
+          />
         </div>
       </div>
 

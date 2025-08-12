@@ -1,13 +1,15 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import styles from './programDetails.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 export default function ProgramDetailsPage() {
   const { programID } = useParams();
+  const router = useRouter();
   const [program, setProgram] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -42,100 +44,188 @@ export default function ProgramDetailsPage() {
     }
   }, [programID]);
 
+  const handleApplyClick = () => {
+    if (program.status === 'Upcoming') {
+      router.push(`/apply?program=${programID}`);
+    }
+  };
+
+  const getStatusClass = (status) => {
+    switch (status) {
+      case 'Upcoming':
+        return styles.statusUpcoming;
+      case 'Active':
+        return styles.statusActive;
+      case 'Completed':
+        return styles.statusCompleted;
+      default:
+        return styles.statusCompleted;
+    }
+  };
+
+  const getApplicationContent = () => {
+    switch (program.status) {
+      case 'Upcoming':
+        return {
+          title: 'Ready to Join?',
+          text: 'Take the first step towards making a positive impact in your community. Apply now and become part of this meaningful program.',
+          buttonText: 'Apply Now',
+          icon: '✨',
+          isDisabled: false
+        };
+      case 'Active':
+        return {
+          title: 'Program in Progress',
+          text: 'This program is currently active and running. Applications are no longer being accepted for this session.',
+          buttonText: 'Applications Closed',
+          icon: '🔄',
+          isDisabled: true
+        };
+      case 'Completed':
+        return {
+          title: 'Program Completed',
+          text: 'This program has been successfully completed. Thank you to all participants who made it possible!',
+          buttonText: 'Program Finished',
+          icon: '✅',
+          isDisabled: true
+        };
+      default:
+        return {
+          title: 'Program Status Unknown',
+          text: 'The current status of this program is unclear. Please contact the organization for more information.',
+          buttonText: 'Contact Organization',
+          icon: '❓',
+          isDisabled: true
+        };
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-lg">Loading program details...</div>
+      <div className={styles.container}>
+        <div className={styles.loadingContainer}>
+          <div className={styles.loadingText}>Loading program details...</div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-lg text-red-600">{error}</div>
+      <div className={styles.container}>
+        <div className={styles.errorContainer}>
+          <div className={styles.errorText}>{error}</div>
+        </div>
       </div>
     );
   }
 
   if (!program) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-lg">Program not found.</div>
+      <div className={styles.container}>
+        <div className={styles.errorContainer}>
+          <div className={styles.errorText}>Program not found.</div>
+        </div>
       </div>
     );
   }
 
+  const applicationContent = getApplicationContent();
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">{program.title}</h1>
+    <div className={styles.container}>
+      <div className={styles.mainContent}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.pageTitle}>Program Details</h1>
+          <p className={styles.pageSubtitle}>Discover opportunities to make a difference</p>
+        </div>
         
-        {program.image && (
-          <div className="mb-6">
-            <Image 
-              src={program.image} 
-              alt={program.title} 
-              width={600} 
-              height={400}
-              className="rounded-lg shadow-lg"
-            />
-          </div>
-        )}
-        
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Category</h3>
-              <p className="text-gray-600">{program.category}</p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Status</h3>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                program.status === 'Upcoming' ? 'bg-blue-100 text-blue-800' :
-                program.status === 'Active' ? 'bg-green-100 text-green-800' :
-                program.status === 'Completed' ? 'bg-gray-100 text-gray-800' :
-                'bg-gray-100 text-gray-800'
-              }`}>
-                {program.status}
-              </span>
-            </div>
-          </div>
-          
-          {program.date && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-2">Date</h3>
-              <p className="text-gray-600">{new Date(program.date).toLocaleDateString()}</p>
-            </div>
-          )}
-          
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-2">Description</h3>
-            <p className="text-gray-700 leading-relaxed">{program.description}</p>
-          </div>
-          
-          {(program.orgName || program.orgID) && (
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold mb-2">Organization</h3>
-              <div className="flex items-center space-x-3">
-                {program.icon && (
-                  <Image 
-                    src={program.icon} 
-                    alt={`${program.orgName || program.orgID} logo`}
-                    width={40} 
-                    height={40}
-                    className="rounded-full"
-                  />
-                )}
-                <div>
-                  <p className="font-medium">{program.orgName || program.orgID}</p>
-                  {program.orgID && program.orgName && (
-                    <p className="text-sm text-gray-600">{program.orgID}</p>
-                  )}
+        <div className={styles.contentGrid}>
+          {/* Left Panel - Program Content */}
+          <div className={styles.programContent}>
+            {program.image && (
+              <Image 
+                src={program.image} 
+                alt={program.title} 
+                width={600} 
+                height={400}
+                className={styles.programImage}
+              />
+            )}
+            
+            <div className={styles.programInfo}>
+              <h2 className={styles.programTitle}>{program.title}</h2>
+              
+              <div className={styles.metaGrid}>
+                <div className={styles.metaItem}>
+                  <span className={styles.metaLabel}>Category</span>
+                  <span className={styles.metaValue}>{program.category}</span>
                 </div>
+                <div className={styles.metaItem}>
+                  <span className={styles.metaLabel}>Status</span>
+                  <span className={`${styles.statusBadge} ${getStatusClass(program.status)}`}>
+                    {program.status}
+                  </span>
+                </div>
+                {program.date && (
+                  <div className={styles.metaItem}>
+                    <span className={styles.metaLabel}>Date</span>
+                    <span className={styles.metaValue}>
+                      {new Date(program.date).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
               </div>
+              
+              <div className={styles.programDescription}>
+                <h3 className={styles.descriptionTitle}>About This Program</h3>
+                <p className={styles.descriptionText}>{program.description}</p>
+              </div>
+              
+              {(program.orgName || program.orgID) && (
+                <div className={styles.organizationSection}>
+                  <h3 className={styles.orgTitle}>Host Organization</h3>
+                  <div className={styles.orgInfo}>
+                    {program.icon && (
+                      <Image 
+                        src={program.icon} 
+                        alt={`${program.orgName || program.orgID} logo`}
+                        width={48} 
+                        height={48}
+                        className={styles.orgLogo}
+                      />
+                    )}
+                    <div className={styles.orgDetails}>
+                      <div className={styles.orgName}>{program.orgName || program.orgID}</div>
+                      {program.orgID && program.orgName && (
+                        <div className={styles.orgId}>{program.orgID}</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          {/* Right Panel - Application Invitation */}
+          <div className={styles.applicationPanel}>
+            <div className={styles.invitationContent}>
+              <div className={styles.invitationIcon}>
+                {applicationContent.icon}
+              </div>
+              <h3 className={styles.invitationTitle}>{applicationContent.title}</h3>
+              <p className={styles.invitationText}>
+                {applicationContent.text}
+              </p>
+              <button 
+                onClick={handleApplyClick}
+                className={`${styles.applyButton} ${applicationContent.isDisabled ? styles.applyButtonDisabled : ''}`}
+                disabled={applicationContent.isDisabled}
+              >
+                {applicationContent.buttonText}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

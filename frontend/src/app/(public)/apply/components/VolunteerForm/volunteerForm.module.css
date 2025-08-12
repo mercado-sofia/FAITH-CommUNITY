@@ -2,7 +2,25 @@
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  margin: 2rem 8rem;
+  margin: 2rem auto;
+  max-width: 1200px;
+  width: 100%;
+  padding: 0 1rem;
+  min-width: 320px;
+}
+
+@media (min-width: 768px) {
+  .formContainer {
+    margin: 2rem auto;
+    padding: 0 4rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .formContainer {
+    margin: 2rem auto;
+    padding: 0 8rem;
+  }
 }
 
 .formContainer * {
@@ -12,11 +30,23 @@
 /* === Dropdown Section === */
 .topTwoCol {
   display: flex;
+  flex-direction: column;
   gap: 1.5rem;
   justify-content: center;
+  align-items: center;
   margin-top: 1rem;
   margin-bottom: 2rem;
-  flex-wrap: wrap;
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 768px) {
+  .topTwoCol {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
 }
 
 .programLabelBox,
@@ -34,13 +64,17 @@
   border: 3px solid #1F1F1F;
   background-color: white;
   height: 60px;
-  min-width: 300px;
+  min-width: 220px;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
 }
 
 .dropdownWrapper {
   position: relative;
   width: 100%;
-  max-width: 450px;
+  max-width: 420px;
+  min-width: 220px;
 }
 
 .customDropdown {
@@ -134,9 +168,17 @@
 
 /* === Section Card Layout === */
 .sectionCard {
-  padding: 2.5rem 2.5rem .5rem;
+  padding: 1.5rem 1.5rem .5rem;
   border-radius: 1rem;
   border: 2px solid #d1d5db;
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (min-width: 768px) {
+  .sectionCard {
+    padding: 2.5rem 2.5rem .5rem;
+  }
 }
 
 .sectionCard h3 {
@@ -147,16 +189,28 @@
 
 .threeCol {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 197px 197px;
+  grid-template-columns: 1fr;
   gap: 1.5rem;
   margin-bottom: 1.5rem;
 }
 
 .twoCol {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: 1.5rem;
   margin-bottom: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .twoCol {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .threeCol {
+    grid-template-columns: minmax(0, 1fr) 197px 197px;
+  }
 }
 
 .fullRow {
@@ -185,6 +239,8 @@
   border-radius: 0.5rem;
   font-size: 0.95rem;
   outline: none;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .formContainer input::placeholder,
@@ -204,6 +260,115 @@
 .formContainer textarea:focus {
   border-color: #1A685B;
   box-shadow: 0 0 0 2px rgba(26, 104, 91, 0.2);
+}
+
+/* Enhanced styling for select dropdowns */
+.formContainer select {
+  padding-right: 2.5rem;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.formContainer select:focus {
+  border-color: #1A685B;
+  outline: none;
+}
+
+/* Enhanced styling for select dropdown options */
+.formContainer select option {
+  padding: 0.75rem 1rem;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  background: white;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.formContainer select option:hover {
+  background: #f3f4f6;
+  color: #1A685B;
+}
+
+.formContainer select option:checked {
+  background: #1A685B;
+  color: white;
+  font-weight: 600;
+}
+
+/* Custom dropdown styling for better appearance */
+.formContainer select:focus option {
+  background: white;
+  color: #374151;
+}
+
+.formContainer select:focus option:hover {
+  background: #f3f4f6;
+  color: #1A685B;
+}
+
+/* Enhanced dropdown container styling */
+.formContainer select {
+  position: relative;
+}
+
+/* Custom dropdown container appearance */
+.formContainer select:focus {
+  border-color: #1A685B;
+  box-shadow: 0 0 0 2px rgba(26, 104, 91, 0.2);
+  outline: none;
+}
+
+/* Dropdown options container enhancement */
+.formContainer select:focus {
+  background-color: white;
+}
+
+/* Custom styling for the dropdown options container */
+.formContainer select:focus {
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+/* Enhanced dropdown options container */
+.formContainer select:focus option {
+  background: white;
+  color: #374151;
+  border-bottom: 1px solid #f3f4f6;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.formContainer select:focus option:last-child {
+  border-bottom: none;
+  border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.formContainer select:focus option:hover {
+  background: #f3f4f6;
+  color: #1A685B;
+  transform: translateX(2px);
+}
+
+.formContainer select:focus option:checked {
+  background: #1A685B;
+  color: white;
+  font-weight: 600;
+}
+
+/* Dropdown container shadow and border */
+.formContainer select:focus {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Remove spinners in number fields */
@@ -235,13 +400,14 @@
   font-size: 15px;
   border: none;
   width: 100%;
+  margin: 0 auto;
   cursor: pointer;
   transition: background-color 0.3s ease;
-
-  display: inline-flex; /* NEW */
-  align-items: center;   /* NEW */
-  justify-content: center; /* NEW */
-  gap: 0.5rem;           /* NEW */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 48px;
 }
 
 .formContainer button[type="submit"].submitBtn:hover {
@@ -290,11 +456,37 @@
   border: 2px dashed #1a685b;
   border-radius: 1rem;
   background-color: #f9fbfb;
-  padding: 2rem 1rem;
+  padding: 1rem 0.75rem;
   text-align: center;
   transition: border-color 0.3s ease, background-color 0.3s ease;
-  height: 280px;
+  height: 180px;
   overflow: hidden;
+  width: 100%;
+  min-width: 280px;
+}
+
+@media (min-width: 768px) {
+  .uploadBox {
+    padding: 2rem 1rem;
+    height: 280px;
+  }
+  
+  .uploadText {
+    font-size: 14px;
+  }
+  
+  .fileNoteInline {
+    font-size: 12px;
+  }
+  
+  .browseBtn {
+    padding: 0.75rem 1.6rem;
+    font-size: 14px;
+  }
+  
+  .uploadIcon {
+    font-size: 2.2rem;
+  }
 }
 
 .uploadBox:hover {
@@ -312,15 +504,17 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   justify-content: center;
   min-height: 100%;
+  width: 100%;
 }
 
 .uploadIcon {
-  font-size: 2.2rem;
+  font-size: 2rem;
   color: #3bb49a;
   transition: color 0.3s ease;
+  flex-shrink: 0;
 }
 
 .uploadIcon.uploaded {
@@ -328,10 +522,13 @@
 }
 
 .uploadText {
-  font-size: 14px;
+  font-size: 13px;
   color: #515151;
   font-weight: 500;
   transition: color 0.3s ease;
+  line-height: 1.3;
+  max-width: 100%;
+  word-wrap: break-word;
 }
 
 .uploadText.uploaded {
@@ -347,13 +544,15 @@
 .browseBtn {
   background-color: #1a685b;
   color: #fff;
-  padding: 0.75rem 1.6rem;
+  padding: 0.6rem 1.2rem;
   border-radius: 999px;
   cursor: pointer;
   font-weight: 500;
-  font-size: 14px;
+  font-size: 13px;
   font-family: var(--font-roboto);
   transition: background-color 0.3s ease;
+  white-space: nowrap;
+  min-width: 120px;
 }
 
 .browseBtn:hover {
@@ -361,11 +560,14 @@
 }
 
 .fileNoteInline {
-  font-size: 12px;
+  font-size: 11px;
   margin-top: 0.5rem;
   color: #444;
   text-align: center;
-  line-height: 1.3;
+  line-height: 1.2;
+  max-width: 100%;
+  word-wrap: break-word;
+  padding: 0 0.5rem;
 }
 
 .fileName {
@@ -616,6 +818,106 @@
   color: #555;
   margin-top: 0.5rem;
   line-height: 1.5;
+}
+
+/* === Custom Gender Dropdown === */
+.customGenderDropdown {
+  position: relative;
+  width: 100%;
+}
+
+.dropdownTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+  min-height: 48px;
+}
+
+.dropdownTrigger:hover {
+  border-color: #1A685B;
+  background-color: #f9fafb;
+}
+
+.dropdownTrigger.open {
+  border-color: #1A685B;
+  box-shadow: 0 0 0 2px rgba(26, 104, 91, 0.2);
+}
+
+.dropdownTrigger:focus {
+  outline: none;
+  border-color: #1A685B;
+}
+
+.placeholder {
+  color: #bababa;
+}
+
+.selectedValue {
+  color: #374151;
+  font-weight: 500;
+}
+
+.dropdownArrow {
+  color: #6b7280;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.dropdownArrow.rotated {
+  transform: rotate(180deg);
+}
+
+.dropdownOptionsContainer {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.dropdownOptionsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dropdownOption {
+  padding: 0.75rem 1rem;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.dropdownOption:hover:not(.disabled):not(.selected) {
+  background: #f3f4f6;
+}
+
+.dropdownOption.selected {
+  background: #1A685B;
+  color: white;
+}
+
+.dropdownOption.disabled {
+  color: #bababa;
+  cursor: not-allowed;
+  background: transparent;
+}
+
+.dropdownOption.disabled:hover {
+  background: transparent;
 }
 
 /* === Status Message === */

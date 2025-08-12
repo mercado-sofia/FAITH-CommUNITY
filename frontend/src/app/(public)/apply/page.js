@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Loader from '../../../components/Loader';
 import PageBanner from '../components/PageBanner';
 import VolunteerForm from './components/VolunteerForm';
@@ -9,7 +10,17 @@ let hasVisitedApply = false;
 
 export default function ApplyPage() {
   const [loading, setLoading] = useState(!hasVisitedApply);
+  const [selectedProgramId, setSelectedProgramId] = useState(null);
   const timerRef = useRef(null);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    // Get program ID from URL parameters
+    const programId = searchParams.get('program');
+    if (programId) {
+      setSelectedProgramId(programId);
+    }
+  }, [searchParams]);
 
   if (!hasVisitedApply && typeof window !== 'undefined') {
     hasVisitedApply = true;
@@ -33,10 +44,20 @@ export default function ApplyPage() {
         ]}
       />
 
-      <section aria-labelledby="apply-heading" style={{ padding: "4rem 2rem", background: "#fff" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+      <section aria-labelledby="apply-heading" style={{ padding: "2rem 1rem", background: "#fff" }}>
+        <style jsx>{`
+          @media (min-width: 768px) {
+            section {
+              padding: 4rem 2rem !important;
+            }
+            h2 {
+              font-size: 2rem !important;
+            }
+          }
+        `}</style>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
           <div style={{ textAlign: "center" }}>
-            <h2 id="apply-heading" style={{ fontSize: "2rem", fontWeight: "700", marginBottom: "0.5rem" }}>
+            <h2 id="apply-heading" style={{ fontSize: "1.5rem", fontWeight: "700", marginBottom: "0.5rem" }}>
               Volunteer Application
             </h2>
             <p style={{ fontSize: "0.9rem", fontWeight: "600", color: "#15803d", marginBottom: "2rem" }}>
@@ -44,7 +65,7 @@ export default function ApplyPage() {
             </p>
           </div>
 
-          <VolunteerForm />
+          <VolunteerForm selectedProgramId={selectedProgramId} />
         </div>
       </section>
     </>

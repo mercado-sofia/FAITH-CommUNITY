@@ -10,7 +10,7 @@ import TermsCheckbox from "./TermsCheckbox";
 import { handleChange } from "./formUtils";
 import { useGetApprovedUpcomingProgramsQuery } from "../../../../../rtk/(public)/programsApi";
 
-export default function VolunteerForm() {
+export default function VolunteerForm({ selectedProgramId }) {
   // Fetch approved upcoming programs from the API
   const {
     data: programOptions = [],
@@ -32,6 +32,19 @@ export default function VolunteerForm() {
     agreeToTerms: false,
     validId: null,
   });
+
+  // Auto-select program if selectedProgramId is provided
+  useEffect(() => {
+    if (selectedProgramId && programOptions.length > 0 && !formData.program) {
+      const selectedProgram = programOptions.find(program => program.id === parseInt(selectedProgramId));
+      if (selectedProgram) {
+        setFormData(prev => ({
+          ...prev,
+          program: selectedProgram
+        }));
+      }
+    }
+  }, [selectedProgramId, programOptions, formData.program]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [submitStatus, setSubmitStatus] = useState({
@@ -96,6 +109,9 @@ export default function VolunteerForm() {
     setIsLoading(true);
     setErrorMessage("");
     setErrorTarget(null);
+
+    // Add 3-second loading delay
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
     // Validation – Program
     if (!formData.program?.id) {

@@ -51,6 +51,17 @@ app.get("/api/test", (req, res) => {
   res.json({ success: true, message: "API is running" })
 })
 
+// Debug route to check table names
+app.get("/api/debug/tables", async (req, res) => {
+  try {
+    const db = await import("./back_end/database.js")
+    const [tables] = await db.default.execute("SHOW TABLES")
+    res.json({ success: true, tables: tables })
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
 // Public Routes
 import applyRoutes from "./back_end/for_public/routes/apply.js"
 import organizationsRoutes from "./back_end/for_public/routes/organizations.js"
@@ -101,6 +112,7 @@ import faqRoutes from "./back_end/superadmin/routes/faqs.js"
 import missionVisionRoutes from "./back_end/superadmin/routes/missionVision.js"
 import footerRoutes from "./back_end/superadmin/routes/footer.js"
 import subscriptionsRoutes from "./back_end/superadmin/routes/subscriptions.js"
+import superadminProgramsRoutes from "./back_end/superadmin/routes/programsRoutes.js"
 
 app.use("/api/admins", adminsRoutes)
 app.use("/api/approvals", approvalRoutes)
@@ -108,6 +120,7 @@ app.use("/api/faqs", faqRoutes)
 app.use("/api/mission-vision", missionVisionRoutes)
 app.use("/api/footer", footerRoutes)
 app.use("/api/subscriptions", subscriptionsRoutes)
+app.use("/api/projects/superadmin", superadminProgramsRoutes)
 
 // Error Handling
 

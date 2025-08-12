@@ -1,7 +1,7 @@
-const db = require('../../db/database');
+import db from '../../database.js';
 
 // Get all programs grouped by organization for superadmin
-const getAllProgramsByOrganization = async (req, res) => {
+export const getAllProgramsByOrganization = async (req, res) => {
   try {
     const query = `
       SELECT 
@@ -17,7 +17,7 @@ const getAllProgramsByOrganization = async (req, res) => {
         pp.updated_at,
         pp.organization_id,
         o.orgName as organization_name,
-        o.acronym as organization_acronym,
+        o.org as organization_acronym,
         o.logo as organization_logo
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
@@ -41,7 +41,7 @@ const getAllProgramsByOrganization = async (req, res) => {
 };
 
 // Get programs statistics for superadmin dashboard
-const getProgramsStatistics = async (req, res) => {
+export const getProgramsStatistics = async (req, res) => {
   try {
     const statisticsQuery = `
       SELECT 
@@ -70,7 +70,7 @@ const getProgramsStatistics = async (req, res) => {
 };
 
 // Get program by ID with organization details
-const getProgramById = async (req, res) => {
+export const getProgramById = async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -88,7 +88,7 @@ const getProgramById = async (req, res) => {
         pp.updated_at,
         pp.organization_id,
         o.orgName as organization_name,
-        o.acronym as organization_acronym,
+        o.org as organization_acronym,
         o.logo as organization_logo
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
@@ -119,7 +119,7 @@ const getProgramById = async (req, res) => {
 };
 
 // Get programs by organization ID
-const getProgramsByOrganizationId = async (req, res) => {
+export const getProgramsByOrganizationId = async (req, res) => {
   try {
     const { orgId } = req.params;
     
@@ -137,7 +137,7 @@ const getProgramsByOrganizationId = async (req, res) => {
         pp.updated_at,
         pp.organization_id,
         o.orgName as organization_name,
-        o.acronym as organization_acronym,
+        o.org as organization_acronym,
         o.logo as organization_logo
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
@@ -159,11 +159,4 @@ const getProgramsByOrganizationId = async (req, res) => {
       error: error.message
     });
   }
-};
-
-module.exports = {
-  getAllProgramsByOrganization,
-  getProgramsStatistics,
-  getProgramById,
-  getProgramsByOrganizationId
 };

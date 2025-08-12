@@ -25,10 +25,12 @@
 }
 
 .pageTitle {
-  font-size: 2.5rem;
+  font-size: 1.4rem;
   font-weight: 700;
-  color: #1a202c;
+  font-family: 'Poppins', sans-serif;
+  color: #06100f;
   margin: 0;
+  user-select: none;
 }
 
 /* Featured Projects Button */
@@ -221,10 +223,12 @@
 }
 
 .sectionTitle {
-  font-size: 2rem;
-  font-weight: 600;
-  color: #2d3748;
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+  color: #06100f;
   margin-bottom: 1.5rem;
+  user-select: none;
 }
 
 .featuredGrid {
@@ -392,7 +396,7 @@
 }
 
 .organizationName {
-  font-size: 1.5rem;
+  font-size: 16px;
   font-weight: 600;
   margin: 0 0 1rem 0;
   display: flex;
@@ -433,7 +437,7 @@
 }
 
 .programSectionTitle {
-  font-size: 1.25rem;
+  font-size: 16px;
   font-weight: 600;
   color: #2d3748;
   margin-bottom: 1rem;
@@ -443,7 +447,7 @@
 
 .programGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 1.5rem;
 }
 
@@ -453,6 +457,9 @@
   border-radius: 12px;
   overflow: hidden;
   transition: all 0.3s ease;
+  height: 400px;
+  display: flex;
+  flex-direction: column;
 }
 
 .programCard:hover {
@@ -486,10 +493,13 @@
 
 .programContent {
   padding: 1.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .programTitle {
-  font-size: 1.125rem;
+  font-size: 15px;
   font-weight: 600;
   color: #2d3748;
   margin-bottom: 0.5rem;
@@ -498,7 +508,7 @@
 
 .programCategory {
   color: #718096;
-  font-size: 0.875rem;
+  font-size: 13px;
   margin-bottom: 1rem;
   font-weight: 500;
 }
@@ -506,14 +516,40 @@
 .programDescription {
   color: #4a5568;
   line-height: 1.6;
-  margin-bottom: 1.5rem;
-  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  font-size: 13px;
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .programFooter {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: auto;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.viewDetailsButton {
+  background: #4299e1;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.viewDetailsButton:hover {
+  background: #3182ce;
 }
 
 .programStatusBadge {
@@ -599,6 +635,146 @@
   background: #3182ce;
 }
 
+/* Program Details Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 16px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modalHeader {
+  padding: 2rem 2rem 1rem 2rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.modalTitle {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+  color: #06100f;
+  margin: 0;
+  user-select: none;
+  flex: 1;
+}
+
+.modalCloseButton {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #718096;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.modalCloseButton:hover {
+  background: #f7fafc;
+  color: #2d3748;
+}
+
+.modalBody {
+  padding: 2rem;
+}
+
+.modalImageContainer {
+  margin-bottom: 1.5rem;
+  border-radius: 12px;
+  overflow: hidden;
+  height: 200px;
+}
+
+.modalImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.modalImagePlaceholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.modalCategory {
+  color: #718096;
+  font-size: 14px;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.modalDescription {
+  color: #4a5568;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  font-size: 14px;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.modalStatusBadge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.modalStatusBadge.upcoming {
+  background: #e6fffa;
+  color: #00b894;
+}
+
+.modalStatusBadge.active {
+  background: #e6f7ff;
+  color: #0984e3;
+}
+
+.modalStatusBadge.completed {
+  background: #f0f9ff;
+  color: #6c5ce7;
+}
+
+.modalDate {
+  font-size: 14px;
+  color: #718096;
+  font-weight: 500;
+}
+
 .emptyState {
   text-align: center;
   padding: 4rem 2rem;
@@ -659,4 +835,217 @@
     justify-content: center;
     gap: 1rem;
   }
+}
+
+/* Featured Projects Styles */
+.featuredSection {
+  margin: 2rem 0;
+  padding: 2rem;
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.featuredGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.featuredCard {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border: 1px solid #e2e8f0;
+}
+
+.featuredCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1);
+}
+
+.cardImageContainer {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+}
+
+.cardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.imagePlaceholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.orgBadge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.orgAcronym {
+  color: white;
+}
+
+.cardContent {
+  padding: 1.5rem;
+}
+
+.cardTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.cardOrganization {
+  font-size: 0.875rem;
+  color: #667eea;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.cardDescription {
+  font-size: 0.875rem;
+  color: #4a5568;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.statusBadge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statusBadge.active {
+  background: #d4edda;
+  color: #155724;
+}
+
+.statusBadge.completed {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.statusBadge.upcoming {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.cardDate {
+  font-size: 0.75rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+/* Loading and Error States */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #718096;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #e53e3e;
+}
+
+.errorMessage {
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.retryButton {
+  padding: 0.75rem 1.5rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.retryButton:hover {
+  background: #5a67d8;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #718096;
+  text-align: center;
+}
+
+.emptyState p {
+  font-size: 1.1rem;
+  margin: 0;
 }

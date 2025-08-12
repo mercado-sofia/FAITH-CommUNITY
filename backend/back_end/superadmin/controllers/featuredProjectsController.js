@@ -116,6 +116,16 @@ const addFeaturedProject = async (req, res) => {
     
     const program = programResults[0];
     
+    // Debug: Log the program data being copied
+    console.log('addFeaturedProject - Program data:', {
+      id: program.id,
+      title: program.title,
+      hasImage: !!program.image,
+      imageType: program.image ? (program.image.startsWith('data:') ? 'base64' : 'file') : 'none',
+      imageLength: program.image ? program.image.length : 0,
+      imagePreview: program.image ? program.image.substring(0, 100) + '...' : null
+    });
+    
     // Check if already featured
     const checkQuery = 'SELECT id FROM featured_projects WHERE program_id = ?';
     const [existing] = await db.execute(checkQuery, [programId]);

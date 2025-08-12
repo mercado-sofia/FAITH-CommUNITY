@@ -1,11 +1,12 @@
-const express = require('express');
-const router = express.Router();
-const {
+import express from 'express';
+import {
   getAllProgramsByOrganization,
   getProgramsStatistics,
   getProgramById,
   getProgramsByOrganizationId
-} = require('../controllers/programsController');
+} from '../controllers/programsController.js';
+
+const router = express.Router();
 
 // Routes for superadmin programs management
 router.get('/all', getAllProgramsByOrganization);
@@ -13,4 +14,4 @@ router.get('/statistics', getProgramsStatistics);
 router.get('/organization/:orgId', getProgramsByOrganizationId);
 router.get('/:id', getProgramById);
 
-module.exports = router;
+export default router;

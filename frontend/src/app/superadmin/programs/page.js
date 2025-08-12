@@ -35,24 +35,33 @@ const SuperadminProgramsPage = () => {
     acronym: org.organizationAcronym
   }))
 
-  const renderProgramCard = (program) => (
-    <div key={program.id} className={styles.programCard}>
-      <div className={styles.programImageContainer}>
-        {program.image ? (
-          <img 
-            src={`http://localhost:8080/uploads/programs/${program.image}`}
-            alt={program.title}
-            className={styles.programImage}
-            onError={(e) => {
-              e.target.style.display = 'none'
-              e.target.nextSibling.style.display = 'flex'
-            }}
-          />
-        ) : null}
-        <div className={styles.programImagePlaceholder} style={{ display: program.image ? 'none' : 'flex' }}>
-          <span>No Image</span>
+  const renderProgramCard = (program) => {
+    // Check if image is base64 data or file path
+    const isBase64Image = program.image && program.image.startsWith('data:image');
+    const imageSource = isBase64Image 
+      ? program.image 
+      : program.image 
+        ? `http://localhost:8080/uploads/programs/${program.image}`
+        : null;
+
+    return (
+      <div key={program.id} className={styles.programCard}>
+        <div className={styles.programImageContainer}>
+          {imageSource ? (
+            <img 
+              src={imageSource}
+              alt={program.title}
+              className={styles.programImage}
+              onError={(e) => {
+                e.target.style.display = 'none'
+                e.target.nextSibling.style.display = 'flex'
+              }}
+            />
+          ) : null}
+          <div className={styles.programImagePlaceholder} style={{ display: imageSource ? 'none' : 'flex' }}>
+            <span>No Image</span>
+          </div>
         </div>
-      </div>
       
       <div className={styles.programContent}>
         <h4 className={styles.programTitle}>{program.title}</h4>
@@ -73,7 +82,8 @@ const SuperadminProgramsPage = () => {
         </div>
       </div>
     </div>
-  )
+    )
+  }
 
   const renderProgramSection = (programs, title, statusKey) => {
     const filteredPrograms = selectedStatus === 'all' || selectedStatus === statusKey 
@@ -210,14 +220,21 @@ const SuperadminProgramsPage = () => {
             <div key={org.organizationId} className={styles.organizationSection}>
               <div className={styles.organizationHeader}>
                 <div className={styles.organizationInfo}>
-                  {org.organizationLogo && (
-                    <img 
-                      src={`http://localhost:8080/uploads/logos/${org.organizationLogo}`}
-                      alt={`${org.organizationName} logo`}
-                      className={styles.organizationLogo}
-                      onError={(e) => e.target.style.display = 'none'}
-                    />
-                  )}
+                  {org.organizationLogo && (() => {
+                    const isBase64Logo = org.organizationLogo.startsWith('data:image');
+                    const logoSource = isBase64Logo 
+                      ? org.organizationLogo 
+                      : `http://localhost:8080/uploads/logos/${org.organizationLogo}`;
+                    
+                    return (
+                      <img 
+                        src={logoSource}
+                        alt={`${org.organizationName} logo`}
+                        className={styles.organizationLogo}
+                        onError={(e) => e.target.style.display = 'none'}
+                      />
+                    );
+                  })()}
                   <div className={styles.organizationDetails}>
                     <h3 className={styles.organizationName}>
                       <span className={styles.organizationAcronym}>{org.organizationAcronym}</span>

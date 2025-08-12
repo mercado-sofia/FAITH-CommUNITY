@@ -15,7 +15,7 @@ const getAllFeaturedProjects = async (req, res) => {
         fp.date_completed,
         fp.created_at,
         fp.updated_at,
-        o.acronym as org_acronym,
+        o.org as org_acronym,
         o.orgName as org_name,
         o.logo as org_logo
       FROM featured_projects fp
@@ -56,7 +56,7 @@ const getFeaturedProjectById = async (req, res) => {
         fp.date_completed,
         fp.created_at,
         fp.updated_at,
-        o.acronym as org_acronym,
+        o.org as org_acronym,
         o.orgName as org_name,
         o.logo as org_logo
       FROM featured_projects fp

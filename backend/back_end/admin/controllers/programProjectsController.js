@@ -1,4 +1,4 @@
-//db table: program_projects
+//db table: programs_projects
 import db from '../../database.js';
 import path from 'path';
 import fs from 'fs';
@@ -13,7 +13,7 @@ export const addProgramProject = async (req, res) => {
 
   try {
     const [result] = await db.execute(
-      `INSERT INTO program_projects (title, description, image, status)
+      `INSERT INTO programs_projects (title, description, image, status)
        VALUES (?, ?, ?, 'pending')`,
       [title, description, image]
     );
@@ -25,7 +25,7 @@ export const addProgramProject = async (req, res) => {
 
 export const getProgramProjects = async (req, res) => {
   try {
-    const [rows] = await db.execute('SELECT * FROM program_projects');
+    const [rows] = await db.execute('SELECT * FROM programs_projects');
     res.json(rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -49,9 +49,9 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
         pp.updated_at,
         pp.organization_id,
         o.orgName as organization_name,
-        o.acronym as organization_acronym,
+        o.org as organization_acronym,
         o.logo as organization_logo
-      FROM program_projects pp
+      FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
       ORDER BY o.orgName ASC, pp.created_at DESC
     `;
@@ -82,8 +82,8 @@ export const getProgramsStatistics = async (req, res) => {
         SUM(CASE WHEN LOWER(status) = 'active' THEN 1 ELSE 0 END) as active_programs,
         SUM(CASE WHEN LOWER(status) = 'completed' THEN 1 ELSE 0 END) as completed_programs,
         COUNT(DISTINCT organization_id) as total_organizations
-      FROM program_projects
-      WHERE organization_id IS NOT NULL
+       FROM programs_projects
+       WHERE organization_id IS NOT NULL
     `;
     
     const [results] = await db.execute(statisticsQuery);

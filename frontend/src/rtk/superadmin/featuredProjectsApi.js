@@ -38,7 +38,8 @@ export const featuredProjectsApi = createApi({
             updatedAt: project.updated_at,
             orgAcronym: project.org_acronym,
             orgName: project.org_name,
-            orgLogo: project.org_logo
+            orgLogo: project.org_logo,
+            orgColor: project.org_color
           }))
         }
         return []
@@ -59,18 +60,20 @@ export const featuredProjectsApi = createApi({
           const project = response.data;
           return {
             id: project.id,
+            programId: project.program_id,
             organizationId: project.organization_id,
             title: project.title,
             description: project.description,
             image: project.image,
             status: project.status,
-            dateCreated: project.date_created,
-            dateCompleted: project.date_completed,
+            completedDate: project.completed_date,
             createdAt: project.created_at,
-            updatedAt: project.updated_at,
             orgAcronym: project.org_acronym,
             orgName: project.org_name,
-            orgLogo: project.org_logo
+            orgLogo: project.org_logo,
+            programTitle: project.program_title,
+            programCategory: project.program_category,
+            programImage: project.program_image
           }
         }
         return null
@@ -80,10 +83,61 @@ export const featuredProjectsApi = createApi({
         return response;
       }
     }),
+
+    // Add program to featured projects
+    addFeaturedProject: builder.mutation({
+      query: (programId) => ({
+        url: `/superadmin/featured-projects`,
+        method: 'POST',
+        body: { programId }
+      }),
+      invalidatesTags: ["FeaturedProject"],
+      transformResponse: (response) => {
+        console.log('featuredProjectsApi - addFeaturedProject response:', response);
+        return response;
+      },
+      transformErrorResponse: (response) => {
+        console.error('featuredProjectsApi - addFeaturedProject error:', response);
+        return response;
+      }
+    }),
+
+    // Remove program from featured projects
+    removeFeaturedProject: builder.mutation({
+      query: (programId) => ({
+        url: `/superadmin/featured-projects/program/${programId}`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: ["FeaturedProject"],
+      transformResponse: (response) => {
+        console.log('featuredProjectsApi - removeFeaturedProject response:', response);
+        return response;
+      },
+      transformErrorResponse: (response) => {
+        console.error('featuredProjectsApi - removeFeaturedProject error:', response);
+        return response;
+      }
+    }),
+
+    // Check if program is featured
+    checkFeaturedStatus: builder.query({
+      query: (programId) => `/superadmin/featured-projects/status/${programId}`,
+      transformResponse: (response) => {
+        console.log('featuredProjectsApi - checkFeaturedStatus response:', response);
+        return response.success ? response.isFeatured : false;
+      },
+      transformErrorResponse: (response) => {
+        console.error('featuredProjectsApi - checkFeaturedStatus error:', response);
+        return response;
+      }
+    }),
   }),
 })
 
 export const {
   useGetAllFeaturedProjectsQuery,
   useGetFeaturedProjectByIdQuery,
+  useAddFeaturedProjectMutation,
+  useRemoveFeaturedProjectMutation,
+  useCheckFeaturedStatusQuery,
 } = featuredProjectsApi

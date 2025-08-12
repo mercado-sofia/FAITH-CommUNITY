@@ -5,51 +5,9 @@ import Image from 'next/image';
 import styles from './styles/ImpactSection.module.css';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { LuCalendarCheck2 } from "react-icons/lu";
+import { useGetPublicFeaturedProjectsQuery } from '@/rtk/(public)/featuredProjectsApi';
 
-const impactCards = [
-  {
-    image: '/sample/sample9.jpg',
-    title: 'Poultry Farming Myths You Should Stop Believing',
-    date: '10 April 2025',
-    description: 'Common myths about poultry farming and the real facts behind them.',
-    organization: 'FACTS',
-  },
-  {
-    image: '/sample/sample7.jpg',
-    title: 'The Benefits of Buying Directly from Local Farms',
-    date: '10 April 2025',
-    description: 'Supporting local farmers builds a stronger, healthier community.',
-    organization: 'JPIA',
-  },
-  {
-    image: '/sample/sample8.jpg',
-    title: 'Feeding Practices That Keep Our Birds Strong',
-    date: '10 April 2025',
-    description: 'A look into nutrition programs that ensure healthy livestock.',
-    organization: 'FABCOMMS',
-  },
-  {
-    image: '/sample/sample1.jpg',
-    title: 'Sustaining Growth Through Education Programs',
-    date: '10 April 2025',
-    description: 'Educational outreach programs that changed lives in the community.',
-    organization: 'FTL',
-  },
-  {
-    image: '/sample/sample6.jpg',
-    title: 'Poultry Farming Myths You Should Stop Believing',
-    date: '10 April 2025',
-    description: 'Common myths about poultry farming and the real facts behind them.',
-    organization: 'JMAP',
-  },
-  {
-    image: '/sample/sample7.jpg',
-    title: 'The Benefits of Buying Directly from Local Farms',
-    date: '10 April 2025',
-    description: 'Supporting local farmers builds a stronger, healthier community.',
-    organization: 'FAIPS',
-  },
-];
+
 
 export default function ImpactSection() {
   const [startIndex, setStartIndex] = useState(0);
@@ -57,6 +15,13 @@ export default function ImpactSection() {
   const [cardWidth, setCardWidth] = useState(480);
   const [cardGap, setCardGap] = useState(24);
   const [isClient, setIsClient] = useState(false);
+
+  // Fetch featured projects from API
+  const { 
+    data: featuredProjects = [], 
+    isLoading, 
+    error 
+  } = useGetPublicFeaturedProjectsQuery();
 
   const updateResponsive = useCallback(() => {
     const width = window.innerWidth;
@@ -91,11 +56,30 @@ export default function ImpactSection() {
     setStartIndex((prev) => Math.max(prev - 1, 0));
   }, []);
 
+  // Transform featured projects data to match the expected format
+  const transformedFeaturedProjects = featuredProjects.map(project => ({
+    image: project.image ? 
+      (project.image.startsWith('data:') ? project.image : `http://localhost:8080/uploads/programs/${project.image}`) 
+      : '/sample/sample1.jpg',
+    title: project.title || 'Featured Project',
+    date: project.completedDate ? new Date(project.completedDate).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }) : 'Coming Soon',
+    description: project.description || 'An amazing project making a difference in the community.',
+    organization: project.orgAcronym || 'FAITH',
+    orgColor: project.orgColor || '#444444'
+  }));
+
+  // Use only the transformed featured projects data
+  const dataToDisplay = transformedFeaturedProjects;
+
   const handleNext = useCallback(() => {
     setStartIndex((prev) =>
-      Math.min(prev + 1, impactCards.length - visibleCount)
+      Math.min(prev + 1, dataToDisplay.length - visibleCount)
     );
-  }, [visibleCount]);
+  }, [visibleCount, dataToDisplay]);
 
   useEffect(() => {
     const handleKey = (e) => {
@@ -108,21 +92,7 @@ export default function ImpactSection() {
 
   const translateX = startIndex * (cardWidth + cardGap);
 
-  function getRandomColor() {
-    const colors = {
-      FACTS: '#ec0000',
-      JPIA: '#FFB300',
-      FABCOMMS: '#058C00',
-      FTL: '#100DBE',
-      JMAP: '#B40099',
-      FAIPS: '#FFB300',
-    };
-    return (org) => colors[org] || '#444';
-  }
-
-  const getColor = getRandomColor();
-
-  if (!isClient) {
+  if (!isClient || isLoading) {
     return (
       <section className={styles.impactSection}>
         <div className={styles.loaderWrapper}>
@@ -130,6 +100,11 @@ export default function ImpactSection() {
         </div>
       </section>
     );
+  }
+
+  // If there are no featured projects, don't render the section
+  if (error || dataToDisplay.length === 0) {
+    return null;
   }
 
   return (
@@ -156,23 +131,32 @@ export default function ImpactSection() {
             className={styles.impactSliderTrack}
             style={{ transform: `translateX(-${translateX}px)` }}
           >
-            {impactCards.map((card, index) => (
+            {dataToDisplay.map((card, index) => (
               <div
                 key={index}
                 className={styles.cardImpact}
                 style={{ width: `${cardWidth}px` }}
               >
               <div className={styles.imageContainer}>
-                <Image
-                  src={card.image}
-                  alt={card.title}
-                  fill
-                  className={styles.impactcardImg}
-                  sizes="(max-width: 740px) 250px, (max-width: 980px) 275px, (max-width: 1200px) 400px, 480px"
-                />
+                {card.image.startsWith('data:') ? (
+                  <img
+                    src={card.image}
+                    alt={card.title}
+                    className={styles.impactcardImg}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <Image
+                    src={card.image}
+                    alt={card.title}
+                    fill
+                    className={styles.impactcardImg}
+                    sizes="(max-width: 740px) 250px, (max-width: 980px) 275px, (max-width: 1200px) 400px, 480px"
+                  />
+                )}
                 <div
                   className={styles.orgLabelOverlay}
-                  style={{ '--bgColor': getColor(card.organization) }}
+                  style={{ '--bgColor': card.orgColor }}
                 >
                   {card.organization}
                 </div>
@@ -191,7 +175,7 @@ export default function ImpactSection() {
         <button
           className={styles.impactnavBtn}
           onClick={handleNext}
-          disabled={startIndex >= impactCards.length - visibleCount}
+          disabled={startIndex >= dataToDisplay.length - visibleCount}
           aria-label="Scroll Right"
         >
           <FaChevronRight />

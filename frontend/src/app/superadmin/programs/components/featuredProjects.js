@@ -70,7 +70,10 @@ const FeaturedProjects = () => {
               <div className={styles.imagePlaceholder} style={{ display: project.image ? 'none' : 'flex' }}>
                 <span>No Image</span>
               </div>
-              <div className={styles.orgBadge}>
+              <div 
+                className={styles.orgBadge}
+                style={{ backgroundColor: project.orgColor || '#444444' }}
+              >
                 <span className={styles.orgAcronym}>{project.orgAcronym}</span>
               </div>
             </div>

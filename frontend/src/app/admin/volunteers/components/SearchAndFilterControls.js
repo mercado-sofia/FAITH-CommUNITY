@@ -15,6 +15,8 @@ export default function SearchAndFilterControls({
   onSearchChange,
   sortOrder,
   onSortOrderChange,
+  programs = [],
+  programsLoading = false,
 }) {
   const [showDropdown, setShowDropdown] = useState(null)
   const [localQuery, setLocalQuery] = useState(searchQuery || '')
@@ -69,19 +71,31 @@ export default function SearchAndFilterControls({
             className={styles.dropdown}
             onClick={() => toggleDropdown("program")}
           >
-            {programFilter}
+            {programsLoading ? "Loading..." : programFilter}
             <FiChevronDown className={styles.icon} />
           </div>
           {showDropdown === "program" && (
             <ul className={styles.options}>
-              {["All Programs", "Program A", "Program B", "Program C"].map((prog) => (
-                <li key={prog} onClick={() => {
-                  onProgramFilterChange(prog)
-                  setShowDropdown(null)
-                }}>
-                  {prog}
-                </li>
-              ))}
+              <li key="all" onClick={() => {
+                onProgramFilterChange("All Programs")
+                setShowDropdown(null)
+              }}>
+                All Programs
+              </li>
+              {programsLoading ? (
+                <li style={{ color: '#666', fontStyle: 'italic' }}>Loading programs...</li>
+              ) : programs.length === 0 ? (
+                <li style={{ color: '#666', fontStyle: 'italic' }}>No programs found</li>
+              ) : (
+                programs.map((program) => (
+                  <li key={program.id} onClick={() => {
+                    onProgramFilterChange(program.title)
+                    setShowDropdown(null)
+                  }}>
+                    {program.title}
+                  </li>
+                ))
+              )}
             </ul>
           )}
         </div>

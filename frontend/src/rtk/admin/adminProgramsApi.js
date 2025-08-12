@@ -39,7 +39,8 @@ export const adminProgramsApi = createApi({
       },
       transformErrorResponse: (response) => {
         console.error('adminProgramsApi - getProgramsByAdminOrg error:', response);
-        return response;
+        // Return empty array on error to prevent UI breaking
+        return { data: [], error: response };
       }
     }),
 

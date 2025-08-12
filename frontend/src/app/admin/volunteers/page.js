@@ -6,6 +6,7 @@ import { useSelector } from 'react-redux'
 import SearchAndFilterControls from './components/SearchAndFilterControls'
 import VolunteerTable from './components/VolunteerTable'
 import { useGetVolunteersByAdminOrgQuery, useUpdateVolunteerStatusMutation, useSoftDeleteVolunteerMutation } from '../../../rtk/admin/volunteersApi'
+import { useGetProgramsByAdminOrgQuery } from '../../../rtk/admin/adminProgramsApi'
 import { selectCurrentAdmin, selectIsAuthenticated } from '../../../rtk/superadmin/adminSlice'
 import styles from './volunteers.module.css'
 
@@ -29,6 +30,42 @@ export default function VolunteersPage() {
     refetchOnFocus: true,
     refetchOnReconnect: true
   })
+
+  // Fetch programs from API using admin's organization
+  const { 
+    data: programsData = [], 
+    isLoading: programsLoading,
+    error: programsError 
+  } = useGetProgramsByAdminOrgQuery(currentAdmin?.org, {
+    skip: !isAuthenticated || !currentAdmin?.org,
+    refetchOnMountOrArgChange: true
+  })
+
+  // Extract unique programs from volunteers data as fallback
+  const programsFromVolunteers = useMemo(() => {
+    if (!volunteersData || volunteersData.length === 0) return []
+    
+    const uniquePrograms = [...new Set(volunteersData.map(volunteer => volunteer.program))]
+      .filter(program => program && program.trim() !== '')
+      .map((programName, index) => ({
+        id: `volunteer-program-${index}`,
+        title: programName,
+        description: `Program: ${programName}`,
+        category: 'Unknown',
+        status: 'active'
+      }))
+    
+    return uniquePrograms
+  }, [volunteersData])
+
+  // Use programs from API if available, otherwise use programs extracted from volunteers
+  const availablePrograms = useMemo(() => {
+    if (programsData && programsData.length > 0) {
+      return programsData
+    }
+    // Fallback to programs extracted from volunteers data
+    return programsFromVolunteers
+  }, [programsData, programsFromVolunteers])
   
   const [updateVolunteerStatus] = useUpdateVolunteerStatusMutation()
   const [softDeleteVolunteer] = useSoftDeleteVolunteerMutation()
@@ -185,6 +222,8 @@ export default function VolunteersPage() {
         onSearchChange={setSearchQuery}
         sortOrder={sortOrder}
         onSortOrderChange={setSortOrder}
+        programs={availablePrograms}
+        programsLoading={programsLoading}
       />
 
       <VolunteerTable

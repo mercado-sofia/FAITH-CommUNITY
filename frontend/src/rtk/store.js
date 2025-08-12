@@ -14,6 +14,8 @@ import { volunteersApi } from "./admin/volunteersApi"
 import { adminProgramsApi } from "./admin/adminProgramsApi"
 import { manageProfilesApi } from "./superadmin/manageProfilesApi"
 import { faqApi } from "./superadmin/faqApi"
+import { featuredProjectsApi } from "./superadmin/featuredProjectsApi"
+import { superadminProgramsApi } from "./superadmin/programsApi"
 import adminReducer from "./superadmin/adminSlice"
 
 export const store = configureStore({
@@ -32,6 +34,8 @@ export const store = configureStore({
     [adminProgramsApi.reducerPath]: adminProgramsApi.reducer,
     [manageProfilesApi.reducerPath]: manageProfilesApi.reducer,
     [faqApi.reducerPath]: faqApi.reducer,
+    [featuredProjectsApi.reducerPath]: featuredProjectsApi.reducer,
+    [superadminProgramsApi.reducerPath]: superadminProgramsApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -48,6 +52,8 @@ export const store = configureStore({
       adminProgramsApi.middleware,
       manageProfilesApi.middleware,
       faqApi.middleware,
+      featuredProjectsApi.middleware,
+      superadminProgramsApi.middleware,
     ),
 })
 

@@ -57,7 +57,7 @@
 
 .question {
   padding: 1rem 1.5rem;
-  font-size: 0.85rem;
+  font-size: 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -75,7 +75,7 @@
 
 .answer {
   padding: 0 1.5rem;
-  font-size: 0.8rem;
+  font-size: 13px;
   line-height: 1.5;
   color: #000000;
   max-height: 0;

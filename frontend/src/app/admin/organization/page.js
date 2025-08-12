@@ -24,7 +24,8 @@ export default function OrganizationPage() {
     orgName: "",
     email: "",
     facebook: "",
-    description: ""
+    description: "",
+    orgColor: "#444444"
   });
 
   // Separate state for edit modal preview (doesn't affect main display)
@@ -120,7 +121,8 @@ export default function OrganizationPage() {
           orgName: orgResult.data.orgName || admin.orgName || "",
           email: orgResult.data.email || admin.email || "",
           facebook: orgResult.data.facebook || "",
-          description: orgResult.data.description || ""
+          description: orgResult.data.description || "",
+          orgColor: orgResult.data.org_color || "#444444"
         });
       } else {
         setOrgData({
@@ -130,7 +132,8 @@ export default function OrganizationPage() {
           orgName: admin.orgName || "",
           email: admin.email || "",
           facebook: "",
-          description: ""
+          description: "",
+          orgColor: "#444444"
         });
         showMessage("Organization data initialized from admin account", "info");
       }
@@ -403,6 +406,7 @@ export default function OrganizationPage() {
         orgName: pendingChanges.orgName,
         facebook: pendingChanges.facebook || null,
         description: pendingChanges.description || null,
+        orgColor: pendingChanges.orgColor || "#444444",
         status: "ACTIVE"
       };
       

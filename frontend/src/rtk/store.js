@@ -4,6 +4,7 @@ import { setupListeners } from "@reduxjs/toolkit/query/react"
 import { applyApi } from "./(public)/applyApi"
 import { programsApi } from "./(public)/programsApi"
 import { organizationsApi } from "./(public)/organizationsApi"
+import { publicFeaturedProjectsApi } from "./(public)/featuredProjectsApi"
 import { advocaciesApi } from "./admin/advocaciesApi"
 import { competenciesApi } from "./admin/competenciesApi"
 import { headsApi } from "./admin/headsApi"
@@ -24,6 +25,7 @@ export const store = configureStore({
     [applyApi.reducerPath]: applyApi.reducer,
     [programsApi.reducerPath]: programsApi.reducer,
     [organizationsApi.reducerPath]: organizationsApi.reducer,
+    [publicFeaturedProjectsApi.reducerPath]: publicFeaturedProjectsApi.reducer,
     [advocaciesApi.reducerPath]: advocaciesApi.reducer,
     [competenciesApi.reducerPath]: competenciesApi.reducer,
     [headsApi.reducerPath]: headsApi.reducer,
@@ -42,6 +44,7 @@ export const store = configureStore({
       applyApi.middleware,
       programsApi.middleware,
       organizationsApi.middleware,
+      publicFeaturedProjectsApi.middleware,
       advocaciesApi.middleware,
       competenciesApi.middleware,
       headsApi.middleware,

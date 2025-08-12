@@ -49,10 +49,10 @@ export const getOrganizationByName = async (req, res) => {
 }
 
 export const createOrganization = async (req, res) => {
-  const { logo, orgName, org, facebook, description, status } = req.body
+  const { logo, orgName, org, facebook, description, status, orgColor } = req.body
 
   console.log("Backend: Received create request for new organization")
-  console.log("Backend: Received body data:", { logo, orgName, org, facebook, description, status })
+  console.log("Backend: Received body data:", { logo, orgName, org, facebook, description, status, orgColor })
 
   // Validate required fields
   if (!org || !orgName) {
@@ -67,6 +67,7 @@ export const createOrganization = async (req, res) => {
   const finalFacebook = facebook === "" ? null : facebook
   const finalDescription = description === "" ? null : description
   const finalStatus = status || "ACTIVE"
+  const finalOrgColor = orgColor || "#444444"
 
   try {
     // Check if organization with this acronym already exists
@@ -84,9 +85,9 @@ export const createOrganization = async (req, res) => {
 
     // Insert new organization
     const [result] = await db.execute(
-      `INSERT INTO organizations (logo, orgName, org, facebook, description, status)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [finalLogo, orgName, org, finalFacebook, finalDescription, finalStatus]
+      `INSERT INTO organizations (logo, orgName, org, facebook, description, status, org_color)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [finalLogo, orgName, org, finalFacebook, finalDescription, finalStatus, finalOrgColor]
     )
 
     console.log("Backend: Successfully created organization with ID:", result.insertId)
@@ -103,16 +104,17 @@ export const createOrganization = async (req, res) => {
 
 export const updateOrganizationInfo = async (req, res) => {
   const { id } = req.params
-  const { logo, orgName, org, facebook, description, status } = req.body
+  const { logo, orgName, org, facebook, description, status, orgColor } = req.body
 
   console.log("Backend: Received update request for Org ID:", id)
-  console.log("Backend: Received body data:", { logo, orgName, org, facebook, description, status })
+  console.log("Backend: Received body data:", { logo, orgName, org, facebook, description, status, orgColor })
 
   // Convert empty strings and undefined values to null for optional fields
   const finalLogo = (logo === "" || logo === undefined) ? null : logo
   const finalFacebook = (facebook === "" || facebook === undefined) ? null : facebook
   const finalDescription = (description === "" || description === undefined) ? null : description
   const finalStatus = status || "ACTIVE" // Ensure status is always a string
+  const finalOrgColor = orgColor || "#444444"
 
   console.log("Backend: Prepared values for DB:", {
     finalLogo,
@@ -156,9 +158,9 @@ export const updateOrganizationInfo = async (req, res) => {
     // Update the organizations table
     const [orgResult] = await connection.execute(
       `UPDATE organizations
-       SET logo = ?, orgName = ?, org = ?, facebook = ?, description = ?, status = ?
+       SET logo = ?, orgName = ?, org = ?, facebook = ?, description = ?, status = ?, org_color = ?
        WHERE id = ?`,
-      [finalLogo, orgName, org, finalFacebook, finalDescription, finalStatus, id],
+      [finalLogo, orgName, org, finalFacebook, finalDescription, finalStatus, finalOrgColor, id],
     )
 
     if (orgResult.affectedRows === 0) {

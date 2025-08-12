@@ -53,13 +53,16 @@ const initializeDatabase = async () => {
       await connection.query(`
         CREATE TABLE featured_projects (
           id INT AUTO_INCREMENT PRIMARY KEY,
+          program_id INT NOT NULL,
           organization_id INT NOT NULL,
           title VARCHAR(255) NOT NULL,
           description TEXT,
           image VARCHAR(255),
           status ENUM('active', 'completed', 'pending') DEFAULT 'active',
           completed_date DATE,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE CASCADE,
+          FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
         )
       `);
       console.log("✅ Featured_projects table created successfully!");

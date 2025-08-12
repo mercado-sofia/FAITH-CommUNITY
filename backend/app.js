@@ -113,6 +113,7 @@ import missionVisionRoutes from "./back_end/superadmin/routes/missionVision.js"
 import footerRoutes from "./back_end/superadmin/routes/footer.js"
 import subscriptionsRoutes from "./back_end/superadmin/routes/subscriptions.js"
 import superadminProgramsRoutes from "./back_end/superadmin/routes/programsRoutes.js"
+import featuredProjectsRoutes from "./back_end/superadmin/routes/featuredProjectsRoutes.js"
 
 app.use("/api/admins", adminsRoutes)
 app.use("/api/approvals", approvalRoutes)
@@ -121,6 +122,7 @@ app.use("/api/mission-vision", missionVisionRoutes)
 app.use("/api/footer", footerRoutes)
 app.use("/api/subscriptions", subscriptionsRoutes)
 app.use("/api/projects/superadmin", superadminProgramsRoutes)
+app.use("/api/superadmin/featured-projects", featuredProjectsRoutes)
 
 // Error Handling
 

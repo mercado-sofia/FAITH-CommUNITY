@@ -126,6 +126,23 @@ export default function EditModal({
             <div className={styles.formSection}>
               <div className={styles.formGroup}>
                 <label className={styles.label}>
+                  Organization Color <span className={styles.required}>*</span>
+                </label>
+                <div className={styles.colorPickerContainer}>
+                  <input
+                    type="color"
+                    name="orgColor"
+                    value={orgData.orgColor || "#444444"}
+                    onChange={handleInputChange}
+                    className={styles.colorPicker}
+                  />
+                  <span className={styles.colorValue}>{orgData.orgColor || "#444444"}</span>
+                </div>
+                <span className={styles.helperText}>This color will be displayed on your organization's program cards in the public portal</span>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>
                   Organization Acronym <span className={styles.required}>*</span>
                 </label>
                 <input

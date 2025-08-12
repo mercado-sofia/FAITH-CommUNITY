@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react'
 import { useGetAllProgramsByOrganizationQuery, useGetProgramsStatisticsQuery } from '@/rtk/superadmin/programsApi'
+import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/featuredProjectsApi'
+import StarButton from './components/StarButton'
 import styles from './programs.module.css'
 
 const SuperadminProgramsPage = () => {
@@ -61,6 +63,7 @@ const SuperadminProgramsPage = () => {
           <div className={styles.programImagePlaceholder} style={{ display: imageSource ? 'none' : 'flex' }}>
             <span>No Image</span>
           </div>
+          <StarButton programId={program.id} programTitle={program.title} />
         </div>
       
       <div className={styles.programContent}>
@@ -145,7 +148,28 @@ const SuperadminProgramsPage = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.pageTitle}>Programs Management</h1>
+        <div className={styles.headerTop}>
+          <h1 className={styles.pageTitle}>Programs Management</h1>
+          <button 
+            className={styles.featuredProjectsButton}
+            onClick={() => window.location.href = '/superadmin/programs/featured'}
+          >
+            <div className={styles.buttonIcon}>
+              <svg viewBox="0 0 24 24" fill="currentColor" className={styles.starIcon}>
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+            </div>
+            <div className={styles.buttonContent}>
+              <span className={styles.buttonTitle}>Featured Projects</span>
+              <span className={styles.buttonSubtitle}>Manage highlights</span>
+            </div>
+            <div className={styles.buttonArrow}>
+              <svg viewBox="0 0 24 24" fill="currentColor" className={styles.arrowIcon}>
+                <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+              </svg>
+            </div>
+          </button>
+        </div>
         <div className={styles.statsContainer}>
           {!statsLoading && (
             <>

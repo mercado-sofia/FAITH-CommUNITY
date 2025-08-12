@@ -6,6 +6,7 @@ import SearchAndFilterControls from './components/SearchAndFilterControls';
 import SubmissionTable from './components/SubmissionTable';
 import BulkActionsBar from './components/BulkActionsBar';
 import PaginationControls from '../volunteers/components/PaginationControls';
+import ToastModal from './components/ToastModal';
 import styles from './submissions.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -32,6 +33,15 @@ export default function SubmissionsPage() {
     parseInt(searchParams.get('show')) || 10
   );
   const [currentPage, setCurrentPage] = useState(1);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+  };
+
+  const hideToast = () => {
+    setToast({ show: false, message: '', type: 'success' });
+  };
 
   function capitalizeFirstLetter(str) {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -157,7 +167,7 @@ export default function SubmissionsPage() {
       });
       
       if (pendingIds.length === 0) {
-        alert('No pending submissions selected to cancel.');
+        showToast('No pending submissions selected to cancel.', 'warning');
         return;
       }
       
@@ -168,9 +178,10 @@ export default function SubmissionsPage() {
       fetchSubmissions();
       setSelectedItems(new Set());
       setShowBulkActions(false);
+      showToast('Submissions cancelled successfully!', 'success');
     } catch (err) {
       console.error('Bulk cancel error:', err);
-      alert('Failed to cancel some submissions');
+      showToast('Failed to cancel some submissions', 'error');
     }
   };
 
@@ -193,9 +204,10 @@ export default function SubmissionsPage() {
       fetchSubmissions();
       setSelectedItems(new Set());
       setShowBulkActions(false);
+      showToast('Submissions deleted successfully!', 'success');
     } catch (err) {
       console.error('Bulk delete error:', err);
-      alert(`Failed to delete some submissions: ${err.message}`);
+      showToast(`Failed to delete some submissions: ${err.message}`, 'error');
     }
   };
 
@@ -257,6 +269,14 @@ export default function SubmissionsPage() {
           />
         )}
       </div>
+      
+      <ToastModal
+        message={toast.message}
+        isVisible={toast.show}
+        onClose={hideToast}
+        type={toast.type}
+        autoHideDuration={3000}
+      />
     </div>
   );
 }

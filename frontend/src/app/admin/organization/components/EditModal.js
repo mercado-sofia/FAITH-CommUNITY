@@ -138,7 +138,7 @@ export default function EditModal({
                   />
                   <span className={styles.colorValue}>{orgData.orgColor || "#444444"}</span>
                 </div>
-                <span className={styles.helperText}>This color will be displayed on your organization's program cards in the public portal</span>
+                <span className={styles.helperText}>This color will be your Organization&apos;s theme color</span>
               </div>
 
               <div className={styles.formGroup}>

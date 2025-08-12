@@ -31,6 +31,28 @@ const ProgramCard = ({ program, onEdit, onDelete }) => {
     }
   };
 
+  const formatProgramDates = (program) => {
+    if (program.multiple_dates && Array.isArray(program.multiple_dates) && program.multiple_dates.length > 0) {
+      if (program.multiple_dates.length === 1) {
+        return formatDate(program.multiple_dates[0]);
+      } else if (program.multiple_dates.length === 2) {
+        return `${formatDate(program.multiple_dates[0])} & ${formatDate(program.multiple_dates[1])}`;
+      } else {
+        return `${formatDate(program.multiple_dates[0])} +${program.multiple_dates.length - 1} more`;
+      }
+    } else if (program.event_start_date && program.event_end_date) {
+      const startDate = new Date(program.event_start_date);
+      const endDate = new Date(program.event_end_date);
+      
+      if (startDate.getTime() === endDate.getTime()) {
+        return formatDate(program.event_start_date);
+      } else {
+        return `${formatDate(program.event_start_date)} - ${formatDate(program.event_end_date)}`;
+      }
+    }
+    return 'Not specified';
+  };
+
   const getCategoryLabel = (category) => {
     const categoryMap = {
       outreach: 'Outreach',
@@ -102,14 +124,12 @@ const ProgramCard = ({ program, onEdit, onDelete }) => {
             </span>
           </div>
 
-          {program.date && (
-            <div className={styles.metaItem}>
-              <FaCalendar className={styles.metaIcon} />
-              <span className={styles.metaText}>
-                {formatDate(program.date)}
-              </span>
-            </div>
-          )}
+          <div className={styles.metaItem}>
+            <FaCalendar className={styles.metaIcon} />
+            <span className={styles.metaText}>
+              {formatProgramDates(program)}
+            </span>
+          </div>
 
           {program.created_at && (
             <div className={styles.metaItem}>

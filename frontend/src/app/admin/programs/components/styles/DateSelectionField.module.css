@@ -1,0 +1,373 @@
+.dateSelectionContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+  gap: 4px;
+}
+
+.required {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+/* Schedule Type Selection - First Row */
+.scheduleTypeRow {
+  margin-bottom: 8px;
+}
+
+/* Date Picker Row - Second Row */
+.datePickerRow {
+  margin-bottom: 8px;
+}
+
+/* Custom Dropdown Styles */
+.customDropdown {
+  position: relative;
+  width: 100%;
+}
+
+.dropdownButton {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+}
+
+.dropdownButton:hover:not(.disabled) {
+  border-color: #9ca3af;
+  background-color: #f9fafb;
+}
+
+.dropdownButton:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.dropdownButton.dropdownOpen {
+  border-color: #3b82f6;
+  background-color: #f8fafc;
+}
+
+.dropdownButton.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #f3f4f6;
+}
+
+.dropdownValue {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdownArrow {
+  color: #6b7280;
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.dropdownArrow.arrowUp {
+  transform: rotate(180deg);
+}
+
+.dropdownOptions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+  animation: dropdownSlideDown 0.2s ease-out;
+}
+
+@keyframes dropdownSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownOption {
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: none;
+  color: #374151;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: block;
+}
+
+.dropdownOption:hover {
+  background-color: #f3f4f6;
+  color: #1f2937;
+}
+
+.dropdownOption.optionSelected {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 500;
+}
+
+.dropdownOption.optionSelected:hover {
+  background-color: #dbeafe;
+}
+
+/* Custom scrollbar for dropdown options */
+.dropdownOptions::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdownOptions::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.dropdownOptions::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.dropdownOptions::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Date Picker Container */
+.datePickerContainer {
+  flex: 1;
+}
+
+/* Single Date Container */
+.singleDateContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dateRangeContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.multipleDatesContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Date Input Wrapper */
+.dateInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dateIcon {
+  position: absolute;
+  left: 12px;
+  color: #6b7280;
+  font-size: 0.875rem;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Date Input Styles */
+.dateInput {
+  width: 100%;
+  padding: 12px 12px 12px 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.dateInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.dateInput:hover:not(:focus) {
+  border-color: #9ca3af;
+}
+
+.dateInput:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Multi Date Input Styles */
+.multiDateInput {
+  width: 100%;
+  padding: 12px 12px 12px 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.multiDateInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.multiDateInput:hover:not(:focus) {
+  border-color: #9ca3af;
+}
+
+.multiDateInput:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Selected Date Display Container */
+.selectedDateDisplayContainer {
+  margin-top: 8px;
+}
+
+/* Selected Date Display */
+.selectedDateDisplay {
+  padding: 8px 12px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  color: #0369a1;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Multiple Dates List */
+.selectedDatesList {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #f9fafb;
+  padding: 12px;
+}
+
+.selectedDatesHeader {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.selectedDatesGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.selectedDateTag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+.removeDateButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: #ef4444;
+  color: #ffffff;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.625rem;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.removeDateButton:hover:not(:disabled) {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+.removeDateButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Error Text */
+.errorText {
+  color: #ef4444;
+  font-size: 0.75rem;
+  margin-top: 4px;
+  display: block;
+  font-weight: 500;
+}
+
+/* Helper Text */
+.helperText {
+  color: #6b7280;
+  font-size: 0.75rem;
+  margin-top: 4px;
+  display: block;
+  font-style: italic;
+}
+
+/* Date picker styles are handled by the imported CSS files */
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .selectedDatesGrid {
+    flex-direction: column;
+  }
+  
+  .selectedDateTag {
+    justify-content: space-between;
+  }
+}

@@ -398,3 +398,102 @@
   }
 }
 
+/* Bulk Actions Bar */
+.bulkActionsBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.bulkActionsLeft {
+  display: flex;
+  align-items: center;
+}
+
+.selectedCount {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.bulkActionsRight {
+  display: flex;
+  gap: 8px;
+}
+
+.bulkActionBtn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bulkApproveBtn {
+  background: #10b981;
+  color: white;
+}
+
+.bulkApproveBtn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.bulkRejectBtn {
+  background: #ef4444;
+  color: white;
+}
+
+.bulkRejectBtn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.bulkDeleteBtn {
+  background: #6b7280;
+  color: white;
+}
+
+.bulkDeleteBtn:hover {
+  background: #4b5563;
+  transform: translateY(-1px);
+}
+
+.bulkActionBtn:active {
+  transform: translateY(0);
+}
+
+/* Responsive bulk actions */
+@media (max-width: 768px) {
+  .bulkActionsBar {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .bulkActionsLeft,
+  .bulkActionsRight {
+    justify-content: center;
+  }
+  
+  .bulkActionsRight {
+    flex-wrap: wrap;
+  }
+  
+  .bulkActionBtn {
+    flex: 1;
+    min-width: 100px;
+  }
+}
+

@@ -4,13 +4,15 @@ import { useState } from 'react';
 import styles from './styles/ApprovalsTable.module.css';
 import ViewDetailsModal from './ViewDetailsModal';
 
-export default function ApprovalsTable({ approvals, onApprove, onReject }) {
+export default function ApprovalsTable({ approvals, onApprove, onReject, onBulkApprove, onBulkReject, onBulkDelete }) {
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedItemForReject, setSelectedItemForReject] = useState(null);
   const [rejectComment, setRejectComment] = useState('');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedItemForDetails, setSelectedItemForDetails] = useState(null);
+  const [showBulkRejectModal, setShowBulkRejectModal] = useState(false);
+  const [bulkRejectComment, setBulkRejectComment] = useState('');
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
@@ -83,6 +85,42 @@ export default function ApprovalsTable({ approvals, onApprove, onReject }) {
     setSelectedItemForDetails(null);
   };
 
+  // Bulk action handlers
+  const handleBulkApprove = () => {
+    if (selectedItems.size === 0) return;
+    const selectedIds = Array.from(selectedItems);
+    onBulkApprove(selectedIds);
+    setSelectedItems(new Set());
+  };
+
+  const handleBulkRejectClick = () => {
+    if (selectedItems.size === 0) return;
+    setShowBulkRejectModal(true);
+  };
+
+  const handleBulkRejectSubmit = () => {
+    if (selectedItems.size === 0) return;
+    const selectedIds = Array.from(selectedItems);
+    onBulkReject(selectedIds, bulkRejectComment);
+    setSelectedItems(new Set());
+    setShowBulkRejectModal(false);
+    setBulkRejectComment('');
+  };
+
+  const handleBulkRejectCancel = () => {
+    setShowBulkRejectModal(false);
+    setBulkRejectComment('');
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedItems.size === 0) return;
+    if (confirm(`Are you sure you want to delete ${selectedItems.size} submission(s)? This action cannot be undone.`)) {
+      const selectedIds = Array.from(selectedItems);
+      onBulkDelete(selectedIds);
+      setSelectedItems(new Set());
+    }
+  };
+
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
       month: 'short',
@@ -93,6 +131,37 @@ export default function ApprovalsTable({ approvals, onApprove, onReject }) {
 
   return (
     <>
+      {/* Bulk Actions Bar */}
+      {selectedItems.size > 0 && (
+        <div className={styles.bulkActionsBar}>
+          <div className={styles.bulkActionsLeft}>
+            <span className={styles.selectedCount}>
+              {selectedItems.size} item{selectedItems.size !== 1 ? 's' : ''} selected
+            </span>
+          </div>
+          <div className={styles.bulkActionsRight}>
+            <button 
+              onClick={handleBulkApprove}
+              className={`${styles.bulkActionBtn} ${styles.bulkApproveBtn}`}
+            >
+              Accept All
+            </button>
+            <button 
+              onClick={handleBulkRejectClick}
+              className={`${styles.bulkActionBtn} ${styles.bulkRejectBtn}`}
+            >
+              Reject All
+            </button>
+            <button 
+              onClick={handleBulkDelete}
+              className={`${styles.bulkActionBtn} ${styles.bulkDeleteBtn}`}
+            >
+              Delete All
+            </button>
+          </div>
+        </div>
+      )}
+      
       <div className={styles.tableContainer}>
         <table className={styles.table}>
           <thead>
@@ -205,6 +274,49 @@ export default function ApprovalsTable({ approvals, onApprove, onReject }) {
                 className={styles.modalRejectBtn}
               >
                 Reject Submission
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Reject Modal */}
+      {showBulkRejectModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Reject Selected Submissions</h3>
+              <button 
+                onClick={handleBulkRejectCancel}
+                className={styles.modalCloseBtn}
+              >
+                ×
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <p className={styles.modalDescription}>
+                Are you sure you want to reject {selectedItems.size} submission{selectedItems.size !== 1 ? 's' : ''}? You can optionally provide a reason below.
+              </p>
+              <textarea
+                value={bulkRejectComment}
+                onChange={(e) => setBulkRejectComment(e.target.value)}
+                placeholder="Enter rejection reason (optional)..."
+                className={styles.rejectTextarea}
+                rows={4}
+              />
+            </div>
+            <div className={styles.modalFooter}>
+              <button 
+                onClick={handleBulkRejectCancel}
+                className={styles.modalCancelBtn}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleBulkRejectSubmit}
+                className={styles.modalRejectBtn}
+              >
+                Reject All Submissions
               </button>
             </div>
           </div>

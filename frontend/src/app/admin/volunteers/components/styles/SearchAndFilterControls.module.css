@@ -56,6 +56,25 @@
   user-select: none;
 }
 
+/* Wider dropdown specifically for programs filter */
+.programDropdown {
+  background: #fff;
+  padding: 0.5rem 0.85rem 0.5rem 1rem;
+  min-width: 200px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  color: #0c1b1a;
+  box-shadow: 0 6px 12px rgba(7, 42, 46, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease-in-out;
+  user-select: none;
+}
+
 .icon {
   margin-left: 8px;
   color: #9ca3af;

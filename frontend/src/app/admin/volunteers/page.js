@@ -124,9 +124,23 @@ export default function VolunteersPage() {
     })
 
     const sorted = filtered.sort((a, b) => {
-      const dateA = new Date(a.date)
-      const dateB = new Date(b.date)      
-      return sortOrder === 'latest' ? dateB - dateA : dateA - dateB
+      // Handle empty or invalid dates by using a fallback date
+      const dateA = a.date ? new Date(a.date) : new Date(0)
+      const dateB = b.date ? new Date(b.date) : new Date(0)
+      
+      // For latest: newest first (descending)
+      // For oldest: oldest first (ascending)
+      const result = sortOrder === 'latest' ? dateB - dateA : dateA - dateB
+      
+      // Debug logging
+      if (filtered.length > 0) {
+        console.log(`Sorting ${filtered.length} volunteers by ${sortOrder}:`, {
+          firstItem: { name: filtered[0].name, date: filtered[0].date },
+          lastItem: { name: filtered[filtered.length - 1].name, date: filtered[filtered.length - 1].date }
+        })
+      }
+      
+      return result
     })
 
     return sorted

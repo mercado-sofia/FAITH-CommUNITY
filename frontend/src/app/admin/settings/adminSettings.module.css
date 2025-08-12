@@ -1,364 +1,420 @@
 /* Main Layout */
 .mainArea {
-    width: 100%;
-    padding: 0;
+  width: 100%;
+  padding: 0;
+}
+
+/* Header */
+.header {
+  margin-bottom: 2.5rem;
+}
+
+.header h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: var(--font-poppins), sans-serif;
+  color: #06100f;
+  user-select: none;
+  margin: 0;
+}
+
+/* Message Notifications */
+.message {
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  margin-bottom: 2rem;
+  font-size: 13px;
+  font-weight: 500;
+  animation: slideIn 0.3s ease-out;
+  border: 1px solid transparent;
+}
+
+.message.success {
+  background-color: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.message.error {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+/* Loading State */
+.loading {
+  padding: 1.5rem;
+  text-align: center;
+  color: #64748b;
+  font-style: italic;
+  background-color: #f8fafc;
+  border-radius: 10px;
+  margin-bottom: 2rem;
+  border: 1px solid #e2e8f0;
+}
+
+.retryButton {
+  margin-left: 1rem;
+  padding: 0.5rem 1rem;
+  background: #19a48d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.retryButton:hover {
+  background: #16a085;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Settings Layout - Changed from Grid to Flexbox */
+.settingsGrid {
+  display: flex;
+  gap: 2rem;
+  max-width: 1200px;
+}
+
+.settingsGrid > * {
+  flex: 1;
+  min-width: 0; /* Prevents flex items from overflowing */
+}
+
+/* Settings Panel */
+.settingsPanel {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  height: fit-content; /* Each panel maintains its own height */
+}
+
+/* Panel Header */
+.panelHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.panelIcon {
+  font-size: 1rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+  color: #c7cccf;
+}
+
+.panelTitle {
+  flex: 1;
+}
+
+.panelTitle h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #06100f;
+  margin: 0 0 4px 0;
+  font-family: var(--font-poppins), sans-serif;
+} 
+
+.panelTitle p {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+  font-family: var(--font-poppins), sans-serif;
+  line-height: 1.4;
+}
+
+/* Edit Button */
+.editButton {
+  background: #f8fafc;
+  color: #06100f;
+  border: 2px solid #06100f;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-poppins), sans-serif;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.editButton:hover {
+  background: #06100f;
+  color: #f8fafc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(6, 16, 15, 0.3);
+}
+
+/* Panel Content */
+.panelContent {
+  padding: 1.5rem;
+}
+
+/* Display Content */
+.displayContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Edit Form */
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Field Groups */
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  font-family: var(--font-poppins), sans-serif;
+}
+
+.input {
+  padding: 0.75rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  font-family: var(--font-poppins), sans-serif;
+  background: white;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #06100f;
+}
+
+.input.inputError {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.displayValue {
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #374151;
+  font-family: var(--font-poppins), sans-serif;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.errorText {
+  font-size: 13px;
+  color: #ef4444;
+  font-weight: 500;
+  font-family: var(--font-poppins), sans-serif;
+}
+
+.required {
+  color: #dc2626;
+  margin-left: 0.25rem;
+}
+
+.helperText {
+  font-size: 13px;
+  color: #6b7280;
+  font-style: italic;
+  font-family: var(--font-poppins), sans-serif;
+  margin-top: 0.25rem;
+}
+
+/* Status Badge */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: var(--font-poppins), sans-serif;
+  width: fit-content;
+  min-width: fit-content;
+  white-space: nowrap;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.statusBadge.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusBadge.inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.statusBadge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* Action Buttons */
+.actionButtons {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.saveButton {
+  background: #06100f;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-poppins), sans-serif;
+  flex: 1;
+}
+.cancelButton {
+  background: #ffffff;
+  color: #06100f;
+  border: 2px solid #06100f;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-poppins), sans-serif;
+  flex: 1;
+}
+
+/* Password Form */
+.passwordForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.passwordInfo {
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.infoText {
+  margin: 0 0 0.5rem 0;
+  font-size: 13px;
+  color: #64748b;
+  font-family: var(--font-poppins), sans-serif;
+  line-height: 1.5;
+}
+
+.infoText:last-child {
+  margin-bottom: 0;
+}
+
+.infoText strong {
+  color: #374151;
+  font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .settingsGrid {
+    flex-direction: column;
+    gap: 1.5rem;
   }
   
-  /* Header */
-  .header {
-    margin-bottom: 2rem;
+  .settingsGrid > * {
+    flex: none;
   }
-  
+}
+
+@media (max-width: 768px) {
   .header h1 {
-    font-size: 1.4rem;
-    font-weight: 700;
-    font-family: var(--font-poppins), sans-serif;
-    color: #050809;
-    user-select: none;
-    margin-bottom: 0.5rem;
+    font-size: 1.25rem;
   }
   
-  .subtitle {
-    font-size: 0.9rem;
-    color: #64748b;
-    margin: 0;
-    font-family: var(--font-poppins), sans-serif;
-  }
-  
-  /* Message Notifications */
-  .message {
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-    font-size: 0.9rem;
-    font-weight: 500;
-    animation: slideIn 0.3s ease-out;
-  }
-  
-  .message.success {
-    background-color: #d1fae5;
-    color: #065f46;
-    border: 1px solid #a7f3d0;
-  }
-  
-  .message.error {
-    background-color: #fee2e2;
-    color: #991b1b;
-    border: 1px solid #fca5a5;
-  }
-
-  /* Loading State */
-  .loading {
-    padding: 1rem;
-    text-align: center;
-    color: #64748b;
-    font-style: italic;
-    background-color: #f8fafc;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-  }
-  
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  /* Settings Container */
-  .settingsContainer {
-    display: flex;
+  .panelHeader {
     flex-direction: column;
-    gap: 2rem;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1.25rem 1.25rem 1rem 1.25rem;
   }
   
-  /* Section Styling */
-  .section {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    border: 1px solid #e2e8f0;
+  .panelIcon {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
   }
   
-  .sectionHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #e2e8f0;
+  .panelTitle h2 {
+    font-size: 1rem;
   }
   
-  .sectionHeader h2 {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #19a48d;
-    margin: 0;
-    font-family: var(--font-poppins), sans-serif;
+  .panelTitle p {
+    font-size: 13px;
   }
   
-  /* Edit Button */
   .editButton {
-    background: #19a48d;
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-family: var(--font-poppins), sans-serif;
-  }
-  
-  .editButton:hover {
-    background: #16a085;
-    transform: translateY(-1px);
-  }
-  
-  /* Profile Content */
-  .profileContent {
-    display: flex;
-    gap: 2rem;
-    align-items: flex-start;
-  }
-
-  /* Edit Form */
-  .editForm {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-  
-
-  
-  /* Profile Fields */
-  .profileFields {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    align-items: flex-start;
-  }
-  
-  .fieldGroup {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .label {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #374151;
-    font-family: var(--font-poppins), sans-serif;
-  }
-  
-  .input {
-    padding: 0.75rem;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-    font-family: var(--font-poppins), sans-serif;
-    background: white;
-  }
-  
-  .input:focus {
-    outline: none;
-    border-color: #19a48d;
-    box-shadow: 0 0 0 3px rgba(25, 164, 141, 0.1);
-  }
-  
-  .input.inputError {
-    border-color: #ef4444;
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
-  }
-  
-  .displayValue {
-    padding: 0.75rem;
-    background: #f8fafc;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    color: #374151;
-    font-family: var(--font-poppins), sans-serif;
-    display: flex;
-    align-items: center;
-  }
-  
-  .errorText {
-    font-size: 0.8rem;
-    color: #ef4444;
-    font-weight: 500;
-    font-family: var(--font-poppins), sans-serif;
-  }
-
-  .required {
-    color: #dc2626;
-    margin-left: 0.25rem;
-  }
-
-  .helperText {
-    font-size: 0.8rem;
-    color: #6b7280;
-    font-style: italic;
-    font-family: var(--font-poppins), sans-serif;
-    margin-top: 0.25rem;
-  }
-  
-  /* Status Badge */
-  .statusBadge {
-    display: inline-flex;
-    align-items: center;
+    align-self: stretch;
+    text-align: center;
     justify-content: center;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-family: var(--font-poppins), sans-serif;
-    width: fit-content;
-    min-width: fit-content;
-    white-space: nowrap;
-    flex-shrink: 0;
-    align-self: flex-start;
   }
   
-  .statusBadge.active {
-    background: #d1fae5;
-    color: #065f46;
-  }
-  
-  .statusBadge.inactive {
-    background: #fee2e2;
-    color: #991b1b;
-  }
-  
-  .statusBadge.pending {
-    background: #fef3c7;
-    color: #92400e;
-  }
-  
-  /* Action Buttons */
   .actionButtons {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid #e2e8f0;
-  }
-  
-  .saveButton {
-    background: #19a48d;
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-family: var(--font-poppins), sans-serif;
-  }
-  
-  .saveButton:hover {
-    background: #16a085;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(25, 164, 141, 0.3);
-  }
-  
-  .cancelButton {
-    background: #f8fafc;
-    color: #475569;
-    border: 2px solid #e2e8f0;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-family: var(--font-poppins), sans-serif;
-  }
-  
-  .cancelButton:hover {
-    background: #e2e8f0;
-    border-color: #cbd5e1;
-  }
-  
-  /* Password Form */
-  .passwordForm {
-    display: flex;
     flex-direction: column;
-    gap: 1.5rem;
   }
   
-  .passwordInfo {
-    background: #f8fafc;
-    padding: 1.5rem;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
+  .saveButton,
+  .cancelButton {
+    width: 100%;
   }
   
-  .infoText {
-    margin: 0 0 0.5rem 0;
-    font-size: 0.9rem;
-    color: #64748b;
-    font-family: var(--font-poppins), sans-serif;
+  .panelContent {
+    padding: 1.25rem;
   }
   
-  .infoText:last-child {
-    margin-bottom: 0;
+  .settingsPanel {
+    border-radius: 12px;
   }
-  
-  .infoText strong {
-    color: #374151;
-    font-weight: 600;
-  }
-  
-  /* Responsive Design */
-  @media (max-width: 768px) {
-    .profileContent {
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-    
-
-    
-    .profileFields {
-      width: 100%;
-    }
-    
-    .actionButtons {
-      flex-direction: column;
-    }
-    
-    .saveButton,
-    .cancelButton {
-      width: 100%;
-    }
-    
-    .section {
-      padding: 1.5rem;
-    }
-    
-    .sectionHeader {
-      flex-direction: column;
-      gap: 1rem;
-      align-items: flex-start;
-    }
-    
-    .editButton {
-      align-self: stretch;
-      text-align: center;
-    }
-  }
-  
-  
+}

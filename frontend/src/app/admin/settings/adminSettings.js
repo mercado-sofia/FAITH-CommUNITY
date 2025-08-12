@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { FaEdit, FaEnvelope, FaLock } from 'react-icons/fa';
 import {
   useGetAdminByIdQuery,
   useUpdateAdminMutation,
@@ -361,7 +362,7 @@ export default function AdminSettings() {
   return (
     <div className={styles.mainArea}>
       <div className={styles.header}>
-        <h1>Admin Settings</h1>
+        <h1>Settings</h1>
       </div>
 
       {message.text && (
@@ -382,87 +383,93 @@ export default function AdminSettings() {
           <button 
             onClick={() => refetch()} 
             className={styles.retryButton}
-            style={{ marginLeft: '1rem', padding: '0.5rem 1rem', background: '#19a48d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
           >
             Retry
           </button>
         </div>
       )}
 
-      <div className={styles.settingsContainer}>
-        {/* Profile Section */}
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h2>Email Settings</h2>
+      <div className={styles.settingsGrid}>
+        {/* Email Settings Panel */}
+        <div className={styles.settingsPanel}>
+          <div className={styles.panelHeader}>
+            <div className={styles.panelIcon}>
+              <FaEnvelope />
+            </div>
+            <div className={styles.panelTitle}>
+              <h2>Email Address</h2>
+              <p>Update your email address for notifications and login</p>
+            </div>
             {!isEditing && (
               <button 
                 className={styles.editButton}
                 onClick={() => setIsEditing(true)}
               >
-                Edit Email
+                <FaEdit />
+                Edit
               </button>
             )}
           </div>
 
-          {isEditing ? (
-            <div className={styles.editForm}>
-              <div className={styles.fieldGroup}>
-                <label className={styles.label}>Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={adminData.email}
-                  onChange={handleInputChange}
-                  className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
-                  placeholder="admin@organization.org"
-                  disabled={isUpdating || isVerifying}
-                />
-                {errors.email && <span className={styles.errorText}>{errors.email}</span>}
-              </div>
-
-              {/* Password verification field - only show when email has changed */}
-              {hasEmailChanged() && (
-                <div className={styles.fieldGroup}>
-                  <label className={styles.label}>
-                    Current Password <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    type="password"
-                    name="emailChangePassword"
-                    value={adminData.emailChangePassword}
-                    onChange={handleInputChange}
-                    className={`${styles.input} ${errors.emailChangePassword ? styles.inputError : ''}`}
-                    placeholder="Enter your current password to confirm email change"
-                    disabled={isUpdating || isVerifying}
-                  />
-                  {errors.emailChangePassword && <span className={styles.errorText}>{errors.emailChangePassword}</span>}
-                  <div className={styles.helperText}>
-                    Current password is required to change your email address
-                  </div>
-                </div>
-              )}
-
-              <div className={styles.actionButtons}>
-                <button 
-                  className={styles.saveButton}
-                  onClick={handleSaveProfile}
-                  disabled={isUpdating || isVerifying}
-                >
-                  {isUpdating ? 'Saving...' : isVerifying ? 'Verifying...' : 'Save Changes'}
-                </button>
-                <button 
-                  className={styles.cancelButton}
-                  onClick={handleCancel}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className={styles.profileContent}>
-              <div className={styles.profileFields}>
+          <div className={styles.panelContent}>
+            {isEditing ? (
+              <div className={styles.editForm}>
                 <div className={styles.fieldGroup}>
                   <label className={styles.label}>Email Address</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={adminData.email}
+                    onChange={handleInputChange}
+                    className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
+                    placeholder="admin@organization.org"
+                    disabled={isUpdating || isVerifying}
+                  />
+                  {errors.email && <span className={styles.errorText}>{errors.email}</span>}
+                </div>
+
+                {/* Password verification field - only show when email has changed */}
+                {hasEmailChanged() && (
+                  <div className={styles.fieldGroup}>
+                    <label className={styles.label}>
+                      Current Password <span className={styles.required}>*</span>
+                    </label>
+                    <input
+                      type="password"
+                      name="emailChangePassword"
+                      value={adminData.emailChangePassword}
+                      onChange={handleInputChange}
+                      className={`${styles.input} ${errors.emailChangePassword ? styles.inputError : ''}`}
+                      placeholder="Enter your current password"
+                      disabled={isUpdating || isVerifying}
+                    />
+                    {errors.emailChangePassword && <span className={styles.errorText}>{errors.emailChangePassword}</span>}
+                    <div className={styles.helperText}>
+                      Required to confirm email change
+                    </div>
+                  </div>
+                )}
+
+                <div className={styles.actionButtons}>
+                  <button 
+                    className={styles.saveButton}
+                    onClick={handleSaveProfile}
+                    disabled={isUpdating || isVerifying}
+                  >
+                    {isUpdating ? 'Saving...' : isVerifying ? 'Verifying...' : 'Save Changes'}
+                  </button>
+                  <button 
+                    className={styles.cancelButton}
+                    onClick={handleCancel}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.displayContent}>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.label}>Current Email</label>
                   <div className={styles.displayValue}>{adminData.email}</div>
                 </div>
 
@@ -473,40 +480,53 @@ export default function AdminSettings() {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        {/* Password Section */}
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h2>Password & Security</h2>
+        {/* Password Settings Panel */}
+        <div className={styles.settingsPanel}>
+          <div className={styles.panelHeader}>
+            <div className={styles.panelIcon}>
+              <FaLock />
+            </div>
+            <div className={styles.panelTitle}>
+              <h2>Password & Security</h2>
+              <p>Change your password and manage security settings</p>
+            </div>
             {!showPasswordChange && (
               <button 
                 className={styles.editButton}
                 onClick={() => setShowPasswordChange(true)}
               >
-                Change Password
+                Change
               </button>
             )}
           </div>
 
-          {showPasswordChange ? (
-            <PasswordChangeForm
-              adminId={currentAdmin?.id}
-              onCancel={() => setShowPasswordChange(false)}
-              onSuccess={handlePasswordChangeSuccess}
-            />
-          ) : (
-            <div className={styles.passwordInfo}>
-              <p className={styles.infoText}>
-                Password last changed: <strong>30 days ago</strong>
-              </p>
-              <p className={styles.infoText}>
-                For security purposes, we recommend changing your password regularly.
-              </p>
-            </div>
-          )}
+          <div className={styles.panelContent}>
+            {showPasswordChange ? (
+              <PasswordChangeForm
+                adminId={currentAdmin?.id}
+                onCancel={() => setShowPasswordChange(false)}
+                onSuccess={handlePasswordChangeSuccess}
+              />
+            ) : (
+              <div className={styles.displayContent}>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.label}>Password Status</label>
+                  <div className={styles.passwordInfo}>
+                    <p className={styles.infoText}>
+                      Last changed: <strong>30 days ago</strong>
+                    </p>
+                    <p className={styles.infoText}>
+                      For security, we recommend changing your password regularly.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

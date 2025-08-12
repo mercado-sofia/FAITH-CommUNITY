@@ -47,7 +47,7 @@ export default function OrgLinks() {
         {organizations.map((org) => (
           <Link
             key={org.id}
-            href={`/programs/org/${org.id}`}
+            href={`/programs/org/${org.acronym}`}
             className={styles.orgItem}
             title={org.name || org.acronym}
           >

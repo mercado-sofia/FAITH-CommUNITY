@@ -1,0 +1,142 @@
+.toastOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.toastModal {
+  background: white;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 300px;
+  max-width: 500px;
+  position: relative;
+  animation: slideIn 0.3s ease-out;
+  border-left: 4px solid;
+}
+
+.toastContent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.toastMessage {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  line-height: 1.4;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton:hover {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+/* Success styles */
+.success {
+  border-left-color: #10b981;
+}
+
+.successIcon {
+  color: #10b981;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+/* Error styles */
+.error {
+  border-left-color: #ef4444;
+}
+
+.errorIcon {
+  color: #ef4444;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+/* Warning styles */
+.warning {
+  border-left-color: #f59e0b;
+}
+
+.warningIcon {
+  color: #f59e0b;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-20px) scale(0.95);
+    opacity: 0;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .toastModal {
+    margin: 20px;
+    min-width: auto;
+    padding: 16px 20px;
+  }
+  
+  .toastMessage {
+    font-size: 14px;
+  }
+  
+  .toastContent {
+    gap: 10px;
+  }
+}

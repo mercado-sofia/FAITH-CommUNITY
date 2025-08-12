@@ -4,6 +4,7 @@ import SubmissionModal from './SubmissionModal';
 import ReEditModal from './ReEditModal';
 import CancelConfirmation from './CancelConfirmationModal';
 import DeleteConfirmation from './DeleteConfirmationModal';
+import ToastModal from './ToastModal';
 import styles from './styles/SubmissionTable.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -25,6 +26,16 @@ export default function SubmissionTable({
   const [reEditSubmission, setReEditSubmission] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+  };
+  
+  const hideToast = () => {
+    setToast({ show: false, message: '', type: 'success' });
+  };
+  
   const handleSelectItem = (id) => {
     const newSelected = new Set(selectedItems);
     if (newSelected.has(id)) {
@@ -61,10 +72,10 @@ export default function SubmissionTable({
       }
       if (onRefresh) onRefresh();
       setConfirmId(null);
-      alert('Submission cancelled successfully!');
+      showToast('Submission cancelled successfully!', 'success');
     } catch (err) {
       console.error('Cancel error:', err);
-      alert(`Failed to cancel submission: ${err.message}`);
+      showToast(`Failed to cancel submission: ${err.message}`, 'error');
     }
   };
 
@@ -107,7 +118,7 @@ export default function SubmissionTable({
         // Refresh the submissions list
         if (onRefresh) onRefresh();
         setReEditSubmission(null);
-        alert('Submission updated successfully!');
+        showToast('Submission updated successfully!', 'success');
       } else {
         const errorData = await response.json();
         console.error('Backend error response:', errorData);
@@ -115,8 +126,8 @@ export default function SubmissionTable({
       }
     } catch (error) {
       console.error('Error updating submission:', error);
-      alert(`Failed to save changes: ${error.message}`);
-      throw error;
+      showToast(`Failed to save changes: ${error.message}`, 'error');
+      // Don't throw the error to prevent the modal from closing
     }
   };
 
@@ -140,6 +151,7 @@ export default function SubmissionTable({
         newSelected.delete(id);
         onSelectItems(newSelected);
         onShowBulkActions(newSelected.size > 0);
+        showToast('Submission deleted successfully!', 'success');
       } else {
         const errorData = await response.text();
         console.error(`Delete failed for ID ${id}:`, errorData);
@@ -147,7 +159,7 @@ export default function SubmissionTable({
       }
     } catch (err) {
       console.error('Delete error:', err);
-      alert('Failed to delete submission');
+      showToast('Failed to delete submission', 'error');
     }
   };
 
@@ -161,7 +173,7 @@ export default function SubmissionTable({
       });
       
       if (pendingIds.length === 0) {
-        alert('No pending submissions selected to cancel.');
+        showToast('No pending submissions selected to cancel.', 'warning');
         return;
       }
       
@@ -172,9 +184,10 @@ export default function SubmissionTable({
       if (onRefresh) onRefresh();
       onSelectItems(new Set());
       onShowBulkActions(false);
+      showToast('Submissions cancelled successfully!', 'success');
     } catch (err) {
       console.error('Bulk cancel error:', err);
-      alert('Failed to cancel some submissions');
+      showToast('Failed to cancel some submissions', 'error');
     }
   };
 
@@ -198,9 +211,10 @@ export default function SubmissionTable({
       if (onRefresh) onRefresh(); // Refresh data from server
       onSelectItems(new Set());
       onShowBulkActions(false);
+      showToast('Submissions deleted successfully!', 'success');
     } catch (err) {
       console.error('Bulk delete error:', err);
-      alert(`Failed to delete some submissions: ${err.message}`);
+      showToast(`Failed to delete some submissions: ${err.message}`, 'error');
     }
   };
 
@@ -322,6 +336,13 @@ export default function SubmissionTable({
       {confirmId && <CancelConfirmation onConfirm={() => handleCancel(confirmId)} onCancel={() => setConfirmId(null)} />}
       {deleteId && <DeleteConfirmation onConfirm={() => handleDelete(deleteId)} onCancel={() => setDeleteId(null)} />}
       
+      <ToastModal
+        message={toast.message}
+        isVisible={toast.show}
+        onClose={hideToast}
+        type={toast.type}
+        autoHideDuration={3000}
+      />
 
     </div>
   );

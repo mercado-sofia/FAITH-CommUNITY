@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { FaTimes, FaUpload, FaImage } from 'react-icons/fa';
+import DateSelectionField from './DateSelectionField';
 import styles from './styles/addModal.module.css';
 
 const AddProgramModal = ({ onClose, onSubmit }) => {
@@ -11,7 +12,10 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
     description: '',
     category: '',
     status: '',
-    image: null
+    image: null,
+    event_start_date: null,
+    event_end_date: null,
+    multiple_dates: null
   });
   const [imagePreview, setImagePreview] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,6 +40,23 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
       setErrors(prev => ({
         ...prev,
         [name]: ''
+      }));
+    }
+  };
+
+  const handleDateChange = (dateData) => {
+    setFormData(prev => ({
+      ...prev,
+      ...dateData
+    }));
+    
+    // Clear date-related errors
+    if (errors.event_start_date || errors.event_end_date || errors.multiple_dates) {
+      setErrors(prev => ({
+        ...prev,
+        event_start_date: '',
+        event_end_date: '',
+        multiple_dates: ''
       }));
     }
   };
@@ -132,6 +153,14 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
       newErrors.status = 'Program status is required';
     }
 
+    // Validate dates
+    const hasSingleOrRangeDates = formData.event_start_date && formData.event_end_date;
+    const hasMultipleDates = formData.multiple_dates && Array.isArray(formData.multiple_dates) && formData.multiple_dates.length > 0;
+    
+    if (!hasSingleOrRangeDates && !hasMultipleDates) {
+      newErrors.event_start_date = 'Please select at least one date for the program';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -152,7 +181,10 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
         description: formData.description.trim(),
         category: formData.category,
         status: formData.status,
-        image: formData.image ? await convertImageToBase64(formData.image) : null
+        image: formData.image ? await convertImageToBase64(formData.image) : null,
+        event_start_date: formData.event_start_date,
+        event_end_date: formData.event_end_date,
+        multiple_dates: formData.multiple_dates
       };
 
       await onSubmit(programData);
@@ -186,130 +218,146 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
         <form onSubmit={handleSubmit} className={styles.modalForm}>
           {/* Two Column Layout */}
           <div className={styles.twoColumnLayout}>
-            {/* Left Column - Image Upload, Category, Status */}
-            <div className={styles.leftColumn}>
-              {/* Image Upload */}
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>
-                  <FaImage className={styles.labelIcon} />
-                  Program Image
-                </label>
-                
-                {!imagePreview ? (
-                  <div className={styles.uploadArea}>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className={styles.fileInput}
-                    />
-                    <div className={styles.uploadContent}>
-                      <FaUpload className={styles.uploadIcon} />
-                      <p className={styles.uploadText}>
-                        Click to upload an image or drag and drop
-                      </p>
-                      <p className={styles.uploadSubtext}>
-                        PNG, JPG, GIF up to 5MB
-                      </p>
-                    </div>
+                         {/* Left Column - Image Upload, Category, Status, and Event Dates */}
+             <div className={styles.leftColumn}>
+               {/* Image Upload */}
+               <div className={styles.formGroup}>
+                 <label className={styles.formLabel}>
+                   <FaImage className={styles.labelIcon} />
+                   Program Image
+                 </label>
+                 
+                 {!imagePreview ? (
+                   <div className={styles.uploadArea}>
+                     <input
+                       ref={fileInputRef}
+                       type="file"
+                       accept="image/*"
+                       onChange={handleImageChange}
+                       className={styles.fileInput}
+                     />
+                     <div className={styles.uploadContent}>
+                       <FaUpload className={styles.uploadIcon} />
+                       <p className={styles.uploadText}>
+                         Click to upload an image or drag and drop
+                       </p>
+                       <p className={styles.uploadSubtext}>
+                         PNG, JPG, GIF up to 5MB
+                       </p>
+                     </div>
+                   </div>
+                 ) : (
+                   <div className={styles.imagePreview}>
+                     <Image 
+                       src={imagePreview} 
+                       alt="Preview" 
+                       className={styles.previewImage}
+                       width={400}
+                       height={200}
+                       style={{ objectFit: 'cover' }}
+                     />
+                     <button
+                       type="button"
+                       onClick={removeImage}
+                       className={styles.removeImageButton}
+                     >
+                       <FaTimes />
+                     </button>
+                   </div>
+                 )}
+                 
+                 {errors.image && <span className={styles.errorText}>{errors.image}</span>}
+               </div>
+
+                               {/* Status Field */}
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Status <span className={styles.required}>*</span></label>
+                  <div className={styles.statusButtons}>
+                    {statusOptions.map(status => (
+                      <button
+                        key={status.value}
+                        type="button"
+                        onClick={() => handleStatusChange(status.value)}
+                        className={`${styles.statusButton} ${formData.status === status.value ? styles.statusActive : ''}`}
+                      >
+                        {status.label}
+                      </button>
+                    ))}
                   </div>
-                ) : (
-                  <div className={styles.imagePreview}>
-                    <Image 
-                      src={imagePreview} 
-                      alt="Preview" 
-                      className={styles.previewImage}
-                      width={400}
-                      height={200}
-                      style={{ objectFit: 'cover' }}
-                    />
-                    <button
-                      type="button"
-                      onClick={removeImage}
-                      className={styles.removeImageButton}
-                    >
-                      <FaTimes />
-                    </button>
+                  {errors.status && <span className={styles.errorText}>{errors.status}</span>}
+                </div>
+
+                {/* Date Selection Field */}
+                <div className={styles.formGroup}>
+                  <DateSelectionField
+                    value={{
+                      event_start_date: formData.event_start_date,
+                      event_end_date: formData.event_end_date,
+                      multiple_dates: formData.multiple_dates
+                    }}
+                    onChange={handleDateChange}
+                    error={errors.event_start_date || errors.event_end_date || errors.multiple_dates}
+                    disabled={isSubmitting}
+                    label="Event Dates"
+                    required={true}
+                  />
+                </div>
+              </div>
+
+              {/* Right Column - Title, Category, and Description */}
+              <div className={styles.rightColumn}>
+                {/* Title Field */}
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
+                    Program Title <span className={styles.required}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    className={`${styles.formInput} ${errors.title ? styles.error : ''}`}
+                    placeholder="Enter program title"
+                    maxLength={100}
+                  />
+                  {errors.title && <span className={styles.errorText}>{errors.title}</span>}
+                </div>
+
+                {/* Category Field */}
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Category</label>
+                  <input
+                    type="text"
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    className={styles.formInput}
+                    placeholder="e.g. Outreach, Education, Health"
+                    maxLength={50}
+                  />
+                  {errors.category && <span className={styles.errorText}>{errors.category}</span>}
+                </div>
+
+                {/* Description Field */}
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
+                    Description <span className={styles.required}>*</span>
+                  </label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    className={`${styles.formTextarea} ${errors.description ? styles.error : ''}`}
+                    placeholder="Describe your program, its objectives, and impact"
+                    rows={4}
+                    maxLength={800}
+                  />
+                  <div className={styles.charCount}>
+                    {formData.description.length}/800 characters
                   </div>
-                )}
-                
-                {errors.image && <span className={styles.errorText}>{errors.image}</span>}
-              </div>
-
-              {/* Category Field */}
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Category</label>
-                <input
-                  type="text"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  className={styles.formInput}
-                  placeholder="e.g. Outreach, Education, Health"
-                  maxLength={50}
-                />
-                {errors.category && <span className={styles.errorText}>{errors.category}</span>}
-              </div>
-
-              {/* Status Field */}
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Status <span className={styles.required}>*</span></label>
-                <div className={styles.statusButtons}>
-                  {statusOptions.map(status => (
-                    <button
-                      key={status.value}
-                      type="button"
-                      onClick={() => handleStatusChange(status.value)}
-                      className={`${styles.statusButton} ${formData.status === status.value ? styles.statusActive : ''}`}
-                    >
-                      {status.label}
-                    </button>
-                  ))}
+                  {errors.description && <span className={styles.errorText}>{errors.description}</span>}
                 </div>
-                {errors.status && <span className={styles.errorText}>{errors.status}</span>}
               </div>
-            </div>
-
-            {/* Right Column - Title and Description */}
-            <div className={styles.rightColumn}>
-              {/* Title Field */}
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>
-                  Program Title <span className={styles.required}>*</span>
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  className={`${styles.formInput} ${errors.title ? styles.error : ''}`}
-                  placeholder="Enter program title"
-                  maxLength={100}
-                />
-                {errors.title && <span className={styles.errorText}>{errors.title}</span>}
-              </div>
-
-              {/* Description Field */}
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>
-                  Description <span className={styles.required}>*</span>
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  className={`${styles.formTextarea} ${errors.description ? styles.error : ''}`}
-                  placeholder="Describe your program, its objectives, and impact"
-                  rows={4}
-                  maxLength={800}
-                />
-                <div className={styles.charCount}>
-                  {formData.description.length}/800 characters
-                </div>
-                {errors.description && <span className={styles.errorText}>{errors.description}</span>}
-              </div>
-            </div>
           </div>
 
           {/* Submit Error */}

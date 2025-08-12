@@ -135,7 +135,7 @@ export default function ReEditModal({ submission, onClose, onSave }) {
     // Validate form data before saving
     const validation = validateFormData();
     if (!validation.isValid) {
-      alert(validation.message);
+      // Let the parent component handle the error message
       return;
     }
 
@@ -153,7 +153,7 @@ export default function ReEditModal({ submission, onClose, onSave }) {
       onClose();
     } catch (error) {
       console.error('Error saving changes:', error);
-      alert('Failed to save changes. Please try again.');
+      // Let the parent component handle the error message
     } finally {
       setIsLoading(false);
     }

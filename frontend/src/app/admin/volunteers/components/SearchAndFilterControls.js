@@ -68,7 +68,7 @@ export default function SearchAndFilterControls({
         {/* Program filter */}
         <div className={styles.dropdownWrapper}>
           <div
-            className={styles.dropdown}
+            className={styles.programDropdown}
             onClick={() => toggleDropdown("program")}
           >
             {programsLoading ? "Loading..." : programFilter}
@@ -156,7 +156,7 @@ export default function SearchAndFilterControls({
             className={styles.dropdown}
             onClick={() => toggleDropdown("sort")}
           >
-            Sort: {sortOrder}
+            Sort: {sortOrder.charAt(0).toUpperCase() + sortOrder.slice(1)}
             <FiChevronDown className={styles.icon} />
           </div>
           {showDropdown === "sort" && (

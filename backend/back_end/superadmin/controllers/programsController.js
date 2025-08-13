@@ -11,8 +11,8 @@ export const getAllProgramsByOrganization = async (req, res) => {
         pp.category,
         pp.status,
         pp.image,
-        pp.date_created,
-        pp.date_completed,
+        pp.event_start_date,
+        pp.event_end_date,
         pp.created_at,
         pp.updated_at,
         pp.organization_id,
@@ -26,9 +26,34 @@ export const getAllProgramsByOrganization = async (req, res) => {
     
     const [results] = await db.execute(query);
     
+    // Get multiple dates for each program
+    const programsWithDates = await Promise.all(results.map(async (program) => {
+      let multipleDates = [];
+      
+      // If program has event_start_date and event_end_date, check if they're the same (single day)
+      if (program.event_start_date && program.event_end_date) {
+        if (program.event_start_date === program.event_end_date) {
+          // Single day program
+          multipleDates = [program.event_start_date];
+        }
+      } else {
+        // Check for multiple dates in program_event_dates table
+        const [dateRows] = await db.execute(
+          'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
+          [program.id]
+        );
+        multipleDates = dateRows.map(row => row.event_date);
+      }
+
+      return {
+        ...program,
+        multiple_dates: multipleDates
+      };
+    }));
+    
     res.json({
       success: true,
-      data: results
+      data: programsWithDates
     });
   } catch (error) {
     console.error('Error fetching programs by organization:', error);
@@ -82,8 +107,8 @@ export const getProgramById = async (req, res) => {
         pp.category,
         pp.status,
         pp.image,
-        pp.date_created,
-        pp.date_completed,
+        pp.event_start_date,
+        pp.event_end_date,
         pp.created_at,
         pp.updated_at,
         pp.organization_id,
@@ -104,9 +129,34 @@ export const getProgramById = async (req, res) => {
       });
     }
     
+    const program = results[0];
+    
+    // Get multiple dates for this program
+    let multipleDates = [];
+    
+    // If program has event_start_date and event_end_date, check if they're the same (single day)
+    if (program.event_start_date && program.event_end_date) {
+      if (program.event_start_date === program.event_end_date) {
+        // Single day program
+        multipleDates = [program.event_start_date];
+      }
+    } else {
+      // Check for multiple dates in program_event_dates table
+      const [dateRows] = await db.execute(
+        'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
+        [program.id]
+      );
+      multipleDates = dateRows.map(row => row.event_date);
+    }
+
+    const programWithDates = {
+      ...program,
+      multiple_dates: multipleDates
+    };
+    
     res.json({
       success: true,
-      data: results[0]
+      data: programWithDates
     });
   } catch (error) {
     console.error('Error fetching program by ID:', error);
@@ -131,8 +181,8 @@ export const getProgramsByOrganizationId = async (req, res) => {
         pp.category,
         pp.status,
         pp.image,
-        pp.date_created,
-        pp.date_completed,
+        pp.event_start_date,
+        pp.event_end_date,
         pp.created_at,
         pp.updated_at,
         pp.organization_id,
@@ -147,9 +197,34 @@ export const getProgramsByOrganizationId = async (req, res) => {
     
     const [results] = await db.execute(query, [orgId]);
     
+    // Get multiple dates for each program
+    const programsWithDates = await Promise.all(results.map(async (program) => {
+      let multipleDates = [];
+      
+      // If program has event_start_date and event_end_date, check if they're the same (single day)
+      if (program.event_start_date && program.event_end_date) {
+        if (program.event_start_date === program.event_end_date) {
+          // Single day program
+          multipleDates = [program.event_start_date];
+        }
+      } else {
+        // Check for multiple dates in program_event_dates table
+        const [dateRows] = await db.execute(
+          'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
+          [program.id]
+        );
+        multipleDates = dateRows.map(row => row.event_date);
+      }
+
+      return {
+        ...program,
+        multiple_dates: multipleDates
+      };
+    }));
+    
     res.json({
       success: true,
-      data: results
+      data: programsWithDates
     });
   } catch (error) {
     console.error('Error fetching programs by organization ID:', error);

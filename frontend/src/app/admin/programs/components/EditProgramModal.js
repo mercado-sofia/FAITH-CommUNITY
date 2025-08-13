@@ -310,39 +310,21 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
                  {errors.image && <span className={styles.errorText}>{errors.image}</span>}
                </div>
 
-                               {/* Status Field */}
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Status <span className={styles.required}>*</span></label>
-                  <div className={styles.statusButtons}>
-                    {statusOptions.map(status => (
-                      <button
-                        key={status.value}
-                        type="button"
-                        onClick={() => handleStatusChange(status.value)}
-                        className={`${styles.statusButton} ${formData.status === status.value ? styles.statusActive : ''}`}
-                      >
-                        {status.label}
-                      </button>
-                    ))}
-                  </div>
-                  {errors.status && <span className={styles.errorText}>{errors.status}</span>}
-                </div>
-
-                {/* Date Selection Field */}
-                <div className={styles.formGroup}>
-                  <DateSelectionField
-                    value={{
-                      event_start_date: formData.event_start_date,
-                      event_end_date: formData.event_end_date,
-                      multiple_dates: formData.multiple_dates
-                    }}
-                    onChange={handleDateChange}
-                    error={errors.event_start_date || errors.event_end_date || errors.multiple_dates}
-                    disabled={isSubmitting}
-                    label="Event Dates"
-                    required={true}
-                  />
-                </div>
+                                                {/* Date Selection Field */}
+                 <div className={styles.formGroup}>
+                   <DateSelectionField
+                     value={{
+                       event_start_date: formData.event_start_date,
+                       event_end_date: formData.event_end_date,
+                       multiple_dates: formData.multiple_dates
+                     }}
+                     onChange={handleDateChange}
+                     error={errors.event_start_date || errors.event_end_date || errors.multiple_dates}
+                     disabled={isSubmitting}
+                     label="Event Dates"
+                     required={true}
+                   />
+                 </div>
               </div>
 
               {/* Right Column - Title, Category, and Description */}
@@ -364,40 +346,58 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
                   {errors.title && <span className={styles.errorText}>{errors.title}</span>}
                 </div>
 
-                {/* Category Field */}
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Category</label>
-                  <input
-                    type="text"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    className={styles.formInput}
-                    placeholder="e.g. Outreach, Education, Health"
-                    maxLength={50}
-                  />
-                  {errors.category && <span className={styles.errorText}>{errors.category}</span>}
-                </div>
+                                 {/* Category Field */}
+                 <div className={styles.formGroup}>
+                   <label className={styles.formLabel}>Category</label>
+                   <input
+                     type="text"
+                     name="category"
+                     value={formData.category}
+                     onChange={handleInputChange}
+                     className={styles.formInput}
+                     placeholder="e.g. Outreach, Education, Health"
+                     maxLength={50}
+                   />
+                   {errors.category && <span className={styles.errorText}>{errors.category}</span>}
+                 </div>
 
-                {/* Description Field */}
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>
-                    Description <span className={styles.required}>*</span>
-                  </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    className={`${styles.formTextarea} ${errors.description ? styles.error : ''}`}
-                    placeholder="Describe your program, its objectives, and impact"
-                    rows={4}
-                    maxLength={800}
-                  />
-                  <div className={styles.charCount}>
-                    {formData.description.length}/800 characters
-                  </div>
-                  {errors.description && <span className={styles.errorText}>{errors.description}</span>}
-                </div>
+                 {/* Status Field */}
+                 <div className={styles.formGroup}>
+                   <label className={styles.formLabel}>Status <span className={styles.required}>*</span></label>
+                   <div className={styles.statusButtons}>
+                     {statusOptions.map(status => (
+                       <button
+                         key={status.value}
+                         type="button"
+                         onClick={() => handleStatusChange(status.value)}
+                         className={`${styles.statusButton} ${formData.status === status.value ? styles.statusActive : ''}`}
+                       >
+                         {status.label}
+                       </button>
+                     ))}
+                   </div>
+                   {errors.status && <span className={styles.errorText}>{errors.status}</span>}
+                 </div>
+
+                 {/* Description Field */}
+                 <div className={styles.formGroup}>
+                   <label className={styles.formLabel}>
+                     Description <span className={styles.required}>*</span>
+                   </label>
+                   <textarea
+                     name="description"
+                     value={formData.description}
+                     onChange={handleInputChange}
+                     className={`${styles.formTextarea} ${errors.description ? styles.error : ''}`}
+                     placeholder="Describe your program, its objectives, and impact"
+                     rows={4}
+                     maxLength={800}
+                   />
+                   <div className={styles.charCount}>
+                     {formData.description.length}/800 characters
+                   </div>
+                   {errors.description && <span className={styles.errorText}>{errors.description}</span>}
+                 </div>
               </div>
           </div>
 

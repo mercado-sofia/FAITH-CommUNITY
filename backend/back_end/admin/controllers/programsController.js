@@ -92,8 +92,33 @@ export const getProgramsByOrg = async (req, res) => {
     );
     console.log(`[DEBUG] Found ${approvedRows.length} approved programs`);
 
+    // Get multiple dates for each program
+    const programsWithDates = await Promise.all(approvedRows.map(async (program) => {
+      let multipleDates = [];
+      
+      // If program has event_start_date and event_end_date, check if they're the same (single day)
+      if (program.event_start_date && program.event_end_date) {
+        if (program.event_start_date === program.event_end_date) {
+          // Single day program
+          multipleDates = [program.event_start_date];
+        }
+      } else {
+        // Check for multiple dates in program_event_dates table
+        const [dateRows] = await db.execute(
+          'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
+          [program.id]
+        );
+        multipleDates = dateRows.map(row => row.event_date);
+      }
+
+      return {
+        ...program,
+        multiple_dates: multipleDates
+      };
+    }));
+
     // Map approved programs with organization info
-    const approvedPrograms = approvedRows.map(program => ({
+    const approvedPrograms = programsWithDates.map(program => ({
       id: program.id,
       title: program.title,
       description: program.description,
@@ -101,6 +126,9 @@ export const getProgramsByOrg = async (req, res) => {
       status: program.status || 'active',
       date: program.date || program.date_completed || program.date_created || program.created_at,
       image: program.image,
+      event_start_date: program.event_start_date,
+      event_end_date: program.event_end_date,
+      multiple_dates: program.multiple_dates,
       created_at: program.created_at,
       orgID: program.orgAcronym || organization.org,
       orgName: program.orgName || organization.orgName,
@@ -128,7 +156,32 @@ export const getApprovedPrograms = async (req, res) => {
       ORDER BY p.created_at DESC
     `);
 
-    const programs = rows.map(program => ({
+    // Get multiple dates for each program
+    const programsWithDates = await Promise.all(rows.map(async (program) => {
+      let multipleDates = [];
+      
+      // If program has event_start_date and event_end_date, check if they're the same (single day)
+      if (program.event_start_date && program.event_end_date) {
+        if (program.event_start_date === program.event_end_date) {
+          // Single day program
+          multipleDates = [program.event_start_date];
+        }
+      } else {
+        // Check for multiple dates in program_event_dates table
+        const [dateRows] = await db.execute(
+          'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
+          [program.id]
+        );
+        multipleDates = dateRows.map(row => row.event_date);
+      }
+
+      return {
+        ...program,
+        multiple_dates: multipleDates
+      };
+    }));
+
+    const programs = programsWithDates.map(program => ({
       id: program.id,
       title: program.title,
       description: program.description,
@@ -136,6 +189,9 @@ export const getApprovedPrograms = async (req, res) => {
       status: program.status,
       date: program.date || program.created_at,
       image: program.image,
+      event_start_date: program.event_start_date,
+      event_end_date: program.event_end_date,
+      multiple_dates: program.multiple_dates,
       orgID: program.orgAcronym,
       orgName: program.orgName,
       icon: program.orgLogo,
@@ -192,7 +248,32 @@ export const getApprovedProgramsByOrg = async (req, res) => {
        ORDER BY p.created_at DESC
     `, [orgId]);
 
-    const programs = rows.map(program => ({
+    // Get multiple dates for each program
+    const programsWithDates = await Promise.all(rows.map(async (program) => {
+      let multipleDates = [];
+      
+      // If program has event_start_date and event_end_date, check if they're the same (single day)
+      if (program.event_start_date && program.event_end_date) {
+        if (program.event_start_date === program.event_end_date) {
+          // Single day program
+          multipleDates = [program.event_start_date];
+        }
+      } else {
+        // Check for multiple dates in program_event_dates table
+        const [dateRows] = await db.execute(
+          'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
+          [program.id]
+        );
+        multipleDates = dateRows.map(row => row.event_date);
+      }
+
+      return {
+        ...program,
+        multiple_dates: multipleDates
+      };
+    }));
+
+    const programs = programsWithDates.map(program => ({
       id: program.id,
       title: program.title,
       description: program.description,
@@ -200,6 +281,9 @@ export const getApprovedProgramsByOrg = async (req, res) => {
       status: program.status,
       date: program.date_completed || program.date_created,
       image: program.image,
+      event_start_date: program.event_start_date,
+      event_end_date: program.event_end_date,
+      multiple_dates: program.multiple_dates,
       orgID: program.orgAcronym,
       orgName: program.orgName,
       icon: program.orgLogo,
@@ -255,6 +339,7 @@ export const deleteProgramSubmission = async (req, res) => {
       }
     } else {
       // Delete from programs_projects table (approved programs)
+      // The program_event_dates will be automatically deleted due to CASCADE
       const [result] = await db.execute(
         'DELETE FROM programs_projects WHERE id = ?',
         [id]
@@ -285,7 +370,7 @@ export const deleteProgramSubmission = async (req, res) => {
 // Update an approved program (admin only)
 export const updateProgram = async (req, res) => {
   const { id } = req.params;
-  const { title, description, category, status, image } = req.body;
+  const { title, description, category, status, image, event_start_date, event_end_date, multiple_dates } = req.body;
 
   if (!id) {
     return res.status(400).json({
@@ -318,9 +403,9 @@ export const updateProgram = async (req, res) => {
     // Update the program
     const [result] = await db.execute(
       `UPDATE programs_projects 
-       SET title = ?, description = ?, category = ?, status = ?, image = ?
+       SET title = ?, description = ?, category = ?, status = ?, image = ?, event_start_date = ?, event_end_date = ?
        WHERE id = ?`,
-      [title, description, category, status || 'active', image, id]
+      [title, description, category, status || 'active', image, event_start_date || null, event_end_date || null, id]
     );
 
     if (result.affectedRows === 0) {
@@ -328,6 +413,22 @@ export const updateProgram = async (req, res) => {
         success: false,
         message: "Program not found or no changes made",
       });
+    }
+
+    // Handle multiple dates if provided
+    if (multiple_dates && Array.isArray(multiple_dates)) {
+      // First, delete existing multiple dates for this program
+      await db.execute('DELETE FROM program_event_dates WHERE program_id = ?', [id]);
+      
+      // Then insert new multiple dates
+      if (multiple_dates.length > 0) {
+        for (const date of multiple_dates) {
+          await db.execute(
+            'INSERT INTO program_event_dates (program_id, event_date) VALUES (?, ?)',
+            [id, date]
+          );
+        }
+      }
     }
 
     res.json({
@@ -339,7 +440,10 @@ export const updateProgram = async (req, res) => {
         description,
         category,
         status: status || 'active',
-        image
+        image,
+        event_start_date,
+        event_end_date,
+        multiple_dates
       }
     });
   } catch (error) {

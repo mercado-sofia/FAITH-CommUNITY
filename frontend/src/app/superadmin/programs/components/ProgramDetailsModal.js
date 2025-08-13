@@ -66,8 +66,42 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
               {program.status}
             </span>
             <span className={styles.modalDate}>
-              Posted: {program.dateCreated ? new Date(program.dateCreated).toLocaleDateString() : 'N/A'}
+              Posted: {program.createdAt ? new Date(program.createdAt).toLocaleDateString() : 'N/A'}
             </span>
+          </div>
+          
+          {/* Event Dates Section */}
+          <div className={styles.eventDatesSection}>
+            <h4 className={styles.eventDatesTitle}>Event Dates:</h4>
+            {(() => {
+              // Format event dates for display
+              if (program.multipleDates && Array.isArray(program.multipleDates) && program.multipleDates.length > 0) {
+                return (
+                  <div className={styles.eventDatesList}>
+                    {program.multipleDates.map((date, index) => (
+                      <span key={index} className={styles.eventDateTag}>
+                        {new Date(date).toLocaleDateString()}
+                      </span>
+                    ))}
+                  </div>
+                );
+              } else if (program.eventStartDate && program.eventEndDate) {
+                if (program.eventStartDate === program.eventEndDate) {
+                  return (
+                    <div className={styles.singleEventDate}>
+                      {new Date(program.eventStartDate).toLocaleDateString()}
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className={styles.eventDateRange}>
+                      {new Date(program.eventStartDate).toLocaleDateString()} - {new Date(program.eventEndDate).toLocaleDateString()}
+                    </div>
+                  );
+                }
+              }
+              return <div className={styles.noEventDates}>No event dates specified</div>;
+            })()}
           </div>
         </div>
       </div>

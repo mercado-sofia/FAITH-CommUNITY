@@ -49,8 +49,9 @@ export const superadminProgramsApi = createApi({
               category: program.category,
               status: program.status,
               image: program.image,
-              dateCreated: program.date_created,
-              dateCompleted: program.date_completed,
+              eventStartDate: program.event_start_date,
+              eventEndDate: program.event_end_date,
+              multipleDates: program.multiple_dates || [],
               createdAt: program.created_at,
               updatedAt: program.updated_at
             };

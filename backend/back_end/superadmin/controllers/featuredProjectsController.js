@@ -13,6 +13,7 @@ const getAllFeaturedProjects = async (req, res) => {
         fp.image,
         fp.status,
         fp.completed_date,
+        fp.created_at,
         o.org as org_acronym,
         o.orgName as org_name,
         o.logo as org_logo,
@@ -27,6 +28,12 @@ const getAllFeaturedProjects = async (req, res) => {
     `;
     
     const [results] = await db.execute(query);
+    
+    console.log('Featured projects query results:', {
+      count: results.length,
+      firstResult: results[0] || null,
+      hasCreatedAt: results[0] ? 'created_at' in results[0] : false
+    });
     
     res.json({
       success: true,
@@ -57,6 +64,7 @@ const getFeaturedProjectById = async (req, res) => {
         fp.image,
         fp.status,
         fp.completed_date,
+        fp.created_at,
         o.org as org_acronym,
         o.orgName as org_name,
         o.logo as org_logo,

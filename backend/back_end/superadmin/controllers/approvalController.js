@@ -131,23 +131,39 @@ export const approveSubmission = async (req, res) => {
         programData: data
       });
       
-      // Insert new program into programs_projects table with automatic publication date
-      const currentDate = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
-      
       try {
-        await db.execute(
-          `INSERT INTO programs_projects (organization_id, title, description, category, status, image)
-           VALUES (?, ?, ?, ?, ?, ?)`,
+        // Insert new program into programs_projects table
+        const [result] = await db.execute(
+          `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             orgId,
             data.title,
             data.description,
             data.category,
             data.status,
-            data.image
+            data.image,
+            data.event_start_date || null,
+            data.event_end_date || null
           ]
         );
-        console.log('[DEBUG] Program successfully inserted into programs_projects table');
+        
+        const programId = result.insertId;
+        console.log('[DEBUG] Program successfully inserted into programs_projects table with ID:', programId);
+        
+        // If multiple dates are provided, insert them into program_event_dates table
+        if (data.multiple_dates && Array.isArray(data.multiple_dates) && data.multiple_dates.length > 0) {
+          console.log('[DEBUG] Inserting multiple dates for program:', data.multiple_dates);
+          
+          for (const date of data.multiple_dates) {
+            await db.execute(
+              `INSERT INTO program_event_dates (program_id, event_date) VALUES (?, ?)`,
+              [programId, date]
+            );
+          }
+          console.log('[DEBUG] Multiple dates successfully inserted into program_event_dates table');
+        }
+        
       } catch (insertError) {
         console.error('[ERROR] Failed to insert program into programs_projects:', insertError);
         throw insertError;

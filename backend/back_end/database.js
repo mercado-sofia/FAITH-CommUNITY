@@ -88,7 +88,58 @@ const initializeDatabase = async () => {
       console.log("✅ News table created successfully!");
     }
 
+    // Check if programs_projects table has date fields, add them if missing
+    const [dateColumns] = await connection.query(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'programs_projects' 
+      AND COLUMN_NAME IN ('event_start_date', 'event_end_date')
+    `);
+    
+    if (dateColumns.length === 0) {
+      console.log("Adding date fields to programs_projects table...");
+      await connection.query(`
+        ALTER TABLE programs_projects 
+        ADD COLUMN event_start_date DATE NULL,
+        ADD COLUMN event_end_date DATE NULL
+      `);
+      console.log("✅ Date fields added to programs_projects table successfully!");
+    }
 
+    // Check if program_event_dates table exists
+    const [eventDatesTables] = await connection.query('SHOW TABLES LIKE "program_event_dates"');
+    
+    if (eventDatesTables.length === 0) {
+      console.log("Creating program_event_dates table...");
+      await connection.query(`
+        CREATE TABLE program_event_dates (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          program_id INT NOT NULL,
+          event_date DATE NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE CASCADE,
+          UNIQUE KEY unique_program_date (program_id, event_date)
+        )
+      `);
+      console.log("✅ Program_event_dates table created successfully!");
+    }
+
+    // Check if featured_projects table has created_at field, add it if missing
+    const [featuredCreatedAtColumns] = await connection.query(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'featured_projects' 
+      AND COLUMN_NAME = 'created_at'
+    `);
+    
+    if (featuredCreatedAtColumns.length === 0) {
+      console.log("Adding created_at field to featured_projects table...");
+      await connection.query(`
+        ALTER TABLE featured_projects 
+        ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      `);
+      console.log("✅ Created_at field added to featured_projects table successfully!");
+    }
 
     connection.release();
     return promisePool;

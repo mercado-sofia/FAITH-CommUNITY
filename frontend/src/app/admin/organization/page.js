@@ -299,6 +299,7 @@ export default function OrganizationPage() {
       
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("uploadType", "organization-logo");
       
       const response = await fetch(`${API_BASE_URL}/api/upload`, {
         method: "POST",
@@ -581,9 +582,17 @@ export default function OrganizationPage() {
       console.log('Saving org heads data:');
       console.log('Organization ID:', orgId);
       console.log('Heads data:', orgHeadsData);
+      
+      // Clean up photo data before sending to backend
+      const cleanedHeadsData = orgHeadsData.map(head => ({
+        ...head,
+        photo: head.photo && head.photo.startsWith('data:') ? null : head.photo // Remove base64 data
+      }));
+      
+      console.log('Cleaned heads data:', cleanedHeadsData);
       console.log('Request payload:', {
         organization_id: orgId,
-        heads: orgHeadsData
+        heads: cleanedHeadsData
       });
       
       const response = await fetch(`${API_BASE_URL}/api/heads/bulk`, {
@@ -593,7 +602,7 @@ export default function OrganizationPage() {
         },
         body: JSON.stringify({
           organization_id: orgId,
-          heads: orgHeadsData
+          heads: cleanedHeadsData
         })
       });
       

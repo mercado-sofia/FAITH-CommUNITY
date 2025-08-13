@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { FaEdit, FaEnvelope, FaLock } from 'react-icons/fa';
+import { FaEdit, FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 import {
   useGetAdminByIdQuery,
   useUpdateAdminMutation,
@@ -23,6 +23,13 @@ const PasswordChangeForm = ({ adminId, onCancel, onSuccess }) => {
     confirmPassword: ''
   });
   
+  // Password visibility states
+  const [passwordVisibility, setPasswordVisibility] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false
+  });
+  
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState({ text: '', type: '' });
 
@@ -36,6 +43,14 @@ const PasswordChangeForm = ({ adminId, onCancel, onSuccess }) => {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
+  };
+
+  // Toggle password visibility
+  const togglePasswordVisibility = (fieldName) => {
+    setPasswordVisibility(prev => ({
+      ...prev,
+      [fieldName]: !prev[fieldName]
+    }));
   };
 
   const validatePasswordChange = () => {
@@ -111,6 +126,11 @@ const PasswordChangeForm = ({ adminId, onCancel, onSuccess }) => {
       newPassword: '',
       confirmPassword: ''
     });
+    setPasswordVisibility({
+      currentPassword: false,
+      newPassword: false,
+      confirmPassword: false
+    });
     setErrors({});
     setMessage({ text: '', type: '' });
     onCancel();
@@ -126,43 +146,73 @@ const PasswordChangeForm = ({ adminId, onCancel, onSuccess }) => {
       
       <div className={styles.fieldGroup}>
         <label className={styles.label}>Current Password</label>
-        <input
-          type="password"
-          name="currentPassword"
-          value={passwordData.currentPassword}
-          onChange={handlePasswordInputChange}
-          className={`${styles.input} ${errors.currentPassword ? styles.inputError : ''}`}
-          placeholder="Enter your current password"
-          disabled={isUpdating || isVerifyingPassword}
-        />
+        <div className={styles.passwordInputContainer}>
+          <input
+            type={passwordVisibility.currentPassword ? "text" : "password"}
+            name="currentPassword"
+            value={passwordData.currentPassword}
+            onChange={handlePasswordInputChange}
+            className={`${styles.input} ${styles.passwordInput} ${errors.currentPassword ? styles.inputError : ''}`}
+            placeholder="Enter your current password"
+            disabled={isUpdating || isVerifyingPassword}
+          />
+          <button
+            type="button"
+            className={styles.passwordToggle}
+            onClick={() => togglePasswordVisibility('currentPassword')}
+            disabled={isUpdating || isVerifyingPassword}
+          >
+            {passwordVisibility.currentPassword ? <FaEyeSlash /> : <FaEye />}
+          </button>
+        </div>
         {errors.currentPassword && <span className={styles.errorText}>{errors.currentPassword}</span>}
       </div>
 
       <div className={styles.fieldGroup}>
         <label className={styles.label}>New Password</label>
-        <input
-          type="password"
-          name="newPassword"
-          value={passwordData.newPassword}
-          onChange={handlePasswordInputChange}
-          className={`${styles.input} ${errors.newPassword ? styles.inputError : ''}`}
-          placeholder="Enter your new password"
-          disabled={isUpdating || isVerifyingPassword}
-        />
+        <div className={styles.passwordInputContainer}>
+          <input
+            type={passwordVisibility.newPassword ? "text" : "password"}
+            name="newPassword"
+            value={passwordData.newPassword}
+            onChange={handlePasswordInputChange}
+            className={`${styles.input} ${styles.passwordInput} ${errors.newPassword ? styles.inputError : ''}`}
+            placeholder="Enter your new password"
+            disabled={isUpdating || isVerifyingPassword}
+          />
+          <button
+            type="button"
+            className={styles.passwordToggle}
+            onClick={() => togglePasswordVisibility('newPassword')}
+            disabled={isUpdating || isVerifyingPassword}
+          >
+            {passwordVisibility.newPassword ? <FaEyeSlash /> : <FaEye />}
+          </button>
+        </div>
         {errors.newPassword && <span className={styles.errorText}>{errors.newPassword}</span>}
       </div>
 
       <div className={styles.fieldGroup}>
         <label className={styles.label}>Confirm New Password</label>
-        <input
-          type="password"
-          name="confirmPassword"
-          value={passwordData.confirmPassword}
-          onChange={handlePasswordInputChange}
-          className={`${styles.input} ${errors.confirmPassword ? styles.inputError : ''}`}
-          placeholder="Confirm your new password"
-          disabled={isUpdating || isVerifyingPassword}
-        />
+        <div className={styles.passwordInputContainer}>
+          <input
+            type={passwordVisibility.confirmPassword ? "text" : "password"}
+            name="confirmPassword"
+            value={passwordData.confirmPassword}
+            onChange={handlePasswordInputChange}
+            className={`${styles.input} ${styles.passwordInput} ${errors.confirmPassword ? styles.inputError : ''}`}
+            placeholder="Confirm your new password"
+            disabled={isUpdating || isVerifyingPassword}
+          />
+          <button
+            type="button"
+            className={styles.passwordToggle}
+            onClick={() => togglePasswordVisibility('confirmPassword')}
+            disabled={isUpdating || isVerifyingPassword}
+          >
+            {passwordVisibility.confirmPassword ? <FaEyeSlash /> : <FaEye />}
+          </button>
+        </div>
         {errors.confirmPassword && <span className={styles.errorText}>{errors.confirmPassword}</span>}
       </div>
 
@@ -224,6 +274,9 @@ export default function AdminSettings() {
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
   const [errors, setErrors] = useState({});
+  
+  // Password visibility state for email change
+  const [emailPasswordVisibility, setEmailPasswordVisibility] = useState(false);
 
   // Helper function to check if email has changed
   const hasEmailChanged = () => {
@@ -269,6 +322,11 @@ export default function AdminSettings() {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
+  };
+
+  // Toggle email password visibility
+  const toggleEmailPasswordVisibility = () => {
+    setEmailPasswordVisibility(prev => !prev);
   };
 
   const validateProfile = () => {
@@ -347,6 +405,7 @@ export default function AdminSettings() {
     setIsEditing(false);
     setShowPasswordChange(false);
     setErrors({});
+    setEmailPasswordVisibility(false); // Reset email password visibility
     setAdminData(prev => ({
       ...prev,
       emailChangePassword: '' // Clear email change password field
@@ -434,15 +493,25 @@ export default function AdminSettings() {
                     <label className={styles.label}>
                       Current Password <span className={styles.required}>*</span>
                     </label>
-                    <input
-                      type="password"
-                      name="emailChangePassword"
-                      value={adminData.emailChangePassword}
-                      onChange={handleInputChange}
-                      className={`${styles.input} ${errors.emailChangePassword ? styles.inputError : ''}`}
-                      placeholder="Enter your current password"
-                      disabled={isUpdating || isVerifying}
-                    />
+                    <div className={styles.passwordInputContainer}>
+                      <input
+                        type={emailPasswordVisibility ? "text" : "password"}
+                        name="emailChangePassword"
+                        value={adminData.emailChangePassword}
+                        onChange={handleInputChange}
+                        className={`${styles.input} ${styles.passwordInput} ${errors.emailChangePassword ? styles.inputError : ''}`}
+                        placeholder="Enter your current password"
+                        disabled={isUpdating || isVerifying}
+                      />
+                      <button
+                        type="button"
+                        className={styles.passwordToggle}
+                        onClick={toggleEmailPasswordVisibility}
+                        disabled={isUpdating || isVerifying}
+                      >
+                        {emailPasswordVisibility ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                    </div>
                     {errors.emailChangePassword && <span className={styles.errorText}>{errors.emailChangePassword}</span>}
                     <div className={styles.helperText}>
                       Required to confirm email change

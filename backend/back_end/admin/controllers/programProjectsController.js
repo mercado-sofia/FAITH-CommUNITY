@@ -77,8 +77,25 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
         multipleDates = dateRows.map(row => row.event_date);
       }
 
+      // Construct proper logo URL
+      let logoUrl;
+      if (program.organization_logo) {
+        if (program.organization_logo.includes('/')) {
+          // Legacy path - extract filename
+          const filename = program.organization_logo.split('/').pop();
+          logoUrl = `/uploads/organizations/logos/${filename}`;
+        } else {
+          // New structure - direct filename
+          logoUrl = `/uploads/organizations/logos/${program.organization_logo}`;
+        }
+      } else {
+        // Fallback to default logo
+        logoUrl = `/logo/faith_community_logo.png`;
+      }
+
       return {
         ...program,
+        organization_logo: logoUrl,
         multiple_dates: multipleDates
       };
     }));

@@ -163,6 +163,20 @@ export const approveSubmission = async (req, res) => {
           }
           console.log('[DEBUG] Multiple dates successfully inserted into program_event_dates table');
         }
+
+        // If additional images are provided, insert them into program_additional_images table
+        if (data.additionalImages && Array.isArray(data.additionalImages) && data.additionalImages.length > 0) {
+          console.log('[DEBUG] Inserting additional images for program:', data.additionalImages.length);
+          
+          for (let i = 0; i < data.additionalImages.length; i++) {
+            const imageData = data.additionalImages[i];
+            await db.execute(
+              `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
+              [programId, imageData, i]
+            );
+          }
+          console.log('[DEBUG] Additional images successfully inserted into program_additional_images table');
+        }
         
       } catch (insertError) {
         console.error('[ERROR] Failed to insert program into programs_projects:', insertError);

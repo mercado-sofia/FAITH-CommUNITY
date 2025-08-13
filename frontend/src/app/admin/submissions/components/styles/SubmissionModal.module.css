@@ -391,6 +391,29 @@
   font-style: italic;
 }
 
+/* Additional Images Grid */
+.additionalImagesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.additionalImagePreview {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+}
+
+.additionalImage {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
 /* Event Dates Styling */
 .eventDatesList {
   display: flex;

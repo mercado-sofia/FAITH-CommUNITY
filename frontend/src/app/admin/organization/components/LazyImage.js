@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { imageCache } from './utils/photoUtils'
 import styles from './styles/LazyImage.module.css'
 
 export default function LazyImage({
@@ -60,26 +59,12 @@ export default function LazyImage({
   useEffect(() => {
     if (!isInView || !src || src === placeholder || src === '' || src === null || src === undefined) return
 
-    const loadImage = async () => {
-      setIsLoading(true)
-      setHasError(false)
-
-      try {
-        const cachedSrc = await imageCache.get(src)
-        setImageSrc(cachedSrc)
-        setIsLoading(false)
-        onLoad?.()
-      } catch (error) {
-        console.error('Failed to load image:', error)
-        setHasError(true)
-        setIsLoading(false)
-        setImageSrc(placeholder)
-        onError?.(error)
-      }
-    }
-
-    loadImage()
-  }, [isInView, src, placeholder, onLoad, onError])
+    setIsLoading(true)
+    setHasError(false)
+    setImageSrc(src)
+    setIsLoading(false)
+    onLoad?.()
+  }, [isInView, src, placeholder, onLoad])
 
   const handleImageLoad = () => {
     setIsLoading(false)

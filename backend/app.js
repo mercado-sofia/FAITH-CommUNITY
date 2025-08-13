@@ -13,6 +13,9 @@ const __dirname = path.dirname(__filename)
 const app = express()
 const PORT = process.env.PORT || 8080
 
+// Import upload configuration to ensure proper directory structure
+import "./back_end/utils/uploadConfig.js"
+
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, "uploads")
 if (!fs.existsSync(uploadsDir)) {

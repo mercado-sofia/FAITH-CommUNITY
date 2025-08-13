@@ -57,7 +57,7 @@ export const handleFileUpload = (req, res) => {
     }
 
     // Return file URL
-    const fileUrl = `/uploads/${req.file.filename}`
+    const fileUrl = `/uploads/programs/main-images/${req.file.filename}`
 
     res.json({
       success: true,

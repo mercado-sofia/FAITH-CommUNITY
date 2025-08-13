@@ -198,6 +198,21 @@
   border: 1px solid #bae6fd;
 }
 
+/* Additional Images Grid */
+.additionalImagesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.additionalImageContainer {
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
 /* Modal Footer */
 .modalFooter {
   padding: 16px 24px;

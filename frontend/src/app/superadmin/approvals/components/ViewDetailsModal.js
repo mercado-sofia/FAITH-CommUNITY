@@ -1,5 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
+import { FaTimes, FaCheck, FaEye } from 'react-icons/fa';
+import { getProgramImageUrl } from '@/utils/uploadPaths';
 import styles from './styles/ViewDetailsModal.module.css';
 
 const ViewDetailsModal = ({ 
@@ -162,15 +164,33 @@ const ViewDetailsModal = ({
                             })()}
                             {programData.image && (
                               <div className={styles.programField}>
-                                <strong>Image:</strong>
+                                <strong>Main Image:</strong>
                                 <div className={styles.programImage}>
                                   <Image 
-                                    src={programData.image} 
+                                    src={getProgramImageUrl(programData.image) || '/default-profile.png'} 
                                     alt="Program" 
                                     width={200}
                                     height={150}
                                     style={{objectFit: 'cover', borderRadius: '4px'}} 
                                   />
+                                </div>
+                              </div>
+                            )}
+                            {programData.additionalImages && Array.isArray(programData.additionalImages) && programData.additionalImages.length > 0 && (
+                              <div className={styles.programField}>
+                                <strong>Additional Images ({programData.additionalImages.length}):</strong>
+                                <div className={styles.additionalImagesGrid}>
+                                  {programData.additionalImages.map((image, index) => (
+                                    <div key={index} className={styles.additionalImageContainer}>
+                                      <Image 
+                                        src={getProgramImageUrl(image) || '/default-profile.png'} 
+                                        alt={`Additional image ${index + 1}`} 
+                                        width={100}
+                                        height={100}
+                                        style={{objectFit: 'cover'}} 
+                                      />
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
                             )}

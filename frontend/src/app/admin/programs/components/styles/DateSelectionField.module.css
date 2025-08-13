@@ -20,14 +20,19 @@
   font-weight: 700;
 }
 
-/* Schedule Type Selection - First Row */
-.scheduleTypeRow {
+/* Date Selection Row - Dropdown and Date Picker in Same Row */
+.dateSelectionRow {
+  display: flex;
+  gap: 12px;
   margin-bottom: 8px;
 }
 
-/* Date Picker Row - Second Row */
-.datePickerRow {
-  margin-bottom: 8px;
+.dropdownContainer {
+  flex: 0 0 200px;
+}
+
+.datePickerContainer {
+  flex: 1;
 }
 
 /* Custom Dropdown Styles */
@@ -60,12 +65,12 @@
 
 .dropdownButton:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: #06100f;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .dropdownButton.dropdownOpen {
-  border-color: #3b82f6;
+  border-color: #06100f;
   background-color: #f8fafc;
 }
 
@@ -135,18 +140,18 @@
 }
 
 .dropdownOption:hover {
-  background-color: #f3f4f6;
-  color: #1f2937;
+  background-color: #f5f6f8;
+  color: #06100f;
 }
 
 .dropdownOption.optionSelected {
-  background-color: #eff6ff;
-  color: #1d4ed8;
+  background-color: #eaedef;
+  color: #06100f;
   font-weight: 500;
 }
 
 .dropdownOption.optionSelected:hover {
-  background-color: #dbeafe;
+  background-color: #eaedef;
 }
 
 /* Custom scrollbar for dropdown options */
@@ -222,7 +227,7 @@
 
 .dateInput:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: #06100f;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -239,7 +244,7 @@
 /* Multi Date Input Styles */
 .multiDateInput {
   width: 100%;
-  padding: 12px 12px 12px 40px;
+  padding: 8px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 0.875rem;
@@ -251,7 +256,7 @@
 
 .multiDateInput:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: #06100f;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -276,7 +281,7 @@
   background: #f0f9ff;
   border: 1px solid #bae6fd;
   border-radius: 6px;
-  color: #0369a1;
+  color: #06100f;
   font-size: 0.875rem;
   font-weight: 500;
 }
@@ -363,6 +368,16 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .dateSelectionRow {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .dropdownContainer {
+    flex: none;
+    width: 100%;
+  }
+  
   .selectedDatesGrid {
     flex-direction: column;
   }

@@ -2,34 +2,66 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { FaTimes, FaUpload, FaImage } from 'react-icons/fa';
+import { FaTimes, FaUpload, FaImage, FaChevronRight, FaChevronLeft } from 'react-icons/fa';
+import { getProgramImageUrl } from '@/utils/uploadPaths';
 import UnsavedChangesModal from './UnsavedChangesModal';
 import DateSelectionField from './DateSelectionField';
 import styles from './styles/addModal.module.css';
 
 const EditProgramModal = ({ program, onClose, onSubmit }) => {
+  const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     title: program?.title || '',
     description: program?.description || '',
     category: program?.category || '',
     status: program?.status || '',
     image: null,
+    additionalImages: [],
     event_start_date: program?.event_start_date || null,
     event_end_date: program?.event_end_date || null,
     multiple_dates: program?.multiple_dates || null
   });
-  const [imagePreview, setImagePreview] = useState(program?.image || null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [additionalImagePreviews, setAdditionalImagePreviews] = useState([]);
+  const [isImageRemoved, setIsImageRemoved] = useState(false); // Track if user explicitly removed the image
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [hasChanges, setHasChanges] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const fileInputRef = useRef(null);
+  const additionalImagesRef = useRef(null);
 
   const statusOptions = [
     { value: 'upcoming', label: 'Upcoming' },
     { value: 'active', label: 'Active' },
     { value: 'completed', label: 'Completed' },
   ];
+
+  const steps = [
+    { id: 1, title: 'Basic Info' },
+    { id: 2, title: 'Status & Date' },
+    { id: 3, title: 'Images' }
+  ];
+
+  // Initialize form data when program changes
+  useEffect(() => {
+    if (program) {
+      console.log('📊 Initializing form data with program:', program);
+      setFormData({
+        title: program.title || '',
+        description: program.description || '',
+        category: program.category || '',
+        status: program.status || '',
+        image: null,
+        additionalImages: [],
+        event_start_date: program.event_start_date || null,
+        event_end_date: program.event_end_date || null,
+        multiple_dates: program.multiple_dates || null
+      });
+      setImagePreview(program.image ? getProgramImageUrl(program.image) : null);
+      setIsImageRemoved(false); // Reset removal flag
+    }
+  }, [program]);
 
   // Check for changes
   useEffect(() => {
@@ -39,6 +71,7 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
       formData.category !== (program?.category || '') ||
       formData.status !== (program?.status || '') ||
       formData.image !== null ||
+      formData.additionalImages.length > 0 ||
       formData.event_start_date !== (program?.event_start_date || null) ||
       formData.event_end_date !== (program?.event_end_date || null) ||
       JSON.stringify(formData.multiple_dates) !== JSON.stringify(program?.multiple_dates || null);
@@ -119,6 +152,9 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
       };
       reader.readAsDataURL(file);
 
+      // Reset removal flag since user uploaded a new image
+      setIsImageRemoved(false);
+
       // Clear image error
       if (errors.image) {
         setErrors(prev => ({
@@ -129,91 +165,205 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
     }
   };
 
+  const handleAdditionalImagesChange = (e) => {
+    const files = Array.from(e.target.files);
+    const validFiles = [];
+    const newPreviews = [];
+
+    files.forEach(file => {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        return;
+      }
+
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        return;
+      }
+
+      validFiles.push(file);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        newPreviews.push(e.target.result);
+        if (newPreviews.length === validFiles.length) {
+          setAdditionalImagePreviews(prev => [...prev, ...newPreviews]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    setFormData(prev => ({
+      ...prev,
+      additionalImages: [...prev.additionalImages, ...validFiles]
+    }));
+  };
+
   const removeImage = () => {
     setFormData(prev => ({
       ...prev,
       image: null
     }));
-    setImagePreview(null);
+    setImagePreview(null); // Clear the image preview completely
+    setIsImageRemoved(true); // Mark that the image was explicitly removed
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  const validateForm = () => {
+  const removeAdditionalImage = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      additionalImages: prev.additionalImages.filter((_, i) => i !== index)
+    }));
+    setAdditionalImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const validateStep = (step) => {
+    console.log('🔍 Validating step:', step);
     const newErrors = {};
 
-    if (!formData.title.trim()) {
-      newErrors.title = 'Program title is required';
-    } else if (formData.title.length < 3) {
-      newErrors.title = 'Title must be at least 3 characters long';
-    } else if (formData.title.length > 100) {
-      newErrors.title = 'Title must be less than 100 characters';
+    switch (step) {
+      case 1:
+        if (!formData.title.trim()) {
+          newErrors.title = 'Program title is required';
+        } else if (formData.title.length < 3) {
+          newErrors.title = 'Title must be at least 3 characters long';
+        } else if (formData.title.length > 100) {
+          newErrors.title = 'Title must be less than 100 characters';
+        }
+
+        if (!formData.description.trim()) {
+          newErrors.description = 'Program description is required';
+        } else if (formData.description.length < 10) {
+          newErrors.description = 'Description must be at least 10 characters long';
+        } else if (formData.description.length > 800) {
+          newErrors.description = 'Description must be less than 800 characters';
+        }
+
+        if (!formData.category.trim()) {
+          newErrors.category = 'Program category is required';
+        } else if (formData.category.length < 2) {
+          newErrors.category = 'Category must be at least 2 characters long';
+        } else if (formData.category.length > 50) {
+          newErrors.category = 'Category must be less than 50 characters';
+        }
+        break;
+
+      case 2:
+        // Validate status
+        if (!formData.status) {
+          newErrors.status = 'Program status is required';
+        }
+
+        // Validate dates - be more flexible for edit mode
+        const hasStartDate = formData.event_start_date;
+        const hasEndDate = formData.event_end_date;
+        const hasMultipleDates = formData.multiple_dates && Array.isArray(formData.multiple_dates) && formData.multiple_dates.length > 0;
+        
+        // Allow single date, date range, or multiple dates
+        if (!hasStartDate && !hasMultipleDates) {
+          newErrors.event_start_date = 'Please select at least one date for the program';
+        }
+        break;
+
+      case 3:
+        // No validation needed for images in edit mode
+        break;
     }
 
-    if (!formData.description.trim()) {
-      newErrors.description = 'Program description is required';
-    } else if (formData.description.length < 10) {
-      newErrors.description = 'Description must be at least 10 characters long';
-    } else if (formData.description.length > 800) {
-      newErrors.description = 'Description must be less than 800 characters';
-    }
-
-    if (!formData.category.trim()) {
-      newErrors.category = 'Program category is required';
-    } else if (formData.category.length < 2) {
-      newErrors.category = 'Category must be at least 2 characters long';
-    } else if (formData.category.length > 50) {
-      newErrors.category = 'Category must be less than 50 characters';
-    }
-
-    if (!formData.status) {
-      newErrors.status = 'Program status is required';
-    }
-
-    // Validate dates
-    const hasSingleOrRangeDates = formData.event_start_date && formData.event_end_date;
-    const hasMultipleDates = formData.multiple_dates && Array.isArray(formData.multiple_dates) && formData.multiple_dates.length > 0;
-    
-    if (!hasSingleOrRangeDates && !hasMultipleDates) {
-      newErrors.event_start_date = 'Please select at least one date for the program';
-    }
-
+    console.log('📝 Validation errors:', newErrors);
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const isValid = Object.keys(newErrors).length === 0;
+    console.log('✅ Step validation result:', isValid);
+    return isValid;
+  };
+
+  const nextStep = () => {
+    console.log('🔍 Next step called for step:', currentStep);
+    console.log('📊 Current form data:', formData);
+    
+    if (validateStep(currentStep)) {
+      console.log('✅ Step validation passed, moving to next step');
+      setCurrentStep(prev => Math.min(prev + 1, 3));
+    } else {
+      console.log('❌ Step validation failed');
+    }
+  };
+
+  const prevStep = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
+
+  const validateForm = () => {
+    return validateStep(1) && validateStep(2);
+  };
+
+  const handleFormKeyDown = (e) => {
+    // Prevent form submission on Enter key
+    if (e.key === 'Enter') {
+      console.log('🚫 Enter key pressed - preventing form submission');
+      e.preventDefault();
+      return false;
+    }
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    // Remove e.preventDefault() since we're not using form onSubmit anymore
+    // e.preventDefault();
     
-    if (!hasChanges) {
-      setErrors({ submit: 'No changes detected. Please make some changes before submitting.' });
-      return;
-    }
-
+    console.log('🚀 handleSubmit called - manual submission triggered');
+    console.log('📊 Current step:', currentStep);
+    console.log('📝 Form data:', formData);
+    
     if (!validateForm()) {
+      console.log('❌ Form validation failed');
       return;
     }
 
+    console.log('✅ Form validation passed, proceeding with submission');
     setIsSubmitting(true);
     
     try {
+      // Convert images to base64 only if new images are uploaded
+      const imageBase64 = formData.image ? await convertImageToBase64(formData.image) : null;
+      const additionalImagesBase64 = await Promise.all(
+        formData.additionalImages.map(img => convertImageToBase64(img))
+      );
+
+      // Determine what to send for the image
+      let imageToSend;
+      if (formData.image) {
+        // New image uploaded
+        imageToSend = imageBase64;
+      } else if (isImageRemoved) {
+        // User explicitly removed the image
+        imageToSend = null;
+      } else {
+        // No change to image
+        imageToSend = undefined; // This will be ignored by backend
+      }
+
       // Create the program data object
       const programData = {
-        id: program.id,
         title: formData.title.trim(),
         description: formData.description.trim(),
         category: formData.category,
         status: formData.status,
+        image: imageToSend,
+        additionalImages: additionalImagesBase64,
         event_start_date: formData.event_start_date,
         event_end_date: formData.event_end_date,
-        multiple_dates: formData.multiple_dates,
-        image: formData.image ? await convertImageToBase64(formData.image) : imagePreview
+        multiple_dates: formData.multiple_dates
       };
 
+      console.log('📦 Submitting program data:', programData);
+      console.log('🖼️ Image data:', imageBase64 ? 'New image uploaded' : 'No new image uploaded');
       await onSubmit(programData);
+      console.log('✅ Program submitted successfully');
     } catch (error) {
-      console.error('Error updating program:', error);
+      console.error('❌ Error updating program:', error);
       setErrors({ submit: 'Failed to update program. Please try again.' });
     } finally {
       setIsSubmitting(false);
@@ -237,215 +387,317 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
     }
   };
 
-  const handleConfirmClose = () => {
-    setShowConfirmModal(false);
-    onClose();
-  };
+  const renderStepIndicator = () => (
+    <div className={styles.stepIndicator}>
+      {steps.map((step, index) => (
+        <div key={step.id} className={styles.stepItem}>
+          <div className={`${styles.stepNumber} ${currentStep >= step.id ? styles.active : ''}`}></div>
+          <span className={`${styles.stepTitle} ${currentStep >= step.id ? styles.active : ''}`}>
+            {step.title}
+          </span>
+          {index < steps.length - 1 && (
+            <div className={`${styles.stepConnector} ${currentStep > step.id ? styles.active : ''}`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
 
-  const handleCancelClose = () => {
-    setShowConfirmModal(false);
-  };
-
-  return (
-    <div className={styles.modalOverlay} onClick={handleClose}>
-      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h2 className={styles.modalTitle}>Edit Program</h2>
-          <button onClick={handleClose} className={styles.closeButton}>
-            <FaTimes />
-          </button>
+  const renderStep1 = () => (
+    <div className={styles.stepContainer}>
+      <h3 className={styles.stepTitle}>Basic Information</h3>
+      
+      {/* Title and Category Row */}
+      <div className={styles.formRow}>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>
+            Program Title <span className={styles.required}>*</span>
+          </label>
+          <input
+            type="text"
+            name="title"
+            value={formData.title}
+            onChange={handleInputChange}
+            className={`${styles.formInput} ${errors.title ? styles.error : ''}`}
+            placeholder="Enter program title"
+            maxLength={100}
+          />
+          {errors.title && <span className={styles.errorText}>{errors.title}</span>}
         </div>
 
-        <form onSubmit={handleSubmit} className={styles.modalForm}>
-          {/* Two Column Layout */}
-          <div className={styles.twoColumnLayout}>
-                         {/* Left Column - Image Upload, Category, Status, and Event Dates */}
-             <div className={styles.leftColumn}>
-               {/* Image Upload */}
-               <div className={styles.formGroup}>
-                 <label className={styles.formLabel}>
-                   <FaImage className={styles.labelIcon} />
-                   Program Image
-                 </label>
-                 
-                 {!imagePreview ? (
-                   <div className={styles.uploadArea}>
-                     <input
-                       ref={fileInputRef}
-                       type="file"
-                       accept="image/*"
-                       onChange={handleImageChange}
-                       className={styles.fileInput}
-                     />
-                     <div className={styles.uploadContent}>
-                       <FaUpload className={styles.uploadIcon} />
-                       <p className={styles.uploadText}>
-                         Click to upload an image or drag and drop
-                       </p>
-                       <p className={styles.uploadSubtext}>
-                         PNG, JPG, GIF up to 5MB
-                       </p>
-                     </div>
-                   </div>
-                 ) : (
-                   <div className={styles.imagePreview}>
-                     <Image 
-                       src={imagePreview} 
-                       alt="Preview" 
-                       className={styles.previewImage}
-                       width={400}
-                       height={200}
-                       style={{ objectFit: 'cover' }}
-                     />
-                     <button
-                       type="button"
-                       onClick={removeImage}
-                       className={styles.removeImageButton}
-                     >
-                       <FaTimes />
-                     </button>
-                   </div>
-                 )}
-                 
-                 {errors.image && <span className={styles.errorText}>{errors.image}</span>}
-               </div>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Category</label>
+          <input
+            type="text"
+            name="category"
+            value={formData.category}
+            onChange={handleInputChange}
+            className={styles.formInput}
+            placeholder="e.g. Outreach, Education, Health"
+            maxLength={50}
+          />
+          {errors.category && <span className={styles.errorText}>{errors.category}</span>}
+        </div>
+      </div>
 
-                                                {/* Date Selection Field */}
-                 <div className={styles.formGroup}>
-                   <DateSelectionField
-                     value={{
-                       event_start_date: formData.event_start_date,
-                       event_end_date: formData.event_end_date,
-                       multiple_dates: formData.multiple_dates
-                     }}
-                     onChange={handleDateChange}
-                     error={errors.event_start_date || errors.event_end_date || errors.multiple_dates}
-                     disabled={isSubmitting}
-                     label="Event Dates"
-                     required={true}
-                   />
-                 </div>
-              </div>
+      {/* Description Field */}
+      <div className={styles.formGroup}>
+        <label className={styles.formLabel}>
+          Description <span className={styles.required}>*</span>
+        </label>
+        <textarea
+          name="description"
+          value={formData.description}
+          onChange={handleInputChange}
+          className={`${styles.formTextarea} ${errors.description ? styles.error : ''}`}
+          placeholder="Describe your program, its objectives, and impact"
+          rows={4}
+          maxLength={800}
+        />
+        <div className={styles.charCount}>
+          {formData.description.length}/800 characters
+        </div>
+        {errors.description && <span className={styles.errorText}>{errors.description}</span>}
+      </div>
+    </div>
+  );
 
-              {/* Right Column - Title, Category, and Description */}
-              <div className={styles.rightColumn}>
-                {/* Title Field */}
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>
-                    Program Title <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    className={`${styles.formInput} ${errors.title ? styles.error : ''}`}
-                    placeholder="Enter program title"
-                    maxLength={100}
-                  />
-                  {errors.title && <span className={styles.errorText}>{errors.title}</span>}
-                </div>
+  const renderStep2 = () => (
+    <div className={styles.stepContainer}>
+      <h3 className={styles.stepTitle}>Status & Event Date</h3>
+      
+      {/* Status Field */}
+      <div className={styles.formGroup}>
+        <label className={styles.formLabel}>Status <span className={styles.required}>*</span></label>
+        <div className={styles.statusButtons}>
+          {statusOptions.map(status => (
+            <button
+              key={status.value}
+              type="button"
+              onClick={() => handleStatusChange(status.value)}
+              className={`${styles.statusButton} ${formData.status === status.value ? styles.statusActive : ''}`}
+            >
+              {status.label}
+            </button>
+          ))}
+        </div>
+        {errors.status && <span className={styles.errorText}>{errors.status}</span>}
+      </div>
 
-                                 {/* Category Field */}
-                 <div className={styles.formGroup}>
-                   <label className={styles.formLabel}>Category</label>
-                   <input
-                     type="text"
-                     name="category"
-                     value={formData.category}
-                     onChange={handleInputChange}
-                     className={styles.formInput}
-                     placeholder="e.g. Outreach, Education, Health"
-                     maxLength={50}
-                   />
-                   {errors.category && <span className={styles.errorText}>{errors.category}</span>}
-                 </div>
+      {/* Event Date Field */}
+      <div className={styles.formGroup}>
+        <DateSelectionField
+          value={{
+            event_start_date: formData.event_start_date,
+            event_end_date: formData.event_end_date,
+            multiple_dates: formData.multiple_dates
+          }}
+          onChange={handleDateChange}
+          error={errors.event_start_date || errors.event_end_date || errors.multiple_dates}
+          disabled={isSubmitting}
+          label="Event Date(s)"
+          required={true}
+        />
+      </div>
+    </div>
+  );
 
-                 {/* Status Field */}
-                 <div className={styles.formGroup}>
-                   <label className={styles.formLabel}>Status <span className={styles.required}>*</span></label>
-                   <div className={styles.statusButtons}>
-                     {statusOptions.map(status => (
-                       <button
-                         key={status.value}
-                         type="button"
-                         onClick={() => handleStatusChange(status.value)}
-                         className={`${styles.statusButton} ${formData.status === status.value ? styles.statusActive : ''}`}
-                       >
-                         {status.label}
-                       </button>
-                     ))}
-                   </div>
-                   {errors.status && <span className={styles.errorText}>{errors.status}</span>}
-                 </div>
-
-                 {/* Description Field */}
-                 <div className={styles.formGroup}>
-                   <label className={styles.formLabel}>
-                     Description <span className={styles.required}>*</span>
-                   </label>
-                   <textarea
-                     name="description"
-                     value={formData.description}
-                     onChange={handleInputChange}
-                     className={`${styles.formTextarea} ${errors.description ? styles.error : ''}`}
-                     placeholder="Describe your program, its objectives, and impact"
-                     rows={4}
-                     maxLength={800}
-                   />
-                   <div className={styles.charCount}>
-                     {formData.description.length}/800 characters
-                   </div>
-                   {errors.description && <span className={styles.errorText}>{errors.description}</span>}
-                 </div>
-              </div>
+  const renderStep3 = () => (
+    <div className={styles.stepContainer}>
+      <h3 className={styles.stepTitle}>Images</h3>
+      
+      {/* Main Image Upload */}
+      <div className={styles.formGroup}>
+        <label className={styles.formLabel}>
+          <FaImage className={styles.labelIcon} />
+          Highlight Image
+        </label>
+        
+        {!imagePreview ? (
+          <div className={styles.uploadArea}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className={styles.fileInput}
+            />
+            <div className={styles.uploadContent}>
+              <FaUpload className={styles.uploadIcon} />
+              <p className={styles.uploadText}>
+                Click to upload an image or drag and drop
+              </p>
+              <p className={styles.uploadSubtext}>
+                PNG, JPG, GIF up to 5MB
+              </p>
+            </div>
           </div>
-
-          {/* Changes Indicator */}
-          {hasChanges && (
-            <div className={styles.changesIndicator}>
-              <span className={styles.changesText}>
-                ⚠️ You have unsaved changes
-              </span>
-            </div>
-          )}
-
-          {/* Submit Error */}
-          {errors.submit && (
-            <div className={styles.submitError}>
-              {errors.submit}
-            </div>
-          )}
-
-          {/* Form Actions */}
-          <div className={styles.formActions}>
+        ) : (
+          <div className={styles.imagePreview}>
+            <Image 
+              src={imagePreview} 
+              alt="Preview" 
+              className={styles.previewImage}
+              width={400}
+              height={200}
+              style={{ objectFit: 'cover' }}
+            />
             <button
               type="button"
-              onClick={handleClose}
-              className={styles.cancelButton}
-              disabled={isSubmitting}
+              onClick={removeImage}
+              className={styles.removeImageButton}
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className={`${styles.submitButton} ${!hasChanges ? styles.disabled : ''}`}
-              disabled={isSubmitting || !hasChanges}
-            >
-              {isSubmitting ? 'Updating...' : 'Update Program'}
+              <FaTimes />
             </button>
           </div>
-        </form>
+        )}
+        
+        {errors.image && <span className={styles.errorText}>{errors.image}</span>}
       </div>
+
+      {/* Additional Images Upload */}
+      <div className={styles.formGroup}>
+        <label className={styles.formLabel}>
+          <FaImage className={styles.labelIcon} />
+          Additional Images (Optional)
+        </label>
+        
+        <div className={styles.uploadArea}>
+          <input
+            ref={additionalImagesRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleAdditionalImagesChange}
+            className={styles.fileInput}
+          />
+          <div className={styles.uploadContent}>
+            <FaUpload className={styles.uploadIcon} />
+            <p className={styles.uploadText}>
+              Click to upload additional images
+            </p>
+            <p className={styles.uploadSubtext}>
+              PNG, JPG, GIF up to 5MB each
+            </p>
+          </div>
+        </div>
+
+        {/* Additional Images Thumbnails */}
+        {additionalImagePreviews.length > 0 && (
+          <div className={styles.additionalImagesGrid}>
+            {additionalImagePreviews.map((preview, index) => (
+              <div key={index} className={styles.additionalImagePreview}>
+                <Image 
+                  src={preview} 
+                  alt={`Additional ${index + 1}`} 
+                  className={styles.additionalPreviewImage}
+                  width={100}
+                  height={100}
+                  style={{ objectFit: 'cover' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeAdditionalImage(index)}
+                  className={styles.removeAdditionalImageButton}
+                >
+                  <FaTimes />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return renderStep1();
+      case 2:
+        return renderStep2();
+      case 3:
+        return renderStep3();
+      default:
+        return renderStep1();
+    }
+  };
+
+  const renderStepActions = () => (
+    <div className={styles.stepActions}>
+      {currentStep > 1 && (
+        <button
+          type="button"
+          onClick={prevStep}
+          className={styles.stepButton}
+          disabled={isSubmitting}
+        >
+          <FaChevronLeft />
+          Back
+        </button>
+      )}
       
-      {/* Unsaved Changes Confirmation Modal */}
-      {showConfirmModal && (
-        <UnsavedChangesModal
-          onConfirm={handleConfirmClose}
-          onCancel={handleCancelClose}
-        />
+      {currentStep < 3 ? (
+        <button
+          type="button"
+          onClick={nextStep}
+          className={`${styles.stepButton} ${styles.nextButton}`}
+          disabled={isSubmitting}
+        >
+          Next
+          <FaChevronRight />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={handleSubmit}
+          className={`${styles.stepButton} ${styles.submitButton}`}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Updating...' : 'Update Program'}
+        </button>
       )}
     </div>
+  );
+
+  return (
+    <>
+      <div className={styles.modalOverlay} onClick={handleClose}>
+        <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.modalHeader}>
+            <h2 className={styles.modalTitle}>Edit Program</h2>
+            <button onClick={handleClose} className={styles.closeButton}>
+              <FaTimes />
+            </button>
+          </div>
+
+          {renderStepIndicator()}
+
+          <form className={styles.modalForm} onKeyDown={handleFormKeyDown} noValidate>
+            {renderStepContent()}
+
+            {/* Submit Error */}
+            {errors.submit && (
+              <div className={styles.submitError}>
+                {errors.submit}
+              </div>
+            )}
+
+            {renderStepActions()}
+          </form>
+        </div>
+      </div>
+
+      {showConfirmModal && (
+        <UnsavedChangesModal
+          onConfirm={() => {
+            setShowConfirmModal(false);
+            onClose();
+          }}
+          onCancel={() => setShowConfirmModal(false)}
+        />
+      )}
+    </>
   );
 };
 

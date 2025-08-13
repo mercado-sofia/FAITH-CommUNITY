@@ -198,6 +198,16 @@ export class ImageCache {
    * @returns {Promise<string>} Image URL or cached version
    */
   async get(src) {
+    // Validate input
+    if (!src || src === '' || src === null || src === undefined) {
+      return '/default.png';
+    }
+
+    // If it's already a placeholder, return it
+    if (src === '/default.png' || src === '/default-profile.png') {
+      return src;
+    }
+
     if (this.cache.has(src)) {
       return this.cache.get(src);
     }
@@ -221,8 +231,18 @@ export class ImageCache {
     try {
       const img = new Image();
       await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
+        const timeout = setTimeout(() => {
+          reject(new Error('Image load timeout'));
+        }, 10000); // 10 second timeout
+
+        img.onload = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
+        img.onerror = () => {
+          clearTimeout(timeout);
+          reject(new Error('Image failed to load'));
+        };
         img.src = src;
       });
 
@@ -230,6 +250,7 @@ export class ImageCache {
       this.loading.delete(src);
       return src;
     } catch (error) {
+      console.warn('Image cache failed to load:', src, error.message);
       this.loading.delete(src);
       // Return placeholder on error
       const placeholder = '/default.png';

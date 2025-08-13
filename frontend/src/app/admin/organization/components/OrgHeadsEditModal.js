@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { FaPlus, FaTrash, FaCamera, FaTimes, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa'
+import { getOrganizationImageUrl } from '@/utils/uploadPaths'
 import styles from './styles/OrgHeadsEditModal.module.css'
 import { PhotoUtils } from './utils/photoUtils'
 import LazyImage from './LazyImage'
@@ -51,14 +52,26 @@ export default function OrgHeadsEditModal({
 
   const handleFileUpload = async (index, e) => {
     const file = e.target.files[0]
-    if (!file) return
+    if (!file) {
+      console.log('No file selected');
+      return
+    }
+
+    console.log('File selected:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
 
     // Clear previous errors
     setValidationErrors(prev => ({ ...prev, [index]: null }))
 
     // Validate image
     const validation = PhotoUtils.validateImage(file)
+    console.log('Validation result:', validation);
+    
     if (!validation.isValid) {
+      console.log('Validation failed:', validation.errors);
       setValidationErrors(prev => ({ 
         ...prev, 
         [index]: { errors: validation.errors, warnings: validation.warnings }
@@ -84,6 +97,8 @@ export default function OrgHeadsEditModal({
 
       // Compress image for better performance
       setUploadProgress(prev => ({ ...prev, [index]: 20 }))
+      console.log('Starting image compression...');
+      
       const compressedFile = await PhotoUtils.compressImage(file, {
         maxWidth: 400,
         maxHeight: 500,
@@ -98,7 +113,10 @@ export default function OrgHeadsEditModal({
 
       // Generate thumbnail for immediate preview
       setUploadProgress(prev => ({ ...prev, [index]: 40 }))
+      console.log('Generating thumbnail...');
+      
       const thumbnail = await PhotoUtils.generateThumbnail(compressedFile)
+      console.log('Thumbnail generated, length:', thumbnail.length);
       
       // Set thumbnail immediately for better UX
       handleInputChange(index, 'photo', thumbnail)
@@ -107,21 +125,40 @@ export default function OrgHeadsEditModal({
       setUploadProgress(prev => ({ ...prev, [index]: 60 }))
       const formData = new FormData()
       formData.append('file', compressedFile)
+      formData.append('uploadType', 'organization-head')
+
+      console.log('Uploading file:', {
+        filename: compressedFile.name,
+        size: compressedFile.size,
+        type: compressedFile.type,
+        uploadType: 'organization-head'
+      })
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/upload`, {
         method: 'POST',
         body: formData,
       })
 
+      console.log('Upload response status:', response.status)
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Upload failed:', errorText)
+        throw new Error(`Upload failed: ${response.status} ${response.statusText}`)
+      }
+
       setUploadProgress(prev => ({ ...prev, [index]: 80 }))
       const result = await response.json()
+      console.log('Upload result:', result);
 
-      if (result.success) {
-        const photoPath = result.filePath || result.url
-        setUploadProgress(prev => ({ ...prev, [index]: 100 }))
-        
-        // Replace thumbnail with actual uploaded image
-        handleInputChange(index, 'photo', photoPath)
+             if (result.success) {
+         // Use the full URL from backend, or construct it from filename
+         const photoPath = result.url || (result.filePath ? `/uploads/organizations/heads/${result.filePath}` : null)
+         console.log('Photo path:', photoPath);
+         
+         setUploadProgress(prev => ({ ...prev, [index]: 100 }))
+         
+         // Replace thumbnail with actual uploaded image
+         handleInputChange(index, 'photo', photoPath)
         
         // Show success state briefly
         setTimeout(() => {
@@ -130,7 +167,8 @@ export default function OrgHeadsEditModal({
         
         console.log('Upload successful:', photoPath)
       } else {
-        throw new Error(result.message || 'Upload failed')
+        console.error('Upload failed:', result);
+        throw new Error(result.message || result.error || 'Upload failed')
       }
     } catch (error) {
       console.error('Upload error:', error)
@@ -167,10 +205,11 @@ export default function OrgHeadsEditModal({
         alert(`Please enter an email for head #${i + 1}`)
         return false
       }
-      if (!head.photo?.trim()) {
-        alert(`Please upload a profile photo for head #${i + 1}`)
-        return false
-      }
+      // Photo is optional - remove this validation
+      // if (!head.photo?.trim()) {
+      //   alert(`Please upload a profile photo for head #${i + 1}`)
+      //   return false
+      // }
       if (head.email && !/\S+@\S+\.\S+/.test(head.email)) {
         alert(`Please enter a valid email for head #${i + 1}`)
         return false
@@ -238,7 +277,7 @@ export default function OrgHeadsEditModal({
                         <div className={styles.headPhoto}>
                           <div className={styles.photoContainer}>
                             <LazyImage
-                              src={head.photo || '/default.png'}
+                              src={head.photo ? getOrganizationImageUrl(head.photo, 'head') : '/default.png'}
                               alt={`Profile photo of ${head.head_name || 'organization head'}`}
                               className={styles.photo}
                               priority={index < 2} // Prioritize first 2 images

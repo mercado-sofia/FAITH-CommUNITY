@@ -188,11 +188,14 @@ export default function ProgramDetailsPage() {
                   <div className={styles.orgInfo}>
                     {program.icon && (
                       <Image 
-                        src={program.icon} 
+                        src={program.icon ? `${API_BASE_URL}${program.icon}` : '/logo/faith_community_logo.png'} 
                         alt={`${program.orgName || program.orgID} logo`}
                         width={48} 
                         height={48}
                         className={styles.orgLogo}
+                        onError={(e) => {
+                          e.target.src = '/logo/faith_community_logo.png';
+                        }}
                       />
                     )}
                     <div className={styles.orgDetails}>

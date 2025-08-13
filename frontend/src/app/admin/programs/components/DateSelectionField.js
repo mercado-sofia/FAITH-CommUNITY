@@ -280,74 +280,75 @@ const DateSelectionField = ({
         {label} {required && <span className={styles.required}>*</span>}
       </label>
       
-      {/* Schedule Type Selection - First Row */}
-      <div className={styles.scheduleTypeRow}>
-        <CustomDropdown
-          options={scheduleOptions}
-          value={scheduleType}
-          onChange={handleScheduleTypeChange}
-          disabled={disabled}
-          placeholder="Select schedule type"
-        />
-      </div>
+      {/* Schedule Type Selection and Date Picker in Same Row */}
+      <div className={styles.dateSelectionRow}>
+        <div className={styles.dropdownContainer}>
+          <CustomDropdown
+            options={scheduleOptions}
+            value={scheduleType}
+            onChange={handleScheduleTypeChange}
+            disabled={disabled}
+            placeholder="Select schedule type"
+          />
+        </div>
 
-      {/* Date Picker Based on Schedule Type - Second Row */}
-      <div className={styles.datePickerRow}>
-        {scheduleType === 'single' && (
-          <div className={styles.singleDateContainer}>
-            <div className={styles.dateInputWrapper}>
-              <FaCalendar className={styles.dateIcon} />
-              <DatePicker
-                selected={dateRange[0]}
-                onChange={handleSingleDateChange}
-                dateFormat="MMM dd, yyyy"
-                placeholderText="Select a date"
-                className={styles.dateInput}
-                disabled={disabled}
-                minDate={new Date()}
-                isClearable
-              />
+        <div className={styles.datePickerContainer}>
+          {scheduleType === 'single' && (
+            <div className={styles.singleDateContainer}>
+              <div className={styles.dateInputWrapper}>
+                <FaCalendar className={styles.dateIcon} />
+                <DatePicker
+                  selected={dateRange[0]}
+                  onChange={handleSingleDateChange}
+                  dateFormat="MMM dd, yyyy"
+                  placeholderText="Select a date"
+                  className={styles.dateInput}
+                  disabled={disabled}
+                  minDate={new Date()}
+                  isClearable
+                />
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {scheduleType === 'range' && (
-          <div className={styles.dateRangeContainer}>
-            <div className={styles.dateInputWrapper}>
-              <FaCalendar className={styles.dateIcon} />
-              <DatePicker
-                selectsRange={true}
-                startDate={dateRange[0]}
-                endDate={dateRange[1]}
-                onChange={handleDateRangeChange}
-                dateFormat="MMM dd, yyyy"
-                placeholderText="Select start and end dates"
-                className={styles.dateInput}
-                disabled={disabled}
-                minDate={new Date()}
-                isClearable
-              />
+          {scheduleType === 'range' && (
+            <div className={styles.dateRangeContainer}>
+              <div className={styles.dateInputWrapper}>
+                <FaCalendar className={styles.dateIcon} />
+                <DatePicker
+                  selectsRange={true}
+                  startDate={dateRange[0]}
+                  endDate={dateRange[1]}
+                  onChange={handleDateRangeChange}
+                  dateFormat="MMM dd, yyyy"
+                  placeholderText="Select start and end dates"
+                  className={styles.dateInput}
+                  disabled={disabled}
+                  minDate={new Date()}
+                  isClearable
+                />
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {scheduleType === 'multiple' && (
-          <div className={styles.multipleDatesContainer}>
-            <div className={styles.dateInputWrapper}>
-              <FaCalendar className={styles.dateIcon} />
-              <MultiDatePicker
-                value={multipleDates}
-                onChange={handleMultipleDatesChange}
-                format="MMM DD, YYYY"
-                placeholder="Select multiple dates"
-                className={styles.multiDateInput}
-                disabled={disabled}
-                minDate={new Date()}
-                sort
-              />
+          {scheduleType === 'multiple' && (
+            <div className={styles.multipleDatesContainer}>
+              <div className={styles.dateInputWrapper}>
+                <FaCalendar className={styles.dateIcon} />
+                <MultiDatePicker
+                  value={multipleDates}
+                  onChange={handleMultipleDatesChange}
+                  format="MMM DD, YYYY"
+                  placeholder="Select multiple dates"
+                  className={styles.multiDateInput}
+                  disabled={disabled}
+                  minDate={new Date()}
+                  sort
+                />
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Selected Date Display - Below the row */}

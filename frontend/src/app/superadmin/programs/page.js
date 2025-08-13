@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { useGetAllProgramsByOrganizationQuery, useGetProgramsStatisticsQuery } from '@/rtk/superadmin/programsApi'
 import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/featuredProjectsApi'
+import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths'
 import StarButton from './components/StarButton'
 import ProgramDetailsModal from './components/ProgramDetailsModal'
 import FeaturedProjects from './components/featuredProjects'
@@ -42,13 +43,8 @@ const SuperadminProgramsPage = () => {
   }))
 
   const renderProgramCard = (program) => {
-    // Check if image is base64 data or file path
-    const isBase64Image = program.image && program.image.startsWith('data:image');
-    const imageSource = isBase64Image 
-      ? program.image 
-      : program.image 
-        ? `http://localhost:8080/uploads/programs/${program.image}`
-        : null;
+    // Use the new upload path utility
+    const imageSource = getProgramImageUrl(program.image);
 
     return (
       <div key={program.id} className={styles.programCard}>
@@ -259,21 +255,14 @@ const SuperadminProgramsPage = () => {
             <div key={org.organizationId} className={styles.organizationSection}>
               <div className={styles.organizationHeader}>
                 <div className={styles.organizationInfo}>
-                  {org.organizationLogo && (() => {
-                    const isBase64Logo = org.organizationLogo.startsWith('data:image');
-                    const logoSource = isBase64Logo 
-                      ? org.organizationLogo 
-                      : `http://localhost:8080/uploads/logos/${org.organizationLogo}`;
-                    
-                    return (
-                      <img 
-                        src={logoSource}
-                        alt={`${org.organizationName} logo`}
-                        className={styles.organizationLogo}
-                        onError={(e) => e.target.style.display = 'none'}
-                      />
-                    );
-                  })()}
+                  {org.organizationLogo && (
+                    <img 
+                      src={getOrganizationImageUrl(org.organizationLogo, 'logo')}
+                      alt={`${org.organizationName} logo`}
+                      className={styles.organizationLogo}
+                      onError={(e) => e.target.style.display = 'none'}
+                    />
+                  )}
                   <div className={styles.organizationDetails}>
                     <h3 className={styles.organizationName}>
                       <span className={styles.organizationAcronym}>{org.organizationAcronym}</span>

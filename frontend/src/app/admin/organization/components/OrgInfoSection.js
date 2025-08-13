@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import { FaEdit, FaEnvelope, FaFacebookF } from 'react-icons/fa'
+import { getOrganizationImageUrl } from '@/utils/uploadPaths'
 import styles from './styles/OrgInfoSection.module.css'
 
 export default function OrgInfoSection({
@@ -47,7 +48,7 @@ export default function OrgInfoSection({
           <div className={styles.logoContainer}>
             {orgData.logo ? (
               <Image
-                src={orgData.logo}
+                src={getOrganizationImageUrl(orgData.logo, 'logo')}
                 alt="Organization Logo"
                 width={120}
                 height={120}

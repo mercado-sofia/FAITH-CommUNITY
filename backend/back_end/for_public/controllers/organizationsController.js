@@ -11,12 +11,30 @@ export const getAllOrganizations = async (req, res) => {
     `);
 
     // Format the data for the frontend
-    const formattedData = rows.map(row => ({
-      id: row.id, // Use numeric ID for proper integration with news
-      acronym: row.acronym, // Organization acronym for display
-      name: row.name, // Full organization name for tooltips
-      logo: row.logo || `/logo/${row.acronym.toLowerCase()}_logo.jpg` // Fallback to expected logo path
-    }));
+    const formattedData = rows.map(row => {
+      let logoUrl;
+      if (row.logo) {
+        // If logo is stored as a filename, construct the proper URL
+        if (row.logo.includes('/')) {
+          // Legacy path - extract filename
+          const filename = row.logo.split('/').pop();
+          logoUrl = `/uploads/organizations/logos/${filename}`;
+        } else {
+          // New structure - direct filename
+          logoUrl = `/uploads/organizations/logos/${row.logo}`;
+        }
+      } else {
+        // Fallback to expected logo path
+        logoUrl = `/logo/${row.acronym.toLowerCase()}_logo.jpg`;
+      }
+      
+      return {
+        id: row.id, // Use numeric ID for proper integration with news
+        acronym: row.acronym, // Organization acronym for display
+        name: row.name, // Full organization name for tooltips
+        logo: logoUrl
+      };
+    });
 
     res.json({
       success: true,

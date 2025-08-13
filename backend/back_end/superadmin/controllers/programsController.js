@@ -26,7 +26,7 @@ export const getAllProgramsByOrganization = async (req, res) => {
     
     const [results] = await db.execute(query);
     
-    // Get multiple dates for each program
+    // Get multiple dates and additional images for each program
     const programsWithDates = await Promise.all(results.map(async (program) => {
       let multipleDates = [];
       
@@ -45,9 +45,34 @@ export const getAllProgramsByOrganization = async (req, res) => {
         multipleDates = dateRows.map(row => row.event_date);
       }
 
+      // Get additional images for this program
+      const [imageRows] = await db.execute(
+        'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
+        [program.id]
+      );
+      const additionalImages = imageRows.map(row => row.image_data);
+
+      // Construct proper logo URL
+      let logoUrl;
+      if (program.organization_logo) {
+        if (program.organization_logo.includes('/')) {
+          // Legacy path - extract filename
+          const filename = program.organization_logo.split('/').pop();
+          logoUrl = `/uploads/organizations/logos/${filename}`;
+        } else {
+          // New structure - direct filename
+          logoUrl = `/uploads/organizations/logos/${program.organization_logo}`;
+        }
+      } else {
+        // Fallback to default logo
+        logoUrl = `/logo/faith_community_logo.png`;
+      }
+
       return {
         ...program,
-        multiple_dates: multipleDates
+        organization_logo: logoUrl,
+        multiple_dates: multipleDates,
+        additional_images: additionalImages
       };
     }));
     
@@ -149,8 +174,25 @@ export const getProgramById = async (req, res) => {
       multipleDates = dateRows.map(row => row.event_date);
     }
 
+    // Construct proper logo URL
+    let logoUrl;
+    if (program.organization_logo) {
+      if (program.organization_logo.includes('/')) {
+        // Legacy path - extract filename
+        const filename = program.organization_logo.split('/').pop();
+        logoUrl = `/uploads/organizations/logos/${filename}`;
+      } else {
+        // New structure - direct filename
+        logoUrl = `/uploads/organizations/logos/${program.organization_logo}`;
+      }
+    } else {
+      // Fallback to default logo
+      logoUrl = `/logo/faith_community_logo.png`;
+    }
+
     const programWithDates = {
       ...program,
+      organization_logo: logoUrl,
       multiple_dates: multipleDates
     };
     
@@ -216,8 +258,25 @@ export const getProgramsByOrganizationId = async (req, res) => {
         multipleDates = dateRows.map(row => row.event_date);
       }
 
+      // Construct proper logo URL
+      let logoUrl;
+      if (program.organization_logo) {
+        if (program.organization_logo.includes('/')) {
+          // Legacy path - extract filename
+          const filename = program.organization_logo.split('/').pop();
+          logoUrl = `/uploads/organizations/logos/${filename}`;
+        } else {
+          // New structure - direct filename
+          logoUrl = `/uploads/organizations/logos/${program.organization_logo}`;
+        }
+      } else {
+        // Fallback to default logo
+        logoUrl = `/logo/faith_community_logo.png`;
+      }
+
       return {
         ...program,
+        organization_logo: logoUrl,
         multiple_dates: multipleDates
       };
     }));

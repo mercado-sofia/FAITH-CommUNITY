@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import { getFeaturedProjectImageUrl } from '@/utils/uploadPaths';
 import styles from './styles/ImpactSection.module.css';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { LuCalendarCheck2 } from "react-icons/lu";
@@ -69,7 +70,7 @@ export default function ImpactSection() {
     
     return {
       image: project.image ? 
-        (project.image.startsWith('data:image') ? project.image : `http://localhost:8080/uploads/featured/${project.image}`) 
+        getFeaturedProjectImageUrl(project.image)
         : '/sample/sample1.jpg',
       title: project.title || 'Featured Project',
       date: project.completedDate ? new Date(project.completedDate).toLocaleDateString('en-US', { 

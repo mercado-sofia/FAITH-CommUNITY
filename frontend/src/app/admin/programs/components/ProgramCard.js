@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
-import { FaEdit, FaCalendar, FaTag } from 'react-icons/fa';
+import { FaEdit, FaTag, FaCalendar } from 'react-icons/fa';
 import { FiTrash2 } from 'react-icons/fi';
+import { getProgramImageUrl } from '@/utils/uploadPaths';
 import styles from './styles/ProgramCard.module.css';
 
 const ProgramCard = ({ program, onEdit, onDelete }) => {
@@ -75,13 +76,14 @@ const ProgramCard = ({ program, onEdit, onDelete }) => {
       {program.image ? (
         <div className={styles.imageContainer}>
           <Image
-            src={program.image}
+            src={getProgramImageUrl(program.image) || '/default-profile.png'}
             alt={program.title}
             className={styles.programImage}
             width={400}
             height={200}
             style={{ objectFit: 'cover' }}
             onError={(e) => {
+              console.error('Image failed to load:', e.target.src);
               e.target.style.display = 'none';
             }}
           />

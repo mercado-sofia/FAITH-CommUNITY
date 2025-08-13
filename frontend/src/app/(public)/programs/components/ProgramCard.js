@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { getProgramImageUrl } from '@/utils/uploadPaths';
 import styles from '../programs.module.css';
 
 export default function ProgramCard({ project }) {
@@ -22,9 +23,9 @@ export default function ProgramCard({ project }) {
           }}
         />
       ) : project.image && !project.image.startsWith('data:') ? (
-        // Use Next.js Image for regular URLs
+        // Use Next.js Image for regular URLs (including relative file paths)
         <Image
-          src={project.image}
+          src={getProgramImageUrl(project.image)}
           alt={project.title}
           width={400}
           height={240}
@@ -74,11 +75,14 @@ export default function ProgramCard({ project }) {
 
         <Link href={`/programs/org/${project.orgID}`} className={styles.cardOrg}>
           <Image
-            src={project.icon}
+            src={project.icon ? `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${project.icon}` : '/logo/faith_community_logo.png'}
             alt={`${project.orgName} logo`}
             width={24}
             height={24}
             className={styles.cardOrgIcon}
+            onError={(e) => {
+              e.target.src = '/logo/faith_community_logo.png';
+            }}
           />
           <span>{project.orgName}</span>
         </Link>

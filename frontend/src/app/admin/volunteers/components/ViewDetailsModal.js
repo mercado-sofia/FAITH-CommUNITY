@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import { getVolunteerIdUrl } from '@/utils/uploadPaths'
 import styles from './styles/ViewDetailsModal.module.css'
 import { IoClose } from "react-icons/io5"
 
@@ -79,7 +80,7 @@ export default function VolunteerDetailModal({ app, onClose, onUpdate }) {
               <div className={styles.imagePreviewContainer}>
                 {!imageError ? (
                   <img
-                    src={`http://localhost:8080/uploads/ids/${app.validIdFilename}`}
+                    src={getVolunteerIdUrl(app.validIdFilename)}
                     alt="Valid ID"
                     className={styles.imagePreview}
                     onClick={() => setShowImageModal(true)}
@@ -90,7 +91,7 @@ export default function VolunteerDetailModal({ app, onClose, onUpdate }) {
                   <div className={styles.imageError}>
                     <p>Image not available</p>
                     <a
-                      href={`http://localhost:8080/uploads/ids/${app.validIdFilename}`}
+                      href={getVolunteerIdUrl(app.validIdFilename)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={styles.validIdLink}
@@ -140,7 +141,7 @@ export default function VolunteerDetailModal({ app, onClose, onUpdate }) {
               <IoClose />
             </button>
             <img
-              src={`http://localhost:8080/uploads/ids/${app.validIdFilename}`}
+              src={getVolunteerIdUrl(app.validIdFilename)}
               alt="Valid ID - Full Size"
               className={styles.fullSizeImage}
             />

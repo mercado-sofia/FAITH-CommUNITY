@@ -1,18 +1,14 @@
 'use client'
 
 import React from 'react'
+import { getProgramImageUrl } from '@/utils/uploadPaths'
 import styles from '../programs.module.css'
 
 const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
   if (!isOpen || !program) return null
 
-  // Check if image is base64 data or file path
-  const isBase64Image = program.image && program.image.startsWith('data:image');
-  const imageSource = isBase64Image 
-    ? program.image 
-    : program.image 
-      ? `http://localhost:8080/uploads/programs/${program.image}`
-      : null;
+  // Use the new upload path utility
+  const imageSource = getProgramImageUrl(program.image);
 
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {

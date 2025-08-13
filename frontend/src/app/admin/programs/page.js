@@ -138,12 +138,17 @@ export default function ProgramsPage() {
 
   // Handle program update
   const handleUpdateProgram = async (programData) => {
+    console.log('🔄 handleUpdateProgram called with data:', programData);
+    console.log('📝 Editing program ID:', editingProgram?.id);
+    
     try {
       if (!editingProgram?.id) {
+        console.error('❌ No editing program ID found');
         setMessage({ type: 'error', text: 'Program ID not found. Please try again.' });
         return;
       }
 
+      console.log('📡 Sending PUT request to:', `${API_BASE_URL}/api/admin/programs/${editingProgram.id}`);
       const response = await fetch(`${API_BASE_URL}/api/admin/programs/${editingProgram.id}`, {
         method: 'PUT',
         headers: {
@@ -152,6 +157,9 @@ export default function ProgramsPage() {
         body: JSON.stringify(programData),
       });
 
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response ok:', response.ok);
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`❌ Update failed: ${response.status} - ${errorText}`);
@@ -159,17 +167,19 @@ export default function ProgramsPage() {
       }
 
       const result = await response.json();
+      console.log('✅ Update successful, result:', result);
       
       setMessage({ 
         type: 'success', 
         text: 'Program updated successfully!' 
       });
       setEditingProgram(null);
+      console.log('🔄 Refreshing programs list...');
       fetchPrograms();
       
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (error) {
-      console.error('Error updating program:', error);
+      console.error('❌ Error updating program:', error);
       setMessage({ type: 'error', text: 'Failed to update program. Please try again.' });
     }
   };

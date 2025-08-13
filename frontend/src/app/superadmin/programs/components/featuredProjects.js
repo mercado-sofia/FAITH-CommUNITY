@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/featuredProjectsApi'
+import { getFeaturedProjectImageUrl } from '@/utils/uploadPaths'
 import styles from '../programs.module.css'
 
 const FeaturedProjects = () => {
@@ -81,34 +82,22 @@ const FeaturedProjects = () => {
           <div key={project.id} className={styles.featuredCard}>
             <div className={styles.cardImageContainer}>
               {project.image ? (
-                                 project.image.startsWith('data:image') ? (
-                   <img 
-                     src={project.image}
-                     alt={project.title}
-                     className={styles.cardImage}
-                     onLoad={() => {
-                       console.log(`Image loaded successfully for: ${project.title}`);
-                     }}
-                     onError={(e) => {
-                       console.log(`Image failed to load for: ${project.title}`, {
-                         src: e.target.src.substring(0, 100) + '...',
-                         error: e
-                       });
-                       e.target.style.display = 'none'
-                       e.target.nextSibling.style.display = 'flex'
-                     }}
-                   />
-                ) : (
-                  <img 
-                    src={`http://localhost:8080/uploads/featured/${project.image}`}
-                    alt={project.title}
-                    className={styles.cardImage}
-                    onError={(e) => {
-                      e.target.style.display = 'none'
-                      e.target.nextSibling.style.display = 'flex'
-                    }}
-                  />
-                )
+                <img 
+                  src={getFeaturedProjectImageUrl(project.image)}
+                  alt={project.title}
+                  className={styles.cardImage}
+                  onLoad={() => {
+                    console.log(`Image loaded successfully for: ${project.title}`);
+                  }}
+                  onError={(e) => {
+                    console.log(`Image failed to load for: ${project.title}`, {
+                      src: e.target.src.substring(0, 100) + '...',
+                      error: e
+                    });
+                    e.target.style.display = 'none'
+                    e.target.nextSibling.style.display = 'flex'
+                  }}
+                />
               ) : null}
               <div className={styles.imagePlaceholder} style={{ display: project.image ? 'none' : 'flex' }}>
                 <span>No Image</span>

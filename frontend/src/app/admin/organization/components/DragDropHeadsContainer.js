@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import Image from 'next/image'
 import { FaGripVertical, FaFacebook, FaEnvelope, FaCrown, FaUserTie, FaUser } from 'react-icons/fa'
+import { getOrganizationImageUrl } from '@/utils/uploadPaths'
 import styles from './styles/DragDropHeadsContainer.module.css'
 import { getRoleBadgeColor } from './utils/roleHierarchy'
 
@@ -107,7 +108,7 @@ export default function DragDropHeadsContainer({
           <div className={styles.headPhoto}>
             {head.photo ? (
               <Image
-                src={head.photo}
+                src={getOrganizationImageUrl(head.photo, 'head')}
                 alt={`Profile photo of ${head.head_name || head.name || 'organization head'}`}
                 width={80}
                 height={100}

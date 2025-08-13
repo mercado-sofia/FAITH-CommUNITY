@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { getOrganizationImageUrl } from "@/utils/uploadPaths";
 import styles from "./styles/SummaryModal.module.css";
 
 export default function SummaryModal({
@@ -44,7 +45,7 @@ export default function SummaryModal({
                         {key === "logo" ? (
                           originalData[key] ? (
                             <Image
-                              src={originalData[key]}
+                              src={getOrganizationImageUrl(originalData[key], 'logo')}
                               alt="Previous logo"
                               width={60}
                               height={60}
@@ -65,7 +66,7 @@ export default function SummaryModal({
                         {key === "logo" ? (
                           pendingChanges[key] ? (
                             <Image
-                              src={pendingChanges[key]}
+                              src={getOrganizationImageUrl(pendingChanges[key], 'logo')}
                               alt="New logo"
                               width={60}
                               height={60}

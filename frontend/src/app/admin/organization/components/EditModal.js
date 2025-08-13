@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { FaCamera } from 'react-icons/fa'
+import { getOrganizationImageUrl } from '@/utils/uploadPaths'
 import styles from './styles/EditModal.module.css'
 
 export default function EditModal({
@@ -93,7 +94,7 @@ export default function EditModal({
               <div className={styles.profileImageContainer}>
                 {orgData.logo ? (
                   <Image
-                    src={orgData.logo}
+                    src={getOrganizationImageUrl(orgData.logo, 'logo')}
                     alt="Organization Logo"
                     width={120}
                     height={120}

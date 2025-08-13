@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/featuredProjectsApi'
+import { getFeaturedProjectImageUrl } from '@/utils/uploadPaths'
 import styles from './featured.module.css'
 
 const FeaturedProjectsPage = () => {
@@ -18,7 +19,7 @@ const FeaturedProjectsPage = () => {
     const imageSource = isBase64Image 
       ? project.image 
       : project.image 
-        ? `http://localhost:8080/uploads/programs/${project.image}`
+        ? getFeaturedProjectImageUrl(project.image)
         : null;
 
     // Debug logging for this specific page

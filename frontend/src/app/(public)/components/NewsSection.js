@@ -256,11 +256,14 @@ export default function NewsSection() {
                   className={`${styles.orgItem} ${isActive ? styles.active : ""}`}
                 >
                   <Image
-                    src={orgObj.logo || `/logo/${orgObj.acronym?.toLowerCase()}_logo.jpg`}
+                    src={orgObj.logo ? `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${orgObj.logo}` : `/logo/${orgObj.acronym?.toLowerCase()}_logo.jpg`}
                     alt={`${orgObj.acronym || orgObj.name} logo`}
                     width={30}
                     height={30}
                     className={styles.orgLogo}
+                    onError={(e) => {
+                      e.target.src = `/logo/${orgObj.acronym?.toLowerCase()}_logo.jpg`;
+                    }}
                   />
                   <span>{orgObj.acronym || orgObj.name}</span>
                 </div>

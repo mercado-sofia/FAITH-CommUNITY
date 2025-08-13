@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { FaEdit, FaPlus, FaFacebook, FaEnvelope, FaSearch, FaTimes, FaCrown, FaUserTie, FaUser, FaGripVertical } from 'react-icons/fa'
 import { FaListUl } from 'react-icons/fa6'
 import { BsFillGrid3X3GapFill } from 'react-icons/bs'
+import { getOrganizationImageUrl } from '@/utils/uploadPaths'
 import styles from './styles/OrgHeadsSection.module.css'
 import { sortHeadsByOrder, filterHeads, getRoleBadgeColor } from './utils/roleHierarchy'
 import DragDropHeadsContainer from './DragDropHeadsContainer'
@@ -227,7 +228,7 @@ export default function OrgHeadsSection({
                 <div className={styles.headPhoto}>
                   {head.photo ? (
                     <Image
-                      src={head.photo}
+                      src={getOrganizationImageUrl(head.photo, 'head')}
                       alt={`Profile photo of ${head.head_name || head.name || 'organization head'}`}
                       width={80}
                       height={100}

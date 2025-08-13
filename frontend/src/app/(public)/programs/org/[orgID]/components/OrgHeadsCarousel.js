@@ -63,11 +63,14 @@ export default function OrgHeadsCarousel({ heads }) {
                   <div key={i} className={styles.orgheadsWrapperItem}>
                     <div className={styles.imageContainer}>
                       <Image
-                        src={head.photo || '/logo/faith_community_logo.png'}
+                        src={head.photo ? `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${head.photo}` : '/logo/faith_community_logo.png'}
                         alt={head.head_name || head.name || 'Organization Head'}
                         width={240}
                         height={280}
                         className={styles.headImage}
+                        onError={(e) => {
+                          e.target.src = '/logo/faith_community_logo.png';
+                        }}
                       />
                       <div className={styles.iconBar}>
                         {head.facebook && (

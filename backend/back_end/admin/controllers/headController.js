@@ -281,6 +281,18 @@ export const bulkUpdateHeads = async (req, res) => {
   console.log('Organization ID:', organization_id);
   console.log('Heads array:', heads);
   console.log('Request body:', req.body);
+  
+  // Log each head's photo field to check for issues
+  if (heads && Array.isArray(heads)) {
+    heads.forEach((head, index) => {
+      console.log(`Head ${index + 1} photo:`, {
+        hasPhoto: !!head.photo,
+        photoType: typeof head.photo,
+        photoLength: head.photo ? head.photo.length : 0,
+        photoStartsWithData: head.photo ? head.photo.startsWith('data:') : false
+      });
+    });
+  }
 
   if (!organization_id || !Array.isArray(heads)) {
     console.log('Validation failed: Missing organization_id or heads is not array');
@@ -356,6 +368,17 @@ export const bulkUpdateHeads = async (req, res) => {
       const priority = head.priority || getRolePriority(head.role);
       const display_order = head.display_order || priority;
 
+      // Clean up photo field - remove base64 data and limit length
+      let cleanPhoto = head.photo?.trim() || null;
+      if (cleanPhoto && cleanPhoto.startsWith('data:')) {
+        console.log(`Head ${i + 1}: Removing base64 photo data`);
+        cleanPhoto = null;
+      }
+      if (cleanPhoto && cleanPhoto.length > 500) {
+        console.log(`Head ${i + 1}: Photo field too long, truncating`);
+        cleanPhoto = cleanPhoto.substring(0, 500);
+      }
+
       console.log('Inserting head with data:', {
         organization_id,
         head_name: head.head_name.trim(),
@@ -364,7 +387,7 @@ export const bulkUpdateHeads = async (req, res) => {
         display_order,
         facebook: head.facebook?.trim() || '',
         email: head.email?.trim() || null,
-        photo: head.photo?.trim() || null,
+        photo: cleanPhoto,
       });
       
       await db.execute(
@@ -378,7 +401,7 @@ export const bulkUpdateHeads = async (req, res) => {
           display_order,
           head.facebook?.trim() || '',
           head.email?.trim() || null,
-          head.photo?.trim() || null,
+          cleanPhoto,
         ],
       )
       

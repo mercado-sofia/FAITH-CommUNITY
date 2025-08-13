@@ -29,15 +29,38 @@ const getAllFeaturedProjects = async (req, res) => {
     
     const [results] = await db.execute(query);
     
+    // Transform results to construct proper logo URLs
+    const transformedResults = results.map(project => {
+      let logoUrl;
+      if (project.org_logo) {
+        if (project.org_logo.includes('/')) {
+          // Legacy path - extract filename
+          const filename = project.org_logo.split('/').pop();
+          logoUrl = `/uploads/organizations/logos/${filename}`;
+        } else {
+          // New structure - direct filename
+          logoUrl = `/uploads/organizations/logos/${project.org_logo}`;
+        }
+      } else {
+        // Fallback to default logo
+        logoUrl = `/logo/faith_community_logo.png`;
+      }
+      
+      return {
+        ...project,
+        org_logo: logoUrl
+      };
+    });
+    
     console.log('Featured projects query results:', {
-      count: results.length,
-      firstResult: results[0] || null,
-      hasCreatedAt: results[0] ? 'created_at' in results[0] : false
+      count: transformedResults.length,
+      firstResult: transformedResults[0] || null,
+      hasCreatedAt: transformedResults[0] ? 'created_at' in transformedResults[0] : false
     });
     
     res.json({
       success: true,
-      data: results
+      data: transformedResults
     });
   } catch (error) {
     console.error('Error fetching featured projects:', error);
@@ -86,9 +109,31 @@ const getFeaturedProjectById = async (req, res) => {
       });
     }
     
+    // Transform result to construct proper logo URL
+    const project = results[0];
+    let logoUrl;
+    if (project.org_logo) {
+      if (project.org_logo.includes('/')) {
+        // Legacy path - extract filename
+        const filename = project.org_logo.split('/').pop();
+        logoUrl = `/uploads/organizations/logos/${filename}`;
+      } else {
+        // New structure - direct filename
+        logoUrl = `/uploads/organizations/logos/${project.org_logo}`;
+      }
+    } else {
+      // Fallback to default logo
+      logoUrl = `/logo/faith_community_logo.png`;
+    }
+    
+    const transformedProject = {
+      ...project,
+      org_logo: logoUrl
+    };
+    
     res.json({
       success: true,
-      data: results[0]
+      data: transformedProject
     });
   } catch (error) {
     console.error('Error fetching featured project:', error);

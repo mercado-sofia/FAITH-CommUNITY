@@ -31,15 +31,55 @@ export const getOrganizationByName = async (req, res) => {
       [org.id],
     )
 
+    // Transform heads to construct proper photo URLs
+    const transformedHeads = heads.map(head => {
+      let photoUrl;
+      if (head.photo) {
+        if (head.photo.includes('/')) {
+          // Legacy path - extract filename
+          const filename = head.photo.split('/').pop();
+          photoUrl = `/uploads/organizations/heads/${filename}`;
+        } else {
+          // New structure - direct filename
+          photoUrl = `/uploads/organizations/heads/${head.photo}`;
+        }
+      } else {
+        // Fallback to default photo
+        photoUrl = null;
+      }
+
+      return {
+        ...head,
+        photo: photoUrl
+      };
+    });
+
+    // Construct proper logo URL
+    let logoUrl;
+    if (org.logo) {
+      if (org.logo.includes('/')) {
+        // Legacy path - extract filename
+        const filename = org.logo.split('/').pop();
+        logoUrl = `/uploads/organizations/logos/${filename}`;
+      } else {
+        // New structure - direct filename
+        logoUrl = `/uploads/organizations/logos/${org.logo}`;
+      }
+    } else {
+      // Fallback to expected logo path
+      logoUrl = `/logo/${org.org.toLowerCase()}_logo.jpg`;
+    }
+
     res.json({
       success: true,
       data: {
         ...org,
+        logo: logoUrl, // Use the constructed logo URL
         email: adminEmail, // Email from admins table
         // Fix: Return single strings instead of arrays
         advocacies: advocacies.length > 0 ? advocacies[0].advocacy : "",
         competencies: competencies.length > 0 ? competencies[0].competency : "",
-        heads,
+        heads: transformedHeads, // Use the transformed heads with proper photo URLs
       },
     })
   } catch (err) {

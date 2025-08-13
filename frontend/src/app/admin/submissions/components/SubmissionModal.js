@@ -68,7 +68,7 @@ export default function SubmissionModal({ data, onClose }) {
           {formatEventDates(dataObj)}
           {dataObj.image && (
             <div className={styles.dataField}>
-              <span className={styles.fieldLabel}>Image:</span>
+              <span className={styles.fieldLabel}>Main Image:</span>
               <div className={styles.imagePreview}>
                 <img 
                   src={dataObj.image} 
@@ -80,6 +80,27 @@ export default function SubmissionModal({ data, onClose }) {
                   }}
                 />
                 <div className={styles.imageError} style={{display: 'none'}}>Image preview unavailable</div>
+              </div>
+            </div>
+          )}
+          {dataObj.additionalImages && Array.isArray(dataObj.additionalImages) && dataObj.additionalImages.length > 0 && (
+            <div className={styles.dataField}>
+              <span className={styles.fieldLabel}>Additional Images ({dataObj.additionalImages.length}):</span>
+              <div className={styles.additionalImagesGrid}>
+                {dataObj.additionalImages.map((image, index) => (
+                  <div key={index} className={styles.additionalImagePreview}>
+                    <img 
+                      src={image} 
+                      alt={`Additional image ${index + 1}`} 
+                      className={styles.additionalImage}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
+                    />
+                    <div className={styles.imageError} style={{display: 'none'}}>Image {index + 1} unavailable</div>
+                  </div>
+                ))}
               </div>
             </div>
           )}

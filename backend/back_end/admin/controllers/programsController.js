@@ -92,7 +92,7 @@ export const getProgramsByOrg = async (req, res) => {
     );
     console.log(`[DEBUG] Found ${approvedRows.length} approved programs`);
 
-    // Get multiple dates for each program
+    // Get multiple dates and additional images for each program
     const programsWithDates = await Promise.all(approvedRows.map(async (program) => {
       let multipleDates = [];
       
@@ -111,29 +111,55 @@ export const getProgramsByOrg = async (req, res) => {
         multipleDates = dateRows.map(row => row.event_date);
       }
 
+      // Get additional images for this program
+      const [imageRows] = await db.execute(
+        'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
+        [program.id]
+      );
+      const additionalImages = imageRows.map(row => row.image_data);
+
       return {
         ...program,
-        multiple_dates: multipleDates
+        multiple_dates: multipleDates,
+        additional_images: additionalImages
       };
     }));
 
     // Map approved programs with organization info
-    const approvedPrograms = programsWithDates.map(program => ({
-      id: program.id,
-      title: program.title,
-      description: program.description,
-      category: program.category,
-      status: program.status || 'active',
-      date: program.date || program.date_completed || program.date_created || program.created_at,
-      image: program.image,
-      event_start_date: program.event_start_date,
-      event_end_date: program.event_end_date,
-      multiple_dates: program.multiple_dates,
-      created_at: program.created_at,
-      orgID: program.orgAcronym || organization.org,
-      orgName: program.orgName || organization.orgName,
-      icon: program.orgLogo || null
-    }));
+    const approvedPrograms = programsWithDates.map(program => {
+      let logoUrl;
+      if (program.orgLogo) {
+        // If logo is stored as a filename, construct the proper URL
+        if (program.orgLogo.includes('/')) {
+          // Legacy path - extract filename
+          const filename = program.orgLogo.split('/').pop();
+          logoUrl = `/uploads/organizations/logos/${filename}`;
+        } else {
+          // New structure - direct filename
+          logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
+        }
+      } else {
+        // Fallback to default logo
+        logoUrl = `/logo/faith_community_logo.png`;
+      }
+      
+      return {
+        id: program.id,
+        title: program.title,
+        description: program.description,
+        category: program.category,
+        status: program.status || 'active',
+        date: program.date || program.date_completed || program.date_created || program.created_at,
+        image: program.image,
+        event_start_date: program.event_start_date,
+        event_end_date: program.event_end_date,
+        multiple_dates: program.multiple_dates,
+        created_at: program.created_at,
+        orgID: program.orgAcronym || organization.org,
+        orgName: program.orgName || organization.orgName,
+        icon: logoUrl
+      };
+    });
 
     res.json(approvedPrograms);
   } catch (error) {
@@ -181,22 +207,40 @@ export const getApprovedPrograms = async (req, res) => {
       };
     }));
 
-    const programs = programsWithDates.map(program => ({
-      id: program.id,
-      title: program.title,
-      description: program.description,
-      category: program.category,
-      status: program.status,
-      date: program.date || program.created_at,
-      image: program.image,
-      event_start_date: program.event_start_date,
-      event_end_date: program.event_end_date,
-      multiple_dates: program.multiple_dates,
-      orgID: program.orgAcronym,
-      orgName: program.orgName,
-      icon: program.orgLogo,
-      created_at: program.created_at
-    }));
+    const programs = programsWithDates.map(program => {
+      let logoUrl;
+      if (program.orgLogo) {
+        // If logo is stored as a filename, construct the proper URL
+        if (program.orgLogo.includes('/')) {
+          // Legacy path - extract filename
+          const filename = program.orgLogo.split('/').pop();
+          logoUrl = `/uploads/organizations/logos/${filename}`;
+        } else {
+          // New structure - direct filename
+          logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
+        }
+      } else {
+        // Fallback to default logo
+        logoUrl = `/logo/faith_community_logo.png`;
+      }
+      
+      return {
+        id: program.id,
+        title: program.title,
+        description: program.description,
+        category: program.category,
+        status: program.status,
+        date: program.date || program.created_at,
+        image: program.image,
+        event_start_date: program.event_start_date,
+        event_end_date: program.event_end_date,
+        multiple_dates: program.multiple_dates,
+        orgID: program.orgAcronym,
+        orgName: program.orgName,
+        icon: logoUrl,
+        created_at: program.created_at
+      };
+    });
 
     res.json({
       success: true,
@@ -248,7 +292,7 @@ export const getApprovedProgramsByOrg = async (req, res) => {
        ORDER BY p.created_at DESC
     `, [orgId]);
 
-    // Get multiple dates for each program
+    // Get multiple dates and additional images for each program
     const programsWithDates = await Promise.all(rows.map(async (program) => {
       let multipleDates = [];
       
@@ -267,28 +311,55 @@ export const getApprovedProgramsByOrg = async (req, res) => {
         multipleDates = dateRows.map(row => row.event_date);
       }
 
+      // Get additional images for this program
+      const [imageRows] = await db.execute(
+        'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
+        [program.id]
+      );
+      const additionalImages = imageRows.map(row => row.image_data);
+
       return {
         ...program,
-        multiple_dates: multipleDates
+        multiple_dates: multipleDates,
+        additional_images: additionalImages
       };
     }));
 
-    const programs = programsWithDates.map(program => ({
-      id: program.id,
-      title: program.title,
-      description: program.description,
-      category: program.category,
-      status: program.status,
-      date: program.date_completed || program.date_created,
-      image: program.image,
-      event_start_date: program.event_start_date,
-      event_end_date: program.event_end_date,
-      multiple_dates: program.multiple_dates,
-      orgID: program.orgAcronym,
-      orgName: program.orgName,
-      icon: program.orgLogo,
-      created_at: program.created_at
-    }));
+    const programs = programsWithDates.map(program => {
+      let logoUrl;
+      if (program.orgLogo) {
+        // If logo is stored as a filename, construct the proper URL
+        if (program.orgLogo.includes('/')) {
+          // Legacy path - extract filename
+          const filename = program.orgLogo.split('/').pop();
+          logoUrl = `/uploads/organizations/logos/${filename}`;
+        } else {
+          // New structure - direct filename
+          logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
+        }
+      } else {
+        // Fallback to default logo
+        logoUrl = `/logo/faith_community_logo.png`;
+      }
+      
+      return {
+        id: program.id,
+        title: program.title,
+        description: program.description,
+        category: program.category,
+        status: program.status,
+        date: program.date_completed || program.date_created,
+        image: program.image,
+        additional_images: program.additional_images,
+        event_start_date: program.event_start_date,
+        event_end_date: program.event_end_date,
+        multiple_dates: program.multiple_dates,
+        orgID: program.orgAcronym,
+        orgName: program.orgName,
+        icon: logoUrl,
+        created_at: program.created_at
+      };
+    });
 
     res.json({
       success: true,
@@ -370,7 +441,12 @@ export const deleteProgramSubmission = async (req, res) => {
 // Update an approved program (admin only)
 export const updateProgram = async (req, res) => {
   const { id } = req.params;
-  const { title, description, category, status, image, event_start_date, event_end_date, multiple_dates } = req.body;
+  const { title, description, category, status, image, additionalImages, event_start_date, event_end_date, multiple_dates } = req.body;
+
+  console.log('🔄 Update program request received:', { id, title, description, category, status });
+  console.log('📅 Date data:', { event_start_date, event_end_date, multiple_dates });
+  console.log('🖼️ Image data:', image ? 'Image provided' : 'No image provided');
+  console.log('🖼️ Additional images:', additionalImages ? `${additionalImages.length} images` : 'No additional images');
 
   if (!id) {
     return res.status(400).json({
@@ -389,34 +465,82 @@ export const updateProgram = async (req, res) => {
   try {
     // Check if program exists
     const [existingProgram] = await db.execute(
-      'SELECT id, organization_id FROM programs_projects WHERE id = ?',
+      'SELECT id, organization_id, image FROM programs_projects WHERE id = ?',
       [id]
     );
 
     if (existingProgram.length === 0) {
+      console.log('❌ Program not found:', id);
       return res.status(404).json({
         success: false,
         message: "Program not found",
       });
     }
 
+    console.log('✅ Program found:', existingProgram[0]);
+    let imagePath = existingProgram[0].image; // Keep existing image by default
+
+    // Handle main image if provided
+    if (image && image.startsWith('data:image/')) {
+      // Convert base64 to file
+      const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+      
+      // Generate unique filename
+      const timestamp = Date.now();
+      const randomSuffix = Math.round(Math.random() * 1e9);
+      const extension = image.match(/data:image\/(\w+);/)[1];
+      const filename = `program-${timestamp}-${randomSuffix}.${extension}`;
+      
+      // Save file to uploads directory
+      const fs = await import('fs');
+      const path = await import('path');
+      const uploadsDir = path.join(process.cwd(), 'uploads', 'programs', 'main-images');
+      
+      // Ensure directory exists
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      
+      const filePath = path.join(uploadsDir, filename);
+      fs.writeFileSync(filePath, buffer);
+      
+      imagePath = `programs/main-images/${filename}`;
+      console.log('✅ Main image saved:', imagePath);
+    } else if (image === null) {
+      // User wants to remove the image
+      imagePath = null;
+      console.log('🗑️ User requested to remove main image');
+    } else if (image === undefined) {
+      // No change to image - keep existing
+      console.log('🔄 Keeping existing main image:', imagePath);
+    } else {
+      console.log('🔄 Keeping existing main image:', imagePath);
+    }
+    // If image is null, keep the existing image (imagePath already set to existingProgram[0].image)
+
+    console.log('📝 Updating program in database...');
     // Update the program
     const [result] = await db.execute(
       `UPDATE programs_projects 
        SET title = ?, description = ?, category = ?, status = ?, image = ?, event_start_date = ?, event_end_date = ?
        WHERE id = ?`,
-      [title, description, category, status || 'active', image, event_start_date || null, event_end_date || null, id]
+      [title, description, category, status || 'active', imagePath, event_start_date || null, event_end_date || null, id]
     );
 
     if (result.affectedRows === 0) {
+      console.log('❌ No rows affected during update');
       return res.status(404).json({
         success: false,
         message: "Program not found or no changes made",
       });
     }
 
+    console.log('✅ Program updated successfully, rows affected:', result.affectedRows);
+
     // Handle multiple dates if provided
     if (multiple_dates && Array.isArray(multiple_dates)) {
+      console.log('📅 Processing multiple dates:', multiple_dates);
       // First, delete existing multiple dates for this program
       await db.execute('DELETE FROM program_event_dates WHERE program_id = ?', [id]);
       
@@ -429,8 +553,55 @@ export const updateProgram = async (req, res) => {
           );
         }
       }
+      console.log('✅ Multiple dates updated');
     }
 
+    // Handle additional images if provided
+    if (additionalImages && Array.isArray(additionalImages)) {
+      console.log('🖼️ Processing additional images:', additionalImages.length);
+      // First, delete existing additional images for this program
+      await db.execute('DELETE FROM program_additional_images WHERE program_id = ?', [id]);
+      
+      // Then insert new additional images
+      if (additionalImages.length > 0) {
+        const fs = await import('fs');
+        const path = await import('path');
+        const uploadsDir = path.join(process.cwd(), 'uploads', 'programs', 'additional-images');
+        
+        // Ensure directory exists
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+
+        for (let i = 0; i < additionalImages.length; i++) {
+          const imageData = additionalImages[i];
+          
+          if (imageData && imageData.startsWith('data:image/')) {
+            // Convert base64 to file
+            const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+            const buffer = Buffer.from(base64Data, 'base64');
+            
+            // Generate unique filename
+            const timestamp = Date.now();
+            const randomSuffix = Math.round(Math.random() * 1e9);
+            const extension = imageData.match(/data:image\/(\w+);/)[1];
+            const filename = `additional-${timestamp}-${randomSuffix}-${i}.${extension}`;
+            
+            const filePath = path.join(uploadsDir, filename);
+            fs.writeFileSync(filePath, buffer);
+            
+            // Store file path in database
+            await db.execute(
+              'INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)',
+              [id, `programs/additional-images/${filename}`, i]
+            );
+          }
+        }
+      }
+      console.log('✅ Additional images updated');
+    }
+
+    console.log('🎉 Program update completed successfully');
     res.json({
       success: true,
       message: "Program updated successfully",
@@ -440,7 +611,7 @@ export const updateProgram = async (req, res) => {
         description,
         category,
         status: status || 'active',
-        image,
+        image: imagePath,
         event_start_date,
         event_end_date,
         multiple_dates

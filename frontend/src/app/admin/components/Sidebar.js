@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { useSelector } from "react-redux"
 import { useState, useEffect } from "react"
 import { selectCurrentAdmin } from "../../../rtk/superadmin/adminSlice"
+import { getOrganizationImageUrl } from "@/utils/uploadPaths"
 import styles from "./sidebar.module.css"
 import LogoutModalTrigger from "../logout/page.js"
 import { FaUserCheck } from "react-icons/fa"
@@ -48,7 +49,7 @@ export default function Sidebar() {
         <div className={styles.logoGradientBorder}>
           <div className={styles.logoInnerWhite}>
             <Image
-              src={orgLogo || "/default-profile.png"}
+              src={orgLogo ? getOrganizationImageUrl(orgLogo, 'logo') : "/default-profile.png"}
               width={45}
               height={45}
               alt="Organization Logo"

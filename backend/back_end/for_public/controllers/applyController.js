@@ -66,7 +66,7 @@ export const submitVolunteer = async (req, res) => {
       });
     }
 
-    const validIdPath = req.file ? `/uploads/ids/${req.file.filename}` : null;
+    const validIdPath = req.file ? `/uploads/volunteers/valid-ids/${req.file.filename}` : null;
 
     const sql = `
       INSERT INTO volunteers 
@@ -306,7 +306,7 @@ export const getApprovedUpcomingPrograms = async (req, res) => {
 
     console.log(`[DEBUG] Found ${rows.length} approved upcoming programs`);
 
-    // Get multiple dates for each program
+    // Get multiple dates and additional images for each program
     const programsWithDates = await Promise.all(rows.map(async (program) => {
       let multipleDates = [];
       
@@ -325,30 +325,57 @@ export const getApprovedUpcomingPrograms = async (req, res) => {
         multipleDates = dateRows.map(row => row.event_date);
       }
 
+      // Get additional images for this program
+      const [imageRows] = await db.execute(
+        'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
+        [program.id]
+      );
+      const additionalImages = imageRows.map(row => row.image_data);
+
       return {
         ...program,
-        multiple_dates: multipleDates
+        multiple_dates: multipleDates,
+        additional_images: additionalImages
       };
     }));
 
-    const programs = programsWithDates.map(program => ({
-      id: program.id,
-      title: program.title,
-      name: program.title, // Alternative field name for compatibility
-      description: program.description,
-      category: program.category,
-      status: program.status,
-      date: program.date || program.created_at,
-      image: program.image,
-      event_start_date: program.event_start_date,
-      event_end_date: program.event_end_date,
-      multiple_dates: program.multiple_dates,
-      organization: program.orgAcronym, // Primary org field
-      org: program.orgAcronym, // Alternative org field for compatibility
-      orgName: program.orgName,
-      icon: program.orgLogo,
-      created_at: program.created_at
-    }));
+    const programs = programsWithDates.map(program => {
+      let logoUrl;
+      if (program.orgLogo) {
+        // If logo is stored as a filename, construct the proper URL
+        if (program.orgLogo.includes('/')) {
+          // Legacy path - extract filename
+          const filename = program.orgLogo.split('/').pop();
+          logoUrl = `/uploads/organizations/logos/${filename}`;
+        } else {
+          // New structure - direct filename
+          logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
+        }
+      } else {
+        // Fallback to default logo
+        logoUrl = `/logo/faith_community_logo.png`;
+      }
+      
+      return {
+        id: program.id,
+        title: program.title,
+        name: program.title, // Alternative field name for compatibility
+        description: program.description,
+        category: program.category,
+        status: program.status,
+        date: program.date || program.created_at,
+        image: program.image,
+        additional_images: program.additional_images,
+        event_start_date: program.event_start_date,
+        event_end_date: program.event_end_date,
+        multiple_dates: program.multiple_dates,
+        organization: program.orgAcronym, // Primary org field
+        org: program.orgAcronym, // Alternative org field for compatibility
+        orgName: program.orgName,
+        icon: logoUrl,
+        created_at: program.created_at
+      };
+    });
 
     res.json(programs);
   } catch (error) {

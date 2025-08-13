@@ -124,6 +124,24 @@ const initializeDatabase = async () => {
       console.log("✅ Program_event_dates table created successfully!");
     }
 
+    // Check if program_additional_images table exists
+    const [additionalImagesTables] = await connection.query('SHOW TABLES LIKE "program_additional_images"');
+    
+    if (additionalImagesTables.length === 0) {
+      console.log("Creating program_additional_images table...");
+      await connection.query(`
+        CREATE TABLE program_additional_images (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          program_id INT NOT NULL,
+          image_data LONGTEXT NOT NULL,
+          image_order INT DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE CASCADE
+        )
+      `);
+      console.log("✅ Program_additional_images table created successfully!");
+    }
+
     // Check if featured_projects table has created_at field, add it if missing
     const [featuredCreatedAtColumns] = await connection.query(`
       SELECT COLUMN_NAME 

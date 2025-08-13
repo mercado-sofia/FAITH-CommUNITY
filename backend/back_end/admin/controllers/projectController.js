@@ -50,7 +50,7 @@ export const getProjects = async (req, res) => {
     // Transform image paths to full URLs
     const projectsWithUrls = rows.map(project => ({
       ...project,
-      image: project.image ? `http://localhost:8080/uploads/${project.image}` : null
+      image: project.image ? `/uploads/programs/main-images/${project.image}` : null
     }));
     
     res.json(projectsWithUrls);
@@ -70,7 +70,7 @@ export const getAllProjects = async (req, res) => {
     // Transform image paths to full URLs
     const projectsWithUrls = rows.map(project => ({
       ...project,
-      image: project.image ? `http://localhost:8080/uploads/${project.image}` : null
+      image: project.image ? `/uploads/programs/main-images/${project.image}` : null
     }));
     
     res.json(projectsWithUrls);

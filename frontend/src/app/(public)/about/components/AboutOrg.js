@@ -96,7 +96,7 @@ export default function AboutOrg() {
               {organizations.map((org, i) => (
                 <div className={styles.orgItem} key={org.id || i}>
                   <Image 
-                    src={org.logo} 
+                    src={`${API_BASE_URL}${org.logo}`} 
                     alt={org.name} 
                     width={100} 
                     height={100}

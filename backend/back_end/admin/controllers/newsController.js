@@ -177,16 +177,34 @@ export const getNewsByOrg = async (req, res) => {
     console.log(`[DEBUG] Found ${newsRows.length} news items`);
 
     // Map news with organization info
-    const news = newsRows.map(news => ({
-      id: news.id,
-      title: news.title,
-      description: news.description,
-      date: news.date || news.created_at,
-      created_at: news.created_at,
-      orgID: news.orgAcronym || organization.org,
-      orgName: news.orgName || organization.orgName,
-      icon: news.orgLogo || null
-    }));
+    const news = newsRows.map(news => {
+      let logoUrl;
+      if (news.orgLogo) {
+        // If logo is stored as a filename, construct the proper URL
+        if (news.orgLogo.includes('/')) {
+          // Legacy path - extract filename
+          const filename = news.orgLogo.split('/').pop();
+          logoUrl = `/uploads/organizations/logos/${filename}`;
+        } else {
+          // New structure - direct filename
+          logoUrl = `/uploads/organizations/logos/${news.orgLogo}`;
+        }
+      } else {
+        // Fallback to default logo
+        logoUrl = `/logo/faith_community_logo.png`;
+      }
+      
+      return {
+        id: news.id,
+        title: news.title,
+        description: news.description,
+        date: news.date || news.created_at,
+        created_at: news.created_at,
+        orgID: news.orgAcronym || organization.org,
+        orgName: news.orgName || organization.orgName,
+        icon: logoUrl
+      };
+    });
 
     res.json(news);
   } catch (error) {
@@ -209,16 +227,34 @@ export const getApprovedNews = async (req, res) => {
        ORDER BY n.created_at DESC`
     );
 
-    const news = rows.map(news => ({
-      id: news.id,
-      title: news.title,
-      description: news.description,
-      date: news.date || news.date_published || news.created_at,
-      created_at: news.created_at,
-      orgID: news.orgAcronym || `Org-${news.organization_id}`,
-      orgName: news.orgName || `Organization ${news.organization_id}`,
-      icon: news.orgLogo || null
-    }));
+    const news = rows.map(news => {
+      let logoUrl;
+      if (news.orgLogo) {
+        // If logo is stored as a filename, construct the proper URL
+        if (news.orgLogo.includes('/')) {
+          // Legacy path - extract filename
+          const filename = news.orgLogo.split('/').pop();
+          logoUrl = `/uploads/organizations/logos/${filename}`;
+        } else {
+          // New structure - direct filename
+          logoUrl = `/uploads/organizations/logos/${news.orgLogo}`;
+        }
+      } else {
+        // Fallback to default logo
+        logoUrl = `/logo/faith_community_logo.png`;
+      }
+      
+      return {
+        id: news.id,
+        title: news.title,
+        description: news.description,
+        date: news.date || news.date_published || news.created_at,
+        created_at: news.created_at,
+        orgID: news.orgAcronym || `Org-${news.organization_id}`,
+        orgName: news.orgName || `Organization ${news.organization_id}`,
+        icon: logoUrl
+      };
+    });
 
     console.log('📰 Fetched news for public view:', news);
     res.json(news);
@@ -276,16 +312,34 @@ export const getApprovedNewsByOrg = async (req, res) => {
       [organization.id]
     );
 
-    const news = rows.map(news => ({
-      id: news.id,
-      title: news.title,
-      description: news.description,
-      date: news.date || news.date_published || news.created_at,
-      created_at: news.created_at,
-      orgID: news.orgAcronym || organization.org || `Org-${news.organization_id}`,
-      orgName: news.orgName || organization.orgName || `Organization ${news.organization_id}`,
-      icon: news.orgLogo || null
-    }));
+    const news = rows.map(news => {
+      let logoUrl;
+      if (news.orgLogo) {
+        // If logo is stored as a filename, construct the proper URL
+        if (news.orgLogo.includes('/')) {
+          // Legacy path - extract filename
+          const filename = news.orgLogo.split('/').pop();
+          logoUrl = `/uploads/organizations/logos/${filename}`;
+        } else {
+          // New structure - direct filename
+          logoUrl = `/uploads/organizations/logos/${news.orgLogo}`;
+        }
+      } else {
+        // Fallback to default logo
+        logoUrl = `/logo/faith_community_logo.png`;
+      }
+      
+      return {
+        id: news.id,
+        title: news.title,
+        description: news.description,
+        date: news.date || news.date_published || news.created_at,
+        created_at: news.created_at,
+        orgID: news.orgAcronym || organization.org || `Org-${news.organization_id}`,
+        orgName: news.orgName || organization.orgName || `Organization ${news.organization_id}`,
+        icon: logoUrl
+      };
+    });
 
     console.log('📰 Fetched news for organization:', news);
     res.json(news);
@@ -327,6 +381,22 @@ export const getNewsById = async (req, res) => {
     }
 
     const news = rows[0];
+    let logoUrl;
+    if (news.orgLogo) {
+      // If logo is stored as a filename, construct the proper URL
+      if (news.orgLogo.includes('/')) {
+        // Legacy path - extract filename
+        const filename = news.orgLogo.split('/').pop();
+        logoUrl = `/uploads/organizations/logos/${filename}`;
+      } else {
+        // New structure - direct filename
+        logoUrl = `/uploads/organizations/logos/${news.orgLogo}`;
+      }
+    } else {
+      // Fallback to default logo
+      logoUrl = `/logo/faith_community_logo.png`;
+    }
+    
     const newsData = {
       id: news.id,
       title: news.title,
@@ -335,7 +405,7 @@ export const getNewsById = async (req, res) => {
       created_at: news.created_at,
       orgID: news.orgAcronym || `Org-${news.organization_id}`,
       orgName: news.orgName || `Organization ${news.organization_id}`,
-      icon: news.orgLogo || null
+      icon: logoUrl
     };
 
     console.log('📰 Fetched news detail:', newsData);

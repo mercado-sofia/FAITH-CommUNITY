@@ -43,8 +43,8 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
         pp.category,
         pp.status,
         pp.image,
-        pp.date_created,
-        pp.date_completed,
+        pp.event_start_date,
+        pp.event_end_date,
         pp.created_at,
         pp.updated_at,
         pp.organization_id,
@@ -58,9 +58,34 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
     
     const [rows] = await db.execute(query);
     
+    // Get multiple dates for each program
+    const programsWithDates = await Promise.all(rows.map(async (program) => {
+      let multipleDates = [];
+      
+      // If program has event_start_date and event_end_date, check if they're the same (single day)
+      if (program.event_start_date && program.event_end_date) {
+        if (program.event_start_date === program.event_end_date) {
+          // Single day program
+          multipleDates = [program.event_start_date];
+        }
+      } else {
+        // Check for multiple dates in program_event_dates table
+        const [dateRows] = await db.execute(
+          'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
+          [program.id]
+        );
+        multipleDates = dateRows.map(row => row.event_date);
+      }
+
+      return {
+        ...program,
+        multiple_dates: multipleDates
+      };
+    }));
+    
     res.json({
       success: true,
-      data: rows
+      data: programsWithDates
     });
   } catch (error) {
     console.error('Error fetching all programs for superadmin:', error);

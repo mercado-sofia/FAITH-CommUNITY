@@ -33,11 +33,15 @@ const FeaturedProjects = () => {
   }
 
   if (error) {
+    console.error('Featured projects error:', error);
     return (
       <div className={styles.featuredSection}>
         <h2 className={styles.sectionTitle}>Featured Projects</h2>
         <div className={styles.errorContainer}>
           <p className={styles.errorMessage}>Failed to load featured projects</p>
+          <p style={{fontSize: '12px', color: '#666'}}>
+            Error: {error?.data?.message || error?.error || 'Unknown error'}
+          </p>
           <button onClick={refetch} className={styles.retryButton}>
             Try Again
           </button>
@@ -77,29 +81,23 @@ const FeaturedProjects = () => {
           <div key={project.id} className={styles.featuredCard}>
             <div className={styles.cardImageContainer}>
               {project.image ? (
-                project.image.startsWith('data:image') ? (
-                  <div>
-                    <img 
-                      src={project.image}
-                      alt={project.title}
-                      className={styles.cardImage}
-                      onLoad={() => {
-                        console.log(`Image loaded successfully for: ${project.title}`);
-                      }}
-                      onError={(e) => {
-                        console.log(`Image failed to load for: ${project.title}`, {
-                          src: e.target.src.substring(0, 100) + '...',
-                          error: e
-                        });
-                        e.target.style.display = 'none'
-                        e.target.nextSibling.style.display = 'flex'
-                      }}
-                    />
-                    {/* Debug: Show first 100 chars of base64 */}
-                    <div style={{fontSize: '10px', color: 'red', padding: '5px'}}>
-                      Debug: {project.image.substring(0, 100)}...
-                    </div>
-                  </div>
+                                 project.image.startsWith('data:image') ? (
+                   <img 
+                     src={project.image}
+                     alt={project.title}
+                     className={styles.cardImage}
+                     onLoad={() => {
+                       console.log(`Image loaded successfully for: ${project.title}`);
+                     }}
+                     onError={(e) => {
+                       console.log(`Image failed to load for: ${project.title}`, {
+                         src: e.target.src.substring(0, 100) + '...',
+                         error: e
+                       });
+                       e.target.style.display = 'none'
+                       e.target.nextSibling.style.display = 'flex'
+                     }}
+                   />
                 ) : (
                   <img 
                     src={`http://localhost:8080/uploads/featured/${project.image}`}
@@ -137,7 +135,7 @@ const FeaturedProjects = () => {
                   {project.status}
                 </span>
                 <span className={styles.cardDate}>
-                  {project.dateCreated ? new Date(project.dateCreated).toLocaleDateString() : 'N/A'}
+                  {project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'N/A'}
                 </span>
               </div>
             </div>

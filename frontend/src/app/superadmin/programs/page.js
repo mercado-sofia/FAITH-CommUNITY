@@ -95,7 +95,23 @@ const SuperadminProgramsPage = () => {
             </button>
           </div>
           <span className={styles.programDate}>
-            {program.dateCreated ? new Date(program.dateCreated).toLocaleDateString() : 'N/A'}
+            {(() => {
+              // Show the posted date (created_at) - when the program was created
+              if (program.createdAt) {
+                try {
+                  const createdDate = new Date(program.createdAt);
+                  if (isNaN(createdDate.getTime())) {
+                    console.error('Invalid createdAt date for program:', program.id, program.createdAt);
+                    return 'Invalid Date';
+                  }
+                  return createdDate.toLocaleDateString();
+                } catch (error) {
+                  console.error('Error parsing createdAt for program:', program.id, error);
+                  return 'Date Error';
+                }
+              }
+              return 'N/A';
+            })()}
           </span>
         </div>
       </div>

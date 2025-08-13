@@ -391,6 +391,24 @@
   font-style: italic;
 }
 
+/* Event Dates Styling */
+.eventDatesList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.eventDateTag {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid #bae6fd;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .modalContainer {

@@ -180,6 +180,24 @@
   border: 1px solid #d1d5db;
 }
 
+/* Event Dates Styling */
+.eventDatesList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.eventDateTag {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid #bae6fd;
+}
+
 /* Modal Footer */
 .modalFooter {
   padding: 16px 24px;

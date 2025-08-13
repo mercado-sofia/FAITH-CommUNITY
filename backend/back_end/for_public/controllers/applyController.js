@@ -306,7 +306,32 @@ export const getApprovedUpcomingPrograms = async (req, res) => {
 
     console.log(`[DEBUG] Found ${rows.length} approved upcoming programs`);
 
-    const programs = rows.map(program => ({
+    // Get multiple dates for each program
+    const programsWithDates = await Promise.all(rows.map(async (program) => {
+      let multipleDates = [];
+      
+      // If program has event_start_date and event_end_date, check if they're the same (single day)
+      if (program.event_start_date && program.event_end_date) {
+        if (program.event_start_date === program.event_end_date) {
+          // Single day program
+          multipleDates = [program.event_start_date];
+        }
+      } else {
+        // Check for multiple dates in program_event_dates table
+        const [dateRows] = await db.execute(
+          'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
+          [program.id]
+        );
+        multipleDates = dateRows.map(row => row.event_date);
+      }
+
+      return {
+        ...program,
+        multiple_dates: multipleDates
+      };
+    }));
+
+    const programs = programsWithDates.map(program => ({
       id: program.id,
       title: program.title,
       name: program.title, // Alternative field name for compatibility
@@ -315,6 +340,9 @@ export const getApprovedUpcomingPrograms = async (req, res) => {
       status: program.status,
       date: program.date || program.created_at,
       image: program.image,
+      event_start_date: program.event_start_date,
+      event_end_date: program.event_end_date,
+      multiple_dates: program.multiple_dates,
       organization: program.orgAcronym, // Primary org field
       org: program.orgAcronym, // Alternative org field for compatibility
       orgName: program.orgName,

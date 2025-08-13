@@ -22,17 +22,21 @@ export const featuredProjectsApi = createApi({
     getAllFeaturedProjects: builder.query({
       query: () => `/superadmin/featured-projects`,
       providesTags: ["FeaturedProject"],
+      // Add timeout and retry logic
+      keepUnusedDataFor: 60,
       transformResponse: (response) => {
         console.log('featuredProjectsApi - getAllFeaturedProjects response:', response);
         if (response.success && Array.isArray(response.data)) {
           // Debug: Log image data for each project
           response.data.forEach((project, index) => {
-            console.log(`Project ${index + 1} image data:`, {
+            console.log(`Project ${index + 1} data:`, {
               id: project.id,
               title: project.title,
               hasImage: !!project.image,
               imageType: project.image ? (project.image.startsWith('data:') ? 'base64' : 'file') : 'none',
-              imagePreview: project.image ? project.image.substring(0, 100) + '...' : null
+              imagePreview: project.image ? project.image.substring(0, 100) + '...' : null,
+              hasCreatedAt: 'created_at' in project,
+              createdAt: project.created_at
             });
           });
           
@@ -43,7 +47,7 @@ export const featuredProjectsApi = createApi({
             description: project.description,
             image: project.image,
             status: project.status,
-            dateCreated: project.date_created,
+            dateCreated: project.created_at, // Use created_at instead of date_created
             dateCompleted: project.date_completed,
             createdAt: project.created_at,
             updatedAt: project.updated_at,

@@ -111,9 +111,9 @@ const ViewDetailsModal = ({
                   <div className={styles.programDetails}>
                     {(() => {
                       try {
-                        const programData = typeof submissionData.data === 'string' 
-                          ? JSON.parse(submissionData.data) 
-                          : submissionData.data;
+                        const programData = typeof submissionData.proposed_data === 'string' 
+                          ? JSON.parse(submissionData.proposed_data) 
+                          : submissionData.proposed_data;
                         return (
                           <div className={styles.programInfo}>
                             <div className={styles.programField}>
@@ -128,9 +128,38 @@ const ViewDetailsModal = ({
                             <div className={styles.programField}>
                               <strong>Status:</strong> {programData.status || 'N/A'}
                             </div>
-                            <div className={styles.programField}>
-                              <strong>Date:</strong> {programData.date || 'N/A'}
-                            </div>
+                            {(() => {
+                              // Format event dates for display
+                              if (programData.multiple_dates && Array.isArray(programData.multiple_dates) && programData.multiple_dates.length > 0) {
+                                return (
+                                  <div className={styles.programField}>
+                                    <strong>Event Dates:</strong>
+                                    <div className={styles.eventDatesList}>
+                                      {programData.multiple_dates.map((date, index) => (
+                                        <span key={index} className={styles.eventDateTag}>
+                                          {new Date(date).toLocaleDateString()}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              } else if (programData.event_start_date && programData.event_end_date) {
+                                if (programData.event_start_date === programData.event_end_date) {
+                                  return (
+                                    <div className={styles.programField}>
+                                      <strong>Event Date:</strong> {new Date(programData.event_start_date).toLocaleDateString()}
+                                    </div>
+                                  );
+                                } else {
+                                  return (
+                                    <div className={styles.programField}>
+                                      <strong>Event Date Range:</strong> {new Date(programData.event_start_date).toLocaleDateString()} - {new Date(programData.event_end_date).toLocaleDateString()}
+                                    </div>
+                                  );
+                                }
+                              }
+                              return null;
+                            })()}
                             {programData.image && (
                               <div className={styles.programField}>
                                 <strong>Image:</strong>

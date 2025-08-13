@@ -24,13 +24,48 @@ export default function SubmissionModal({ data, onClose }) {
         </div>
       );
     } else if (data.section === 'programs') {
+      // Format event dates for display
+      const formatEventDates = (programData) => {
+        if (programData.multiple_dates && Array.isArray(programData.multiple_dates) && programData.multiple_dates.length > 0) {
+          return (
+            <div className={styles.dataField}>
+              <span className={styles.fieldLabel}>Event Dates:</span>
+              <div className={styles.eventDatesList}>
+                {programData.multiple_dates.map((date, index) => (
+                  <span key={index} className={styles.eventDateTag}>
+                    {new Date(date).toLocaleDateString()}
+                  </span>
+                ))}
+              </div>
+            </div>
+          );
+        } else if (programData.event_start_date && programData.event_end_date) {
+          if (programData.event_start_date === programData.event_end_date) {
+            return (
+              <div className={styles.dataField}>
+                <span className={styles.fieldLabel}>Event Date:</span>
+                {new Date(programData.event_start_date).toLocaleDateString()}
+              </div>
+            );
+          } else {
+            return (
+              <div className={styles.dataField}>
+                <span className={styles.fieldLabel}>Event Date Range:</span>
+                {new Date(programData.event_start_date).toLocaleDateString()} - {new Date(programData.event_end_date).toLocaleDateString()}
+              </div>
+            );
+          }
+        }
+        return null;
+      };
+
       return (
         <div className={styles.programData}>
           {dataObj.title && <div className={styles.dataField}><span className={styles.fieldLabel}>Title:</span> {dataObj.title}</div>}
           {dataObj.description && <div className={styles.dataField}><span className={styles.fieldLabel}>Description:</span> {dataObj.description}</div>}
           {dataObj.category && <div className={styles.dataField}><span className={styles.fieldLabel}>Category:</span> {dataObj.category}</div>}
           {dataObj.status && <div className={styles.dataField}><span className={styles.fieldLabel}>Status:</span> <span className={`${styles.statusIndicator} ${styles[dataObj.status?.toLowerCase()]}`}>{dataObj.status}</span></div>}
-          {dataObj.date && <div className={styles.dataField}><span className={styles.fieldLabel}>Date:</span> {new Date(dataObj.date).toLocaleDateString()}</div>}
+          {formatEventDates(dataObj)}
           {dataObj.image && (
             <div className={styles.dataField}>
               <span className={styles.fieldLabel}>Image:</span>

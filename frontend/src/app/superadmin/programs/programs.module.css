@@ -1049,3 +1049,54 @@
   font-size: 1.1rem;
   margin: 0;
 }
+
+/* Event Dates Styling */
+.eventDatesSection {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.eventDatesTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.5rem 0;
+}
+
+.eventDatesList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.eventDateTag {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid #bae6fd;
+}
+
+.singleEventDate {
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 500;
+  padding: 0.25rem 0;
+}
+
+.eventDateRange {
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 500;
+  padding: 0.25rem 0;
+}
+
+.noEventDates {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-style: italic;
+  padding: 0.25rem 0;
+}

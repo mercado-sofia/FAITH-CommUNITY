@@ -7,17 +7,19 @@ import styles from './styles/OrgInfoSection.module.css'
 
 export default function OrgInfoSection({
   orgData,
-  message,
   isEditing,
   setIsEditing,
   setShowEditModal,
   setOriginalData,
-  setEditPreviewData
+  setEditPreviewData,
+  currentSection,
+  setCurrentSection
 }) {
   const handleEditClick = () => {
     setOriginalData({ ...orgData })
     setEditPreviewData({ ...orgData })
     setIsEditing(true)
+    setCurrentSection('organization')
     setShowEditModal(true)
   }
 
@@ -25,7 +27,7 @@ export default function OrgInfoSection({
     <div className={styles.section}>
       <div className={styles.header}>
         <h2 className={styles.sectionTitle}>Organization Details</h2>
-        {!isEditing && (
+        {(!isEditing || currentSection !== 'organization') && (
           <button
             onClick={handleEditClick}
             className={styles.editIcon}
@@ -36,11 +38,7 @@ export default function OrgInfoSection({
         )}
       </div>
 
-      {message.text && !message.section && (
-        <div className={`${styles.message} ${styles[message.type]}`}>
-          {message.text}
-        </div>
-      )}
+
 
       <div className={styles.contentLayout}>
         {/* Logo Section */}

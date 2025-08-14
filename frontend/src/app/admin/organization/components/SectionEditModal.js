@@ -11,7 +11,8 @@ export default function SectionEditModal({
   handleInputChange,
   handleSave,
   handleCancel,
-  saving
+  saving,
+  originalData
 }) {
   // Lock body scroll when modal is open to prevent background shifting
   useEffect(() => {
@@ -39,6 +40,21 @@ export default function SectionEditModal({
       };
     }
   }, [isOpen]);
+
+  // Check if any changes have been made
+  const hasChanges = () => {
+    if (!originalData) return false;
+    
+    if (currentSection === 'advocacy') {
+      return originalData.advocacy !== advocacyData.advocacy;
+    }
+    
+    if (currentSection === 'competency') {
+      return originalData.competency !== competencyData.competency;
+    }
+    
+    return false;
+  };
 
   if (!isOpen) return null
 
@@ -117,7 +133,7 @@ export default function SectionEditModal({
               <button 
                 onClick={handleSave}
                 className={styles.saveButton}
-                disabled={saving}
+                disabled={saving || !hasChanges()}
               >
                 {saving ? (
                   <>

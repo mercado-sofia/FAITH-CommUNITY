@@ -5,7 +5,6 @@ import styles from './styles/SectionStyles.module.css'
 
 export default function AdvocacySection({ 
   advocacyData, 
-  message, 
   setIsEditing, 
   setShowEditModal, 
   setOriginalData, 
@@ -33,11 +32,7 @@ export default function AdvocacySection({
         </button>
       </div>
 
-      {message.text && message.section === 'advocacy' && (
-        <div className={`${styles.message} ${styles[message.type]}`}>
-          {message.text}
-        </div>
-      )}
+
 
       <div className={styles.contentLayout}>
         <div className={styles.detailsSection}>

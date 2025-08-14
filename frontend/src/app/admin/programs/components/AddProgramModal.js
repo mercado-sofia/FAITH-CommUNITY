@@ -27,10 +27,12 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
   const additionalImagesRef = useRef(null);
 
   const statusOptions = [
-    { value: 'upcoming', label: 'Upcoming' },
-    { value: 'active', label: 'Active' },
-    { value: 'completed', label: 'Completed' },
+    { value: 'Upcoming', label: 'Upcoming' },
+    { value: 'Active', label: 'Active' },
+    { value: 'Completed', label: 'Completed' },
   ];
+
+
 
   const steps = [
     { id: 1, title: 'Basic Info' },
@@ -77,6 +79,8 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
       status: status
     }));
   };
+
+
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -138,16 +142,26 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
       }
 
       validFiles.push(file);
+    });
 
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        newPreviews.push(e.target.result);
-        if (newPreviews.length === validFiles.length) {
-          setAdditionalImagePreviews(prev => [...prev, ...newPreviews]);
-        }
-      };
-      reader.readAsDataURL(file);
+    // Create previews for all valid files
+    const previewPromises = validFiles.map(file => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          resolve(e.target.result);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    Promise.all(previewPromises).then(previews => {
+      console.log('Additional image previews created:', previews.length);
+      setAdditionalImagePreviews(prev => {
+        const newPreviews = [...prev, ...previews];
+        console.log('Total additional image previews:', newPreviews.length);
+        return newPreviews;
+      });
     });
 
     setFormData(prev => ({
@@ -373,18 +387,20 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
       
       {/* Status Field */}
       <div className={styles.formGroup}>
-        <label className={styles.formLabel}>Status <span className={styles.required}>*</span></label>
-        <div className={styles.statusButtons}>
-          {statusOptions.map(status => (
-            <button
-              key={status.value}
-              type="button"
-              onClick={() => handleStatusChange(status.value)}
-              className={`${styles.statusButton} ${formData.status === status.value ? styles.statusActive : ''}`}
-            >
-              {status.label}
-            </button>
-          ))}
+        <div className={styles.statusField}>
+          <label className={styles.statusLabel}>Status <span className={styles.required}>*</span></label>
+          <div className={styles.statusButtons}>
+            {statusOptions.map(status => (
+              <button
+                key={status.value}
+                type="button"
+                onClick={() => handleStatusChange(status.value)}
+                className={`${styles.statusButton} ${formData.status === status.value ? styles.statusActive : ''}`}
+              >
+                {status.label}
+              </button>
+            ))}
+          </div>
         </div>
         {errors.status && <span className={styles.errorText}>{errors.status}</span>}
       </div>
@@ -411,106 +427,138 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
     <div className={styles.stepContainer}>
       <h3 className={styles.stepTitle}>Images</h3>
       
-      {/* Main Image Upload */}
-      <div className={styles.formGroup}>
-        <label className={styles.formLabel}>
-          <FaImage className={styles.labelIcon} />
-          Highlight Image <span className={styles.required}>*</span>
-        </label>
-        
-        {!imagePreview ? (
-          <div className={styles.uploadArea}>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className={styles.fileInput}
-            />
-            <div className={styles.uploadContent}>
-              <FaUpload className={styles.uploadIcon} />
-              <p className={styles.uploadText}>
-                Click to upload an image or drag and drop
-              </p>
-              <p className={styles.uploadSubtext}>
-                PNG, JPG, GIF up to 5MB
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className={styles.imagePreview}>
-            <Image 
-              src={imagePreview} 
-              alt="Preview" 
-              className={styles.previewImage}
-              width={400}
-              height={200}
-              style={{ objectFit: 'cover' }}
-            />
-            <button
-              type="button"
-              onClick={removeImage}
-              className={styles.removeImageButton}
-            >
-              <FaTimes />
-            </button>
-          </div>
-        )}
-        
-        {errors.image && <span className={styles.errorText}>{errors.image}</span>}
-      </div>
-
-      {/* Additional Images Upload */}
-      <div className={styles.formGroup}>
-        <label className={styles.formLabel}>
-          <FaImage className={styles.labelIcon} />
-          Additional Images (Optional)
-        </label>
-        
-        <div className={styles.uploadArea}>
-          <input
-            ref={additionalImagesRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleAdditionalImagesChange}
-            className={styles.fileInput}
-          />
-          <div className={styles.uploadContent}>
-            <FaUpload className={styles.uploadIcon} />
-            <p className={styles.uploadText}>
-              Click to upload additional images
-            </p>
-            <p className={styles.uploadSubtext}>
-              PNG, JPG, GIF up to 5MB each
-            </p>
-          </div>
-        </div>
-
-        {/* Additional Images Thumbnails */}
-        {additionalImagePreviews.length > 0 && (
-          <div className={styles.additionalImagesGrid}>
-            {additionalImagePreviews.map((preview, index) => (
-              <div key={index} className={styles.additionalImagePreview}>
+      <div className={styles.imageUploadRow}>
+        {/* Main Image Upload */}
+        <div className={styles.highlightImageSection}>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>
+              <FaImage className={styles.labelIcon} />
+              Highlight Image <span className={styles.required}>*</span>
+            </label>
+            
+            {!imagePreview ? (
+              <div className={styles.uploadArea}>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className={styles.fileInput}
+                />
+                <div className={styles.uploadContent}>
+                  <FaUpload className={styles.uploadIcon} />
+                  <p className={styles.uploadText}>
+                    Click to upload an image or drag and drop
+                  </p>
+                  <p className={styles.uploadSubtext}>
+                    PNG, JPG, GIF up to 5MB
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.imagePreview}>
                 <Image 
-                  src={preview} 
-                  alt={`Additional ${index + 1}`} 
-                  className={styles.additionalPreviewImage}
-                  width={100}
-                  height={100}
+                  src={imagePreview} 
+                  alt="Preview" 
+                  className={styles.previewImage}
+                  width={400}
+                  height={200}
                   style={{ objectFit: 'cover' }}
                 />
                 <button
                   type="button"
-                  onClick={() => removeAdditionalImage(index)}
-                  className={styles.removeAdditionalImageButton}
+                  onClick={removeImage}
+                  className={styles.removeImageButton}
                 >
                   <FaTimes />
                 </button>
               </div>
-            ))}
+            )}
+            
+            {errors.image && <span className={styles.errorText}>{errors.image}</span>}
           </div>
-        )}
+        </div>
+
+        {/* Additional Images Upload */}
+        <div className={styles.additionalImagesSection}>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>
+              <FaImage className={styles.labelIcon} />
+              Additional Images (Optional)
+            </label>
+            
+            <div className={styles.uploadArea}>
+              <input
+                ref={additionalImagesRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleAdditionalImagesChange}
+                className={styles.fileInput}
+              />
+              <div className={styles.uploadContent}>
+                <FaUpload className={styles.uploadIcon} />
+                <p className={styles.uploadText}>
+                  Click to upload additional images
+                </p>
+                <p className={styles.uploadSubtext}>
+                  PNG, JPG, GIF up to 5MB each
+                </p>
+              </div>
+            </div>
+
+            {/* Additional Images Thumbnails */}
+            {additionalImagePreviews.length > 0 && (
+              <div className={styles.additionalImagesGrid}>
+                {additionalImagePreviews.map((preview, index) => {
+                  console.log(`Rendering additional image ${index}:`, preview);
+                  return (
+                    <div key={index} className={styles.additionalImagePreview}>
+                      {preview.startsWith('data:') ? (
+                        // For base64 images (new uploads)
+                        <Image 
+                          src={preview} 
+                          alt={`Additional ${index + 1}`} 
+                          className={styles.additionalPreviewImage}
+                          width={100}
+                          height={100}
+                          style={{ objectFit: 'cover' }}
+                          onError={(e) => {
+                            console.error(`Failed to load base64 image ${index}:`, e);
+                          }}
+                          onLoad={() => {
+                            console.log(`Successfully loaded base64 image ${index}`);
+                          }}
+                        />
+                      ) : (
+                        // For file path images (from database)
+                        <img 
+                          src={preview} 
+                          alt={`Additional ${index + 1}`} 
+                          className={styles.additionalPreviewImage}
+                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                          onError={(e) => {
+                            console.error(`Failed to load file image ${index}:`, preview, e);
+                          }}
+                          onLoad={() => {
+                            console.log(`Successfully loaded file image ${index}:`, preview);
+                          }}
+                        />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeAdditionalImage(index)}
+                        className={styles.removeAdditionalImageButton}
+                      >
+                        <FaTimes />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

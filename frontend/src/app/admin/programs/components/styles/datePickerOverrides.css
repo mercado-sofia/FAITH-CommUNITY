@@ -18,12 +18,14 @@
   background: #ffffff !important;
   transition: all 0.2s ease !important;
   cursor: pointer !important;
+  caret-color: transparent !important;
+  user-select: none !important;
 }
 
 .react-datepicker__input-container input:focus {
   outline: none !important;
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+  border-color: #06100f !important;
+  box-shadow: 0 0 0 3px rgba(6, 16, 15, 0.1) !important;
 }
 
 .react-datepicker__input-container input:hover:not(:focus) {
@@ -41,179 +43,525 @@
   width: 100% !important;
 }
 
+/* ===== CALENDAR-DRAFT STYLING ADOPTION ===== */
+
+/* CSS Custom Properties - Using gray theme with #06100f highlight */
+:root {
+  --rmdp-primary: #06100f;
+  --rmdp-secondary: #142220;
+  --rmdp-shadow: #6b7280;
+  --rmdp-today: #f3f4f6;
+  --rmdp-hover: #e5e7eb;
+  --rmdp-deselect: #374151;
+  --rmdp-border: #d1d5db;
+  --rmdp-bg: #ffffff;
+  --rmdp-text: #374151;
+  --rmdp-text-light: #6b7280;
+}
+
+/* Main Calendar Panel - calendar-draft style */
+.rmdp-panel {
+  border: 1px solid var(--rmdp-border) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 0 5px var(--rmdp-shadow) !important;
+  background: var(--rmdp-bg) !important;
+  font-family: inherit !important;
+  overflow: hidden !important;
+  transform: none !important;
+  transform-origin: center !important;
+  user-select: none !important;
+  padding: 0 6px !important;
+}
+
+/* Multiple Date Picker specific styling */
+.rmdp-panel.rmdp-multiple {
+  border-radius: 12px !important;
+}
+
+/* Calendar Header - calendar-draft style */
+.rmdp-header {
+  margin-top: 5px !important;
+  font-size: 14px !important;
+  padding: 10px 0 14px 0 !important;
+  background: var(--rmdp-bg) !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+/* Header Values (Month/Year) - calendar-draft style */
+.rmdp-header-values {
+  color: var(--rmdp-text) !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  margin: 8px 0 12px!important;
+  text-align: center !important;
+}
+
+.rmdp-header-values span {
+  padding: 0 5px !important;
+  padding-right: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Navigation Arrows - calendar-draft style */
+.rmdp-arrow-container {
+  cursor: pointer !important;
+  border-radius: 50% !important;
+  height: 20px !important;
+  width: 20px !important;
+  display: flex !important;
+  justify-content: center !important;
+  margin: 8px 5px 10px 5px !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.rmdp-arrow-container:hover {
+  background-color: var(--rmdp-primary) !important;
+  box-shadow: 0 0 3px var(--rmdp-secondary) !important;
+}
+
+.rmdp-arrow {
+  border: solid var(--rmdp-primary) !important;
+  border-width: 0 2px 2px 0 !important;
+  display: inline-block !important;
+  padding: 2px !important;
+  height: 3px !important;
+  width: 3px !important;
+  margin-top: 5px !important;
+}
+
+.rmdp-arrow-container:hover .rmdp-arrow {
+  border: solid white !important;
+  border-width: 0 2px 2px 0 !important;
+}
+
+.rmdp-arrow-container.disabled {
+  cursor: default !important;
+}
+
+.rmdp-arrow-container.disabled:hover {
+  background-color: inherit !important;
+  box-shadow: inherit !important;
+}
+
+.rmdp-arrow-container.disabled .rmdp-arrow,
+.rmdp-arrow-container.disabled:hover .rmdp-arrow {
+  border: solid gray !important;
+  border-width: 0 2px 2px 0 !important;
+}
+
+/* Week Days Header - calendar-draft style */
+.rmdp-week {
+  background: var(--rmdp-bg) !important;
+}
+
+/* Calendar Body - ensure all corners are rounded */
+.rmdp-calendar {
+  border-top-left-radius: 10px !important;
+  border-top-right-radius: 10px !important;
+  border-bottom-left-radius: 10px !important;
+  border-bottom-right-radius: 10px !important;
+}
+
+.rmdp-week-day {
+  cursor: default !important;
+  color: var(--rmdp-primary) !important;
+  font-weight: 500 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  font-size: 13px !important;
+  height: 34px !important;
+  width: 34px !important;
+  margin: 0 2px !important;
+}
+
+/* Calendar Body - calendar-draft style */
+.rmdp-calendar {
+  padding: 4px !important;
+  height: max-content !important;
+  background: var(--rmdp-bg) !important;
+  user-select: none !important;
+}
+
+/* Day Cells - calendar-draft style */
+.rmdp-day {
+  height: 34px !important;
+  width: 34px !important;
+  cursor: pointer !important;
+  position: relative !important;
+  color: var(--rmdp-text) !important;
+  margin: 2px !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-style: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: none !important;
+  display: block !important;
+  text-align: center !important;
+}
+
+.rmdp-day span {
+  position: absolute !important;
+  left: 3px !important;
+  right: 3px !important;
+  top: 3px !important;
+  bottom: 3px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  justify-content: center !important;
+  flex-direction: column !important;
+  font-size: 14px !important;
+  background: transparent !important;
+  transition: none !important;
+}
+
+/* Day States - calendar-draft style */
+.rmdp-day.rmdp-today span {
+  background-color: var(--rmdp-today) !important;
+  color: var(--rmdp-text) !important;
+}
+
+.rmdp-day.rmdp-selected span:not(.highlight) {
+  background-color: var(--rmdp-primary) !important;
+  box-shadow: 0 0 3px var(--rmdp-shadow) !important;
+  color: white !important;
+}
+
+.rmdp-day.rmdp-deactive,
+.rmdp-day.rmdp-disabled {
+  color: #cccccc !important;
+}
+
+.rmdp-day.rmdp-deactive span,
+.rmdp-day.rmdp-disabled span {
+  color: #cccccc !important;
+}
+
+/* Force light gray for any deactive/disabled day spans */
+.rmdp-day.rmdp-deactive span,
+.rmdp-day.rmdp-disabled span,
+.rmdp-day.rmdp-deactive,
+.rmdp-day.rmdp-disabled {
+  color: #cccccc !important;
+}
+
+.rmdp-day.rmdp-deactive.rmdp-selected span {
+  background-color: var(--rmdp-secondary) !important;
+  box-shadow: 0 0 3px #bac5d3 !important;
+}
+
+/* Day Hover Effects - calendar-draft style */
+.rmdp-day:not(.rmdp-day-hidden) span:hover {
+  background-color: var(--rmdp-hover) !important;
+  color: var(--rmdp-text) !important;
+}
+
+/* Disable hover effects for selected dates */
+.rmdp-day.rmdp-selected span:hover,
+.rmdp-day.rmdp-range span:hover {
+  background-color: var(--rmdp-primary) !important;
+  color: white !important;
+}
+
+/* Range Selection - calendar-draft style */
+.rmdp-range {
+  color: white !important;
+  background-color: var(--rmdp-primary) !important;
+  box-shadow: 0 0 3px var(--rmdp-shadow) !important;
+}
+
+.rmdp-range-hover {
+  background-color: var(--rmdp-primary) !important;
+  color: var(--rmdp-text) !important;
+}
+
+/* Override any blue range colors */
+.rmdp-range span,
+.rmdp-range-hover span {
+  background-color: var(--rmdp-primary) !important;
+  color: white !important;
+  border-radius: 50% !important;
+}
+
+/* Force gray theme for all range states */
+.rmdp-day.rmdp-range span,
+.rmdp-day.rmdp-range-hover span {
+  background-color: var(--rmdp-primary) !important;
+  color: white !important;
+  border-radius: 50% !important;
+}
+
+/* Ensure multiple selected dates are circular */
+.rmdp-day.rmdp-selected span {
+  border-radius: 50% !important;
+  background-color: var(--rmdp-primary) !important;
+  color: white !important;
+}
+
+/* Force circular shape for ALL selected states */
+.rmdp-day.rmdp-selected,
+.rmdp-day.rmdp-selected span,
+.rmdp-day.rmdp-range,
+.rmdp-day.rmdp-range span,
+.rmdp-day.rmdp-range-hover,
+.rmdp-day.rmdp-range-hover span {
+  border-radius: 50% !important;
+  border-top-left-radius: 50% !important;
+  border-top-right-radius: 50% !important;
+  border-bottom-left-radius: 50% !important;
+  border-bottom-right-radius: 50% !important;
+}
+
+.rmdp-range.start:not(.force),
+.rmdp-range-hover.start:not(.force) {
+  border-radius: 50% !important;
+  border-top-left-radius: 50% !important;
+  border-bottom-left-radius: 50% !important;
+  border-top-right-radius: 50% !important;
+  border-bottom-right-radius: 50% !important;
+}
+
+.rmdp-range.end:not(.force),
+.rmdp-range-hover.end:not(.force) {
+  border-radius: 50% !important;
+  border-top-left-radius: 50% !important;
+  border-bottom-left-radius: 50% !important;
+  border-top-right-radius: 50% !important;
+  border-bottom-right-radius: 50% !important;
+}
+
+/* Input Styling - calendar-draft style */
 .rmdp-input {
   width: 100% !important;
   padding: 8px 8px 8px 36px !important;
-  border: 1px solid #d1d5db !important;
+  border: 1px solid var(--rmdp-border) !important;
   border-radius: 6px !important;
   font-size: 0.875rem !important;
-  background: #ffffff !important;
+  background: var(--rmdp-bg) !important;
   transition: all 0.2s ease !important;
   cursor: pointer !important;
   min-height: 36px !important;
+  color: var(--rmdp-text) !important;
+  caret-color: transparent !important;
+  user-select: none !important;
 }
 
 .rmdp-input:focus {
   outline: none !important;
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+  border-color: var(--rmdp-primary) !important;
+  box-shadow: 0 0 0 3px rgba(6, 16, 15, 0.1) !important;
 }
 
 .rmdp-input:hover:not(:focus) {
-  border-color: #9ca3af !important;
+  border-color: var(--rmdp-shadow) !important;
 }
 
 .rmdp-input:disabled {
   background: #f3f4f6 !important;
-  color: #9ca3af !important;
+  color: var(--rmdp-text-light) !important;
   cursor: not-allowed !important;
 }
 
-/* Multi Date Picker Calendar Styles */
-.rmdp-panel {
-  border: 1px solid #d1d5db !important;
-  border-radius: 8px !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
-  background: #ffffff !important;
-  font-family: inherit !important;
-  transform: scale(0.9) !important;
-  transform-origin: top left !important;
-}
-
-.rmdp-header {
-  background: #f9fafb !important;
-  border-bottom: 1px solid #e5e7eb !important;
-  padding: 8px !important;
-}
-
-.rmdp-header-values {
-  color: #374151 !important;
-  font-weight: 600 !important;
-  font-size: 0.875rem !important;
-}
-
-.rmdp-arrow {
-  border-color: #6b7280 !important;
-}
-
-.rmdp-arrow:hover {
-  border-color: #374151 !important;
-}
-
-.rmdp-week {
-  border-bottom: 1px solid #f3f4f6 !important;
-}
-
-.rmdp-week-day {
-  color: #6b7280 !important;
-  font-weight: 500 !important;
-  font-size: 0.7rem !important;
-  padding: 6px 2px !important;
-}
-
-.rmdp-day {
-  color: #374151 !important;
-  font-size: 0.8rem !important;
-  font-weight: 500 !important;
-  border-radius: 4px !important;
-  margin: 1px !important;
-  transition: all 0.2s ease !important;
-  width: 28px !important;
-  height: 28px !important;
-  line-height: 28px !important;
-}
-
-.rmdp-day.rmdp-selected {
-  background: #06100f !important;
-  color: #ffffff !important;
-  font-weight: 600 !important;
-}
-
-.rmdp-day.rmdp-today {
-  background: #f0f9ff !important;
-  color: #0369a1 !important;
-  font-weight: 600 !important;
-  border: 1px solid #bae6fd !important;
-}
-
-.rmdp-day:hover:not(.rmdp-disabled):not(.rmdp-selected) {
-  background: #f3f4f6 !important;
-  color: #374151 !important;
-}
-
-.rmdp-day.rmdp-disabled {
-  color: #d1d5db !important;
-  background: transparent !important;
-}
-
-/* React DatePicker Calendar Styles */
+/* React DatePicker Calendar Styles - calendar-draft style */
 .react-datepicker {
-  border: 1px solid #d1d5db !important;
-  border-radius: 8px !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
-  background: #ffffff !important;
+  border: 1px solid var(--rmdp-border) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 0 5px var(--rmdp-shadow) !important;
+  background: var(--rmdp-bg) !important;
   font-family: inherit !important;
+  user-select: none !important;
+  padding: 0 10px !important;
 }
 
 .react-datepicker__header {
-  background: #f9fafb !important;
-  border-bottom: 1px solid #e5e7eb !important;
-  border-top-left-radius: 8px !important;
-  border-top-right-radius: 8px !important;
+  background: var(--rmdp-bg) !important;
+  border-bottom: 1px solid var(--rmdp-border) !important;
+  border-top-left-radius: 10px !important;
+  border-top-right-radius: 10px !important;
+  padding: 8px 0 10px 0 !important;
 }
 
 .react-datepicker__current-month {
-  color: #374151 !important;
-  font-weight: 600 !important;
-  font-size: 0.875rem !important;
+  color: var(--rmdp-text) !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  margin: 8px 0 12px!important;
 }
 
 .react-datepicker__day-name {
-  color: #6b7280 !important;
+  color: var(--rmdp-primary) !important;
   font-weight: 500 !important;
-  font-size: 0.75rem !important;
+  font-size: 13px !important;
+  margin: 0 6px !important;
 }
 
 .react-datepicker__day {
-  color: #374151 !important;
-  font-size: 0.875rem !important;
+  color: var(--rmdp-text) !important;
+  font-size: 14px !important;
   font-weight: 500 !important;
-  border-radius: 4px !important;
+  border-radius: 50% !important;
   margin: 2px !important;
-  transition: all 0.2s ease !important;
+  transition: none !important;
+  width: 34px !important;
+  height: 34px !important;
+  line-height: 34px !important;
 }
 
 .react-datepicker__day--selected {
-  background: #06100f !important;
-  color: #ffffff !important;
+  background: var(--rmdp-primary) !important;
+  color: white !important;
   font-weight: 600 !important;
+  box-shadow: 0 0 3px var(--rmdp-shadow) !important;
 }
 
 .react-datepicker__day--today {
-  background: #f0f9ff !important;
-  color: #0369a1 !important;
+  background: var(--rmdp-today) !important;
+  color: var(--rmdp-text) !important;
   font-weight: 600 !important;
-  border: 1px solid #bae6fd !important;
 }
 
 .react-datepicker__day:hover:not(.react-datepicker__day--disabled):not(.react-datepicker__day--selected) {
-  background: #f3f4f6 !important;
-  color: #374151 !important;
+  background: var(--rmdp-hover) !important;
+  color: var(--rmdp-text) !important;
+}
+
+/* Disable hover effects for selected dates in React DatePicker */
+.react-datepicker__day--selected:hover,
+.react-datepicker__day--in-range:hover {
+  background: var(--rmdp-primary) !important;
+  color: white !important;
 }
 
 .react-datepicker__day--disabled {
-  color: #d1d5db !important;
+  color: #cccccc !important;
   background: transparent !important;
 }
 
+/* Target any day that might be outside current month */
+.react-datepicker__day--outside-month {
+  color: #cccccc !important;
+}
+
+.react-datepicker__day--keyboard-selected.react-datepicker__day--outside-month {
+  color: #cccccc !important;
+}
+
 .react-datepicker__navigation {
-  border-color: #6b7280 !important;
+  border-color: var(--rmdp-primary) !important;
+  margin: 8px 0 12px !important;
 }
 
 .react-datepicker__navigation:hover {
-  border-color: #374151 !important;
+  border-color: var(--rmdp-secondary) !important;
 }
 
 .react-datepicker__month-container {
-  background: #ffffff !important;
+  background: var(--rmdp-bg) !important;
+  border-top-left-radius: 10px !important;
+  border-top-right-radius: 10px !important;
+  border-bottom-left-radius: 10px !important;
+  border-bottom-right-radius: 10px !important;
+}
+
+/* Clear button styling - replacing blue with brand colors */
+.react-datepicker__close-icon {
+  border-color: var(--rmdp-primary) !important;
+}
+  
+.react-datepicker__close-icon::after {
+  background-color: var(--rmdp-primary) !important;
+}
+
+/* Override any remaining blue colors with gray theme */
+.rmdp-day.rmdp-selected,
+.rmdp-day.rmdp-selected span,
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: var(--rmdp-primary) !important;
+  color: white !important;
+}
+
+/* Override React DatePicker range selection */
+.react-datepicker__day--in-range,
+.react-datepicker__day--in-selecting-range,
+.react-datepicker__day--range-start,
+.react-datepicker__day--range-end {
+  background-color: var(--rmdp-primary) !important;
+  color: white !important;
+}
+
+/* Override any blue focus states */
+.rmdp-day:focus,
+.react-datepicker__day:focus,
+.rmdp-input:focus,
+.react-datepicker__input-container input:focus {
+  outline-color: var(--rmdp-primary) !important;
+  border-color: var(--rmdp-primary) !important;
+  box-shadow: 0 0 0 3px rgba(6, 16, 15, 0.1) !important;
+}
+
+
+
+/* Force remove borders with higher specificity */
+.rmdp-calendar .rmdp-day,
+.rmdp-calendar .rmdp-day span,
+.rmdp-calendar .rmdp-day div,
+.rmdp-panel .rmdp-day,
+.rmdp-panel .rmdp-day span,
+.rmdp-panel .rmdp-day div {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-style: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+}
+
+/* Target React DatePicker with higher specificity */
+.react-datepicker .react-datepicker__day,
+.react-datepicker .react-datepicker__day *,
+.react-datepicker__month-container .react-datepicker__day,
+.react-datepicker__month-container .react-datepicker__day * {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-style: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+}
+
+/* Mobile Responsive - calendar-draft style */
+@media (max-width: 450px), (max-height: 450px) {
+  .rmdp-day,
+  .rmdp-week-day {
+    height: 28px !important;
+    width: 28px !important;
+  }
+
+  .rmdp-day span {
+    padding-left: 0.5px !important;
+    font-size: 12px !important;
+  }
+
+  .rmdp-header {
+    padding: 3px 0 0 0 !important;
+    font-size: 12px !important;
+  }
+
+  .react-datepicker__day {
+    width: 28px !important;
+    height: 28px !important;
+    line-height: 28px !important;
+    font-size: 12px !important;
+  }
 }

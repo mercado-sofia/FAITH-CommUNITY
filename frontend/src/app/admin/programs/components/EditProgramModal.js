@@ -11,19 +11,19 @@ import styles from './styles/addModal.module.css';
 const EditProgramModal = ({ program, onClose, onSubmit }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
-    title: program?.title || '',
-    description: program?.description || '',
-    category: program?.category || '',
-    status: program?.status || '',
+    title: '',
+    description: '',
+    category: '',
+    status: '',
     image: null,
     additionalImages: [],
-    event_start_date: program?.event_start_date || null,
-    event_end_date: program?.event_end_date || null,
-    multiple_dates: program?.multiple_dates || null
+    event_start_date: null,
+    event_end_date: null,
+    multiple_dates: null
   });
   const [imagePreview, setImagePreview] = useState(null);
   const [additionalImagePreviews, setAdditionalImagePreviews] = useState([]);
-  const [isImageRemoved, setIsImageRemoved] = useState(false); // Track if user explicitly removed the image
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [hasChanges, setHasChanges] = useState(false);
@@ -32,10 +32,12 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
   const additionalImagesRef = useRef(null);
 
   const statusOptions = [
-    { value: 'upcoming', label: 'Upcoming' },
-    { value: 'active', label: 'Active' },
-    { value: 'completed', label: 'Completed' },
+    { value: 'Upcoming', label: 'Upcoming' },
+    { value: 'Active', label: 'Active' },
+    { value: 'Completed', label: 'Completed' },
   ];
+
+
 
   const steps = [
     { id: 1, title: 'Basic Info' },
@@ -46,12 +48,18 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
   // Initialize form data when program changes
   useEffect(() => {
     if (program) {
-      console.log('📊 Initializing form data with program:', program);
+      // Map database status to frontend status
+      const mapStatus = (dbStatus) => {
+        if (!dbStatus) return '';
+        // Keep the original case since database uses capitalized values
+        return dbStatus;
+      };
+
       setFormData({
         title: program.title || '',
         description: program.description || '',
         category: program.category || '',
-        status: program.status || '',
+        status: mapStatus(program.status),
         image: null,
         additionalImages: [],
         event_start_date: program.event_start_date || null,
@@ -59,12 +67,33 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
         multiple_dates: program.multiple_dates || null
       });
       setImagePreview(program.image ? getProgramImageUrl(program.image) : null);
-      setIsImageRemoved(false); // Reset removal flag
+      
+      // Load existing additional images if they exist
+      if (program.additional_images && Array.isArray(program.additional_images) && program.additional_images.length > 0) {
+        console.log('Loading additional images from program:', program.additional_images);
+        // Convert file paths to proper URLs using the utility function
+        const imageUrls = program.additional_images.map(imagePath => {
+          const url = getProgramImageUrl(imagePath, 'additional');
+          console.log('Converted image path:', imagePath, 'to URL:', url);
+          return url;
+        });
+        console.log('Final image URLs:', imageUrls);
+        setAdditionalImagePreviews(imageUrls);
+      } else {
+        console.log('No additional images found in program');
+        setAdditionalImagePreviews([]);
+      }
     }
   }, [program]);
 
+
   // Check for changes
   useEffect(() => {
+    // Convert program additional images to URLs for comparison
+    const programAdditionalImageUrls = program?.additional_images?.map(imagePath => {
+      return getProgramImageUrl(imagePath, 'additional');
+    }) || [];
+
     const hasFormChanges = 
       formData.title !== (program?.title || '') ||
       formData.description !== (program?.description || '') ||
@@ -72,12 +101,13 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
       formData.status !== (program?.status || '') ||
       formData.image !== null ||
       formData.additionalImages.length > 0 ||
+      JSON.stringify(additionalImagePreviews) !== JSON.stringify(programAdditionalImageUrls) ||
       formData.event_start_date !== (program?.event_start_date || null) ||
       formData.event_end_date !== (program?.event_end_date || null) ||
       JSON.stringify(formData.multiple_dates) !== JSON.stringify(program?.multiple_dates || null);
     
     setHasChanges(hasFormChanges);
-  }, [formData, program]);
+  }, [formData, program, additionalImagePreviews]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -119,6 +149,7 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
     }));
   };
 
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -152,8 +183,6 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
       };
       reader.readAsDataURL(file);
 
-      // Reset removal flag since user uploaded a new image
-      setIsImageRemoved(false);
 
       // Clear image error
       if (errors.image) {
@@ -182,16 +211,26 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
       }
 
       validFiles.push(file);
+    });
 
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        newPreviews.push(e.target.result);
-        if (newPreviews.length === validFiles.length) {
-          setAdditionalImagePreviews(prev => [...prev, ...newPreviews]);
-        }
-      };
-      reader.readAsDataURL(file);
+    // Create previews for all valid files
+    const previewPromises = validFiles.map(file => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          resolve(e.target.result);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    Promise.all(previewPromises).then(previews => {
+      console.log('Additional image previews created:', previews.length);
+      setAdditionalImagePreviews(prev => {
+        const newPreviews = [...prev, ...previews];
+        console.log('Total additional image previews:', newPreviews.length);
+        return newPreviews;
+      });
     });
 
     setFormData(prev => ({
@@ -205,8 +244,7 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
       ...prev,
       image: null
     }));
-    setImagePreview(null); // Clear the image preview completely
-    setIsImageRemoved(true); // Mark that the image was explicitly removed
+    setImagePreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -221,7 +259,6 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
   };
 
   const validateStep = (step) => {
-    console.log('🔍 Validating step:', step);
     const newErrors = {};
 
     switch (step) {
@@ -257,13 +294,11 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
           newErrors.status = 'Program status is required';
         }
 
-        // Validate dates - be more flexible for edit mode
-        const hasStartDate = formData.event_start_date;
-        const hasEndDate = formData.event_end_date;
+        // Validate dates - same logic as Add modal
+        const hasSingleOrRangeDates = formData.event_start_date && formData.event_end_date;
         const hasMultipleDates = formData.multiple_dates && Array.isArray(formData.multiple_dates) && formData.multiple_dates.length > 0;
         
-        // Allow single date, date range, or multiple dates
-        if (!hasStartDate && !hasMultipleDates) {
+        if (!hasSingleOrRangeDates && !hasMultipleDates) {
           newErrors.event_start_date = 'Please select at least one date for the program';
         }
         break;
@@ -273,22 +308,13 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
         break;
     }
 
-    console.log('📝 Validation errors:', newErrors);
     setErrors(newErrors);
-    const isValid = Object.keys(newErrors).length === 0;
-    console.log('✅ Step validation result:', isValid);
-    return isValid;
+    return Object.keys(newErrors).length === 0;
   };
 
   const nextStep = () => {
-    console.log('🔍 Next step called for step:', currentStep);
-    console.log('📊 Current form data:', formData);
-    
     if (validateStep(currentStep)) {
-      console.log('✅ Step validation passed, moving to next step');
       setCurrentStep(prev => Math.min(prev + 1, 3));
-    } else {
-      console.log('❌ Step validation failed');
     }
   };
 
@@ -303,26 +329,16 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
   const handleFormKeyDown = (e) => {
     // Prevent form submission on Enter key
     if (e.key === 'Enter') {
-      console.log('🚫 Enter key pressed - preventing form submission');
       e.preventDefault();
       return false;
     }
   };
 
   const handleSubmit = async (e) => {
-    // Remove e.preventDefault() since we're not using form onSubmit anymore
-    // e.preventDefault();
-    
-    console.log('🚀 handleSubmit called - manual submission triggered');
-    console.log('📊 Current step:', currentStep);
-    console.log('📝 Form data:', formData);
-    
     if (!validateForm()) {
-      console.log('❌ Form validation failed');
       return;
     }
 
-    console.log('✅ Form validation passed, proceeding with submission');
     setIsSubmitting(true);
     
     try {
@@ -332,18 +348,8 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
         formData.additionalImages.map(img => convertImageToBase64(img))
       );
 
-      // Determine what to send for the image
-      let imageToSend;
-      if (formData.image) {
-        // New image uploaded
-        imageToSend = imageBase64;
-      } else if (isImageRemoved) {
-        // User explicitly removed the image
-        imageToSend = null;
-      } else {
-        // No change to image
-        imageToSend = undefined; // This will be ignored by backend
-      }
+      // Handle image data - only send if there's a new image or if image was removed
+      const imageToSend = formData.image ? imageBase64 : (imagePreview === null ? null : undefined);
 
       // Create the program data object
       const programData = {
@@ -358,12 +364,9 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
         multiple_dates: formData.multiple_dates
       };
 
-      console.log('📦 Submitting program data:', programData);
-      console.log('🖼️ Image data:', imageBase64 ? 'New image uploaded' : 'No new image uploaded');
       await onSubmit(programData);
-      console.log('✅ Program submitted successfully');
     } catch (error) {
-      console.error('❌ Error updating program:', error);
+      console.error('Error updating program:', error);
       setErrors({ submit: 'Failed to update program. Please try again.' });
     } finally {
       setIsSubmitting(false);
@@ -468,18 +471,20 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
       
       {/* Status Field */}
       <div className={styles.formGroup}>
-        <label className={styles.formLabel}>Status <span className={styles.required}>*</span></label>
-        <div className={styles.statusButtons}>
-          {statusOptions.map(status => (
-            <button
-              key={status.value}
-              type="button"
-              onClick={() => handleStatusChange(status.value)}
-              className={`${styles.statusButton} ${formData.status === status.value ? styles.statusActive : ''}`}
-            >
-              {status.label}
-            </button>
-          ))}
+        <div className={styles.statusField}>
+          <label className={styles.statusLabel}>Status <span className={styles.required}>*</span></label>
+          <div className={styles.statusButtons}>
+            {statusOptions.map(status => (
+              <button
+                key={status.value}
+                type="button"
+                onClick={() => handleStatusChange(status.value)}
+                className={`${styles.statusButton} ${formData.status === status.value ? styles.statusActive : ''}`}
+              >
+                {status.label}
+              </button>
+            ))}
+          </div>
         </div>
         {errors.status && <span className={styles.errorText}>{errors.status}</span>}
       </div>
@@ -506,106 +511,138 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
     <div className={styles.stepContainer}>
       <h3 className={styles.stepTitle}>Images</h3>
       
-      {/* Main Image Upload */}
-      <div className={styles.formGroup}>
-        <label className={styles.formLabel}>
-          <FaImage className={styles.labelIcon} />
-          Highlight Image
-        </label>
-        
-        {!imagePreview ? (
-          <div className={styles.uploadArea}>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className={styles.fileInput}
-            />
-            <div className={styles.uploadContent}>
-              <FaUpload className={styles.uploadIcon} />
-              <p className={styles.uploadText}>
-                Click to upload an image or drag and drop
-              </p>
-              <p className={styles.uploadSubtext}>
-                PNG, JPG, GIF up to 5MB
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className={styles.imagePreview}>
-            <Image 
-              src={imagePreview} 
-              alt="Preview" 
-              className={styles.previewImage}
-              width={400}
-              height={200}
-              style={{ objectFit: 'cover' }}
-            />
-            <button
-              type="button"
-              onClick={removeImage}
-              className={styles.removeImageButton}
-            >
-              <FaTimes />
-            </button>
-          </div>
-        )}
-        
-        {errors.image && <span className={styles.errorText}>{errors.image}</span>}
-      </div>
-
-      {/* Additional Images Upload */}
-      <div className={styles.formGroup}>
-        <label className={styles.formLabel}>
-          <FaImage className={styles.labelIcon} />
-          Additional Images (Optional)
-        </label>
-        
-        <div className={styles.uploadArea}>
-          <input
-            ref={additionalImagesRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleAdditionalImagesChange}
-            className={styles.fileInput}
-          />
-          <div className={styles.uploadContent}>
-            <FaUpload className={styles.uploadIcon} />
-            <p className={styles.uploadText}>
-              Click to upload additional images
-            </p>
-            <p className={styles.uploadSubtext}>
-              PNG, JPG, GIF up to 5MB each
-            </p>
-          </div>
-        </div>
-
-        {/* Additional Images Thumbnails */}
-        {additionalImagePreviews.length > 0 && (
-          <div className={styles.additionalImagesGrid}>
-            {additionalImagePreviews.map((preview, index) => (
-              <div key={index} className={styles.additionalImagePreview}>
+      <div className={styles.imageUploadRow}>
+        {/* Main Image Upload */}
+        <div className={styles.highlightImageSection}>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>
+              <FaImage className={styles.labelIcon} />
+              Highlight Image
+            </label>
+            
+            {!imagePreview ? (
+              <div className={styles.uploadArea}>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className={styles.fileInput}
+                />
+                <div className={styles.uploadContent}>
+                  <FaUpload className={styles.uploadIcon} />
+                  <p className={styles.uploadText}>
+                    Click to upload an image or drag and drop
+                  </p>
+                  <p className={styles.uploadSubtext}>
+                    PNG, JPG, GIF up to 5MB
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.imagePreview}>
                 <Image 
-                  src={preview} 
-                  alt={`Additional ${index + 1}`} 
-                  className={styles.additionalPreviewImage}
-                  width={100}
-                  height={100}
+                  src={imagePreview} 
+                  alt="Preview" 
+                  className={styles.previewImage}
+                  width={400}
+                  height={200}
                   style={{ objectFit: 'cover' }}
                 />
                 <button
                   type="button"
-                  onClick={() => removeAdditionalImage(index)}
-                  className={styles.removeAdditionalImageButton}
+                  onClick={removeImage}
+                  className={styles.removeImageButton}
                 >
                   <FaTimes />
                 </button>
               </div>
-            ))}
+            )}
+            
+            {errors.image && <span className={styles.errorText}>{errors.image}</span>}
           </div>
-        )}
+        </div>
+
+        {/* Additional Images Upload */}
+        <div className={styles.additionalImagesSection}>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>
+              <FaImage className={styles.labelIcon} />
+              Additional Images (Optional)
+            </label>
+            
+            <div className={styles.uploadArea}>
+              <input
+                ref={additionalImagesRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleAdditionalImagesChange}
+                className={styles.fileInput}
+              />
+              <div className={styles.uploadContent}>
+                <FaUpload className={styles.uploadIcon} />
+                <p className={styles.uploadText}>
+                  Click to upload additional images
+                </p>
+                <p className={styles.uploadSubtext}>
+                  PNG, JPG, GIF up to 5MB each
+                </p>
+              </div>
+            </div>
+
+            {/* Additional Images Thumbnails */}
+            {additionalImagePreviews.length > 0 && (
+              <div className={styles.additionalImagesGrid}>
+                {additionalImagePreviews.map((preview, index) => {
+                  console.log(`Rendering additional image ${index}:`, preview);
+                  return (
+                    <div key={index} className={styles.additionalImagePreview}>
+                      {preview.startsWith('data:') ? (
+                        // For base64 images (new uploads)
+                        <Image 
+                          src={preview} 
+                          alt={`Additional ${index + 1}`} 
+                          className={styles.additionalPreviewImage}
+                          width={100}
+                          height={100}
+                          style={{ objectFit: 'cover' }}
+                          onError={(e) => {
+                            console.error(`Failed to load base64 image ${index}:`, e);
+                          }}
+                          onLoad={() => {
+                            console.log(`Successfully loaded base64 image ${index}`);
+                          }}
+                        />
+                      ) : (
+                        // For file path images (from database)
+                        <img 
+                          src={preview} 
+                          alt={`Additional ${index + 1}`} 
+                          className={styles.additionalPreviewImage}
+                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                          onError={(e) => {
+                            console.error(`Failed to load file image ${index}:`, preview, e);
+                          }}
+                          onLoad={() => {
+                            console.log(`Successfully loaded file image ${index}:`, preview);
+                          }}
+                        />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeAdditionalImage(index)}
+                        className={styles.removeAdditionalImageButton}
+                      >
+                        <FaTimes />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

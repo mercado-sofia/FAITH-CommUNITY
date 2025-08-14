@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Image from 'next/image'
 import { FaEdit, FaPlus, FaFacebook, FaEnvelope, FaSearch, FaTimes, FaCrown, FaUserTie, FaUser, FaGripVertical } from 'react-icons/fa'
 import { FaListUl } from 'react-icons/fa6'
@@ -12,7 +12,7 @@ import DragDropHeadsContainer from './DragDropHeadsContainer'
 
 export default function OrgHeadsSection({
   orgHeadsData,
-  message,
+  setOrgHeadsData,
   setIsEditing,
   setShowEditModal,
   setOriginalData,
@@ -24,27 +24,50 @@ export default function OrgHeadsSection({
   const [isDragMode, setIsDragMode] = useState(false)
   const [viewMode, setViewMode] = useState('grid')
   const [localReorderedData, setLocalReorderedData] = useState(null)
+  
+  // Clear localReorderedData when orgHeadsData changes from external source (e.g., after refresh)
+  // This ensures we use fresh data from the database after page refresh
+  useEffect(() => {
+    // Only clear if the data length changes (indicating a fresh fetch)
+    if (localReorderedData && localReorderedData.length !== orgHeadsData.length) {
+      console.log('Clearing localReorderedData due to data length change')
+      setLocalReorderedData(null)
+    }
+  }, [orgHeadsData.length]) // Only depend on the length, not the full array
+  
   const handleEditClick = () => {
-    setOriginalData([...orgHeadsData])
+    // Always use the processed heads (which are already sorted by display_order)
+    console.log('📝 Opening edit modal with processed heads:', processedHeads?.map(h => ({ name: h.head_name, order: h.display_order })))
+    console.log('📝 Current localReorderedData:', localReorderedData?.map(h => ({ name: h.head_name, order: h.display_order })))
+    console.log('📝 Current orgHeadsData:', orgHeadsData?.map(h => ({ name: h.head_name, order: h.display_order })))
+    
+    setOriginalData([...processedHeads])
     setCurrentSection('orgHeads')
-    setTempEditData([...orgHeadsData])
+    setTempEditData({ orgHeads: [...processedHeads] })
     setIsEditing(true)
     setShowEditModal(true)
   }
 
   // Process and sort heads data
   const processedHeads = useMemo(() => {
-    // Use localReorderedData if available (for reordering), otherwise use orgHeadsData
+    // Use localReorderedData if available (for immediate UI updates), otherwise use orgHeadsData
     const dataToUse = localReorderedData || orgHeadsData
     
     if (!dataToUse || dataToUse.length === 0) return []
     
-    // Sort by display order only (manual reordering)
+    // The backend already sorts by display_order, but we sort again to ensure consistency
     const sortedHeads = sortHeadsByOrder(dataToUse)
     
     // Then filter by search query
     return filterHeads(sortedHeads, searchQuery)
   }, [orgHeadsData, localReorderedData, searchQuery])
+
+  // Debug logging
+  console.log('OrgHeadsSection render:', {
+    orgHeadsData: orgHeadsData?.map(h => ({ name: h.head_name, order: h.display_order })),
+    localReorderedData: localReorderedData?.map(h => ({ name: h.head_name, order: h.display_order })),
+    processedHeads: processedHeads?.map(h => ({ name: h.head_name, order: h.display_order }))
+  })
 
   const handleSearchInputChange = (e) => {
     setSearchInput(e.target.value)
@@ -82,9 +105,13 @@ export default function OrgHeadsSection({
         display_order: index + 1
       }))
       
-      setLocalReorderedData(headsWithOrder)
+      console.log('🔄 Setting reordered data:', headsWithOrder.map(h => ({ name: h.head_name, order: h.display_order })))
       
-      console.log('Reordered heads with display_order:', headsWithOrder)
+      setLocalReorderedData(headsWithOrder)
+      // Update parent component's data to reflect the new order
+      setOrgHeadsData(headsWithOrder)
+      
+      console.log('✅ Reordered heads with display_order:', headsWithOrder)
     
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
     const response = await fetch(`${API_BASE_URL}/api/heads/reorder`, {
@@ -109,6 +136,8 @@ export default function OrgHeadsSection({
     } catch (error) {
       console.error('Failed to reorder heads:', error)
       setLocalReorderedData(null)
+      // Revert parent data on error
+      setOrgHeadsData(orgHeadsData)
     }
   }
 
@@ -171,11 +200,7 @@ export default function OrgHeadsSection({
         </div>
       </div>
 
-      {message.text && message.section === 'orgHeads' && (
-        <div className={`${styles.message} ${styles[message.type]}`}>
-          {message.text}
-        </div>
-      )}
+
 
       {/* Search and Filter Controls */}
       {orgHeadsData && orgHeadsData.length > 0 && (

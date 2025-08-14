@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import MultiDatePicker from 'react-multi-date-picker';
-import { FaCalendar, FaTimes, FaChevronDown } from 'react-icons/fa';
+import { FaCalendar, FaChevronDown } from 'react-icons/fa';
 import "react-datepicker/dist/react-datepicker.css";
 import './styles/datePickerOverrides.css';
 import styles from './styles/DateSelectionField.module.css';
@@ -79,6 +79,28 @@ const DateSelectionField = ({
     { value: 'range', label: 'Date Range' },
     { value: 'multiple', label: 'Multiple Dates' },
   ];
+
+  // Helper function to convert date to YYYY-MM-DD format
+  const formatDateToString = (date) => {
+    if (date instanceof Date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } else if (date && date.toDate) {
+      const dateObj = date.toDate();
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } else if (date && typeof date === 'object' && date.year) {
+      const year = date.year;
+      const month = String(date.month).padStart(2, '0');
+      const day = String(date.day).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    return null;
+  };
 
   // Initialize values based on incoming value
   useEffect(() => {
@@ -187,29 +209,7 @@ const DateSelectionField = ({
   // Handle multiple dates change
   const handleMultipleDatesChange = (dates) => {
     setMultipleDates(dates);
-    const dateStrings = dates.map(date => {
-      // Handle different date formats from react-multi-date-picker
-      if (date instanceof Date) {
-        // Use local date string to avoid timezone issues
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      } else if (date && date.toDate) {
-        const dateObj = date.toDate();
-        const year = dateObj.getFullYear();
-        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const day = String(dateObj.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      } else if (date && typeof date === 'object' && date.year) {
-        // Handle date object format {year, month, day}
-        const year = date.year;
-        const month = String(date.month).padStart(2, '0');
-        const day = String(date.day).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      }
-      return null;
-    }).filter(Boolean);
+    const dateStrings = dates.map(formatDateToString).filter(Boolean);  
     
     onChange({
       event_start_date: null,
@@ -227,26 +227,7 @@ const DateSelectionField = ({
       return date1.getTime() !== date2.getTime();
     });
     setMultipleDates(filteredDates);
-    const dateStrings = filteredDates.map(date => {
-      if (date instanceof Date) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      } else if (date && date.toDate) {
-        const dateObj = date.toDate();
-        const year = dateObj.getFullYear();
-        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const day = String(dateObj.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      } else if (date && typeof date === 'object' && date.year) {
-        const year = date.year;
-        const month = String(date.month).padStart(2, '0');
-        const day = String(date.day).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      }
-      return null;
-    }).filter(Boolean);
+    const dateStrings = filteredDates.map(formatDateToString).filter(Boolean);
     
     onChange({
       event_start_date: null,
@@ -302,10 +283,10 @@ const DateSelectionField = ({
                   onChange={handleSingleDateChange}
                   dateFormat="MMM dd, yyyy"
                   placeholderText="Select a date"
-                  className={styles.dateInput}
                   disabled={disabled}
                   minDate={new Date()}
                   isClearable
+                  popperPlacement="right"
                 />
               </div>
             </div>
@@ -322,10 +303,10 @@ const DateSelectionField = ({
                   onChange={handleDateRangeChange}
                   dateFormat="MMM dd, yyyy"
                   placeholderText="Select start and end dates"
-                  className={styles.dateInput}
                   disabled={disabled}
                   minDate={new Date()}
                   isClearable
+                  popperPlacement="right"
                 />
               </div>
             </div>
@@ -340,10 +321,12 @@ const DateSelectionField = ({
                   onChange={handleMultipleDatesChange}
                   format="MMM DD, YYYY"
                   placeholder="Select multiple dates"
-                  className={styles.multiDateInput}
                   disabled={disabled}
                   minDate={new Date()}
                   sort
+                  hideOnEscape={false}
+                  hideOnClickOutside={false}
+                  position="right"
                 />
               </div>
             </div>
@@ -379,8 +362,9 @@ const DateSelectionField = ({
                     onClick={() => removeDate(date)}
                     className={styles.removeDateButton}
                     disabled={disabled}
+                    title="Remove date"
                   >
-                    <FaTimes />
+                    ×
                   </button>
                 </div>
               ))}

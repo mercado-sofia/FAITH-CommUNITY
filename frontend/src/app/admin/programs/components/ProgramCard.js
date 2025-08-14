@@ -2,12 +2,12 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { FaEdit, FaTag, FaCalendar } from 'react-icons/fa';
+import { FaEdit, FaTag, FaCalendar, FaEye } from 'react-icons/fa';
 import { FiTrash2 } from 'react-icons/fi';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import styles from './styles/ProgramCard.module.css';
 
-const ProgramCard = ({ program, onEdit, onDelete }) => {
+const ProgramCard = ({ program, onEdit, onDelete, onViewDetails }) => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -80,13 +80,18 @@ const ProgramCard = ({ program, onEdit, onDelete }) => {
             alt={program.title}
             className={styles.programImage}
             width={400}
-            height={200}
+            height={220}
             style={{ objectFit: 'cover' }}
             onError={(e) => {
               console.error('Image failed to load:', e.target.src);
               e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'flex';
             }}
           />
+          <div className={styles.imagePlaceholder} style={{ display: 'none' }}>
+            <FaTag className={styles.placeholderIcon} />
+            <span>Image Failed to Load</span>
+          </div>
         </div>
       ) : (
         <div className={styles.imageContainer}>
@@ -104,10 +109,7 @@ const ProgramCard = ({ program, onEdit, onDelete }) => {
         </div>
 
         <p className={styles.programDescription}>
-          {program.description && program.description.length > 120
-            ? `${program.description.substring(0, 120)}...`
-            : program.description || 'No description provided'
-          }
+          {program.description || 'No description provided'}
         </p>
 
         {/* Program Status Badge */}
@@ -119,18 +121,20 @@ const ProgramCard = ({ program, onEdit, onDelete }) => {
 
         {/* Program Meta Information */}
         <div className={styles.programMeta}>
-          <div className={styles.metaItem}>
-            <FaTag className={styles.metaIcon} />
-            <span className={styles.metaText}>
-              {getCategoryLabel(program.category)}
-            </span>
-          </div>
+          <div className={styles.metaRow}>
+            <div className={styles.metaItem}>
+              <FaTag className={styles.metaIcon} />
+              <span className={styles.metaText}>
+                {getCategoryLabel(program.category)}
+              </span>
+            </div>
 
-          <div className={styles.metaItem}>
-            <FaCalendar className={styles.metaIcon} />
-            <span className={styles.metaText}>
-              {formatProgramDates(program)}
-            </span>
+            <div className={styles.metaItem}>
+              <FaCalendar className={styles.metaIcon} />
+              <span className={styles.metaText}>
+                {formatProgramDates(program)}
+              </span>
+            </div>
           </div>
 
           {program.created_at && (
@@ -145,6 +149,15 @@ const ProgramCard = ({ program, onEdit, onDelete }) => {
 
         {/* Action Buttons */}
         <div className={styles.actionButtons}>
+          <button
+            onClick={onViewDetails}
+            className={styles.viewButton}
+            disabled={isDeleting}
+            title="View program details"
+          >
+            <FaEye /> View
+          </button>
+          
           <button
             onClick={onEdit}
             className={styles.editButton}

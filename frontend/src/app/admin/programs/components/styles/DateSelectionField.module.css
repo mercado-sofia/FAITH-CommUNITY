@@ -194,7 +194,7 @@
 .multipleDatesContainer {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 /* Date Input Wrapper */
@@ -202,6 +202,8 @@
   position: relative;
   display: flex;
   align-items: center;
+  min-height: 44px;
+  width: 270px;
 }
 
 .dateIcon {
@@ -213,66 +215,11 @@
   pointer-events: none;
 }
 
-/* Date Input Styles */
-.dateInput {
-  width: 100%;
-  padding: 12px 12px 12px 40px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  background: #ffffff;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.dateInput:focus {
-  outline: none;
-  border-color: #06100f;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.dateInput:hover:not(:focus) {
-  border-color: #9ca3af;
-}
-
-.dateInput:disabled {
-  background: #f3f4f6;
-  color: #9ca3af;
-  cursor: not-allowed;
-}
-
-/* Multi Date Input Styles */
-.multiDateInput {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  background: #ffffff;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  min-height: 44px;
-}
-
-.multiDateInput:focus {
-  outline: none;
-  border-color: #06100f;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.multiDateInput:hover:not(:focus) {
-  border-color: #9ca3af;
-}
-
-.multiDateInput:disabled {
-  background: #f3f4f6;
-  color: #9ca3af;
-  cursor: not-allowed;
-}
-
 /* Selected Date Display Container */
 .selectedDateDisplayContainer {
   margin-top: 8px;
+  position: relative;
+  z-index: 0;
 }
 
 /* Selected Date Display */

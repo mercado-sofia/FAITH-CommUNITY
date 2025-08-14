@@ -151,6 +151,7 @@ export const getProgramsByOrg = async (req, res) => {
         status: program.status || 'active',
         date: program.date || program.date_completed || program.date_created || program.created_at,
         image: program.image,
+        additional_images: program.additional_images,
         event_start_date: program.event_start_date,
         event_end_date: program.event_end_date,
         multiple_dates: program.multiple_dates,
@@ -182,7 +183,7 @@ export const getApprovedPrograms = async (req, res) => {
       ORDER BY p.created_at DESC
     `);
 
-    // Get multiple dates for each program
+    // Get multiple dates and additional images for each program
     const programsWithDates = await Promise.all(rows.map(async (program) => {
       let multipleDates = [];
       
@@ -201,9 +202,17 @@ export const getApprovedPrograms = async (req, res) => {
         multipleDates = dateRows.map(row => row.event_date);
       }
 
+      // Get additional images for this program
+      const [imageRows] = await db.execute(
+        'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
+        [program.id]
+      );
+      const additionalImages = imageRows.map(row => row.image_data);
+
       return {
         ...program,
-        multiple_dates: multipleDates
+        multiple_dates: multipleDates,
+        additional_images: additionalImages
       };
     }));
 
@@ -232,6 +241,7 @@ export const getApprovedPrograms = async (req, res) => {
         status: program.status,
         date: program.date || program.created_at,
         image: program.image,
+        additional_images: program.additional_images,
         event_start_date: program.event_start_date,
         event_end_date: program.event_end_date,
         multiple_dates: program.multiple_dates,

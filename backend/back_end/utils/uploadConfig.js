@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Base uploads directory
-const baseUploadsDir = path.join(__dirname, "../../../uploads");
+const baseUploadsDir = path.join(__dirname, "../../uploads");
 
 // Define upload directories by type
 const uploadDirectories = {

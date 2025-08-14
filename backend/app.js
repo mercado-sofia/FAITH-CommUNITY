@@ -16,11 +16,8 @@ const PORT = process.env.PORT || 8080
 // Import upload configuration to ensure proper directory structure
 import "./back_end/utils/uploadConfig.js"
 
-// Ensure uploads directory exists
+// Ensure uploads directory exists (this is now handled by uploadConfig.js)
 const uploadsDir = path.join(__dirname, "uploads")
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true })
-}
 
 // Middleware
 app.use(

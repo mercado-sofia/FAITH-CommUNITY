@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { FaPlus, FaTrash, FaCamera, FaTimes, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa'
+import { FaPlus, FaCamera, FaTimes, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa'
+import { FiTrash2, FiImage } from 'react-icons/fi'
 import { getOrganizationImageUrl } from '@/utils/uploadPaths'
 import styles from './styles/OrgHeadsEditModal.module.css'
 import { PhotoUtils } from './utils/photoUtils'
@@ -14,12 +15,57 @@ export default function OrgHeadsEditModal({
   setOrgHeadsData,
   handleSave,
   handleCancel,
-  saving
+  saving,
+  originalData
 }) {
   const [localHeads, setLocalHeads] = useState(orgHeadsData || [])
   const [uploading, setUploading] = useState({})
   const [uploadProgress, setUploadProgress] = useState({})
   const [validationErrors, setValidationErrors] = useState({})
+  const [fieldErrors, setFieldErrors] = useState({})
+
+  // Update localHeads when orgHeadsData changes (e.g., after reordering)
+  useEffect(() => {
+    if (orgHeadsData) {
+      setLocalHeads(orgHeadsData)
+    }
+  }, [orgHeadsData])
+
+  // Reset localHeads when modal opens with new data
+  useEffect(() => {
+    if (isOpen && orgHeadsData) {
+      setLocalHeads(orgHeadsData)
+    }
+  }, [isOpen, orgHeadsData])
+
+  // Clear field errors when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setFieldErrors({})
+    }
+  }, [isOpen])
+
+  // Check if any changes have been made
+  const hasChanges = () => {
+    if (!originalData || !localHeads) return false;
+    
+    // Check if the number of heads has changed
+    if (originalData.length !== localHeads.length) return true;
+    
+    // Check if any head data has changed
+    return localHeads.some((head, index) => {
+      const originalHead = originalData[index];
+      if (!originalHead) return true; // New head added
+      
+      return (
+        head.head_name !== originalHead.head_name ||
+        head.role !== originalHead.role ||
+        head.photo !== originalHead.photo ||
+        head.facebook !== originalHead.facebook ||
+        head.email !== originalHead.email
+      );
+    });
+  };
 
   if (!isOpen) return null
 
@@ -27,7 +73,15 @@ export default function OrgHeadsEditModal({
     const updatedHeads = [...localHeads]
     updatedHeads[index] = { ...updatedHeads[index], [field]: value }
     setLocalHeads(updatedHeads)
-    setOrgHeadsData(updatedHeads)
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[`${index}-${field}`]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[`${index}-${field}`]
+        return newErrors
+      })
+    }
   }
 
   const handleAddHead = () => {
@@ -41,13 +95,33 @@ export default function OrgHeadsEditModal({
     }
     const updatedHeads = [...localHeads, newHead]
     setLocalHeads(updatedHeads)
-    setOrgHeadsData(updatedHeads)
+    
+    // Clear field errors when adding new head
+    setFieldErrors({})
   }
 
   const handleRemoveHead = (index) => {
     const updatedHeads = localHeads.filter((_, i) => i !== index)
     setLocalHeads(updatedHeads)
-    setOrgHeadsData(updatedHeads)
+    
+    // Clear field errors for removed head and reindex remaining errors
+    setFieldErrors(prev => {
+      const newErrors = {}
+      Object.keys(prev).forEach(key => {
+        const [headIndex, field] = key.split('-')
+        const headIndexNum = parseInt(headIndex)
+        if (headIndexNum < index) {
+          // Keep errors for heads before the removed one
+          newErrors[key] = prev[key]
+        } else if (headIndexNum > index) {
+          // Reindex errors for heads after the removed one
+          const newKey = `${headIndexNum - 1}-${field}`
+          newErrors[newKey] = prev[key]
+        }
+        // Skip errors for the removed head
+      })
+      return newErrors
+    })
   }
 
   const handleFileUpload = async (index, e) => {
@@ -191,40 +265,60 @@ export default function OrgHeadsEditModal({
   }
 
   const validateForm = () => {
+    const newFieldErrors = {}
+    let isValid = true
+
     for (let i = 0; i < localHeads.length; i++) {
       const head = localHeads[i]
+      
+      // Validate name
       if (!head.head_name?.trim()) {
-        alert(`Please enter a name for head #${i + 1}`)
-        return false
+        newFieldErrors[`${i}-head_name`] = 'Name is required'
+        isValid = false
       }
+      
+      // Validate role
       if (!head.role?.trim()) {
-        alert(`Please enter a role for head #${i + 1}`)
-        return false
+        newFieldErrors[`${i}-role`] = 'Role is required'
+        isValid = false
       }
+      
+      // Validate email
       if (!head.email?.trim()) {
-        alert(`Please enter an email for head #${i + 1}`)
-        return false
+        newFieldErrors[`${i}-email`] = 'Email is required'
+        isValid = false
+      } else if (!/\S+@\S+\.\S+/.test(head.email)) {
+        newFieldErrors[`${i}-email`] = 'Please enter a valid email address'
+        isValid = false
       }
-      // Photo is optional - remove this validation
-      // if (!head.photo?.trim()) {
-      //   alert(`Please upload a profile photo for head #${i + 1}`)
-      //   return false
-      // }
-      if (head.email && !/\S+@\S+\.\S+/.test(head.email)) {
-        alert(`Please enter a valid email for head #${i + 1}`)
-        return false
-      }
+      
+      // Validate Facebook URL (optional field)
       if (head.facebook && !head.facebook.includes('facebook.com')) {
-        alert(`Please enter a valid Facebook URL for head #${i + 1}`)
-        return false
+        newFieldErrors[`${i}-facebook`] = 'Please enter a valid Facebook URL'
+        isValid = false
       }
     }
-    return true
+
+    setFieldErrors(newFieldErrors)
+    return isValid
   }
 
   const handleSaveClick = () => {
     if (validateForm()) {
-      handleSave()
+      // Update the main state with local changes before saving
+      setOrgHeadsData([...localHeads])
+      // Pass the current local data to the save function to ensure it has the latest data
+      handleSave(localHeads)
+    } else {
+      // Scroll to the first error field
+      const firstErrorField = document.querySelector(`.${styles.inputError}`)
+      if (firstErrorField) {
+        firstErrorField.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        })
+        firstErrorField.focus()
+      }
     }
   }
 
@@ -266,7 +360,7 @@ export default function OrgHeadsEditModal({
                       disabled={saving}
                       title="Remove this head"
                     >
-                      <FaTrash />
+                                              <FiTrash2 />
                     </button>
                   </div>
 
@@ -276,12 +370,19 @@ export default function OrgHeadsEditModal({
                       <div className={styles.photoSection}>
                         <div className={styles.headPhoto}>
                           <div className={styles.photoContainer}>
-                            <LazyImage
-                              src={head.photo ? getOrganizationImageUrl(head.photo, 'head') : '/default.png'}
-                              alt={`Profile photo of ${head.head_name || 'organization head'}`}
-                              className={styles.photo}
-                              priority={index < 2} // Prioritize first 2 images
-                            />
+                            {head.photo ? (
+                              <LazyImage
+                                src={getOrganizationImageUrl(head.photo, 'head')}
+                                alt={`Profile photo of ${head.head_name || 'organization head'}`}
+                                className={styles.photo}
+                                priority={index < 2} // Prioritize first 2 images
+                              />
+                            ) : (
+                              <div className={styles.noImageContainer}>
+                                <FiImage className={styles.noImageIcon} />
+                                <span className={styles.noImageText}>No image</span>
+                              </div>
+                            )}
                             
                             <div className={styles.photoOverlay}>
                               <label className={styles.photoUploadLabel}>
@@ -344,59 +445,79 @@ export default function OrgHeadsEditModal({
                       </div>
 
                       <div className={styles.nameRoleFields}>
-                        <div className={styles.formGroup}>
+                        <div className={`${styles.formGroup} ${fieldErrors[`${index}-head_name`] ? styles.formGroupError : ''}`}>
                           <label className={styles.label}>Name *</label>
                           <input
                             type="text"
                             value={head.head_name || ''}
                             onChange={(e) => handleInputChange(index, 'head_name', e.target.value)}
-                            className={styles.input}
+                            className={`${styles.input} ${fieldErrors[`${index}-head_name`] ? styles.inputError : ''}`}
                             placeholder="Enter full name"
                             disabled={saving}
                             required
                           />
+                          {fieldErrors[`${index}-head_name`] && (
+                            <div className={styles.fieldError}>
+                              {fieldErrors[`${index}-head_name`]}
+                            </div>
+                          )}
                         </div>
 
-                        <div className={styles.formGroup}>
+                        <div className={`${styles.formGroup} ${fieldErrors[`${index}-role`] ? styles.formGroupError : ''}`}>
                           <label className={styles.label}>Role *</label>
                           <input
                             type="text"
                             value={head.role || ''}
                             onChange={(e) => handleInputChange(index, 'role', e.target.value)}
-                            className={styles.input}
+                            className={`${styles.input} ${fieldErrors[`${index}-role`] ? styles.inputError : ''}`}
                             placeholder="e.g., President, Vice President, Secretary"
                             disabled={saving}
                             required
                           />
+                          {fieldErrors[`${index}-role`] && (
+                            <div className={styles.fieldError}>
+                              {fieldErrors[`${index}-role`]}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
 
                     {/* Bottom row: Email and Facebook full width */}
                     <div className={styles.bottomRow}>
-                      <div className={styles.formGroup}>
+                      <div className={`${styles.formGroup} ${fieldErrors[`${index}-email`] ? styles.formGroupError : ''}`}>
                         <label className={styles.label}>Email *</label>
                         <input
                           type="email"
                           value={head.email || ''}
                           onChange={(e) => handleInputChange(index, 'email', e.target.value)}
-                          className={styles.input}
+                          className={`${styles.input} ${fieldErrors[`${index}-email`] ? styles.inputError : ''}`}
                           placeholder="Enter email address"
                           disabled={saving}
                           required
                         />
+                        {fieldErrors[`${index}-email`] && (
+                          <div className={styles.fieldError}>
+                            {fieldErrors[`${index}-email`]}
+                          </div>
+                        )}
                       </div>
 
-                      <div className={styles.formGroup}>
+                      <div className={`${styles.formGroup} ${fieldErrors[`${index}-facebook`] ? styles.formGroupError : ''}`}>
                         <label className={styles.label}>Facebook URL</label>
                         <input
                           type="url"
                           value={head.facebook || ''}
                           onChange={(e) => handleInputChange(index, 'facebook', e.target.value)}
-                          className={styles.input}
+                          className={`${styles.input} ${fieldErrors[`${index}-facebook`] ? styles.inputError : ''}`}
                           placeholder="https://facebook.com/username (optional)"
                           disabled={saving}
                         />
+                        {fieldErrors[`${index}-facebook`] && (
+                          <div className={styles.fieldError}>
+                            {fieldErrors[`${index}-facebook`]}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -429,7 +550,7 @@ export default function OrgHeadsEditModal({
           <button
             onClick={handleSaveClick}
             className={styles.saveButton}
-            disabled={saving}
+            disabled={saving || !hasChanges()}
           >
             {saving ? 'Saving...' : 'Save Changes'}
           </button>

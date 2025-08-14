@@ -1,6 +1,9 @@
+// SectionSummaryModal.js
 'use client'
 
+import { useEffect } from 'react'
 import Image from 'next/image'
+import { AiOutlineExclamationCircle } from 'react-icons/ai'
 import styles from './styles/SummaryModal.module.css'
 
 export default function SectionSummaryModal({
@@ -10,37 +13,53 @@ export default function SectionSummaryModal({
   pendingChanges,
   saving,
   handleCancelModal,
-  handleConfirmChanges
+  handleConfirmChanges,
 }) {
+  // Lock background scroll while modal is open
+  useEffect(() => {
+    if (!isOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [isOpen])
+
   if (!isOpen || !originalData || !pendingChanges) return null
 
   const getSectionTitle = () => {
-    switch(currentSection) {
-      case 'organization': return 'Organization Information'
-      case 'advocacy': return 'Advocacy Information'
-      case 'competency': return 'Competency Information'
-      default: return 'Information'
+    switch (currentSection) {
+      case 'organization':
+        return 'Organization Information'
+      case 'advocacy':
+        return 'Advocacy Information'
+      case 'competency':
+        return 'Competency Information'
+      default:
+        return 'Information'
     }
   }
 
   const getActionButtonText = () => {
-    switch(currentSection) {
-      case 'organization': return 'Confirm Changes'
-      case 'advocacy': 
-      case 'competency': 
+    switch (currentSection) {
+      case 'organization':
+        return 'Confirm Changes'
+      case 'advocacy':
+      case 'competency':
         return 'Submit for Approval'
-      default: return 'Confirm Changes'
+      default:
+        return 'Confirm Changes'
     }
   }
 
   const getWarningText = () => {
-    switch(currentSection) {
-      case 'organization': 
+    switch (currentSection) {
+      case 'organization':
         return 'Confirming these changes will immediately update your organization information on the official website.'
-      case 'advocacy': 
-      case 'competency': 
+      case 'advocacy':
+      case 'competency':
         return 'Submitting these changes will send them to the superadmin for approval. Changes will not be visible until approved.'
-      default: 
+      default:
         return 'Please review your changes before confirming.'
     }
   }
@@ -48,12 +67,19 @@ export default function SectionSummaryModal({
   const renderFieldComparison = (fieldName, label, originalValue, newValue) => {
     if (originalValue === newValue) return null
 
+    const formatText = (text) => {
+      if (!text) return 'Not specified'
+      return String(text).trim()
+    }
+
     return (
       <div key={fieldName} className={styles.changeItem}>
         <h4 className={styles.fieldLabel}>{label}</h4>
+
         <div className={styles.comparison}>
           <div className={styles.beforeSection}>
             <span className={styles.sectionLabel}>Previous:</span>
+
             {fieldName === 'logo' ? (
               originalValue ? (
                 <Image
@@ -67,11 +93,13 @@ export default function SectionSummaryModal({
                 <span className={styles.emptyValue}>No logo</span>
               )
             ) : (
-              <span className={styles.value}>{originalValue || "Not specified"}</span>
+              <div className={styles.value}>{formatText(originalValue)}</div>
             )}
           </div>
+
           <div className={styles.afterSection}>
             <span className={styles.sectionLabel}>New:</span>
+
             {fieldName === 'logo' ? (
               newValue ? (
                 <Image
@@ -85,7 +113,7 @@ export default function SectionSummaryModal({
                 <span className={styles.emptyValue}>No logo</span>
               )
             ) : (
-              <span className={styles.value}>{newValue || "Not specified"}</span>
+              <div className={styles.value}>{formatText(newValue)}</div>
             )}
           </div>
         </div>
@@ -93,26 +121,54 @@ export default function SectionSummaryModal({
     )
   }
 
+  // --- Per-section diffs (only show changed fields) ---
   const renderOrganizationChanges = () => {
     const changes = []
-    
+
     if (originalData.logo !== pendingChanges.logo) {
-      changes.push(renderFieldComparison('logo', 'Logo', originalData.logo, pendingChanges.logo))
+      changes.push(
+        renderFieldComparison('logo', 'Logo', originalData.logo, pendingChanges.logo)
+      )
     }
     if (originalData.org !== pendingChanges.org) {
-      changes.push(renderFieldComparison('org', 'Organization Acronym', originalData.org, pendingChanges.org))
+      changes.push(
+        renderFieldComparison('org', 'Organization Acronym', originalData.org, pendingChanges.org)
+      )
     }
     if (originalData.orgName !== pendingChanges.orgName) {
-      changes.push(renderFieldComparison('orgName', 'Organization Name', originalData.orgName, pendingChanges.orgName))
+      changes.push(
+        renderFieldComparison(
+          'orgName',
+          'Organization Name',
+          originalData.orgName,
+          pendingChanges.orgName
+        )
+      )
     }
     if (originalData.email !== pendingChanges.email) {
-      changes.push(renderFieldComparison('email', 'Email', originalData.email, pendingChanges.email))
+      changes.push(
+        renderFieldComparison('email', 'Email', originalData.email, pendingChanges.email)
+      )
     }
     if (originalData.facebook !== pendingChanges.facebook) {
-      changes.push(renderFieldComparison('facebook', 'Facebook Link', originalData.facebook, pendingChanges.facebook))
+      changes.push(
+        renderFieldComparison(
+          'facebook',
+          'Facebook Link',
+          originalData.facebook,
+          pendingChanges.facebook
+        )
+      )
     }
     if (originalData.description !== pendingChanges.description) {
-      changes.push(renderFieldComparison('description', 'Description', originalData.description, pendingChanges.description))
+      changes.push(
+        renderFieldComparison(
+          'description',
+          'Description',
+          originalData.description,
+          pendingChanges.description
+        )
+      )
     }
 
     return changes
@@ -120,30 +176,44 @@ export default function SectionSummaryModal({
 
   const renderAdvocacyChanges = () => {
     const changes = []
-    
     if (originalData.advocacy !== pendingChanges.advocacy) {
-      changes.push(renderFieldComparison('advocacy', 'Advocacy Information', originalData.advocacy, pendingChanges.advocacy))
+      changes.push(
+        renderFieldComparison(
+          'advocacy',
+          'Advocacy Information',
+          originalData.advocacy,
+          pendingChanges.advocacy
+        )
+      )
     }
-
     return changes
   }
 
   const renderCompetencyChanges = () => {
     const changes = []
-    
     if (originalData.competency !== pendingChanges.competency) {
-      changes.push(renderFieldComparison('competency', 'Competency Information', originalData.competency, pendingChanges.competency))
+      changes.push(
+        renderFieldComparison(
+          'competency',
+          'Competency Information',
+          originalData.competency,
+          pendingChanges.competency
+        )
+      )
     }
-
     return changes
   }
 
   const renderChanges = () => {
-    switch(currentSection) {
-      case 'organization': return renderOrganizationChanges()
-      case 'advocacy': return renderAdvocacyChanges()
-      case 'competency': return renderCompetencyChanges()
-      default: return []
+    switch (currentSection) {
+      case 'organization':
+        return renderOrganizationChanges()
+      case 'advocacy':
+        return renderAdvocacyChanges()
+      case 'competency':
+        return renderCompetencyChanges()
+      default:
+        return []
     }
   }
 
@@ -156,13 +226,20 @@ export default function SectionSummaryModal({
           <div className={styles.modalHeader}>
             <h2 className={styles.modalTitle}>No Changes Detected</h2>
           </div>
-          <div className={styles.modalContent}>
-            <p className={styles.noChangesText}>No changes were made to the {getSectionTitle().toLowerCase()}.</p>
-            <div className={styles.buttonSection}>
-              <button onClick={handleCancelModal} className={styles.cancelButton}>
-                Close
-              </button>
+
+          {/* scroll area kept for consistent layout */}
+          <div className={styles.modalScrollArea}>
+            <div className={styles.modalContent}>
+              <p className={styles.noChangesText}>
+                No changes were made to the {getSectionTitle().toLowerCase()}.
+              </p>
             </div>
+          </div>
+
+          <div className={styles.modalActions}>
+            <button onClick={handleCancelModal} className={styles.modalCancelBtn}>
+              Close
+            </button>
           </div>
         </div>
       </div>
@@ -172,47 +249,52 @@ export default function SectionSummaryModal({
   return (
     <div className={styles.modalOverlay}>
       <div className={styles.modalContainer}>
+        {/* Header (fixed) */}
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>Review {getSectionTitle()} Changes</h2>
         </div>
 
-        <div className={styles.modalContent}>
-          <div className={styles.warningSection}>
-            <p className={styles.warningText}>
-              {getWarningText()}
-            </p>
-          </div>
+        {/* Scrollable area */}
+        <div className={styles.modalScrollArea}>
+          <div className={styles.modalContent}>
+            <div className={styles.warningSection}>
+              <div className={styles.warningContent}>
+                <AiOutlineExclamationCircle className={styles.warningIcon} />
+                <p className={styles.warningText}>{getWarningText()}</p>
+              </div>
+            </div>
 
-          <div className={styles.changesSection}>
-            <h3 className={styles.changesTitle}>Summary of Changes:</h3>
-            <div className={styles.changesList}>
-              {changes}
+            <div className={styles.changesSection}>
+              <h3 className={styles.changesTitle}>Summary of Changes:</h3>
+              <div className={styles.changesList}>{changes}</div>
             </div>
           </div>
+        </div>
 
-          <div className={styles.buttonSection}>
-            <button 
-              onClick={handleCancelModal}
-              className={styles.cancelButton}
-              disabled={saving}
-            >
-              Cancel
-            </button>
-            <button 
-              onClick={handleConfirmChanges}
-              className={styles.confirmButton}
-              disabled={saving}
-            >
-              {saving ? (
-                <>
-                  <span className={styles.spinner}></span>
-                  Processing...
-                </>
-              ) : (
-                getActionButtonText()
-              )}
-            </button>
-          </div>
+        {/* Actions (fixed) */}
+        <div className={styles.modalActions}>
+          <button
+            onClick={handleCancelModal}
+            className={styles.modalCancelBtn}
+            disabled={saving}
+          >
+            Cancel
+          </button>
+
+          <button
+            onClick={handleConfirmChanges}
+            className={styles.modalConfirmBtn}
+            disabled={saving}
+          >
+            {saving ? (
+              <>
+                <span className={styles.spinner} />
+                Processing...
+              </>
+            ) : (
+              getActionButtonText()
+            )}
+          </button>
         </div>
       </div>
     </div>

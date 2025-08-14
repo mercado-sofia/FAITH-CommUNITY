@@ -18,7 +18,8 @@ export default function EditModal({
   handleCancel,
   saving,
   modalMessage,
-  setModalMessage
+  setModalMessage,
+  originalData
 }) {
   // Auto-clear modal message after 3 seconds
   useEffect(() => {
@@ -62,6 +63,20 @@ export default function EditModal({
       };
     }
   }, [isOpen]);
+
+  // Check if any changes have been made
+  const hasChanges = () => {
+    if (!originalData || !orgData) return false;
+    
+    return (
+      originalData.logo !== orgData.logo ||
+      originalData.org !== orgData.org ||
+      originalData.orgName !== orgData.orgName ||
+      originalData.facebook !== orgData.facebook ||
+      originalData.description !== orgData.description ||
+      originalData.orgColor !== orgData.orgColor
+    );
+  };
 
   if (!isOpen) return null
 
@@ -225,7 +240,7 @@ export default function EditModal({
               <button 
                 onClick={handleSave}
                 className={styles.saveButton}
-                disabled={saving || uploading}
+                disabled={saving || uploading || !hasChanges()}
               >
                 {saving ? (
                   <>

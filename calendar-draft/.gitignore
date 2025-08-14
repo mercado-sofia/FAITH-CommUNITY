@@ -1,0 +1,10 @@
+/node_modules
+/build
+/coverage
+/website/node_modules
+/website/public
+/website/.cache
+/plugins
+/components
+.npmignore 
+.vscode

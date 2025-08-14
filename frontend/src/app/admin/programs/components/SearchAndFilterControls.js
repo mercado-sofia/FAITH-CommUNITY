@@ -6,7 +6,6 @@ import styles from './styles/SearchAndFilterControls.module.css';
 
 const SearchAndFilterControls = ({
   searchQuery,
-  categoryFilter,
   sortBy,
   showCount,
   onSearchChange,
@@ -32,19 +31,7 @@ const SearchAndFilterControls = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const categories = [
-    { value: 'all', label: 'All Categories' },
-    { value: 'outreach', label: 'Outreach' },
-    { value: 'education', label: 'Education' },
-    { value: 'health', label: 'Health' },
-    { value: 'environment', label: 'Environment' },
-    { value: 'community', label: 'Community Development' },
-    { value: 'youth', label: 'Youth Programs' },
-    { value: 'women', label: 'Women Empowerment' },
-    { value: 'elderly', label: 'Elderly Care' },
-    { value: 'disaster', label: 'Disaster Relief' },
-    { value: 'other', label: 'Other' }
-  ];
+
 
   const sortOptions = [
     { value: 'newest', label: 'Newest' },

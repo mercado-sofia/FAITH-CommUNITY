@@ -14,8 +14,21 @@ const nextConfig = {
         port: '8080',
         pathname: '/uploads/**',
       },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
+        pathname: '/uploads/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'localhost',
+        port: '3000',
+        pathname: '/uploads/**',
+      },
     ],
     formats: ['image/webp', 'image/avif'],
+    unoptimized: true, // Allow unoptimized images for local development
   },
   
   // Compiler optimizations

@@ -57,12 +57,12 @@ export const superadminProgramsApi = createApi({
             };
 
             // Categorize by status
-            const status = program.status?.toLowerCase();
-            if (status === 'upcoming') {
+            const status = program.status;
+            if (status === 'Upcoming') {
               acc[orgKey].programs.upcoming.push(programData);
-            } else if (status === 'active') {
+            } else if (status === 'Active') {
               acc[orgKey].programs.active.push(programData);
-            } else if (status === 'completed') {
+            } else if (status === 'Completed') {
               acc[orgKey].programs.completed.push(programData);
             }
 

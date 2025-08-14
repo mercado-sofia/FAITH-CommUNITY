@@ -336,17 +336,17 @@
   letter-spacing: 0.5px;
 }
 
-.statusBadge.upcoming {
+.statusBadge.Upcoming {
   background: #e6fffa;
   color: #00b894;
 }
 
-.statusBadge.active {
+.statusBadge.Active {
   background: #e6f7ff;
   color: #0984e3;
 }
 
-.statusBadge.completed {
+.statusBadge.Completed {
   background: #f0f9ff;
   color: #6c5ce7;
 }
@@ -561,17 +561,17 @@
   letter-spacing: 0.5px;
 }
 
-.programStatusBadge.upcoming {
+.programStatusBadge.Upcoming {
   background: #e6fffa;
   color: #00b894;
 }
 
-.programStatusBadge.active {
+.programStatusBadge.Active {
   background: #e6f7ff;
   color: #0984e3;
 }
 
-.programStatusBadge.completed {
+.programStatusBadge.Completed {
   background: #f0f9ff;
   color: #6c5ce7;
 }
@@ -754,17 +754,17 @@
   letter-spacing: 0.5px;
 }
 
-.modalStatusBadge.upcoming {
+.modalStatusBadge.Upcoming {
   background: #e6fffa;
   color: #00b894;
 }
 
-.modalStatusBadge.active {
+.modalStatusBadge.Active {
   background: #e6f7ff;
   color: #0984e3;
 }
 
-.modalStatusBadge.completed {
+.modalStatusBadge.Completed {
   background: #f0f9ff;
   color: #6c5ce7;
 }
@@ -960,17 +960,17 @@
   letter-spacing: 0.5px;
 }
 
-.statusBadge.active {
+.statusBadge.Active {
   background: #d4edda;
   color: #155724;
 }
 
-.statusBadge.completed {
+.statusBadge.Completed {
   background: #cce5ff;
   color: #004085;
 }
 
-.statusBadge.upcoming {
+.statusBadge.Upcoming {
   background: #fff3cd;
   color: #856404;
 }

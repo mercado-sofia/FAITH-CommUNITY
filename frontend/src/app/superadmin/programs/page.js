@@ -77,7 +77,7 @@ const SuperadminProgramsPage = () => {
         
         <div className={styles.programFooter}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span className={`${styles.programStatusBadge} ${styles[program.status?.toLowerCase()]}`}>
+            <span className={`${styles.programStatusBadge} ${styles[program.status]}`}>
               {program.status}
             </span>
             <button 
@@ -232,9 +232,9 @@ const SuperadminProgramsPage = () => {
             className={styles.filterSelect}
           >
             <option value="all">All Status</option>
-            <option value="upcoming">Upcoming</option>
-            <option value="active">Active</option>
-            <option value="completed">Completed</option>
+            <option value="Upcoming">Upcoming</option>
+            <option value="Active">Active</option>
+            <option value="Completed">Completed</option>
           </select>
         </div>
       </div>

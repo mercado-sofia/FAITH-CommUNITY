@@ -12,6 +12,7 @@ import SectionEditModal from "./components/SectionEditModal";
 import OrgHeadsEditModal from "./components/OrgHeadsEditModal";
 import SummaryModal from "./components/SummaryModal";
 import SectionSummaryModal from "./components/SectionSummaryModal";
+import ToastModal from "./components/ToastModal";
 import pageStyles from "./page.module.css";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -54,12 +55,13 @@ export default function OrganizationPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showSectionEditModal, setShowSectionEditModal] = useState(false);
   const [showOrgHeadsEditModal, setShowOrgHeadsEditModal] = useState(false);
-  const [currentSection, setCurrentSection] = useState('organization'); // 'organization', 'advocacy', 'competency', 'orgHeads'
+  const [currentSection, setCurrentSection] = useState(''); // 'organization', 'advocacy', 'competency', 'orgHeads'
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState({ text: "", type: "", section: "" });
+  const [showToastModal, setShowToastModal] = useState(false);
   const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [showSectionSummaryModal, setShowSectionSummaryModal] = useState(false);
   const [originalData, setOriginalData] = useState(null);
@@ -69,7 +71,12 @@ export default function OrganizationPage() {
 
   const showMessage = (text, type, section = "") => {
     setMessage({ text, type, section });
-    setTimeout(() => setMessage({ text: "", type: "", section: "" }), 5000);
+    setShowToastModal(true);
+  };
+
+  const closeToastModal = () => {
+    setShowToastModal(false);
+    setMessage({ text: "", type: "", section: "" });
   };
 
     const validateForm = () => {
@@ -473,7 +480,7 @@ export default function OrganizationPage() {
     }
     setIsEditing(false);
     setErrors({});
-    setCurrentSection('organization');
+    setCurrentSection(''); // Reset to empty string instead of 'organization'
     setPendingChanges(null);
     setOriginalData(null);
     setTempEditData({}); // Clear temporary editing data
@@ -548,7 +555,7 @@ export default function OrganizationPage() {
       setIsEditing(false);
       setPendingChanges(null);
       setOriginalData(null);
-      setCurrentSection('organization');
+      setCurrentSection('');
       setTempEditData({}); // Clear temporary editing data
       
       const actionText = reEditSubmissionId ? 'updated' : 'submitted';
@@ -568,11 +575,11 @@ export default function OrganizationPage() {
   const handleSectionCancelModal = () => {
     setShowSectionSummaryModal(false);
     setPendingChanges(null);
-    setCurrentSection('organization');
+    setCurrentSection('');
   };
 
   // Organization Heads CRUD handlers
-  const handleOrgHeadsSave = async () => {
+  const handleOrgHeadsSave = async (headsData = orgHeadsData) => {
     try {
       setSaving(true);
       setShowOrgHeadsEditModal(false);
@@ -581,10 +588,10 @@ export default function OrganizationPage() {
       
       console.log('Saving org heads data:');
       console.log('Organization ID:', orgId);
-      console.log('Heads data:', orgHeadsData);
+      console.log('Heads data:', headsData);
       
       // Clean up photo data before sending to backend
-      const cleanedHeadsData = orgHeadsData.map(head => ({
+      const cleanedHeadsData = headsData.map(head => ({
         ...head,
         photo: head.photo && head.photo.startsWith('data:') ? null : head.photo // Remove base64 data
       }));
@@ -622,14 +629,14 @@ export default function OrganizationPage() {
     } finally {
       setSaving(false);
       setIsEditing(false);
-      setCurrentSection('organization');
+      setCurrentSection('');
     }
   };
 
   const handleOrgHeadsCancel = () => {
     setShowOrgHeadsEditModal(false);
     setIsEditing(false);
-    setCurrentSection('organization');
+    setCurrentSection('');
     // Reset orgHeadsData to original state
     fetchOrganizationData();
   };
@@ -649,19 +656,19 @@ export default function OrganizationPage() {
 
       <OrgInfoSection
         orgData={orgData}
-        message={message}
         isEditing={isEditing}
         setIsEditing={setIsEditing}
         setShowEditModal={setShowEditModal}
         setOriginalData={setOriginalData}
         setEditPreviewData={setEditPreviewData}
+        currentSection={currentSection}
+        setCurrentSection={setCurrentSection}
       />
 
       <div className={pageStyles.sectionsContainer}>
         <div className={pageStyles.sectionColumn}>
           <AdvocacySection
             advocacyData={advocacyData}
-            message={message}
             setIsEditing={setIsEditing}
             setShowEditModal={setShowSectionEditModal}
             setOriginalData={setOriginalData}
@@ -673,7 +680,6 @@ export default function OrganizationPage() {
         <div className={pageStyles.sectionColumn}>
           <CompetencySection
             competencyData={competencyData}
-            message={message}
             setIsEditing={setIsEditing}
             setShowEditModal={setShowSectionEditModal}
             setOriginalData={setOriginalData}
@@ -685,7 +691,7 @@ export default function OrganizationPage() {
 
       <OrgHeadsSection
         orgHeadsData={orgHeadsData}
-        message={message}
+        setOrgHeadsData={setOrgHeadsData}
         setIsEditing={setIsEditing}
         setShowEditModal={setShowOrgHeadsEditModal}
         setOriginalData={setOriginalData}
@@ -706,6 +712,7 @@ export default function OrganizationPage() {
         saving={saving}
         modalMessage={modalMessage}
         setModalMessage={setModalMessage}
+        originalData={originalData}
       />
 
       <SectionEditModal
@@ -717,15 +724,17 @@ export default function OrganizationPage() {
         handleSave={handleSave}
         handleCancel={handleCancel}
         saving={saving}
+        originalData={originalData}
       />
 
       <OrgHeadsEditModal
         isOpen={showOrgHeadsEditModal}
-        orgHeadsData={orgHeadsData}
+        orgHeadsData={tempEditData.orgHeads || orgHeadsData}
         setOrgHeadsData={setOrgHeadsData}
-        handleSave={handleSave}
+        handleSave={handleOrgHeadsSave}
         handleCancel={handleOrgHeadsCancel}
         saving={saving}
+        originalData={originalData}
       />
 
       {showSummaryModal && originalData && pendingChanges && (
@@ -749,6 +758,12 @@ export default function OrganizationPage() {
           handleConfirmChanges={handleSectionConfirmChanges}
         />
       )}
+
+      <ToastModal
+        isOpen={showToastModal}
+        message={message}
+        onClose={closeToastModal}
+      />
     </div>
   );
 }

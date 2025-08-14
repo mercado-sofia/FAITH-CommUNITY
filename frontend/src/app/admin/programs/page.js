@@ -9,6 +9,7 @@ import { FaPlus, FaEdit, FaTrash, FaEye } from 'react-icons/fa';
 import AddProgramModal from './components/AddProgramModal';
 import EditProgramModal from './components/EditProgramModal';
 import DeleteProgramModal from './components/DeleteProgramModal';
+import ViewDetailsModal from './components/ViewDetailsModal';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
 import ProgramCard from './components/ProgramCard';
 
@@ -25,13 +26,14 @@ export default function ProgramsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProgram, setEditingProgram] = useState(null);
   const [deletingProgram, setDeletingProgram] = useState(null);
+  const [viewingProgram, setViewingProgram] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   
   // Filter and search states
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || 'all');
-  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'active');
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'Active');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
   const [showCount, setShowCount] = useState(parseInt(searchParams.get('show')) || 10);
 
@@ -101,9 +103,6 @@ export default function ProgramsPage() {
         ],
       };
 
-      console.log("📦 Payload to be submitted:", submissionPayload);
-      console.log("🌐 Submitting to URL:", `${API_BASE_URL}/api/submissions`);
-
       const response = await fetch(`${API_BASE_URL}/api/submissions`, {
         method: 'POST',
         headers: {
@@ -111,13 +110,10 @@ export default function ProgramsPage() {
         },
         body: JSON.stringify(submissionPayload),
       });
-      
-      console.log("📡 Response status:", response.status);
-      console.log("📡 Response ok:", response.ok);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`❌ Submission failed: ${response.status} - ${errorText}`);
+        console.error(`Submission failed: ${response.status} - ${errorText}`);
         throw new Error('Failed to submit program');
       }
 
@@ -138,17 +134,13 @@ export default function ProgramsPage() {
 
   // Handle program update
   const handleUpdateProgram = async (programData) => {
-    console.log('🔄 handleUpdateProgram called with data:', programData);
-    console.log('📝 Editing program ID:', editingProgram?.id);
-    
     try {
       if (!editingProgram?.id) {
-        console.error('❌ No editing program ID found');
+        console.error('No editing program ID found');
         setMessage({ type: 'error', text: 'Program ID not found. Please try again.' });
         return;
       }
 
-      console.log('📡 Sending PUT request to:', `${API_BASE_URL}/api/admin/programs/${editingProgram.id}`);
       const response = await fetch(`${API_BASE_URL}/api/admin/programs/${editingProgram.id}`, {
         method: 'PUT',
         headers: {
@@ -157,34 +149,33 @@ export default function ProgramsPage() {
         body: JSON.stringify(programData),
       });
 
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response ok:', response.ok);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`❌ Update failed: ${response.status} - ${errorText}`);
+        console.error(`Update failed: ${response.status} - ${errorText}`);
         throw new Error('Failed to update program');
       }
 
       const result = await response.json();
-      console.log('✅ Update successful, result:', result);
       
       setMessage({ 
         type: 'success', 
         text: 'Program updated successfully!' 
       });
       setEditingProgram(null);
-      console.log('🔄 Refreshing programs list...');
       fetchPrograms();
       
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (error) {
-      console.error('❌ Error updating program:', error);
+      console.error('Error updating program:', error);
       setMessage({ type: 'error', text: 'Failed to update program. Please try again.' });
     }
   };
 
   // Handle program deletion - show modal
+  const handleViewProgram = (program) => {
+    setViewingProgram(program);
+  };
+
   const handleDeleteProgram = (program) => {
     setDeletingProgram(program);
   };
@@ -257,7 +248,7 @@ export default function ProgramsPage() {
   const updateURLParams = (params) => {
     const newSearchParams = new URLSearchParams(searchParams);
     Object.entries(params).forEach(([key, value]) => {
-      if (value && value !== 'all' && value !== '' && !(key === 'sort' && value === 'newest') && !(key === 'status' && value === 'active') && !(key === 'show' && value === 10)) {
+             if (value && value !== 'all' && value !== '' && !(key === 'sort' && value === 'newest') && !(key === 'status' && value === 'Active') && !(key === 'show' && value === 10)) {
         newSearchParams.set(key, value);
       } else {
         newSearchParams.delete(key);
@@ -328,7 +319,6 @@ export default function ProgramsPage() {
       {/* Search and Filter Controls */}
       <SearchAndFilterControls
         searchQuery={searchQuery}
-        categoryFilter={categoryFilter}
         sortBy={sortBy}
         showCount={showCount}
         onSearchChange={handleSearchChange}
@@ -339,13 +329,13 @@ export default function ProgramsPage() {
 
       {/* Status Navigation Tabs */}
       <div className={styles.statusTabs}>
-        {['active', 'upcoming', 'completed'].map((status) => (
+        {['Active', 'Upcoming', 'Completed'].map((status) => (
           <button
             key={status}
             className={`${styles.statusTab} ${statusFilter === status ? styles.activeTab : ''}`}
             onClick={() => handleFilterChange('status', status)}
           >
-            {status.charAt(0).toUpperCase() + status.slice(1)}
+            {status}
           </button>
         ))}
       </div>
@@ -363,6 +353,7 @@ export default function ProgramsPage() {
               <ProgramCard
                 key={program.id}
                 program={program}
+                onViewDetails={() => handleViewProgram(program)}
                 onEdit={() => setEditingProgram(program)}
                 onDelete={() => handleDeleteProgram(program)}
               />
@@ -384,6 +375,13 @@ export default function ProgramsPage() {
           program={editingProgram}
           onClose={() => setEditingProgram(null)}
           onSubmit={handleUpdateProgram}
+        />
+      )}
+
+      {viewingProgram && (
+        <ViewDetailsModal
+          program={viewingProgram}
+          onClose={() => setViewingProgram(null)}
         />
       )}
 

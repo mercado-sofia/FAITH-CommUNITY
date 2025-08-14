@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { AiOutlineExclamationCircle } from 'react-icons/ai';
 import { getOrganizationImageUrl } from "@/utils/uploadPaths";
 import styles from "./styles/SummaryModal.module.css";
 
@@ -24,74 +25,74 @@ export default function SummaryModal({
     <div className={styles.modalOverlay}>
       <div className={styles.modalContainer}>
         <div className={styles.modalHeader}>
-          <h2>Confirm Changes</h2>
-          <p className={styles.modalSubtitle}>
-            Please review the changes below before applying them to the official website.
-          </p>
+          <h2 className={styles.modalTitle}>Confirm Changes</h2>
         </div>
 
-        <div className={styles.modalContent}>
-          <div className={styles.changesContainer}>
+        <div className={styles.modalScrollArea}>
+          <div className={styles.modalContent}>
+            <div className={styles.changesContainer}>
             {Object.keys(pendingChanges).map((key) => {
               if (key === "id" || key === "email" || originalData[key] === pendingChanges[key]) return null;
 
               return (
                 <div key={key} className={styles.changeItem}>
                   <h4 className={styles.fieldName}>{fieldLabels[key] || key}</h4>
-                  <div className={styles.comparison}>
-                    <div className={styles.previousValue}>
-                      <span className={styles.label}>Previous:</span>
-                      <div className={styles.value}>
-                        {key === "logo" ? (
-                          originalData[key] ? (
-                            <Image
-                              src={getOrganizationImageUrl(originalData[key], 'logo')}
-                              alt="Previous logo"
-                              width={60}
-                              height={60}
-                              className={styles.logoPreview}
-                            />
-                          ) : (
-                            <span className={styles.emptyValue}>No logo</span>
-                          )
-                        ) : (
-                          originalData[key] || <span className={styles.emptyValue}>Empty</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className={styles.arrow}>→</div>
-                    <div className={styles.newValue}>
-                      <span className={styles.label}>New:</span>
-                      <div className={styles.value}>
-                        {key === "logo" ? (
-                          pendingChanges[key] ? (
-                            <Image
-                              src={getOrganizationImageUrl(pendingChanges[key], 'logo')}
-                              alt="New logo"
-                              width={60}
-                              height={60}
-                              className={styles.logoPreview}
-                            />
-                          ) : (
-                            <span className={styles.emptyValue}>No logo</span>
-                          )
-                        ) : (
-                          pendingChanges[key] || <span className={styles.emptyValue}>Empty</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                                     <div className={styles.comparison}>
+                     <div className={styles.beforeSection}>
+                       <div className={styles.sectionLabel}>Previous</div>
+                       <div className={styles.value}>
+                         {key === "logo" ? (
+                           originalData[key] ? (
+                             <Image
+                               src={getOrganizationImageUrl(originalData[key], 'logo')}
+                               alt="Previous logo"
+                               width={60}
+                               height={60}
+                               className={styles.logoPreview}
+                             />
+                           ) : (
+                             <span className={styles.emptyValue}>No logo</span>
+                           )
+                         ) : (
+                           originalData[key] || <span className={styles.emptyValue}>Empty</span>
+                         )}
+                       </div>
+                     </div>
+                     <div className={styles.afterSection}>
+                       <div className={styles.sectionLabel}>New</div>
+                       <div className={styles.value}>
+                         {key === "logo" ? (
+                           pendingChanges[key] ? (
+                             <Image
+                               src={getOrganizationImageUrl(pendingChanges[key], 'logo')}
+                               alt="New logo"
+                               width={60}
+                               height={60}
+                               className={styles.logoPreview}
+                             />
+                           ) : (
+                             <span className={styles.emptyValue}>No logo</span>
+                           )
+                         ) : (
+                           pendingChanges[key] || <span className={styles.emptyValue}>Empty</span>
+                         )}
+                       </div>
+                     </div>
+                   </div>
                 </div>
               );
             })}
-          </div>
+            </div>
 
-          <div className={styles.warningMessage}>
-            <div className={styles.warningIcon}>⚠️</div>
-            <p>
-              <strong>Important:</strong> Confirming these changes will immediately apply them to
-              the official website. This action cannot be undone.
-            </p>
+                         <div className={styles.warningMessage}>
+               <div className={styles.warningContent}>
+                 <AiOutlineExclamationCircle className={styles.warningIcon} />
+                 <p>
+                   <strong>Important:</strong> Confirming these changes will immediately apply them to
+                   the official website. This action cannot be undone.
+                 </p>
+               </div>
+             </div>
           </div>
         </div>
 

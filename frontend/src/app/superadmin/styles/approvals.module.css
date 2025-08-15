@@ -26,6 +26,49 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Notification Display - Matches Admin Portal Design */
+.notification {
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: notificationSlideIn 0.3s ease-out;
+  border: 1px solid transparent;
+}
+
+@keyframes notificationSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.notification.success {
+  background: #d1fae5;
+  color: #065f46;
+  border-color: #34d399;
+}
+
+.notification.error {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #f87171;
+}
+
+.notification.info {
+  background: #dbeafe;
+  color: #1e40af;
+  border-color: #60a5fa;
+}
+
 /* Loading and Error States */
 .loading {
   display: flex;
@@ -797,6 +840,29 @@
   justify-content: flex-end;
 }
 
+/* Responsive design */
+@media (max-width: 768px) {
+  .comparisonContainer {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .cardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .orgInfo {
+    align-items: flex-start;
+  }
+  
+  .actionButtons {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
 /* Enhanced styles for advocacy and competency submissions */
 .loading {
   text-align: center;
@@ -922,27 +988,4 @@
   margin: 0.5rem 0;
   white-space: pre-wrap;
   word-wrap: break-word;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .comparisonContainer {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .cardHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-  
-  .orgInfo {
-    align-items: flex-start;
-  }
-  
-  .actionButtons {
-    justify-content: center;
-    flex-wrap: wrap;
-  }
 }

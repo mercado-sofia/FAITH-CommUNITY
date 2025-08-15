@@ -10,6 +10,7 @@ export default function PendingApprovalsPage() {
   const [approvals, setApprovals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [notification, setNotification] = useState({ type: '', text: '' });
 
   const fetchApprovals = async () => {
     try {
@@ -54,11 +55,20 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Approval failed');
       }
 
-      alert('Changes have been approved and applied.');
+      setNotification({ 
+        type: 'success', 
+        text: 'Changes have been approved and applied.' 
+      });
       fetchApprovals(); // Refresh the list
+      
+      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
     } catch (err) {
       console.error('❌ Approve error:', err);
-      alert('Failed to approve changes: ' + err.message);
+      setNotification({ 
+        type: 'error', 
+        text: 'Failed to approve changes: ' + err.message 
+      });
+      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
     }
   };
 
@@ -76,11 +86,20 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Rejection failed');
       }
 
-      alert('Submission has been rejected.');
+      setNotification({ 
+        type: 'success', 
+        text: 'Submission has been rejected.' 
+      });
       fetchApprovals();
+      
+      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
     } catch (err) {
       console.error('❌ Reject error:', err);
-      alert('Failed to reject submission: ' + err.message);
+      setNotification({ 
+        type: 'error', 
+        text: 'Failed to reject submission: ' + err.message 
+      });
+      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
     }
   };
 
@@ -99,11 +118,20 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Bulk approval failed');
       }
 
-      alert(`Bulk approval completed: ${result.details.successCount} approved, ${result.details.errorCount} failed`);
+      setNotification({ 
+        type: 'success', 
+        text: `Bulk approval completed: ${result.details.successCount} approved, ${result.details.errorCount} failed` 
+      });
       fetchApprovals();
+      
+      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
     } catch (err) {
       console.error('❌ Bulk approve error:', err);
-      alert('Failed to bulk approve submissions: ' + err.message);
+      setNotification({ 
+        type: 'error', 
+        text: 'Failed to bulk approve submissions: ' + err.message 
+      });
+      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
     }
   };
 
@@ -121,11 +149,20 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Bulk rejection failed');
       }
 
-      alert(`Bulk rejection completed: ${result.details.successCount} rejected, ${result.details.errorCount} failed`);
+      setNotification({ 
+        type: 'success', 
+        text: `Bulk rejection completed: ${result.details.successCount} rejected, ${result.details.errorCount} failed` 
+      });
       fetchApprovals();
+      
+      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
     } catch (err) {
       console.error('❌ Bulk reject error:', err);
-      alert('Failed to bulk reject submissions: ' + err.message);
+      setNotification({ 
+        type: 'error', 
+        text: 'Failed to bulk reject submissions: ' + err.message 
+      });
+      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
     }
   };
 
@@ -143,11 +180,20 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Bulk deletion failed');
       }
 
-      alert(`Bulk deletion completed: ${result.details.successCount} deleted, ${result.details.errorCount} failed`);
+      setNotification({ 
+        type: 'success', 
+        text: `Bulk deletion completed: ${result.details.successCount} deleted, ${result.details.errorCount} failed` 
+      });
       fetchApprovals();
+      
+      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
     } catch (err) {
       console.error('❌ Bulk delete error:', err);
-      alert('Failed to bulk delete submissions: ' + err.message);
+      setNotification({ 
+        type: 'error', 
+        text: 'Failed to bulk delete submissions: ' + err.message 
+      });
+      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
     }
   };
 
@@ -175,6 +221,13 @@ export default function PendingApprovalsPage() {
           Review and approve organization updates from administrators
         </p>
       </div>
+
+      {/* Notification Display */}
+      {notification.text && (
+        <div className={`${styles.notification} ${styles[notification.type]}`}>
+          {notification.text}
+        </div>
+      )}
       
       {approvals.length === 0 ? (
         <div className={styles.noSubmissions}>

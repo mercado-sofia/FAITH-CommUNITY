@@ -13,6 +13,7 @@ export default function ApprovalsTable({ approvals, onApprove, onReject, onBulkA
   const [selectedItemForDetails, setSelectedItemForDetails] = useState(null);
   const [showBulkRejectModal, setShowBulkRejectModal] = useState(false);
   const [bulkRejectComment, setBulkRejectComment] = useState('');
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
@@ -114,11 +115,19 @@ export default function ApprovalsTable({ approvals, onApprove, onReject, onBulkA
 
   const handleBulkDelete = () => {
     if (selectedItems.size === 0) return;
-    if (confirm(`Are you sure you want to delete ${selectedItems.size} submission(s)? This action cannot be undone.`)) {
-      const selectedIds = Array.from(selectedItems);
-      onBulkDelete(selectedIds);
-      setSelectedItems(new Set());
-    }
+    setShowBulkDeleteModal(true);
+  };
+
+  const handleBulkDeleteConfirm = () => {
+    if (selectedItems.size === 0) return;
+    const selectedIds = Array.from(selectedItems);
+    onBulkDelete(selectedIds);
+    setSelectedItems(new Set());
+    setShowBulkDeleteModal(false);
+  };
+
+  const handleBulkDeleteCancel = () => {
+    setShowBulkDeleteModal(false);
   };
 
   const formatDate = (date) => {
@@ -317,6 +326,42 @@ export default function ApprovalsTable({ approvals, onApprove, onReject, onBulkA
                 className={styles.modalRejectBtn}
               >
                 Reject All Submissions
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      {showBulkDeleteModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Delete Selected Submissions</h3>
+              <button 
+                onClick={handleBulkDeleteCancel}
+                className={styles.modalCloseBtn}
+              >
+                ×
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <p className={styles.modalDescription}>
+                Are you sure you want to delete {selectedItems.size} submission{selectedItems.size !== 1 ? 's' : ''}? This action cannot be undone.
+              </p>
+            </div>
+            <div className={styles.modalFooter}>
+              <button 
+                onClick={handleBulkDeleteCancel}
+                className={styles.modalCancelBtn}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleBulkDeleteConfirm}
+                className={styles.modalDeleteBtn}
+              >
+                Delete All Submissions
               </button>
             </div>
           </div>

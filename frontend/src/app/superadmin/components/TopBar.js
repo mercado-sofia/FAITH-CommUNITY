@@ -35,7 +35,6 @@ export default function TopBar() {
 
     switch (superAdminSection) {
       case 'dashboard': return { category: 'General', section: 'Dashboard' };
-      case 'organizations': return { category: 'Management', section: 'Organizations' };
       case 'approvals': return { category: 'Management', section: 'Pending Approvals' };
       case 'programs': return { category: 'Management', section: 'Programs' };
       case 'faqs': return { category: 'Management', section: 'FAQs' };

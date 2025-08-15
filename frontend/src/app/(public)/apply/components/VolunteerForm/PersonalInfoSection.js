@@ -3,146 +3,135 @@
 import { forwardRef } from "react";
 import styles from "./volunteerForm.module.css";
 import CustomGenderDropdown from "./CustomGenderDropdown";
+import FormField from "./FormField";
 
 const PersonalInfoSection = forwardRef(function PersonalInfoSection(
-  { formData, handleChange, errorMessage },
+  { formData, handleChange, fieldErrors, validationErrors, clearFieldError },
   ref
 ) {
   return (
     <div
-      className={`${styles.sectionCard} ${errorMessage ? styles.highlightError : ""}`}
+      className={styles.sectionCard}
       ref={ref}
     >
       <h3>Personal Information</h3>
 
       <div className={styles.threeCol}>
+        <FormField
+          type="text"
+          name="fullName"
+          label="Full Name"
+          value={formData.fullName}
+          onChange={handleChange}
+          error={fieldErrors.fullName || validationErrors.fullName}
+          required
+          autoComplete="name"
+        />
+        <FormField
+          type="number"
+          name="age"
+          label="Age"
+          value={formData.age}
+          onChange={handleChange}
+          error={fieldErrors.age || validationErrors.age}
+          required
+          min="16"
+          max="100"
+        />
         <div className={styles.inputGroup}>
-          <label htmlFor="fullName">Full Name</label>
-          <input
-            id="fullName"
-            name="fullName"
-            value={formData.fullName}
-            onChange={handleChange}
-            autoComplete="name"
-            placeholder="First Name, Middle Name and Last Name"
-            required
-          />
-        </div>
-        <div className={styles.inputGroup}>
-          <label htmlFor="age">Age</label>
-          <input
-            id="age"
-            name="age"
-            type="number"
-            value={formData.age}
-            onChange={handleChange}
-            placeholder="Age"
-            required
-          />
-        </div>
-        <div className={styles.inputGroup}>
-          <label htmlFor="gender">Gender</label>
+          <label htmlFor="gender-dropdown">Gender</label>
           <CustomGenderDropdown
+            id="gender-dropdown"
             name="gender"
             value={formData.gender}
             onChange={handleChange}
             required
           />
+          {(fieldErrors.gender || validationErrors.gender) && (
+            <div className={styles.errorMessage} role="alert">
+              {fieldErrors.gender || validationErrors.gender}
+            </div>
+          )}
         </div>
       </div>
 
       <div className={styles.twoCol}>
-        <div className={styles.inputGroup}>
-          <label htmlFor="email">Email Address</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            autoComplete="email"
-            placeholder="example@email.com"
-            required
-          />
-        </div>
-        <div className={styles.inputGroup}>
-          <label htmlFor="phoneNumber">Contact No.</label>
-          <input
-            type="tel"
-            id="phoneNumber"
-            name="phoneNumber"
-            value={formData.phoneNumber}
-            onChange={handleChange}
-            autoComplete="tel"
-            placeholder="09XXXXXXXXX"
-            pattern="09[0-9]{9}"
-            title="Enter a valid 11-digit mobile number starting with 09"
-            aria-describedby="phoneHelp"
-            required
-          />
-        </div>
+        <FormField
+          type="email"
+          name="email"
+          label="Email Address"
+          value={formData.email}
+          onChange={handleChange}
+          error={fieldErrors.email || validationErrors.email}
+          required
+          autoComplete="email"
+        />
+        <FormField
+          type="tel"
+          name="phoneNumber"
+          label="Contact No."
+          value={formData.phoneNumber}
+          onChange={handleChange}
+          error={fieldErrors.phoneNumber || validationErrors.phoneNumber}
+          required
+          autoComplete="tel"
+          pattern="09[0-9]{9}"
+          title="Enter a valid 11-digit mobile number starting with 09"
+        />
       </div>
 
       <div className={styles.fullRow}>
-        <label htmlFor="address">Address</label>
-        <input
-          id="address"
+        <FormField
+          type="text"
           name="address"
+          label="Address"
           value={formData.address}
           onChange={handleChange}
-          autoComplete="street-address"
-          placeholder="Complete address (House No., Street, Purok, Barangay, City, Province)"
+          error={fieldErrors.address || validationErrors.address}
           required
+          autoComplete="street-address"
         />
       </div>
 
       <div className={styles.twoCol}>
-        <div className={styles.inputGroup}>
-          <label htmlFor="occupation">Occupation</label>
-          <input
-            id="occupation"
-            name="occupation"
-            value={formData.occupation}
-            onChange={handleChange}
-            autoComplete="organization-title"
-            placeholder="e.g. Student, Engineer, Unemployed"
-            required
-          />
-        </div>
-        <div className={styles.inputGroup}>
-          <label htmlFor="citizenship">Citizenship</label>
-          <input
-            id="citizenship"
-            name="citizenship"
-            value={formData.citizenship}
-            onChange={handleChange}
-            autoComplete="country-name"
-            placeholder="Citizenship"
-            required
-          />
-        </div>
+        <FormField
+          type="text"
+          name="occupation"
+          label="Occupation"
+          value={formData.occupation}
+          onChange={handleChange}
+          error={fieldErrors.occupation || validationErrors.occupation}
+          required
+          autoComplete="organization-title"
+        />
+        <FormField
+          type="text"
+          name="citizenship"
+          label="Citizenship"
+          value={formData.citizenship}
+          onChange={handleChange}
+          error={fieldErrors.citizenship || validationErrors.citizenship}
+          required
+          autoComplete="country-name"
+        />
       </div>
 
       <div className={styles.fullRow}>
-        <div className={styles.inputGroup}>
-          <label htmlFor="reason">Why are you interested in volunteering?</label>
-          <textarea
-            id="reason"
-            name="reason"
-            value={formData.reason}
-            onChange={handleChange}
-            placeholder="Tell us why you'd like to volunteer with our organization..."
-            maxLength={800}
-            autoComplete="off"
-            required
-          />
-          <div className={styles.charCount}>
-            {formData.reason.length} / 800
-          </div>
+        <FormField
+          type="textarea"
+          name="reason"
+          label="Why are you interested in volunteering?"
+          value={formData.reason}
+          onChange={handleChange}
+          error={fieldErrors.reason || validationErrors.reason}
+          required
+          maxLength={800}
+          autoComplete="off"
+        />
+        <div className={styles.charCount}>
+          {formData.reason.length} / 800
         </div>
       </div>
-
-      {errorMessage && <p className={styles.inlineError}>{errorMessage}</p>}
     </div>
   );
 });

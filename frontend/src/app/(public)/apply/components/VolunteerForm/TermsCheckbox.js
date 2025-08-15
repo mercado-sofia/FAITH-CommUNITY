@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, forwardRef } from "react";
+import { createPortal } from "react-dom";
 import styles from "./volunteerForm.module.css";
 import { FiX } from "react-icons/fi";
 
@@ -81,20 +82,8 @@ const TermsCheckbox = forwardRef(function TermsCheckbox(
       {errorMessage && <p className={styles.inlineError}>{errorMessage}</p>}
     </div>
 
-      <button
-        type="submit"
-        disabled={isLoading}
-        aria-busy={isLoading}
-        className={styles.submitBtn}
-      >
-        Submit Application
-        {isLoading && (
-          <span className={styles.loader} aria-hidden="true"></span>
-        )}
-      </button>
-
       {/* ✅ Terms Modal */}
-      {showTermsModal && (
+      {showTermsModal && typeof window !== 'undefined' && createPortal(
         <div className={styles.modalOverlay}>
           <div
             className={styles.modalContent}
@@ -112,15 +101,31 @@ const TermsCheckbox = forwardRef(function TermsCheckbox(
             <h3 className={styles.headingText} id="termsHeading">
               Terms of Service
             </h3>
-            <p className={styles.placeholderText}>
-              Terms of Service content goes here (to be updated later).
-            </p>
+            <div className={styles.modalBody}>
+              <p>
+                By using our volunteer application platform, you agree to the following terms and conditions:
+              </p>
+              <ul>
+                <li>You must provide accurate and truthful information in your application.</li>
+                <li>You agree to participate in volunteer activities in a safe and responsible manner.</li>
+                <li>You understand that volunteer positions are unpaid and voluntary.</li>
+                <li>You agree to follow all safety guidelines and instructions provided by program coordinators.</li>
+                <li>You consent to the collection and use of your personal information as described in our Privacy Policy.</li>
+              </ul>
+              <p>
+                We reserve the right to modify these terms at any time. Continued use of the platform constitutes acceptance of any changes.
+              </p>
+              <p className={styles.lastUpdated}>
+                Last updated: {new Date().toLocaleDateString()}
+              </p>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ✅ Privacy Modal */}
-      {showPrivacyModal && (
+      {showPrivacyModal && typeof window !== 'undefined' && createPortal(
         <div className={styles.modalOverlay}>
           <div
             className={styles.modalContent}
@@ -138,11 +143,39 @@ const TermsCheckbox = forwardRef(function TermsCheckbox(
             <h3 className={styles.headingText} id="privacyHeading">
               Privacy Policy
             </h3>
-            <p className={styles.placeholderText}>
-              Privacy Policy content goes here (to be updated later).
-            </p>
+            <div className={styles.modalBody}>
+              <p>
+                We are committed to protecting your privacy and ensuring the security of your personal information.
+              </p>
+              <h4>Information We Collect</h4>
+              <p>We collect personal information that you provide when applying for volunteer positions, including:</p>
+              <ul>
+                <li>Full name and contact information</li>
+                <li>Age, gender, and citizenship details</li>
+                <li>Address and occupation information</li>
+                <li>Valid identification documents</li>
+                <li>Application responses and preferences</li>
+              </ul>
+              <h4>How We Use Your Information</h4>
+              <p>Your information is used to:</p>
+              <ul>
+                <li>Process your volunteer application</li>
+                <li>Match you with appropriate volunteer opportunities</li>
+                <li>Communicate with you about your application status</li>
+                <li>Ensure safety and compliance with program requirements</li>
+                <li>Improve our volunteer programs and services</li>
+              </ul>
+              <h4>Data Security</h4>
+              <p>
+                We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.
+              </p>
+              <p className={styles.lastUpdated}>
+                Last updated: {new Date().toLocaleDateString()}
+              </p>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

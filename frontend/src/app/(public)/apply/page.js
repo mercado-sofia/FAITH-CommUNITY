@@ -7,6 +7,7 @@ import PageBanner from '../components/PageBanner';
 import VolunteerForm from './components/VolunteerForm';
 
 let hasVisitedApply = false;
+let isFirstVisitApply = true;
 
 export default function ApplyPage() {
   const [loading, setLoading] = useState(!hasVisitedApply);
@@ -24,13 +25,15 @@ export default function ApplyPage() {
 
   if (!hasVisitedApply && typeof window !== 'undefined') {
     hasVisitedApply = true;
+    const delay = isFirstVisitApply ? 2000 : 1000; // Extra delay only for first visit
     timerRef.current = setTimeout(() => {
       setLoading(false);
-    }, 1000);
+      isFirstVisitApply = false; // Mark as no longer first visit
+    }, delay);
   }
 
   if (loading) {
-    return <Loader small />;
+    return <Loader small centered />;
   }
 
   return (
@@ -65,7 +68,9 @@ export default function ApplyPage() {
             </p>
           </div>
 
-          <VolunteerForm selectedProgramId={selectedProgramId} />
+          <VolunteerForm 
+            selectedProgramId={selectedProgramId}
+          />
         </div>
       </section>
     </>

@@ -44,7 +44,7 @@
   animation: popIn 0.3s ease forwards;
   max-height: calc(100vh - 8rem);
   overflow-y: auto;
-  z-index: 99999;
+  z-index: 99999 !important;
 }
 
 .messageBox h2 {

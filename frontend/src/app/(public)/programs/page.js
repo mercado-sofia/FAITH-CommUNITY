@@ -13,6 +13,7 @@ import { usePublicPrograms } from '../../../hooks/usePublicData';
 
 const CARDS_PER_PAGE = 6;
 let hasVisited = false;
+let isFirstVisit = true;
 
 export default function ProgramsPage() {
   const searchParams = useSearchParams();
@@ -29,7 +30,9 @@ export default function ProgramsPage() {
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [isLoading, setIsLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(!hasVisited);
+  const [pageReady, setPageReady] = useState(false);
   const timerRef = useRef(null);
+  const pageReadyTimerRef = useRef(null);
 
   // Use SWR hook for data fetching with caching
   const { programs, isLoading: dataLoading, error } = usePublicPrograms();
@@ -46,6 +49,25 @@ export default function ProgramsPage() {
 
     return () => clearTimeout(timerRef.current);
   }, []);
+
+  // Add extra 1 second delay only for first visits after data loads
+  useEffect(() => {
+    if (!dataLoading && !initialLoading) {
+      // Only add extra delay for first-time visitors
+      const extraDelay = isFirstVisit ? 1000 : 0;
+      
+      pageReadyTimerRef.current = setTimeout(() => {
+        setPageReady(true);
+        isFirstVisit = false; // Mark as no longer first visit
+      }, extraDelay);
+    }
+
+    return () => {
+      if (pageReadyTimerRef.current) {
+        clearTimeout(pageReadyTimerRef.current);
+      }
+    };
+  }, [dataLoading, initialLoading]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -119,7 +141,7 @@ export default function ProgramsPage() {
     currentPage * CARDS_PER_PAGE
   );
 
-  if (initialLoading || dataLoading) return <Loader small />;
+  if (initialLoading || dataLoading || !pageReady) return <Loader small centered />;
 
   return (
     <>

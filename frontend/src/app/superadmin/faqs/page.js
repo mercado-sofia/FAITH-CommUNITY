@@ -314,8 +314,9 @@ const ManageFaqs = () => {
         <h2>Create New FAQ</h2>
         <form className={styles.faqForm} onSubmit={handleCreateFaq}>
           <div className={styles.formField}>
-            <label>Question:</label>
+            <label htmlFor="faq-question">Question:</label>
             <textarea
+              id="faq-question"
               name="question"
               placeholder="Enter the FAQ question..."
               value={form.question}
@@ -328,8 +329,9 @@ const ManageFaqs = () => {
           </div>
 
           <div className={styles.formField}>
-            <label>Answer:</label>
+            <label htmlFor="faq-answer">Answer:</label>
             <textarea
+              id="faq-answer"
               name="answer"
               placeholder="Enter the FAQ answer..."
               value={form.answer}
@@ -342,8 +344,9 @@ const ManageFaqs = () => {
           </div>
 
           <div className={styles.formField}>
-            <label>Status:</label>
+            <label htmlFor="faq-status">Status:</label>
             <select
+              id="faq-status"
               name="status"
               value={form.status}
               onChange={handleInputChange}

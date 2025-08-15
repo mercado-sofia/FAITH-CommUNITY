@@ -5,8 +5,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import styles from './styles/newsSection.module.css';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { usePublicOrganizations, usePublicNews } from '../../../hooks/usePublicData';
 
 export default function NewsSection() {
   const router = useRouter();
@@ -15,10 +14,6 @@ export default function NewsSection() {
   const orgNavRef = useRef(null);
   const initialOrgSetRef = useRef(false);
   
-  const [organizations, setOrganizations] = useState([]);
-  const [news, setNews] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [selectedOrg, setSelectedOrg] = useState(null);
   
   // Swipe functionality states
@@ -28,116 +23,67 @@ export default function NewsSection() {
   const [dragOffset, setDragOffset] = useState(0);
   const [scrollPosition, setScrollPosition] = useState(0);
 
-  // Fetch organizations from database
-  const fetchOrganizations = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/organizations`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch organizations');
-      }
-      const result = await response.json();
-      if (result.success) {
-        const orgsData = result.data || [];
-        
-        // Fetch latest news for each organization to determine order
-        const orgsWithLatestNews = await Promise.all(
-          orgsData.map(async (org) => {
-            try {
-              const newsResponse = await fetch(`${API_BASE_URL}/api/news/org/${org.id}`);
-              if (newsResponse.ok) {
-                const newsData = await newsResponse.json();
-                const latestNews = Array.isArray(newsData) && newsData.length > 0 
-                  ? newsData[0] 
-                  : null;
-                return {
-                  ...org,
-                  latestNewsDate: latestNews ? new Date(latestNews.created_at || latestNews.date) : new Date(0)
-                };
-              }
-              return { ...org, latestNewsDate: new Date(0) };
-            } catch (error) {
-              return { ...org, latestNewsDate: new Date(0) };
-            }
-          })
-        );
+  // Use SWR hooks for data fetching
+  const { organizations: orgsData, isLoading: orgLoading, error: orgError } = usePublicOrganizations();
+  const { news, isLoading: newsLoading, error: newsError } = usePublicNews();
 
-        // Sort organizations by latest announcement date (newest first)
-        const sortedOrgs = orgsWithLatestNews.sort((a, b) => b.latestNewsDate - a.latestNewsDate);
-        console.log('📊 Organizations ordered by latest announcements:', sortedOrgs.map(org => ({
-          name: org.acronym,
-          latestNewsDate: org.latestNewsDate
-        })));
-        setOrganizations(sortedOrgs);
-      } else {
-        throw new Error(result.message || 'Failed to fetch organizations');
-      }
-    } catch (error) {
-      console.error('Error fetching organizations:', error);
-      setOrganizations([]);
-    }
-  };
+  // No debug logging in production
 
-  // Fetch news data from database
-  const fetchNews = async (orgId = null) => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Process organizations with latest news dates
+  const organizations = useMemo(() => {
+    if (!orgsData.length || !news.length) return orgsData;
 
-      let url = `${API_BASE_URL}/api/news`;
-      if (orgId) {
-        url = `${API_BASE_URL}/api/news/org/${orgId}`;
-      }
+    const orgsWithLatestNews = orgsData.map(org => {
+      const orgNews = news.filter(item => item.organization_id === org.id);
+      const latestNews = orgNews.length > 0 ? orgNews[0] : null;
+      return {
+        ...org,
+        latestNewsDate: latestNews ? new Date(latestNews.created_at || latestNews.date) : new Date(0)
+      };
+    });
 
-      console.log('🔍 Fetching news from:', url);
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('📰 Fetched news:', data);
-      setNews(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('❌ Error fetching news:', error);
-      setError('Failed to fetch news. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchOrganizations();
-  }, []);
+    // Sort organizations by latest announcement date (newest first)
+    return orgsWithLatestNews.sort((a, b) => b.latestNewsDate - a.latestNewsDate);
+  }, [orgsData, news]);
 
   // Handle initial organization selection and URL parameters
   useEffect(() => {
     const urlOrg = searchParams.get('news_org');
     
-    if (urlOrg) {
-      // If URL has organization parameter, use it
-      console.log('🔍 Setting organization from URL:', urlOrg);
-      setSelectedOrg(urlOrg.toString());
-      fetchNews(urlOrg);
-      initialOrgSetRef.current = true;
+    if (urlOrg && organizations.length > 0) {
+      // If URL has organization parameter, try to find by ID first, then by acronym
+      let org = organizations.find(o => o.id.toString() === urlOrg);
+      
+      // If not found by ID, try by acronym
+      if (!org) {
+        org = organizations.find(o => o.acronym === urlOrg);
+      }
+      
+      if (org) {
+        setSelectedOrg(org);
+        initialOrgSetRef.current = true;
+      }
     } else if (organizations.length > 0 && !initialOrgSetRef.current) {
       // If no URL parameter and organizations are loaded, select the first one
       const initialOrg = organizations[0];
-      console.log('🔍 Setting initial organization:', initialOrg);
-      setSelectedOrg(initialOrg.id.toString());
-      fetchNews(initialOrg.id);
+      setSelectedOrg(initialOrg);
       initialOrgSetRef.current = true;
     }
   }, [searchParams, organizations]);
 
   const handleOrgClick = (orgObj, index) => {
-    setSelectedOrg(orgObj.id.toString());
-    router.push(`${pathname}?news_org=${orgObj.id}`, { scroll: false });
-    fetchNews(orgObj.id);
-
-    // This logic needs to be re-evaluated for real-time swipe
-    // For now, it will just update the selectedOrg and fetch news
+    setSelectedOrg(orgObj);
+    // Use acronym in URL for better readability
+    router.push(`${pathname}?news_org=${orgObj.acronym || orgObj.id}`, { scroll: false });
   };
+
+  // Filter news based on selected organization
+  const filteredNews = useMemo(() => {
+    if (!selectedOrg) return news;
+    
+    const filtered = news.filter(item => item.organization_id == selectedOrg.id);
+    return filtered;
+  }, [news, selectedOrg]);
 
   // Touch/trackpad swipe handlers
   const handleTouchStart = (e) => {
@@ -184,10 +130,7 @@ export default function NewsSection() {
     }
   };
 
-  const filteredNews = useMemo(() => {
-    // The API already returns filtered news when orgId is provided, so just return the news
-    return news;
-  }, [news]);
+
 
   const visibleOrgs = organizations; // Display all organizations
   const maxDisplay = 6;
@@ -205,7 +148,7 @@ export default function NewsSection() {
     }
   };
 
-  if (loading && organizations.length === 0) {
+  if ((orgLoading || newsLoading) && organizations.length === 0) {
     return (
       <section className={styles.newsSection}>
         <div className={styles.newsContainer}>
@@ -243,9 +186,11 @@ export default function NewsSection() {
             onTouchEnd={handleTouchEnd}
             onWheel={handleWheel}
           >
-            {visibleOrgs.map((orgObj, index) => {
-              const isActive = selectedOrg === orgObj.id.toString();
-              return (
+                         {visibleOrgs.map((orgObj, index) => {
+               // Check if this organization is active by comparing with selectedOrg
+               const isActive = selectedOrg && selectedOrg.id === orgObj.id;
+               
+               return (
                 <div
                   key={`${orgObj.id}-${index}`}
                   role="button"
@@ -275,32 +220,32 @@ export default function NewsSection() {
 
       <div className={styles.newsContainer}>
         <div className={styles.newsList}>
-          {loading ? (
-            <div style={{ 
-              gridColumn: '1 / -1', 
-              textAlign: 'center', 
-              padding: '2rem',
-              color: '#6b7280'
-            }}>
-              <div style={{ 
-                width: '40px', 
-                height: '40px', 
-                border: '4px solid #f3f3f3', 
-                borderTop: '4px solid #167c59', 
-                borderRadius: '50%', 
-                animation: 'spin 1s linear infinite',
-                margin: '0 auto 1rem'
-              }}></div>
-              <p>Loading news...</p>
-            </div>
-          ) : error ? (
+                     {newsLoading ? (
+             <div style={{ 
+               gridColumn: '1 / -1', 
+               textAlign: 'center', 
+               padding: '2rem',
+               color: '#6b7280'
+             }}>
+               <div style={{ 
+                 width: '40px', 
+                 height: '40px', 
+                 border: '4px solid #f3f3f3', 
+                 borderTop: '4px solid #167c59', 
+                 borderRadius: '50%', 
+                 animation: 'spin 1s linear infinite',
+                 margin: '0 auto 1rem'
+               }}></div>
+               <p>Loading news...</p>
+             </div>
+           ) : newsError ? (
             <div style={{ 
               gridColumn: '1 / -1', 
               textAlign: 'center', 
               padding: '2rem',
               color: '#dc3545'
             }}>
-              <p>{error}</p>
+                             <p>{newsError?.message || 'An error occurred while loading news'}</p>
             </div>
           ) : filteredNews.length === 0 ? (
             <div style={{ 
@@ -331,7 +276,7 @@ export default function NewsSection() {
 
         {filteredNews.length > maxDisplay && (
           <div className={styles.seeAllNewsContainer}>
-            <Link href={`/news?news_org=${selectedOrg}`} className={styles.seeAllNewsBtn}>
+            <Link href={`/news?news_org=${selectedOrg?.acronym || selectedOrg?.id}`} className={styles.seeAllNewsBtn}>
               SEE ALL NEWS
             </Link>
           </div>

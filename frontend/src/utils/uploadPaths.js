@@ -1,8 +1,7 @@
+import logger from './logger';
+
 // Upload path utility for consistent image URL handling
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
-
-console.log('🔧 BACKEND_URL:', BACKEND_URL);
-console.log('🔧 process.env.NEXT_PUBLIC_BACKEND_URL:', process.env.NEXT_PUBLIC_BACKEND_URL);
 
 /**
  * Get the full URL for an uploaded image
@@ -13,16 +12,16 @@ console.log('🔧 process.env.NEXT_PUBLIC_BACKEND_URL:', process.env.NEXT_PUBLIC
  */
 export const getImageUrl = (imagePath, type = 'programs', subType = 'main') => {
   try {
-    console.log('🔍 getImageUrl called with:', { imagePath, type, subType });
+    logger.debug('getImageUrl called', { imagePath, type, subType });
     
     if (!imagePath) {
-      console.log('⚠️ Empty imagePath, returning fallback');
+      logger.debug('Empty imagePath, returning fallback');
       return '/default-profile.png';
     }
     
     // If it's already a full URL or base64, return as is
     if (imagePath.startsWith('http') || imagePath.startsWith('data:')) {
-      console.log('✅ Full URL or base64 detected, returning as is');
+      logger.debug('Full URL or base64 detected, returning as is');
       return imagePath;
     }
     
@@ -31,16 +30,16 @@ export const getImageUrl = (imagePath, type = 'programs', subType = 'main') => {
       // Extract filename from path
       const filename = imagePath.split('/').pop();
       const result = `${BACKEND_URL}/uploads/${type}/${subType}/${filename}`;
-      console.log('✅ Legacy path result:', result);
+      logger.debug('Legacy path result', { result });
       return result;
     }
     
     // New structure - direct filename
     const result = `${BACKEND_URL}/uploads/${type}/${subType}/${imagePath}`;
-    console.log('✅ New structure result:', result);
+    logger.debug('New structure result', { result });
     return result;
   } catch (error) {
-    console.error('❌ Error in getImageUrl:', error);
+    logger.error('Error in getImageUrl', error, { imagePath, type, subType });
     return '/default-profile.png';
   }
 };
@@ -53,19 +52,19 @@ export const getImageUrl = (imagePath, type = 'programs', subType = 'main') => {
  */
 export const getProgramImageUrl = (imagePath, subType = 'main') => {
   try {
-    console.log('🔍 getProgramImageUrl called with:', { imagePath, subType });
+    logger.debug('getProgramImageUrl called', { imagePath, subType });
     
     // Handle null, undefined, or empty values
     if (!imagePath || imagePath === '' || imagePath === null || imagePath === undefined) {
-      console.log('⚠️ Empty imagePath, returning fallback');
+      logger.debug('Empty imagePath, returning fallback');
       return '/default-profile.png';
     }
     
     const result = getImageUrl(imagePath, 'programs', subType === 'additional' ? 'additional-images' : 'main-images');
-    console.log('✅ getProgramImageUrl result:', result);
+    logger.debug('getProgramImageUrl result', { result });
     return result;
   } catch (error) {
-    console.error('❌ Error in getProgramImageUrl:', error);
+    logger.error('Error in getProgramImageUrl', error, { imagePath, subType });
     return '/default-profile.png';
   }
 };

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import styles from "./volunteerForm.module.css";
 
-const CustomGenderDropdown = ({ value, onChange, name, required }) => {
+const CustomGenderDropdown = ({ value, onChange, name, required, id }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -47,6 +47,7 @@ const CustomGenderDropdown = ({ value, onChange, name, required }) => {
   return (
     <div className={styles.customGenderDropdown} ref={dropdownRef}>
       <div
+        id={id}
         className={`${styles.dropdownTrigger} ${isOpen ? styles.open : ""}`}
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
@@ -103,6 +104,7 @@ const CustomGenderDropdown = ({ value, onChange, name, required }) => {
       
       <input
         type="hidden"
+        id={`${id}-hidden`}
         name={name}
         value={value}
         required={required}

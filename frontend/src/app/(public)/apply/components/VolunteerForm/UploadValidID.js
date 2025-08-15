@@ -2,6 +2,7 @@
 
 import { useState, useEffect, forwardRef } from "react";
 import Image from "next/image";
+import { createPortal } from "react-dom";
 import styles from "./volunteerForm.module.css";
 import { PiUploadSimpleBold } from "react-icons/pi";
 
@@ -14,6 +15,11 @@ const UploadValidID = forwardRef(function UploadValidID(
   const [showOverlay, setShowOverlay] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!file) {
@@ -86,115 +92,130 @@ const UploadValidID = forwardRef(function UploadValidID(
     setIsDragging(false);
   };
 
-  return (
-    <div
-      className={`${styles.uploadSection} ${
-        errorMessage ? styles.highlightError : ""
-      }`}
-      ref={ref}
-    >
-      {/* ✅ Label with htmlFor matches input below */}
-      <label htmlFor="validId" className={styles.uploadLabel}>
-        Upload Valid ID
-      </label>
-
+  // Overlay component that will be rendered via Portal
+  const Overlay = () => (
+    <div className={styles.overlayPreview}>
       <div
-        className={`${styles.uploadBox} ${file ? styles.uploaded : ""} ${
-          isDragging ? styles.dragging : ""
-        }`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        <div className={styles.uploadInner}>
-          <PiUploadSimpleBold
-            className={`${styles.uploadIcon} ${file ? styles.uploaded : ""}`}
+        className={styles.overlayBackdrop}
+        onClick={() => setShowOverlay(false)}
+      />
+      <div className={styles.overlayContent}>
+        <button
+          className={styles.overlayClose}
+          onClick={() => setShowOverlay(false)}
+        >
+          &times;
+        </button>
+        <div
+          style={{ position: "relative", width: "100%", height: "100%" }}
+        >
+          {isLoading && <div className={styles.shimmer}></div>}
+          <Image
+            key={fileURL}
+            src={fileURL}
+            alt="Selected Preview"
+            width={800}
+            height={600}
+            style={{ objectFit: "contain", borderRadius: "10px" }}
+            onLoad={() => setIsLoading(false)}
+                         onError={(e) => {
+               setIsLoading(false);
+             }}
+            unoptimized
           />
-          <p
-            className={`${styles.uploadText} ${
-              file ? styles.uploaded : ""
-            }`}
-          >
-            {file
-              ? "File selected. You can change it below or drag to replace."
-              : "Drag and drop your file here or browse manually"}
-          </p>
+        </div>
+      </div>
+    </div>
+  );
 
-          {/* ✅ Styled label for input, not wrapped */}
-          <label className={styles.browseBtn}>
-            Browse File
+  return (
+    <>
+      <div
+        className={styles.uploadSection}
+        ref={ref}
+      >
+        {/* ✅ Label with htmlFor matches input below */}
+        <label htmlFor="validId" className={styles.uploadLabel}>
+          Upload Valid ID
+        </label>
+
+        <div
+          className={`${styles.uploadBox} ${file ? styles.uploaded : ""} ${
+            isDragging ? styles.dragging : ""
+          }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <div className={styles.uploadInner}>
+            <PiUploadSimpleBold
+              className={`${styles.uploadIcon} ${file ? styles.uploaded : ""}`}
+            />
+            <p
+              className={`${styles.uploadText} ${
+                file ? styles.uploaded : ""
+              }`}
+            >
+              {file
+                ? "File selected. You can change it below or drag to replace."
+                : "Drag and drop your file here or browse manually"}
+            </p>
+
+            {/* ✅ Styled button for input, properly connected */}
+            <label htmlFor="validIdInput" className={styles.browseBtn}>
+              Browse File
+            </label>
             <input
               type="file"
               name="validId"
-              id="validId"
+              id="validIdInput"
               accept="image/png, image/jpeg, application/pdf"
               onChange={handleFileChange}
               className={styles.hiddenInput}
               required
             />
-          </label>
 
-          {!file ? (
-            <p className={styles.fileNoteInline}>
-              Accepted: PNG, JPEG, or PDF <br />
-              Max file size: 5MB
-            </p>
-          ) : (
-            <button
-              type="button"
-              className={styles.fileLink}
-              onClick={() => {
-                if (file.type.startsWith("image/")) {
-                  setShowOverlay(true);
-                }
-              }}
-            >
-              {file.name}
-            </button>
-          )}
-        </div>
-      </div>
-
-      <small className={styles.fileNote}>
-        Please upload a clear photo or scan of any valid government-issued or school ID.
-      </small>
-
-      {errorMessage && (
-        <p className={styles.inlineError}>{errorMessage}</p>
-      )}
-
-      {showOverlay && file?.type.startsWith("image/") && fileURL && (
-        <div className={styles.overlayPreview}>
-          <div
-            className={styles.overlayBackdrop}
-            onClick={() => setShowOverlay(false)}
-          />
-          <div className={styles.overlayContent}>
-            <button
-              className={styles.overlayClose}
-              onClick={() => setShowOverlay(false)}
-            >
-              &times;
-            </button>
-            <div
-              style={{ position: "relative", width: "100%", height: "100%" }}
-            >
-              {isLoading && <div className={styles.shimmer}></div>}
-              <Image
-                key={fileURL}
-                src={fileURL}
-                alt="Selected Preview"
-                width={800}
-                height={600}
-                style={{ objectFit: "contain", borderRadius: "10px" }}
-                onLoad={() => setIsLoading(false)}
-                unoptimized
-              />
-            </div>
+            {!file ? (
+              <p className={styles.fileNoteInline}>
+                Accepted: PNG, JPEG, or PDF <br />
+                Max file size: 5MB
+              </p>
+            ) : (
+                             <>
+                 <button
+                  type="button"
+                  className={styles.fileLink}
+                                     onClick={(e) => {
+                     e.preventDefault();
+                     e.stopPropagation();
+                     setShowOverlay(true);
+                   }}
+                  style={{ cursor: 'pointer', userSelect: 'none' }}
+                >
+                  {file.name}
+                </button>
+              </>
+            )}
           </div>
         </div>
+
+        <small className={styles.fileNote}>
+          Please upload a clear photo or scan of any valid government-issued or school ID.
+        </small>
+
+        {errorMessage && (
+          <p className={styles.errorMessage} role="alert">{errorMessage}</p>
+        )}
+
+        
+      </div>
+
+      {/* Render overlay via Portal to ensure it's at document level */}
+      {mounted && showOverlay && createPortal(
+        <Overlay />,
+        document.body
       )}
-    </div>
+    </>
   );
 });
 

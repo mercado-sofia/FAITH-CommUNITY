@@ -1,6 +1,6 @@
 'use client';
 
-import styles from '../programs.module.css';
+import styles from './styles/OrgLinks.module.css';
 import Link from 'next/link';
 import { usePublicOrganizations } from '../../../../hooks/usePublicData';
 

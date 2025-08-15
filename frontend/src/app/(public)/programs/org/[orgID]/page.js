@@ -12,11 +12,14 @@ import { usePublicOrganizationData } from '../../../../../hooks/usePublicData';
 import styles from '../org.module.css';
 
 let hasVisited = false;
+let isFirstVisit = true;
 
 export default function OrgPage() {
   const { orgID } = useParams();
   const [imageLoading, setImageLoading] = useState(true);
+  const [pageReady, setPageReady] = useState(false);
   const timerRef = useRef(null);
+  const pageReadyTimerRef = useRef(null);
 
   // Use SWR hook for data fetching with caching
   const { organizationData, isLoading, error, isEmpty } = usePublicOrganizationData(orgID);
@@ -57,8 +60,26 @@ export default function OrgPage() {
     };
   }, [organizationData, imageUrls, isLoading]);
 
+  // Add extra 1 second delay only for first visits after data and images load
+  useEffect(() => {
+    if (!isLoading && !imageLoading) {
+      const extraDelay = isFirstVisit ? 1000 : 0; // Extra delay only for first visit
+      
+      pageReadyTimerRef.current = setTimeout(() => {
+        setPageReady(true);
+        isFirstVisit = false; // Mark as no longer first visit
+      }, extraDelay);
+    }
+
+    return () => {
+      if (pageReadyTimerRef.current) {
+        clearTimeout(pageReadyTimerRef.current);
+      }
+    };
+  }, [isLoading, imageLoading]);
+
   // Show loading state
-  if (isLoading || imageLoading) return <Loader small />;
+  if (isLoading || imageLoading || !pageReady) return <Loader small centered />;
 
   // Show error state with fallback data
   if (error || isEmpty) {

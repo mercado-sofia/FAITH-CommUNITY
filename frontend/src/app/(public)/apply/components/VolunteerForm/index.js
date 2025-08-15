@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import styles from "./volunteerForm.module.css";
 import SubmitStatus from "./SubmitStatus";
 import ProgramSelect from "./ProgramSelect";
@@ -8,15 +8,19 @@ import PersonalInfoSection from "./PersonalInfoSection";
 import UploadValidID from "./UploadValidID";
 import TermsCheckbox from "./TermsCheckbox";
 import { handleChange } from "./formUtils";
-import { useGetApprovedUpcomingProgramsQuery } from "../../../../../rtk/(public)/programsApi";
+import { usePublicApprovedPrograms } from "../../../../../hooks/usePublicData";
+import SuccessModal from "./SuccessModal";
+import { validateForm, validateField } from "./validationUtils";
+import FormErrorBoundary from "./FormErrorBoundary";
+import logger from "../../../../../utils/logger";
 
 export default function VolunteerForm({ selectedProgramId }) {
   // Fetch approved upcoming programs from the API
   const {
-    data: programOptions = [],
+    programs: programOptions = [],
     isLoading: programsLoading,
     error: programsError
-  } = useGetApprovedUpcomingProgramsQuery();
+  } = usePublicApprovedPrograms();
 
   const [formData, setFormData] = useState({
     program: null,
@@ -52,24 +56,37 @@ export default function VolunteerForm({ selectedProgramId }) {
     success: false,
     message: "",
   });
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
+  // Memoize the close function to prevent unnecessary re-renders
+  const handleCloseModal = useCallback(() => {
+    setShowSuccessModal(false);
+  }, []);
+
+  // ESC key to close success modal
   useEffect(() => {
-    if (submitStatus.submitted) {
-      const timer = setTimeout(() => {
-        setSubmitStatus({
-          submitted: false,
-          success: false,
-          message: "",
-        });
-      }, 4000);
+    const handleEsc = (e) => {
+      if (e.key === "Escape") {
+        setShowSuccessModal(false);
+      }
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, []);
 
-      return () => clearTimeout(timer);
-    }
-  }, [submitStatus]);
+  // Prevent background scroll when success modal is open
+  useEffect(() => {
+    document.body.style.overflow = showSuccessModal ? "hidden" : "auto";
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [showSuccessModal]);
+
+
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [errorTarget, setErrorTarget] = useState(null);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [validationErrors, setValidationErrors] = useState({});
 
   const programRef = useRef(null);
   const personalInfoRef = useRef(null);
@@ -88,82 +105,67 @@ export default function VolunteerForm({ selectedProgramId }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const showError = (ref, message, targetKey) => {
-    setErrorMessage(message);
-    setErrorTarget(targetKey);
+  const showFieldError = (fieldName, message) => {
+    setFieldErrors(prev => ({
+      ...prev,
+      [fieldName]: message
+    }));
 
-    if (ref?.current) {
-      ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
-      ref.current.classList.add(styles.highlightError);
+    // Scroll to the first error field
+    const firstErrorField = document.querySelector(`[name="${fieldName}"]`);
+    if (firstErrorField) {
+      firstErrorField.scrollIntoView({ behavior: "smooth", block: "center" });
+      firstErrorField.focus();
     }
+  };
 
-    setTimeout(() => {
-      ref?.current?.classList.remove(styles.highlightError);
-      setErrorMessage("");
-      setErrorTarget(null);
-    }, 2000);
+  const clearFieldError = (fieldName) => {
+    setFieldErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[fieldName];
+      return newErrors;
+    });
+    
+    // Also clear validation errors for the same field
+    setValidationErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[fieldName];
+      return newErrors;
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setErrorMessage("");
-    setErrorTarget(null);
+    setFieldErrors({});
+    setValidationErrors({});
 
-    // Add 3-second loading delay
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    // Validation – Program
-    if (!formData.program?.id) {
-      showError(programRef, "Please select a valid program.", "program");
-      setIsLoading(false);
-      return;
-    }
-
-    // Validation – All personal info fields
-    const personalFields = [
-      "fullName",
-      "age",
-      "gender",
-      "email",
-      "phoneNumber",
-      "address",
-      "occupation",
-      "citizenship",
-      "reason",
-    ];
-
-    const missingField = personalFields.find((field) => {
-      const value = formData[field];
-      return value === null || value === undefined || value.toString().trim() === "";
-    });
-
-    if (missingField) {
-      showError(
-        personalInfoRef,
-        "Please fill out all required personal information.",
-        "personalInfo"
-      );
-      setIsLoading(false);
-      return;
-    }
-
-    // Validation – Valid ID
-    if (!formData.validId) {
-      showError(uploadRef, "Please upload your valid ID.", "upload");
-      setIsLoading(false);
-      return;
-    }
-
-    // Validation – Agree to terms
-    if (!formData.agreeToTerms) {
-      showError(termsRef, "You must agree to the terms and conditions.", "terms");
-      setIsLoading(false);
-      return;
-    }
-
-    // Submit form
     try {
+      // Add 3-second loading delay
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // Comprehensive form validation
+      const validation = validateForm(formData);
+      
+      if (!validation.isValid) {
+        setValidationErrors(validation.errors);
+        
+        // Show all validation errors
+        Object.keys(validation.errors).forEach(fieldName => {
+          showFieldError(fieldName, validation.errors[fieldName]);
+        });
+        
+        // Log validation errors
+        logger.warn("Form validation failed", {
+          errors: validation.errors,
+          formData: Object.keys(formData)
+        });
+        
+        setIsLoading(false);
+        return;
+      }
+
+          // Submit form
       const form = new FormData();
       form.append("program_id", formData.program.id);
       form.append("full_name", formData.fullName);
@@ -179,7 +181,7 @@ export default function VolunteerForm({ selectedProgramId }) {
         form.append("valid_id", formData.validId);
       }
 
-      const response = await fetch("http://localhost:8080/api/volunteers", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/volunteers`, {
         method: "POST",
         body: form,
       });
@@ -189,11 +191,7 @@ export default function VolunteerForm({ selectedProgramId }) {
         throw new Error(errorData?.message || "Failed to submit application. Please try again.");
       }
 
-      setSubmitStatus({
-        submitted: true,
-        success: true,
-        message: "Application submitted successfully!",
-      });
+      setShowSuccessModal(true);
 
       setFormData({
         program: null,
@@ -209,11 +207,23 @@ export default function VolunteerForm({ selectedProgramId }) {
         agreeToTerms: false,
         validId: null,
       });
+
+      // Log successful submission
+      logger.info("Volunteer application submitted successfully", {
+        programId: formData.program.id,
+        email: formData.email
+      });
+
     } catch (error) {
+      // Log submission error
+      logger.error("Volunteer application submission failed", error, {
+        formData: Object.keys(formData)
+      });
+
       setSubmitStatus({
         submitted: true,
         success: false,
-        message: error.message || "Something went wrong.",
+        message: error.message || "Something went wrong. Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -221,48 +231,79 @@ export default function VolunteerForm({ selectedProgramId }) {
   };
 
   return (
-    <form
-      aria-label="Volunteer Application Form"
-      className={styles.formContainer}
-      onSubmit={handleSubmit}
-      noValidate
-    >
+    <>
+      <form
+        aria-label="Volunteer Application Form"
+        className={styles.formContainer}
+        onSubmit={handleSubmit}
+        noValidate
+      >
 
-      <ProgramSelect
-        ref={programRef}
-        programOptions={programOptions}
-        formData={formData}
-        setFormData={setFormData}
-        dropdownOpen={dropdownOpen}
-        setDropdownOpen={setDropdownOpen}
-        errorMessage={errorTarget === "program" ? errorMessage : ""}
-        isLoading={programsLoading}
-        error={programsError}
-      />
+        <FormErrorBoundary componentName="ProgramSelect" formSection="program-selection">
+          <ProgramSelect
+            ref={programRef}
+            programOptions={programOptions}
+            formData={formData}
+            setFormData={setFormData}
+            dropdownOpen={dropdownOpen}
+            setDropdownOpen={setDropdownOpen}
+            errorMessage={fieldErrors.program || validationErrors.program}
+            isLoading={programsLoading}
+            error={programsError}
+            clearFieldError={clearFieldError}
+          />
+        </FormErrorBoundary>
 
-      <PersonalInfoSection
-        ref={personalInfoRef}
-        formData={formData}
-        handleChange={handleChange(setFormData)}
-        errorMessage={errorTarget === "personalInfo" ? errorMessage : ""}
-      />
+        <FormErrorBoundary componentName="PersonalInfoSection" formSection="personal-info">
+          <PersonalInfoSection
+            ref={personalInfoRef}
+            formData={formData}
+            handleChange={handleChange(setFormData, clearFieldError)}
+            fieldErrors={fieldErrors}
+            validationErrors={validationErrors}
+            clearFieldError={clearFieldError}
+          />
+        </FormErrorBoundary>
 
-      <UploadValidID
-        ref={uploadRef}
-        formData={formData}
-        handleChange={handleChange(setFormData)}
-        errorMessage={errorTarget === "upload" ? errorMessage : ""}
-      />
+        <FormErrorBoundary componentName="UploadValidID" formSection="file-upload">
+          <UploadValidID
+            ref={uploadRef}
+            formData={formData}
+            handleChange={handleChange(setFormData, clearFieldError)}
+            errorMessage={fieldErrors.validId || validationErrors.validId}
+          />
+        </FormErrorBoundary>
 
-      <TermsCheckbox
-        ref={termsRef}
-        formData={formData}
-        handleChange={handleChange(setFormData)}
-        isLoading={isLoading}
-        errorMessage={errorTarget === "terms" ? errorMessage : ""}
-      />
-      
-      <SubmitStatus status={submitStatus} />
-    </form>
+        <FormErrorBoundary componentName="TermsCheckbox" formSection="terms-agreement">
+          <TermsCheckbox
+            ref={termsRef}
+            formData={formData}
+            handleChange={handleChange(setFormData, clearFieldError)}
+            errorMessage={fieldErrors.agreeToTerms || validationErrors.agreeToTerms}
+            isLoading={isLoading}
+          />
+        </FormErrorBoundary>
+
+        <button
+          type="submit"
+          disabled={isLoading}
+          aria-busy={isLoading}
+          className={styles.submitBtn}
+        >
+          Submit Application
+          {isLoading && (
+            <span className={styles.loader} aria-hidden="true"></span>
+          )}
+        </button>
+        
+        <SubmitStatus status={submitStatus} />
+        
+        <SuccessModal 
+          isOpen={showSuccessModal}
+          onClose={handleCloseModal}
+          message="Application submitted successfully!"
+        />
+      </form>
+    </>
   );
 }

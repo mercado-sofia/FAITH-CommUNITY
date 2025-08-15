@@ -70,10 +70,8 @@ app.use("/api", applyRoutes)
 app.use("/api", organizationsRoutes)
 
 // ADMIN ROUTES
-import activitiesRoutes from "./back_end/admin/routes/activities.js"
 import advocaciesRoutes from "./back_end/admin/routes/advocacies.js"
 import competenciesRoutes from "./back_end/admin/routes/competencies.js"
-import eventsRoutes from "./back_end/admin/routes/events.js"
 import headsRoutes from "./back_end/admin/routes/heads.js"
 import organizationRoutes from "./back_end/admin/routes/organization.js"
 import programProjectRoutes from "./back_end/admin/routes/programProjects.js"
@@ -85,10 +83,8 @@ import volunteersRoutes from "./back_end/admin/routes/volunteers.js"
 import orgSyncRoutes from "./back_end/admin/routes/orgSync.js"
 import newsRoutes from "./back_end/admin/routes/newsRoutes.js"
 
-app.use("/api/activities", activitiesRoutes)
 app.use("/api/advocacies", advocaciesRoutes)
 app.use("/api/competencies", competenciesRoutes)
-app.use("/api/events", eventsRoutes)
 app.use("/api/heads", headsRoutes)
 app.use("/api/organization", organizationRoutes)
 app.use("/api/projects", programProjectRoutes)

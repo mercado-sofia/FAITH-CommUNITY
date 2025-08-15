@@ -7,7 +7,6 @@ const icons = {
   pending: <FiFileText className={styles.icon} />,
   total: <FiUsers className={styles.icon} />,
   programs: <FiCheckCircle className={styles.icon} />,
-  events: <FiCalendar className={styles.icon} />,
 };
 
 export default function StatCard({ label, count, iconKey }) {

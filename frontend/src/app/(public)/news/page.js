@@ -3,74 +3,37 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { usePublicOrganizations, usePublicNews } from "../../../hooks/usePublicData";
 
 export default function AllNewsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const orgFilter = searchParams.get("news_org");
   
-  const [news, setNews] = useState([]);
-  const [organizations, setOrganizations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [pageReady, setPageReady] = useState(false);
+  const [isFirstVisit, setIsFirstVisit] = useState(true);
 
-  // Fetch organizations for tabs
-  const fetchOrganizations = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/organizations`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch organizations');
-      }
-      const result = await response.json();
-      if (result.success) {
-        setOrganizations(result.data || []);
-      } else {
-        throw new Error(result.message || 'Failed to fetch organizations');
-      }
-    } catch (error) {
-      console.error('Error fetching organizations:', error);
-      setOrganizations([]);
-    }
-  };
+  // Use SWR hooks for data fetching
+  const { organizations, isLoading: orgLoading, error: orgError } = usePublicOrganizations();
+  const { news, isLoading: newsLoading, error: newsError } = usePublicNews();
 
-  // Fetch news data
-  const fetchNews = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Filter news based on organization if needed
+  const filteredNews = orgFilter 
+    ? news.filter(item => item.organization_id === orgFilter)
+    : news;
 
-      let url = `${API_BASE_URL}/api/news`;
-      if (orgFilter) {
-        url = `${API_BASE_URL}/api/news/org/${orgFilter}`;
-      }
-
-      console.log('🔍 Fetching news from:', url);
-      const response = await fetch(url);
+  // Add extra 1 second delay only for first visits
+  useEffect(() => {
+    if (!orgLoading && !newsLoading) {
+      const extraDelay = isFirstVisit ? 1000 : 0;
+      const timer = setTimeout(() => {
+        setPageReady(true);
+        setIsFirstVisit(false);
+      }, extraDelay);
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('📰 Fetched news:', data);
-      setNews(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('❌ Error fetching news:', error);
-      setError('Failed to fetch news. Please try again.');
-    } finally {
-      setLoading(false);
+      return () => clearTimeout(timer);
     }
-  };
-
-  useEffect(() => {
-    fetchOrganizations();
-  }, []);
-
-  useEffect(() => {
-    fetchNews();
-  }, [orgFilter]);
+  }, [orgLoading, newsLoading, isFirstVisit]);
 
   const handleOrgTabClick = (orgId) => {
     if (orgId === 'all') {
@@ -93,7 +56,7 @@ export default function AllNewsPage() {
     }
   };
 
-  if (loading) {
+  if (orgLoading || newsLoading || !pageReady) {
     return (
       <main style={{ maxWidth: "900px", margin: "2rem auto", padding: "0 1rem" }}>
         <h1>All News</h1>
@@ -119,14 +82,14 @@ export default function AllNewsPage() {
     );
   }
 
-  if (error) {
+  if (newsError || orgError) {
     return (
       <main style={{ maxWidth: "900px", margin: "2rem auto", padding: "0 1rem" }}>
         <h1>All News</h1>
         <div style={{ textAlign: 'center', padding: '2rem', color: '#dc3545' }}>
-          <p>{error}</p>
+          <p>{newsError || orgError}</p>
           <button 
-            onClick={fetchNews}
+            onClick={() => window.location.reload()}
             style={{
               padding: '0.75rem 1.5rem',
               background: '#167c59',
@@ -194,13 +157,13 @@ export default function AllNewsPage() {
       </div>
 
       {/* News List */}
-      {news.length === 0 ? (
+      {filteredNews.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
           <p>No announcements found{orgFilter && ` for ${orgFilter}`}.</p>
         </div>
       ) : (
         <ul style={{ listStyle: "none", padding: 0 }}>
-          {news.map((newsItem) => (
+          {filteredNews.map((newsItem) => (
             <li key={newsItem.id} style={{ 
               marginBottom: "2rem",
               padding: "1.5rem",

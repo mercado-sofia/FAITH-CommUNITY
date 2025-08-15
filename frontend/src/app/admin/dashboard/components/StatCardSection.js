@@ -12,10 +12,6 @@ export default function StatCardSection() {
   const currentAdmin = useSelector(selectCurrentAdmin);
   const isAuthenticated = useSelector(selectIsAuthenticated);
 
-  // Debug logging
-  console.log('StatCardSection - currentAdmin:', currentAdmin);
-  console.log('StatCardSection - isAuthenticated:', isAuthenticated);
-
   // Fetch volunteers data for the current admin's organization
   const { 
     data: volunteersData = [], 
@@ -53,13 +49,7 @@ export default function StatCardSection() {
     refetchOnReconnect: true
   });
 
-  // Debug logging
-  console.log('StatCardSection - volunteersData:', volunteersData);
-  console.log('StatCardSection - activeProgramsCount:', activeProgramsCount);
-  console.log('StatCardSection - completedProgramsCount:', completedProgramsCount);
-  console.log('StatCardSection - volunteersError:', volunteersError);
-  console.log('StatCardSection - activeProgramsError:', activeProgramsError);
-  console.log('StatCardSection - completedProgramsError:', completedProgramsError);
+
 
   // Calculate counts from real data
   const pendingApplicationsCount = volunteersData.filter(volunteer => 
@@ -73,7 +63,7 @@ export default function StatCardSection() {
 
   // Show error state if there are errors
   if (volunteersError || activeProgramsError || completedProgramsError) {
-    console.error('StatCardSection errors:', { volunteersError, activeProgramsError, completedProgramsError });
+    // Handle errors silently in production
   }
 
   return (
@@ -99,7 +89,7 @@ export default function StatCardSection() {
           iconKey="programs"
         />
       </Link>
-      <Link href="/admin/programs?status=completed" className={styles.cardWrapper}>
+      <Link href="/admin/programs?status=Completed" className={styles.cardWrapper}>
         <StatCard
           label="Completed Programs"
           count={isLoading ? "..." : completedProgramsCount}

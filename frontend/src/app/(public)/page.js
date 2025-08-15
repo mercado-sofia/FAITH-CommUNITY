@@ -7,7 +7,6 @@ import NewsSection from './components/NewsSection'
 import BannerSection from './components/BannerSection'
 import OfficerSection from './components/OfficerSection'
 import OrgAdviserSection from './components/OrgAdviserSection'
-import FloatingMessage from './components/FloatingMessage'
 
 export default function PublicHomePage() {
   return (
@@ -19,7 +18,6 @@ export default function PublicHomePage() {
       <BannerSection />
       <OfficerSection />
       <OrgAdviserSection />
-      <FloatingMessage />
     </>
   )
 }

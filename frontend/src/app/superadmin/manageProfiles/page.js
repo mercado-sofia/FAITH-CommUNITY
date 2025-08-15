@@ -525,36 +525,50 @@ const ManageProfiles = () => {
       <div className={styles.createSection}>
         <h2>Create New Admin</h2>
         <form className={styles.adminForm} onSubmit={handleCreateAdmin}>
-          <input
-            type="text"
-            name="org"
-            placeholder="Organization Acronym (e.g., FAIPS)"
-            value={form.org}
-            onChange={handleInputChange}
-            required
-            disabled={isCreating}
-          />
-          <input
-            type="text"
-            name="orgName"
-            placeholder="Organization Name"
-            value={form.orgName}
-            onChange={handleInputChange}
-            required
-            disabled={isCreating}
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleInputChange}
-            required
-            disabled={isCreating}
-          />
+          <div className={styles.formField}>
+            <label htmlFor="admin-org">Organization Acronym:</label>
+            <input
+              type="text"
+              id="admin-org"
+              name="org"
+              placeholder="Organization Acronym (e.g., FAIPS)"
+              value={form.org}
+              onChange={handleInputChange}
+              required
+              disabled={isCreating}
+            />
+          </div>
+          <div className={styles.formField}>
+            <label htmlFor="admin-orgName">Organization Name:</label>
+            <input
+              type="text"
+              id="admin-orgName"
+              name="orgName"
+              placeholder="Organization Name"
+              value={form.orgName}
+              onChange={handleInputChange}
+              required
+              disabled={isCreating}
+            />
+          </div>
+          <div className={styles.formField}>
+            <label htmlFor="admin-email">Email:</label>
+            <input
+              type="email"
+              id="admin-email"
+              name="email"
+              placeholder="Email"
+              value={form.email}
+              onChange={handleInputChange}
+              required
+              disabled={isCreating}
+            />
+          </div>
           <div className={styles.passwordInputWrapper}>
+            <label htmlFor="admin-password">Password:</label>
             <input
               type={showPassword ? "text" : "password"}
+              id="admin-password"
               name="password"
               placeholder="Password"
               value={form.password}
@@ -588,8 +602,10 @@ const ManageProfiles = () => {
             )}
           </div>
           <div className={styles.passwordInputWrapper}>
+            <label htmlFor="admin-confirmPassword">Confirm Password:</label>
             <input
               type={showConfirmPassword ? "text" : "password"}
+              id="admin-confirmPassword"
               name="confirmPassword"
               placeholder="Confirm Password"
               value={form.confirmPassword}

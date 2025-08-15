@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { FaChevronDown, FaChevronUp } from "react-icons/fa"
 import { usePublicFAQs } from "../../../hooks/usePublicData"
 import PageBanner from "../components/PageBanner"
@@ -9,28 +9,13 @@ import styles from "./faqs.module.css"
 
 export default function FaqPage() {
   const [activeIndex, setActiveIndex] = useState(null)
-  const [pageReady, setPageReady] = useState(false)
-  const [isFirstVisit, setIsFirstVisit] = useState(true)
   const { faqs = [], error, isLoading } = usePublicFAQs()
 
   const toggleFaq = (index) => {
     setActiveIndex(index === activeIndex ? null : index)
   }
 
-  // Add extra 1 second delay only for first visits after data loads
-  useEffect(() => {
-    if (!isLoading) {
-      const extraDelay = isFirstVisit ? 1000 : 0; // Extra delay only for first visit
-      const timer = setTimeout(() => {
-        setPageReady(true);
-        setIsFirstVisit(false); // Mark as no longer first visit
-      }, extraDelay);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading, isFirstVisit]);
-
-  if (isLoading || !pageReady) return <Loader small centered />
+  if (isLoading) return <Loader small centered />
 
   if (error) {
     return (

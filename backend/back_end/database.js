@@ -159,6 +159,24 @@ const initializeDatabase = async () => {
       console.log("✅ Created_at field added to featured_projects table successfully!");
     }
 
+    // Check if faqs table exists
+    const [faqsTables] = await connection.query('SHOW TABLES LIKE "faqs"');
+    
+    if (faqsTables.length === 0) {
+      console.log("Creating faqs table...");
+      await connection.query(`
+        CREATE TABLE faqs (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          question TEXT NOT NULL,
+          answer TEXT NOT NULL,
+          status ENUM('active', 'inactive') DEFAULT 'active',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+      `);
+      console.log("✅ FAQs table created successfully!");
+    }
+
     connection.release();
     return promisePool;
   } catch (error) {

@@ -173,14 +173,14 @@ export const usePublicNewsArticle = (articleId) => {
 // Custom hook for FAQs
 export const usePublicFAQs = () => {
   const { data, error, isLoading } = useSWR(
-    `${API_BASE_URL}/api/public/faqs`,
+    `${API_BASE_URL}/api/faqs/active`,
     fetcher,
     {
       revalidateOnFocus: false,
       dedupingInterval: 1800000, // Cache for 30 minutes (FAQs rarely change)
       errorRetryCount: 2,
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/public/faqs`, error);
+        logger.swrError(`${API_BASE_URL}/api/faqs/active`, error);
       }
     }
   );

@@ -286,30 +286,124 @@ export const bulkApproveSubmissions = async (req, res) => {
           continue;
         }
 
-        const proposedData = JSON.parse(submission.proposed_data || '{}');
+        const data = JSON.parse(submission.proposed_data);
+        const section = submission.section;
+        const orgId = submission.organization_id;
 
-        // Apply the changes to the organizations table
-        const updateFields = [];
-        const updateValues = [];
+        // Apply changes based on section - same logic as individual approveSubmission
+        if (section === 'organization') {
+          await db.execute(
+            `UPDATE organizations SET orgName = ?, org = ?, logo = ?, facebook = ?, description = ? WHERE id = ?`,
+            [data.orgName, data.org, data.logo, data.facebook, data.description, orgId]
+          );
+        }
 
-        Object.keys(proposedData).forEach(key => {
-          if (proposedData[key] !== null && proposedData[key] !== undefined) {
-            updateFields.push(`${key} = ?`);
-            updateValues.push(proposedData[key]);
+        if (section === 'advocacy') {
+          const [existingAdvocacy] = await db.execute(
+            'SELECT id FROM advocacies WHERE organization_id = ?',
+            [orgId]
+          );
+          
+          const advocacyData = typeof data === 'string' ? data.trim() : JSON.stringify(data).trim();
+          
+          if (existingAdvocacy.length > 0) {
+            await db.execute(
+              'UPDATE advocacies SET advocacy = ? WHERE organization_id = ?',
+              [advocacyData, orgId]
+            );
+          } else {
+            await db.execute(
+              'INSERT INTO advocacies (organization_id, advocacy) VALUES (?, ?)',
+              [orgId, advocacyData]
+            );
           }
-        });
+        }
 
-        if (updateFields.length > 0) {
-          updateValues.push(submission.organization_id);
-          const updateQuery = `UPDATE organizations SET ${updateFields.join(', ')} WHERE id = ?`;
-          await db.execute(updateQuery, updateValues);
+        if (section === 'competency') {
+          const [existingCompetency] = await db.execute(
+            'SELECT id FROM competencies WHERE organization_id = ?',
+            [orgId]
+          );
+          
+          const competencyData = typeof data === 'string' ? data.trim() : JSON.stringify(data).trim();
+          
+          if (existingCompetency.length > 0) {
+            await db.execute(
+              'UPDATE competencies SET competency = ? WHERE organization_id = ?',
+              [competencyData, orgId]
+            );
+          } else {
+            await db.execute(
+              'INSERT INTO competencies (organization_id, competency) VALUES (?, ?)',
+              [orgId, competencyData]
+            );
+          }
+        }
+
+        if (section === 'org_heads') {
+          await db.execute(`DELETE FROM organization_heads WHERE organization_id = ?`, [orgId]);
+          for (let head of data) {
+            await db.execute(
+              `INSERT INTO organization_heads (organization_id, head_name, role, facebook, email, photo)
+               VALUES (?, ?, ?, ?, ?, ?)`,
+              [orgId, head.name, head.position, head.facebook, head.email, head.photo]
+            );
+          }
+        }
+
+        if (section === 'programs') {
+          const [result] = await db.execute(
+            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              orgId,
+              data.title,
+              data.description,
+              data.category,
+              data.status,
+              data.image,
+              data.event_start_date || null,
+              data.event_end_date || null
+            ]
+          );
+          
+          const programId = result.insertId;
+          
+          if (data.multiple_dates && Array.isArray(data.multiple_dates) && data.multiple_dates.length > 0) {
+            for (const date of data.multiple_dates) {
+              await db.execute(
+                `INSERT INTO program_event_dates (program_id, event_date) VALUES (?, ?)`,
+                [programId, date]
+              );
+            }
+          }
+
+          if (data.additionalImages && Array.isArray(data.additionalImages) && data.additionalImages.length > 0) {
+            for (let i = 0; i < data.additionalImages.length; i++) {
+              const imageData = data.additionalImages[i];
+              await db.execute(
+                `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
+                [programId, imageData, i]
+              );
+            }
+          }
+        }
+
+        if (section === 'news') {
+          await db.execute(
+            `INSERT INTO news (organization_id, title, description, date)
+             VALUES (?, ?, ?, ?)`,
+            [
+              orgId,
+              data.title,
+              data.description,
+              data.date || new Date().toISOString().split('T')[0]
+            ]
+          );
         }
 
         // Update submission status
-        await db.execute(
-          'UPDATE submissions SET status = ?, approved_at = NOW() WHERE id = ?',
-          ['approved', id]
-        );
+        await db.execute(`UPDATE submissions SET status = 'approved' WHERE id = ?`, [id]);
 
         successCount++;
       } catch (error) {

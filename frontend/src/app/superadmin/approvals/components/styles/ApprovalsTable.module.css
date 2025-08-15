@@ -348,54 +348,35 @@
 }
 
 .modalRejectBtn {
-  padding: 8px 16px;
-  border: 1px solid #ef4444;
-  background-color: #ef4444;
+  background: #dc3545;
   color: white;
+  border: none;
+  padding: 10px 20px;
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.2s ease;
 }
 
 .modalRejectBtn:hover {
-  background-color: #dc2626;
-  border-color: #dc2626;
+  background: #c82333;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .table {
-    font-size: 12px;
-  }
-  
-  .table th,
-  .table td {
-    padding: 8px 12px;
-  }
-  
-  .actionButtons {
-    flex-direction: column;
-    gap: 4px;
-  }
-  
-  .actionBtn {
-    font-size: 12px;
-    padding: 4px 8px;
-    min-width: 50px;
-  }
-  
-  .modal {
-    width: 95%;
-    margin: 20px;
-  }
-  
-  .modalHeader,
-  .modalBody,
-  .modalFooter {
-    padding: 16px 20px;
-  }
+.modalDeleteBtn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.modalDeleteBtn:hover {
+  background: #c82333;
 }
 
 /* Bulk Actions Bar */
@@ -497,3 +478,36 @@
   }
 }
 
+/* Responsive Design */
+@media (max-width: 768px) {
+  .table {
+    font-size: 12px;
+  }
+  
+  .table th,
+  .table td {
+    padding: 8px 12px;
+  }
+  
+  .actionButtons {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .actionBtn {
+    font-size: 12px;
+    padding: 4px 8px;
+    min-width: 50px;
+  }
+  
+  .modal {
+    width: 95%;
+    margin: 20px;
+  }
+  
+  .modalHeader,
+  .modalBody,
+  .modalFooter {
+    padding: 16px 20px;
+  }
+}

@@ -9,7 +9,7 @@ import LogoutModalTrigger from '../logout/page.js';
 import { TbChecklist } from "react-icons/tb";
 import { RiTreeFill } from "react-icons/ri";
 import { HiViewGrid } from 'react-icons/hi';
-import { FaUsersCog, FaUserCheck, FaClipboardCheck, FaRegQuestionCircle, FaRegAddressBook, FaAddressCard } from 'react-icons/fa';
+import { FaUserCheck, FaClipboardCheck, FaRegQuestionCircle, FaRegAddressBook, FaAddressCard } from 'react-icons/fa';
 import { MdSettings } from 'react-icons/md';
 
 export default function Sidebar() {
@@ -62,14 +62,6 @@ export default function Sidebar() {
         {/* === MANAGEMENT === */}
         <p className={styles.menuLabel}>Management</p>
         <nav className={styles.nav}>
-          <Link
-            href="/superadmin/organizations"
-            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith('/superadmin/organizations') ? styles.active : ''}`}
-          >
-            <FaUsersCog className={styles.icon} />
-            <span>Organizations</span>
-          </Link>
-
           <Link
             href="/superadmin/approvals"
             className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith('/superadmin/approvals') ? styles.active : ''}`}

@@ -101,8 +101,13 @@ export default function FloatingMessage() {
       return;
     }
 
-    console.log(`Message to ${org} from ${email}: ${message}`);
-    alert("Message sent successfully!");
+    // Message sent successfully
+    if (typeof window !== 'undefined' && window.showToast) {
+      window.showToast("Message sent successfully!", "success", 4000);
+    } else {
+      // Fallback to alert if toast system is not available
+      alert("Message sent successfully!");
+    }
     closeMessageBox();
   };
 

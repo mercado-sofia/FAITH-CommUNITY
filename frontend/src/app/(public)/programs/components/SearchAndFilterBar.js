@@ -1,6 +1,6 @@
 "use client";
 
-import styles from '../programs.module.css';
+import styles from './styles/SearchAndFilterBar.module.css';
 import { FiSearch, FiX } from 'react-icons/fi';
 import { FaChevronDown } from 'react-icons/fa';
 import { useState, useRef, useEffect } from 'react';

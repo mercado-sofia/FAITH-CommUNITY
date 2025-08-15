@@ -1,0 +1,55 @@
+.orgSection {
+  top: -1rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+ 
+.orgLabel {
+  font-weight: 600;
+  font-size: 14px;
+  color: #111827;
+}
+ 
+.orgList {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+}
+  
+.orgItem {
+  background: none;
+  border: none;
+  text-decoration: none;
+  color: #22c55e;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+ 
+.orgItem:hover {
+  color: #15803d;
+  text-decoration: underline;
+}
+
+.loadingText {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.errorText {
+  color: #dc2626;
+  font-size: 14px;
+}
+
+.emptyText {
+  color: #6b7280;
+  font-size: 14px;
+}

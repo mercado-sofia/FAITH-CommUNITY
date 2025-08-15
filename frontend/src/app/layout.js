@@ -3,7 +3,8 @@ import { Inter, Roboto, Source_Sans_3 } from "next/font/google";
 import LoaderWrapper from "../components/LoaderWrapper";
 import ReduxProvider from "./ReduxProvider";
 import DisableTabOnButtonsLinks from "../components/DisableTabOnButtonsLinks";
-import { SWRConfig } from 'swr';
+import SWRProvider from '../components/SWRProvider';
+import '../utils/devTools'; // Load development tools
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const roboto = Roboto({
@@ -26,21 +27,12 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${inter.variable} ${roboto.variable} ${sourceSans3.variable}`}>
       <body className={inter.className}>
-        <SWRConfig 
-          value={{
-            refreshInterval: 0,
-            revalidateOnFocus: false,
-            revalidateOnReconnect: true,
-            shouldRetryOnError: true,
-            errorRetryCount: 3,
-            dedupingInterval: 2000,
-          }}
-        >
+        <SWRProvider>
           <ReduxProvider>
             <DisableTabOnButtonsLinks />
             <LoaderWrapper>{children}</LoaderWrapper>
           </ReduxProvider>
-        </SWRConfig>
+        </SWRProvider>
       </body>
     </html>
   );

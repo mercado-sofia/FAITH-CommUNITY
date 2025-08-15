@@ -3,7 +3,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
-import styles from '../programs.module.css';
+import styles from './styles/ProgramCard.module.css';
+import logger from '../../../../utils/logger';
 
 // Utility function to get date information from various date formats
 const getDateInfo = (project) => {
@@ -205,7 +206,10 @@ export default function ProgramCard({ project }) {
             alt={project.title}
             className={styles.cardImage}
             onError={(e) => {
-              console.error('Failed to load base64 image:', project.image.substring(0, 50) + '...');
+              logger.error('Failed to load base64 image', null, { 
+                projectId: project.id, 
+                imagePreview: project.image.substring(0, 50) + '...' 
+              });
               e.target.style.display = 'none';
               e.target.nextSibling.style.display = 'block';
             }}

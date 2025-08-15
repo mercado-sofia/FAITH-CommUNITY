@@ -1,21 +1,29 @@
 import useSWR from 'swr';
+import logger from '../utils/logger';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 // Fetcher function for SWR
 const fetcher = async (url) => {
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
-  if (!response.ok) {
-    throw new Error('Failed to fetch data');
+    if (!response.ok) {
+      const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
+      logger.apiError(url, error, { status: response.status });
+      throw error;
+    }
+
+    return response.json();
+  } catch (error) {
+    logger.apiError(url, error);
+    throw error;
   }
-
-  return response.json();
 };
 
 // Custom hook for public organization data (optimized for public pages)
@@ -30,6 +38,9 @@ export const usePublicOrganizationData = (orgID) => {
       errorRetryCount: 2,
       errorRetryInterval: 2000,
       fallbackData: null, // Provide fallback while loading
+      onError: (error) => {
+        logger.swrError(`${API_BASE_URL}/api/organization/org/${orgID}`, error, { orgID });
+      }
     }
   );
 
@@ -80,6 +91,9 @@ export const usePublicOrganizations = () => {
       revalidateOnFocus: false,
       dedupingInterval: 300000, // Cache for 5 minutes
       errorRetryCount: 3,
+      onError: (error) => {
+        logger.swrError(`${API_BASE_URL}/api/organizations`, error);
+      }
     }
   );
 
@@ -99,6 +113,9 @@ export const usePublicPrograms = (orgID) => {
       revalidateOnFocus: false,
       dedupingInterval: 300000, // Cache for 5 minutes
       errorRetryCount: 2,
+      onError: (error) => {
+        logger.swrError(orgID ? `${API_BASE_URL}/api/programs/org/${orgID}` : `${API_BASE_URL}/api/programs`, error, { orgID });
+      }
     }
   );
 
@@ -112,12 +129,15 @@ export const usePublicPrograms = (orgID) => {
 // Custom hook for public news/articles
 export const usePublicNews = () => {
   const { data, error, isLoading } = useSWR(
-    `${API_BASE_URL}/api/public/news`,
+    `${API_BASE_URL}/api/news`,
     fetcher,
     {
       revalidateOnFocus: false,
       dedupingInterval: 180000, // Cache for 3 minutes (news updates more frequently)
       errorRetryCount: 2,
+      onError: (error) => {
+        logger.swrError(`${API_BASE_URL}/api/news`, error);
+      }
     }
   );
 
@@ -131,12 +151,15 @@ export const usePublicNews = () => {
 // Custom hook for single news article
 export const usePublicNewsArticle = (articleId) => {
   const { data, error, isLoading } = useSWR(
-    articleId ? `${API_BASE_URL}/api/public/news/${articleId}` : null,
+    articleId ? `${API_BASE_URL}/api/news/${articleId}` : null,
     fetcher,
     {
       revalidateOnFocus: false,
       dedupingInterval: 600000, // Cache for 10 minutes (single articles don't change often)
       errorRetryCount: 2,
+      onError: (error) => {
+        logger.swrError(`${API_BASE_URL}/api/news/${articleId}`, error, { articleId });
+      }
     }
   );
 
@@ -156,11 +179,36 @@ export const usePublicFAQs = () => {
       revalidateOnFocus: false,
       dedupingInterval: 1800000, // Cache for 30 minutes (FAQs rarely change)
       errorRetryCount: 2,
+      onError: (error) => {
+        logger.swrError(`${API_BASE_URL}/api/public/faqs`, error);
+      }
     }
   );
 
   return {
     faqs: Array.isArray(data) ? data : [],
+    isLoading,
+    error,
+  };
+};
+
+// Custom hook for approved upcoming programs (for apply form)
+export const usePublicApprovedPrograms = () => {
+  const { data, error, isLoading } = useSWR(
+    `${API_BASE_URL}/api/programs/approved/upcoming`,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 300000, // Cache for 5 minutes
+      errorRetryCount: 2,
+      onError: (error) => {
+        logger.swrError(`${API_BASE_URL}/api/programs/approved/upcoming`, error);
+      }
+    }
+  );
+
+  return {
+    programs: Array.isArray(data) ? data : [],
     isLoading,
     error,
   };

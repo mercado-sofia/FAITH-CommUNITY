@@ -3,44 +3,32 @@
 import { useState, useEffect } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { usePublicNewsArticle } from "../../../hooks/usePublicData";
 
 export default function NewsDetailPage({ params }) {
   const { id } = params;
-  const [news, setNews] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [pageReady, setPageReady] = useState(false);
+  const [isFirstVisit, setIsFirstVisit] = useState(true);
+  
+  const { article: news, isLoading: loading, error } = usePublicNewsArticle(id);
 
+  // Add extra 1 second delay only for first visits
   useEffect(() => {
-    fetchNews();
-  }, [id]);
-
-  const fetchNews = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      console.log('🔍 Fetching news detail from:', `${API_BASE_URL}/api/news/${id}`);
-      const response = await fetch(`${API_BASE_URL}/api/news/${id}`);
+    if (!loading) {
+      const extraDelay = isFirstVisit ? 1000 : 0;
+      const timer = setTimeout(() => {
+        setPageReady(true);
+        setIsFirstVisit(false);
+      }, extraDelay);
       
-      if (!response.ok) {
-        if (response.status === 404) {
-          notFound();
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('📰 Fetched news detail:', data);
-      setNews(data);
-    } catch (error) {
-      console.error('❌ Error fetching news:', error);
-      setError('Failed to fetch news. Please try again.');
-    } finally {
-      setLoading(false);
+      return () => clearTimeout(timer);
     }
-  };
+  }, [loading, isFirstVisit]);
+
+  // Handle 404 case
+  if (!loading && !news) {
+    notFound();
+  }
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Not specified';
@@ -55,7 +43,7 @@ export default function NewsDetailPage({ params }) {
     }
   };
 
-  if (loading) {
+  if (loading || !pageReady) {
     return (
       <main style={{ maxWidth: "800px", margin: "2rem auto", padding: "0 1rem" }}>
         <div style={{ textAlign: 'center', padding: '2rem' }}>
@@ -86,7 +74,7 @@ export default function NewsDetailPage({ params }) {
         <div style={{ textAlign: 'center', padding: '2rem', color: '#dc3545' }}>
           <p>{error}</p>
           <button 
-            onClick={fetchNews}
+            onClick={() => window.location.reload()}
             style={{
               padding: '0.75rem 1.5rem',
               background: '#167c59',

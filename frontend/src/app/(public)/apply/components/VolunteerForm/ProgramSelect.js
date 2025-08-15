@@ -14,6 +14,7 @@ const ProgramSelect = forwardRef(function ProgramSelect(
     errorMessage,
     isLoading,
     error,
+    clearFieldError,
   },
   ref
 ) {
@@ -60,31 +61,24 @@ const ProgramSelect = forwardRef(function ProgramSelect(
 
   return (
     <div
-      className={`${styles.topTwoCol} ${errorMessage ? styles.highlightError : ""}`}
+      className={styles.topTwoCol}
       ref={ref}
     >
       <div className={styles.programLabelBox}>
-        <label htmlFor="program">What program are you interested in joining?</label>
-        <input
-          type="text"
-          id="program"
-          name="program"
-          value={formData.program?.name || ""}
-          readOnly
-          hidden
-        />
+        <label htmlFor="program-dropdown">What program are you interested in joining?</label>
       </div>
 
       <div className={styles.dropdownWrapper} ref={wrapperRef}>
         <div
+          id="program-dropdown"
           className={`${styles.customDropdown} ${
             formData.program ? styles.filled : ""
-          } ${isLoading ? styles.loading : ""}`}
-          id="program"
-          role="button"
+          } ${isLoading ? styles.loading : ""} ${errorMessage ? styles.inputError : ""}`}
+          role="combobox"
           tabIndex={0}
           aria-expanded={dropdownOpen}
-          aria-controls="program-dropdown"
+          aria-controls="program-dropdown-list"
+          aria-haspopup="listbox"
           onClick={() => !isLoading && setDropdownOpen(!dropdownOpen)}
           onKeyDown={(e) => {
             if (!isLoading && (e.key === "Enter" || e.key === " ")) {
@@ -100,8 +94,9 @@ const ProgramSelect = forwardRef(function ProgramSelect(
         {dropdownOpen && !isLoading && !error && (
           <ul
             className={styles.dropdownList}
-            id="program-dropdown"
+            id="program-dropdown-list"
             ref={dropdownListRef}
+            role="listbox"
           >
             {programOptions.length > 0 ? (
               programOptions.map((option) => (
@@ -114,6 +109,10 @@ const ProgramSelect = forwardRef(function ProgramSelect(
                       program: option,
                     }));
                     setDropdownOpen(false);
+                    // Clear program error when a program is selected
+                    if (clearFieldError) {
+                      clearFieldError('program');
+                    }
                   }}
                 >
                   <div>
@@ -131,8 +130,8 @@ const ProgramSelect = forwardRef(function ProgramSelect(
         )}
       </div>
 
-      {errorMessage && <p className={styles.inlineError}>{errorMessage}</p>}
-      {error && <p className={styles.inlineError}>Failed to load programs. Please try again later.</p>}
+      {errorMessage && <p className={styles.errorMessage} role="alert">{errorMessage}</p>}
+      {error && <p className={styles.errorMessage} role="alert">Failed to load programs. Please try again later.</p>}
     </div>
   );
 });

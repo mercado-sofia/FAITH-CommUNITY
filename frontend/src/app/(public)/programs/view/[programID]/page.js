@@ -4,45 +4,32 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import styles from './programDetails.module.css';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+import { usePublicPrograms } from '../../../../../hooks/usePublicData';
 
 export default function ProgramDetailsPage() {
   const { programID } = useParams();
   const router = useRouter();
-  const [program, setProgram] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [pageReady, setPageReady] = useState(false);
+  const [isFirstVisit, setIsFirstVisit] = useState(true);
 
+  // Use SWR hook for data fetching
+  const { programs, isLoading: loading, error } = usePublicPrograms();
+
+  // Find the specific program
+  const program = programs.find(p => p.id === Number(programID));
+
+  // Add extra 1 second delay only for first visits
   useEffect(() => {
-    const fetchProgram = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/api/programs`);
-        const data = await response.json();
-        
-        if (data.success) {
-          const foundProgram = data.data.find(p => p.id === Number(programID));
-          if (foundProgram) {
-            setProgram(foundProgram);
-          } else {
-            setError('Program not found');
-          }
-        } else {
-          setError('Failed to fetch programs');
-        }
-      } catch (err) {
-        console.error('Error fetching program:', err);
-        setError('Failed to load program data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (programID) {
-      fetchProgram();
+    if (!loading) {
+      const extraDelay = isFirstVisit ? 1000 : 0;
+      const timer = setTimeout(() => {
+        setPageReady(true);
+        setIsFirstVisit(false);
+      }, extraDelay);
+      
+      return () => clearTimeout(timer);
     }
-  }, [programID]);
+  }, [loading, isFirstVisit]);
 
   const handleApplyClick = () => {
     if (program.status === 'Upcoming') {
@@ -100,7 +87,7 @@ export default function ProgramDetailsPage() {
     }
   };
 
-  if (loading) {
+  if (loading || !pageReady) {
     return (
       <div className={styles.container}>
         <div className={styles.loadingContainer}>
@@ -187,16 +174,16 @@ export default function ProgramDetailsPage() {
                   <h3 className={styles.orgTitle}>Host Organization</h3>
                   <div className={styles.orgInfo}>
                     {program.icon && (
-                      <Image 
-                        src={program.icon ? `${API_BASE_URL}${program.icon}` : '/logo/faith_community_logo.png'} 
-                        alt={`${program.orgName || program.orgID} logo`}
-                        width={48} 
-                        height={48}
-                        className={styles.orgLogo}
-                        onError={(e) => {
-                          e.target.src = '/logo/faith_community_logo.png';
-                        }}
-                      />
+                                             <Image 
+                         src={program.icon ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${program.icon}` : '/logo/faith_community_logo.png'} 
+                         alt={`${program.orgName || program.orgID} logo`}
+                         width={48} 
+                         height={48}
+                         className={styles.orgLogo}
+                         onError={(e) => {
+                           e.target.src = '/logo/faith_community_logo.png';
+                         }}
+                       />
                     )}
                     <div className={styles.orgDetails}>
                       <div className={styles.orgName}>{program.orgName || program.orgID}</div>

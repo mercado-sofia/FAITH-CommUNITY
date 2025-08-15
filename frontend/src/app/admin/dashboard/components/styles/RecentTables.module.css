@@ -1,12 +1,12 @@
 .tableContainer {
-  margin-bottom: 2.5rem;
+  margin-bottom: 1rem;
 }
 
 .sectionHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.2rem;
+  margin-bottom: 0.8rem;
 }
 
 .sectionTitle {
@@ -103,7 +103,7 @@
   border-radius: 12px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
   padding: 1rem 1.5rem;
-  min-height: 390px;
+  min-height: 374px;
 }
 
 .table {
@@ -115,7 +115,7 @@
 .table th,
 .table td {
   font-size: 13px;
-  padding: 0.8rem 1rem;
+  padding: 0.65rem 1rem;
   font-weight: 400;
   font-family: var(--font-inter);
   text-align: left;
@@ -141,7 +141,7 @@
   font-size: 0.75rem;
   font-weight: 600;
   font-family: var(--font-inter);
-  padding: 0.35rem 1.1rem;
+  padding: 0.45rem 1.1rem;
   border-radius: 28px;
   display: inline-block;
   text-align: center;

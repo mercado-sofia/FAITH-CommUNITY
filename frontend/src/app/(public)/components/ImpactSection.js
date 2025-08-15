@@ -59,14 +59,6 @@ export default function ImpactSection() {
 
   // Transform featured projects data to match the expected format
   const transformedFeaturedProjects = featuredProjects.map(project => {
-    // Debug logging for image data
-    console.log('ImpactSection - Processing project:', {
-      id: project.id,
-      title: project.title,
-      hasImage: !!project.image,
-      imageType: project.image ? (project.image.startsWith('data:image') ? 'base64' : 'file') : 'none',
-      imagePreview: project.image ? project.image.substring(0, 50) + '...' : null
-    });
     
     return {
       image: project.image ? 

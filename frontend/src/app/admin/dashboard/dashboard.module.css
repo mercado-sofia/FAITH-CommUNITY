@@ -33,19 +33,7 @@
   margin-bottom: 1rem;
 }
 
-/* 🔹 Layout for Recent Apps + Activities */
+/* 🔹 Layout for Recent Applications */
 .recentRow {
-  display: flex;
-  gap: 2rem;
   width: 100%;
-}
-
-.leftColumn {
-  flex: 2;
-  min-width: 0;
-}
-
-.rightColumn {
-  flex: 1;
-  min-width: 0;
 }

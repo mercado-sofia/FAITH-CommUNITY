@@ -1,3 +1,5 @@
+import logger from '../../../../../utils/logger';
+
 // Direct fetch implementation without Redux
 export const submitVolunteerApplication = async (formData) => {
   try {
@@ -15,7 +17,7 @@ export const submitVolunteerApplication = async (formData) => {
       }
     });
 
-    const response = await fetch("http://localhost:8080/apply", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/apply`, {
       method: "POST",
       // Don't set Content-Type header when sending FormData
       // The browser will set it automatically with the correct boundary
@@ -34,7 +36,7 @@ export const submitVolunteerApplication = async (formData) => {
       message: "Application submitted successfully!",
     }
   } catch (error) {
-    console.error("Error submitting application:", error)
+    logger.error("Error submitting application", error, { formData: Object.keys(formData) });
     return {
       success: false,
       error: error.message || "Failed to submit application. Please try again.",
@@ -45,7 +47,7 @@ export const submitVolunteerApplication = async (formData) => {
 // Get all volunteer applications (for admin purposes)
 export const getVolunteerApplications = async () => {
   try {
-    const response = await fetch("http://localhost:8080/apply")
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/apply`)
     const data = await response.json()
 
     if (!response.ok) {
@@ -58,7 +60,7 @@ export const getVolunteerApplications = async () => {
       count: data.count || 0,
     }
   } catch (error) {
-    console.error("Error fetching applications:", error)
+    logger.error("Error fetching applications", error);
     return {
       success: false,
       error: error.message || "Failed to fetch applications.",
@@ -69,7 +71,7 @@ export const getVolunteerApplications = async () => {
 // Test connection to backend
 export const testBackendConnection = async () => {
   try {
-    const response = await fetch("http://localhost:8080/test-post", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/test-post`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -86,7 +88,7 @@ export const testBackendConnection = async () => {
       message: "Successfully connected to backend!",
     }
   } catch (error) {
-    console.error("Error connecting to backend:", error)
+    logger.error("Error connecting to backend", error);
     return {
       success: false,
       error: "Failed to connect to backend. Please check if the server is running.",

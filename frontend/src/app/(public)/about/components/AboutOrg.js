@@ -1,48 +1,14 @@
 import styles from './styles/aboutOrg.module.css';
 import Image from 'next/image';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { useState, useEffect } from 'react';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+import { useState } from 'react';
+import { usePublicOrganizations } from '../../../../hooks/usePublicData';
 
 export default function AboutOrg() {
   const cardWidth = 140;
   const orgVisibleCount = 7;
   const [orgStart, setOrgStart] = useState(0);
-  const [organizations, setOrganizations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Fetch organizations from API
-  const fetchOrganizations = async () => {
-    try {
-      setError(null);
-      const response = await fetch(`${API_BASE_URL}/api/organizations`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch organizations');
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        setOrganizations(result.data || []);
-      } else {
-        throw new Error(result.message || 'Failed to fetch organizations');
-      }
-    } catch (error) {
-      console.error('Error fetching organizations:', error);
-      setError(error.message);
-      // Fallback to empty array on error
-      setOrganizations([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchOrganizations();
-  }, []);
+  const { organizations, isLoading: loading, error } = usePublicOrganizations();
 
   if (loading) {
     return (
@@ -61,7 +27,7 @@ export default function AboutOrg() {
         <h2 className={styles.orgHeading}>Error Loading Organizations</h2>
         <div className={styles.errorWrapper}>
           <p>Failed to load organizations: {error}</p>
-          <button onClick={fetchOrganizations} className={styles.retryButton}>
+          <button onClick={() => window.location.reload()} className={styles.retryButton}>
             Try Again
           </button>
         </div>
@@ -95,15 +61,15 @@ export default function AboutOrg() {
             >
               {organizations.map((org, i) => (
                 <div className={styles.orgItem} key={org.id || i}>
-                  <Image 
-                    src={`${API_BASE_URL}${org.logo}`} 
-                    alt={org.name} 
-                    width={100} 
-                    height={100}
-                    onError={(e) => {
-                      e.target.src = '/logo/default_org_logo.png'; // Fallback image
-                    }}
-                  />
+                                     <Image 
+                     src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${org.logo}`} 
+                     alt={org.name} 
+                     width={100} 
+                     height={100}
+                     onError={(e) => {
+                       e.target.src = '/logo/default_org_logo.png'; // Fallback image
+                     }}
+                   />
                   <p>{org.acronym}</p>
                 </div>
               ))}

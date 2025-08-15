@@ -1,21 +1,36 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { FaChevronDown, FaChevronUp } from "react-icons/fa"
-import { useGetActiveFaqsQuery } from "../../../rtk/superadmin/faqApi"
+import { usePublicFAQs } from "../../../hooks/usePublicData"
 import PageBanner from "../components/PageBanner"
 import Loader from "../../../components/Loader"
 import styles from "./faqs.module.css"
 
 export default function FaqPage() {
   const [activeIndex, setActiveIndex] = useState(null)
-  const { data: faqs = [], error, isLoading } = useGetActiveFaqsQuery()
+  const [pageReady, setPageReady] = useState(false)
+  const [isFirstVisit, setIsFirstVisit] = useState(true)
+  const { faqs = [], error, isLoading } = usePublicFAQs()
 
   const toggleFaq = (index) => {
     setActiveIndex(index === activeIndex ? null : index)
   }
 
-  if (isLoading) return <Loader />
+  // Add extra 1 second delay only for first visits after data loads
+  useEffect(() => {
+    if (!isLoading) {
+      const extraDelay = isFirstVisit ? 1000 : 0; // Extra delay only for first visit
+      const timer = setTimeout(() => {
+        setPageReady(true);
+        setIsFirstVisit(false); // Mark as no longer first visit
+      }, extraDelay);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, isFirstVisit]);
+
+  if (isLoading || !pageReady) return <Loader small centered />
 
   if (error) {
     return (

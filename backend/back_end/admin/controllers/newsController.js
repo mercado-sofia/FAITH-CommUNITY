@@ -250,6 +250,7 @@ export const getApprovedNews = async (req, res) => {
         description: news.description,
         date: news.date || news.date_published || news.created_at,
         created_at: news.created_at,
+        organization_id: news.organization_id, // Add this field for frontend filtering
         orgID: news.orgAcronym || `Org-${news.organization_id}`,
         orgName: news.orgName || `Organization ${news.organization_id}`,
         icon: logoUrl
@@ -335,6 +336,7 @@ export const getApprovedNewsByOrg = async (req, res) => {
         description: news.description,
         date: news.date || news.date_published || news.created_at,
         created_at: news.created_at,
+        organization_id: news.organization_id, // Add this field for frontend filtering
         orgID: news.orgAcronym || organization.org || `Org-${news.organization_id}`,
         orgName: news.orgName || organization.orgName || `Organization ${news.organization_id}`,
         icon: logoUrl
@@ -403,6 +405,7 @@ export const getNewsById = async (req, res) => {
       description: news.description,
       date: news.date || news.date_published || news.created_at,
       created_at: news.created_at,
+      organization_id: news.organization_id, // Add this field for frontend filtering
       orgID: news.orgAcronym || `Org-${news.organization_id}`,
       orgName: news.orgName || `Organization ${news.organization_id}`,
       icon: logoUrl

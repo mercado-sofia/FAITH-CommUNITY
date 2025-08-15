@@ -1,0 +1,55 @@
+/* Pagination */
+.pagination {
+  margin: 3rem 0;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Page buttons */
+.pageBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  background: transparent;
+  color: #06100f;
+  border-radius: 4px;
+  border: 1px solid #d1d2d2;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.pageBtn:hover {
+  background-color: #ecefef;
+}
+
+.pageBtn.active {
+  background-color: #1686733b;
+  border: 1px solid #328f7f;
+  color: #328f7f;
+}
+
+.pageBtn.disabled {
+  background-color: #fff;
+  border: 1px solid #d1d2d2;
+  color: #7d9591;
+  cursor: not-allowed;
+  font-weight: 500;
+}
+
+/* Ellipsis */
+.pageDots {
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  font-weight: bold;
+  color: #444;
+  font-size: 0.9rem;
+  user-select: none;
+}

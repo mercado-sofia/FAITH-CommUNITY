@@ -1,0 +1,165 @@
+/* Search Container holds both search bar and sort dropdown */
+.searchContainer {
+  position: relative;
+  top: -2.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  z-index: 5;
+}
+
+/* Main Search Bar */
+.searchBar {
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 1rem;
+  padding: 0;
+  width: 85%;
+  height: 5rem;
+  max-width: 1000px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 1;
+  flex-grow: 1;
+}
+
+/* Search Input Field */
+.searchInput {
+  flex: 3;
+  padding: 1.2rem 1.5rem;
+  border: none;
+  font-size: 1rem;
+  color: #333;
+  border-left: 1px solid #e5e7eb;
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: #aaa;
+  font-weight: 400;
+}
+
+/* Search Button */
+.searchBtn {
+  padding: 0 1.5rem;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #238172;
+  cursor: pointer;
+}
+
+/* Filter Dropdown */
+.customSelectWrapper {
+  position: relative;
+  flex: 1;
+  margin-right: 20px;
+  font-size: 1rem;
+  user-select: none;
+  max-width: 200px;
+}
+
+.customSelectHeader {
+  padding: 1.2rem 2rem;
+  font-weight: 700;
+  color: #004c3f;
+  background: transparent;
+  border: none;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dropdownIcon {
+  font-size: 0.85rem;
+  margin-left: 0.5rem;
+}
+
+.customSelectOptions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+  overflow: hidden;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.optionItem {
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  color: #004c3f;
+}
+
+.optionItem:hover {
+  background-color: #f1f5f9;
+}
+
+/* Sort Dropdown */
+.sortSelectWrapper {
+  position: relative;
+  width: 140px;
+  height: 50px;
+  font-size: 14px;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sortSelectHeader {
+  padding: 1rem 1.4rem;
+  font-weight: 600;
+  background: #fff;
+  color: #004c3f;
+  border: none;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sortSelectOptions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+  overflow: hidden;
+}
+
+.sortOptionItem {
+  padding: 1rem 1.8rem;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #004c3f;
+  transition: background 0.2s ease;
+}
+
+.sortOptionItem:hover {
+  background-color: #f1f5f9;
+}
+
+.sortdropdownIcon {
+  font-size: 10px;
+  margin-left: 0.5rem;
+}

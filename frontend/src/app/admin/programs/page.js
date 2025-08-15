@@ -77,6 +77,31 @@ export default function ProgramsPage() {
     fetchPrograms();
   }, [fetchPrograms]);
 
+  // Sync URL parameters with state when URL changes
+  useEffect(() => {
+    const urlStatus = searchParams.get('status');
+    const urlSearch = searchParams.get('search');
+    const urlCategory = searchParams.get('category');
+    const urlSort = searchParams.get('sort');
+    const urlShow = searchParams.get('show');
+
+    if (urlStatus) {
+      setStatusFilter(urlStatus);
+    }
+    if (urlSearch !== null) {
+      setSearchQuery(urlSearch);
+    }
+    if (urlCategory) {
+      setCategoryFilter(urlCategory);
+    }
+    if (urlSort) {
+      setSortBy(urlSort);
+    }
+    if (urlShow) {
+      setShowCount(parseInt(urlShow));
+    }
+  }, [searchParams]);
+
 
 
   // Handle program submission for approval

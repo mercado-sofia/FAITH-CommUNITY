@@ -5,7 +5,7 @@ import path from "path";
 import fs from "fs";
 
 // Ensure upload folder exists
-const uploadsDir = path.join(process.cwd(), "uploads", "ids");
+const uploadsDir = path.join(process.cwd(), "uploads", "volunteers", "valid-ids");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }

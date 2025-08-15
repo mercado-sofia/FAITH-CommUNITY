@@ -342,10 +342,13 @@
   overflow-x: auto;
   scroll-behavior: smooth;
   transition: transform 0.4s ease;
+  /* Hide scrollbar for all browsers */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
 }
 
 .orgheadsCards::-webkit-scrollbar {
-  display: none;
+  display: none; /* Chrome, Safari, Opera */
 }
 
 /* Card Wrapper */

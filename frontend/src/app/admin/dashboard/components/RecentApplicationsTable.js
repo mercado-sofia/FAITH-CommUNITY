@@ -104,9 +104,40 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
               </Link>
             </div>
           </div>
-          <div style={{ textAlign: 'center', padding: '2rem' }}>
-            <p>Loading recent applications...</p>
-          </div>
+          <table className={styles.table}>
+            <colgroup>
+              <col style={{ width: '160px' }} />
+              <col style={{ width: '200px' }} />
+              <col style={{ width: '135px' }} />
+              <col style={{ width: '100px' }} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Program</th>
+                <th>Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[1, 2, 3, 4, 5].map((index) => (
+                <tr key={index}>
+                  <td>
+                    <div className={styles.skeletonText} style={{ width: '80%' }}></div>
+                  </td>
+                  <td>
+                    <div className={styles.skeletonText} style={{ width: '90%' }}></div>
+                  </td>
+                  <td>
+                    <div className={styles.skeletonText} style={{ width: '70%' }}></div>
+                  </td>
+                  <td>
+                    <div className={styles.skeletonBadge}></div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     );

@@ -250,7 +250,6 @@ export class ImageCache {
       this.loading.delete(src);
       return src;
     } catch (error) {
-      console.warn('Image cache failed to load:', src, error.message);
       this.loading.delete(src);
       // Return placeholder on error
       const placeholder = '/default.png';

@@ -37,6 +37,12 @@ const nextConfig = {
         port: '3000',
         pathname: '/uploads/**',
       },
+      // Production patterns - add your production domain here
+      {
+        protocol: 'https',
+        hostname: process.env.NEXT_PUBLIC_API_HOSTNAME || 'your-production-domain.com',
+        pathname: '/uploads/**',
+      },
     ],
     formats: ['image/webp', 'image/avif'],
     unoptimized: true, // Allow unoptimized images for local development
@@ -49,6 +55,33 @@ const nextConfig = {
   
   // Enable compression for better performance
   compress: true,
+  
+  // Security headers for production
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'origin-when-cross-origin',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+        ],
+      },
+    ];
+  },
   
   // Reduce bundle size
   modularizeImports: {

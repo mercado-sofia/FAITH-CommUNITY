@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useAdminSubmissions } from '../../../hooks/useAdminData';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
 import SubmissionTable from './components/SubmissionTable';
 import BulkActionsBar from './components/BulkActionsBar';
@@ -17,8 +18,6 @@ export default function SubmissionsPage() {
   const admin = useSelector((state) => state.admin.admin);
   const orgAcronym = admin?.org;
 
-  const [submissions, setSubmissions] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(
     searchParams.get('filter') ? capitalizeFirstLetter(searchParams.get('filter')) : 'All status'
@@ -35,46 +34,36 @@ export default function SubmissionsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
-  const showToast = (message, type = 'success') => {
-    setToast({ show: true, message, type });
-  };
+  // Use SWR hook for submissions data
+  const { submissions, isLoading: loading, error, mutate: refreshSubmissions } = useAdminSubmissions(orgAcronym);
 
-  const hideToast = () => {
+  const showToast = useCallback((message, type = 'success') => {
+    setToast({ show: true, message, type });
+  }, []);
+
+  const hideToast = useCallback(() => {
     setToast({ show: false, message: '', type: 'success' });
-  };
+  }, []);
 
   function capitalizeFirstLetter(str) {
+    if (!str) return '';
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   }
 
-  const fetchSubmissions = useCallback(async () => {
-    if (!orgAcronym) return;
-    
-    try {
-      setLoading(true);
-      const res = await fetch(`${API_BASE_URL}/api/submissions/${orgAcronym}`);
-      const data = await res.json();
-      
-      // Handle different response formats
-      if (data.success && Array.isArray(data.data)) {
-        setSubmissions(data.data);
-      } else if (Array.isArray(data)) {
-        setSubmissions(data);
-      } else {
-        console.error('Unexpected data format:', data);
-        setSubmissions([]);
-      }
-    } catch (err) {
-      console.error('Error fetching submissions:', err);
-      setSubmissions([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [orgAcronym]);
-
+  // Handle error display
   useEffect(() => {
-    fetchSubmissions();
-  }, [fetchSubmissions]);
+    if (error) {
+      console.error('Submissions error:', error);
+      showToast('Failed to load submissions. Please try again.', 'error');
+    }
+  }, [error, showToast]);
+
+  // Handle authentication check
+  useEffect(() => {
+    if (!admin?.org) {
+      showToast('Please log in to view submissions.', 'warning');
+    }
+  }, [admin?.org, showToast]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -99,19 +88,21 @@ export default function SubmissionsPage() {
   }, [router, statusFilter, sortOrder, sectionFilter, showCount]);
 
   const filteredSubmissions = useMemo(() => {
+    if (!Array.isArray(submissions)) return [];
+    
     const filtered = submissions.filter((submission) => {
       const matchesSearch =
-        submission.section.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        submission.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        submission.section?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        submission.status?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         new Date(submission.submitted_at).toLocaleDateString().includes(searchQuery.toLowerCase());
 
       const matchesStatus =
         statusFilter.toLowerCase() === 'all status' ||
-        submission.status.toLowerCase() === statusFilter.toLowerCase();
+        submission.status?.toLowerCase() === statusFilter.toLowerCase();
 
       const matchesSection =
         sectionFilter === 'All Sections' || 
-        submission.section.toLowerCase() === sectionFilter.toLowerCase();
+        submission.section?.toLowerCase() === sectionFilter.toLowerCase();
 
       return matchesSearch && matchesStatus && matchesSection;
     });
@@ -131,34 +122,22 @@ export default function SubmissionsPage() {
   const paginatedSubmissions = filteredSubmissions.slice(startIndex, endIndex);
 
   // Handle page change
-  const handlePageChange = (page) => {
+  const handlePageChange = useCallback((page) => {
     setCurrentPage(page);
     // Optional: Scroll to top of table
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
 
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter, sectionFilter, sortOrder, showCount]);
 
-  // Debug logging
-  console.log('Rendering SubmissionsPage', {
-    currentPage,
-    totalPages,
-    totalItems,
-    showCount,
-    startIndex,
-    endIndex,
-    filteredSubmissionsLength: filteredSubmissions.length,
-    paginatedSubmissionsLength: paginatedSubmissions.length
-  });
-
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
 
   // Bulk actions handlers
-  const handleBulkCancel = async () => {
+  const handleBulkCancel = useCallback(async () => {
     try {
       // Only cancel pending submissions from the selected items
       const pendingIds = Array.from(selectedItems).filter(id => {
@@ -172,10 +151,15 @@ export default function SubmissionsPage() {
       }
       
       const promises = pendingIds.map(id => 
-        fetch(`${API_BASE_URL}/api/submissions/${id}`, { method: 'DELETE' })
+        fetch(`${API_BASE_URL}/api/submissions/${id}`, { 
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          }
+        })
       );
       await Promise.all(promises);
-      fetchSubmissions();
+      refreshSubmissions();
       setSelectedItems(new Set());
       setShowBulkActions(false);
       showToast('Submissions cancelled successfully!', 'success');
@@ -183,16 +167,15 @@ export default function SubmissionsPage() {
       console.error('Bulk cancel error:', err);
       showToast('Failed to cancel some submissions', 'error');
     }
-  };
+  }, [selectedItems, filteredSubmissions, refreshSubmissions, showToast]);
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = useCallback(async () => {
     try {
-      console.log('[DEBUG] Bulk delete - Selected IDs:', Array.from(selectedItems));
-      
       const response = await fetch(`${API_BASE_URL}/api/submissions/bulk-delete`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         },
         body: JSON.stringify({ ids: Array.from(selectedItems) })
       });
@@ -201,7 +184,7 @@ export default function SubmissionsPage() {
         throw new Error(`Failed to delete submissions: ${response.status}`);
       }
       
-      fetchSubmissions();
+      refreshSubmissions();
       setSelectedItems(new Set());
       setShowBulkActions(false);
       showToast('Submissions deleted successfully!', 'success');
@@ -209,7 +192,44 @@ export default function SubmissionsPage() {
       console.error('Bulk delete error:', err);
       showToast(`Failed to delete some submissions: ${err.message}`, 'error');
     }
-  };
+  }, [selectedItems, refreshSubmissions, showToast]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <h1>Submissions</h1>
+        </div>
+        <div style={{ textAlign: 'center', padding: '2rem' }}>
+          <div className="spinner" style={{ 
+            width: 40, 
+            height: 40, 
+            border: "4px solid #f1f5f9", 
+            borderTop: "4px solid #16a085", 
+            borderRadius: "50%", 
+            animation: "spin 1s linear infinite",
+            margin: '0 auto'
+          }} />
+          <p style={{ marginTop: '1rem', color: '#64748b' }}>Loading submissions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error && !admin?.org) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <h1>Submissions</h1>
+        </div>
+        <div style={{ textAlign: 'center', padding: '2rem', color: 'red' }}>
+          <p>Please log in to view submissions.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -249,7 +269,7 @@ export default function SubmissionsPage() {
           orgAcronym={orgAcronym} 
           submissions={filteredSubmissions}
           loading={loading}
-          onRefresh={fetchSubmissions}
+          onRefresh={refreshSubmissions}
           currentPage={currentPage}
           itemsPerPage={showCount}
           onPageChange={handlePageChange}

@@ -109,6 +109,7 @@
   border: none;
   cursor: pointer;
   transition: all 0.3s ease;
+  position: relative;
 } 
 
 /* Specific styles */
@@ -191,6 +192,38 @@
 .navItem.active:hover .dashbIcon {
   background-color: #10c4a6;
   color: white;
+}
+
+/* Loading states */
+.navItem.loading {
+  opacity: 0.7;
+  pointer-events: none;
+  background-color: #142220;
+  color: #15e8c5;
+}
+
+.navItem.loading .icon,
+.navItem.loading .dashbIcon {
+  background-color: #15e8c6;
+  color: white;
+}
+
+.loadingSpinner {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid #15e8c5;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: translateY(-50%) rotate(0deg); }
+  100% { transform: translateY(-50%) rotate(360deg); }
 }
 
 /* Logout Modal */

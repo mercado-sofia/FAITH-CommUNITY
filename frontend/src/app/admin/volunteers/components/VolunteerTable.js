@@ -8,6 +8,18 @@ import PaginationControls from "./PaginationControls"
 import ViewDetailsModal from "./ViewDetailsModal"
 import styles from "./styles/VolunteerTable.module.css"
 
+// Security utilities
+const sanitizeInput = (input) => {
+  if (typeof input !== 'string') return '';
+  return input.trim().replace(/[<>]/g, '').substring(0, 200); // Basic XSS protection + length limit
+};
+
+const validateVolunteerData = (volunteer) => {
+  if (!volunteer || typeof volunteer !== 'object') return false;
+  if (!volunteer.id || !volunteer.name) return false;
+  return true;
+};
+
 export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelete, itemsPerPage = 10 }) {
   const [selectedVolunteer, setSelectedVolunteer] = useState(null)
   const [showDropdown, setShowDropdown] = useState(null)
@@ -73,6 +85,12 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
   }
 
   const handleAction = (volunteer, action) => {
+    // Validate volunteer data before processing
+    if (!validateVolunteerData(volunteer)) {
+      console.error('Invalid volunteer data:', volunteer);
+      return;
+    }
+    
     setSelectedVolunteer(volunteer)
     setModalType(action)
     setShowDropdown(null)
@@ -213,69 +231,83 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
                   No applicants found
                 </td>
               </tr>
-            ) : currentVolunteers.map((volunteer) => (
-              <tr key={volunteer.id}>
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={selectedVolunteers.includes(volunteer.id)}
-                    onChange={() => toggleSelectOne(volunteer.id)}
-                  />
-                </td>
-                <td className={styles.truncatedText} style={{ color: "#2e3136", fontWeight: "500" }}>
-                  {volunteer.name}
-                </td>
-                <td className={styles.truncatedText} style={{ color: "#8a919c", fontWeight: "400" }}>
-                  {volunteer.email}
-                </td>
-                <td className={styles.truncatedText} style={{ color: "#2e3136", fontWeight: "500" }}>
-                  {volunteer.program}
-                </td>
-                <td style={{ color: "#8a919c", fontWeight: "400" }}>{volunteer.date}</td>
-                <td>
-                  <span className={`${styles.statusBadge} ${styles[volunteer.status.toLowerCase()]}`}>
-                    {volunteer.status}
-                  </span>
-                </td>
-                <td>
-                  <div
-                    className={styles.dropdownWrapper}
-                    ref={(el) => (dropdownRefs.current[volunteer.id] = el)}
-                  >
-                    <div className={styles.dropdownButtonWrapper}>
-                      <div
-                        className={styles.dropdown}
-                        onClick={() => handleDropdownToggle(volunteer.id)}
-                      >
-                        <HiOutlineDotsHorizontal className={styles.icon} />
-                      </div>
+            ) : currentVolunteers.map((volunteer) => {
+              // Validate volunteer data before rendering
+              if (!validateVolunteerData(volunteer)) {
+                console.error('Invalid volunteer data:', volunteer);
+                return null;
+              }
 
-                      {showDropdown === volunteer.id && (
-                        <ul className={styles.options}>
-                          <li onClick={() => handleAction(volunteer, "view")}>View Details</li>
-                          {volunteer.status !== "Approved" && (
-                            <li onClick={() => handleAction(volunteer, "approve")}>
-                              Approve
+              // Sanitize data for display
+              const sanitizedName = sanitizeInput(volunteer.name);
+              const sanitizedEmail = sanitizeInput(volunteer.email);
+              const sanitizedProgram = sanitizeInput(volunteer.program);
+              const sanitizedDate = sanitizeInput(volunteer.date);
+
+              return (
+                <tr key={volunteer.id}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedVolunteers.includes(volunteer.id)}
+                      onChange={() => toggleSelectOne(volunteer.id)}
+                    />
+                  </td>
+                  <td className={styles.truncatedText} style={{ color: "#2e3136", fontWeight: "500" }}>
+                    {sanitizedName}
+                  </td>
+                  <td className={styles.truncatedText} style={{ color: "#8a919c", fontWeight: "400" }}>
+                    {sanitizedEmail}
+                  </td>
+                  <td className={styles.truncatedText} style={{ color: "#2e3136", fontWeight: "500" }}>
+                    {sanitizedProgram}
+                  </td>
+                  <td style={{ color: "#8a919c", fontWeight: "400" }}>{sanitizedDate}</td>
+                  <td>
+                    <span className={`${styles.statusBadge} ${styles[volunteer.status.toLowerCase()]}`}>
+                      {volunteer.status}
+                    </span>
+                  </td>
+                  <td>
+                    <div
+                      className={styles.dropdownWrapper}
+                      ref={(el) => (dropdownRefs.current[volunteer.id] = el)}
+                    >
+                      <div className={styles.dropdownButtonWrapper}>
+                        <div
+                          className={styles.dropdown}
+                          onClick={() => handleDropdownToggle(volunteer.id)}
+                        >
+                          <HiOutlineDotsHorizontal className={styles.icon} />
+                        </div>
+
+                        {showDropdown === volunteer.id && (
+                          <ul className={styles.options}>
+                            <li onClick={() => handleAction(volunteer, "view")}>View Details</li>
+                            {volunteer.status !== "Approved" && (
+                              <li onClick={() => handleAction(volunteer, "approve")}>
+                                Approve
+                              </li>
+                            )}
+                            {volunteer.status !== "Declined" && (
+                              <li onClick={() => handleAction(volunteer, "reject")}>
+                                Decline
+                              </li>
+                            )}
+                            <li 
+                              onClick={() => onSoftDelete && onSoftDelete(volunteer.id, sanitizedName)}
+                              style={{ color: '#dc3545', borderTop: '1px solid #eee', marginTop: '4px', paddingTop: '4px' }}
+                            >
+                              Delete
                             </li>
-                          )}
-                          {volunteer.status !== "Declined" && (
-                            <li onClick={() => handleAction(volunteer, "reject")}>
-                              Decline
-                            </li>
-                          )}
-                          <li 
-                            onClick={() => onSoftDelete && onSoftDelete(volunteer.id, volunteer.name)}
-                            style={{ color: '#dc3545', borderTop: '1px solid #eee', marginTop: '4px', paddingTop: '4px' }}
-                          >
-                            Delete
-                          </li>
-                        </ul>
-                      )}
+                          </ul>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -302,7 +334,7 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
           <div className={styles.confirmModal}>
             <h2>{modalType === "approve" ? "Approve" : "Reject"} Application</h2>
             <p>
-              Are you sure you want to {modalType} <strong>{selectedVolunteer.name}</strong>&apos;s application?
+              Are you sure you want to {modalType} <strong>{sanitizeInput(selectedVolunteer.name)}</strong>&apos;s application?
             </p>
             <div className={styles.confirmActions}>
               <button onClick={closeModal}>Cancel</button>

@@ -1,31 +1,29 @@
 'use client';
 
 import { useSelector } from 'react-redux';
+import { useEffect } from 'react';
 import styles from './dashboard.module.css';
 import StatCardSection from './components/StatCardSection';
 import RecentApplicationsTable from './components/RecentApplicationsTable';
-
-import { useGetVolunteersByAdminOrgQuery } from '../../../rtk/admin/volunteersApi';
+import { useDashboardLoadingState } from '../../../hooks/useLoadingState';
+import { useAdminVolunteers } from '../../../hooks/useAdminData';
 import { selectCurrentAdmin, selectIsAuthenticated } from '../../../rtk/superadmin/adminSlice';
 
 export default function AdminDashboard() {
   const currentAdmin = useSelector(selectCurrentAdmin);
   const isAuthenticated = useSelector(selectIsAuthenticated);
 
-  // Fetch volunteers data for the current admin's organization
+  // Use the dashboard loading state hook
+  const { isDashboardReady } = useDashboardLoadingState();
+
+  // Fetch volunteers data for the current admin's organization using SWR
   const { 
-    data: volunteersData = [], 
+    volunteers: volunteersData = [], 
     isLoading: volunteersLoading,
     error: volunteersError
-  } = useGetVolunteersByAdminOrgQuery(currentAdmin?.id, {
-    skip: !isAuthenticated || !currentAdmin?.id,
-    refetchOnMountOrArgChange: true,
-    refetchOnFocus: true,
-    refetchOnReconnect: true
-  });
+  } = useAdminVolunteers(currentAdmin?.id);
 
   // Get recent volunteers (most recent 5)
-  // Create a copy of the array before sorting to avoid mutating immutable RTK Query data
   const recentVolunteers = [...volunteersData]
     .sort((a, b) => {
       // Handle cases where date might be invalid or missing
@@ -40,6 +38,18 @@ export default function AdminDashboard() {
       return dateB - dateA; // Most recent first
     })
     .slice(0, 5);
+
+  // Trigger dashboard ready event when all data is loaded
+  useEffect(() => {
+    if (isDashboardReady) {
+      // Small delay to ensure smooth transition
+      const timer = setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('dashboardReady'));
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isDashboardReady]);
 
   return (
     <div className={styles.mainArea}>

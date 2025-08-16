@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { FaGripVertical, FaFacebook, FaEnvelope, FaCrown, FaUserTie, FaUser } from 'react-icons/fa'
 import { getOrganizationImageUrl } from '@/utils/uploadPaths'
 import styles from './styles/DragDropHeadsContainer.module.css'
-import { getRoleBadgeColor } from './utils/roleHierarchy'
+
 
 export default function DragDropHeadsContainer({ 
   heads, 
@@ -67,8 +67,12 @@ export default function DragDropHeadsContainer({
 
   const getRoleIcon = (role) => {
     const roleStr = role?.toLowerCase() || ''
-    if (roleStr.includes('president')) return <FaCrown className={styles.roleIcon} />
-    if (roleStr.includes('director') || roleStr.includes('manager')) return <FaUserTie className={styles.roleIcon} />
+    if (roleStr.includes('adviser') || roleStr.includes('advisor') || roleStr.includes('president')) {
+      return <FaCrown className={styles.roleIcon} />
+    }
+    if (roleStr.includes('secretary') || roleStr.includes('treasurer') || roleStr.includes('pro') || roleStr.includes('public relations')) {
+      return <FaUserTie className={styles.roleIcon} />
+    }
     return <FaUser className={styles.roleIcon} />
   }
 
@@ -136,7 +140,7 @@ export default function DragDropHeadsContainer({
               </h3>
               <div className={styles.roleContainer}>
                 {getRoleIcon(head.role)}
-                <span className={`${styles.headRole} ${styles[getRoleBadgeColor(head.role)]}`}>
+                <span className={styles.headRole}>
                   {head.role || 'Not specified'}
                 </span>
               </div>

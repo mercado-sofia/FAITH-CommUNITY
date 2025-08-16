@@ -3,7 +3,7 @@ import { FiEdit, FiX, FiTrash2 } from 'react-icons/fi';
 import SubmissionModal from './SubmissionModal';
 import ReEditModal from './ReEditModal';
 import CancelConfirmation from './CancelConfirmationModal';
-import DeleteConfirmation from './DeleteConfirmationModal';
+import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import ToastModal from './ToastModal';
 import styles from './styles/SubmissionTable.module.css';
 
@@ -74,7 +74,6 @@ export default function SubmissionTable({
       setConfirmId(null);
       showToast('Submission cancelled successfully!', 'success');
     } catch (err) {
-      console.error('Cancel error:', err);
       showToast(`Failed to cancel submission: ${err.message}`, 'error');
     }
   };
@@ -334,7 +333,16 @@ export default function SubmissionTable({
         />
       )}
       {confirmId && <CancelConfirmation onConfirm={() => handleCancel(confirmId)} onCancel={() => setConfirmId(null)} />}
-      {deleteId && <DeleteConfirmation onConfirm={() => handleDelete(deleteId)} onCancel={() => setDeleteId(null)} />}
+      {deleteId && (
+        <DeleteConfirmationModal
+          isOpen={!!deleteId}
+          itemName="this submission"
+          itemType="submission"
+          onConfirm={() => handleDelete(deleteId)}
+          onCancel={() => setDeleteId(null)}
+          isDeleting={false}
+        />
+      )}
       
       <ToastModal
         message={toast.message}

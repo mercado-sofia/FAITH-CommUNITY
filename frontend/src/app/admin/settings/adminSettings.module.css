@@ -299,11 +299,10 @@
 }
 
 .helperText {
-  font-size: 13px;
+  font-size: 12px;
   color: #6b7280;
   font-style: italic;
   font-family: var(--font-poppins), sans-serif;
-  margin-top: 0.25rem;
 }
 
 /* Status Badge */

@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { initializeAuth } from "../../rtk/superadmin/adminSlice";
+import { NavigationProvider } from "../../contexts/NavigationContext";
 import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
+import ErrorBoundary from "../../components/ErrorBoundary";
+import Loader from "../../components/Loader";
 import styles from "./dashboard/dashboard.module.css";
 import scrollStyles from "./components/CustomScrollbar.module.css";
 import { Poppins, Inter, Urbanist } from 'next/font/google';
@@ -32,6 +35,7 @@ export default function AdminLayout({ children }) {
   const dispatch = useDispatch();
   const router = useRouter();
   const [isAuthChecked, setIsAuthChecked] = useState(false);
+  const [isDashboardReady, setIsDashboardReady] = useState(false);
 
   useEffect(() => {
     dispatch(initializeAuth());
@@ -47,23 +51,54 @@ export default function AdminLayout({ children }) {
     }
   }, [dispatch, router]);
 
-  if (!isAuthChecked) {
+  // Listen for dashboard ready event
+  useEffect(() => {
+    const handleDashboardReady = () => {
+      setIsDashboardReady(true);
+    };
+
+    // Check if we're on the dashboard page
+    const isDashboardPage = window.location.pathname === '/admin' || window.location.pathname === '/admin/dashboard';
+    
+    if (isDashboardPage) {
+      // Listen for dashboard ready event
+      window.addEventListener('dashboardReady', handleDashboardReady);
+      
+      // Fallback: if no event is fired within 3 seconds, mark as ready
+      const fallbackTimer = setTimeout(() => {
+        setIsDashboardReady(true);
+      }, 3000);
+      
+      return () => {
+        window.removeEventListener('dashboardReady', handleDashboardReady);
+        clearTimeout(fallbackTimer);
+      };
+    } else {
+      // For non-dashboard pages, mark as ready immediately
+      setIsDashboardReady(true);
+    }
+  }, []);
+
+  // Show loader while auth is being checked or dashboard is loading
+  if (!isAuthChecked || !isDashboardReady) {
     return (
-      <div className={styles.mainContent}>
-        <div style={{ padding: "2rem", textAlign: "center" }}>
-          <p>Checking admin access...</p>
-        </div>
+      <div className={`${poppins.variable} ${inter.variable} ${urbanist.variable}`}>
+        <Loader />
       </div>
     );
   }
 
   return (
-    <div className={`${poppins.variable} ${inter.variable} ${urbanist.variable}`}>
-      <Sidebar />
-      <TopBar />
-      <main className={`${styles.mainContent} ${scrollStyles.adminScrollContainer} ${poppins.className}`}>
-        {children}
-      </main>
-    </div>
+    <NavigationProvider>
+      <div className={`${poppins.variable} ${inter.variable} ${urbanist.variable}`}>
+        <Sidebar />
+        <TopBar />
+        <main className={`${styles.mainContent} ${scrollStyles.adminScrollContainer} ${poppins.className}`}>
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
+        </main>
+      </div>
+    </NavigationProvider>
   );
 }

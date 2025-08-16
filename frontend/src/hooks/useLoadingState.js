@@ -1,92 +1,92 @@
 import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { selectCurrentAdmin } from '../rtk/superadmin/adminSlice';
+import { useAdminVolunteers, useAdminPrograms } from './useAdminData';
 
 /**
- * Custom hook for managing loading states with minimum display time
- * @param {number} minDisplayTime - Minimum time in ms to show loading state (default: 500ms)
- * @returns {object} - { isLoading, startLoading, stopLoading }
+ * Custom hook for managing loading states with intersection observer
  */
-export const useLoadingState = (minDisplayTime = 500) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [startTime, setStartTime] = useState(null);
+export const useOptimizedLoading = (isLoading, containerRef) => {
+  const [shouldShowLoader, setShouldShowLoader] = useState(true);
 
-  const startLoading = () => {
-    setIsLoading(true);
-    setStartTime(Date.now());
-  };
-
-  const stopLoading = () => {
-    const elapsed = Date.now() - startTime;
-    const remaining = Math.max(0, minDisplayTime - elapsed);
-
-    if (remaining > 0) {
-      setTimeout(() => {
-        setIsLoading(false);
-      }, remaining);
-    } else {
-      setIsLoading(false);
-    }
-  };
-
-  return { isLoading, startLoading, stopLoading };
-};
-
-/**
- * Hook for managing multiple loading states simultaneously
- * @param {string[]} keys - Array of loading state keys
- * @param {number} minDisplayTime - Minimum display time for each state
- * @returns {object} - { loadingStates, startLoading, stopLoading, isAnyLoading }
- */
-export const useMultiLoadingState = (keys = [], minDisplayTime = 500) => {
-  const [loadingStates, setLoadingStates] = useState({});
-  const [startTimes, setStartTimes] = useState({});
-
-  const startLoading = (key) => {
-    setLoadingStates(prev => ({ ...prev, [key]: true }));
-    setStartTimes(prev => ({ ...prev, [key]: Date.now() }));
-  };
-
-  const stopLoading = (key) => {
-    const startTime = startTimes[key];
-    if (startTime) {
-      const elapsed = Date.now() - startTime;
-      const remaining = Math.max(0, minDisplayTime - elapsed);
-
-      if (remaining > 0) {
-        setTimeout(() => {
-          setLoadingStates(prev => ({ ...prev, [key]: false }));
-        }, remaining);
-      } else {
-        setLoadingStates(prev => ({ ...prev, [key]: false }));
-      }
-    }
-  };
-
-  const isAnyLoading = Object.values(loadingStates).some(Boolean);
-
-  return { loadingStates, startLoading, stopLoading, isAnyLoading };
-};
-
-/**
- * Hook to prevent layout shifts during loading
- * @param {boolean} isLoading - Current loading state
- * @param {React.RefObject} containerRef - Reference to the container element
- * @returns {void}
- */
-export const usePreventLayoutShift = (isLoading, containerRef) => {
   useEffect(() => {
-    if (containerRef.current && isLoading) {
-      const container = containerRef.current;
-      const originalHeight = container.style.height;
-      const currentHeight = container.offsetHeight;
-      
-      // Set minimum height to prevent collapse
-      if (currentHeight > 0) {
-        container.style.minHeight = `${currentHeight}px`;
-      }
-
-      return () => {
-        container.style.minHeight = originalHeight;
-      };
+    if (!containerRef.current || isLoading) {
+      setShouldShowLoader(true);
+      return;
     }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldShowLoader(false);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(containerRef.current);
+
+    return () => {
+      if (containerRef.current) {
+        observer.unobserve(containerRef.current);
+      }
+    };
   }, [isLoading, containerRef]);
+};
+
+/**
+ * Hook to manage dashboard loading state and signal when ready
+ */
+export const useDashboardLoadingState = () => {
+  const currentAdmin = useSelector(selectCurrentAdmin);
+  const [isDashboardReady, setIsDashboardReady] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+
+  // Fetch all required data
+  const { 
+    volunteers: volunteersData = [], 
+    isLoading: volunteersLoading,
+    error: volunteersError
+  } = useAdminVolunteers(currentAdmin?.id);
+
+  const { 
+    programs: programsData = [], 
+    isLoading: programsLoading,
+    error: programsError
+  } = useAdminPrograms(currentAdmin?.org);
+
+  // Calculate loading progress
+  useEffect(() => {
+    const totalDataSources = 2; // volunteers and programs
+    let loadedSources = 0;
+
+    if (!volunteersLoading) loadedSources++;
+    if (!programsLoading) loadedSources++;
+
+    const progress = (loadedSources / totalDataSources) * 100;
+    setLoadingProgress(progress);
+  }, [volunteersLoading, programsLoading]);
+
+  // Check if dashboard is ready
+  useEffect(() => {
+    if (!volunteersLoading && !programsLoading && currentAdmin && loadingProgress === 100) {
+      // Add a small delay to ensure smooth transition
+      const timer = setTimeout(() => {
+        setIsDashboardReady(true);
+        // Signal to parent components that dashboard is ready
+        window.dispatchEvent(new CustomEvent('dashboardReady'));
+      }, 300);
+
+      return () => clearTimeout(timer);
+    }
+  }, [volunteersLoading, programsLoading, currentAdmin, loadingProgress]);
+
+  return {
+    isDashboardReady,
+    loadingProgress,
+    isLoading: !isDashboardReady,
+    volunteersLoading,
+    programsLoading,
+    hasErrors: volunteersError || programsError
+  };
 };

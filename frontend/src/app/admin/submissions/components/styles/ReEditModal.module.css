@@ -209,7 +209,7 @@
 
 .formInput:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: #06100f;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -221,7 +221,7 @@
   border-radius: 6px;
   font-size: 0.875rem;
   font-family: inherit;
-  resize: vertical;
+  resize: none;
   transition: all 0.15s ease;
   background-color: #ffffff;
   line-height: 1.5;
@@ -229,8 +229,8 @@
 
 .formTextarea:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #06100f;
+  box-shadow: 0 0 0 3px rgba(59, 237, 246, 0.1);
 }
 
 /* Actions */
@@ -266,9 +266,9 @@
 }
 
 .saveButton {
-  background-color: #3b82f6;
+  background-color: #06100f;
   color: #ffffff;
-  border: 1px solid #3b82f6;
+  border: 1px solid #06100f;
   padding: 10px 16px;
   border-radius: 6px;
   font-size: 0.875rem;
@@ -281,8 +281,8 @@
 }
 
 .saveButton:hover:not(:disabled) {
-  background-color: #2563eb;
-  border-color: #2563eb;
+  background-color: rgb(4, 9, 9);
+  border-color: rgb(4, 9, 9);
 }
 
 .saveButton:disabled {

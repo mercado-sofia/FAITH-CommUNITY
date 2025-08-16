@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { FaPlus, FaCamera, FaTimes, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa'
 import { FiTrash2, FiImage } from 'react-icons/fi'
@@ -8,6 +8,7 @@ import { getOrganizationImageUrl } from '@/utils/uploadPaths'
 import styles from './styles/OrgHeadsEditModal.module.css'
 import { PhotoUtils } from './utils/photoUtils'
 import LazyImage from './LazyImage'
+import { sortHeadsByOrder, ROLE_OPTIONS } from './utils/roleHierarchy'
 
 export default function OrgHeadsEditModal({
   isOpen,
@@ -16,46 +17,49 @@ export default function OrgHeadsEditModal({
   handleSave,
   handleCancel,
   saving,
-  originalData
+  originalData,
+  isIndividualEdit = false
 }) {
-  const [localHeads, setLocalHeads] = useState(orgHeadsData || [])
+  const [localHeads, setLocalHeads] = useState([])
   const [uploading, setUploading] = useState({})
   const [uploadProgress, setUploadProgress] = useState({})
   const [validationErrors, setValidationErrors] = useState({})
   const [fieldErrors, setFieldErrors] = useState({})
+  
+  // Use ref to track previous data and prevent infinite loops
+  const prevOrgHeadsDataRef = useRef(null)
+  const isInitializedRef = useRef(false)
 
-  // Update localHeads when orgHeadsData changes (e.g., after reordering)
+  // Simple initialization when modal opens
   useEffect(() => {
-    if (orgHeadsData) {
-      setLocalHeads(orgHeadsData)
+    if (isOpen && orgHeadsData && !isInitializedRef.current) {
+      const sortedHeads = sortHeadsByOrder(orgHeadsData);
+      setLocalHeads(sortedHeads);
+      isInitializedRef.current = true;
+    } else if (!isOpen) {
+      setLocalHeads([]);
+      setFieldErrors({});
+      isInitializedRef.current = false;
     }
-  }, [orgHeadsData])
-
-  // Reset localHeads when modal opens with new data
-  useEffect(() => {
-    if (isOpen && orgHeadsData) {
-      setLocalHeads(orgHeadsData)
-    }
-  }, [isOpen, orgHeadsData])
-
-  // Clear field errors when modal closes
-  useEffect(() => {
-    if (!isOpen) {
-      setFieldErrors({})
-    }
-  }, [isOpen])
+  }, [isOpen, orgHeadsData]) // Include both isOpen and orgHeadsData as dependencies
 
   // Check if any changes have been made
   const hasChanges = () => {
-    if (!originalData || !localHeads) return false;
+    if (!originalData || !localHeads) {
+      return false;
+    }
     
     // Check if the number of heads has changed
-    if (originalData.length !== localHeads.length) return true;
+    if (originalData.length !== localHeads.length) {
+      return true;
+    }
     
     // Check if any head data has changed
     return localHeads.some((head, index) => {
       const originalHead = originalData[index];
-      if (!originalHead) return true; // New head added
+      if (!originalHead) {
+        return true; // New head added
+      }
       
       return (
         head.head_name !== originalHead.head_name ||
@@ -91,7 +95,8 @@ export default function OrgHeadsEditModal({
       role: '',
       photo: '',
       facebook: '',
-      email: ''
+      email: '',
+      display_order: localHeads.length + 1 // Set the next order number
     }
     const updatedHeads = [...localHeads, newHead]
     setLocalHeads(updatedHeads)
@@ -102,7 +107,14 @@ export default function OrgHeadsEditModal({
 
   const handleRemoveHead = (index) => {
     const updatedHeads = localHeads.filter((_, i) => i !== index)
-    setLocalHeads(updatedHeads)
+    
+    // Update display_order for remaining heads to maintain sequential order
+    const reorderedHeads = updatedHeads.map((head, newIndex) => ({
+      ...head,
+      display_order: newIndex + 1
+    }));
+    
+    setLocalHeads(reorderedHeads)
     
     // Clear field errors for removed head and reindex remaining errors
     setFieldErrors(prev => {
@@ -127,25 +139,16 @@ export default function OrgHeadsEditModal({
   const handleFileUpload = async (index, e) => {
     const file = e.target.files[0]
     if (!file) {
-      console.log('No file selected');
       return
     }
-
-    console.log('File selected:', {
-      name: file.name,
-      size: file.size,
-      type: file.type
-    });
 
     // Clear previous errors
     setValidationErrors(prev => ({ ...prev, [index]: null }))
 
     // Validate image
     const validation = PhotoUtils.validateImage(file)
-    console.log('Validation result:', validation);
     
     if (!validation.isValid) {
-      console.log('Validation failed:', validation.errors);
       setValidationErrors(prev => ({ 
         ...prev, 
         [index]: { errors: validation.errors, warnings: validation.warnings }
@@ -165,13 +168,8 @@ export default function OrgHeadsEditModal({
     setUploadProgress(prev => ({ ...prev, [index]: 0 }))
 
     try {
-      // Get original image dimensions for info
-      const dimensions = await PhotoUtils.getImageDimensions(file)
-      console.log('Original image dimensions:', dimensions)
-
       // Compress image for better performance
       setUploadProgress(prev => ({ ...prev, [index]: 20 }))
-      console.log('Starting image compression...');
       
       const compressedFile = await PhotoUtils.compressImage(file, {
         maxWidth: 400,
@@ -179,18 +177,10 @@ export default function OrgHeadsEditModal({
         quality: 0.85
       })
 
-      console.log('File compressed:', {
-        original: `${(file.size / 1024).toFixed(1)}KB`,
-        compressed: `${(compressedFile.size / 1024).toFixed(1)}KB`,
-        reduction: `${(((file.size - compressedFile.size) / file.size) * 100).toFixed(1)}%`
-      })
-
       // Generate thumbnail for immediate preview
       setUploadProgress(prev => ({ ...prev, [index]: 40 }))
-      console.log('Generating thumbnail...');
       
       const thumbnail = await PhotoUtils.generateThumbnail(compressedFile)
-      console.log('Thumbnail generated, length:', thumbnail.length);
       
       // Set thumbnail immediately for better UX
       handleInputChange(index, 'photo', thumbnail)
@@ -201,51 +191,36 @@ export default function OrgHeadsEditModal({
       formData.append('file', compressedFile)
       formData.append('uploadType', 'organization-head')
 
-      console.log('Uploading file:', {
-        filename: compressedFile.name,
-        size: compressedFile.size,
-        type: compressedFile.type,
-        uploadType: 'organization-head'
-      })
-
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/upload`, {
         method: 'POST',
         body: formData,
       })
 
-      console.log('Upload response status:', response.status)
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('Upload failed:', errorText)
         throw new Error(`Upload failed: ${response.status} ${response.statusText}`)
       }
 
       setUploadProgress(prev => ({ ...prev, [index]: 80 }))
       const result = await response.json()
-      console.log('Upload result:', result);
 
-             if (result.success) {
-         // Use the full URL from backend, or construct it from filename
-         const photoPath = result.url || (result.filePath ? `/uploads/organizations/heads/${result.filePath}` : null)
-         console.log('Photo path:', photoPath);
-         
-         setUploadProgress(prev => ({ ...prev, [index]: 100 }))
-         
-         // Replace thumbnail with actual uploaded image
-         handleInputChange(index, 'photo', photoPath)
+      if (result.success) {
+        // Use the full URL from backend, or construct it from filename
+        const photoPath = result.url || (result.filePath ? `/uploads/organizations/heads/${result.filePath}` : null)
+        
+        setUploadProgress(prev => ({ ...prev, [index]: 100 }))
+        
+        // Replace thumbnail with actual uploaded image
+        handleInputChange(index, 'photo', photoPath)
         
         // Show success state briefly
         setTimeout(() => {
           setUploadProgress(prev => ({ ...prev, [index]: null }))
         }, 1000)
-        
-        console.log('Upload successful:', photoPath)
       } else {
-        console.error('Upload failed:', result);
         throw new Error(result.message || result.error || 'Upload failed')
       }
     } catch (error) {
-      console.error('Upload error:', error)
       setValidationErrors(prev => ({ 
         ...prev, 
         [index]: { 
@@ -304,11 +279,34 @@ export default function OrgHeadsEditModal({
   }
 
   const handleSaveClick = () => {
+    // Check if we're already saving
+    if (saving) {
+      return;
+    }
+    
+    // Check if handleSave function exists
+    if (typeof handleSave !== 'function') {
+      return;
+    }
+    
     if (validateForm()) {
-      // Update the main state with local changes before saving
-      setOrgHeadsData([...localHeads])
-      // Pass the current local data to the save function to ensure it has the latest data
-      handleSave(localHeads)
+      try {
+        // Ensure all heads have proper display_order before saving
+        const headsWithOrder = localHeads.map((head, index) => ({
+          ...head,
+          display_order: index + 1
+        }));
+        
+        // Update the main state with local changes before saving
+        if (typeof setOrgHeadsData === 'function') {
+          setOrgHeadsData([...headsWithOrder]);
+        }
+        
+        // Pass the current local data to the save function
+        handleSave(headsWithOrder);
+      } catch (error) {
+        // Handle error silently
+      }
     } else {
       // Scroll to the first error field
       const firstErrorField = document.querySelector(`.${styles.inputError}`)
@@ -322,11 +320,13 @@ export default function OrgHeadsEditModal({
     }
   }
 
-  return (
+    return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
         <div className={styles.header}>
-          <h2 className={styles.title}>Edit Organization Heads</h2>
+          <h2 className={styles.title}>
+            {isIndividualEdit ? 'Edit Organization Head' : 'Edit Organization Heads'}
+          </h2>
           <button
             onClick={handleCancel}
             className={styles.closeButton}
@@ -337,7 +337,7 @@ export default function OrgHeadsEditModal({
         </div>
 
         <div className={styles.content}>
-          {localHeads.length === 0 ? (
+          {localHeads.length === 0 && !isIndividualEdit ? (
             <div className={styles.emptyState}>
               <p>No organization heads added yet.</p>
               <button
@@ -353,15 +353,19 @@ export default function OrgHeadsEditModal({
               {localHeads.map((head, index) => (
                 <div key={index} className={styles.headForm}>
                   <div className={styles.formHeader}>
-                    <h3 className={styles.headTitle}>Head #{index + 1}</h3>
-                    <button
-                      onClick={() => handleRemoveHead(index)}
-                      className={styles.removeButton}
-                      disabled={saving}
-                      title="Remove this head"
-                    >
-                                              <FiTrash2 />
-                    </button>
+                    <h3 className={styles.headTitle}>
+                      {isIndividualEdit ? 'Organization Head' : `Head #${index + 1}`}
+                    </h3>
+                    {!isIndividualEdit && (
+                      <button
+                        onClick={() => handleRemoveHead(index)}
+                        className={styles.removeButton}
+                        disabled={saving}
+                        title="Remove this head"
+                      >
+                        <FiTrash2 />
+                      </button>
+                    )}
                   </div>
 
                   <div className={styles.formLayout}>
@@ -465,15 +469,20 @@ export default function OrgHeadsEditModal({
 
                         <div className={`${styles.formGroup} ${fieldErrors[`${index}-role`] ? styles.formGroupError : ''}`}>
                           <label className={styles.label}>Role *</label>
-                          <input
-                            type="text"
+                          <select
                             value={head.role || ''}
                             onChange={(e) => handleInputChange(index, 'role', e.target.value)}
                             className={`${styles.input} ${fieldErrors[`${index}-role`] ? styles.inputError : ''}`}
-                            placeholder="e.g., President, Vice President, Secretary"
                             disabled={saving}
                             required
-                          />
+                          >
+                            <option value="">Select a role</option>
+                            {ROLE_OPTIONS.map((role) => (
+                              <option key={role.value} value={role.value}>
+                                {role.label}
+                              </option>
+                            ))}
+                          </select>
                           {fieldErrors[`${index}-role`] && (
                             <div className={styles.fieldError}>
                               {fieldErrors[`${index}-role`]}
@@ -526,7 +535,7 @@ export default function OrgHeadsEditModal({
             </div>
           )}
 
-          {localHeads.length > 0 && (
+          {localHeads.length > 0 && !isIndividualEdit && (
             <div className={styles.addMoreSection}>
               <button
                 onClick={handleAddHead}
@@ -551,11 +560,12 @@ export default function OrgHeadsEditModal({
             onClick={handleSaveClick}
             className={styles.saveButton}
             disabled={saving || !hasChanges()}
+            title={saving ? 'Saving...' : !hasChanges() ? 'No changes detected' : 'Save changes'}
           >
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </div>
     </div>
-  )
+  );
 }

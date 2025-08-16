@@ -30,11 +30,14 @@
   border-radius: 8px;
   width: 100%;
   max-width: 600px;
-  max-height: 50vh;
+  max-height: 90vh;
+  min-height: 300px;
   overflow: hidden;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   position: relative;
   animation: slideIn 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes slideIn {
@@ -61,7 +64,7 @@
 .modalTitle {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #1f2937;
+  color: #06100f;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
@@ -94,8 +97,10 @@
 
 /* Modal Content */
 .modalContent {
-  max-height: calc(50vh - 80px);
+  flex: 1;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Modal Message */
@@ -140,6 +145,9 @@
 /* Main Content */
 .mainContent {
   padding: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Form Section */
@@ -169,8 +177,9 @@
   transition: all 0.2s ease;
   background: #ffffff;
   resize: none;
-  min-height: 40px;
-  max-height: 125px;
+  min-height: 145px;
+  max-height: 400px;
+  overflow-y: auto;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.4;
 }
@@ -191,6 +200,7 @@
   justify-content: flex-end;
   gap: 12px;
   margin-top: 20px;
+  flex-shrink: 0;
 }
 
 .cancelButton {
@@ -273,11 +283,14 @@
   }
   
   .modalContent {
-    height: auto;
-    max-height: calc(100vh - 100px);
+    flex: 1;
   }
   
   .mainContent {
     padding: 16px;
+  }
+  
+  .textarea {
+    max-height: 300px;
   }
 }

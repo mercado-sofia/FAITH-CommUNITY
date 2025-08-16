@@ -84,7 +84,7 @@ export default function EditModal({
     <div className={styles.modalOverlay}>
       <div className={styles.modalContainer}>
         <div className={styles.modalHeader}>
-          <h2 className={styles.modalTitle}>Account Details</h2>
+          <h2 className={styles.modalTitle}>Organization Details</h2>
           <button 
             className={styles.closeButton}
             onClick={handleCancel}

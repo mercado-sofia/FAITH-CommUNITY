@@ -9,14 +9,15 @@ import {
   deleteNewsSubmission,
   updateNews
 } from '../controllers/newsController.js';
+import { verifyAdminToken } from '../../superadmin/controllers/adminController.js';
 
 const router = express.Router();
 
-// Admin routes
-router.post('/admin/news/:orgId', createNews);
-router.get('/admin/news/:orgId', getNewsByOrg);
-router.put('/admin/news/:id', updateNews);
-router.delete('/admin/news/:id', deleteNewsSubmission);
+// Admin routes (protected with authentication)
+router.post('/admin/news/:orgId', verifyAdminToken, createNews);
+router.get('/admin/news/:orgId', verifyAdminToken, getNewsByOrg);
+router.put('/admin/news/:id', verifyAdminToken, updateNews);
+router.delete('/admin/news/:id', verifyAdminToken, deleteNewsSubmission);
 
 // Public routes
 router.get('/news', getApprovedNews);

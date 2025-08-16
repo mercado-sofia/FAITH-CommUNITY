@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import styles from './styles/SectionEditModal.module.css'
 
 export default function SectionEditModal({
@@ -14,6 +14,8 @@ export default function SectionEditModal({
   saving,
   originalData
 }) {
+  const advocacyTextareaRef = useRef(null)
+  const competencyTextareaRef = useRef(null)
   // Lock body scroll when modal is open to prevent background shifting
   useEffect(() => {
     if (isOpen) {
@@ -41,6 +43,26 @@ export default function SectionEditModal({
     }
   }, [isOpen]);
 
+  // Auto-resize textarea function
+  const autoResizeTextarea = (textarea) => {
+    if (textarea) {
+      textarea.style.height = 'auto'
+      textarea.style.height = Math.min(textarea.scrollHeight, 400) + 'px'
+    }
+  }
+
+  // Auto-resize textareas when content changes
+  useEffect(() => {
+    if (isOpen) {
+      if (currentSection === 'advocacy' && advocacyTextareaRef.current) {
+        autoResizeTextarea(advocacyTextareaRef.current)
+      }
+      if (currentSection === 'competency' && competencyTextareaRef.current) {
+        autoResizeTextarea(competencyTextareaRef.current)
+      }
+    }
+  }, [isOpen, currentSection, advocacyData.advocacy, competencyData.competency])
+
   // Check if any changes have been made
   const hasChanges = () => {
     if (!originalData) return false;
@@ -66,12 +88,13 @@ export default function SectionEditModal({
       <div className={styles.formGroup}>
         <label className={styles.label}>Advocacy Information:</label>
         <textarea
+          ref={advocacyTextareaRef}
           name="advocacy"
           value={advocacyData.advocacy}
           onChange={handleInputChange}
           className={styles.textarea}
           placeholder="Enter your organization's advocacy information, mission, vision, goals, programs, and initiatives..."
-          rows={6}
+          onInput={(e) => autoResizeTextarea(e.target)}
         />
       </div>
     </div>
@@ -82,12 +105,13 @@ export default function SectionEditModal({
       <div className={styles.formGroup}>
         <label className={styles.label}>Competency Information:</label>
         <textarea
+          ref={competencyTextareaRef}
           name="competency"
           value={competencyData.competency}
           onChange={handleInputChange}
           className={styles.textarea}
           placeholder="Enter your organization's competencies, expertise areas, certifications, partnerships, resources, and achievements..."
-          rows={6}
+          onInput={(e) => autoResizeTextarea(e.target)}
         />
       </div>
     </div>

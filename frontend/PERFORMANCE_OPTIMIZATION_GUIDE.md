@@ -145,8 +145,8 @@ const nextConfig = {
 
 ### Monitoring Tools
 ```javascript
-// Performance monitoring utility
-import performanceMonitor from '../utils/performanceMonitor';
+// Performance monitoring utility (development only)
+import performanceMonitor from '../src/utils/performanceMonitor';
 
 // Track page loads
 performanceMonitor.startPageLoadTimer('about-page');

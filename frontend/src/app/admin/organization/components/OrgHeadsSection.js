@@ -5,20 +5,21 @@ import Image from 'next/image'
 import { FaEdit, FaPlus, FaFacebook, FaEnvelope, FaSearch, FaTimes, FaCrown, FaUserTie, FaUser, FaGripVertical } from 'react-icons/fa'
 import { FaListUl } from 'react-icons/fa6'
 import { BsFillGrid3X3GapFill } from 'react-icons/bs'
+import { FiTrash2 } from 'react-icons/fi'
 import { getOrganizationImageUrl } from '@/utils/uploadPaths'
 import styles from './styles/OrgHeadsSection.module.css'
-import { sortHeadsByOrder, filterHeads, getRoleBadgeColor } from './utils/roleHierarchy'
+import { sortHeadsByOrder, filterHeads } from './utils/roleHierarchy'
 import DragDropHeadsContainer from './DragDropHeadsContainer'
 
 export default function OrgHeadsSection({
   orgHeadsData,
-  setOrgHeadsData,
-  setIsEditing,
-  setShowEditModal,
-  setOriginalData,
-  setCurrentSection,
-  setTempEditData
+  onEditIndividualHead,
+  onDeleteIndividualHead,
+  onAddOrgHead,
+  onReorderHeads,
+  saving = false
 }) {
+
   const [searchQuery, setSearchQuery] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [isDragMode, setIsDragMode] = useState(false)
@@ -30,22 +31,26 @@ export default function OrgHeadsSection({
   useEffect(() => {
     // Only clear if the data length changes (indicating a fresh fetch)
     if (localReorderedData && localReorderedData.length !== orgHeadsData.length) {
-      console.log('Clearing localReorderedData due to data length change')
       setLocalReorderedData(null)
     }
-  }, [orgHeadsData.length]) // Only depend on the length, not the full array
+  }, [orgHeadsData.length, localReorderedData]) // Include localReorderedData in dependencies
   
-  const handleEditClick = () => {
-    // Always use the processed heads (which are already sorted by display_order)
-    console.log('📝 Opening edit modal with processed heads:', processedHeads?.map(h => ({ name: h.head_name, order: h.display_order })))
-    console.log('📝 Current localReorderedData:', localReorderedData?.map(h => ({ name: h.head_name, order: h.display_order })))
-    console.log('📝 Current orgHeadsData:', orgHeadsData?.map(h => ({ name: h.head_name, order: h.display_order })))
-    
-    setOriginalData([...processedHeads])
-    setCurrentSection('orgHeads')
-    setTempEditData({ orgHeads: [...processedHeads] })
-    setIsEditing(true)
-    setShowEditModal(true)
+  const handleAddHeadsClick = () => {
+    if (onAddOrgHead) {
+      onAddOrgHead();
+    }
+  }
+
+  const handleEditIndividualHead = (head) => {
+    if (onEditIndividualHead) {
+      onEditIndividualHead(head);
+    }
+  }
+
+  const handleDeleteIndividualHead = (head) => {
+    if (onDeleteIndividualHead) {
+      onDeleteIndividualHead(head);
+    }
   }
 
   // Process and sort heads data
@@ -62,12 +67,7 @@ export default function OrgHeadsSection({
     return filterHeads(sortedHeads, searchQuery)
   }, [orgHeadsData, localReorderedData, searchQuery])
 
-  // Debug logging
-  console.log('OrgHeadsSection render:', {
-    orgHeadsData: orgHeadsData?.map(h => ({ name: h.head_name, order: h.display_order })),
-    localReorderedData: localReorderedData?.map(h => ({ name: h.head_name, order: h.display_order })),
-    processedHeads: processedHeads?.map(h => ({ name: h.head_name, order: h.display_order }))
-  })
+
 
   const handleSearchInputChange = (e) => {
     setSearchInput(e.target.value)
@@ -93,8 +93,12 @@ export default function OrgHeadsSection({
 
   const getRoleIcon = (role) => {
     const roleStr = role?.toLowerCase() || ''
-    if (roleStr.includes('president')) return <FaCrown className={styles.roleIcon} />
-    if (roleStr.includes('director') || roleStr.includes('manager')) return <FaUserTie className={styles.roleIcon} />
+    if (roleStr.includes('adviser') || roleStr.includes('advisor') || roleStr.includes('president')) {
+      return <FaCrown className={styles.roleIcon} />
+    }
+    if (roleStr.includes('secretary') || roleStr.includes('treasurer') || roleStr.includes('pro') || roleStr.includes('public relations')) {
+      return <FaUserTie className={styles.roleIcon} />
+    }
     return <FaUser className={styles.roleIcon} />
   }
 
@@ -105,39 +109,18 @@ export default function OrgHeadsSection({
         display_order: index + 1
       }))
       
-      console.log('🔄 Setting reordered data:', headsWithOrder.map(h => ({ name: h.head_name, order: h.display_order })))
-      
+      // Update local state immediately for UI feedback
       setLocalReorderedData(headsWithOrder)
-      // Update parent component's data to reflect the new order
-      setOrgHeadsData(headsWithOrder)
       
-      console.log('✅ Reordered heads with display_order:', headsWithOrder)
-    
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-    const response = await fetch(`${API_BASE_URL}/api/heads/reorder`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ heads: headsWithOrder })
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to save reorder changes')
-    }
-    
-    console.log('✅ Heads reorder saved to database')
-    
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const orgId = headsWithOrder[0]?.organization_id;
-      if (orgId) {
-        console.log('🔄 Clearing SWR cache for organization data');
+      // Call parent's reorder handler if provided
+      if (onReorderHeads) {
+        await onReorderHeads(headsWithOrder)
       }
-    }
       
     } catch (error) {
       console.error('Failed to reorder heads:', error)
+      // Revert local state on error
       setLocalReorderedData(null)
-      // Revert parent data on error
-      setOrgHeadsData(orgHeadsData)
     }
   }
 
@@ -191,11 +174,11 @@ export default function OrgHeadsSection({
           )}
           
           <button
-            onClick={handleEditClick}
-            className={styles.editIcon}
-            title="Edit Organization Heads"
+            onClick={handleAddHeadsClick}
+            className={styles.addButton}
+            title="Add Organization Heads"
           >
-            <FaEdit />
+            <FaPlus /> Add Org Heads
           </button>
         </div>
       </div>
@@ -250,6 +233,28 @@ export default function OrgHeadsSection({
           ) : (
             processedHeads.map((head, index) => (
               <div key={head.id || index} className={styles.headCard}>
+                {/* Individual Action Buttons Container */}
+                <div className={styles.individualActionButtons}>
+                  {/* Individual Edit Button */}
+                  <button
+                    onClick={() => handleEditIndividualHead(head)}
+                    className={styles.individualEditButton}
+                    title="Edit this head"
+                  >
+                    <FaEdit />
+                  </button>
+                  
+                  {/* Individual Delete Button */}
+                  <button
+                    onClick={() => handleDeleteIndividualHead(head)}
+                    className={styles.individualDeleteButton}
+                    title="Delete this head"
+                    disabled={saving}
+                  >
+                    <FiTrash2 />
+                  </button>
+                </div>
+                
                 <div className={styles.headPhoto}>
                   {head.photo ? (
                     <Image
@@ -278,7 +283,7 @@ export default function OrgHeadsSection({
                     <h3 className={styles.headName}>{head.head_name || head.name || 'Not specified'}</h3>
                     <div className={styles.roleContainer}>
                       {getRoleIcon(head.role)}
-                      <span className={`${styles.headRole} ${styles[getRoleBadgeColor(head.role)]}`}>
+                      <span className={styles.headRole}>
                         {head.role || 'Not specified'}
                       </span>
                     </div>
@@ -325,15 +330,7 @@ export default function OrgHeadsSection({
                 </button>
               </>
             ) : (
-              <>
-                <p>No organization heads added yet.</p>
-                <button
-                  onClick={handleEditClick}
-                  className={styles.addButton}
-                >
-                  <FaPlus /> Add Organization Heads
-                </button>
-              </>
+              <p>No organization heads added yet.</p>
             )}
           </div>
         )}

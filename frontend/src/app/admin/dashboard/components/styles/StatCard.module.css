@@ -62,3 +62,36 @@
   font-size: 1.2rem;
   color: #1d9782;
 }
+
+/* Loading states */
+.loadingCount {
+  opacity: 0.6;
+}
+
+.loadingLabel {
+  opacity: 0.7;
+}
+
+.loadingIcon {
+  opacity: 0.5;
+  background-color: #f0f0f0;
+}
+
+.skeletonCount {
+  display: inline-block;
+  width: 40px;
+  height: 28px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}

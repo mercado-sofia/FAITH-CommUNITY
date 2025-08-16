@@ -121,7 +121,95 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+.addButton {
+  background: #06100f;
+  color: white;
+  border: none;
+  padding: 0.65rem 1.2rem;
+  border-radius: 0.375rem;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
 
+.addButton:hover {
+  background: #101c1a;
+  border-color: #06100f;
+}
+
+.addButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Action buttons container */
+.individualActionButtons {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.headCard:hover .individualActionButtons {
+  opacity: 1;
+}
+
+/* Common styles for individual action buttons */
+.individualEditButton,
+.individualDeleteButton {
+  padding: 0.4rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+/* Edit button specific styles */
+.individualEditButton {
+  color: #06100f;
+  background-color: #ffffff;
+  border: 2px solid #06100f;
+}
+
+.individualEditButton:hover {
+  background: #f5f6f7;
+  color: #06100f;
+  border-color: #0a1a1a;
+}
+
+/* Delete button specific styles */
+.individualDeleteButton {
+  color: #dc2626;
+  background-color: #fef2f2;
+  border: 2px solid #dc2626;
+}
+
+.individualDeleteButton:hover {
+  background: #ffe1e1;
+  color: #dc2626;
+  border-color: #dc2626;
+}
+
+.individualDeleteButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  opacity: 0.5;
+}
 
 .headsContainer {
   display: grid;
@@ -164,6 +252,7 @@
   gap: 1.5rem;
   transition: all 0.2s ease;
   height: fit-content;
+  position: relative;
 }
 
 .headCard:hover {
@@ -208,7 +297,7 @@
 .headName {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
+  color: #070808;
   margin: 0 0 0.375rem 0;
   line-height: 1.4;
   letter-spacing: -0.025em;
@@ -234,42 +323,10 @@
 
 .headRole {
   font-size: 0.75rem;
-  font-weight: 500;
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
+  font-weight: 600;
+  color: #06100f;
   margin: 0;
   font-style: normal;
-}
-
-/* Role Badge Colors - More subtle */
-.roleExecutive {
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fde68a;
-}
-
-.roleOfficer {
-  background: #dbeafe;
-  color: #1e40af;
-  border: 1px solid #93c5fd;
-}
-
-.roleManager {
-  background: #d1fae5;
-  color: #065f46;
-  border: 1px solid #6ee7b7;
-}
-
-.roleCoordinator {
-  background: #e0e7ff;
-  color: #3730a3;
-  border: 1px solid #a5b4fc;
-}
-
-.roleOther {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
 }
 
 .contactInfo {
@@ -308,6 +365,11 @@
   padding: 2rem 1rem;
   color: #64748b;
   grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
 }
 
 .emptyState p {
@@ -317,29 +379,7 @@
   color: #6b7280;
 }
 
-.addButton {
-  background: #f8fafc;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: var(--font-inter), sans-serif;
-}
 
-.addButton:hover {
-  background: #f1f5f9;
-  color: #475569;
-  border-color: #cbd5e1;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
 
 /* Search and Filter Controls */
 .controlsSection {
@@ -426,42 +466,10 @@
 
 .headRole {
   font-size: 0.85rem;
-  font-weight: 500;
-  padding: 0.25rem 0.5rem;
-  border-radius: 12px;
+  font-weight: 600;
+  color: #06100f;
   margin: 0;
   font-style: normal;
-}
-
-/* Role Badge Colors */
-.roleExecutive {
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fbbf24;
-}
-
-.roleOfficer {
-  background: #dbeafe;
-  color: #1e40af;
-  border: 1px solid #60a5fa;
-}
-
-.roleManager {
-  background: #d1fae5;
-  color: #065f46;
-  border: 1px solid #34d399;
-}
-
-.roleCoordinator {
-  background: #e0e7ff;
-  color: #3730a3;
-  border: 1px solid #818cf8;
-}
-
-.roleOther {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
 }
 
 /* Clear Button */

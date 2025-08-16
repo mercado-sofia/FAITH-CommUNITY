@@ -1,20 +1,17 @@
 // Organization heads utility functions
-// Simple role options without priority hierarchy
+// Role options with proper hierarchy
 export const ROLE_OPTIONS = [
   { value: 'Org Adviser', label: 'Org Adviser' },
   { value: 'President', label: 'President' },
   { value: 'Vice President', label: 'Vice President' },
   { value: 'Secretary', label: 'Secretary' },
+  { value: 'Assistant Secretary', label: 'Assistant Secretary' },
   { value: 'Treasurer', label: 'Treasurer' },
-  { value: 'Director', label: 'Director' },
-  { value: 'Manager', label: 'Manager' },
-  { value: 'Coordinator', label: 'Coordinator' },
-  { value: 'Member', label: 'Member' },
-  { value: 'Volunteer', label: 'Volunteer' },
-  { value: 'Other', label: 'Other' }
+  { value: 'Assistant Treasurer', label: 'Assistant Treasurer' },
+  { value: 'PRO', label: 'PRO' },
+  { value: 'Class Representative', label: 'Class Representative' },
+  { value: 'Others', label: 'Others' }
 ];
-
-
 
 /**
  * Sort organization heads by display order only (manual reordering)
@@ -34,6 +31,38 @@ export const sortHeadsByOrder = (heads) => {
     // If same order or no order, sort by name
     return (a.head_name || '').localeCompare(b.head_name || '');
   });
+};
+
+/**
+ * Get role badge color based on role hierarchy
+ * @param {string} role - The role name
+ * @returns {string} CSS class name for role badge
+ */
+export const getRoleBadgeColor = (role) => {
+  const roleStr = role?.toLowerCase() || '';
+  
+  // Executive level roles (highest priority)
+  if (roleStr.includes('adviser') || roleStr.includes('advisor') || roleStr.includes('president')) {
+    return 'roleExecutive';
+  }
+  
+  // Officer level roles (high priority)
+  if (roleStr.includes('vice president') || roleStr.includes('secretary') || roleStr.includes('treasurer') || roleStr.includes('pro') || roleStr.includes('public relations')) {
+    return 'roleOfficer';
+  }
+  
+  // Assistant level roles (medium-high priority)
+  if (roleStr.includes('assistant')) {
+    return 'roleManager';
+  }
+  
+  // Representative level roles (medium priority)
+  if (roleStr.includes('representative')) {
+    return 'roleCoordinator';
+  }
+  
+  // Default for all other roles (lowest priority)
+  return 'roleOther';
 };
 
 /**
@@ -60,18 +89,4 @@ export const filterHeads = (heads, searchQuery) => {
   });
 };
 
-/**
- * Get role badge color (simplified - no priority-based colors)
- * @param {string} role - The role name
- * @returns {string} CSS class name for role badge
- */
-export const getRoleBadgeColor = (role) => {
-  // Simple color scheme without priority hierarchy
-  const roleStr = role?.toLowerCase() || '';
-  
-  if (roleStr.includes('adviser') || roleStr.includes('advisor')) return 'gold';
-  if (roleStr.includes('president')) return 'silver';
-  if (roleStr.includes('secretary')) return 'blue';
-  if (roleStr.includes('treasurer')) return 'green';
-  return 'gray'; // Default for all other roles
-};
+

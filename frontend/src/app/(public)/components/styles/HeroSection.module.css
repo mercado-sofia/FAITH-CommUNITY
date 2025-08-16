@@ -228,12 +228,14 @@
   border-radius: 9999px;
   border: none;
   font-weight: bold;
+  font-size: 13px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 0.3rem;
   margin-right: 5px;
   transition: transform 0.3s ease, background 0.3s ease;
+  text-decoration: none;
 }
 
 .discover:hover {

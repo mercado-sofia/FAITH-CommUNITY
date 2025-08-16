@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { TbMail } from "react-icons/tb";
 import { MdNotificationsNone } from "react-icons/md";
+import { useNavigation } from '../../../contexts/NavigationContext';
 import styles from './topbar.module.css';
 
 export default function TopBar() {
@@ -16,6 +17,7 @@ export default function TopBar() {
 
   const router = useRouter();
   const pathname = usePathname();
+  const { isNavigating } = useNavigation();
 
   useEffect(() => {
     const storedAdminData = localStorage.getItem('adminData');
@@ -90,6 +92,13 @@ export default function TopBar() {
 
   return (
     <div className={styles.topBar}>
+      {/* Global Navigation Loading Indicator */}
+      {isNavigating && (
+        <div className={styles.navigationLoader}>
+          <div className={styles.loaderBar}></div>
+        </div>
+      )}
+      
       <div className={styles.topBarContent}>
         <div className={styles.leftSection}>
           <span className={styles.breadcrumbText}>

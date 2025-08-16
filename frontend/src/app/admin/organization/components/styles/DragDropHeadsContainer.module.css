@@ -133,42 +133,10 @@
 
 .headRole {
   font-size: 0.85rem;
-  font-weight: 500;
-  padding: 0.25rem 0.5rem;
-  border-radius: 12px;
+  font-weight: 600;
+  color: #06100f;
   margin: 0;
   font-style: normal;
-}
-
-/* Role Badge Colors */
-.roleExecutive {
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fbbf24;
-}
-
-.roleOfficer {
-  background: #dbeafe;
-  color: #1e40af;
-  border: 1px solid #60a5fa;
-}
-
-.roleManager {
-  background: #d1fae5;
-  color: #065f46;
-  border: 1px solid #34d399;
-}
-
-.roleCoordinator {
-  background: #e0e7ff;
-  color: #3730a3;
-  border: 1px solid #818cf8;
-}
-
-.roleOther {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
 }
 
 /* Contact Info */

@@ -4,14 +4,16 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { selectCurrentAdmin } from '../../../rtk/superadmin/adminSlice';
+import { useAdminPrograms } from '../../../hooks/useAdminData';
 import styles from './programs.module.css';
 import { FaPlus, FaEdit, FaTrash, FaEye } from 'react-icons/fa';
 import AddProgramModal from './components/AddProgramModal';
 import EditProgramModal from './components/EditProgramModal';
-import DeleteProgramModal from './components/DeleteProgramModal';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import ViewDetailsModal from './components/ViewDetailsModal';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
 import ProgramCard from './components/ProgramCard';
+import SuccessModal from './components/SuccessModal';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -21,14 +23,15 @@ export default function ProgramsPage() {
   const currentAdmin = useSelector(selectCurrentAdmin);
   
   // State management
-  const [programs, setPrograms] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProgram, setEditingProgram] = useState(null);
   const [deletingProgram, setDeletingProgram] = useState(null);
   const [viewingProgram, setViewingProgram] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
+
+  // Use SWR hook for programs data
+  const { programs, isLoading, error, mutate: refreshPrograms } = useAdminPrograms(currentAdmin?.org);
   
   // Filter and search states
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
@@ -37,45 +40,16 @@ export default function ProgramsPage() {
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
   const [showCount, setShowCount] = useState(parseInt(searchParams.get('show')) || 10);
 
-  // Fetch submitted programs (pending approval)
-  const fetchPrograms = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      if (!currentAdmin?.org) {
-        console.error('No organization ID found in admin session');
-        setPrograms([]);
-        return;
-      }
-      
-      const orgId = currentAdmin.org;
-
-      const response = await fetch(`${API_BASE_URL}/api/programs/org/${orgId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch programs');
-      }
-
-      const data = await response.json();
-      // Handle both direct array and wrapped response formats
-      const programsArray = Array.isArray(data) ? data : (data.programs || data.data || []);
-      setPrograms(programsArray);
-    } catch (error) {
-      console.error('Error fetching programs:', error);
-      setPrograms([]);
-      setMessage({ type: 'error', text: 'Failed to load programs. Please try again.' });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentAdmin?.org]);
-
+  // Handle error display
   useEffect(() => {
-    fetchPrograms();
-  }, [fetchPrograms]);
+    if (error) {
+      setSuccessModal({ 
+        isVisible: true, 
+        message: 'Failed to load programs. Please try again.', 
+        type: 'error' 
+      });
+    }
+  }, [error]);
 
   // Sync URL parameters with state when URL changes
   useEffect(() => {
@@ -108,7 +82,11 @@ export default function ProgramsPage() {
   const handleSubmitProgram = async (programData) => {
     try {
       if (!currentAdmin?.org || !currentAdmin?.id) {
-        setMessage({ type: 'error', text: 'Missing organization or admin ID. Please log in again.' });
+        setSuccessModal({ 
+          isVisible: true, 
+          message: 'Missing organization or admin ID. Please log in again.', 
+          type: 'error' 
+        });
         return;
       }
       
@@ -138,22 +116,23 @@ export default function ProgramsPage() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`Submission failed: ${response.status} - ${errorText}`);
         throw new Error('Failed to submit program');
       }
 
-      setMessage({ 
-        type: 'success', 
-        text: 'Program submitted for approval! You can track its status in the submissions page.' 
+      setSuccessModal({ 
+        isVisible: true, 
+        message: 'Program submitted for approval! You can track its status in the submissions page.', 
+        type: 'success' 
       });
 
       setIsAddModalOpen(false);
-      fetchPrograms();
-      
-      setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+      refreshPrograms();
     } catch (error) {
-      console.error('❌ Error submitting program:', error);
-      setMessage({ type: 'error', text: 'Failed to submit program. Please try again.' });
+      setSuccessModal({ 
+        isVisible: true, 
+        message: 'Failed to submit program. Please try again.', 
+        type: 'error' 
+      });
     }
   };
 
@@ -161,8 +140,11 @@ export default function ProgramsPage() {
   const handleUpdateProgram = async (programData) => {
     try {
       if (!editingProgram?.id) {
-        console.error('No editing program ID found');
-        setMessage({ type: 'error', text: 'Program ID not found. Please try again.' });
+        setSuccessModal({ 
+          isVisible: true, 
+          message: 'Program ID not found. Please try again.', 
+          type: 'error' 
+        });
         return;
       }
 
@@ -176,23 +158,24 @@ export default function ProgramsPage() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`Update failed: ${response.status} - ${errorText}`);
         throw new Error('Failed to update program');
       }
 
       const result = await response.json();
       
-      setMessage({ 
-        type: 'success', 
-        text: 'Program updated successfully!' 
+      setSuccessModal({ 
+        isVisible: true, 
+        message: 'Program updated successfully!', 
+        type: 'success' 
       });
       setEditingProgram(null);
-      fetchPrograms();
-      
-      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+      refreshPrograms();
     } catch (error) {
-      console.error('Error updating program:', error);
-      setMessage({ type: 'error', text: 'Failed to update program. Please try again.' });
+      setSuccessModal({ 
+        isVisible: true, 
+        message: 'Failed to update program. Please try again.', 
+        type: 'error' 
+      });
     }
   };
 
@@ -219,14 +202,19 @@ export default function ProgramsPage() {
         throw new Error('Failed to delete program');
       }
 
-      setMessage({ type: 'success', text: 'Program deleted successfully!' });
+      setSuccessModal({ 
+        isVisible: true, 
+        message: 'Program deleted successfully!', 
+        type: 'success' 
+      });
       setDeletingProgram(null);
-      fetchPrograms();
-      
-      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+      refreshPrograms();
     } catch (error) {
-      console.error('Error deleting program:', error);
-      setMessage({ type: 'error', text: 'Failed to delete program. Please try again.' });
+      setSuccessModal({ 
+        isVisible: true, 
+        message: 'Failed to delete program. Please try again.', 
+        type: 'error' 
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -236,6 +224,11 @@ export default function ProgramsPage() {
   const cancelDeleteProgram = () => {
     setDeletingProgram(null);
     setIsDeleting(false);
+  };
+
+  // Close success modal
+  const closeSuccessModal = () => {
+    setSuccessModal({ isVisible: false, message: '', type: 'success' });
   };
 
   // Filter and sort programs
@@ -334,12 +327,7 @@ export default function ProgramsPage() {
         </div>
       </div>
 
-      {/* Message Display */}
-      {message.text && (
-        <div className={`${styles.message} ${styles[message.type]}`}>
-          {message.text}
-        </div>
-      )}
+
 
       {/* Search and Filter Controls */}
       <SearchAndFilterControls
@@ -410,14 +398,23 @@ export default function ProgramsPage() {
         />
       )}
 
-      {deletingProgram && (
-        <DeleteProgramModal
-          program={deletingProgram}
-          onConfirm={confirmDeleteProgram}
-          onCancel={cancelDeleteProgram}
-          isDeleting={isDeleting}
-        />
-      )}
+      <DeleteConfirmationModal
+        isOpen={!!deletingProgram}
+        itemName={deletingProgram?.title || 'this program'}
+        itemType="program"
+        onConfirm={confirmDeleteProgram}
+        onCancel={cancelDeleteProgram}
+        isDeleting={isDeleting}
+      />
+
+      {/* Success Modal */}
+      <SuccessModal
+        message={successModal.message}
+        isVisible={successModal.isVisible}
+        onClose={closeSuccessModal}
+        type={successModal.type}
+        autoHideDuration={4000}
+      />
     </div>
   );
 }

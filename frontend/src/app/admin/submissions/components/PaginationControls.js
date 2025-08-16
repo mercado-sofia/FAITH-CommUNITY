@@ -4,7 +4,7 @@ import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowLeftDoubleFill, RiArrowRigh
 import styles from './styles/PaginationControls.module.css'
 
 export default function PaginationControls({ currentPage, totalPages, onPageChange, startIndex, endIndex, totalCount }) {
-  console.log('Rendering PaginationControls', { currentPage, totalPages, startIndex, endIndex, totalCount });
+
   
   // Handle edge cases
   if (totalPages <= 0) {

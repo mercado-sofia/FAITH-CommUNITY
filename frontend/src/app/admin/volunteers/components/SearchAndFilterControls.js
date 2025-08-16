@@ -4,6 +4,12 @@ import { useState, useEffect } from "react"
 import { FiChevronDown, FiSearch, FiX } from "react-icons/fi"
 import styles from "./styles/SearchAndFilterControls.module.css"
 
+// Input sanitization utility
+const sanitizeInput = (input) => {
+  if (typeof input !== 'string') return '';
+  return input.trim().replace(/[<>]/g, '').substring(0, 100); // Basic XSS protection + length limit
+};
+
 export default function SearchAndFilterControls({
   showCount,
   onShowCountChange,
@@ -37,6 +43,22 @@ export default function SearchAndFilterControls({
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // Enhanced search input handler with sanitization
+  const handleSearchInputChange = (e) => {
+    const sanitizedValue = sanitizeInput(e.target.value);
+    setLocalQuery(sanitizedValue);
+  };
+
+  const handleSearchSubmit = () => {
+    const sanitizedQuery = sanitizeInput(localQuery);
+    onSearchChange(sanitizedQuery);
+  };
+
+  const handleClearSearch = () => {
+    setLocalQuery('');
+    onSearchChange('');
+  };
 
   return (
     <div className={styles.controlsRow}>
@@ -126,27 +148,25 @@ export default function SearchAndFilterControls({
 
       {/* Search and Sort */}
       <div className={styles.searchWrapper}>
-        {/* Search input */}
+        {/* Search input with sanitization */}
         <div className={styles.searchInputContainer}>
           <input
             type="text"
             placeholder="Search"
             value={localQuery}
-            onChange={(e) => setLocalQuery(e.target.value)}
+            onChange={handleSearchInputChange}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                onSearchChange(localQuery)
+                handleSearchSubmit();
               }
             }}
             className={styles.searchInput}
+            maxLength={100} // Additional length protection
           />
           {localQuery ? (
-            <FiX className={styles.clearIcon} onClick={() => {
-              setLocalQuery('')
-              onSearchChange('')
-            }} />
+            <FiX className={styles.clearIcon} onClick={handleClearSearch} />
           ) : (
-            <FiSearch className={styles.searchIcon} onClick={() => onSearchChange(localQuery)} />
+            <FiSearch className={styles.searchIcon} onClick={handleSearchSubmit} />
           )}
         </div>
 

@@ -75,6 +75,27 @@ const adminSlice = createSlice({
         }
       }
     },
+    // Update admin organization data in Redux store
+    updateAdminOrg: (state, action) => {
+      if (state.admin) {
+        state.admin.org = action.payload.org
+        state.admin.orgName = action.payload.orgName
+        // Also update localStorage to keep it in sync
+        if (typeof window !== "undefined") {
+          const adminData = localStorage.getItem("adminData")
+          if (adminData) {
+            try {
+              const parsedData = JSON.parse(adminData)
+              parsedData.org = action.payload.org
+              parsedData.orgName = action.payload.orgName
+              localStorage.setItem("adminData", JSON.stringify(parsedData))
+            } catch (error) {
+              console.error("Error updating localStorage:", error)
+            }
+          }
+        }
+      }
+    },
     // Initialize from localStorage
     initializeAuth: (state) => {
       if (typeof window !== "undefined") {
@@ -111,7 +132,7 @@ const adminSlice = createSlice({
   },
 })
 
-export const { loginAdmin, loginSuperAdmin, logoutAdmin, setLoading, setError, clearError, initializeAuth, updateAdminEmail } =
+export const { loginAdmin, loginSuperAdmin, logoutAdmin, setLoading, setError, clearError, initializeAuth, updateAdminEmail, updateAdminOrg } =
   adminSlice.actions
 
 export default adminSlice.reducer

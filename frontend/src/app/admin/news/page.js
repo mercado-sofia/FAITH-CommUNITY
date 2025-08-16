@@ -4,30 +4,35 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { selectCurrentAdmin } from '../../../rtk/superadmin/adminSlice';
+import { useAdminNews } from '../../../hooks/useAdminData';
 import NewsCard from './components/NewsCard';
 import AddNewsModal from './components/AddNewsModal';
 import EditNewsModal from './components/EditNewsModal';
-import DeleteNewsModal from './components/DeleteNewsModal';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
+import ErrorBoundary from '../../../components/ErrorBoundary';
 import styles from './news.module.css';
 import { FaPlus } from 'react-icons/fa';
 
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 export default function AdminNewsPage() {
   const currentAdmin = useSelector(selectCurrentAdmin);
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  const [news, setNews] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editingNews, setEditingNews] = useState(null);
   const [deletingNews, setDeletingNews] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Use SWR hook for news data
+  const { news, isLoading: loading, error, mutate: refreshNews } = useAdminNews(currentAdmin?.org);
   
   // Initialize state from URL parameters
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
@@ -87,135 +92,192 @@ export default function AdminNewsPage() {
     updateURLParams({ show: value.toString() });
   };
 
-  const fetchNews = useCallback(async () => {
-    if (!orgId) {
-      setError('Organization information not found');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/admin/news/${orgId}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch news');
-      }
-
-      const data = await response.json();
-      setNews(data);
-      setError(null);
-    } catch (error) {
-      console.error('❌ Error fetching news:', error);
-      setError('Failed to fetch news');
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId]);
-  
+  // Handle error display
   useEffect(() => {
-    if (currentAdmin) {
-      fetchNews();
+    if (error) {
+      setMessage({ type: 'error', text: 'Failed to fetch news. Please try again.' });
     }
-  }, [currentAdmin, fetchNews]);
-
-  useEffect(() => {
-    console.log('Current admin:', currentAdmin);
-    console.log('Org ID:', orgId);
-  }, [currentAdmin, orgId]);
+  }, [error]);
 
   // Handle news submission (direct publishing)
   const handleSubmitNews = async (newsData) => {
+    setIsSubmitting(true);
     try {
       if (!orgId) {
         setMessage({ type: 'error', text: 'Organization information not found. Please try again.' });
         return;
       }
 
+      // Validate news data
+      if (!newsData.title || !newsData.title.trim()) {
+        setMessage({ type: 'error', text: 'News title is required.' });
+        return;
+      }
+
+      if (!newsData.description || !newsData.description.trim()) {
+        setMessage({ type: 'error', text: 'News description is required.' });
+        return;
+      }
+
+      if (!newsData.date) {
+        setMessage({ type: 'error', text: 'News date is required.' });
+        return;
+      }
+
+      // Sanitize data
+      const sanitizedData = {
+        title: newsData.title.trim(),
+        description: newsData.description.trim(),
+        date: newsData.date
+      };
+
+      const adminToken = localStorage.getItem("adminToken");
+      
+      if (!adminToken) {
+        setMessage({ type: 'error', text: 'Authentication required. Please log in again.' });
+        return;
+      }
+      
       const response = await fetch(`${API_BASE_URL}/api/admin/news/${orgId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
         },
-        body: JSON.stringify(newsData),
+        body: JSON.stringify(sanitizedData),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`❌ News creation failed: ${response.status} - ${errorText}`);
-        throw new Error('Failed to create news');
+        console.error('News creation failed:', { status: response.status, error: errorText });
+        throw new Error(`Failed to create news: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
-      console.log('✅ News created successfully:', result);
 
       setMessage({ type: 'success', text: 'News created successfully!' });
       setShowAddModal(false);
-      fetchNews(); // Refresh the list
+      refreshNews(); // Refresh the list
     } catch (error) {
-      console.error('❌ Error creating news:', error);
-      setMessage({ type: 'error', text: 'Failed to create news. Please try again.' });
+      console.error('News creation error:', error);
+      const errorMessage = error.message.includes('Failed to fetch') 
+        ? 'Network error. Please check your connection and try again.'
+        : 'Failed to create news. Please try again.';
+      setMessage({ type: 'error', text: errorMessage });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   // Handle news update
   const handleUpdateNews = async (newsData) => {
+    setIsUpdating(true);
     try {
       if (!editingNews?.id) {
         setMessage({ type: 'error', text: 'News ID not found. Please try again.' });
         return;
       }
 
+      // Validate news data
+      if (!newsData.title || !newsData.title.trim()) {
+        setMessage({ type: 'error', text: 'News title is required.' });
+        return;
+      }
+
+      if (!newsData.description || !newsData.description.trim()) {
+        setMessage({ type: 'error', text: 'News description is required.' });
+        return;
+      }
+
+      if (!newsData.date) {
+        setMessage({ type: 'error', text: 'News date is required.' });
+        return;
+      }
+
+      // Sanitize data
+      const sanitizedData = {
+        title: newsData.title.trim(),
+        description: newsData.description.trim(),
+        date: newsData.date
+      };
+
+      const adminToken = localStorage.getItem("adminToken");
+      
+      if (!adminToken) {
+        setMessage({ type: 'error', text: 'Authentication required. Please log in again.' });
+        return;
+      }
+      
       const response = await fetch(`${API_BASE_URL}/api/admin/news/${editingNews.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
         },
-        body: JSON.stringify(newsData),
+        body: JSON.stringify(sanitizedData),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`❌ Update failed: ${response.status} - ${errorText}`);
-        throw new Error('Failed to update news');
+        console.error('News update failed:', { status: response.status, error: errorText });
+        throw new Error(`Failed to update news: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
-      console.log('✅ News updated successfully:', result);
 
       setMessage({ type: 'success', text: 'News updated successfully!' });
       setShowEditModal(false);
       setEditingNews(null);
-      fetchNews(); // Refresh the list
+      refreshNews(); // Refresh the list
     } catch (error) {
-      console.error('❌ Error updating news:', error);
-      setMessage({ type: 'error', text: 'Failed to update news. Please try again.' });
+      console.error('News update error:', error);
+      const errorMessage = error.message.includes('Failed to fetch') 
+        ? 'Network error. Please check your connection and try again.'
+        : 'Failed to update news. Please try again.';
+      setMessage({ type: 'error', text: errorMessage });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   // Handle news deletion
   const handleDeleteNews = async (newsId) => {
+    setIsDeleting(true);
     try {
+      const adminToken = localStorage.getItem("adminToken");
+      
+      if (!adminToken) {
+        setMessage({ type: 'error', text: 'Authentication required. Please log in again.' });
+        return;
+      }
+      
       const response = await fetch(`${API_BASE_URL}/api/admin/news/${newsId}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        },
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`❌ Delete failed: ${response.status} - ${errorText}`);
-        throw new Error('Failed to delete news');
+        console.error('News deletion failed:', { status: response.status, error: errorText });
+        throw new Error(`Failed to delete news: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
-      console.log('✅ News deleted successfully:', result);
 
       setMessage({ type: 'success', text: 'News deleted successfully!' });
       setShowDeleteModal(false);
       setDeletingNews(null);
-      fetchNews(); // Refresh the list
+      refreshNews(); // Refresh the list
     } catch (error) {
-      console.error('❌ Error deleting news:', error);
-      setMessage({ type: 'error', text: 'Failed to delete news. Please try again.' });
+      console.error('News deletion error:', error);
+      const errorMessage = error.message.includes('Failed to fetch') 
+        ? 'Network error. Please check your connection and try again.'
+        : 'Failed to delete news. Please try again.';
+      setMessage({ type: 'error', text: errorMessage });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -276,7 +338,8 @@ export default function AdminNewsPage() {
   }
 
   return (
-    <div className={styles.container}>
+    <ErrorBoundary>
+      <div className={styles.container}>
       {/* Header Section - Consistent with other admin pages */}
       <div className={styles.header}>
         <div className={styles.headerTop}>
@@ -308,14 +371,15 @@ export default function AdminNewsPage() {
       />
 
       {loading && (
-        <div className={styles.loading}>
-          Loading news...
+        <div className={styles.loadingContainer}>
+          <div className={styles.loadingSpinner}></div>
+          <p>Loading news...</p>
         </div>
       )}
 
       {error && (
-        <div className={styles.error}>
-          {error}
+        <div className={styles.errorContainer}>
+          <p className={styles.errorMessage}>{error}</p>
         </div>
       )}
 
@@ -372,13 +436,15 @@ export default function AdminNewsPage() {
       )}
 
       {/* Delete News Modal */}
-      {showDeleteModal && deletingNews && (
-        <DeleteNewsModal
-          news={deletingNews}
-          onConfirm={() => handleDeleteNews(deletingNews.id)}
-          onCancel={handleCloseModals}
-        />
-      )}
-    </div>
-  );
-}
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal && !!deletingNews}
+        itemName={deletingNews?.title || 'this news item'}
+        itemType="news"
+        onConfirm={() => handleDeleteNews(deletingNews?.id)}
+        onCancel={handleCloseModals}
+        isDeleting={isDeleting}
+              />
+      </div>
+    </ErrorBoundary>
+    );
+  }

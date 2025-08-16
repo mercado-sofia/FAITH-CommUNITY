@@ -1,21 +1,132 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { FaEdit, FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
-import {
-  useGetAdminByIdQuery,
-  useUpdateAdminMutation,
-  useVerifyPasswordForEmailChangeMutation,
-  useVerifyPasswordForPasswordChangeMutation,
-} from '../../../rtk/superadmin/manageProfilesApi';
+import { useAdminById } from '../../../hooks/useAdminData';
 import { selectCurrentAdmin, updateAdminEmail } from '../../../rtk/superadmin/adminSlice';
 import styles from './adminSettings.module.css';
 
+// Utility functions for production enhancements
+const sanitizeEmail = (email) => {
+  return email.trim().toLowerCase();
+};
+
+const validateEmailFormat = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const sanitizePassword = (password) => {
+  // Remove any potential script tags or dangerous characters
+  return password.replace(/[<>]/g, '');
+};
+
+// Rate limiting utility
+class RateLimiter {
+  constructor(maxAttempts = 5, windowMs = 15 * 60 * 1000) { // 5 attempts per 15 minutes
+    this.maxAttempts = maxAttempts;
+    this.windowMs = windowMs;
+    this.attempts = new Map();
+  }
+
+  isAllowed(key) {
+    const now = Date.now();
+    const userAttempts = this.attempts.get(key) || [];
+    
+    // Remove old attempts outside the window
+    const recentAttempts = userAttempts.filter(timestamp => now - timestamp < this.windowMs);
+    
+    if (recentAttempts.length >= this.maxAttempts) {
+      return false;
+    }
+    
+    // Add current attempt
+    recentAttempts.push(now);
+    this.attempts.set(key, recentAttempts);
+    
+    return true;
+  }
+
+  getRemainingAttempts(key) {
+    const now = Date.now();
+    const userAttempts = this.attempts.get(key) || [];
+    const recentAttempts = userAttempts.filter(timestamp => now - timestamp < this.windowMs);
+    return Math.max(0, this.maxAttempts - recentAttempts.length);
+  }
+
+  reset(key) {
+    this.attempts.delete(key);
+  }
+}
+
+// Audit logging utility
+const auditLogger = {
+  log: (action, details, userId) => {
+    const logEntry = {
+      timestamp: new Date().toISOString(),
+      action,
+      userId,
+      details,
+      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server-side',
+      ip: 'client-side' // In production, this would come from server
+    };
+    
+    // In production, send to logging service
+    if (process.env.NODE_ENV === 'production') {
+      // Send to your logging service (Sentry, LogRocket, etc.)
+      console.log('AUDIT_LOG:', logEntry);
+    } else {
+      console.log('AUDIT_LOG:', logEntry);
+    }
+  }
+};
+
+// Enhanced error handling
+const handleApiError = (error, context) => {
+  if (error.status === 401) {
+    return {
+      type: 'authentication',
+      message: 'Your session has expired. Please log in again.',
+      action: 'redirect_to_login'
+    };
+  } else if (error.status === 403) {
+    return {
+      type: 'authorization',
+      message: 'You do not have permission to perform this action.',
+      action: 'show_error'
+    };
+  } else if (error.status === 409) {
+    return {
+      type: 'conflict',
+      message: 'This email address is already in use.',
+      action: 'show_error'
+    };
+  } else if (error.status === 429) {
+    return {
+      type: 'rate_limit',
+      message: 'Too many attempts. Please try again later.',
+      action: 'show_error'
+    };
+  } else if (error.status >= 500) {
+    return {
+      type: 'server_error',
+      message: 'Server error. Please try again later.',
+      action: 'show_error'
+    };
+  } else {
+    return {
+      type: 'unknown',
+      message: error.message || 'An unexpected error occurred.',
+      action: 'show_error'
+    };
+  }
+};
+
 // Separate component for password change functionality
 const PasswordChangeForm = ({ adminId, onCancel, onSuccess }) => {
-  const [updateAdmin, { isLoading: isUpdating }] = useUpdateAdminMutation();
-  const [verifyPasswordForPasswordChange, { isLoading: isVerifyingPassword }] = useVerifyPasswordForPasswordChangeMutation();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isVerifyingPassword, setIsVerifyingPassword] = useState(false);
   
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -33,12 +144,18 @@ const PasswordChangeForm = ({ adminId, onCancel, onSuccess }) => {
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState({ text: '', type: '' });
 
+  // Rate limiting for password attempts
+  const rateLimiter = useRef(new RateLimiter(5, 15 * 60 * 1000)); // 5 attempts per 15 minutes
+
   const handlePasswordInputChange = (e) => {
     const { name, value } = e.target;
+    const sanitizedValue = sanitizePassword(value);
+    
     setPasswordData(prev => ({
       ...prev,
-      [name]: value
+      [name]: sanitizedValue
     }));
+    
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
@@ -64,6 +181,8 @@ const PasswordChangeForm = ({ adminId, onCancel, onSuccess }) => {
       newErrors.newPassword = 'New password is required';
     } else if (passwordData.newPassword.length < 8) {
       newErrors.newPassword = 'Password must be at least 8 characters long';
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(passwordData.newPassword)) {
+      newErrors.newPassword = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
     }
     
     if (passwordData.newPassword !== passwordData.confirmPassword) {
@@ -76,33 +195,81 @@ const PasswordChangeForm = ({ adminId, onCancel, onSuccess }) => {
 
   const handleChangePassword = async () => {
     if (validatePasswordChange()) {
+      // Check rate limiting
+      const rateLimitKey = `password_change_${adminId}`;
+      if (!rateLimiter.current.isAllowed(rateLimitKey)) {
+        const remainingAttempts = rateLimiter.current.getRemainingAttempts(rateLimitKey);
+        setMessage({
+          text: `Too many password change attempts. Please try again in 15 minutes.`,
+          type: 'error'
+        });
+        setTimeout(() => setMessage({ text: '', type: '' }), 5000);
+        return;
+      }
+
       try {
+        setIsVerifyingPassword(true);
+        
+        // Audit log: Password change attempt
+        auditLogger.log('password_change_attempt', { adminId }, adminId);
+        
         // First verify the current password
-        try {
-          await verifyPasswordForPasswordChange({
-            id: adminId,
-            currentPassword: passwordData.currentPassword
-          }).unwrap();
-        } catch (error) {
+        const verifyResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admins/${adminId}/verify-password`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          },
+          body: JSON.stringify({ currentPassword: passwordData.currentPassword })
+        });
+
+        if (!verifyResponse.ok) {
+          const errorData = await verifyResponse.json().catch(() => ({}));
+          const errorInfo = handleApiError({ status: verifyResponse.status, message: errorData.message }, 'password_verification');
+          
           setMessage({
-            text: 'Invalid current password. Please try again.',
+            text: errorInfo.message,
             type: 'error'
           });
+          
+          // Audit log: Password verification failed
+          auditLogger.log('password_verification_failed', { 
+            adminId, 
+            reason: errorInfo.type 
+          }, adminId);
+          
           setTimeout(() => setMessage({ text: '', type: '' }), 5000);
           return;
         }
 
+        setIsVerifyingPassword(false);
+        setIsUpdating(true);
+
         // If password verification succeeds, proceed with password update
-        const updateData = {
-          password: passwordData.newPassword,
-          role: 'admin',
-          status: 'ACTIVE'
-        };
+        const updateResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admins/${adminId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          },
+          body: JSON.stringify({
+            password: passwordData.newPassword,
+            role: 'admin',
+            status: 'ACTIVE'
+          })
+        });
+
+        if (!updateResponse.ok) {
+          const errorData = await updateResponse.json().catch(() => ({}));
+          const errorInfo = handleApiError({ status: updateResponse.status, message: errorData.message }, 'password_update');
+          throw new Error(errorInfo.message);
+        }
         
-        await updateAdmin({ 
-          id: adminId, 
-          ...updateData 
-        }).unwrap();
+        // Reset rate limiter on success
+        rateLimiter.current.reset(rateLimitKey);
+        
+        // Audit log: Password change successful
+        auditLogger.log('password_change_successful', { adminId }, adminId);
         
         setMessage({ text: 'Password changed successfully!', type: 'success' });
         setTimeout(() => {
@@ -110,12 +277,20 @@ const PasswordChangeForm = ({ adminId, onCancel, onSuccess }) => {
           onSuccess();
         }, 3000);
       } catch (error) {
-        console.error('Failed to change password:', error);
+        // Audit log: Password change failed
+        auditLogger.log('password_change_failed', { 
+          adminId, 
+          error: error.message 
+        }, adminId);
+        
         setMessage({ 
-          text: error.data?.message || 'Failed to change password. Please try again.', 
+          text: error.message || 'Failed to change password. Please try again.', 
           type: 'error' 
         });
         setTimeout(() => setMessage({ text: '', type: '' }), 5000);
+      } finally {
+        setIsVerifyingPassword(false);
+        setIsUpdating(false);
       }
     }
   };
@@ -190,6 +365,9 @@ const PasswordChangeForm = ({ adminId, onCancel, onSuccess }) => {
           </button>
         </div>
         {errors.newPassword && <span className={styles.errorText}>{errors.newPassword}</span>}
+        <div className={styles.helperText}>
+          Password must be at least 8 characters with uppercase, lowercase, and number
+        </div>
       </div>
 
       <div className={styles.fieldGroup}>
@@ -218,18 +396,18 @@ const PasswordChangeForm = ({ adminId, onCancel, onSuccess }) => {
 
       <div className={styles.actionButtons}>
         <button 
-          className={styles.saveButton}
-          onClick={handleChangePassword}
-          disabled={isUpdating || isVerifyingPassword}
-        >
-          {isUpdating ? 'Updating...' : isVerifyingPassword ? 'Verifying...' : 'Update Password'}
-        </button>
-        <button 
           className={styles.cancelButton}
           onClick={handleCancel}
           disabled={isUpdating || isVerifyingPassword}
         >
           Cancel
+        </button>
+        <button 
+          className={styles.saveButton}
+          onClick={handleChangePassword}
+          disabled={isUpdating || isVerifyingPassword}
+        >
+          {isUpdating ? 'Updating...' : isVerifyingPassword ? 'Verifying...' : 'Update Password'}
         </button>
       </div>
     </div>
@@ -240,27 +418,20 @@ export default function AdminSettings() {
   const dispatch = useDispatch();
   const currentAdmin = useSelector(selectCurrentAdmin);
   
-  // Get admin data from API
-  const { data: adminFromApi, isLoading: isLoadingAdmin, error: apiError, refetch } = useGetAdminByIdQuery(
-    currentAdmin?.id,
-    { 
-      skip: !currentAdmin?.id,
-      // Retry on failure
-      retry: 3,
-      // Don't refetch on window focus if we have data
-      refetchOnWindowFocus: false
-    }
-  );
+  // Get admin data from API using SWR
+  const { admin: adminFromApi, isLoading: isLoadingAdmin, error: apiError, mutate: refreshAdmin } = useAdminById(currentAdmin?.id);
 
   // Use currentAdmin as primary source, API as enhancement
   // If API returns empty email but Redux has it, use Redux data
-  const effectiveAdminData = adminFromApi ? {
-    ...adminFromApi,
-    email: adminFromApi.email || currentAdmin?.email || ''
-  } : currentAdmin;
+  const effectiveAdminData = useMemo(() => {
+    return adminFromApi ? {
+      ...adminFromApi,
+      email: adminFromApi.email || currentAdmin?.email || ''
+    } : currentAdmin;
+  }, [adminFromApi, currentAdmin]);
 
-  const [updateAdmin, { isLoading: isUpdating }] = useUpdateAdminMutation();
-  const [verifyPassword, { isLoading: isVerifying }] = useVerifyPasswordForEmailChangeMutation();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const [adminData, setAdminData] = useState({
     org: '',
@@ -278,11 +449,46 @@ export default function AdminSettings() {
   // Password visibility state for email change
   const [emailPasswordVisibility, setEmailPasswordVisibility] = useState(false);
 
+  // Rate limiting for email change attempts
+  const emailRateLimiter = useRef(new RateLimiter(3, 10 * 60 * 1000)); // 3 attempts per 10 minutes
+
   // Helper function to check if email has changed
   const hasEmailChanged = () => {
     // Get the original email from the most reliable source
     const originalEmail = effectiveAdminData?.email || '';
     return adminData.email !== originalEmail;
+  };
+
+  // Helper function to calculate time since password was last changed
+  const getPasswordChangeTime = () => {
+    // Check if we have password change date from API
+    const passwordChangedAt = effectiveAdminData?.password_changed_at || effectiveAdminData?.updated_at;
+    
+    if (!passwordChangedAt) {
+      return 'Unknown';
+    }
+
+    const now = new Date();
+    const changeDate = new Date(passwordChangedAt);
+    const diffTime = Math.abs(now - changeDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return 'Today';
+    } else if (diffDays === 1) {
+      return '1 day ago';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+    } else if (diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      return `${months} month${months > 1 ? 's' : ''} ago`;
+    } else {
+      const years = Math.floor(diffDays / 365);
+      return `${years} year${years > 1 ? 's' : ''} ago`;
+    }
   };
 
   // Initialize admin data when API data is loaded
@@ -305,7 +511,7 @@ export default function AdminSettings() {
         status: 'ACTIVE'
       });
     }
-  }, [adminFromApi, currentAdmin]);
+  }, [effectiveAdminData]);
 
   // Clear email change password on mount
   useEffect(() => {
@@ -314,10 +520,15 @@ export default function AdminSettings() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Sanitize email input
+    const sanitizedValue = name === 'email' ? sanitizeEmail(value) : value;
+    
     setAdminData(prev => ({
       ...prev,
-      [name]: value
+      [name]: sanitizedValue
     }));
+    
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
@@ -334,7 +545,7 @@ export default function AdminSettings() {
     
     if (!adminData.email.trim()) {
       newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(adminData.email)) {
+    } else if (!validateEmailFormat(adminData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
     
@@ -351,52 +562,122 @@ export default function AdminSettings() {
 
   const handleSaveProfile = async () => {
     if (validateProfile()) {
+      // Check rate limiting for email changes
+      const rateLimitKey = `email_change_${currentAdmin?.id}`;
+      if (hasEmailChanged() && !emailRateLimiter.current.isAllowed(rateLimitKey)) {
+        const remainingAttempts = emailRateLimiter.current.getRemainingAttempts(rateLimitKey);
+        setMessage({
+          text: `Too many email change attempts. Please try again in 10 minutes.`,
+          type: 'error'
+        });
+        setTimeout(() => setMessage({ text: '', type: '' }), 5000);
+        return;
+      }
+
       try {
+        setIsVerifying(true);
+        
+        // Audit log: Email change attempt
+        if (hasEmailChanged()) {
+          auditLogger.log('email_change_attempt', { 
+            adminId: currentAdmin?.id,
+            oldEmail: effectiveAdminData?.email,
+            newEmail: adminData.email
+          }, currentAdmin?.id);
+        }
+        
         // If email has changed, verify password first
         if (hasEmailChanged()) {
-          try {
-            await verifyPassword({
-              id: currentAdmin.id,
-              currentPassword: adminData.emailChangePassword
-            }).unwrap();
-          } catch (error) {
+          const verifyResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admins/${currentAdmin.id}/verify-password`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+            },
+            body: JSON.stringify({ currentPassword: adminData.emailChangePassword })
+          });
+
+          if (!verifyResponse.ok) {
+            const errorData = await verifyResponse.json().catch(() => ({}));
+            const errorInfo = handleApiError({ status: verifyResponse.status, message: errorData.message }, 'email_verification');
+            
             setMessage({
-              text: 'Invalid current password. Please try again.',
+              text: errorInfo.message,
               type: 'error'
             });
+            
+            // Audit log: Email change verification failed
+            auditLogger.log('email_change_verification_failed', { 
+              adminId: currentAdmin?.id,
+              reason: errorInfo.type 
+            }, currentAdmin?.id);
+            
             setTimeout(() => setMessage({ text: '', type: '' }), 5000);
             return;
           }
         }
 
-        const updateData = {
-          email: adminData.email,
-          role: 'admin', // Ensure role remains admin
-          status: adminData.status
-        };
+        setIsVerifying(false);
+        setIsUpdating(true);
+
+        const updateResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admins/${currentAdmin.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          },
+          body: JSON.stringify({
+            email: adminData.email,
+            role: 'admin', // Ensure role remains admin
+            status: adminData.status
+          })
+        });
+
+        if (!updateResponse.ok) {
+          const errorData = await updateResponse.json().catch(() => ({}));
+          const errorInfo = handleApiError({ status: updateResponse.status, message: errorData.message }, 'email_update');
+          throw new Error(errorInfo.message);
+        }
         
-        await updateAdmin({ 
-          id: currentAdmin.id, 
-          ...updateData 
-        }).unwrap();
+        // Reset rate limiter on success
+        if (hasEmailChanged()) {
+          emailRateLimiter.current.reset(rateLimitKey);
+        }
         
         // Update Redux store with new email
         if (hasEmailChanged()) {
           dispatch(updateAdminEmail({ email: adminData.email }));
+          
+          // Audit log: Email change successful
+          auditLogger.log('email_change_successful', { 
+            adminId: currentAdmin?.id,
+            oldEmail: effectiveAdminData?.email,
+            newEmail: adminData.email
+          }, currentAdmin?.id);
         }
         
         setMessage({ text: 'Email updated successfully!', type: 'success' });
         setIsEditing(false);
         setAdminData(prev => ({ ...prev, emailChangePassword: '' })); // Clear password field
-        refetch(); // Refresh data
+        refreshAdmin(); // Refresh data
         setTimeout(() => setMessage({ text: '', type: '' }), 3000);
       } catch (error) {
-        console.error('Failed to update profile:', error);
+        // Audit log: Email change failed
+        if (hasEmailChanged()) {
+          auditLogger.log('email_change_failed', { 
+            adminId: currentAdmin?.id,
+            error: error.message 
+          }, currentAdmin?.id);
+        }
+        
         setMessage({ 
-          text: error.data?.message || 'Failed to update email. Please try again.', 
+          text: error.message || 'Failed to update email. Please try again.', 
           type: 'error' 
         });
         setTimeout(() => setMessage({ text: '', type: '' }), 5000);
+      } finally {
+        setIsVerifying(false);
+        setIsUpdating(false);
       }
     }
   };
@@ -406,8 +687,10 @@ export default function AdminSettings() {
     setShowPasswordChange(false);
     setErrors({});
     setEmailPasswordVisibility(false); // Reset email password visibility
+    // Reset email to original value and clear password field
     setAdminData(prev => ({
       ...prev,
+      email: effectiveAdminData?.email || '', // Reset to original email
       emailChangePassword: '' // Clear email change password field
     }));
   };
@@ -416,6 +699,8 @@ export default function AdminSettings() {
     setShowPasswordChange(false);
     setMessage({ text: 'Password changed successfully!', type: 'success' });
     setTimeout(() => setMessage({ text: '', type: '' }), 3000);
+    // Refresh admin data to get updated password change time
+    refreshAdmin();
   };
 
   return (
@@ -440,7 +725,7 @@ export default function AdminSettings() {
         <div className={`${styles.message} ${styles.error}`}>
           <strong>Error loading admin data:</strong> {apiError?.data?.message || apiError?.message || 'Unknown error'}
           <button 
-            onClick={() => refetch()} 
+            onClick={() => refreshAdmin()} 
             className={styles.retryButton}
           >
             Retry
@@ -500,7 +785,7 @@ export default function AdminSettings() {
                         value={adminData.emailChangePassword}
                         onChange={handleInputChange}
                         className={`${styles.input} ${styles.passwordInput} ${errors.emailChangePassword ? styles.inputError : ''}`}
-                        placeholder="Enter your current password"
+                        placeholder="Enter your current password to confirm"
                         disabled={isUpdating || isVerifying}
                       />
                       <button
@@ -521,17 +806,17 @@ export default function AdminSettings() {
 
                 <div className={styles.actionButtons}>
                   <button 
+                    className={styles.cancelButton}
+                    onClick={handleCancel}
+                  >
+                    Cancel
+                  </button>
+                  <button 
                     className={styles.saveButton}
                     onClick={handleSaveProfile}
                     disabled={isUpdating || isVerifying}
                   >
                     {isUpdating ? 'Saving...' : isVerifying ? 'Verifying...' : 'Save Changes'}
-                  </button>
-                  <button 
-                    className={styles.cancelButton}
-                    onClick={handleCancel}
-                  >
-                    Cancel
                   </button>
                 </div>
               </div>
@@ -586,7 +871,7 @@ export default function AdminSettings() {
                   <label className={styles.label}>Password Status</label>
                   <div className={styles.passwordInfo}>
                     <p className={styles.infoText}>
-                      Last changed: <strong>30 days ago</strong>
+                      Last changed: <strong>{getPasswordChangeTime()}</strong>
                     </p>
                     <p className={styles.infoText}>
                       For security, we recommend changing your password regularly.

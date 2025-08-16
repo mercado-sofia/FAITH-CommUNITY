@@ -35,10 +35,19 @@ export default function NewsSection() {
 
     const orgsWithLatestNews = orgsData.map(org => {
       const orgNews = news.filter(item => item.organization_id === org.id);
-      const latestNews = orgNews.length > 0 ? orgNews[0] : null;
+      
+      // Find the latest news by sorting and taking the first one
+      const latestNews = orgNews.length > 0 
+        ? orgNews.sort((a, b) => {
+            const dateA = new Date(a.date || a.created_at || 0);
+            const dateB = new Date(b.date || b.created_at || 0);
+            return dateB - dateA; // Descending order (newest first)
+          })[0] 
+        : null;
+      
       return {
         ...org,
-        latestNewsDate: latestNews ? new Date(latestNews.created_at || latestNews.date) : new Date(0)
+        latestNewsDate: latestNews ? new Date(latestNews.date || latestNews.created_at || 0) : new Date(0)
       };
     });
 
@@ -77,12 +86,25 @@ export default function NewsSection() {
     router.push(`${pathname}?news_org=${orgObj.acronym || orgObj.id}`, { scroll: false });
   };
 
-  // Filter news based on selected organization
+  // Filter news based on selected organization and sort by date (newest first)
   const filteredNews = useMemo(() => {
-    if (!selectedOrg) return news;
+    if (!selectedOrg) {
+      // If no organization is selected, return all news sorted by date
+      return [...news].sort((a, b) => {
+        const dateA = new Date(a.date || a.created_at || 0);
+        const dateB = new Date(b.date || b.created_at || 0);
+        return dateB - dateA; // Descending order (newest first)
+      });
+    }
     
     const filtered = news.filter(item => item.organization_id == selectedOrg.id);
-    return filtered;
+    
+    // Sort filtered news by date (newest first)
+    return filtered.sort((a, b) => {
+      const dateA = new Date(a.date || a.created_at || 0);
+      const dateB = new Date(b.date || b.created_at || 0);
+      return dateB - dateA; // Descending order (newest first)
+    });
   }, [news, selectedOrg]);
 
   // Touch/trackpad swipe handlers

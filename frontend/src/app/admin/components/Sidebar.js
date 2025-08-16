@@ -4,8 +4,9 @@ import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSelector } from "react-redux"
-import { useState, useEffect } from "react"
 import { selectCurrentAdmin } from "../../../rtk/superadmin/adminSlice"
+import { useAdminOrganization } from "../../../hooks/useAdminData"
+import { useNavigation } from "../../../contexts/NavigationContext"
 import { getOrganizationImageUrl } from "@/utils/uploadPaths"
 import styles from "./sidebar.module.css"
 import LogoutModalTrigger from "../logout/page.js"
@@ -20,27 +21,11 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
 export default function Sidebar() {
   const pathname = usePathname()
   const currentAdmin = useSelector(selectCurrentAdmin)
-  const [orgLogo, setOrgLogo] = useState(null)
-
-  // Fetch organization logo
-  useEffect(() => {
-    const fetchOrgLogo = async () => {
-      if (!currentAdmin?.org) return
-      
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/organization/org/${currentAdmin.org}`)
-        const result = await response.json()
-        
-        if (result.success && result.data?.logo) {
-          setOrgLogo(result.data.logo)
-        }
-      } catch (error) {
-        console.error('Failed to fetch organization logo:', error)
-      }
-    }
-
-    fetchOrgLogo()
-  }, [currentAdmin?.org])
+  const { handleNavigation, isLinkLoading } = useNavigation()
+  
+  // Use SWR hook for organization data
+  const { organization } = useAdminOrganization(currentAdmin?.org)
+  const orgLogo = organization?.logo
 
   return (
     <aside className={styles.sidebar}>
@@ -55,7 +40,6 @@ export default function Sidebar() {
               alt="Organization Logo"
               unoptimized={true}
               onError={(e) => {
-                console.error('Sidebar logo failed to load:', orgLogo);
                 e.target.src = "/default-profile.png";
               }}
             />
@@ -81,10 +65,12 @@ export default function Sidebar() {
         <nav className={styles.nav}>
           <Link
             href="/admin/dashboard"
-            className={`${styles.navBase} ${styles.navItem} ${pathname === "/admin/dashboard" ? styles.active : ""}`}
+            className={`${styles.navBase} ${styles.navItem} ${pathname === "/admin/dashboard" ? styles.active : ""} ${isLinkLoading("/admin/dashboard") ? styles.loading : ""}`}
+            onClick={() => handleNavigation("/admin/dashboard")}
           >
             <HiViewGrid className={styles.dashbIcon} />
             <span>Dashboard</span>
+            {isLinkLoading("/admin/dashboard") && <div className={styles.loadingSpinner}></div>}
           </Link>
         </nav>
 
@@ -93,44 +79,54 @@ export default function Sidebar() {
         <nav className={styles.nav}>
           <Link
             href="/admin/volunteers"
-            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith("/admin/volunteers") ? styles.active : ""}`}
+            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith("/admin/volunteers") ? styles.active : ""} ${isLinkLoading("/admin/volunteers") ? styles.loading : ""}`}
+            onClick={() => handleNavigation("/admin/volunteers")}
           >
             <FaUserCheck className={styles.icon} />
             <span>Volunteers</span>
+            {isLinkLoading("/admin/volunteers") && <div className={styles.loadingSpinner}></div>}
           </Link>
 
           <Link
             href="/admin/organization"
-            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith("/admin/organization") ? styles.active : ""}`}
+            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith("/admin/organization") ? styles.active : ""} ${isLinkLoading("/admin/organization") ? styles.loading : ""}`}
+            onClick={() => handleNavigation("/admin/organization")}
           >
             <HiOfficeBuilding className={styles.icon} />
             <span>Organization</span>
+            {isLinkLoading("/admin/organization") && <div className={styles.loadingSpinner}></div>}
           </Link>
 
           <Link
             href="/admin/programs"
-            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith("/admin/programs") ? styles.active : ""}`}
+            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith("/admin/programs") ? styles.active : ""} ${isLinkLoading("/admin/programs") ? styles.loading : ""}`}
+            onClick={() => handleNavigation("/admin/programs")}
           >
             <TbChecklist className={styles.icon} />
             <span>Programs</span>
+            {isLinkLoading("/admin/programs") && <div className={styles.loadingSpinner}></div>}
           </Link>
 
           <Link
             href="/admin/news"
-            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith("/admin/news") ? styles.active : ""}`}
+            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith("/admin/news") ? styles.active : ""} ${isLinkLoading("/admin/news") ? styles.loading : ""}`}
+            onClick={() => handleNavigation("/admin/news")}
           >
             <HiOutlineNewspaper className={styles.icon} />
             <span>
               News <span className={styles.updateText}>Update</span>
             </span>
+            {isLinkLoading("/admin/news") && <div className={styles.loadingSpinner}></div>}
           </Link>
 
           <Link
             href="/admin/submissions"
-            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith("/admin/submissions") ? styles.active : ""}`}
+            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith("/admin/submissions") ? styles.active : ""} ${isLinkLoading("/admin/submissions") ? styles.loading : ""}`}
+            onClick={() => handleNavigation("/admin/submissions")}
           >
             <FaRegFolderOpen className={styles.icon} />
             <span>Submissions</span>
+            {isLinkLoading("/admin/submissions") && <div className={styles.loadingSpinner}></div>}
           </Link>
         </nav>
 
@@ -139,10 +135,12 @@ export default function Sidebar() {
         <nav className={styles.nav}>
           <Link
             href="/admin/settings"
-            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith("/admin/settings") ? styles.active : ""}`}
+            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith("/admin/settings") ? styles.active : ""} ${isLinkLoading("/admin/settings") ? styles.loading : ""}`}
+            onClick={() => handleNavigation("/admin/settings")}
           >
             <HiOutlineCog className={styles.icon} />
             <span>Settings</span>
+            {isLinkLoading("/admin/settings") && <div className={styles.loadingSpinner}></div>}
           </Link>
 
           {/* Logout Button */}

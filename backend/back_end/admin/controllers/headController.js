@@ -98,6 +98,17 @@ export const updateHead = async (req, res) => {
   const { id } = req.params
   const { head_name, role, facebook, email, photo, priority, display_order } = req.body
 
+  console.log('🔄 Individual head update request:', {
+    id,
+    head_name,
+    role,
+    facebook,
+    email,
+    photo: photo ? 'photo provided' : 'no photo',
+    priority,
+    display_order
+  });
+
   if (!id) {
     return res.status(400).json({
       success: false,
@@ -129,7 +140,7 @@ export const updateHead = async (req, res) => {
   try {
     const [result] = await db.execute(
       `UPDATE organization_heads 
-       SET head_name = ?, role = ?, priority = ?, display_order = ?, facebook = ?, email = ?, photo = ?, updated_at = NOW() 
+       SET head_name = ?, role = ?, priority = ?, display_order = ?, facebook = ?, email = ?, photo = ? 
        WHERE id = ?`,
       [
         head_name.trim(), 
@@ -150,6 +161,7 @@ export const updateHead = async (req, res) => {
       })
     }
 
+    console.log('✅ Individual head update completed successfully');
     res.json({
       success: true,
       message: "Organization head updated successfully",

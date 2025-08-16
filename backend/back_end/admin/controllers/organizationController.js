@@ -222,12 +222,20 @@ export const updateOrganizationInfo = async (req, res) => {
 
     // Commit the transaction
     await connection.commit()
+    
+    // Get the updated organization data to return
+    const [updatedOrgData] = await connection.execute(
+      'SELECT * FROM organizations WHERE id = ?',
+      [id]
+    )
+    
     connection.release()
 
     console.log("Backend: Successfully updated organization and synced admin data")
     res.json({ 
       success: true, 
-      message: "Organization info updated successfully and admin data synchronized" 
+      message: "Organization info updated successfully and admin data synchronized",
+      data: updatedOrgData[0] || { id }
     })
   } catch (err) {
     // Rollback the transaction in case of error

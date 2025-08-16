@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import styles from './styles/HeroSection.module.css';
 
@@ -34,12 +35,12 @@ export default function HeroSection() {
               </div>
 
               <div className={styles.buttons}>
-                <button className={styles.discover}>
+                <Link href="/programs" className={styles.discover}>
                   Discover Now
                   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 15 15" fill="none">
                     <path d="M4.375 10.625L10.625 4.375M10.625 4.375H4.375M10.625 4.375V10.625" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                </button>
+                </Link>
 
                 <div className={styles.playCircle} onClick={() => setShowVideo(true)}>
                   <span className={styles.playIcon}>▶</span>

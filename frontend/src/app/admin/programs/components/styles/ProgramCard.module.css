@@ -5,7 +5,9 @@
   border: 1px solid #e5e7eb;
   overflow: hidden;
   transition: all 0.3s ease;
-  height: fit-content;
+  height: 500px; /* Fixed height for consistent dimensions */
+  display: flex;
+  flex-direction: column;
 }
 
 .programCard:hover {
@@ -35,6 +37,10 @@
 
 .programContent {
   padding: 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0; /* Allow content to shrink */
 }
 
 .programHeader {
@@ -64,6 +70,7 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 0; /* Prevent description from shrinking */
 }
 
 .programMeta {
@@ -71,6 +78,7 @@
   flex-direction: column;
   gap: 6px;
   margin-bottom: 12px;
+  flex-shrink: 0; /* Prevent meta from shrinking */
 }
 
 .metaRow {
@@ -127,6 +135,9 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 0.75rem;
+  width: fit-content; /* Only take the width it needs */
+  min-width: 80px; /* Minimum width for consistency */
+  text-align: center; /* Center the text within the badge */
 }
 
 .statusBadge.Upcoming {
@@ -148,6 +159,7 @@
   display: flex;
   gap: 8px;
   margin-top: auto;
+  flex-shrink: 0; /* Keep buttons at bottom */
 }
 
 .viewButton,
@@ -213,6 +225,7 @@
 @media (max-width: 768px) {
   .programCard {
     margin-bottom: 16px;
+    height: 450px; /* Slightly smaller height on mobile */
   }
 
   .imageContainer {
@@ -259,6 +272,10 @@
 }
 
 @media (max-width: 480px) {
+  .programCard {
+    height: 400px; /* Even smaller height on very small screens */
+  }
+  
   .programContent {
     padding: 12px;
   }

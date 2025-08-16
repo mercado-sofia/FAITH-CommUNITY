@@ -5,6 +5,8 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import styles from './programDetails.module.css';
 import { usePublicPrograms } from '../../../../../hooks/usePublicData';
+import Loader from '../../../../../components/Loader';
+import { getProgramImageUrl } from '../../../../../utils/uploadPaths';
 
 export default function ProgramDetailsPage() {
   const { programID } = useParams();
@@ -50,6 +52,69 @@ export default function ProgramDetailsPage() {
     }
   };
 
+  const formatEventDates = (program) => {
+    // Check for multiple dates first
+    if (program.multiple_dates && Array.isArray(program.multiple_dates) && program.multiple_dates.length > 0) {
+      if (program.multiple_dates.length === 1) {
+        return new Date(program.multiple_dates[0]).toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      } else {
+        const dates = program.multiple_dates.map(date => 
+          new Date(date).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+          })
+        );
+        return `Multiple Dates: ${dates.join(', ')}`;
+      }
+    }
+    
+    // Check for event start and end dates
+    if (program.event_start_date && program.event_end_date) {
+      const startDate = new Date(program.event_start_date);
+      const endDate = new Date(program.event_end_date);
+      
+      if (startDate.getTime() === endDate.getTime()) {
+        // Single day event
+        return startDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      } else {
+        // Date range
+        return `${startDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })} - ${endDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })}`;
+      }
+    }
+    
+    // Check for single start date
+    if (program.event_start_date) {
+      return new Date(program.event_start_date).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
+    
+    return 'Date not specified';
+  };
+
   const getApplicationContent = () => {
     switch (program.status) {
       case 'Upcoming':
@@ -88,13 +153,7 @@ export default function ProgramDetailsPage() {
   };
 
   if (loading || !pageReady) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.loadingContainer}>
-          <div className={styles.loadingText}>Loading program details...</div>
-        </div>
-      </div>
-    );
+    return <Loader small centered />;
   }
 
   if (error) {
@@ -132,7 +191,7 @@ export default function ProgramDetailsPage() {
           <div className={styles.programContent}>
             {program.image && (
               <Image 
-                src={program.image} 
+                src={getProgramImageUrl(program.image)} 
                 alt={program.title} 
                 width={600} 
                 height={400}
@@ -154,14 +213,12 @@ export default function ProgramDetailsPage() {
                     {program.status}
                   </span>
                 </div>
-                {program.date && (
-                  <div className={styles.metaItem}>
-                    <span className={styles.metaLabel}>Date</span>
-                    <span className={styles.metaValue}>
-                      {new Date(program.date).toLocaleDateString()}
-                    </span>
-                  </div>
-                )}
+                <div className={styles.metaItem}>
+                  <span className={styles.metaLabel}>Event Date</span>
+                  <span className={styles.metaValue}>
+                    {formatEventDates(program)}
+                  </span>
+                </div>
               </div>
               
               <div className={styles.programDescription}>
@@ -169,21 +226,41 @@ export default function ProgramDetailsPage() {
                 <p className={styles.descriptionText}>{program.description}</p>
               </div>
               
+              {/* Additional Images Gallery */}
+              {program.additional_images && program.additional_images.length > 0 && (
+                <div className={styles.additionalImagesSection}>
+                  <h3 className={styles.additionalImagesTitle}>Program Gallery</h3>
+                  <div className={styles.additionalImagesGrid}>
+                    {program.additional_images.map((imagePath, index) => (
+                      <div key={index} className={styles.additionalImageContainer}>
+                        <Image 
+                          src={getProgramImageUrl(imagePath, 'additional')} 
+                          alt={`${program.title} - Image ${index + 1}`}
+                          width={200} 
+                          height={150}
+                          className={styles.additionalImage}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               {(program.orgName || program.orgID) && (
                 <div className={styles.organizationSection}>
                   <h3 className={styles.orgTitle}>Host Organization</h3>
                   <div className={styles.orgInfo}>
                     {program.icon && (
-                                             <Image 
-                         src={program.icon ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${program.icon}` : '/logo/faith_community_logo.png'} 
-                         alt={`${program.orgName || program.orgID} logo`}
-                         width={48} 
-                         height={48}
-                         className={styles.orgLogo}
-                         onError={(e) => {
-                           e.target.src = '/logo/faith_community_logo.png';
-                         }}
-                       />
+                      <Image 
+                        src={program.icon ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${program.icon}` : '/logo/faith_community_logo.png'} 
+                        alt={`${program.orgName || program.orgID} logo`}
+                        width={48} 
+                        height={48}
+                        className={styles.orgLogo}
+                        onError={(e) => {
+                          e.target.src = '/logo/faith_community_logo.png';
+                        }}
+                      />
                     )}
                     <div className={styles.orgDetails}>
                       <div className={styles.orgName}>{program.orgName || program.orgID}</div>

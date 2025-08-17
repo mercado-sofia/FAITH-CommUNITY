@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { TbMail } from "react-icons/tb";
 import { MdNotificationsNone } from "react-icons/md";
 import { useNavigation } from '../../../contexts/NavigationContext';
-import styles from './topbar.module.css';
+import styles from './styles/topbar.module.css';
 
 export default function TopBar() {
   const [adminData, setAdminData] = useState(null);

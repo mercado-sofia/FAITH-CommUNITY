@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useSelector } from 'react-redux'
 import SearchAndFilterControls from './components/SearchAndFilterControls'
 import VolunteerTable from './components/VolunteerTable'
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
+import SuccessModal from '../components/SuccessModal'
 import { useAdminVolunteers, useAdminPrograms } from '../../../hooks/useAdminData'
 import { selectCurrentAdmin, selectIsAuthenticated } from '../../../rtk/superadmin/adminSlice'
 import styles from './volunteers.module.css'
@@ -186,21 +188,100 @@ export default function VolunteersPage() {
     // Sanitize volunteer name for display
     const sanitizedName = sanitizeInput(volunteerName);
     
-    if (window.confirm(`Are you sure you want to delete ${sanitizedName}? This action will hide the volunteer from the list but preserve their data.`)) {
-      // Check rate limiting
-      const rateLimitKey = `soft_delete_${currentAdmin?.id}`;
-      if (!rateLimiter.current.isAllowed(rateLimitKey)) {
-        alert('Too many delete operations. Please wait a moment and try again.');
-        return;
+    // Set volunteer to delete and show confirmation modal
+    const volunteerData = { id, name: sanitizedName };
+    setVolunteerToDelete(volunteerData);
+    volunteerToDeleteRef.current = volunteerData;
+    setShowDeleteModal(true);
+  }, [])
+
+  // Handle delete confirmation
+  const handleConfirmDelete = useCallback(async () => {
+    if (!volunteerToDeleteRef.current) return;
+
+    const volunteer = volunteerToDeleteRef.current; // Use ref value
+    setIsDeleting(true);
+    
+    // Check rate limiting
+    const rateLimitKey = `soft_delete_${currentAdmin?.id}`;
+    if (!rateLimiter.current.isAllowed(rateLimitKey)) {
+      alert('Too many delete operations. Please wait a moment and try again.');
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+      setVolunteerToDelete(null);
+      volunteerToDeleteRef.current = null;
+      return;
+    }
+
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        throw new Error('No admin token found. Please log in again.');
       }
 
-      try {
-        const adminToken = localStorage.getItem('adminToken');
-        if (!adminToken) {
-          throw new Error('No admin token found. Please log in again.');
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/volunteers/${volunteer.id}/soft-delete`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
         }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorInfo = handleApiError({ status: response.status, message: errorData.message }, 'soft_delete');
+        throw new Error(errorInfo.message);
+      }
+      
+      // Reset rate limiter on success
+      rateLimiter.current.reset(rateLimitKey);
+      
+      // Close delete modal
+      setShowDeleteModal(false);
+      setVolunteerToDelete(null);
+      volunteerToDeleteRef.current = null;
+      
+      // Show success message
+      setSuccessMessage(`${volunteer.name} has been successfully deleted from the volunteer list.`);
+      setShowSuccessModal(true);
+      
+      // Refresh data after successful deletion
+      refreshVolunteers();
+    } catch (error) {
+      console.error('Soft delete error:', error);
+      alert(error.message || 'Failed to delete volunteer. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [refreshVolunteers, currentAdmin?.id])
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/volunteers/${id}/soft-delete`, {
+  // Handle delete cancellation
+  const handleCancelDelete = useCallback(() => {
+    setShowDeleteModal(false);
+    setVolunteerToDelete(null);
+    volunteerToDeleteRef.current = null;
+    setIsDeleting(false);
+  }, [])
+
+  // Handle bulk delete
+  const handleBulkDelete = useCallback(async (volunteerIds) => {
+    if (!volunteerIds || volunteerIds.length === 0) return;
+
+    setIsDeleting(true);
+    
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        throw new Error('No admin token found. Please log in again.');
+      }
+
+      // Delete each volunteer
+      const deletePromises = volunteerIds.map(async (volunteerId) => {
+        const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/volunteers/${volunteerId}/soft-delete`;
+        
+        const response = await fetch(apiUrl, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -210,23 +291,38 @@ export default function VolunteersPage() {
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          const errorInfo = handleApiError({ status: response.status, message: errorData.message }, 'soft_delete');
-          throw new Error(errorInfo.message);
+          throw new Error(`Failed to delete volunteer ${volunteerId}: ${errorData.message || response.statusText}`);
         }
         
-        // Reset rate limiter on success
-        rateLimiter.current.reset(rateLimitKey);
-        
-        // Refresh data after successful deletion
-        refreshVolunteers();
-      } catch (error) {
-        console.error('Soft delete error:', error);
-        alert(error.message || 'Failed to delete volunteer. Please try again.');
-      }
-    }
-  }, [refreshVolunteers, currentAdmin?.id])
+        return response.ok;
+      });
 
-  const [searchQuery, setSearchQuery] = useState('')
+      await Promise.all(deletePromises);
+      
+      // Show success message
+      setSuccessMessage(`${volunteerIds.length} volunteer${volunteerIds.length !== 1 ? 's' : ''} have been successfully deleted from the volunteer list.`);
+      setShowSuccessModal(true);
+      
+      // Refresh data after successful deletion
+      refreshVolunteers();
+    } catch (error) {
+      console.error('Bulk delete error:', error);
+      alert(error.message || 'Failed to delete volunteers. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [refreshVolunteers])
+
+
+
+  function capitalizeFirstLetter(str) {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+  }
+
+  const [searchQuery, setSearchQuery] = useState(
+    searchParams.get('search') || ''
+  )
   const [statusFilter, setStatusFilter] = useState(
     searchParams.get('filter') ? capitalizeFirstLetter(searchParams.get('filter')) : 'All status'
   )
@@ -238,10 +334,15 @@ export default function VolunteersPage() {
     parseInt(searchParams.get('show')) || 10
   )
 
-  function capitalizeFirstLetter(str) {
-    if (!str) return '';
-    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
-  }
+  // Modal states
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [volunteerToDelete, setVolunteerToDelete] = useState(null)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
+  
+  // Use ref to store volunteer to delete to avoid dependency issues
+  const volunteerToDeleteRef = useRef(null)
 
   // Enhanced search handler with sanitization
   const handleSearchChange = useCallback((query) => {
@@ -277,8 +378,12 @@ export default function VolunteersPage() {
       params.set('show', showCount.toString())
     }
 
+    if (searchQuery && searchQuery.trim() !== '') {
+      params.set('search', searchQuery.trim())
+    }
+
     router.replace(`?${params.toString()}`, { scroll: false })
-  }, [router, statusFilter, sortOrder, showCount])
+  }, [router, statusFilter, sortOrder, showCount, searchQuery])
 
   const filteredVolunteers = useMemo(() => {
     if (!Array.isArray(volunteersData) || volunteersData.length === 0) return []
@@ -411,7 +516,27 @@ export default function VolunteersPage() {
         volunteers={filteredVolunteers}
         onStatusUpdate={handleStatusUpdate}
         onSoftDelete={handleSoftDelete}
+        onBulkDelete={handleBulkDelete}
         itemsPerPage={showCount}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        itemName={volunteerToDelete?.name || ''}
+        itemType="volunteer"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        isDeleting={isDeleting}
+      />
+
+      {/* Success Modal */}
+      <SuccessModal
+        message={successMessage}
+        isVisible={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        type="success"
+        autoHideDuration={4000}
       />
     </div>
   )

@@ -59,19 +59,19 @@ const ViewDetailsModal = ({ program, onClose }) => {
   };
 
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h2 className={styles.modalTitle}>Program Details</h2>
-          <button onClick={onClose} className={styles.closeButton}>
+    <div className={styles.modalOverlay} onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ background: 'white', borderRadius: '14px', width: '100%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', padding: '0 10px' }}>
+        <div className={styles.modalHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 24px 0 24px', marginBottom: '24px' }}>
+          <h2 className={styles.modalTitle} style={{ fontSize: '1.25rem', fontWeight: '700', color: '#06100f', margin: 0 }}>Program Details</h2>
+          <button onClick={onClose} className={styles.closeButton} style={{ background: '#f3f4f6', border: 'none', borderRadius: '8px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#6b7280' }}>
             <FaTimes />
           </button>
         </div>
 
-        <div className={styles.modalBody}>
-          <div className={styles.contentLayout}>
+        <div className={styles.modalBody} style={{ padding: '0 24px 24px 24px' }}>
+          <div className={styles.contentLayout} style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '24px' }}>
             {/* Top Section - Image and Program Info Side by Side */}
-            <div className={styles.topSection}>
+            <div className={styles.topSection} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', alignItems: 'start' }}>
               {/* Left - Program Image */}
               {program.image ? (
                 <div className={styles.imageSection}>

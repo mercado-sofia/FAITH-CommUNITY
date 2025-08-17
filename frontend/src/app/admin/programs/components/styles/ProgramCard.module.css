@@ -5,7 +5,7 @@
   border: 1px solid #e5e7eb;
   overflow: hidden;
   transition: all 0.3s ease;
-  height: 500px; /* Fixed height for consistent dimensions */
+  height: 490px;
   display: flex;
   flex-direction: column;
 }
@@ -67,10 +67,11 @@
   margin: 0 0 12px 0;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex-shrink: 0; /* Prevent description from shrinking */
+  flex-shrink: 0;
 }
 
 .programMeta {

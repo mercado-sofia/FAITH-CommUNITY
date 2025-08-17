@@ -1,37 +1,40 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { selectCurrentAdmin } from '../../../rtk/superadmin/adminSlice';
 import { useAdminPrograms } from '../../../hooks/useAdminData';
-import styles from './programs.module.css';
-import { FaPlus, FaEdit, FaTrash, FaEye } from 'react-icons/fa';
+import ProgramCard from './components/ProgramCard';
 import AddProgramModal from './components/AddProgramModal';
 import EditProgramModal from './components/EditProgramModal';
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import ViewDetailsModal from './components/ViewDetailsModal';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
-import ProgramCard from './components/ProgramCard';
-import SuccessModal from './components/SuccessModal';
+import ErrorBoundary from '../../../components/ErrorBoundary';
+import SuccessModal from '../components/SuccessModal';
+import styles from './programs.module.css';
+import { FaPlus } from 'react-icons/fa';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-export default function ProgramsPage() {
+export default function AdminProgramsPage() {
+  const currentAdmin = useSelector(selectCurrentAdmin);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const currentAdmin = useSelector(selectCurrentAdmin);
   
-  // State management
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingProgram, setEditingProgram] = useState(null);
-  const [deletingProgram, setDeletingProgram] = useState(null);
-  const [viewingProgram, setViewingProgram] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingProgram, setEditingProgram] = useState(null);
+  const [viewingProgram, setViewingProgram] = useState(null);
+  const [deletingProgram, setDeletingProgram] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Use SWR hook for programs data
-  const { programs, isLoading, error, mutate: refreshPrograms } = useAdminPrograms(currentAdmin?.org);
+  const { programs = [], isLoading, error, mutate: refreshPrograms } = useAdminPrograms(currentAdmin?.org);
   
   // Filter and search states
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
@@ -116,7 +119,7 @@ export default function ProgramsPage() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error('Failed to submit program');
+        throw new Error(`Failed to submit program: ${errorText}`);
       }
 
       setSuccessModal({ 
@@ -125,12 +128,12 @@ export default function ProgramsPage() {
         type: 'success' 
       });
 
-      setIsAddModalOpen(false);
+      setShowAddModal(false);
       refreshPrograms();
     } catch (error) {
       setSuccessModal({ 
         isVisible: true, 
-        message: 'Failed to submit program. Please try again.', 
+        message: `Failed to submit program: ${error.message}`, 
         type: 'error' 
       });
     }
@@ -179,7 +182,7 @@ export default function ProgramsPage() {
     }
   };
 
-  // Handle program deletion - show modal
+  // Handle program view - show modal
   const handleViewProgram = (program) => {
     setViewingProgram(program);
   };
@@ -231,13 +234,20 @@ export default function ProgramsPage() {
     setSuccessModal({ isVisible: false, message: '', type: 'success' });
   };
 
+  // Close view modal
+  const closeViewModal = () => {
+    setViewingProgram(null);
+  };
+
   // Filter and sort programs
-  const filteredAndSortedPrograms = useMemo(() => {
-    let filtered = programs.filter((program) => {
+  const filteredAndSortedPrograms = useCallback(() => {
+    let filtered = (programs || []).filter((program) => {
+      if (!program || !program.title) return false;
+      
       const matchesSearch = 
-        program.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        program.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        program.category?.toLowerCase().includes(searchQuery.toLowerCase());
+        (program.title && program.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (program.description && program.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (program.category && program.category.toLowerCase().includes(searchQuery.toLowerCase()));
       
       const matchesCategory = categoryFilter === 'all' || program.category === categoryFilter;
       const matchesStatus = program.status?.toLowerCase() === statusFilter.toLowerCase();
@@ -249,11 +259,15 @@ export default function ProgramsPage() {
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'newest':
-          return new Date(b.created_at || b.date) - new Date(a.created_at || a.date);
+          const dateANew = a.created_at || a.date || new Date(0);
+          const dateBNew = b.created_at || b.date || new Date(0);
+          return new Date(dateBNew) - new Date(dateANew);
         case 'oldest':
-          return new Date(a.created_at || a.date) - new Date(b.created_at || b.date);
+          const dateAOld = a.created_at || a.date || new Date(0);
+          const dateBOld = b.created_at || b.date || new Date(0);
+          return new Date(dateAOld) - new Date(dateBOld);
         case 'title':
-          return a.title.localeCompare(b.title);
+          return (a.title || '').localeCompare(b.title || '');
         default:
           return 0;
       }
@@ -319,14 +333,13 @@ export default function ProgramsPage() {
         <div className={styles.headerTop}>
           <h1>Programs</h1>
           <button 
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => setShowAddModal(true)}
             className={styles.addButton}
           >
             <FaPlus /> Add Program
           </button>
         </div>
       </div>
-
 
 
       {/* Search and Filter Controls */}
@@ -336,8 +349,8 @@ export default function ProgramsPage() {
         showCount={showCount}
         onSearchChange={handleSearchChange}
         onFilterChange={handleFilterChange}
-        totalCount={programs.length}
-        filteredCount={filteredAndSortedPrograms.length}
+        totalCount={programs?.length || 0}
+        filteredCount={filteredAndSortedPrograms()?.length || 0}
       />
 
       {/* Status Navigation Tabs */}
@@ -355,16 +368,16 @@ export default function ProgramsPage() {
 
       {/* Programs Grid */}
       <div className={styles.programsSection}>
-        {filteredAndSortedPrograms.length === 0 ? (
+        {(filteredAndSortedPrograms()?.length || 0) === 0 ? (
           <div className={styles.emptyState}>
             <div className={styles.emptyTitle}>No programs found</div>
             <div className={styles.emptyText}>No programs match your current filters. Try adjusting your search criteria.</div>
           </div>
         ) : (
           <div className={styles.programsGrid}>
-            {filteredAndSortedPrograms.map((program) => (
+            {(filteredAndSortedPrograms() || []).map((program) => (
               <ProgramCard
-                key={program.id}
+                key={program?.id || Math.random()}
                 program={program}
                 onViewDetails={() => handleViewProgram(program)}
                 onEdit={() => setEditingProgram(program)}
@@ -376,9 +389,9 @@ export default function ProgramsPage() {
       </div>
 
       {/* Modals */}
-      {isAddModalOpen && (
+      {showAddModal && (
         <AddProgramModal
-          onClose={() => setIsAddModalOpen(false)}
+          onClose={() => setShowAddModal(false)}
           onSubmit={handleSubmitProgram}
         />
       )}
@@ -394,7 +407,7 @@ export default function ProgramsPage() {
       {viewingProgram && (
         <ViewDetailsModal
           program={viewingProgram}
-          onClose={() => setViewingProgram(null)}
+          onClose={closeViewModal}
         />
       )}
 

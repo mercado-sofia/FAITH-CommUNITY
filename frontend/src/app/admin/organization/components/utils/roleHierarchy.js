@@ -34,6 +34,38 @@ export const sortHeadsByOrder = (heads) => {
 };
 
 /**
+ * Sort organization heads by role hierarchy (automatic ordering)
+ * @param {Array} heads - Array of organization heads
+ * @returns {Array} Sorted array
+ */
+export const sortHeadsByRoleHierarchy = (heads) => {
+  return [...heads].sort((a, b) => {
+    const roleA = a.role || '';
+    const roleB = b.role || '';
+    
+    // Find the index of each role in the ROLE_OPTIONS array
+    const indexA = ROLE_OPTIONS.findIndex(option => option.value === roleA);
+    const indexB = ROLE_OPTIONS.findIndex(option => option.value === roleB);
+    
+    // If both roles are found in the hierarchy, sort by their index
+    if (indexA !== -1 && indexB !== -1) {
+      return indexA - indexB;
+    }
+    
+    // If only one role is found in the hierarchy, prioritize it
+    if (indexA !== -1 && indexB === -1) {
+      return -1; // roleA comes first
+    }
+    if (indexA === -1 && indexB !== -1) {
+      return 1; // roleB comes first
+    }
+    
+    // If neither role is in the hierarchy, sort alphabetically
+    return roleA.localeCompare(roleB);
+  });
+};
+
+/**
  * Get role badge color based on role hierarchy
  * @param {string} role - The role name
  * @returns {string} CSS class name for role badge
@@ -87,6 +119,23 @@ export const filterHeads = (heads, searchQuery) => {
            role.includes(query) || 
            email.includes(query);
   });
+};
+
+/**
+ * Apply role hierarchy ordering to organization heads
+ * This function automatically assigns display_order based on role hierarchy
+ * @param {Array} heads - Array of organization heads
+ * @returns {Array} Heads with updated display_order
+ */
+export const applyRoleHierarchyOrdering = (heads) => {
+  // First, sort by role hierarchy
+  const sortedHeads = sortHeadsByRoleHierarchy(heads);
+  
+  // Then assign display_order based on the sorted position
+  return sortedHeads.map((head, index) => ({
+    ...head,
+    display_order: index + 1
+  }));
 };
 
 

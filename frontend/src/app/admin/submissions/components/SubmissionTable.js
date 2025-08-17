@@ -4,7 +4,7 @@ import SubmissionModal from './SubmissionModal';
 import ReEditModal from './ReEditModal';
 import CancelConfirmation from './CancelConfirmationModal';
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
-import ToastModal from './ToastModal';
+import SuccessModal from '../../components/SuccessModal';
 import styles from './styles/SubmissionTable.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -26,14 +26,14 @@ export default function SubmissionTable({
   const [reEditSubmission, setReEditSubmission] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
-  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
   
   const showToast = (message, type = 'success') => {
-    setToast({ show: true, message, type });
+    setSuccessModal({ isVisible: true, message, type });
   };
   
   const hideToast = () => {
-    setToast({ show: false, message: '', type: 'success' });
+    setSuccessModal({ isVisible: false, message: '', type: 'success' });
   };
   
   const handleSelectItem = (id) => {
@@ -344,11 +344,11 @@ export default function SubmissionTable({
         />
       )}
       
-      <ToastModal
-        message={toast.message}
-        isVisible={toast.show}
+      <SuccessModal
+        message={successModal.message}
+        isVisible={successModal.isVisible}
         onClose={hideToast}
-        type={toast.type}
+        type={successModal.type}
         autoHideDuration={3000}
       />
 

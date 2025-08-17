@@ -177,6 +177,33 @@ const initializeDatabase = async () => {
       console.log("✅ FAQs table created successfully!");
     }
 
+    // Check if submissions table exists
+    const [submissionsTables] = await connection.query('SHOW TABLES LIKE "submissions"');
+    
+    if (submissionsTables.length === 0) {
+      console.log("Creating submissions table...");
+      await connection.query(`
+        CREATE TABLE submissions (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          organization_id INT NOT NULL,
+          section VARCHAR(50) NOT NULL,
+          previous_data JSON,
+          proposed_data JSON NOT NULL,
+          submitted_by INT NOT NULL,
+          status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+          rejection_reason TEXT,
+          submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+          FOREIGN KEY (submitted_by) REFERENCES admins(id) ON DELETE CASCADE,
+          INDEX idx_organization_status (organization_id, status),
+          INDEX idx_submitted_by (submitted_by),
+          INDEX idx_section (section)
+        )
+      `);
+      console.log("✅ Submissions table created successfully!");
+    }
+
     connection.release();
     return promisePool;
   } catch (error) {

@@ -55,7 +55,6 @@
 }
 
 .actionButton {
-  padding: 8px 16px;
   border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
@@ -84,6 +83,7 @@
 
 .cancelAction {
   background-color: #fff;
+  padding: 8px 16px;
   color: #d50808;
   border-color: #d50808;
 }
@@ -93,14 +93,17 @@
 }
 
 .deleteAction {
-  background-color: #7f1d1d;
-  color: white;
-  border-color: #7f1d1d;
+  background-color: #fff;
+  padding: 8px 10px;
+  color: #dc2626;
+  border-color: #dc2626;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .deleteAction:hover {
-  background-color: #991b1b;
-  border-color: #991b1b;
+  background-color: #fef2f2;
 }
 
 /* Confirmation Modal Styles */

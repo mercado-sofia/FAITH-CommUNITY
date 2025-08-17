@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { initializeAuth } from "../../rtk/superadmin/adminSlice";
 import { NavigationProvider } from "../../contexts/NavigationContext";
@@ -31,74 +31,69 @@ const urbanist = Urbanist({
   variable: '--font-urbanist',
 });
 
-export default function AdminLayout({ children }) {
+function AdminLayoutContent({ children }) {
   const dispatch = useDispatch();
   const router = useRouter();
-  const [isAuthChecked, setIsAuthChecked] = useState(false);
-  const [isDashboardReady, setIsDashboardReady] = useState(false);
+  const pathname = usePathname();
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   useEffect(() => {
-    dispatch(initializeAuth());
+    const initializeAdmin = async () => {
+      try {
+        const token = localStorage.getItem('adminToken');
+        const adminData = localStorage.getItem('adminData');
+        const userRole = document.cookie.includes('userRole=admin');
+        
+        if (!token || !adminData || !userRole) {
+          localStorage.removeItem('adminToken');
+          localStorage.removeItem('adminData');
+          document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          router.push('/login');
+          return;
+        }
 
-    const adminToken = localStorage.getItem("adminToken");
-    const adminData = localStorage.getItem("adminData");
-    const userRole = document.cookie.includes("userRole=admin");
-
-    if (!adminToken || !adminData || !userRole) {
-      router.push("/login");
-    } else {
-      setIsAuthChecked(true);
-    }
-  }, [dispatch, router]);
-
-  // Listen for dashboard ready event
-  useEffect(() => {
-    const handleDashboardReady = () => {
-      setIsDashboardReady(true);
+        const parsedAdminData = JSON.parse(adminData);
+        dispatch(initializeAuth({ token, adminData: parsedAdminData }));
+        
+        setIsInitialLoading(false);
+      } catch (error) {
+        console.error('Error initializing admin:', error);
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminData');
+        document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        router.push('/login');
+      }
     };
 
-    // Check if we're on the dashboard page
-    const isDashboardPage = window.location.pathname === '/admin' || window.location.pathname === '/admin/dashboard';
-    
-    if (isDashboardPage) {
-      // Listen for dashboard ready event
-      window.addEventListener('dashboardReady', handleDashboardReady);
-      
-      // Fallback: if no event is fired within 3 seconds, mark as ready
-      const fallbackTimer = setTimeout(() => {
-        setIsDashboardReady(true);
-      }, 3000);
-      
-      return () => {
-        window.removeEventListener('dashboardReady', handleDashboardReady);
-        clearTimeout(fallbackTimer);
-      };
-    } else {
-      // For non-dashboard pages, mark as ready immediately
-      setIsDashboardReady(true);
-    }
-  }, []);
+    initializeAdmin();
+  }, [dispatch, router]);
 
-  // Show loader while auth is being checked or dashboard is loading
-  if (!isAuthChecked || !isDashboardReady) {
-    return (
-      <div className={`${poppins.variable} ${inter.variable} ${urbanist.variable}`}>
-        <Loader />
-      </div>
-    );
+  // Show full-screen loader only on initial page load/reload
+  if (isInitialLoading) {
+    return <Loader />;
   }
 
   return (
-    <NavigationProvider>
-      <div className={`${poppins.variable} ${inter.variable} ${urbanist.variable}`}>
-        <Sidebar />
+    <div className={`${styles.adminLayout} ${poppins.variable} ${inter.variable} ${urbanist.variable}`}>
+      <Sidebar />
+      <div className={styles.mainContent}>
         <TopBar />
-        <main className={`${styles.mainContent} ${scrollStyles.adminScrollContainer} ${poppins.className}`}>
+        <main className={`${styles.content} ${scrollStyles.customScrollbar}`}>
           <ErrorBoundary>
             {children}
           </ErrorBoundary>
         </main>
       </div>
+    </div>
+  );
+}
+
+export default function AdminLayout({ children }) {
+  return (
+    <NavigationProvider>
+      <AdminLayoutContent>
+        {children}
+      </AdminLayoutContent>
     </NavigationProvider>
   );
 }

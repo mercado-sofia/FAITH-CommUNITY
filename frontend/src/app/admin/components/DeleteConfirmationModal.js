@@ -46,14 +46,26 @@ export default function DeleteConfirmationModal({
 
         <div className={styles.footer}>
           <button
-            onClick={onCancel}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (onCancel && typeof onCancel === 'function') {
+                onCancel();
+              }
+            }}
             className={styles.cancelBtn}
             disabled={isDeleting}
           >
             Cancel
           </button>
           <button
-            onClick={onConfirm}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (onConfirm && typeof onConfirm === 'function') {
+                onConfirm();
+              }
+            }}
             className={styles.deleteBtn}
             disabled={isDeleting}
           >

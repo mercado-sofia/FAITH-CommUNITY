@@ -513,6 +513,13 @@
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
+.customRoleInput {
+  margin-top: 0.5rem;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top: none;
+}
+
 .fieldError {
   color: #ef4444;
   font-size: 12px;

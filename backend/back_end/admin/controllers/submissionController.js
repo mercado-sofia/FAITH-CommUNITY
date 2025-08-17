@@ -36,7 +36,6 @@ const validateSubmissionItem = (item) => {
 }
 
 export const submitChanges = async (req, res) => {
-  console.log("[DEBUG] submitChanges called with body:", JSON.stringify(req.body, null, 2))
   const { submissions } = req.body
 
   // Input validation
@@ -70,16 +69,14 @@ export const submitChanges = async (req, res) => {
 
     // Get unique organization identifiers from submissions
     const orgIdentifiers = [...new Set(submissions.map((item) => item.organization_id))]
-    console.log("[DEBUG] Organization identifiers to validate:", orgIdentifiers)
     
     // Query organizations table to get numeric IDs for both numeric IDs and acronyms
     const placeholders = orgIdentifiers.map(() => "?").join(",")
+    
     const [orgCheck] = await db.execute(
       `SELECT id, org FROM organizations WHERE id IN (${placeholders}) OR org IN (${placeholders})`,
       [...orgIdentifiers, ...orgIdentifiers]
     )
-    
-    console.log("[DEBUG] Found organizations:", orgCheck)
     
     // Create mapping from identifier to numeric ID
     const orgIdMap = new Map()
@@ -88,10 +85,9 @@ export const submitChanges = async (req, res) => {
       orgIdMap.set(org.org, org.id)
     })
     
-    console.log("[DEBUG] Organization ID mapping:", Object.fromEntries(orgIdMap))
-    
     // Check if all identifiers were found
     const missingOrgs = orgIdentifiers.filter(id => !orgIdMap.has(id.toString()))
+    
     if (missingOrgs.length > 0) {
       await db.query("ROLLBACK")
       return res.status(404).json({
@@ -104,7 +100,6 @@ export const submitChanges = async (req, res) => {
     // Insert submissions with converted numeric organization IDs
     const insertPromises = submissions.map((item) => {
       const numericOrgId = orgIdMap.get(item.organization_id.toString())
-      console.log(`[DEBUG] Converting org identifier ${item.organization_id} to numeric ID ${numericOrgId}`)
       
       return db.execute(
         `INSERT INTO submissions (organization_id, section, previous_data, proposed_data, submitted_by, status, submitted_at)
@@ -119,8 +114,6 @@ export const submitChanges = async (req, res) => {
         ]
       )
     })
-
-    console.log("🔍 Incoming submission payload:", req.body);
 
     await Promise.all(insertPromises)
 
@@ -165,7 +158,6 @@ export const getSubmissionsByOrg = async (req, res) => {
     }
 
     const org = orgRows[0]
-    console.log(`[DEBUG] Fetching submissions for org: ${orgAcronym}, numeric ID: ${org.id}`)
 
     // Get submissions with additional info
     const [rows] = await db.execute(
@@ -176,11 +168,6 @@ export const getSubmissionsByOrg = async (req, res) => {
        ORDER BY s.submitted_at DESC`,
       [org.id],
     )
-    
-    console.log(`[DEBUG] Found ${rows.length} submissions for org ${orgAcronym}:`)
-    rows.forEach(row => {
-      console.log(`[DEBUG] - ID: ${row.id}, Section: ${row.section}, Status: ${row.status}, OrgID: ${row.organization_id}`)
-    })
 
     // Parse JSON data and add metadata
     const parsedRows = rows.map((row) => {

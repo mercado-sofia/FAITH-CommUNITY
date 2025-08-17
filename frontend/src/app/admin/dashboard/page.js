@@ -5,16 +5,12 @@ import { useEffect } from 'react';
 import styles from './dashboard.module.css';
 import StatCardSection from './components/StatCardSection';
 import RecentApplicationsTable from './components/RecentApplicationsTable';
-import { useDashboardLoadingState } from '../../../hooks/useLoadingState';
 import { useAdminVolunteers } from '../../../hooks/useAdminData';
 import { selectCurrentAdmin, selectIsAuthenticated } from '../../../rtk/superadmin/adminSlice';
 
 export default function AdminDashboard() {
   const currentAdmin = useSelector(selectCurrentAdmin);
   const isAuthenticated = useSelector(selectIsAuthenticated);
-
-  // Use the dashboard loading state hook
-  const { isDashboardReady } = useDashboardLoadingState();
 
   // Fetch volunteers data for the current admin's organization using SWR
   const { 
@@ -39,17 +35,9 @@ export default function AdminDashboard() {
     })
     .slice(0, 5);
 
-  // Trigger dashboard ready event when all data is loaded
-  useEffect(() => {
-    if (isDashboardReady) {
-      // Small delay to ensure smooth transition
-      const timer = setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('dashboardReady'));
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isDashboardReady]);
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className={styles.mainArea}>

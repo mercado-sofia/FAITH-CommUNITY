@@ -65,7 +65,6 @@ export default function BulkActionsBar({ selectedCount, selectedItems, submissio
           title="Delete selected submissions"
         >
           <FiTrash2 size={14} />
-          <span>Delete</span>
         </button>
         <button 
           className={styles.cancelButton}

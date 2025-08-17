@@ -6,7 +6,7 @@ import { useAdminSubmissions } from '../../../hooks/useAdminData';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
 import SubmissionTable from './components/SubmissionTable';
 import BulkActionsBar from './components/BulkActionsBar';
-import PaginationControls from '../volunteers/components/PaginationControls';
+import PaginationControls from '../components/PaginationControls';
 import SuccessModal from '../components/SuccessModal';
 import styles from './submissions.module.css';
 

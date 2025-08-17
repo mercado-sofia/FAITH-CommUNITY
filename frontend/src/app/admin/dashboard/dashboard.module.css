@@ -9,6 +9,36 @@
   overflow-x: hidden;
 }
 
+/* Custom scrollbar for main content - matching public section */
+.mainContent::-webkit-scrollbar {
+  width: 8px;
+}
+
+.mainContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mainContent::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+  transition: background-color 0.2s ease;
+}
+
+.mainContent::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+.mainContent::-webkit-scrollbar-thumb:active {
+  background: #4b5563;
+}
+
+/* Firefox scrollbar */
+.mainContent {
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af transparent;
+}
+
 .mainArea {
   width: 100%;
 }
@@ -22,7 +52,7 @@
   font-size: 1.4rem;
   font-weight: 700;
   font-family: var(--font-poppins), sans-serif;
-  color: #050809;
+  color: #06100f;
   user-select: none;
 }
 

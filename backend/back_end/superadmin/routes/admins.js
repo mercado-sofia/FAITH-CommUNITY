@@ -8,8 +8,6 @@ import {
   loginAdmin,
   verifyPasswordForEmailChange,
   verifyPasswordForPasswordChange,
-  testPasswordUpdate,
-  testDatabaseConnection,
 } from "../controllers/adminController.js"
 
 const router = express.Router()
@@ -25,9 +23,5 @@ router.put("/:id", updateAdmin)
 router.delete("/:id", deleteAdmin)
 router.post("/:id/verify-password", verifyPasswordForEmailChange)
 router.post("/:id/verify-password-change", verifyPasswordForPasswordChange)
-router.post("/:id/test-password-update", testPasswordUpdate)
-
-// Test routes (for debugging)
-router.get("/test/database", testDatabaseConnection)
 
 export default router

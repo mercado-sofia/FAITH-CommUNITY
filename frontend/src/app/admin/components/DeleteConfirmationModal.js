@@ -39,9 +39,11 @@ export default function DeleteConfirmationModal({
           <p>
             Are you sure you want to permanently delete <strong>&ldquo;{itemName}&rdquo;</strong>?
           </p>
-          <p className={styles.warning}>
-            Warning: This action cannot be undone. The {itemType} will be completely removed from your records.
-          </p>
+          {itemType !== 'notification' && (
+            <p className={styles.warning}>
+              Warning: This action cannot be undone. The {itemType} will be completely removed from your records.
+            </p>
+          )}
         </div>
 
         <div className={styles.footer}>

@@ -47,7 +47,6 @@ app.get("/api/health", (req, res) => {
 
 // Test route
 app.get("/api/test", (req, res) => {
-  console.log("Test GET endpoint hit")
   res.json({ success: true, message: "API is running" })
 })
 
@@ -82,6 +81,7 @@ import uploadRoutes from "./back_end/admin/routes/upload.js"
 import volunteersRoutes from "./back_end/admin/routes/volunteers.js"
 import orgSyncRoutes from "./back_end/admin/routes/orgSync.js"
 import newsRoutes from "./back_end/admin/routes/newsRoutes.js"
+import notificationsRoutes from "./back_end/admin/routes/notifications.js"
 
 app.use("/api/advocacies", advocaciesRoutes)
 app.use("/api/competencies", competenciesRoutes)
@@ -95,6 +95,7 @@ app.use("/api/upload", uploadRoutes)
 app.use("/api/volunteers", volunteersRoutes)
 app.use("/api", orgSyncRoutes)
 app.use("/api", newsRoutes)
+app.use("/api/notifications", notificationsRoutes)
 
 // PUBLIC ROUTES
 import publicOrganizationsRoutes from "./back_end/for_public/routes/organizations.js"

@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from "react"
 import { HiOutlineDotsHorizontal } from "react-icons/hi"
 import { IoCloseOutline } from "react-icons/io5";
 import { FiTrash2 } from "react-icons/fi";
-import PaginationControls from "./PaginationControls"
+import PaginationControls from "../../components/PaginationControls"
 import ViewDetailsModal from "./ViewDetailsModal"
 import styles from "./styles/VolunteerTable.module.css"
 

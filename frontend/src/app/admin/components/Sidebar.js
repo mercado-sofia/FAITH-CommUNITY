@@ -72,6 +72,8 @@ export default function Sidebar() {
             <span>Dashboard</span>
             {isLinkLoading("/admin/dashboard") && <div className={styles.loadingSpinner}></div>}
           </Link>
+
+
         </nav>
 
         {/* === MANAGEMENT === */}

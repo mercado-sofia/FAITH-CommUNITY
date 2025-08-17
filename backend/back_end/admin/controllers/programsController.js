@@ -13,7 +13,6 @@ export const getProgramsByOrg = async (req, res) => {
   }
 
   try {
-    console.log(`[DEBUG] Fetching programs for org ID: ${orgId}`);
     
     // First try to get organization by ID (numeric) from organizations table
     let [orgRows] = await db.execute(
@@ -39,7 +38,7 @@ export const getProgramsByOrg = async (req, res) => {
       // If found in admins table, sync to organizations table
       if (orgRows.length > 0) {
         const adminOrg = orgRows[0];
-        console.log(`[DEBUG] Found organization in admins table, syncing to organizations table:`, adminOrg);
+  
         
         // Check if organization already exists in organizations table
         const [existingOrg] = await db.execute(
@@ -53,7 +52,7 @@ export const getProgramsByOrg = async (req, res) => {
             "INSERT INTO organizations (org, orgName, description, status) VALUES (?, ?, NULL, 'ACTIVE')",
             [adminOrg.org, adminOrg.orgName]
           );
-          console.log(`[DEBUG] Synced organization to organizations table with ID: ${insertResult.insertId}`);
+  
           
           // Update the orgRows with the new organization data
           [orgRows] = await db.execute(
@@ -79,7 +78,6 @@ export const getProgramsByOrg = async (req, res) => {
     }
 
     const organization = orgRows[0];
-    console.log(`[DEBUG] Found organization:`, organization);
 
     // Get only approved programs from programs_projects table
     const [approvedRows] = await db.execute(
@@ -90,7 +88,6 @@ export const getProgramsByOrg = async (req, res) => {
        ORDER BY p.created_at DESC`,
       [organization.id]
     );
-    console.log(`[DEBUG] Found ${approvedRows.length} approved programs`);
 
     // Get multiple dates and additional images for each program
     const programsWithDates = await Promise.all(approvedRows.map(async (program) => {

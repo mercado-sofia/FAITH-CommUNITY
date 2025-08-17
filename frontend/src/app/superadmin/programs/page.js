@@ -46,8 +46,76 @@ const SuperadminProgramsPage = () => {
     // Use the new upload path utility
     const imageSource = getProgramImageUrl(program.image);
 
+    const formatDate = (dateString) => {
+      if (!dateString) return 'Not specified';
+      try {
+        return new Date(dateString).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      } catch (error) {
+        return 'Invalid date';
+      }
+    };
+
+    const formatProgramDates = (program) => {
+      // Handle multiple dates array (from admin creation flow)
+      if (program.multiple_dates && Array.isArray(program.multiple_dates) && program.multiple_dates.length > 0) {
+        if (program.multiple_dates.length === 1) {
+          return formatDate(program.multiple_dates[0]);
+        } else if (program.multiple_dates.length === 2) {
+          return `${formatDate(program.multiple_dates[0])} & ${formatDate(program.multiple_dates[1])}`;
+        } else {
+          return `${formatDate(program.multiple_dates[0])} +${program.multiple_dates.length - 1} more dates`;
+        }
+      } 
+      // Handle single date range
+      else if (program.event_start_date && program.event_end_date) {
+        const startDate = new Date(program.event_start_date);
+        const endDate = new Date(program.event_end_date);
+        
+        if (startDate.getTime() === endDate.getTime()) {
+          return formatDate(program.event_start_date);
+        } else {
+          return `${formatDate(program.event_start_date)} - ${formatDate(program.event_end_date)}`;
+        }
+      }
+      // Handle single event date
+      else if (program.event_date) {
+        return formatDate(program.event_date);
+      }
+      return 'Not specified';
+    };
+
+    const getCategoryLabel = (category) => {
+      const categoryMap = {
+        outreach: 'Outreach',
+        education: 'Education',
+        health: 'Health',
+        environment: 'Environment',
+        community: 'Community Development',
+        youth: 'Youth Programs',
+        women: 'Women Empowerment',
+        elderly: 'Elderly Care',
+        disaster: 'Disaster Relief',
+        other: 'Other'
+      };
+      return categoryMap[category] || category || 'Uncategorized';
+    };
+
+    const getStatusColor = (status) => {
+      switch (status?.toLowerCase()) {
+        case 'upcoming': return '#1e40af';
+        case 'active': return '#065f46';
+        case 'completed': return '#374151';
+        default: return '#6b7280';
+      }
+    };
+
     return (
       <div key={program.id} className={styles.programCard}>
+        {/* Enhanced Image Section */}
         <div className={styles.programImageContainer}>
           {imageSource ? (
             <img 
@@ -66,20 +134,123 @@ const SuperadminProgramsPage = () => {
           <StarButton programId={program.id} programTitle={program.title} />
         </div>
       
-      <div className={styles.programContent}>
-        <h4 className={styles.programTitle}>{program.title}</h4>
-        <p className={styles.programCategory}>{program.category}</p>
-        <p className={styles.programDescription}>
-          {program.description?.length > 100 
-            ? `${program.description.substring(0, 100)}...` 
-            : program.description}
-        </p>
+        {/* Enhanced Content Section */}
+        <div className={styles.programContent}>
+          <div className={styles.programHeader}>
+            <h4 className={styles.programTitle}>{program.title}</h4>
+            {program.posted_date && (
+              <span className={styles.postedDate}>
+                Posted: {formatDate(program.posted_date)}
+              </span>
+            )}
+          </div>
+
+          {/* Program Details Grid - Enhanced */}
+          <div className={styles.programDetailsGrid}>
+            <div className={styles.programDetailItem}>
+              <span className={styles.programDetailLabel}>Category</span>
+              <span className={styles.programDetailValue}>
+                {getCategoryLabel(program.category)}
+              </span>
+            </div>
+
+            <div className={styles.programDetailItem}>
+              <span className={styles.programDetailLabel}>Event Date(s)</span>
+              <span className={styles.programDetailValue}>
+                {formatProgramDates(program)}
+              </span>
+            </div>
+
+            {/* Show multiple dates if available */}
+            {program.multiple_dates && program.multiple_dates.length > 1 && (
+              <div className={styles.programDetailItem}>
+                <span className={styles.programDetailLabel}>All Event Dates</span>
+                <div className={styles.multipleDatesContainer}>
+                  {program.multiple_dates.slice(0, 3).map((date, index) => (
+                    <span key={index} className={styles.dateChip}>
+                      {formatDate(date)}
+                    </span>
+                  ))}
+                  {program.multiple_dates.length > 3 && (
+                    <span className={styles.dateChip}>
+                      +{program.multiple_dates.length - 3} more
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {program.created_at && (
+              <div className={styles.programDetailItem}>
+                <span className={styles.programDetailLabel}>Created</span>
+                <span className={styles.programDetailValue}>
+                  {formatDate(program.created_at)}
+                </span>
+              </div>
+            )}
+
+            {/* Organization Info */}
+            {program.organization_name && (
+              <div className={styles.programDetailItem}>
+                <span className={styles.programDetailLabel}>Organization</span>
+                <span className={styles.programDetailValue}>
+                  {program.organization_name}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Enhanced Description */}
+          <div className={styles.programDescriptionSection}>
+            <h5 className={styles.descriptionTitle}>Description</h5>
+            <p className={styles.programDescription}>
+              {program.description?.length > 150 
+                ? `${program.description.substring(0, 150)}...` 
+                : program.description || 'No description provided'}
+            </p>
+          </div>
+
+          {/* Additional Images Preview - Enhanced */}
+          {program.additional_images && program.additional_images.length > 0 && (
+            <div className={styles.additionalImagesPreview}>
+              <h5 className={styles.additionalImagesTitle}>Additional Images</h5>
+              <div className={styles.additionalImagesThumbnails}>
+                {program.additional_images.slice(0, 4).map((imagePath, index) => (
+                  <div key={index} className={styles.additionalImageThumbnail}>
+                    <img 
+                      src={getProgramImageUrl(imagePath, 'additional')}
+                      alt={`Additional ${index + 1}`}
+                      onError={(e) => e.target.style.display = 'none'}
+                    />
+                  </div>
+                ))}
+                {program.additional_images.length > 4 && (
+                  <div className={styles.additionalImageMore}>
+                    +{program.additional_images.length - 4}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Program Stats */}
+          <div className={styles.programStats}>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Status</span>
+              <span className={styles.statValue} style={{ color: getStatusColor(program.status) }}>
+                {program.status}
+              </span>
+            </div>
+            {program.participants_count && (
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Participants</span>
+                <span className={styles.statValue}>{program.participants_count}</span>
+              </div>
+            )}
+          </div>
         
-        <div className={styles.programFooter}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span className={`${styles.programStatusBadge} ${styles[program.status]}`}>
-              {program.status}
-            </span>
+          {/* Enhanced Footer */}
+          <div className={styles.programFooter}>
             <button 
               className={styles.viewDetailsButton}
               onClick={() => {
@@ -87,31 +258,11 @@ const SuperadminProgramsPage = () => {
                 setIsModalOpen(true)
               }}
             >
-              View Details
+              View Full Details
             </button>
           </div>
-          <span className={styles.programDate}>
-            {(() => {
-              // Show the posted date (created_at) - when the program was created
-              if (program.createdAt) {
-                try {
-                  const createdDate = new Date(program.createdAt);
-                  if (isNaN(createdDate.getTime())) {
-                    console.error('Invalid createdAt date for program:', program.id, program.createdAt);
-                    return 'Invalid Date';
-                  }
-                  return createdDate.toLocaleDateString();
-                } catch (error) {
-                  console.error('Error parsing createdAt for program:', program.id, error);
-                  return 'Date Error';
-                }
-              }
-              return 'N/A';
-            })()}
-          </span>
         </div>
       </div>
-    </div>
     )
   }
 

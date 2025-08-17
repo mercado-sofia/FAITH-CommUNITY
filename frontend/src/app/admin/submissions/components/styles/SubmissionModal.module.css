@@ -432,6 +432,19 @@
   border: 1px solid #bae6fd;
 }
 
+/* Rejection Comment Styling */
+.rejectionComment {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 8px;
+  font-size: 0.875rem;
+  color: #7f1d1d;
+  line-height: 1.5;
+  font-style: italic;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .modalContainer {

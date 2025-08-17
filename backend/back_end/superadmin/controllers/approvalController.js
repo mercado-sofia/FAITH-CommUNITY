@@ -234,7 +234,7 @@ export const rejectSubmission = async (req, res) => {
 
     // Update submission status to rejected
     await db.execute(
-      'UPDATE submissions SET status = "rejected", rejection_comment = ?, updated_at = NOW() WHERE id = ?',
+      'UPDATE submissions SET status = "rejected", comment_reject = ? WHERE id = ?',
       [rejection_comment || 'No reason provided', id]
     );
 
@@ -468,7 +468,7 @@ export const bulkRejectSubmissions = async (req, res) => {
 
         // Update submission status to rejected
         await db.execute(
-          'UPDATE submissions SET status = ?, rejected_at = NOW(), rejection_comment = ? WHERE id = ?',
+          'UPDATE submissions SET status = ?, comment_reject = ? WHERE id = ?',
           ['rejected', rejection_comment || '', id]
         );
 

@@ -221,7 +221,7 @@ export default function NotificationsPage() {
          <h1>Notifications</h1>
        </div>
        
-               <div className={styles.headerActions}>
+        <div className={styles.headerActions}>
           {selectedNotifications.length > 0 && (
             <>
               <button 
@@ -248,7 +248,7 @@ export default function NotificationsPage() {
           </button>
         </div>
        
-                      {/* Navigation Tabs */}
+        {/* Navigation Tabs */}
         <div className={styles.navTabs}>
           <button 
             className={`${styles.navTab} ${currentTab === 'all' ? styles.active : ''}`}
@@ -336,7 +336,7 @@ export default function NotificationsPage() {
                         </svg>
                       </button>
                     )}
-                                         <button
+                    <button
                        className={styles.deleteBtn}
                        onClick={() => handleIndividualDeleteClick(notification)}
                        title="Delete notification"

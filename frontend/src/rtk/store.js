@@ -5,6 +5,7 @@ import { applyApi } from "./(public)/applyApi"
 import { programsApi } from "./(public)/programsApi"
 import { organizationsApi } from "./(public)/organizationsApi"
 import { publicFeaturedProjectsApi } from "./(public)/featuredProjectsApi"
+import { messagesApi } from "./(public)/messagesApi"
 import { advocaciesApi } from "./admin/advocaciesApi"
 import { competenciesApi } from "./admin/competenciesApi"
 import { headsApi } from "./admin/headsApi"
@@ -13,6 +14,7 @@ import { approvalApi } from "./admin/approvalApi"
 import { submissionApi } from "./admin/submissionApi"
 import { volunteersApi } from "./admin/volunteersApi"
 import { adminProgramsApi } from "./admin/adminProgramsApi"
+import { inboxApi } from "./admin/inboxApi"
 import { manageProfilesApi } from "./superadmin/manageProfilesApi"
 import { faqApi } from "./superadmin/faqApi"
 import { featuredProjectsApi } from "./superadmin/featuredProjectsApi"
@@ -27,6 +29,7 @@ export const store = configureStore({
     [programsApi.reducerPath]: programsApi.reducer,
     [organizationsApi.reducerPath]: organizationsApi.reducer,
     [publicFeaturedProjectsApi.reducerPath]: publicFeaturedProjectsApi.reducer,
+    [messagesApi.reducerPath]: messagesApi.reducer,
     [advocaciesApi.reducerPath]: advocaciesApi.reducer,
     [competenciesApi.reducerPath]: competenciesApi.reducer,
     [headsApi.reducerPath]: headsApi.reducer,
@@ -35,6 +38,7 @@ export const store = configureStore({
     [submissionApi.reducerPath]: submissionApi.reducer,
     [volunteersApi.reducerPath]: volunteersApi.reducer,
     [adminProgramsApi.reducerPath]: adminProgramsApi.reducer,
+    [inboxApi.reducerPath]: inboxApi.reducer,
     [manageProfilesApi.reducerPath]: manageProfilesApi.reducer,
     [faqApi.reducerPath]: faqApi.reducer,
     [featuredProjectsApi.reducerPath]: featuredProjectsApi.reducer,
@@ -47,6 +51,7 @@ export const store = configureStore({
       programsApi.middleware,
       organizationsApi.middleware,
       publicFeaturedProjectsApi.middleware,
+      messagesApi.middleware,
       advocaciesApi.middleware,
       competenciesApi.middleware,
       headsApi.middleware,
@@ -55,6 +60,7 @@ export const store = configureStore({
       submissionApi.middleware,
       volunteersApi.middleware,
       adminProgramsApi.middleware,
+      inboxApi.middleware,
       manageProfilesApi.middleware,
       faqApi.middleware,
       featuredProjectsApi.middleware,

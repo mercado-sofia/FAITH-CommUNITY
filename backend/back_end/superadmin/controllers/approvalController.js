@@ -1,4 +1,5 @@
 import db from '../../database.js';
+import NotificationController from '../../admin/controllers/notificationController.js';
 
 export const getPendingSubmissions = async (req, res) => {
   try {
@@ -125,11 +126,6 @@ export const approveSubmission = async (req, res) => {
     }
 
     if (section === 'programs') {
-      console.log('[DEBUG] Approving program submission:', {
-        orgId,
-        submissionId: id,
-        programData: data
-      });
       
       try {
         // Insert new program into programs_projects table
@@ -149,11 +145,9 @@ export const approveSubmission = async (req, res) => {
         );
         
         const programId = result.insertId;
-        console.log('[DEBUG] Program successfully inserted into programs_projects table with ID:', programId);
         
         // If multiple dates are provided, insert them into program_event_dates table
         if (data.multiple_dates && Array.isArray(data.multiple_dates) && data.multiple_dates.length > 0) {
-          console.log('[DEBUG] Inserting multiple dates for program:', data.multiple_dates);
           
           for (const date of data.multiple_dates) {
             await db.execute(
@@ -161,12 +155,10 @@ export const approveSubmission = async (req, res) => {
               [programId, date]
             );
           }
-          console.log('[DEBUG] Multiple dates successfully inserted into program_event_dates table');
         }
 
         // If additional images are provided, insert them into program_additional_images table
         if (data.additionalImages && Array.isArray(data.additionalImages) && data.additionalImages.length > 0) {
-          console.log('[DEBUG] Inserting additional images for program:', data.additionalImages.length);
           
           for (let i = 0; i < data.additionalImages.length; i++) {
             const imageData = data.additionalImages[i];
@@ -175,7 +167,6 @@ export const approveSubmission = async (req, res) => {
               [programId, imageData, i]
             );
           }
-          console.log('[DEBUG] Additional images successfully inserted into program_additional_images table');
         }
         
       } catch (insertError) {
@@ -185,11 +176,6 @@ export const approveSubmission = async (req, res) => {
     }
 
     if (section === 'news') {
-      console.log('[DEBUG] Approving news submission:', {
-        orgId,
-        submissionId: id,
-        newsData: data
-      });
       
       // Insert new news into news table
       try {
@@ -203,7 +189,6 @@ export const approveSubmission = async (req, res) => {
             data.date || new Date().toISOString().split('T')[0]
           ]
         );
-        console.log('[DEBUG] News successfully inserted into news table');
       } catch (insertError) {
         console.error('[ERROR] Failed to insert news into news table:', insertError);
         throw insertError;
@@ -211,6 +196,37 @@ export const approveSubmission = async (req, res) => {
     }
 
     await db.execute(`UPDATE submissions SET status = 'approved' WHERE id = ?`, [id]);
+    
+    // Create dynamic notification message based on section and data
+    let notificationMessage = `Your submission for ${section} has been approved by SuperAdmin`;
+    
+    // Add specific details for programs
+    if (section === 'programs' && data.title) {
+      notificationMessage = `Your program "${data.title}" has been approved by SuperAdmin`;
+    }
+    // Add specific details for news
+    else if (section === 'news' && data.title) {
+      notificationMessage = `Your news "${data.title}" has been approved by SuperAdmin`;
+    }
+    // Add specific details for organization
+    else if (section === 'organization' && data.orgName) {
+      notificationMessage = `Your organization "${data.orgName}" has been approved by SuperAdmin`;
+    }
+    
+    // Create notification for the admin
+    const notificationResult = await NotificationController.createNotification(
+      submission.submitted_by,
+      'approval',
+      'Submission Approved',
+      notificationMessage,
+      section,
+      id
+    );
+
+    if (!notificationResult.success) {
+      console.error('Failed to create notification:', notificationResult.error);
+    }
+
     res.json({ success: true, message: 'Submission approved and applied.' });
   } catch (err) {
     console.error('Approval error:', err);
@@ -232,11 +248,51 @@ export const rejectSubmission = async (req, res) => {
       });
     }
 
+    const submission = rows[0];
+
     // Update submission status to rejected
     await db.execute(
       'UPDATE submissions SET status = "rejected", rejection_comment = ?, updated_at = NOW() WHERE id = ?',
       [rejection_comment || 'No reason provided', id]
     );
+
+    // Create dynamic notification message based on section and data
+    let notificationMessage = `Your submission for ${submission.section} has been declined by SuperAdmin`;
+    
+    // Parse the proposed data to get specific details
+    try {
+      const data = JSON.parse(submission.proposed_data);
+      
+      // Add specific details for programs
+      if (submission.section === 'programs' && data.title) {
+        notificationMessage = `Your program "${data.title}" has been declined by SuperAdmin`;
+      }
+      // Add specific details for news
+      else if (submission.section === 'news' && data.title) {
+        notificationMessage = `Your news "${data.title}" has been declined by SuperAdmin`;
+      }
+      // Add specific details for organization
+      else if (submission.section === 'organization' && data.orgName) {
+        notificationMessage = `Your organization "${data.orgName}" has been declined by SuperAdmin`;
+      }
+    } catch (parseError) {
+      console.error('Error parsing submission data for notification:', parseError);
+      // Keep the generic message if parsing fails
+    }
+
+    // Create notification for the admin
+    const notificationResult = await NotificationController.createNotification(
+      submission.submitted_by,
+      'decline',
+      'Submission Declined',
+      notificationMessage,
+      submission.section,
+      id
+    );
+
+    if (!notificationResult.success) {
+      console.error('Failed to create notification:', notificationResult.error);
+    }
 
     res.json({ 
       success: true, 

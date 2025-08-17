@@ -44,13 +44,6 @@ export const submitVolunteer = async (req, res) => {
       reason,
     } = req.body;
 
-    console.log("[DEBUG] Volunteer application submission:", {
-      program_id,
-      fullName,
-      email,
-      phoneNumber
-    });
-
     // Validate required fields
     if (!program_id) {
       return res.status(400).json({
@@ -128,8 +121,6 @@ export const getVolunteersByOrganization = async (req, res) => {
   try {
     const { orgId } = req.params;
     
-    console.log(`[DEBUG] Fetching volunteers for organization ID: ${orgId}`);
-    
     const [results] = await db.query(`
       SELECT v.*, p.title as program_name, p.title as program_title, o.orgName as organization_name, o.id as organization_id
       FROM volunteers v
@@ -138,8 +129,6 @@ export const getVolunteersByOrganization = async (req, res) => {
       WHERE o.id = ? AND v.db_status = 'active'
       ORDER BY v.created_at DESC
     `, [orgId]);
-    
-    console.log(`[DEBUG] Found ${results.length} volunteers for organization ${orgId}`);
     
     res.status(200).json({
       success: true,
@@ -156,8 +145,6 @@ export const getVolunteersByAdminOrg = async (req, res) => {
   try {
     const { adminId } = req.params;
     
-    console.log(`[DEBUG] Fetching volunteers for admin ID: ${adminId}`);
-    
     // First get the admin's organization
     const [adminRows] = await db.query(`
       SELECT org FROM admins WHERE id = ?
@@ -171,7 +158,6 @@ export const getVolunteersByAdminOrg = async (req, res) => {
     }
     
     const adminOrg = adminRows[0].org;
-    console.log(`[DEBUG] Admin ${adminId} belongs to organization: ${adminOrg}`);
     
     // Now get volunteers for programs from that organization
     const [results] = await db.query(`
@@ -182,8 +168,6 @@ export const getVolunteersByAdminOrg = async (req, res) => {
       WHERE o.org = ? AND v.db_status = 'Active'
       ORDER BY v.created_at DESC
     `, [adminOrg]);
-    
-    console.log(`[DEBUG] Found ${results.length} volunteers for organization ${adminOrg}`);
     
     res.status(200).json({
       success: true,
@@ -230,8 +214,6 @@ export const updateVolunteerStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     
-    console.log(`[DEBUG] Updating volunteer ${id} status to: ${status}`);
-    
     const [result] = await db.execute(`
       UPDATE volunteers 
       SET status = ?, updated_at = NOW()
@@ -259,8 +241,6 @@ export const softDeleteVolunteer = async (req, res) => {
   try {
     const { id } = req.params;
     
-    console.log(`[DEBUG] Soft deleting volunteer ${id} (setting db_status to inactive)`);
-    
     const [result] = await db.execute(`
       UPDATE volunteers 
       SET db_status = 'Inactive', updated_at = NOW()
@@ -287,15 +267,12 @@ export const softDeleteVolunteer = async (req, res) => {
 export const testGet = (req, res) => res.send("Hello from apply.js!");
 
 export const testPost = (req, res) => {
-  console.log("Test POST in controller hit");
   res.json({ success: true, message: "Test POST successful" });
 };
 
 // Get approved programs with status "Upcoming" for volunteer application dropdown
 export const getApprovedUpcomingPrograms = async (req, res) => {
   try {
-    console.log("[DEBUG] Fetching approved upcoming programs for volunteer application");
-    
     const [rows] = await db.execute(`
       SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
       FROM programs_projects p
@@ -303,8 +280,6 @@ export const getApprovedUpcomingPrograms = async (req, res) => {
       WHERE p.status = 'Upcoming'
       ORDER BY p.created_at DESC
     `);
-
-    console.log(`[DEBUG] Found ${rows.length} approved upcoming programs`);
 
     // Get multiple dates and additional images for each program
     const programsWithDates = await Promise.all(rows.map(async (program) => {

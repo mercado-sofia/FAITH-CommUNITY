@@ -10,7 +10,6 @@ import TopBar from "./components/TopBar";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import Loader from "../../components/Loader";
 import styles from "./dashboard/dashboard.module.css";
-import scrollStyles from "./components/CustomScrollbar.module.css";
 import { Poppins, Inter, Urbanist } from 'next/font/google';
 
 const poppins = Poppins({
@@ -78,7 +77,7 @@ function AdminLayoutContent({ children }) {
       <Sidebar />
       <div className={styles.mainContent}>
         <TopBar />
-        <main className={`${styles.content} ${scrollStyles.customScrollbar}`}>
+        <main className={styles.content}>
           <ErrorBoundary>
             {children}
           </ErrorBoundary>

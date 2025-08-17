@@ -4,7 +4,7 @@ import db from '../../database.js';
 // Submit volunteer application
 export const applyVolunteer = async (req, res) => {
   try {
-    console.log('Received form data:', req.body); // Debug log
+  
 
     // Validate required fields
     const requiredFields = ['program_id', 'full_name', 'age', 'gender', 'email', 'phone_number', 'address', 'occupation', 'citizenship', 'reason'];

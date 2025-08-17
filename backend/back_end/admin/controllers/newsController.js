@@ -21,7 +21,7 @@ export const createNews = async (req, res) => {
   }
 
   try {
-    console.log(`[DEBUG] Creating news for org ID: ${orgId}`);
+
     
     // First try to get organization by ID (numeric) from organizations table
     let [orgRows] = await db.execute(
@@ -66,7 +66,6 @@ export const createNews = async (req, res) => {
     }
 
     const organization = orgRows[0];
-    console.log(`[DEBUG] Found organization:`, organization);
 
     // Insert news directly into news table
     const [result] = await db.execute(
@@ -83,7 +82,6 @@ export const createNews = async (req, res) => {
     }
 
     const newsId = result.insertId;
-    console.log(`[DEBUG] News created with ID: ${newsId}`);
 
     res.json({
       success: true,
@@ -118,7 +116,6 @@ export const getNewsByOrg = async (req, res) => {
   }
 
   try {
-    console.log(`[DEBUG] Fetching news for org ID: ${orgId}`);
     
     // First try to get organization by ID (numeric) from organizations table
     let [orgRows] = await db.execute(
@@ -163,7 +160,6 @@ export const getNewsByOrg = async (req, res) => {
     }
 
     const organization = orgRows[0];
-    console.log(`[DEBUG] Found organization:`, organization);
 
     // Get only approved news from news table (no pending submissions)
     const [newsRows] = await db.execute(
@@ -174,7 +170,6 @@ export const getNewsByOrg = async (req, res) => {
        ORDER BY n.created_at DESC`,
       [organization.id]
     );
-    console.log(`[DEBUG] Found ${newsRows.length} news items`);
 
     // Map news with organization info
     const news = newsRows.map(news => {
@@ -257,7 +252,6 @@ export const getApprovedNews = async (req, res) => {
       };
     });
 
-    console.log('📰 Fetched news for public view:', news);
     res.json(news);
   } catch (error) {
     console.error("❌ Error fetching approved news:", error);

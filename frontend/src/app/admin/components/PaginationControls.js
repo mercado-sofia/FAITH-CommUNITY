@@ -4,8 +4,6 @@ import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowLeftDoubleFill, RiArrowRigh
 import styles from './styles/PaginationControls.module.css'
 
 export default function PaginationControls({ currentPage, totalPages, onPageChange, startIndex, endIndex, totalCount }) {
-
-  
   // Handle edge cases
   if (totalPages <= 0) {
     return (
@@ -56,7 +54,7 @@ export default function PaginationControls({ currentPage, totalPages, onPageChan
   const pageNumbers = getPageNumbers()
 
   return (
-    <div className={styles.pagination} style={{ border: '2px solid #3b82f6' }}>
+    <div className={styles.pagination}>
       <div className={styles.paginationInfo}>
         Showing {startIndex + 1} to {Math.min(endIndex, totalCount)} of {totalCount} entries
       </div>

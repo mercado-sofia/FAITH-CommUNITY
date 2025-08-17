@@ -3,7 +3,7 @@ import db from "../../database.js"
 
 export const getOrganizationByName = async (req, res) => {
   const { org_name } = req.params
-  console.log("🧪 org_name param:", org_name)
+
 
   try {
     const [orgRows] = await db.execute('SELECT * FROM organizations WHERE org = ? AND status = "ACTIVE"', [org_name])

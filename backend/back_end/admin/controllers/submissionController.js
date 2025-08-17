@@ -382,7 +382,7 @@ export const bulkDeleteSubmissions = async (req, res) => {
     // Commit transaction
     await db.query("COMMIT");
 
-    console.log(`[DEBUG] Deleted ${result.affectedRows} submissions`);
+
     
     return res.status(200).json({
       success: true,

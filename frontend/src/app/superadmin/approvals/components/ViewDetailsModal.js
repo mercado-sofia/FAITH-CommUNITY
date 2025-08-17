@@ -91,138 +91,163 @@ const ViewDetailsModal = ({
           
           <div className={styles.dataComparison}>
             <h4 className={styles.comparisonTitle}>Data Changes</h4>
-            {submissionData.section === 'advocacy' || submissionData.section === 'competency' ? (
-              <div className={styles.textComparison}>
-                <div className={styles.comparisonSection}>
-                  <h5>Previous Data:</h5>
-                  <div className={styles.dataContent}>
-                    {submissionData.previous_data || "No previous data"}
+            <div className={styles.dataChangesContainer}>
+              {submissionData.section === 'advocacy' || submissionData.section === 'competency' ? (
+                <div className={styles.textComparison}>
+                  <div className={styles.comparisonSection}>
+                    <h5>Previous Data:</h5>
+                    <div className={styles.dataContent}>
+                      {submissionData.previous_data || "No previous data"}
+                    </div>
+                  </div>
+                  <div className={styles.comparisonSection}>
+                    <h5>Proposed Data:</h5>
+                    <div className={styles.dataContent}>
+                      {submissionData.proposed_data || "No proposed data"}
+                    </div>
                   </div>
                 </div>
-                <div className={styles.comparisonSection}>
-                  <h5>Proposed Data:</h5>
-                  <div className={styles.dataContent}>
-                    {submissionData.proposed_data || "No proposed data"}
-                  </div>
-                </div>
-              </div>
-            ) : submissionData.section === 'programs' ? (
-              <div className={styles.programComparison}>
-                <div className={styles.comparisonSection}>
-                  <h5>Program Details:</h5>
-                  <div className={styles.programDetails}>
-                    {(() => {
-                      try {
-                        const programData = typeof submissionData.proposed_data === 'string' 
-                          ? JSON.parse(submissionData.proposed_data) 
-                          : submissionData.proposed_data;
-                        return (
-                          <div className={styles.programInfo}>
-                            <div className={styles.programField}>
-                              <strong>Title:</strong> {programData.title || 'N/A'}
-                            </div>
-                            <div className={styles.programField}>
-                              <strong>Description:</strong> {programData.description || 'N/A'}
-                            </div>
-                            <div className={styles.programField}>
-                              <strong>Category:</strong> {programData.category || 'N/A'}
-                            </div>
-                            <div className={styles.programField}>
-                              <strong>Status:</strong> {programData.status || 'N/A'}
-                            </div>
-                            {(() => {
-                              // Format event dates for display
-                              if (programData.multiple_dates && Array.isArray(programData.multiple_dates) && programData.multiple_dates.length > 0) {
-                                return (
+              ) : submissionData.section === 'programs' ? (
+                <div className={styles.programComparison}>
+                  <div className={styles.comparisonSection}>
+                    <h5>Program Details:</h5>
+                    <div className={styles.programDetailsContainer}>
+                      {(() => {
+                        try {
+                          const programData = typeof submissionData.proposed_data === 'string' 
+                            ? JSON.parse(submissionData.proposed_data) 
+                            : submissionData.proposed_data;
+                          return (
+                            <div className={styles.programInfo}>
+                              <div className={styles.programFieldsGrid}>
+                                <div className={styles.programField}>
+                                  <strong>Title:</strong> 
+                                  <span>{programData.title || 'N/A'}</span>
+                                </div>
+                                <div className={styles.programField}>
+                                  <strong>Category:</strong> 
+                                  <span>{programData.category || 'N/A'}</span>
+                                </div>
+                                <div className={styles.programField}>
+                                  <strong>Status:</strong> 
+                                  <span className={styles.statusValue}>{programData.status || 'N/A'}</span>
+                                </div>
+                                {(() => {
+                                  // Format event dates for display
+                                  if (programData.multiple_dates && Array.isArray(programData.multiple_dates) && programData.multiple_dates.length > 0) {
+                                    return (
+                                      <div className={styles.programField}>
+                                        <strong>Event Dates:</strong>
+                                        <div className={styles.eventDatesList}>
+                                          {programData.multiple_dates.map((date, index) => (
+                                            <span key={index} className={styles.eventDateTag}>
+                                              {new Date(date).toLocaleDateString()}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  } else if (programData.event_start_date && programData.event_end_date) {
+                                    if (programData.event_start_date === programData.event_end_date) {
+                                      return (
+                                        <div className={styles.programField}>
+                                          <strong>Event Date:</strong> 
+                                          <span>{new Date(programData.event_start_date).toLocaleDateString()}</span>
+                                        </div>
+                                      );
+                                    } else {
+                                      return (
+                                        <div className={styles.programField}>
+                                          <strong>Event Date Range:</strong> 
+                                          <span>{new Date(programData.event_start_date).toLocaleDateString()} - {new Date(programData.event_end_date).toLocaleDateString()}</span>
+                                        </div>
+                                      );
+                                    }
+                                  }
+                                  return null;
+                                })()}
+                              </div>
+                              
+                              <div className={styles.programDescription}>
+                                <div className={styles.programField}>
+                                  <strong>Description:</strong>
+                                  <div className={styles.descriptionContent}>
+                                    {programData.description || 'N/A'}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {programData.image && (
+                                <div className={styles.programImagesSection}>
                                   <div className={styles.programField}>
-                                    <strong>Event Dates:</strong>
-                                    <div className={styles.eventDatesList}>
-                                      {programData.multiple_dates.map((date, index) => (
-                                        <span key={index} className={styles.eventDateTag}>
-                                          {new Date(date).toLocaleDateString()}
-                                        </span>
+                                    <strong>Main Image:</strong>
+                                    <div className={styles.programImage}>
+                                      <Image 
+                                        src={getProgramImageUrl(programData.image) || '/default-profile.png'} 
+                                        alt="Program" 
+                                        width={200}
+                                        height={150}
+                                        style={{objectFit: 'cover', borderRadius: '8px'}} 
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {programData.additionalImages && Array.isArray(programData.additionalImages) && programData.additionalImages.length > 0 && (
+                                <div className={styles.programImagesSection}>
+                                  <div className={styles.programField}>
+                                    <strong>Additional Images ({programData.additionalImages.length}):</strong>
+                                    <div className={styles.additionalImagesGrid}>
+                                      {programData.additionalImages.map((image, index) => (
+                                        <div key={index} className={styles.additionalImageContainer}>
+                                          <Image 
+                                            src={getProgramImageUrl(image) || '/default-profile.png'} 
+                                            alt={`Additional image ${index + 1}`} 
+                                            width={100}
+                                            height={100}
+                                            style={{objectFit: 'cover', borderRadius: '6px'}} 
+                                          />
+                                        </div>
                                       ))}
                                     </div>
                                   </div>
-                                );
-                              } else if (programData.event_start_date && programData.event_end_date) {
-                                if (programData.event_start_date === programData.event_end_date) {
-                                  return (
-                                    <div className={styles.programField}>
-                                      <strong>Event Date:</strong> {new Date(programData.event_start_date).toLocaleDateString()}
-                                    </div>
-                                  );
-                                } else {
-                                  return (
-                                    <div className={styles.programField}>
-                                      <strong>Event Date Range:</strong> {new Date(programData.event_start_date).toLocaleDateString()} - {new Date(programData.event_end_date).toLocaleDateString()}
-                                    </div>
-                                  );
-                                }
-                              }
-                              return null;
-                            })()}
-                            {programData.image && (
-                              <div className={styles.programField}>
-                                <strong>Main Image:</strong>
-                                <div className={styles.programImage}>
-                                  <Image 
-                                    src={getProgramImageUrl(programData.image) || '/default-profile.png'} 
-                                    alt="Program" 
-                                    width={200}
-                                    height={150}
-                                    style={{objectFit: 'cover', borderRadius: '4px'}} 
-                                  />
                                 </div>
-                              </div>
-                            )}
-                            {programData.additionalImages && Array.isArray(programData.additionalImages) && programData.additionalImages.length > 0 && (
-                              <div className={styles.programField}>
-                                <strong>Additional Images ({programData.additionalImages.length}):</strong>
-                                <div className={styles.additionalImagesGrid}>
-                                  {programData.additionalImages.map((image, index) => (
-                                    <div key={index} className={styles.additionalImageContainer}>
-                                      <Image 
-                                        src={getProgramImageUrl(image) || '/default-profile.png'} 
-                                        alt={`Additional image ${index + 1}`} 
-                                        width={100}
-                                        height={100}
-                                        style={{objectFit: 'cover'}} 
-                                      />
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      } catch (error) {
-                        return (
-                          <div className={styles.errorMessage}>
-                            Error parsing program data: {error.message}
-                          </div>
-                        );
-                      }
-                    })()} 
+                              )}
+                            </div>
+                          );
+                        } catch (error) {
+                          return (
+                            <div className={styles.errorMessage}>
+                              Error parsing program data: {error.message}
+                            </div>
+                          );
+                        }
+                      })()} 
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className={styles.jsonComparison}>
-                <div className={styles.comparisonSection}>
-                  <h5>Previous Data:</h5>
-                  <pre className={styles.jsonData}>
-                    {JSON.stringify(submissionData.previous_data, null, 2)}
-                  </pre>
+              ) : (
+                <div className={styles.jsonComparison}>
+                  <div className={styles.comparisonSection}>
+                    <h5>Previous Data:</h5>
+                    <div className={styles.jsonDataContainer}>
+                      <pre className={styles.jsonData}>
+                        {JSON.stringify(submissionData.previous_data, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                  <div className={styles.comparisonSection}>
+                    <h5>Proposed Data:</h5>
+                    <div className={styles.jsonDataContainer}>
+                      <pre className={styles.jsonData}>
+                        {JSON.stringify(submissionData.proposed_data, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
                 </div>
-                <div className={styles.comparisonSection}>
-                  <h5>Proposed Data:</h5>
-                  <pre className={styles.jsonData}>
-                    {JSON.stringify(submissionData.proposed_data, null, 2)}
-                  </pre>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
         

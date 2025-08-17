@@ -18,7 +18,8 @@ export const getAllProgramsByOrganization = async (req, res) => {
         pp.organization_id,
         o.orgName as organization_name,
         o.org as organization_acronym,
-        o.logo as organization_logo
+        o.logo as organization_logo,
+        o.org_color as organization_color
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
       ORDER BY o.orgName ASC, pp.created_at DESC
@@ -139,7 +140,8 @@ export const getProgramById = async (req, res) => {
         pp.organization_id,
         o.orgName as organization_name,
         o.org as organization_acronym,
-        o.logo as organization_logo
+        o.logo as organization_logo,
+        o.org_color as organization_color
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
       WHERE pp.id = ?
@@ -174,6 +176,13 @@ export const getProgramById = async (req, res) => {
       multipleDates = dateRows.map(row => row.event_date);
     }
 
+    // Get additional images for this program
+    const [imageRows] = await db.execute(
+      'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
+      [program.id]
+    );
+    const additionalImages = imageRows.map(row => row.image_data);
+
     // Construct proper logo URL
     let logoUrl;
     if (program.organization_logo) {
@@ -193,7 +202,8 @@ export const getProgramById = async (req, res) => {
     const programWithDates = {
       ...program,
       organization_logo: logoUrl,
-      multiple_dates: multipleDates
+      multiple_dates: multipleDates,
+      additional_images: additionalImages
     };
     
     res.json({
@@ -230,7 +240,8 @@ export const getProgramsByOrganizationId = async (req, res) => {
         pp.organization_id,
         o.orgName as organization_name,
         o.org as organization_acronym,
-        o.logo as organization_logo
+        o.logo as organization_logo,
+        o.org_color as organization_color
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
       WHERE pp.organization_id = ?

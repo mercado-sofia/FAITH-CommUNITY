@@ -3,18 +3,31 @@
 import React from 'react'
 import { FaTimes, FaTag, FaCalendar, FaEye } from 'react-icons/fa'
 import { getProgramImageUrl } from '@/utils/uploadPaths'
+import { useGetProgramByIdQuery } from '@/rtk/superadmin/programsApi'
 import styles from '../programs.module.css'
 
 const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
+  // Fetch complete program details when modal opens
+  const { 
+    data: fullProgramData, 
+    isLoading: programLoading, 
+    error: programError 
+  } = useGetProgramByIdQuery(program?.id, {
+    skip: !isOpen || !program?.id
+  })
+
   if (!isOpen || !program) return null
 
+  // Use fetched data if available, otherwise fallback to passed program data
+  const programData = fullProgramData || program
+
   // Debug logging to check program data
-  console.log('🔍 ProgramDetailsModal - Program data:', program);
-  console.log('🔍 Additional images:', program.additional_images);
-  console.log('🔍 Additional images length:', program.additional_images?.length);
+  console.log('🔍 ProgramDetailsModal - Program data:', programData);
+  console.log('🔍 Additional images:', programData.additional_images);
+  console.log('🔍 Additional images length:', programData.additional_images?.length);
 
   // Use the new upload path utility
-  const imageSource = getProgramImageUrl(program.image);
+  const imageSource = getProgramImageUrl(programData.image);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Not specified';
@@ -98,7 +111,7 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
                 {imageSource ? (
                   <img 
                     src={imageSource}
-                    alt={program.title}
+                    alt={programData.title}
                     className={styles.programImage}
                     onError={(e) => {
                       e.target.style.display = 'none'
@@ -114,12 +127,12 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
 
               {/* Right - Program Title, Status, Program Details */}
               <div className={styles.programInfoSection}>
-                <h3 className={styles.programTitle}>{program.title}</h3>
+                <h3 className={styles.programTitle}>{programData.title}</h3>
                 
                 {/* Status Badge */}
-                {program.status && (
-                  <div className={`${styles.statusBadge} ${styles[program.status]}`}>
-                    {program.status.charAt(0).toUpperCase() + program.status.slice(1)}
+                {programData.status && (
+                  <div className={`${styles.statusBadge} ${styles[programData.status]}`}>
+                    {programData.status.charAt(0).toUpperCase() + programData.status.slice(1)}
                   </div>
                 )}
 
@@ -131,7 +144,7 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
                       <div className={styles.detailContent}>
                         <span className={styles.detailLabel}>Category</span>
                         <span className={styles.detailValue}>
-                          {getCategoryLabel(program.category)}
+                          {getCategoryLabel(programData.category)}
                         </span>
                       </div>
                     </div>
@@ -141,18 +154,18 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
                       <div className={styles.detailContent}>
                         <span className={styles.detailLabel}>Event Date(s)</span>
                         <span className={styles.detailValue}>
-                          {formatProgramDates(program)}
+                          {formatProgramDates(programData)}
                         </span>
                       </div>
                     </div>
 
-                    {program.created_at && (
+                    {programData.created_at && (
                       <div className={styles.detailItem}>
                         <FaCalendar className={styles.detailIcon} />
                         <div className={styles.detailContent}>
                           <span className={styles.detailLabel}>Created</span>
                           <span className={styles.detailValue}>
-                            {formatDate(program.created_at)}
+                            {formatDate(programData.created_at)}
                           </span>
                         </div>
                       </div>
@@ -166,7 +179,7 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
             <div className={styles.descriptionSection}>
               <h4 className={styles.sectionTitle}>Description</h4>
               <p className={styles.description}>
-                {program.description || 'No description provided'}
+                {programData.description || 'No description provided'}
               </p>
             </div>
           </div>
@@ -175,8 +188,8 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
           <div className={styles.additionalImagesSection}>
             <h4 className={styles.sectionTitle}>Additional Images</h4>
             <div className={styles.additionalImagesGrid}>
-              {program.additional_images && program.additional_images.length > 0 ? (
-                program.additional_images.map((imagePath, index) => (
+              {programData.additional_images && programData.additional_images.length > 0 ? (
+                programData.additional_images.map((imagePath, index) => (
                   <div key={index} className={styles.additionalImageContainer}>
                     <img
                       src={getProgramImageUrl(imagePath, 'additional')}

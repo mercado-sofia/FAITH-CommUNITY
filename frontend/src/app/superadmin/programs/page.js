@@ -267,11 +267,11 @@ const SuperadminProgramsPage = () => {
   }
 
   const renderProgramSection = (programs, title, statusKey) => {
-    const filteredPrograms = selectedStatus === 'all' || selectedStatus === statusKey 
+    const filteredPrograms = selectedStatus === 'all' || selectedStatus.toLowerCase() === statusKey.toLowerCase() 
       ? programs 
       : []
 
-    if (filteredPrograms.length === 0 && selectedStatus !== 'all' && selectedStatus !== statusKey) {
+    if (filteredPrograms.length === 0 && selectedStatus !== 'all' && selectedStatus.toLowerCase() !== statusKey.toLowerCase()) {
       return null
     }
 
@@ -402,40 +402,57 @@ const SuperadminProgramsPage = () => {
             <p>No organizations found with the selected filters.</p>
           </div>
         ) : (
-          filteredOrganizations.map((org) => (
-            <div key={org.organizationId} className={styles.organizationSection}>
-              <div className={styles.organizationHeader}>
-                <div className={styles.organizationInfo}>
-                  {org.organizationLogo && (
-                    <img 
-                      src={getOrganizationImageUrl(org.organizationLogo, 'logo')}
-                      alt={`${org.organizationName} logo`}
-                      className={styles.organizationLogo}
-                      onError={(e) => e.target.style.display = 'none'}
-                    />
-                  )}
-                  <div className={styles.organizationDetails}>
-                    <h3 className={styles.organizationName}>
-                      <span className={styles.organizationAcronym}>{org.organizationAcronym}</span>
-                      {org.organizationName}
-                    </h3>
-                    <div className={styles.organizationStats}>
-                      <span>Total: {org.programs.upcoming.length + org.programs.active.length + org.programs.completed.length}</span>
-                      <span>Upcoming: {org.programs.upcoming.length}</span>
-                      <span>Active: {org.programs.active.length}</span>
-                      <span>Completed: {org.programs.completed.length}</span>
+          filteredOrganizations.map(org => {
+            // Debug: Log organization data to check if color is available
+            console.log('Organization data:', {
+              id: org.organizationId,
+              name: org.organizationName,
+              acronym: org.organizationAcronym,
+              color: org.organizationColor,
+              hasColor: !!org.organizationColor,
+              fullOrgData: org
+            });
+            
+            return (
+              <div key={org.organizationId} className={styles.organizationSection}>
+                <div className={styles.organizationHeader}>
+                  <div className={styles.organizationInfo}>
+                    {org.organizationLogo && (
+                      <img 
+                        src={getOrganizationImageUrl(org.organizationLogo, 'logo')}
+                        alt={`${org.organizationName} logo`}
+                        className={styles.organizationLogo}
+                        onError={(e) => e.target.style.display = 'none'}
+                      />
+                    )}
+                    <div className={styles.organizationDetails}>
+                      <h3 className={styles.organizationName}>
+                        <span 
+                          className={styles.organizationAcronym}
+                          style={{ backgroundColor: org.organizationColor || '#667eea' }}
+                        >
+                          {org.organizationAcronym}
+                        </span>
+                        {org.organizationName}
+                      </h3>
+                      <div className={styles.organizationStats}>
+                        <span>Total: {org.programs.upcoming.length + org.programs.active.length + org.programs.completed.length}</span>
+                        <span>Upcoming: {org.programs.upcoming.length}</span>
+                        <span>Active: {org.programs.active.length}</span>
+                        <span>Completed: {org.programs.completed.length}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className={styles.organizationPrograms}>
-                {renderProgramSection(org.programs.upcoming, 'Upcoming Programs', 'upcoming')}
-                {renderProgramSection(org.programs.active, 'Active Programs', 'active')}
-                {renderProgramSection(org.programs.completed, 'Completed Programs', 'completed')}
+                <div className={styles.organizationPrograms}>
+                  {renderProgramSection(org.programs.upcoming, 'Upcoming Programs', 'upcoming')}
+                  {renderProgramSection(org.programs.active, 'Active Programs', 'active')}
+                  {renderProgramSection(org.programs.completed, 'Completed Programs', 'completed')}
+                </div>
               </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
 

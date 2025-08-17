@@ -104,6 +104,15 @@ export default function SubmissionModal({ data, onClose }) {
               </div>
             </div>
           )}
+          {/* Rejection Comment for Programs */}
+          {data.status === 'rejected' && data.comment_reject && (
+            <div className={styles.dataField}>
+              <span className={styles.fieldLabel}>Rejection Reason:</span>
+              <div className={styles.rejectionComment}>
+                {data.comment_reject}
+              </div>
+            </div>
+          )}
         </div>
       );
     }
@@ -159,12 +168,12 @@ export default function SubmissionModal({ data, onClose }) {
           </div>
 
           {/* Rejection Feedback */}
-          {data.status === 'rejected' && data.rejection_reason && (
+          {data.status === 'rejected' && data.comment_reject && (
             <div className={styles.rejectionAlert}>
               <div className={styles.alertIcon}>⚠️</div>
               <div className={styles.alertContent}>
                 <h4 className={styles.alertTitle}>Rejection Feedback</h4>
-                <p className={styles.alertMessage}>{data.rejection_reason}</p>
+                <p className={styles.alertMessage}>{data.comment_reject}</p>
               </div>
             </div>
           )}

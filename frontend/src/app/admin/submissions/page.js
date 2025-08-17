@@ -7,7 +7,7 @@ import SearchAndFilterControls from './components/SearchAndFilterControls';
 import SubmissionTable from './components/SubmissionTable';
 import BulkActionsBar from './components/BulkActionsBar';
 import PaginationControls from '../volunteers/components/PaginationControls';
-import ToastModal from './components/ToastModal';
+import SuccessModal from '../components/SuccessModal';
 import styles from './submissions.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -32,17 +32,17 @@ export default function SubmissionsPage() {
     parseInt(searchParams.get('show')) || 10
   );
   const [currentPage, setCurrentPage] = useState(1);
-  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
 
   // Use SWR hook for submissions data
   const { submissions, isLoading: loading, error, mutate: refreshSubmissions } = useAdminSubmissions(orgAcronym);
 
   const showToast = useCallback((message, type = 'success') => {
-    setToast({ show: true, message, type });
+    setSuccessModal({ isVisible: true, message, type });
   }, []);
 
   const hideToast = useCallback(() => {
-    setToast({ show: false, message: '', type: 'success' });
+    setSuccessModal({ isVisible: false, message: '', type: 'success' });
   }, []);
 
   function capitalizeFirstLetter(str) {
@@ -290,11 +290,11 @@ export default function SubmissionsPage() {
         )}
       </div>
       
-      <ToastModal
-        message={toast.message}
-        isVisible={toast.show}
+      <SuccessModal
+        message={successModal.message}
+        isVisible={successModal.isVisible}
         onClose={hideToast}
-        type={toast.type}
+        type={successModal.type}
         autoHideDuration={3000}
       />
     </div>

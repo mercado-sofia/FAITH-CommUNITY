@@ -19,9 +19,7 @@ export default function SWRProvider({ children }) {
         onError: (error, key) => {
           logger.swrError(`SWR Error for key: ${key}`, error, { key });
         },
-        onSuccess: (data, key) => {
-          logger.info(`SWR Success for key: ${key}`, { dataLength: Array.isArray(data) ? data.length : 'non-array' });
-        },
+
         compare: (a, b) => {
           // Custom comparison function to prevent unnecessary re-renders
           if (a === b) return true;

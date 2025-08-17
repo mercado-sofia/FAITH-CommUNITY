@@ -8,7 +8,8 @@ import { getOrganizationImageUrl } from '@/utils/uploadPaths'
 import styles from './styles/AddOrgHeadModal.module.css'
 import { PhotoUtils } from './utils/photoUtils'
 import LazyImage from './LazyImage'
-import { ROLE_OPTIONS } from './utils/roleHierarchy'
+import { applyRoleHierarchyOrdering } from './utils/roleHierarchy'
+
 
 export default function AddOrgHeadModal({
   isOpen,
@@ -53,7 +54,7 @@ export default function AddOrgHeadModal({
   const handleInputChange = (field, value) => {
     setNewHead(prev => ({ ...prev, [field]: value }))
     
-    // Clear field error when user starts typing
+    // Clear field error when user starts typing or uploading
     if (fieldErrors[field]) {
       setFieldErrors(prev => {
         const newErrors = { ...prev }
@@ -182,6 +183,12 @@ export default function AddOrgHeadModal({
       isValid = false
     }
     
+    // Validate photo (now required)
+    if (!newHead.photo?.trim()) {
+      newFieldErrors.photo = 'Profile photo is required'
+      isValid = false
+    }
+    
     // Validate Facebook URL (optional field)
     if (newHead.facebook && !newHead.facebook.includes('facebook.com')) {
       newFieldErrors.facebook = 'Please enter a valid Facebook URL'
@@ -199,13 +206,24 @@ export default function AddOrgHeadModal({
     
     if (validateForm()) {
       try {
-        // Add display_order based on existing heads
-        const headWithOrder = {
+        // Create new head with temporary display_order
+        const newHeadWithTempOrder = {
           ...newHead,
           display_order: existingHeads.length + 1
         }
         
-        onSave(headWithOrder)
+        // Apply role hierarchy ordering to all heads (including the new one)
+        const allHeadsWithNewHead = [...existingHeads, newHeadWithTempOrder]
+        const reorderedHeads = applyRoleHierarchyOrdering(allHeadsWithNewHead)
+        
+        // Find the new head in the reordered list and get its final display_order
+        const finalNewHead = reorderedHeads.find(head => 
+          head.head_name === newHead.head_name && 
+          head.role === newHead.role && 
+          head.email === newHead.email
+        )
+        
+        onSave(finalNewHead)
       } catch (error) {
         // Handle error silently
       }
@@ -256,6 +274,7 @@ export default function AddOrgHeadModal({
             {/* Top row: Photo on left, Name and Role on right */}
             <div className={styles.topRow}>
               <div className={styles.photoSection}>
+                <label className={styles.photoLabel}>Profile Photo *</label>
                 <div className={styles.headPhoto}>
                   <div className={styles.photoContainer}>
                     {newHead.photo ? (
@@ -313,27 +332,32 @@ export default function AddOrgHeadModal({
                     )}
                   </div>
                   
-                  {/* Validation Messages */}
-                  {validationErrors.errors && validationErrors.errors.length > 0 && (
-                    <div className={styles.validationMessages}>
-                      {validationErrors.errors.map((error, errorIndex) => (
-                        <div key={errorIndex} className={styles.errorMessage}>
-                          <FaExclamationTriangle className={styles.errorIcon} />
-                          {error}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {validationErrors.warnings && validationErrors.warnings.length > 0 && (
-                    <div className={styles.validationMessages}>
-                      {validationErrors.warnings.map((warning, warningIndex) => (
-                        <div key={warningIndex} className={styles.warningMessage}>
-                          <FaExclamationTriangle className={styles.warningIcon} />
-                          {warning}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                                     {/* Validation Messages */}
+                   {validationErrors.errors && validationErrors.errors.length > 0 && (
+                     <div className={styles.validationMessages}>
+                       {validationErrors.errors.map((error, errorIndex) => (
+                         <div key={errorIndex} className={styles.errorMessage}>
+                           <FaExclamationTriangle className={styles.errorIcon} />
+                           {error}
+                         </div>
+                       ))}
+                     </div>
+                   )}
+                   {validationErrors.warnings && validationErrors.warnings.length > 0 && (
+                     <div className={styles.validationMessages}>
+                       {validationErrors.warnings.map((warning, warningIndex) => (
+                         <div key={warningIndex} className={styles.warningMessage}>
+                           <FaExclamationTriangle className={styles.warningIcon} />
+                           {warning}
+                         </div>
+                       ))}
+                     </div>
+                   )}
+                   {fieldErrors.photo && (
+                     <div className={styles.fieldError}>
+                       {fieldErrors.photo}
+                     </div>
+                   )}
                 </div>
               </div>
 
@@ -358,20 +382,15 @@ export default function AddOrgHeadModal({
 
                 <div className={`${styles.formGroup} ${fieldErrors.role ? styles.formGroupError : ''}`}>
                   <label className={styles.label}>Role *</label>
-                  <select
+                  <input
+                    type="text"
                     value={newHead.role || ''}
                     onChange={(e) => handleInputChange('role', e.target.value)}
                     className={`${styles.input} ${fieldErrors.role ? styles.inputError : ''}`}
+                    placeholder="Enter role (e.g., President, Secretary, PRO)"
                     disabled={saving}
                     required
-                  >
-                    <option value="">Select a role</option>
-                    {ROLE_OPTIONS.map((role) => (
-                      <option key={role.value} value={role.value}>
-                        {role.label}
-                      </option>
-                    ))}
-                  </select>
+                  />
                   {fieldErrors.role && (
                     <div className={styles.fieldError}>
                       {fieldErrors.role}

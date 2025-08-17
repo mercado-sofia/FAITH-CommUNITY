@@ -34,13 +34,26 @@ export default function SuccessModal({
     }
   };
 
+  const getTitle = () => {
+    switch (type) {
+      case 'success':
+        return 'Success!';
+      case 'error':
+        return 'Error!';
+      case 'warning':
+        return 'Warning!';
+      default:
+        return 'Success!';
+    }
+  };
+
   return (
     <div className={styles.modalOverlay}>
-      <div className={`${styles.modalContent} ${styles[type]}`}>
+      <div className={`${styles.modalContent} ${styles[type] || ''}`}>
         <div className={styles.modalHeader}>
           <div className={styles.modalTitle}>
             {getIcon()}
-            <span>{type === 'success' ? 'Success!' : type === 'error' ? 'Error!' : 'Warning!'}</span>
+            <span>{getTitle()}</span>
           </div>
           <button 
             className={styles.closeButton}

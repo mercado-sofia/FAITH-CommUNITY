@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { NavigationProvider } from "../../contexts/NavigationContext";
 import Sidebar from "./components/Sidebar"
 import TopBar from "./components/TopBar"
+import Loader from "../../components/Loader";
 import styles from "./styles/dashboard.module.css"
 import { Poppins, Inter, Urbanist } from 'next/font/google';
 
@@ -21,43 +23,66 @@ const inter = Inter({
 
 const urbanist = Urbanist({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800', '900'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-urbanist',
 });
 
-export default function SuperAdminLayout({ children }) {
+function SuperAdminLayoutContent({ children }) {
   const router = useRouter();
-  const [isAuthChecked, setIsAuthChecked] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   useEffect(() => {
-    const superAdminToken = localStorage.getItem("superAdminToken");
-    const superAdminData = localStorage.getItem("superAdminData");
-    const userRole = document.cookie.includes("userRole=superadmin");
+    const initializeSuperAdmin = async () => {
+      try {
+        const token = localStorage.getItem('superAdminToken');
+        const superAdminData = localStorage.getItem('superAdminData');
+        const userRole = document.cookie.includes('userRole=superadmin');
+        
+        if (!token || !superAdminData || !userRole) {
+          localStorage.removeItem('superAdminToken');
+          localStorage.removeItem('superAdminData');
+          document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          router.push('/login');
+          return;
+        }
 
-    if (!superAdminToken || !superAdminData || !userRole) {
-      router.push("/login");
-    } else {
-      setIsAuthChecked(true);
-    }
+        setIsInitialLoading(false);
+      } catch (error) {
+        console.error('Error initializing super admin:', error);
+        localStorage.removeItem('superAdminToken');
+        localStorage.removeItem('superAdminData');
+        document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        router.push('/login');
+      }
+    };
+
+    initializeSuperAdmin();
   }, [router]);
 
-  if (!isAuthChecked) {
-    return (
-      <div className={styles.mainContent}>
-        <div style={{ padding: "2rem", textAlign: "center" }}>
-          <p>Checking superadmin access...</p>
-        </div>
-      </div>
-    );
+  // Show full-screen loader only on initial page load/reload
+  if (isInitialLoading) {
+    return <Loader />;
   }
 
   return (
-    <div className={`${poppins.variable} ${inter.variable} ${urbanist.variable}`}>
+    <div className={`${styles.superAdminLayout} ${poppins.variable} ${inter.variable} ${urbanist.variable}`}>
       <Sidebar />
-      <TopBar />
-      <main className={`${styles.mainContent} ${poppins.className}`}>
-        {children}
-      </main>
+      <div className={styles.mainContent}>
+        <TopBar />
+        <main className={styles.content}>
+          {children}
+        </main>
+      </div>
     </div>
+  );
+}
+
+export default function SuperAdminLayout({ children }) {
+  return (
+    <NavigationProvider>
+      <SuperAdminLayoutContent>
+        {children}
+      </SuperAdminLayoutContent>
+    </NavigationProvider>
   );
 }

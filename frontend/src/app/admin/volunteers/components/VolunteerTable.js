@@ -4,6 +4,7 @@
 import { useState, useRef, useEffect } from "react"
 import { HiOutlineDotsHorizontal } from "react-icons/hi"
 import { IoCloseOutline } from "react-icons/io5";
+import { FiTrash2 } from "react-icons/fi";
 import PaginationControls from "./PaginationControls"
 import ViewDetailsModal from "./ViewDetailsModal"
 import styles from "./styles/VolunteerTable.module.css"
@@ -20,7 +21,7 @@ const validateVolunteerData = (volunteer) => {
   return true;
 };
 
-export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelete, itemsPerPage = 10 }) {
+export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelete, onBulkDelete, itemsPerPage = 10 }) {
   const [selectedVolunteer, setSelectedVolunteer] = useState(null)
   const [showDropdown, setShowDropdown] = useState(null)
   const [modalType, setModalType] = useState(null)
@@ -29,6 +30,7 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
   const [selectedVolunteers, setSelectedVolunteers] = useState([])
   const [showBulkModal, setShowBulkModal] = useState(false)
   const [bulkAction, setBulkAction] = useState(null)
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
 
   // itemsPerPage is now passed as a prop with default value of 10
   const dropdownRefs = useRef({})
@@ -115,6 +117,11 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
     setShowBulkModal(true)
   }
 
+  const handleBulkDelete = () => {
+    if (selectedVolunteers.length === 0) return
+    setShowBulkDeleteModal(true)
+  }
+
   const handleConfirmBulkAction = () => {
     if (selectedVolunteers.length === 0 || !bulkAction) return
     
@@ -131,6 +138,22 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
   const closeBulkModal = () => {
     setShowBulkModal(false)
     setBulkAction(null)
+  }
+
+  const handleConfirmBulkDelete = () => {
+    if (selectedVolunteers.length === 0) return
+    
+    // Call the bulk delete handler with the selected volunteer IDs
+    if (onBulkDelete) {
+      onBulkDelete(selectedVolunteers)
+    }
+    
+    setSelectedVolunteers([])
+    setShowBulkDeleteModal(false)
+  }
+
+  const closeBulkDeleteModal = () => {
+    setShowBulkDeleteModal(false)
   }
 
   const cancelSelection = () => {
@@ -197,6 +220,13 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
               title={isDeclineDisabled ? 'Cannot decline: All selected volunteers are already declined' : 'Decline selected volunteers'}
             >
               Decline Selected
+            </button>
+            <button 
+              className={`${styles.bulkButton} ${styles.deleteButton}`}
+              onClick={handleBulkDelete}
+              title="Delete selected volunteers"
+            >
+              <FiTrash2 size={16} />
             </button>
             <button 
               className={styles.cancelButton}
@@ -366,6 +396,30 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
                 className={bulkAction === 'approve' ? '' : styles.declineButton}
               >
                 Yes, {bulkAction === 'approve' ? 'Approve' : 'Decline'} All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      {showBulkDeleteModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.confirmModal}>
+            <h2>Delete Selected Volunteers</h2>
+            <p>
+              Are you sure you want to delete <strong>{selectedVolunteers.length}</strong> selected volunteer{selectedVolunteers.length !== 1 ? 's' : ''}?
+            </p>
+            <p className={styles.warning}>
+              Warning: This action will hide the selected volunteers from the list but preserve their data.
+            </p>
+            <div className={styles.confirmActions}>
+              <button onClick={closeBulkDeleteModal}>Cancel</button>
+              <button 
+                onClick={handleConfirmBulkDelete}
+                className={styles.deleteButton}
+              >
+                Yes, Delete All
               </button>
             </div>
           </div>

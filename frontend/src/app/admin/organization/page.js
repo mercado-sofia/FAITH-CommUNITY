@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { updateAdminOrg } from "../../../rtk/superadmin/adminSlice";
 import { useAdminOrganization, useAdminAdvocacies, useAdminCompetencies, useAdminHeads } from "../../../hooks/useAdminData";
+import { applyRoleHierarchyOrdering } from "./components/utils/roleHierarchy";
 import OrgHeader from "./components/OrgHeader";
 import OrgInfoSection from "./components/OrgInfoSection";
 import AdvocacySection from "./components/AdvocacySection";
@@ -16,7 +17,7 @@ import OrgHeadsEditModal from "./components/OrgHeadsEditModal";
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import SummaryModal from "./components/SummaryModal";
 import SectionSummaryModal from "./components/SectionSummaryModal";
-import ToastModal from "./components/ToastModal";
+import SuccessModal from "../components/SuccessModal";
 import pageStyles from "./page.module.css";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -146,8 +147,7 @@ export default function OrganizationPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [message, setMessage] = useState({ text: "", type: "", section: "" });
-  const [showToastModal, setShowToastModal] = useState(false);
+  const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
   const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [showSectionSummaryModal, setShowSectionSummaryModal] = useState(false);
   const [originalData, setOriginalData] = useState(null);
@@ -194,13 +194,11 @@ export default function OrganizationPage() {
   }, [organization, editPreviewData, loading, admin]);
 
   const showMessage = (text, type, section = "") => {
-    setMessage({ text, type, section });
-    setShowToastModal(true);
+    setSuccessModal({ isVisible: true, message: text, type: type });
   };
 
-  const closeToastModal = () => {
-    setShowToastModal(false);
-    setMessage({ text: "", type: "", section: "" });
+  const closeSuccessModal = () => {
+    setSuccessModal({ isVisible: false, message: '', type: 'success' });
   };
 
     const validateForm = () => {
@@ -682,11 +680,12 @@ export default function OrganizationPage() {
 
         showMessage('Organization head added successfully', 'success', 'orgHeads');
         
-        // Update SWR cache with the new data
-        const updatedHeads = [...stableOrgHeadsData, result.data];
+        // Apply role hierarchy ordering to all heads including the new one
+        const allHeadsWithNew = [...stableOrgHeadsData, result.data];
+        const reorderedHeads = applyRoleHierarchyOrdering(allHeadsWithNew);
         
-        // Update the SWR cache immediately with the new data
-        refreshHeads(updatedHeads, false); // false = don't revalidate
+        // Update SWR cache with the reordered data
+        refreshHeads(reorderedHeads, false); // false = don't revalidate
         
         // Also trigger a revalidation to ensure data consistency
         setTimeout(() => {
@@ -1070,10 +1069,11 @@ export default function OrganizationPage() {
         isDeleting={saving}
       />
 
-      <ToastModal
-        isOpen={showToastModal}
-        message={message}
-        onClose={closeToastModal}
+      <SuccessModal
+        isVisible={successModal.isVisible}
+        message={successModal.message}
+        type={successModal.type}
+        onClose={closeSuccessModal}
       />
     </div>
   );

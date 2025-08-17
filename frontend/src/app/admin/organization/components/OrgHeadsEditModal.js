@@ -8,7 +8,7 @@ import { getOrganizationImageUrl } from '@/utils/uploadPaths'
 import styles from './styles/OrgHeadsEditModal.module.css'
 import { PhotoUtils } from './utils/photoUtils'
 import LazyImage from './LazyImage'
-import { sortHeadsByOrder, ROLE_OPTIONS } from './utils/roleHierarchy'
+import { sortHeadsByOrder } from './utils/roleHierarchy'
 
 export default function OrgHeadsEditModal({
   isOpen,
@@ -291,19 +291,31 @@ export default function OrgHeadsEditModal({
     
     if (validateForm()) {
       try {
-        // Ensure all heads have proper display_order before saving
-        const headsWithOrder = localHeads.map((head, index) => ({
-          ...head,
-          display_order: index + 1
-        }));
+        let headsToSave;
+        
+        if (isIndividualEdit) {
+          // For individual editing, preserve the original display_order
+          // Only update the head data, don't change the order
+          headsToSave = localHeads.map(head => ({
+            ...head,
+            // Preserve the original display_order if it exists
+            display_order: head.display_order || 1
+          }));
+        } else {
+          // For bulk editing, maintain the current order in the modal
+          headsToSave = localHeads.map((head, index) => ({
+            ...head,
+            display_order: index + 1
+          }));
+        }
         
         // Update the main state with local changes before saving
         if (typeof setOrgHeadsData === 'function') {
-          setOrgHeadsData([...headsWithOrder]);
+          setOrgHeadsData([...headsToSave]);
         }
         
         // Pass the current local data to the save function
-        handleSave(headsWithOrder);
+        handleSave(headsToSave);
       } catch (error) {
         // Handle error silently
       }
@@ -469,20 +481,15 @@ export default function OrgHeadsEditModal({
 
                         <div className={`${styles.formGroup} ${fieldErrors[`${index}-role`] ? styles.formGroupError : ''}`}>
                           <label className={styles.label}>Role *</label>
-                          <select
+                          <input
+                            type="text"
                             value={head.role || ''}
                             onChange={(e) => handleInputChange(index, 'role', e.target.value)}
                             className={`${styles.input} ${fieldErrors[`${index}-role`] ? styles.inputError : ''}`}
+                            placeholder="Enter role (e.g., President, Secretary, PRO)"
                             disabled={saving}
                             required
-                          >
-                            <option value="">Select a role</option>
-                            {ROLE_OPTIONS.map((role) => (
-                              <option key={role.value} value={role.value}>
-                                {role.label}
-                              </option>
-                            ))}
-                          </select>
+                          />
                           {fieldErrors[`${index}-role`] && (
                             <div className={styles.fieldError}>
                               {fieldErrors[`${index}-role`]}

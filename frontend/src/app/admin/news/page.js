@@ -11,6 +11,7 @@ import EditNewsModal from './components/EditNewsModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
 import ErrorBoundary from '../../../components/ErrorBoundary';
+import SuccessModal from '../components/SuccessModal';
 import styles from './news.module.css';
 import { FaPlus } from 'react-icons/fa';
 
@@ -21,7 +22,7 @@ export default function AdminNewsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -32,28 +33,28 @@ export default function AdminNewsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Use SWR hook for news data
-  const { news, isLoading: loading, error, mutate: refreshNews } = useAdminNews(currentAdmin?.org);
+  const { news = [], isLoading: loading, error, mutate: refreshNews } = useAdminNews(currentAdmin?.org);
   
   // Initialize state from URL parameters
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [sortBy, setSortBy] = useState(() => {
     const sortParam = searchParams.get('sort');
-    return sortParam ? sortParam.charAt(0).toUpperCase() + sortParam.slice(1).toLowerCase() : 'Newest';
+    return sortParam || 'newest';
   });
-  const [showCount, setShowCount] = useState(parseInt(searchParams.get('show') || '10'));
+  const [showCount, setShowCount] = useState(parseInt(searchParams.get('show')) || 10);
 
   const orgId = currentAdmin?.org;
 
-  // Auto-clear messages after 5 seconds
+  // Auto-clear success modal after 3 seconds
   useEffect(() => {
-    if (message.text) {
+    if (successModal.isVisible) {
       const timer = setTimeout(() => {
-        setMessage({ type: '', text: '' });
+        setSuccessModal({ isVisible: false, message: '', type: 'success' });
       }, 3000);
       
       return () => clearTimeout(timer);
     }
-  }, [message.text]);
+  }, [successModal.isVisible]);
 
   // Function to update URL parameters
   const updateURLParams = (newParams) => {
@@ -95,7 +96,7 @@ export default function AdminNewsPage() {
   // Handle error display
   useEffect(() => {
     if (error) {
-      setMessage({ type: 'error', text: 'Failed to fetch news. Please try again.' });
+      setSuccessModal({ isVisible: true, message: 'Failed to fetch news. Please try again.', type: 'error' });
     }
   }, [error]);
 
@@ -104,23 +105,23 @@ export default function AdminNewsPage() {
     setIsSubmitting(true);
     try {
       if (!orgId) {
-        setMessage({ type: 'error', text: 'Organization information not found. Please try again.' });
+        setSuccessModal({ isVisible: true, message: 'Organization information not found. Please try again.', type: 'error' });
         return;
       }
 
       // Validate news data
       if (!newsData.title || !newsData.title.trim()) {
-        setMessage({ type: 'error', text: 'News title is required.' });
+        setSuccessModal({ isVisible: true, message: 'News title is required.', type: 'error' });
         return;
       }
 
       if (!newsData.description || !newsData.description.trim()) {
-        setMessage({ type: 'error', text: 'News description is required.' });
+        setSuccessModal({ isVisible: true, message: 'News description is required.', type: 'error' });
         return;
       }
 
       if (!newsData.date) {
-        setMessage({ type: 'error', text: 'News date is required.' });
+        setSuccessModal({ isVisible: true, message: 'News date is required.', type: 'error' });
         return;
       }
 
@@ -134,7 +135,7 @@ export default function AdminNewsPage() {
       const adminToken = localStorage.getItem("adminToken");
       
       if (!adminToken) {
-        setMessage({ type: 'error', text: 'Authentication required. Please log in again.' });
+        setSuccessModal({ isVisible: true, message: 'Authentication required. Please log in again.', type: 'error' });
         return;
       }
       
@@ -155,7 +156,7 @@ export default function AdminNewsPage() {
 
       const result = await response.json();
 
-      setMessage({ type: 'success', text: 'News created successfully!' });
+      setSuccessModal({ isVisible: true, message: 'News created successfully!', type: 'success' });
       setShowAddModal(false);
       refreshNews(); // Refresh the list
     } catch (error) {
@@ -163,7 +164,7 @@ export default function AdminNewsPage() {
       const errorMessage = error.message.includes('Failed to fetch') 
         ? 'Network error. Please check your connection and try again.'
         : 'Failed to create news. Please try again.';
-      setMessage({ type: 'error', text: errorMessage });
+      setSuccessModal({ isVisible: true, message: errorMessage, type: 'error' });
     } finally {
       setIsSubmitting(false);
     }
@@ -174,23 +175,23 @@ export default function AdminNewsPage() {
     setIsUpdating(true);
     try {
       if (!editingNews?.id) {
-        setMessage({ type: 'error', text: 'News ID not found. Please try again.' });
+        setSuccessModal({ isVisible: true, message: 'News ID not found. Please try again.', type: 'error' });
         return;
       }
 
       // Validate news data
       if (!newsData.title || !newsData.title.trim()) {
-        setMessage({ type: 'error', text: 'News title is required.' });
+        setSuccessModal({ isVisible: true, message: 'News title is required.', type: 'error' });
         return;
       }
 
       if (!newsData.description || !newsData.description.trim()) {
-        setMessage({ type: 'error', text: 'News description is required.' });
+        setSuccessModal({ isVisible: true, message: 'News description is required.', type: 'error' });
         return;
       }
 
       if (!newsData.date) {
-        setMessage({ type: 'error', text: 'News date is required.' });
+        setSuccessModal({ isVisible: true, message: 'News date is required.', type: 'error' });
         return;
       }
 
@@ -204,7 +205,7 @@ export default function AdminNewsPage() {
       const adminToken = localStorage.getItem("adminToken");
       
       if (!adminToken) {
-        setMessage({ type: 'error', text: 'Authentication required. Please log in again.' });
+        setSuccessModal({ isVisible: true, message: 'Authentication required. Please log in again.', type: 'error' });
         return;
       }
       
@@ -225,7 +226,7 @@ export default function AdminNewsPage() {
 
       const result = await response.json();
 
-      setMessage({ type: 'success', text: 'News updated successfully!' });
+      setSuccessModal({ isVisible: true, message: 'News updated successfully!', type: 'success' });
       setShowEditModal(false);
       setEditingNews(null);
       refreshNews(); // Refresh the list
@@ -234,7 +235,7 @@ export default function AdminNewsPage() {
       const errorMessage = error.message.includes('Failed to fetch') 
         ? 'Network error. Please check your connection and try again.'
         : 'Failed to update news. Please try again.';
-      setMessage({ type: 'error', text: errorMessage });
+      setSuccessModal({ isVisible: true, message: errorMessage, type: 'error' });
     } finally {
       setIsUpdating(false);
     }
@@ -247,7 +248,7 @@ export default function AdminNewsPage() {
       const adminToken = localStorage.getItem("adminToken");
       
       if (!adminToken) {
-        setMessage({ type: 'error', text: 'Authentication required. Please log in again.' });
+        setSuccessModal({ isVisible: true, message: 'Authentication required. Please log in again.', type: 'error' });
         return;
       }
       
@@ -266,7 +267,7 @@ export default function AdminNewsPage() {
 
       const result = await response.json();
 
-      setMessage({ type: 'success', text: 'News deleted successfully!' });
+      setSuccessModal({ isVisible: true, message: 'News deleted successfully!', type: 'success' });
       setShowDeleteModal(false);
       setDeletingNews(null);
       refreshNews(); // Refresh the list
@@ -275,17 +276,18 @@ export default function AdminNewsPage() {
       const errorMessage = error.message.includes('Failed to fetch') 
         ? 'Network error. Please check your connection and try again.'
         : 'Failed to delete news. Please try again.';
-      setMessage({ type: 'error', text: errorMessage });
+      setSuccessModal({ isVisible: true, message: errorMessage, type: 'error' });
     } finally {
       setIsDeleting(false);
     }
   };
 
   // Filter and sort news
-  const filteredNews = news.filter(item => {
+  const filteredNews = (news || []).filter(item => {
+    if (!item || !item.title) return false;
     const matchesSearch = !searchQuery || 
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase());
+      (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesSearch;
   });
 
@@ -294,19 +296,25 @@ export default function AdminNewsPage() {
     switch (sortBy.toLowerCase()) {
       case 'newest':
         // Sort by date field (newest first)
-        return new Date(b.date || b.created_at) - new Date(a.date || a.created_at);
+        const dateA = a.date || a.created_at || new Date(0);
+        const dateB = b.date || b.created_at || new Date(0);
+        return new Date(dateB) - new Date(dateA);
       case 'oldest':
         // Sort by date field (oldest first)
-        return new Date(a.date || a.created_at) - new Date(b.date || b.created_at);
+        const dateAOld = a.date || a.created_at || new Date(0);
+        const dateBOld = b.date || b.created_at || new Date(0);
+        return new Date(dateAOld) - new Date(dateBOld);
       case 'title':
-        return a.title.localeCompare(b.title);
+        return (a.title || '').localeCompare(b.title || '');
       default:
         // Default to newest
-        return new Date(b.date || b.created_at) - new Date(a.date || a.created_at);
+        const dateADef = a.date || a.created_at || new Date(0);
+        const dateBDef = b.date || b.created_at || new Date(0);
+        return new Date(dateBDef) - new Date(dateADef);
     }
   });
 
-  const displayedNews = sortedNews.slice(0, showCount);
+  const displayedNews = (sortedNews || []).slice(0, showCount);
 
   const handleEdit = (newsItem) => {
     setEditingNews(newsItem);
@@ -353,11 +361,6 @@ export default function AdminNewsPage() {
         </div>
       </div>
 
-      {message.text && (
-        <div className={`${styles.message} ${styles[message.type]}`}>
-          {message.text}
-        </div>
-      )}
 
       <SearchAndFilterControls
         searchQuery={searchQuery}
@@ -366,8 +369,8 @@ export default function AdminNewsPage() {
         onSortChange={handleSortChange}
         showCount={showCount}
         onShowCountChange={handleShowCountChange}
-        totalCount={news.length}
-        filteredCount={filteredNews.length}
+        totalCount={news?.length || 0}
+        filteredCount={filteredNews?.length || 0}
       />
 
       {loading && (
@@ -385,7 +388,7 @@ export default function AdminNewsPage() {
 
       {!loading && !error && (
         <div className={styles.newsGrid}>
-          {displayedNews.length === 0 ? (
+          {(displayedNews?.length || 0) === 0 ? (
             <div className={styles.emptyState}>
               <p>No news found.</p>
               {searchQuery && (
@@ -393,7 +396,7 @@ export default function AdminNewsPage() {
               )}
             </div>
           ) : (
-            displayedNews.map((newsItem) => (
+            (displayedNews || []).map((newsItem) => (
               <NewsCard
                 key={newsItem.id}
                 news={newsItem}
@@ -406,13 +409,13 @@ export default function AdminNewsPage() {
       )}
 
       {/* Show More Button */}
-      {filteredNews.length > showCount && (
+      {(filteredNews?.length || 0) > showCount && (
         <div className={styles.showMoreContainer}>
           <button
             className={styles.showMoreButton}
             onClick={() => setShowCount(showCount + 10)}
           >
-            Show More ({filteredNews.length - showCount} remaining)
+            Show More ({(filteredNews?.length || 0) - showCount} remaining)
           </button>
         </div>
       )}
@@ -443,8 +446,16 @@ export default function AdminNewsPage() {
         onConfirm={() => handleDeleteNews(deletingNews?.id)}
         onCancel={handleCloseModals}
         isDeleting={isDeleting}
-              />
-      </div>
+      />
+
+      <SuccessModal
+        message={successModal.message}
+        isVisible={successModal.isVisible}
+        onClose={() => setSuccessModal({ isVisible: false, message: '', type: 'success' })}
+        type={successModal.type}
+        autoHideDuration={4000}
+      />
+    </div>
     </ErrorBoundary>
-    );
-  }
+  );
+}

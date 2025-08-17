@@ -64,9 +64,11 @@ app.get("/api/debug/tables", async (req, res) => {
 // Public Routes
 import applyRoutes from "./back_end/for_public/routes/apply.js"
 import organizationsRoutes from "./back_end/for_public/routes/organizations.js"
+import messagesRoutes from "./back_end/for_public/routes/messages.js"
 
 app.use("/api", applyRoutes)
 app.use("/api", organizationsRoutes)
+app.use("/api", messagesRoutes)
 
 // ADMIN ROUTES
 import advocaciesRoutes from "./back_end/admin/routes/advocacies.js"
@@ -82,6 +84,7 @@ import volunteersRoutes from "./back_end/admin/routes/volunteers.js"
 import orgSyncRoutes from "./back_end/admin/routes/orgSync.js"
 import newsRoutes from "./back_end/admin/routes/newsRoutes.js"
 import notificationsRoutes from "./back_end/admin/routes/notifications.js"
+import inboxRoutes from "./back_end/admin/routes/inbox.js"
 
 app.use("/api/advocacies", advocaciesRoutes)
 app.use("/api/competencies", competenciesRoutes)
@@ -96,6 +99,7 @@ app.use("/api/volunteers", volunteersRoutes)
 app.use("/api", orgSyncRoutes)
 app.use("/api", newsRoutes)
 app.use("/api/notifications", notificationsRoutes)
+app.use("/api/inbox", inboxRoutes)
 
 // PUBLIC ROUTES
 import publicOrganizationsRoutes from "./back_end/for_public/routes/organizations.js"

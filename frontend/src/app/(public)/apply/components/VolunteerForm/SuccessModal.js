@@ -73,7 +73,7 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
           <p className={styles.successMessage}>{message}</p>
           
           <div className={styles.successTimer}>
-            <p>This modal will close automatically in {timeLeft} seconds</p>
+            <p>This will close automatically in {timeLeft} seconds</p>
             <div className={styles.progressBar}>
               <div 
                 className={styles.progressFill} 

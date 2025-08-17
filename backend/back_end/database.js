@@ -28,12 +28,7 @@ const dbConfig = {
   maxPacketSize: 16777216 // 16MB
 };
 
-// Log the database configuration (remove in production)
-console.log("Database Configuration:", {
-  host: dbConfig.host,
-  user: dbConfig.user,
-  database: dbConfig.database
-});
+// Database configuration loaded
 
 // Create a connection pool
 const pool = mysql.createPool(dbConfig);
@@ -202,6 +197,29 @@ const initializeDatabase = async () => {
         )
       `);
       console.log("✅ Submissions table created successfully!");
+    }
+
+    // Check if messages table exists
+    const [messagesTables] = await connection.query('SHOW TABLES LIKE "messages"');
+    
+    if (messagesTables.length === 0) {
+      console.log("Creating messages table...");
+      await connection.query(`
+        CREATE TABLE messages (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          organization_id INT NOT NULL,
+          sender_email VARCHAR(255) NOT NULL,
+          sender_name VARCHAR(255),
+          message TEXT NOT NULL,
+          is_read BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+          INDEX idx_organization_read (organization_id, is_read),
+          INDEX idx_created_at (created_at)
+        )
+      `);
+      console.log("✅ Messages table created successfully!");
     }
 
     connection.release();

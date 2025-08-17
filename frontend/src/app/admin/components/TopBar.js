@@ -13,6 +13,7 @@ import {
   useMarkAsReadMutation,
   useMarkAllAsReadMutation 
 } from '../../../rtk/admin/notificationsApi';
+import { useGetUnreadCountQuery as useGetInboxUnreadCountQuery } from '../../../rtk/admin/inboxApi';
 import styles from './styles/topbar.module.css';
 
 export default function TopBar() {
@@ -29,16 +30,23 @@ export default function TopBar() {
     { skip: !currentAdmin?.id }
   );
   
-  // Fetch unread count
+  // Fetch unread count for notifications
   const { data: unreadCountData } = useGetUnreadCountQuery(
     currentAdmin?.id,
     { skip: !currentAdmin?.id }
+  );
+
+  // Fetch unread count for inbox messages
+  const { data: inboxUnreadCountData } = useGetInboxUnreadCountQuery(
+    currentAdmin?.org,
+    { skip: !currentAdmin?.org }
   );
   
   const [markAsRead] = useMarkAsReadMutation();
   const [markAllAsRead] = useMarkAllAsReadMutation();
   
   const hasUnreadNotifications = unreadCountData?.count > 0;
+  const hasUnreadMessages = inboxUnreadCountData?.data?.count > 0;
   const notifications = notificationsData?.notifications || [];
 
   const router = useRouter();
@@ -68,8 +76,8 @@ export default function TopBar() {
       case 'programs': return { category: 'Management', section: 'Programs' };
       case 'news': return { category: 'Management', section: 'News' };
       case 'submissions': return { category: 'Management', section: 'Submissions' };
-      case 'settings': return { category: 'Account', section: 'Settings' };
       case 'inbox': return { category: 'General', section: 'Inbox' };
+      case 'settings': return { category: 'Account', section: 'Settings' };
       default: return { category: 'General', section: 'Dashboard' };
     }
   };
@@ -148,7 +156,10 @@ export default function TopBar() {
         <div className={styles.rightSection}>
           {/* Inbox Icon */}
           <div className={styles.iconButton} onClick={handleInboxClick}>
-            <TbMail size={20} color="#06100f" />
+            <div className={styles.notificationWrapper}>
+              <TbMail size={20} color="#06100f" />
+              {hasUnreadMessages && <div className={styles.notificationBadge}></div>}
+            </div>
           </div>
 
           {/* Notifications Icon */}

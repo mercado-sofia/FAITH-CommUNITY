@@ -216,10 +216,18 @@ export default function PendingApprovalsPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.pageTitle}>Pending Submissions</h1>
-        <p className={styles.pageSubtitle}>
-          Review and approve organization updates from administrators
-        </p>
+        <div className={styles.headerContent}>
+          <h1 className={styles.pageTitle}>Pending Submissions</h1>
+          <p className={styles.pageSubtitle}>
+            Review and approve organization updates from administrators
+          </p>
+        </div>
+        <div className={styles.headerStats}>
+          <div className={styles.statItem}>
+            <span className={styles.statNumber}>{approvals.length}</span>
+            <span className={styles.statLabel}>Total Submissions</span>
+          </div>
+        </div>
       </div>
 
       {/* Notification Display */}
@@ -230,18 +238,32 @@ export default function PendingApprovalsPage() {
       )}
       
       {approvals.length === 0 ? (
-        <div className={styles.noSubmissions}>
-          <p>No pending submissions at this time.</p>
+        <div className={styles.emptyState}>
+          <div className={styles.emptyStateIcon}>📋</div>
+          <h3 className={styles.emptyStateTitle}>No pending submissions</h3>
+          <p className={styles.emptyStateText}>
+            All submissions have been reviewed. New submissions will appear here when administrators submit updates.
+          </p>
         </div>
       ) : (
-        <ApprovalsTable 
-          approvals={approvals}
-          onApprove={handleApprove}
-          onReject={handleReject}
-          onBulkApprove={handleBulkApprove}
-          onBulkReject={handleBulkReject}
-          onBulkDelete={handleBulkDelete}
-        />
+        <div className={styles.tableSection}>
+          <div className={styles.tableSectionHeader}>
+            <h2 className={styles.tableSectionTitle}>Submissions</h2>
+            <div className={styles.tableSectionActions}>
+              <span className={styles.showingText}>
+                Showing {approvals.length} submission{approvals.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+          </div>
+          <ApprovalsTable 
+            approvals={approvals}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onBulkApprove={handleBulkApprove}
+            onBulkReject={handleBulkReject}
+            onBulkDelete={handleBulkDelete}
+          />
+        </div>
       )}
     </div>
   );

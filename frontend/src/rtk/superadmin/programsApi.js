@@ -34,6 +34,7 @@ export const superadminProgramsApi = createApi({
                 organizationName: program.organization_name,
                 organizationAcronym: program.organization_acronym,
                 organizationLogo: program.organization_logo,
+                organizationColor: program.organization_color,
                 programs: {
                   upcoming: [],
                   active: [],
@@ -107,10 +108,46 @@ export const superadminProgramsApi = createApi({
         return response;
       }
     }),
+
+    // Get individual program by ID with complete details
+    getProgramById: builder.query({
+      query: (id) => `/projects/superadmin/${id}`,
+      providesTags: (result, error, id) => [{ type: "SuperadminProgram", id }],
+      transformResponse: (response) => {
+        console.log('superadminProgramsApi - getProgramById response:', response);
+        if (response.success && response.data) {
+          const program = response.data;
+          return {
+            id: program.id,
+            title: program.title,
+            description: program.description,
+            category: program.category,
+            status: program.status,
+            image: program.image,
+            event_start_date: program.event_start_date,
+            event_end_date: program.event_end_date,
+            multiple_dates: program.multiple_dates || [],
+            additional_images: program.additional_images || [],
+            created_at: program.created_at,
+            updated_at: program.updated_at,
+            organization_id: program.organization_id,
+            organization_name: program.organization_name,
+            organization_acronym: program.organization_acronym,
+            organization_logo: program.organization_logo
+          };
+        }
+        return null;
+      },
+      transformErrorResponse: (response) => {
+        console.error('superadminProgramsApi - getProgramById error:', response);
+        return response;
+      }
+    }),
   }),
 })
 
 export const {
   useGetAllProgramsByOrganizationQuery,
   useGetProgramsStatisticsQuery,
+  useGetProgramByIdQuery,
 } = superadminProgramsApi

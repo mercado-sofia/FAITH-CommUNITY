@@ -91,7 +91,8 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
         pp.organization_id,
         o.orgName as organization_name,
         o.org as organization_acronym,
-        o.logo as organization_logo
+        o.logo as organization_logo,
+        o.org_color as organization_color
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
       ORDER BY o.orgName ASC, pp.created_at DESC

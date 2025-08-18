@@ -403,7 +403,6 @@ const SuperadminProgramsPage = () => {
           </div>
         ) : (
           filteredOrganizations.map(org => {
-            // Debug: Log organization data to check if color is available
             console.log('Organization data:', {
               id: org.organizationId,
               name: org.organizationName,
@@ -429,7 +428,9 @@ const SuperadminProgramsPage = () => {
                       <h3 className={styles.organizationName}>
                         <span 
                           className={styles.organizationAcronym}
-                          style={{ backgroundColor: org.organizationColor || '#667eea' }}
+                          style={{ 
+                            backgroundColor: org.organizationColor || '#667eea'
+                          }}
                         >
                           {org.organizationAcronym}
                         </span>

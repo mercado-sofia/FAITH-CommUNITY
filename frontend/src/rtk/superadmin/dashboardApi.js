@@ -60,6 +60,18 @@ export const dashboardApi = createApi({
       providesTags: ["Dashboard"],
     }),
 
+    // Get active programs count
+    getActiveProgramsCount: builder.query({
+      query: () => "/projects/superadmin/statistics",
+      providesTags: ["Dashboard"],
+      transformResponse: (response) => {
+        if (response.success && response.data) {
+          return response.data.active_programs || 0;
+        }
+        return 0;
+      },
+    }),
+
     // Get recent pending approvals for table
     getRecentPendingApprovals: builder.query({
       query: () => "/approvals/pending",
@@ -74,8 +86,9 @@ export const dashboardApi = createApi({
           .map(approval => ({
             ...approval,
             submitted_at: approval.submitted_at ? new Date(approval.submitted_at).toISOString() : null,
-            // Ensure organization name is properly displayed
-            organization_name: approval.organization_name || approval.organization_acronym || approval.admin_name || 'Unknown Organization'
+            // Map backend fields to frontend expected fields
+            organization_acronym: approval.org || approval.organization_acronym || 'N/A',
+            organization_name: approval.orgName || approval.organization_name || 'Unknown Organization'
           }))
           .sort((a, b) => {
             const dateA = new Date(a.submitted_at || 0);
@@ -83,6 +96,34 @@ export const dashboardApi = createApi({
             return dateB - dateA;
           })
           .slice(0, 5);
+      },
+    }),
+
+    // Get organizations for dropdown filter
+    getOrganizationsForFilter: builder.query({
+      query: () => "/admins",
+      providesTags: ["Dashboard"],
+      transformResponse: (response) => {
+        const admins = response.success ? response.data : response;
+        if (!Array.isArray(admins)) return [];
+        
+        // Extract unique organizations from admins data
+        const uniqueOrgs = [];
+        const seen = new Set();
+        
+        admins.forEach(admin => {
+          const orgKey = `${admin.org}-${admin.orgName}`;
+          if (!seen.has(orgKey) && admin.org && admin.orgName) {
+            seen.add(orgKey);
+            uniqueOrgs.push({
+              id: admin.organization_id || admin.id,
+              acronym: admin.org,
+              name: admin.orgName
+            });
+          }
+        });
+        
+        return uniqueOrgs;
       },
     }),
   }),
@@ -94,5 +135,7 @@ export const {
   useGetPendingApprovalsCountQuery,
   useGetTotalVolunteersCountQuery,
   useGetTotalProgramsCountQuery,
+  useGetActiveProgramsCountQuery,
   useGetRecentPendingApprovalsQuery,
+  useGetOrganizationsForFilterQuery,
 } = dashboardApi

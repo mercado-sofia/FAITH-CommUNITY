@@ -1,37 +1,89 @@
 /* Main Dashboard Layout */
+.mainContent {
+  margin-left: 245px;
+  margin-top: 55px;
+  margin-right: 4px;
+  padding: 2rem 3rem 3rem 4.5rem;
+  height: calc(100vh - 55px);
+  background-color: #F0F4F7;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar for main content - matching public section */
+.mainContent::-webkit-scrollbar {
+  width: 8px;
+}
+
+.mainContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mainContent::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+  transition: background-color 0.2s ease;
+}
+
+.mainContent::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+.mainContent::-webkit-scrollbar-thumb:active {
+  background: #4b5563;
+}
+
+/* Firefox scrollbar */
+.mainContent {
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af transparent;
+}
+
 .mainArea {
-  padding: 1.5rem;
-  background: #f8fafc;
-  min-height: 100vh;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  width: 100%;
 }
 
 /* Header Section */
 .header {
   margin-bottom: 2rem;
+  padding-top: 1rem;
 }
 
 .header h1 {
-  font-size: 1.875rem;
+  font-size: 1.4rem;
   font-weight: 700;
-  color: #111827;
+  font-family: var(--font-poppins), sans-serif;
+  color: #06100f;
+  user-select: none;
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.2;
+}
+
+/* Section Heading */
+.section h2 {
+  font-size: 1.3rem;
+  color: #19a48d;
+  margin-bottom: 1rem;
 }
 
 /* Recent Row for Table */
 .recentRow {
+  width: 100%;
   margin-top: 2rem;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .mainArea {
+  .mainContent {
+    margin-left: 1rem;
+    margin-top: 1rem;
+    margin-right: 1rem;
     padding: 1rem;
   }
   
   .header h1 {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
   }
   
   .recentRow {
@@ -40,11 +92,14 @@
 }
 
 @media (max-width: 480px) {
-  .mainArea {
-    padding: 0.75rem;
+  .mainContent {
+    margin-left: 0.5rem;
+    margin-top: 0.5rem;
+    margin-right: 0.5rem;
+    padding: 0.5rem;
   }
   
   .header h1 {
-    font-size: 1.25rem;
+    font-size: 1rem;
   }
 }

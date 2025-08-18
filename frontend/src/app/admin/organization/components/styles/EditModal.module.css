@@ -325,8 +325,8 @@
 
 .input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #06100f;
+  box-shadow: 0 0 0 3px rgba(27, 87, 88, 0.1);
 }
 
 .input:hover:not(:focus) {
@@ -429,8 +429,8 @@
 
 .textarea:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #06100f;
+  box-shadow: 0 0 0 3px (27, 87, 88, 0.1);
 }
 
 .textarea:hover:not(:focus) {

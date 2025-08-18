@@ -39,14 +39,14 @@
   align-items: center;
   gap: 1rem;
   padding: 1rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #19a48d 0%, #148a76 100%);
   color: white;
   border: none;
   border-radius: 16px;
   font-family: inherit;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 15px rgba(25, 164, 141, 0.4);
   position: relative;
   overflow: hidden;
   min-width: 220px;
@@ -69,13 +69,13 @@
 
 .featuredProjectsButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+  box-shadow: 0 8px 25px rgba(25, 164, 141, 0.6);
+  background: linear-gradient(135deg, #148a76 0%, #0f6b5c 100%);
 }
 
 .featuredProjectsButton:active {
   transform: translateY(0);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 15px rgba(25, 164, 141, 0.4);
 }
 
 .buttonIcon {
@@ -372,11 +372,13 @@
 }
 
 .organizationHeader {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: #f1f5f9;
+  color: #2d3748;
   padding: 2.5rem;
   position: relative;
   overflow: hidden;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .organizationHeader::before {
@@ -386,7 +388,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%, rgba(255, 255, 255, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.6) 100%);
   pointer-events: none;
 }
 
@@ -403,16 +405,16 @@
   height: 80px;
   border-radius: 16px;
   object-fit: cover;
-  border: 4px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  border: 3px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   background: white;
 }
 
 .organizationLogo:hover {
   transform: scale(1.05);
-  border-color: rgba(255, 255, 255, 0.5);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  border-color: #cbd5e0;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .organizationDetails {
@@ -426,19 +428,24 @@
   display: flex;
   align-items: center;
   gap: 1.2rem;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: #2d3748;
 }
 
 .organizationAcronym {
-  background: rgba(255, 255, 255, 0.25);
+  background: white;
   padding: 0.6rem 1.2rem;
   border-radius: 12px;
   font-size: 1.1rem;
   font-weight: 800;
   letter-spacing: 1.2px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.organizationAcronym:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .organizationStats {
@@ -450,18 +457,20 @@
 }
 
 .organizationStats span {
-  background: rgba(255, 255, 255, 0.15);
+  background: white;
   padding: 0.6rem 1.2rem;
   border-radius: 24px;
   font-weight: 600;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid #e2e8f0;
+  color: #4a5568;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
 }
 
 .organizationStats span:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: #f7fafc;
   transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .organizationPrograms {

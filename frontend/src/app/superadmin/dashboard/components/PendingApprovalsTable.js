@@ -3,12 +3,12 @@
 import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react';
 import { FiEye } from 'react-icons/fi';
-import { CgOptions } from "react-icons/cg";
 import styles from './styles/RecentTables.module.css';
-import { useGetRecentPendingApprovalsQuery } from '../../../../rtk/superadmin/dashboardApi';
+import { useGetRecentPendingApprovalsQuery, useGetOrganizationsForFilterQuery } from '../../../../rtk/superadmin/dashboardApi';
 
 export default function PendingApprovalsTable() {
   const [filter, setFilter] = useState('All');
+  const [selectedOrganization, setSelectedOrganization] = useState('all');
   const [showOptions, setShowOptions] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -17,6 +17,11 @@ export default function PendingApprovalsTable() {
     isLoading, 
     error 
   } = useGetRecentPendingApprovalsQuery();
+
+  const {
+    data: organizations = [],
+    isLoading: orgsLoading
+  } = useGetOrganizationsForFilterQuery();
 
   const handleFilterChange = (status) => {
     setFilter(status);
@@ -45,7 +50,23 @@ export default function PendingApprovalsTable() {
         return true;
       });
 
-  const displayList = filteredList.slice(0, 5);
+  // Apply organization filter
+  const organizationFilteredList = selectedOrganization === 'all'
+    ? approvals 
+    : approvals.filter(approval => 
+        approval.organization_acronym === selectedOrganization ||
+        approval.org === selectedOrganization
+      );
+
+  const displayList = organizationFilteredList.slice(0, Math.max(5, organizationFilteredList.length));
+
+  // Calculate dynamic table height based on number of rows
+  const calculateTableHeight = () => {
+    const baseHeight = 200; // Header + padding
+    const rowHeight = 50; // Approximate height per row
+    const maxRows = Math.min(displayList.length, 10); // Cap at 10 rows max
+    return baseHeight + (maxRows * rowHeight);
+  };
 
   // Format date for display - handle string dates from API
   const formatDate = (dateString) => {
@@ -68,22 +89,26 @@ export default function PendingApprovalsTable() {
   };
 
   // Show loading state
-  if (isLoading) {
+  if (isLoading || orgsLoading) {
     return (
       <div className={styles.tableContainer}>
         <div className={styles.tableWrapper}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Pending Approvals</h2>
             <div className={styles.buttonGroup}>
-              <div className={styles.dropdownWrapper} ref={dropdownRef}>
-                <button
-                  className={styles.iconButton}
+              {/* Organization Filter */}
+              <div className={styles.filterGroup}>
+                <label className={styles.filterLabel}>Organization:</label>
+                <select 
+                  value={selectedOrganization} 
+                  onChange={(e) => setSelectedOrganization(e.target.value)}
+                  className={styles.filterSelect}
                   disabled
                 >
-                  <CgOptions className={styles.icon} />
-                  Filter
-                </button>
+                  <option value="all">All Organizations</option>
+                </select>
               </div>
+
               <Link href="/superadmin/approvals" className={styles.iconButton}>
                 <FiEye className={styles.icon} />
                 View All
@@ -162,33 +187,25 @@ export default function PendingApprovalsTable() {
 
   return (
     <div className={styles.tableContainer}>
-      <div className={styles.tableWrapper}>
+      <div className={styles.tableWrapper} style={{ height: calculateTableHeight() }}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>Pending Approvals</h2>
           <div className={styles.buttonGroup}>
-            <div className={styles.dropdownWrapper} ref={dropdownRef}>
-              <button
-                className={styles.iconButton}
-                onClick={() => setShowOptions((prev) => !prev)}
+            {/* Organization Filter */}
+            <div className={styles.filterGroup}>
+              <label className={styles.filterLabel}>Organization:</label>
+              <select 
+                value={selectedOrganization} 
+                onChange={(e) => setSelectedOrganization(e.target.value)}
+                className={styles.filterSelect}
               >
-                <CgOptions className={styles.icon} />
-                Filter
-              </button>
-              {showOptions && (
-                <ul className={styles.dropdownMenu}>
-                  {['All', 'Organization', 'Programs', 'News'].map((status) => (
-                    <li
-                      key={status}
-                      className={`${styles.dropdownItem} ${
-                        filter === status ? styles.active : ''
-                      }`}
-                      onClick={() => handleFilterChange(status)}
-                    >
-                      {status}
-                    </li>
-                  ))}
-                </ul>
-              )}
+                <option value="all">All Organizations</option>
+                {organizations.map(org => (
+                  <option key={org.id} value={org.acronym}>
+                    {org.acronym} - {org.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <Link href="/superadmin/approvals" className={styles.iconButton}>

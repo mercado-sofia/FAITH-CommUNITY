@@ -7,7 +7,7 @@ import {
   useGetOrganizationsCountQuery,
   useGetPendingApprovalsCountQuery,
   useGetTotalVolunteersCountQuery,
-  useGetTotalProgramsCountQuery
+  useGetActiveProgramsCountQuery
 } from '../../../../rtk/superadmin/dashboardApi';
 
 export default function StatCardSection() {
@@ -28,9 +28,9 @@ export default function StatCardSection() {
   } = useGetTotalVolunteersCountQuery();
 
   const { 
-    data: totalProgramsCount = 0, 
+    data: activeProgramsCount = 0, 
     isLoading: programsLoading 
-  } = useGetTotalProgramsCountQuery();
+  } = useGetActiveProgramsCountQuery();
 
   // Show loading state if any data is still loading
   const isLoading = organizationsLoading || pendingLoading || volunteersLoading || programsLoading;
@@ -41,7 +41,6 @@ export default function StatCardSection() {
         <StatCard
           label="Total Organizations"
           count={isLoading ? "—" : organizationsCount}
-          iconKey="organizations"
           isLoading={organizationsLoading}
         />
       </Link>
@@ -49,7 +48,6 @@ export default function StatCardSection() {
         <StatCard
           label="Pending Approvals"
           count={isLoading ? "—" : pendingApprovalsCount}
-          iconKey="pending"
           isLoading={pendingLoading}
         />
       </Link>
@@ -57,15 +55,13 @@ export default function StatCardSection() {
         <StatCard
           label="Total Volunteers"
           count={isLoading ? "—" : totalVolunteersCount}
-          iconKey="volunteers"
           isLoading={volunteersLoading}
         />
       </div>
       <Link href="/superadmin/programs" className={styles.cardWrapper}>
         <StatCard
-          label="Programs & Services"
-          count={isLoading ? "—" : totalProgramsCount}
-          iconKey="programs"
+          label="Active Programs & Services"
+          count={isLoading ? "—" : activeProgramsCount}
           isLoading={programsLoading}
         />
       </Link>

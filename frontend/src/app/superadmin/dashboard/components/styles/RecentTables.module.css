@@ -8,7 +8,14 @@
 }
 
 .tableWrapper {
-  width: 100%;
+  overflow-x: auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+  padding: 1rem 1.5rem;
+  min-height: 200px;
+  max-height: 600px;
+  overflow-y: auto;
 }
 
 /* Section Header */
@@ -16,56 +23,84 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 1.5rem 1rem 1.5rem;
-  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 0.8rem;
 }
 
 .sectionTitle {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #111827;
-  margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1rem;
+  font-family: var(--font-poppins);
+  color: #050809;
+  font-weight: 700;
+  cursor: default;
 }
 
 .buttonGroup {
   display: flex;
   gap: 0.75rem;
+}
+
+/* Filter Group Styles */
+.filterGroup {
+  display: flex;
   align-items: center;
+  gap: 0.5rem;
+}
+
+.filterLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.filterSelect {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  color: #374151;
+  font-size: 0.875rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 180px;
+}
+
+.filterSelect:hover {
+  border-color: #9ca3af;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 /* Filter and View All Buttons */
 .iconButton {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.875rem;
-  background: #f9fafb;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  color: #374151;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  gap: 0.4rem;
   text-decoration: none;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: white;
+  border: 2px solid #06100f;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  color: #050809;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  user-select: none;
 }
 
 .iconButton:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
-  color: #111827;
-}
-
-.iconButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  background: #f3f3f3;
 }
 
 .icon {
-  width: 16px;
-  height: 16px;
+  font-size: 1rem;
 }
 
 /* Dropdown */
@@ -73,136 +108,285 @@
   position: relative;
 }
 
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .dropdownMenu {
   position: absolute;
-  top: 100%;
-  left: 0;
+  top: 110%;
   right: 0;
   background: white;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 0.3rem 0;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
   z-index: 10;
-  margin-top: 4px;
-  padding: 0.25rem 0;
+  width: 130px;
   list-style: none;
-  margin: 4px 0 0 0;
+  animation: fadeSlideIn 0.25s ease-out;
 }
 
 .dropdownItem {
-  padding: 0.5rem 0.875rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-family: var(--font-inter);
+  color: #050809;
   cursor: pointer;
-  font-size: 0.875rem;
-  color: #374151;
-  transition: background-color 0.2s ease;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  transition: background 0.2s;
 }
 
 .dropdownItem:hover {
-  background: #f3f4f6;
+  background: #f3f3f3;
 }
 
-.dropdownItem.active {
-  background: #eff6ff;
-  color: #2563eb;
-  font-weight: 500;
+.active {
+  font-weight: 600;
+  background-color: #eeeff0;
 }
 
 /* Table Styles */
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  table-layout: fixed;
+}
+
+.table th,
+.table td {
+  font-size: 13px;
+  padding: 0.65rem 1rem;
+  font-weight: 400;
+  font-family: var(--font-inter);
+  text-align: left;
+  color: #414143;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
 }
 
 .table th {
-  text-align: left;
-  padding: 0.75rem 1.5rem;
-  font-size: 0.75rem;
+  color: #050809;
   font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid #e5e7eb;
-  background: #f9fafb;
-}
-
-.table td {
-  padding: 1rem 1.5rem;
-  font-size: 0.875rem;
-  color: #374151;
-  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.8rem;
+  font-family: var(--font-inter);
+  cursor: default;
 }
 
 .table tbody tr:hover {
-  background: #f9fafb;
-}
-
-.table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.truncate {
-  max-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  background-color: #f9fbfd;
 }
 
 /* Status Badges */
 .statusBadge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  padding: 0.45rem 1.1rem;
+  border-radius: 28px;
+  display: inline-block;
+  text-align: center;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.approved {
+  background-color: #e2f7f0;
+  color: #53ac87;
+}
+
+.pending {
+  background-color: #fbe6e8;
+  color: #cd6d79;
+}
+
+.declined {
+  background-color: #fdece8;
+  color: #cea077;
+}
+
+/* Truncation */
+.truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Action dropdown styles */
+.actionDropdown {
+  position: relative;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  color: #6b7280;
+  user-select: none;
+}
+
+.actionButton:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.actionIcon {
+  font-size: 1.2rem;
+}
+
+.actionMenu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  padding: 0.5rem 0;
+  min-width: 140px;
+  z-index: 50;
+  list-style: none;
+  margin: 0;
+  animation: fadeSlideIn 0.2s ease-out;
+}
+
+.actionMenu li {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-family: var(--font-inter);
+}
+
+.actionMenu li:hover {
+  background-color: #f9fafb;
+}
+
+/* Modal styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.confirmModal {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+}
+
+.confirmModal h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  font-family: var(--font-poppins);
+}
+
+.confirmModal p {
+  margin: 0 0 1.5rem 0;
+  color: #6b7280;
+  font-family: var(--font-inter);
+  line-height: 1.5;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.confirmActions button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  color: #374151;
+  font-size: 0.875rem;
   font-weight: 500;
-  border-radius: 9999px;
-  text-transform: capitalize;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-inter);
+  user-select: none;
 }
 
-.statusBadge.pending {
-  background: #fef3c7;
-  color: #d97706;
-  border: 1px solid #fbbf24;
+.confirmActions button:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
 }
 
-.statusBadge.approved {
-  background: #d1fae5;
-  color: #065f46;
-  border: 1px solid #34d399;
+.confirmActions button:last-child {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
 }
 
-.statusBadge.declined {
-  background: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #f87171;
+.confirmActions button:last-child:hover {
+  background: #2563eb;
+  border-color: #2563eb;
 }
 
-/* Loading Skeletons */
+/* Skeleton loading styles */
 .skeletonText {
   height: 16px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
-  animation: loading 1.5s infinite;
+  animation: shimmer 1.5s infinite;
   border-radius: 4px;
+  margin: 4px 0;
 }
 
 .skeletonBadge {
-  width: 60px;
   height: 24px;
+  width: 60px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
-  animation: loading 1.5s infinite;
+  animation: shimmer 1.5s infinite;
   border-radius: 12px;
+  margin: 4px 0;
 }
 
-@keyframes loading {
+@keyframes shimmer {
   0% {
-    background-position: 200% 0;
-  }
-  100% {
     background-position: -200% 0;
   }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.declineButton {
+  background: #dc2626 !important;
+  color: white !important;
+  border-color: #dc2626 !important;
+}
+
+.declineButton:hover {
+  background: #b91c1c !important;
+  border-color: #b91c1c !important;
 }
 
 /* Responsive Design */

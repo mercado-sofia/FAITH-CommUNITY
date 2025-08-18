@@ -18,29 +18,29 @@ export function middleware(request) {
 
   // Allow login page for everyone
   if (pathname === "/login") {
-    console.log("✅ Login page - allowing access")
+    // Login page - allowing access
     return NextResponse.next()
   }
 
   // Block /admin if not admin or superadmin
   if (pathname.startsWith("/admin")) {
     if (role !== "admin" && role !== "superadmin") {
-      console.log("❌ Admin access denied - redirecting to login", { role })
+      // Admin access denied - redirecting to login
       url.pathname = "/login"
       return NextResponse.redirect(url)
     } else {
-      console.log("✅ Admin access granted", { role })
+      // Admin access granted
     }
   }
 
   // Block /superadmin if not superadmin
   if (pathname.startsWith("/superadmin")) {
     if (role !== "superadmin") {
-      console.log("❌ Superadmin access denied - redirecting to login", { role })
+      // Superadmin access denied - redirecting to login
       url.pathname = "/login"
       return NextResponse.redirect(url)
     } else {
-      console.log("✅ Superadmin access granted", { role })
+      // Superadmin access granted
     }
   }
 

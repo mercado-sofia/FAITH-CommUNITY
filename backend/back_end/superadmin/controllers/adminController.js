@@ -96,44 +96,79 @@ export const createAdmin = async (req, res) => {
     return res.status(400).json({ error: "Password must be at least 6 characters long" })
   }
 
+  // Get a connection for transaction
+  const connection = await db.getConnection()
+  
   try {
-    const [existingAdmin] = await db.execute("SELECT id FROM admins WHERE email = ?", [email])
+    // Start transaction
+    await connection.beginTransaction()
 
+    // Check if admin with this email already exists
+    const [existingAdmin] = await connection.execute("SELECT id FROM admins WHERE email = ?", [email])
     if (existingAdmin.length > 0) {
+      await connection.rollback()
       return res.status(409).json({ error: "Admin with this email already exists" })
     }
 
+    // Check if organization with this acronym already exists
+    const [existingOrg] = await connection.execute("SELECT id FROM organizations WHERE org = ?", [org])
+    if (existingOrg.length > 0) {
+      await connection.rollback()
+      return res.status(409).json({ error: "Organization with this acronym already exists" })
+    }
+
+    // Hash password
     const saltRounds = 10
     const hashedPassword = await bcrypt.hash(password, saltRounds)
 
-    const [result] = await db.execute(
-      `INSERT INTO admins (org, orgName, email, password, role, status, created_at) 
-       VALUES (?, ?, ?, ?, ?, 'ACTIVE', NOW())`,
-      [org, orgName, email, hashedPassword, role],
+    // First, create the organization record
+    const [orgResult] = await connection.execute(
+      `INSERT INTO organizations (org, orgName, status, org_color) 
+       VALUES (?, ?, 'ACTIVE', '#444444')`,
+      [org, orgName]
     )
 
+    const organizationId = orgResult.insertId
+
+    // Then, create the admin record with organization_id
+    const [adminResult] = await connection.execute(
+      `INSERT INTO admins (org, orgName, email, password, role, status, organization_id, created_at) 
+       VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?, NOW())`,
+      [org, orgName, email, hashedPassword, role, organizationId]
+    )
+
+    // Commit transaction
+    await connection.commit()
+
     res.status(201).json({
-      id: result.insertId,
-      message: "Admin created successfully",
+      id: adminResult.insertId,
+      organization_id: organizationId,
+      message: "Admin and organization created successfully",
       admin: {
-        id: result.insertId,
+        id: adminResult.insertId,
         org,
         orgName,
         email,
         role,
         status: "ACTIVE",
+        organization_id: organizationId,
       },
     })
   } catch (err) {
+    // Rollback transaction on error
+    await connection.rollback()
     console.error("Create admin error:", err)
     res.status(500).json({ error: "Internal server error while creating admin" })
+  } finally {
+    // Release connection
+    connection.release()
   }
 }
 
 export const getAllAdmins = async (req, res) => {
   try {
     const [rows] = await db.execute(
-      "SELECT id, org, orgName, email, role, status, created_at FROM admins ORDER BY created_at DESC",
+      "SELECT id, org, orgName, email, role, status, organization_id, created_at FROM admins ORDER BY created_at DESC",
     )
     res.json(rows)
   } catch (err) {
@@ -151,7 +186,7 @@ export const getAdminById = async (req, res) => {
 
   try {
     const [rows] = await db.execute(
-      "SELECT id, org, orgName, email, role, status, created_at FROM admins WHERE id = ?",
+      "SELECT id, org, orgName, email, role, status, organization_id, created_at FROM admins WHERE id = ?",
       [id],
     )
 
@@ -174,13 +209,21 @@ export const updateAdmin = async (req, res) => {
     return res.status(400).json({ error: "Invalid admin ID" })
   }
 
-  // For password-only updates or status-only updates, we need to get existing data
-  if ((password && password.trim() !== "" && (!org || !orgName || !email || !role)) || 
-      (status && (!org || !orgName || !email || !role))) {
-    try {
-      const [existingAdmin] = await db.execute("SELECT org, orgName, email, role FROM admins WHERE id = ?", [id])
+  // Get a connection for transaction
+  const connection = await db.getConnection()
+
+  try {
+    // Start transaction
+    await connection.beginTransaction()
+
+    // For password-only updates or status-only updates, we need to get existing data
+    if ((password && password.trim() !== "" && (!org || !orgName || !email || !role)) || 
+        (status && (!org || !orgName || !email || !role))) {
+      
+      const [existingAdmin] = await connection.execute("SELECT org, orgName, email, role, organization_id FROM admins WHERE id = ?", [id])
 
       if (existingAdmin.length === 0) {
+        await connection.rollback()
         return res.status(404).json({ error: "Admin not found" })
       }
 
@@ -194,20 +237,19 @@ export const updateAdmin = async (req, res) => {
         status: status || admin.status || "ACTIVE",
       }
 
-      // Update admin table (trigger will automatically sync organization email)
+      // Update admin table
       let adminQuery, adminParams
 
       if (password && password.trim() !== "") {
         if (password.length < 6) {
+          await connection.rollback()
           return res.status(400).json({ error: "Password must be at least 6 characters long" })
         }
 
         const saltRounds = 10
         const hashedPassword = await bcrypt.hash(password, saltRounds)
         
-        console.log(`🔐 Password update for admin ID: ${id}`)
-        console.log(`📝 New password length: ${password.length}`)
-        console.log(`🔒 Hashed password length: ${hashedPassword.length}`)
+        // Password update logged
 
         adminQuery = "UPDATE admins SET org = ?, orgName = ?, email = ?, password = ?, role = ?, status = ? WHERE id = ?"
         adminParams = [updateData.org, updateData.orgName, updateData.email, hashedPassword, updateData.role, updateData.status, id]
@@ -216,27 +258,17 @@ export const updateAdmin = async (req, res) => {
         adminParams = [updateData.org, updateData.orgName, updateData.email, updateData.role, updateData.status, id]
       }
 
-      console.log(`📊 Update query: ${adminQuery}`)
-      console.log(`📋 Update params:`, adminParams)
-
-      await db.execute(adminQuery, adminParams)
+      await connection.execute(adminQuery, adminParams)
       
-      // Verify the update was successful
-      const [verifyUpdate] = await db.execute("SELECT password FROM admins WHERE id = ?", [id])
-      if (verifyUpdate.length > 0) {
-        console.log(`✅ Password update verified for admin ID: ${id}`)
-        console.log(`🔍 Stored password hash length: ${verifyUpdate[0].password.length}`)
+      // Update organization record if org or orgName changed
+      if (admin.organization_id && (updateData.org !== admin.org || updateData.orgName !== admin.orgName)) {
+        await connection.execute(
+          "UPDATE organizations SET org = ?, orgName = ? WHERE id = ?",
+          [updateData.org, updateData.orgName, admin.organization_id]
+        )
       }
 
-      // Log the change for debugging
-      if (updateData.email !== admin.email) {
-        console.log(`🔄 Admin email updated from '${admin.email}' to '${updateData.email}' for org: ${updateData.org}`)
-        console.log(`📧 Email is now the single source of truth in admins table`)
-      }
-
-      if (password && password.trim() !== "") {
-        console.log(`🔐 Password updated for admin ID: ${id}`)
-      }
+      await connection.commit()
 
       return res.json({
         message: "Admin updated successfully",
@@ -245,50 +277,48 @@ export const updateAdmin = async (req, res) => {
           ...updateData,
         },
       })
-    } catch (err) {
-      console.error("Update admin error:", err)
-      return res.status(500).json({ error: "Internal server error while updating admin" })
     }
-  }
 
-  // Continue with normal validation for full updates
-  if (!org || !orgName || !email || !role) {
-    return res.status(400).json({ error: "Organization acronym, organization name, email, and role are required" })
-  }
+    // Continue with normal validation for full updates
+    if (!org || !orgName || !email || !role) {
+      await connection.rollback()
+      return res.status(400).json({ error: "Organization acronym, organization name, email, and role are required" })
+    }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(email)) {
-    return res.status(400).json({ error: "Invalid email format" })
-  }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      await connection.rollback()
+      return res.status(400).json({ error: "Invalid email format" })
+    }
 
-  try {
-    const [existingAdmin] = await db.execute("SELECT id, email FROM admins WHERE id = ?", [id])
+    const [existingAdmin] = await connection.execute("SELECT id, email, organization_id FROM admins WHERE id = ?", [id])
 
     if (existingAdmin.length === 0) {
+      await connection.rollback()
       return res.status(404).json({ error: "Admin not found" })
     }
 
     const currentAdmin = existingAdmin[0]
-    const [emailCheck] = await db.execute("SELECT id FROM admins WHERE email = ? AND id != ?", [email, id])
+    const [emailCheck] = await connection.execute("SELECT id FROM admins WHERE email = ? AND id != ?", [email, id])
 
     if (emailCheck.length > 0) {
+      await connection.rollback()
       return res.status(409).json({ error: "Email is already taken by another admin" })
     }
 
-    // Update admin table (trigger will automatically sync organization email)
+    // Update admin table
     let adminQuery, adminParams
 
     if (password && password.trim() !== "") {
       if (password.length < 6) {
+        await connection.rollback()
         return res.status(400).json({ error: "Password must be at least 6 characters long" })
       }
 
       const saltRounds = 10
       const hashedPassword = await bcrypt.hash(password, saltRounds)
       
-      console.log(`🔐 Password update for admin ID: ${id}`)
-      console.log(`📝 New password length: ${password.length}`)
-      console.log(`🔒 Hashed password length: ${hashedPassword.length}`)
+      // Password update logged
 
       adminQuery = "UPDATE admins SET org = ?, orgName = ?, email = ?, password = ?, role = ?, status = ? WHERE id = ?"
       adminParams = [org, orgName, email, hashedPassword, role, status || "ACTIVE", id]
@@ -297,28 +327,21 @@ export const updateAdmin = async (req, res) => {
       adminParams = [org, orgName, email, role, status || "ACTIVE", id]
     }
 
-    console.log(`📊 Update query: ${adminQuery}`)
-    console.log(`📋 Update params:`, adminParams)
+          // Update query executed
 
     // Update admin table
-    await db.execute(adminQuery, adminParams)
+    await connection.execute(adminQuery, adminParams)
     
-    // Verify the update was successful
-    const [verifyUpdate] = await db.execute("SELECT password FROM admins WHERE id = ?", [id])
-    if (verifyUpdate.length > 0) {
-      console.log(`✅ Password update verified for admin ID: ${id}`)
-      console.log(`🔍 Stored password hash length: ${verifyUpdate[0].password.length}`)
+    // Update organization record if org or orgName changed
+    if (currentAdmin.organization_id) {
+      await connection.execute(
+        "UPDATE organizations SET org = ?, orgName = ? WHERE id = ?",
+        [org, orgName, currentAdmin.organization_id]
+      )
+      // Organization updated
     }
 
-    // Log the change for debugging
-    if (email !== currentAdmin.email) {
-      console.log(`🔄 Admin email updated from '${currentAdmin.email}' to '${email}' for org: ${org}`)
-      console.log(`📧 Email is now the single source of truth in admins table`)
-    }
-
-    if (password && password.trim() !== "") {
-      console.log(`🔐 Password updated for admin ID: ${id}`)
-    }
+    await connection.commit()
 
     res.json({
       message: "Admin updated successfully",
@@ -332,8 +355,11 @@ export const updateAdmin = async (req, res) => {
       },
     })
   } catch (err) {
+    await connection.rollback()
     console.error("Update admin error:", err)
     res.status(500).json({ error: "Internal server error while updating admin" })
+  } finally {
+    connection.release()
   }
 }
 

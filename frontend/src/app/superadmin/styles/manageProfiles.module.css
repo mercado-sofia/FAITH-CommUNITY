@@ -411,6 +411,27 @@
   font-style: italic;
 }
 
+.btnSync {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+  margin-right: 0.5rem;
+}
+
+.btnSync:hover {
+  background-color: #218838;
+}
+
+.btnSync:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
 .btnRefresh {
   background-color: #007bff;
   color: white;

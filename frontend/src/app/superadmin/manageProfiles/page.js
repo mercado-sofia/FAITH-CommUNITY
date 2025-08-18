@@ -328,6 +328,7 @@ const ManageProfiles = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
 
   const dispatch = useDispatch()
   const currentAdmin = useSelector(selectCurrentAdmin)
@@ -463,6 +464,34 @@ const ManageProfiles = () => {
     setStatusFilter(e.target.value)
   }
 
+  const handleSyncOrganizations = async () => {
+    if (!window.confirm("This will create organization records for existing admins that don't have them. Continue?")) return
+
+    setIsSyncing(true)
+    try {
+      const response = await fetch('http://localhost:8080/api/sync-orgs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const result = await response.json()
+      
+      if (response.ok) {
+        showNotification(`Sync completed! ${result.message}`)
+        refetch() // Refresh the admin list to show updated data
+      } else {
+        showNotification(result.error || "Sync failed", "error")
+      }
+    } catch (error) {
+      showNotification("Failed to sync organizations", "error")
+      console.error("Sync error:", error)
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
   if (isFetching) {
     return (
       <div className={styles.manageProfilesContainer}>
@@ -512,6 +541,9 @@ const ManageProfiles = () => {
               <option value="inactive">Inactive ({adminCounts.inactive})</option>
             </select>
           </div>
+          <button onClick={handleSyncOrganizations} className={styles.btnSync} disabled={isSyncing}>
+            {isSyncing ? "Syncing..." : "Sync Organizations"}
+          </button>
           <button onClick={handleRefresh} className={styles.btnRefresh}>
             Refresh Data
           </button>

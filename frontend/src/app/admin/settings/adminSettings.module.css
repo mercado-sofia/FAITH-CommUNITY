@@ -91,7 +91,7 @@
 
 .settingsGrid > * {
   flex: 1;
-  min-width: 0; /* Prevents flex items from overflowing */
+  min-width: 0;
 }
 
 /* Settings Panel */
@@ -101,7 +101,7 @@
   border: 1px solid #e2e8f0;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   overflow: hidden;
-  height: fit-content; /* Each panel maintains its own height */
+  height: fit-content;
 }
 
 /* Panel Header */
@@ -197,20 +197,20 @@
 .fieldGroup {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .label {
   font-size: 13px;
   font-weight: 600;
   color: #374151;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-inter);
 }
 
 .input {
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 1rem;
   border: 2px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 8px;
   font-size: 13px;
   transition: all 0.2s ease;
   font-family: var(--font-poppins), sans-serif;
@@ -235,8 +235,8 @@
 }
 
 .passwordInput {
-  padding-right: 3rem; /* Make room for the toggle button */
-  width: 100%; /* Ensure input takes full width */
+  padding-right: 3rem;
+  width: 100%;
 }
 
 .passwordToggle {
@@ -255,8 +255,8 @@
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  z-index: 10; /* Ensure button is above the input */
-  pointer-events: auto; /* Ensure button is clickable */
+  z-index: 10;
+  pointer-events: auto;
   width: 24px;
   height: 24px;
   user-select: none;
@@ -346,8 +346,8 @@
 .actionButtons {
   display: flex;
   gap: 0.75rem;
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
   border-top: 1px solid #e2e8f0;
 }
 
@@ -364,6 +364,7 @@
   flex: 1;
   user-select: none;
 }
+
 .cancelButton {
   background: #ffffff;
   color: #06100f;
@@ -407,6 +408,67 @@
 .infoText strong {
   color: #374151;
   font-weight: 600;
+}
+
+/* Password Requirements */
+.passwordRequirements {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  margin-top: 0.75rem;
+}
+
+.passwordRequirementsTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.5rem 0;
+  font-family: var(--font-poppins), sans-serif;
+}
+
+.requirementsList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.requirementItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 12px;
+  color: #5d626a;
+  font-family: var(--font-poppins), sans-serif;
+}
+
+.requirementIcon {
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.requirementIcon.met {
+  background: #10b981;
+  color: white;
+  font-size: 8px;
+}
+
+.requirementIcon.notMet {
+  background: #e5e7eb;
+  color: #9ca3af;
+  font-size: 6px;
+}
+
+.requirementText {
+  flex: 1;
 }
 
 /* Responsive Design */

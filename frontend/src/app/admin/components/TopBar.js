@@ -206,6 +206,11 @@ export default function TopBar() {
                             <path d="M18 6L6 18M6 6L18 18" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             <circle cx="12" cy="12" r="9" stroke="#ef4444" strokeWidth="2" />
                           </svg>
+                        ) : notification.type === 'message' ? (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <polyline points="22,6 12,13 2,6" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
                         ) : (
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                             <circle cx="12" cy="12" r="10" stroke="#3b82f6" strokeWidth="2" />

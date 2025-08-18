@@ -104,43 +104,44 @@ export default function EditModal({
           
           {/* Main Content Area */}
           <div className={styles.mainContent}>
-            {/* Profile Photo Section */}
-            <div className={styles.profileSection}>
-              <div className={styles.profileImageContainer}>
-                {orgData.logo ? (
-                  <Image
-                    src={getOrganizationImageUrl(orgData.logo, 'logo')}
-                    alt="Organization Logo"
-                    width={120}
-                    height={120}
-                    className={styles.profileImage}
-                    onError={(e) => {
-                      e.target.style.display = 'none'
-                    }}
-                  />
-                ) : (
-                  <div className={styles.profilePlaceholder}>
+            {/* Profile Photo and Color Picker Row */}
+            <div className={styles.profileColorRow}>
+              {/* Profile Photo Section */}
+              <div className={styles.profileSection}>
+                <div className={styles.profileImageContainer}>
+                  {orgData.logo ? (
+                    <Image
+                      src={getOrganizationImageUrl(orgData.logo, 'logo')}
+                      alt="Organization Logo"
+                      width={120}
+                      height={120}
+                      className={styles.profileImage}
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                      }}
+                    />
+                  ) : (
+                    <div className={styles.profilePlaceholder}>
+                      <FaCamera className={styles.cameraIcon} />
+                    </div>
+                  )}
+                  <div className={styles.profileOverlay}>
                     <FaCamera className={styles.cameraIcon} />
+                    <span className={styles.changeText}>Click to change photo</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      disabled={uploading}
+                      className={styles.fileInput}
+                    />
                   </div>
-                )}
-                <div className={styles.profileOverlay}>
-                  <FaCamera className={styles.cameraIcon} />
-                  <span className={styles.changeText}>Click to change photo</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    disabled={uploading}
-                    className={styles.fileInput}
-                  />
                 </div>
+                {uploading && <span className={styles.uploadingText}>Uploading...</span>}
               </div>
-              {uploading && <span className={styles.uploadingText}>Uploading...</span>}
-            </div>
 
-            {/* Form Fields */}
-            <div className={styles.formSection}>
-              <div className={styles.formGroup}>
+              {/* Color Picker Section */}
+              <div className={styles.colorSection}>
                 <label className={styles.label}>
                   Organization Color <span className={styles.required}>*</span>
                 </label>
@@ -156,7 +157,10 @@ export default function EditModal({
                 </div>
                 <span className={styles.helperText}>This color will be your Organization&apos;s theme color</span>
               </div>
+            </div>
 
+            {/* Form Fields */}
+            <div className={styles.formSection}>
               <div className={styles.formGroup}>
                 <label className={styles.label}>
                   Organization Acronym <span className={styles.required}>*</span>
@@ -227,32 +231,32 @@ export default function EditModal({
                 />
               </div>
             </div>
-
-            {/* Action Buttons */}
-            <div className={styles.buttonSection}>
-              <button 
-                onClick={handleCancel}
-                className={styles.cancelButton}
-                disabled={saving}
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleSave}
-                className={styles.saveButton}
-                disabled={saving || uploading || !hasChanges()}
-              >
-                {saving ? (
-                  <>
-                    <span className={styles.spinner}></span>
-                    Saving...
-                  </>
-                ) : (
-                  "Save Changes"
-                )}
-              </button>
-            </div>
           </div>
+        </div>
+
+        {/* Fixed Footer with Action Buttons */}
+        <div className={styles.modalFooter}>
+          <button 
+            onClick={handleCancel}
+            className={styles.cancelButton}
+            disabled={saving}
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={handleSave}
+            className={styles.saveButton}
+            disabled={saving || uploading || !hasChanges()}
+          >
+            {saving ? (
+              <>
+                <span className={styles.spinner}></span>
+                Saving...
+              </>
+            ) : (
+              "Save Changes"
+            )}
+          </button>
         </div>
       </div>
     </div>

@@ -43,10 +43,10 @@
 
 .title {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 600;
   color: #06100f;
-  font-family: var(--font-inter), sans-serif;
+  font-family: var(--font-poppins);
 }
 
 .closeButton {
@@ -84,6 +84,15 @@
 
 .photoSection {
   flex-shrink: 0;
+}
+
+.photoLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  font-family: var(--font-inter), sans-serif;
+  margin-bottom: 0.5rem;
+  display: block;
 }
 
 .headPhoto {

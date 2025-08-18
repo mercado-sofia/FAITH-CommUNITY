@@ -83,6 +83,7 @@
   border: none;
   min-width: 120px;
   font-family: var(--font-inter);
+  user-select: none;
 }
 
 .cancelButton {

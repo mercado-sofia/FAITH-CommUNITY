@@ -30,6 +30,7 @@
   font-family: var(--font-inter);
   color: #333;
   cursor: pointer;
+  user-select: none;
 }
 
 .modalHeading {
@@ -179,6 +180,7 @@
   font-family: var(--font-inter);
   cursor: pointer;
   transition: background-color 0.2s ease;
+  user-select: none;
 }
 
 .approve {
@@ -317,6 +319,7 @@
   font-size: 18px;
   transition: background-color 0.2s ease;
   z-index: 1;
+  user-select: none;
 }
 
 .imageModalClose:hover {

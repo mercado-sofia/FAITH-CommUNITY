@@ -28,22 +28,22 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.25rem 1.5rem;
+  padding: 1.2rem 1.5rem;
   border-bottom: 1px solid #f3f4f6;
 }
 
 .modalTitle {
-  font-size: 1.25rem;
+  margin: 0;
+  font-size: 1.2rem;
   font-weight: 600;
   color: #06100f;
-  margin: 0;
-  letter-spacing: -0.025em;
+  font-family: var(--font-poppins);
 }
 
 .closeButton {
   background: none;
   border: none;
-  font-size: 1.125rem;
+  font-size: 15px;
   color: #6b7280;
   cursor: pointer;
   padding: 0.375rem;
@@ -52,6 +52,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  user-select: none;
 }
 
 .closeButton:hover {
@@ -114,6 +115,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  width: 200px;
 }
 
 .dateIcon {
@@ -155,12 +157,13 @@
   transition: all 0.2s ease;
   border: none;
   min-width: 120px;
+  user-select: none;
 }
 
 .cancelButton {
-  background: #f3f4f6;
+  background: white;
   color: #374151;
-  border: 1px solid #d1d5db;
+  border: 2px solid #c6c9ce;
 }
 
 .cancelButton:hover:not(:disabled) {

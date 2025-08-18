@@ -33,6 +33,7 @@
   color: #050809;
   cursor: pointer;
   transition: background 0.2s ease;
+  user-select: none;
 }
 
 .iconButton:hover {
@@ -182,6 +183,7 @@
   cursor: pointer;
   transition: background-color 0.2s ease;
   color: #6b7280;
+  user-select: none;
 }
 
 .actionButton:hover {
@@ -278,6 +280,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: var(--font-inter);
+  user-select: none;
 }
 
 .confirmActions button:hover {

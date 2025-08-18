@@ -1,39 +1,35 @@
-// routes/newsRoutes.js
-import express from 'express';
-import { 
+import { Router } from "express";
+import {
   createNews,
-  getNewsByOrg, 
-  getApprovedNews, 
+  getNewsByOrg,
+  getApprovedNews,
   getApprovedNewsByOrg,
   getNewsById,
   deleteNewsSubmission,
-  updateNews,
   getRecentlyDeletedNews,
   restoreNews,
-  permanentlyDeleteNews
-} from '../controllers/newsController.js';
-import { manualCleanupDeletedNews } from '../../utils/cleanupDeletedNews.js';
-import { verifyAdminToken } from '../../superadmin/controllers/adminController.js';
+  permanentlyDeleteNews,
+  updateNews,
+} from "../controllers/newsController.js";
 
-const router = express.Router();
+const router = Router();
 
-// Admin routes (protected with authentication)
-router.post('/admin/news/:orgId', verifyAdminToken, createNews);
-router.get('/admin/news/:orgId', verifyAdminToken, getNewsByOrg);
-router.put('/admin/news/:id', verifyAdminToken, updateNews);
-router.delete('/admin/news/:id', verifyAdminToken, deleteNewsSubmission);
+// Create news for an org (orgId can be numeric or acronym)
+router.post("/:orgId", createNews);
 
-// Recently deleted news routes
-router.get('/admin/news/:orgId/deleted', verifyAdminToken, getRecentlyDeletedNews);
-router.post('/admin/news/:id/restore', verifyAdminToken, restoreNews);
-router.delete('/admin/news/:id/permanent', verifyAdminToken, permanentlyDeleteNews);
+// Root -> return approved news (so GET /api/news works)
+router.get("/", getApprovedNews);
 
-// Cleanup route (for manual cleanup of old deleted items)
-router.post('/admin/news/cleanup', verifyAdminToken, manualCleanupDeletedNews);
+// Other endpoints
+router.get("/approved", getApprovedNews);
+router.get("/approved/:orgId", getApprovedNewsByOrg);
+router.get("/org/:orgId", getNewsByOrg);
+router.get("/deleted/:orgId", getRecentlyDeletedNews);
+router.patch("/restore/:id", restoreNews);
+router.delete("/permanent/:id", permanentlyDeleteNews);
+router.put("/:id", updateNews);
 
-// Public routes (no authentication required)
-router.get('/news', getApprovedNews);
-router.get('/news/:orgId', getApprovedNewsByOrg);
-router.get('/news/detail/:id', getNewsById);
+// Keep this near the end so it doesn't shadow the specific routes above
+router.get("/:id", getNewsById);
 
 export default router;

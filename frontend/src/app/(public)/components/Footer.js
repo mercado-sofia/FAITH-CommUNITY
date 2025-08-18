@@ -8,6 +8,10 @@ import { HiMiniArrowRight } from "react-icons/hi2";
 import { Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
+  "http://localhost:8080";
+
 export default function Footer() {
   const quickLinksRef = useRef(null);
   const servicesRef = useRef(null);
@@ -18,6 +22,11 @@ export default function Footer() {
     services: false,
     newsletter: false,
   });
+
+  // Newsletter state
+  const [email, setEmail] = useState("");
+  const [sending, setSending] = useState(false);
+  const [msg, setMsg] = useState({ type: "", text: "" }); // "success" | "error" | ""
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -38,6 +47,53 @@ export default function Footer() {
 
     return () => observer.disconnect();
   }, []);
+
+  const isValidEmail = (val) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(val).trim());
+
+  async function handleSubscribe(e) {
+    e.preventDefault();
+    setMsg({ type: "", text: "" });
+
+    if (!isValidEmail(email)) {
+      setMsg({ type: "error", text: "Please enter a valid email address." });
+      return;
+    }
+
+    try {
+      setSending(true);
+
+      const res = await fetch(`${API_BASE}/api/subscribers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const errText = data?.error || data?.message || "Failed to subscribe.";
+        throw new Error(errText);
+      }
+
+      setMsg({
+        type: "success",
+        text:
+          data?.message ||
+          "Thanks! Please check your email to confirm your subscription.",
+      });
+      setEmail("");
+    } catch (err) {
+      setMsg({
+        type: "error",
+        text:
+          err?.message ||
+          "Something went wrong while subscribing. Please try again.",
+      });
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <footer className={styles.footerWrapper}>
@@ -137,7 +193,7 @@ export default function Footer() {
           </h4>
           <p>Join our mailing list for updates on programs, volunteer opportunities, and stories that make a difference.</p>
           
-          <form className={styles.subscribeForm} onSubmit={(e) => e.preventDefault()}>
+          <form className={styles.subscribeForm} onSubmit={handleSubscribe} noValidate>
             <label htmlFor="newsletter-email" className={styles.visuallyHidden}>
               Email address for newsletter
             </label>
@@ -148,11 +204,20 @@ export default function Footer() {
               placeholder="Enter your email"
               required
               autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              aria-invalid={msg.type === "error" ? "true" : "false"}
+              aria-describedby="newsletter-feedback"
             />
-            <button type="submit">
-              <Send className={styles.submitIcon} />
+            <button type="submit" disabled={sending} aria-busy={sending}>
+              {sending ? <span className={styles.loadingDot}>• • •</span> : <Send className={styles.submitIcon} />}
             </button>
           </form>
+
+          <div id="newsletter-feedback" aria-live="polite" className={styles.feedback}>
+            {msg.type === "success" && <span className={styles.successText}>{msg.text}</span>}
+            {msg.type === "error" && <span className={styles.errorText}>{msg.text}</span>}
+          </div>
 
           <div className={styles.socials}>
             <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">

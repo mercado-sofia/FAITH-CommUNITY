@@ -1,3 +1,7 @@
+import 'dotenv/config';
+console.log("SMTP host:", process.env.SMTP_HOST);
+console.log("SMTP user (masked):", (process.env.SMTP_USER||"").slice(0,4) + "***");
+
 import express from "express"
 import cors from "cors"
 import bodyParser from "body-parser"
@@ -88,6 +92,7 @@ import orgSyncRoutes from "./back_end/admin/routes/orgSync.js"
 import newsRoutes from "./back_end/admin/routes/newsRoutes.js"
 import notificationsRoutes from "./back_end/admin/routes/notifications.js"
 import inboxRoutes from "./back_end/admin/routes/inbox.js"
+import subscribersRoutes from "./back_end/admin/routes/subscribers.js";
 
 app.use("/api/advocacies", advocaciesRoutes)
 app.use("/api/competencies", competenciesRoutes)
@@ -100,9 +105,10 @@ app.use("/api/submissions", submissionRoutes)
 app.use("/api/upload", uploadRoutes)
 app.use("/api/volunteers", volunteersRoutes)
 app.use("/api", orgSyncRoutes)
-app.use("/api", newsRoutes)
+app.use("/api/news", newsRoutes)
 app.use("/api/notifications", notificationsRoutes)
 app.use("/api/inbox", inboxRoutes)
+app.use("/api/subscribers", subscribersRoutes);
 
 // PUBLIC ROUTES
 import publicOrganizationsRoutes from "./back_end/for_public/routes/organizations.js"
@@ -173,3 +179,31 @@ app.listen(PORT, () => {
     console.error('❌ Initial cleanup failed:', error);
   });
 })
+
+// Function to list all registered routes
+function listRoutes(app) {
+  if (!app?._router?.stack) {
+    console.log("No routes registered yet.");
+    return;
+  }
+  const out = [];
+  app._router.stack.forEach((m) => {
+    if (m.name === "router" && m.handle?.stack) {
+      const base =
+        (m.regexp?.source.match(/\^\\\/(.+?)\\\/\?\(\?=\\\/\|\$\)/)?.[1] || "")
+          .replace(/\\\//g, "/");
+      m.handle.stack.forEach((h) => {
+        if (h.route) {
+          out.push(
+            `${Object.keys(h.route.methods)
+              .join(",")
+              .toUpperCase()} /${base}${h.route.path}`.replace(/\/\//g, "/")
+          );
+        }
+      });
+    }
+  });
+  console.log("Registered routes:\n" + out.join("\n"));
+}
+
+listRoutes(app);

@@ -1,35 +1,45 @@
 // controllers/newsController.js
 import db from "../../database.js";
 
+/* ------------------------- Email notify helper ------------------------- */
+/** Broadcast to verified subscribers via your /api/subscribers/notify route.
+ * Non-blocking: logs errors but doesn't break API response.
+ */
+async function notifySubscribers({ type, subject, messageHtml }) {
+  const api = process.env.API_BASE_URL || "http://localhost:8080";
+  try {
+    const resp = await fetch(`${api}/api/subscribers/notify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, subject, messageHtml }),
+    });
+    try { return await resp.json(); } catch { return null; }
+  } catch (e) {
+    console.warn("notifySubscribers failed:", e?.message || e);
+    return null;
+  }
+}
+
+/* ----------------------------- Create News ---------------------------- */
 // Create news directly (for admin)
 export const createNews = async (req, res) => {
   const { title, description, date } = req.body;
   const { orgId } = req.params;
 
   if (!orgId) {
-    return res.status(400).json({
-      success: false,
-      message: "Organization ID is required",
-    });
+    return res.status(400).json({ success: false, message: "Organization ID is required" });
   }
-
   if (!title || !description) {
-    return res.status(400).json({
-      success: false,
-      message: "Title and description are required",
-    });
+    return res.status(400).json({ success: false, message: "Title and description are required" });
   }
 
   try {
-
-    
-    // First try to get organization by ID (numeric) from organizations table
+    // 1) Resolve organization (by numeric ID → by acronym → sync from admins if needed)
     let [orgRows] = await db.execute(
       "SELECT id, orgName, org FROM organizations WHERE id = ?",
       [orgId]
     );
 
-    // If not found by ID, try by acronym
     if (orgRows.length === 0) {
       [orgRows] = await db.execute(
         "SELECT id, orgName, org FROM organizations WHERE org = ?",
@@ -37,20 +47,16 @@ export const createNews = async (req, res) => {
       );
     }
 
-    // If still not found, check admins table and sync
     if (orgRows.length === 0) {
       const [adminRows] = await db.execute(
         "SELECT id, orgName, org FROM admins WHERE org = ?",
         [orgId]
       );
-      
       if (adminRows.length > 0) {
-        // Sync organization to organizations table
-        const [syncResult] = await db.execute(
+        await db.execute(
           "INSERT INTO organizations (orgName, org) VALUES (?, ?) ON DUPLICATE KEY UPDATE orgName = VALUES(orgName)",
           [adminRows[0].orgName, adminRows[0].org]
         );
-        
         [orgRows] = await db.execute(
           "SELECT id, orgName, org FROM organizations WHERE org = ?",
           [orgId]
@@ -59,15 +65,12 @@ export const createNews = async (req, res) => {
     }
 
     if (orgRows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Organization not found",
-      });
+      return res.status(404).json({ success: false, message: "Organization not found" });
     }
 
     const organization = orgRows[0];
 
-    // Insert news directly into news table
+    // 2) Insert news
     const [result] = await db.execute(
       `INSERT INTO news (organization_id, title, description, date)
        VALUES (?, ?, ?, ?)`,
@@ -75,55 +78,52 @@ export const createNews = async (req, res) => {
     );
 
     if (result.affectedRows === 0) {
-      return res.status(500).json({
-        success: false,
-        message: "Failed to create news",
-      });
+      return res.status(500).json({ success: false, message: "Failed to create news" });
     }
 
     const newsId = result.insertId;
 
-    res.json({
+    // 3) 🔔 Notify subscribers (announcement)
+    const appBase = process.env.APP_BASE_URL || "http://localhost:3000";
+    const url = `${appBase}/news/${newsId}`;
+
+    // Fire-and-forget (remove await to make it truly background)
+    notifySubscribers({
+      type: "announcement",
+      subject: `New Announcement: ${title}`,
+      messageHtml: `
+        <h2>${title}</h2>
+        <p>${String(description)}</p>
+        <p><a href="${url}">Read more</a></p>
+      `,
+    }).catch(e => console.warn("Notify failed:", e?.message || e));
+
+    return res.json({
       success: true,
       message: "News created successfully",
-      data: {
-        id: newsId,
-        title,
-        description,
-        date: date || null,
-        organization_id: organization.id
-      }
+      data: { id: newsId, title, description, date: date || null, organization_id: organization.id }
     });
   } catch (error) {
     console.error("❌ Error creating news:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to create news",
-      error: error.message,
-    });
+    return res.status(500).json({ success: false, message: "Failed to create news", error: error.message });
   }
 };
 
+/* -------------------------- Get News by Org --------------------------- */
 // Get news for a specific organization (for admin view) - Only approved news
 export const getNewsByOrg = async (req, res) => {
   const { orgId } = req.params;
 
   if (!orgId) {
-    return res.status(400).json({
-      success: false,
-      message: "Organization ID is required",
-    });
+    return res.status(400).json({ success: false, message: "Organization ID is required" });
   }
 
   try {
-    
-    // First try to get organization by ID (numeric) from organizations table
     let [orgRows] = await db.execute(
       "SELECT id, orgName, org FROM organizations WHERE id = ?",
       [orgId]
     );
 
-    // If not found by ID, try by acronym
     if (orgRows.length === 0) {
       [orgRows] = await db.execute(
         "SELECT id, orgName, org FROM organizations WHERE org = ?",
@@ -131,20 +131,16 @@ export const getNewsByOrg = async (req, res) => {
       );
     }
 
-    // If still not found, check admins table and sync
     if (orgRows.length === 0) {
       const [adminRows] = await db.execute(
         "SELECT id, orgName, org FROM admins WHERE org = ?",
         [orgId]
       );
-      
       if (adminRows.length > 0) {
-        // Sync organization to organizations table
-        const [syncResult] = await db.execute(
+        await db.execute(
           "INSERT INTO organizations (orgName, org) VALUES (?, ?) ON DUPLICATE KEY UPDATE orgName = VALUES(orgName)",
           [adminRows[0].orgName, adminRows[0].org]
         );
-        
         [orgRows] = await db.execute(
           "SELECT id, orgName, org FROM organizations WHERE org = ?",
           [orgId]
@@ -153,15 +149,11 @@ export const getNewsByOrg = async (req, res) => {
     }
 
     if (orgRows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Organization not found",
-      });
+      return res.status(404).json({ success: false, message: "Organization not found" });
     }
 
     const organization = orgRows[0];
 
-    // Get only approved news from news table (no pending submissions and no deleted news)
     const [newsRows] = await db.execute(
       `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
        FROM news n
@@ -171,47 +163,38 @@ export const getNewsByOrg = async (req, res) => {
       [organization.id]
     );
 
-    // Map news with organization info
-    const news = newsRows.map(news => {
+    const news = newsRows.map(n => {
       let logoUrl;
-      if (news.orgLogo) {
-        // If logo is stored as a filename, construct the proper URL
-        if (news.orgLogo.includes('/')) {
-          // Legacy path - extract filename
-          const filename = news.orgLogo.split('/').pop();
+      if (n.orgLogo) {
+        if (n.orgLogo.includes('/')) {
+          const filename = n.orgLogo.split('/').pop();
           logoUrl = `/uploads/organizations/logos/${filename}`;
         } else {
-          // New structure - direct filename
-          logoUrl = `/uploads/organizations/logos/${news.orgLogo}`;
+          logoUrl = `/uploads/organizations/logos/${n.orgLogo}`;
         }
       } else {
-        // Fallback to default logo
         logoUrl = `/logo/faith_community_logo.png`;
       }
-      
       return {
-        id: news.id,
-        title: news.title,
-        description: news.description,
-        date: news.date || news.created_at,
-        created_at: news.created_at,
-        orgID: news.orgAcronym || organization.org,
-        orgName: news.orgName || organization.orgName,
+        id: n.id,
+        title: n.title,
+        description: n.description,
+        date: n.date || n.created_at,
+        created_at: n.created_at,
+        orgID: n.orgAcronym || organization.org,
+        orgName: n.orgName || organization.orgName,
         icon: logoUrl
       };
     });
 
-    res.json(news);
+    return res.json(news);
   } catch (error) {
     console.error("❌ Error fetching news:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch news",
-      error: error.message,
-    });
+    return res.status(500).json({ success: false, message: "Failed to fetch news", error: error.message });
   }
 };
 
+/* -------------------------- Get All Approved -------------------------- */
 // Get all approved news (for public view)
 export const getApprovedNews = async (req, res) => {
   try {
@@ -222,66 +205,52 @@ export const getApprovedNews = async (req, res) => {
        ORDER BY n.created_at DESC`
     );
 
-    const news = rows.map(news => {
+    const news = rows.map(n => {
       let logoUrl;
-      if (news.orgLogo) {
-        // If logo is stored as a filename, construct the proper URL
-        if (news.orgLogo.includes('/')) {
-          // Legacy path - extract filename
-          const filename = news.orgLogo.split('/').pop();
+      if (n.orgLogo) {
+        if (n.orgLogo.includes('/')) {
+          const filename = n.orgLogo.split('/').pop();
           logoUrl = `/uploads/organizations/logos/${filename}`;
         } else {
-          // New structure - direct filename
-          logoUrl = `/uploads/organizations/logos/${news.orgLogo}`;
+          logoUrl = `/uploads/organizations/logos/${n.orgLogo}`;
         }
       } else {
-        // Fallback to default logo
         logoUrl = `/logo/faith_community_logo.png`;
       }
-      
       return {
-        id: news.id,
-        title: news.title,
-        description: news.description,
-        date: news.date || news.date_published || news.created_at,
-        created_at: news.created_at,
-        organization_id: news.organization_id, // Add this field for frontend filtering
-        orgID: news.orgAcronym || `Org-${news.organization_id}`,
-        orgName: news.orgName || `Organization ${news.organization_id}`,
+        id: n.id,
+        title: n.title,
+        description: n.description,
+        date: n.date || n.date_published || n.created_at,
+        created_at: n.created_at,
+        organization_id: n.organization_id,
+        orgID: n.orgAcronym || `Org-${n.organization_id}`,
+        orgName: n.orgName || `Organization ${n.organization_id}`,
         icon: logoUrl
       };
     });
 
-    res.json(news);
+    return res.json(news);
   } catch (error) {
     console.error("❌ Error fetching approved news:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch news",
-      error: error.message,
-    });
+    return res.status(500).json({ success: false, message: "Failed to fetch news", error: error.message });
   }
 };
 
-// Get approved news for a specific organization (for public view)
+/* --------------------- Get Approved News by Org ---------------------- */
 export const getApprovedNewsByOrg = async (req, res) => {
   const { orgId } = req.params;
 
   if (!orgId) {
-    return res.status(400).json({
-      success: false,
-      message: "Organization ID is required",
-    });
+    return res.status(400).json({ success: false, message: "Organization ID is required" });
   }
 
   try {
-    // First try to get organization by ID (numeric) from organizations table
     let [orgRows] = await db.execute(
       "SELECT id, orgName, org FROM organizations WHERE id = ?",
       [orgId]
     );
 
-    // If not found by ID, try by acronym
     if (orgRows.length === 0) {
       [orgRows] = await db.execute(
         "SELECT id, orgName, org FROM organizations WHERE org = ?",
@@ -290,10 +259,7 @@ export const getApprovedNewsByOrg = async (req, res) => {
     }
 
     if (orgRows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Organization not found",
-      });
+      return res.status(404).json({ success: false, message: "Organization not found" });
     }
 
     const organization = orgRows[0];
@@ -307,57 +273,45 @@ export const getApprovedNewsByOrg = async (req, res) => {
       [organization.id]
     );
 
-    const news = rows.map(news => {
+    const news = rows.map(n => {
       let logoUrl;
-      if (news.orgLogo) {
-        // If logo is stored as a filename, construct the proper URL
-        if (news.orgLogo.includes('/')) {
-          // Legacy path - extract filename
-          const filename = news.orgLogo.split('/').pop();
+      if (n.orgLogo) {
+        if (n.orgLogo.includes('/')) {
+          const filename = n.orgLogo.split('/').pop();
           logoUrl = `/uploads/organizations/logos/${filename}`;
         } else {
-          // New structure - direct filename
-          logoUrl = `/uploads/organizations/logos/${news.orgLogo}`;
+          logoUrl = `/uploads/organizations/logos/${n.orgLogo}`;
         }
       } else {
-        // Fallback to default logo
         logoUrl = `/logo/faith_community_logo.png`;
       }
-      
       return {
-        id: news.id,
-        title: news.title,
-        description: news.description,
-        date: news.date || news.date_published || news.created_at,
-        created_at: news.created_at,
-        organization_id: news.organization_id, // Add this field for frontend filtering
-        orgID: news.orgAcronym || organization.org || `Org-${news.organization_id}`,
-        orgName: news.orgName || organization.orgName || `Organization ${news.organization_id}`,
+        id: n.id,
+        title: n.title,
+        description: n.description,
+        date: n.date || n.date_published || n.created_at,
+        created_at: n.created_at,
+        organization_id: n.organization_id,
+        orgID: n.orgAcronym || organization.org || `Org-${n.organization_id}`,
+        orgName: n.orgName || organization.orgName || `Organization ${n.organization_id}`,
         icon: logoUrl
       };
     });
 
-    console.log('📰 Fetched news for organization:', news);
-    res.json(news);
+    console.log("📰 Fetched news for organization:", news);
+    return res.json(news);
   } catch (error) {
     console.error("❌ Error fetching approved news by org:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch news",
-      error: error.message,
-    });
+    return res.status(500).json({ success: false, message: "Failed to fetch news", error: error.message });
   }
 };
 
-// Get a single news item by ID (for public view)
+/* --------------------------- Get One by ID --------------------------- */
 export const getNewsById = async (req, res) => {
   const { id } = req.params;
 
   if (!id) {
-    return res.status(400).json({
-      success: false,
-      message: "News ID is required",
-    });
+    return res.status(400).json({ success: false, message: "News ID is required" });
   }
 
   try {
@@ -370,106 +324,75 @@ export const getNewsById = async (req, res) => {
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "News not found",
-      });
+      return res.status(404).json({ success: false, message: "News not found" });
     }
 
-    const news = rows[0];
+    const n = rows[0];
     let logoUrl;
-    if (news.orgLogo) {
-      // If logo is stored as a filename, construct the proper URL
-      if (news.orgLogo.includes('/')) {
-        // Legacy path - extract filename
-        const filename = news.orgLogo.split('/').pop();
+    if (n.orgLogo) {
+      if (n.orgLogo.includes('/')) {
+        const filename = n.orgLogo.split('/').pop();
         logoUrl = `/uploads/organizations/logos/${filename}`;
       } else {
-        // New structure - direct filename
-        logoUrl = `/uploads/organizations/logos/${news.orgLogo}`;
+        logoUrl = `/uploads/organizations/logos/${n.orgLogo}`;
       }
     } else {
-      // Fallback to default logo
       logoUrl = `/logo/faith_community_logo.png`;
     }
-    
+
     const newsData = {
-      id: news.id,
-      title: news.title,
-      description: news.description,
-      date: news.date || news.date_published || news.created_at,
-      created_at: news.created_at,
-      organization_id: news.organization_id, // Add this field for frontend filtering
-      orgID: news.orgAcronym || `Org-${news.organization_id}`,
-      orgName: news.orgName || `Organization ${news.organization_id}`,
-      icon: logoUrl
+      id: n.id,
+      title: n.title,
+      description: n.description,
+      date: n.date || n.date_published || n.created_at,
+      created_at: n.created_at,
+      organization_id: n.organization_id,
+      orgID: n.orgAcronym || `Org-${n.organization_id}`,
+      orgName: n.orgName || `Organization ${n.organization_id}`,
+      icon: logoUrl,
     };
 
-    console.log('📰 Fetched news detail:', newsData);
-    res.json(newsData);
+    console.log("📰 Fetched news detail:", newsData);
+    return res.json(newsData);
   } catch (error) {
     console.error("❌ Error fetching news by ID:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch news",
-      error: error.message,
-    });
+    return res.status(500).json({ success: false, message: "Failed to fetch news", error: error.message });
   }
 };
 
+/* -------------------------- Soft Delete flows ------------------------- */
 // Delete news submission (for admin) - Now implements soft delete
 export const deleteNewsSubmission = async (req, res) => {
   const { id } = req.params;
 
   if (!id) {
-    return res.status(400).json({
-      success: false,
-      message: "News ID is required",
-    });
+    return res.status(400).json({ success: false, message: "News ID is required" });
   }
 
   try {
-    // Check if it's a submission ID or approved news ID
-    if (id.startsWith('submission_')) {
-      // Delete from submissions table (hard delete for submissions)
-      const submissionId = id.replace('submission_', '');
+    if (id.startsWith("submission_")) {
+      const submissionId = id.replace("submission_", "");
       const [result] = await db.execute(
         "DELETE FROM submissions WHERE id = ? AND section = 'news'",
         [submissionId]
       );
-
       if (result.affectedRows === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "News submission not found",
-        });
+        return res.status(404).json({ success: false, message: "News submission not found" });
       }
     } else {
-      // Soft delete from news table
       const [result] = await db.execute(
         "UPDATE news SET is_deleted = TRUE, deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND is_deleted = FALSE",
         [id]
       );
-
       if (result.affectedRows === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "News not found or already deleted",
-        });
+        return res.status(404).json({ success: false, message: "News not found or already deleted" });
       }
     }
 
-    res.json({
-      success: true,
-      message: "News moved to recently deleted",
-    });
+    return res.json({ success: true, message: "News moved to recently deleted" });
   } catch (error) {
     console.error("❌ Error deleting news:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to delete news",
-      error: error.message,
-    });
+    return res.status(500).json({ success: false, message: "Failed to delete news", error: error.message });
   }
 };
 
@@ -478,20 +401,15 @@ export const getRecentlyDeletedNews = async (req, res) => {
   const { orgId } = req.params;
 
   if (!orgId) {
-    return res.status(400).json({
-      success: false,
-      message: "Organization ID is required",
-    });
+    return res.status(400).json({ success: false, message: "Organization ID is required" });
   }
 
   try {
-    // First try to get organization by ID (numeric) from organizations table
     let [orgRows] = await db.execute(
       "SELECT id, orgName, org FROM organizations WHERE id = ?",
       [orgId]
     );
 
-    // If not found by ID, try by acronym
     if (orgRows.length === 0) {
       [orgRows] = await db.execute(
         "SELECT id, orgName, org FROM organizations WHERE org = ?",
@@ -499,20 +417,16 @@ export const getRecentlyDeletedNews = async (req, res) => {
       );
     }
 
-    // If still not found, check admins table and sync
     if (orgRows.length === 0) {
       const [adminRows] = await db.execute(
         "SELECT id, orgName, org FROM admins WHERE org = ?",
         [orgId]
       );
-      
       if (adminRows.length > 0) {
-        // Sync organization to organizations table
-        const [syncResult] = await db.execute(
+        await db.execute(
           "INSERT INTO organizations (orgName, org) VALUES (?, ?) ON DUPLICATE KEY UPDATE orgName = VALUES(orgName)",
           [adminRows[0].orgName, adminRows[0].org]
         );
-        
         [orgRows] = await db.execute(
           "SELECT id, orgName, org FROM organizations WHERE org = ?",
           [orgId]
@@ -521,15 +435,11 @@ export const getRecentlyDeletedNews = async (req, res) => {
     }
 
     if (orgRows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Organization not found",
-      });
+      return res.status(404).json({ success: false, message: "Organization not found" });
     }
 
     const organization = orgRows[0];
 
-    // Get only deleted news from news table
     const [newsRows] = await db.execute(
       `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
        FROM news n
@@ -539,52 +449,42 @@ export const getRecentlyDeletedNews = async (req, res) => {
       [organization.id]
     );
 
-    // Map news with organization info
-    const news = newsRows.map(news => {
+    const news = newsRows.map(n => {
       let logoUrl;
-      if (news.orgLogo) {
-        // If logo is stored as a filename, construct the proper URL
-        if (news.orgLogo.includes('/')) {
-          // Legacy path - extract filename
-          const filename = news.orgLogo.split('/').pop();
+      if (n.orgLogo) {
+        if (n.orgLogo.includes('/')) {
+          const filename = n.orgLogo.split('/').pop();
           logoUrl = `/uploads/organizations/logos/${filename}`;
         } else {
-          // New structure - direct filename
-          logoUrl = `/uploads/organizations/logos/${news.orgLogo}`;
+          logoUrl = `/uploads/organizations/logos/${n.orgLogo}`;
         }
       } else {
-        // Fallback to default logo
         logoUrl = `/logo/faith_community_logo.png`;
       }
-      
-      // Calculate days until permanent deletion (15 days from deleted_at)
-      const deletedDate = new Date(news.deleted_at);
+
+      const deletedDate = new Date(n.deleted_at);
       const permanentDeleteDate = new Date(deletedDate.getTime() + (15 * 24 * 60 * 60 * 1000));
       const now = new Date();
       const daysRemaining = Math.ceil((permanentDeleteDate - now) / (24 * 60 * 60 * 1000));
-      
+
       return {
-        id: news.id,
-        title: news.title,
-        description: news.description,
-        date: news.date || news.created_at,
-        created_at: news.created_at,
-        deleted_at: news.deleted_at,
+        id: n.id,
+        title: n.title,
+        description: n.description,
+        date: n.date || n.created_at,
+        created_at: n.created_at,
+        deleted_at: n.deleted_at,
         days_until_permanent_deletion: Math.max(0, daysRemaining),
-        orgID: news.orgAcronym || organization.org,
-        orgName: news.orgName || organization.orgName,
+        orgID: n.orgAcronym || organization.org,
+        orgName: n.orgName || organization.orgName,
         icon: logoUrl
       };
     });
 
-    res.json(news);
+    return res.json(news);
   } catch (error) {
     console.error("❌ Error fetching recently deleted news:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch recently deleted news",
-      error: error.message,
-    });
+    return res.status(500).json({ success: false, message: "Failed to fetch recently deleted news", error: error.message });
   }
 };
 
@@ -592,12 +492,7 @@ export const getRecentlyDeletedNews = async (req, res) => {
 export const restoreNews = async (req, res) => {
   const { id } = req.params;
 
-  if (!id) {
-    return res.status(400).json({
-      success: false,
-      message: "News ID is required",
-    });
-  }
+  if (!id) return res.status(400).json({ success: false, message: "News ID is required" });
 
   try {
     const [result] = await db.execute(
@@ -606,23 +501,13 @@ export const restoreNews = async (req, res) => {
     );
 
     if (result.affectedRows === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "News not found or not deleted",
-      });
+      return res.status(404).json({ success: false, message: "News not found or not deleted" });
     }
 
-    res.json({
-      success: true,
-      message: "News restored successfully",
-    });
+    return res.json({ success: true, message: "News restored successfully" });
   } catch (error) {
     console.error("❌ Error restoring news:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to restore news",
-      error: error.message,
-    });
+    return res.status(500).json({ success: false, message: "Failed to restore news", error: error.message });
   }
 };
 
@@ -630,12 +515,7 @@ export const restoreNews = async (req, res) => {
 export const permanentlyDeleteNews = async (req, res) => {
   const { id } = req.params;
 
-  if (!id) {
-    return res.status(400).json({
-      success: false,
-      message: "News ID is required",
-    });
-  }
+  if (!id) return res.status(400).json({ success: false, message: "News ID is required" });
 
   try {
     const [result] = await db.execute(
@@ -644,84 +524,44 @@ export const permanentlyDeleteNews = async (req, res) => {
     );
 
     if (result.affectedRows === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "News not found or not in deleted state",
-      });
+      return res.status(404).json({ success: false, message: "News not found or not in deleted state" });
     }
 
-    res.json({
-      success: true,
-      message: "News permanently deleted",
-    });
+    return res.json({ success: true, message: "News permanently deleted" });
   } catch (error) {
     console.error("❌ Error permanently deleting news:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to permanently delete news",
-      error: error.message,
-    });
+    return res.status(500).json({ success: false, message: "Failed to permanently delete news", error: error.message });
   }
 };
 
+/* ------------------------------ Update ------------------------------- */
 // Update news (for admin)
 export const updateNews = async (req, res) => {
   const { id } = req.params;
   const { title, description, date } = req.body;
 
-  if (!id) {
-    return res.status(400).json({
-      success: false,
-      message: "News ID is required",
-    });
-  }
-
-  if (!title || !description) {
-    return res.status(400).json({
-      success: false,
-      message: "Title and description are required",
-    });
-  }
+  if (!id) return res.status(400).json({ success: false, message: "News ID is required" });
+  if (!title || !description)
+    return res.status(400).json({ success: false, message: "Title and description are required" });
 
   try {
-    // Check if news exists
-    const [existingNews] = await db.execute(
-      "SELECT id FROM news WHERE id = ?",
-      [id]
-    );
-
+    const [existingNews] = await db.execute("SELECT id FROM news WHERE id = ?", [id]);
     if (existingNews.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "News not found",
-      });
+      return res.status(404).json({ success: false, message: "News not found" });
     }
 
-    // Update the news
     const [result] = await db.execute(
-      `UPDATE news 
-       SET title = ?, description = ?, date = ?
-       WHERE id = ?`,
+      `UPDATE news SET title = ?, description = ?, date = ? WHERE id = ?`,
       [title, description, date || null, id]
     );
 
     if (result.affectedRows === 0) {
-      return res.status(500).json({
-        success: false,
-        message: "Failed to update news",
-      });
+      return res.status(500).json({ success: false, message: "Failed to update news" });
     }
 
-    res.json({
-      success: true,
-      message: "News updated successfully",
-    });
+    return res.json({ success: true, message: "News updated successfully" });
   } catch (error) {
     console.error("❌ Error updating news:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to update news",
-      error: error.message,
-    });
+    return res.status(500).json({ success: false, message: "Failed to update news", error: error.message });
   }
 };

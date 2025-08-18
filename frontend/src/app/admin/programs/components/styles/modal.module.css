@@ -63,6 +63,7 @@
   border-radius: 4px;
   cursor: pointer;
   font-size: 1rem;
+  user-select: none;
 }
 
 .submitButton {
@@ -73,6 +74,7 @@
   border-radius: 4px;
   cursor: pointer;
   font-size: 1rem;
+  user-select: none;
 }
 
 .submitButton:hover {
@@ -96,6 +98,7 @@
   cursor: pointer;
   font-size: 0.9rem;
   transition: background-color 0.2s;
+  user-select: none;
 }
 
 .uploadButton:hover {

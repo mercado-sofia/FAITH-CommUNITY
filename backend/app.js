@@ -5,6 +5,9 @@ import path from "path"
 import { fileURLToPath } from "url"
 import fs from "fs"
 
+// Import cleanup function for deleted news
+import cleanupDeletedNews from "./back_end/utils/cleanupDeletedNews.js"
+
 // Get current directory
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -153,6 +156,20 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`)
   console.log(`📁 Uploads directory: ${uploadsDir}`)
   console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`)
+  
+  // Set up daily cleanup job for deleted news (runs every 24 hours)
+  setInterval(async () => {
+    try {
+      await cleanupDeletedNews();
+    } catch (error) {
+      console.error('❌ Error in scheduled cleanup:', error);
+    }
+  }, 24 * 60 * 60 * 1000); // 24 hours in milliseconds
+  
+  // Run initial cleanup on server start
+  cleanupDeletedNews().then(() => {
+    console.log('✅ Initial cleanup completed');
+  }).catch((error) => {
+    console.error('❌ Initial cleanup failed:', error);
+  });
 })
-
-app.use(cors());

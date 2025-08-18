@@ -79,7 +79,7 @@ const AddNewsModal = ({ onClose, onSubmit, orgId }) => {
     <div className={styles.modalOverlay} onClick={handleClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <h2 className={styles.modalTitle}>Add News & Announcement</h2>
+          <h2 className={styles.modalTitle}>Publish News</h2>
           <button
             className={styles.closeButton}
             onClick={handleClose}
@@ -90,6 +90,25 @@ const AddNewsModal = ({ onClose, onSubmit, orgId }) => {
         </div>
 
         <form onSubmit={handleSubmit} className={styles.form}>
+          <div className={styles.formGroup}>
+            <label htmlFor="date" className={styles.label}>
+              Date *
+            </label>
+            <div className={styles.dateInputContainer}>
+              <FaCalendar className={styles.dateIcon} />
+              <input
+                type="date"
+                id="date"
+                name="date"
+                value={formData.date}
+                onChange={handleInputChange}
+                className={`${styles.input} ${styles.dateInput} ${errors.date ? styles.error : ''}`}
+                disabled={isSubmitting}
+              />
+            </div>
+            {errors.date && <span className={styles.errorText}>{errors.date}</span>}
+          </div>
+
           <div className={styles.formGroup}>
             <label htmlFor="title" className={styles.label}>
               Title *
@@ -122,25 +141,6 @@ const AddNewsModal = ({ onClose, onSubmit, orgId }) => {
               disabled={isSubmitting}
             />
             {errors.description && <span className={styles.errorText}>{errors.description}</span>}
-          </div>
-
-          <div className={styles.formGroup}>
-            <label htmlFor="date" className={styles.label}>
-              Date *
-            </label>
-            <div className={styles.dateInputContainer}>
-              <FaCalendar className={styles.dateIcon} />
-              <input
-                type="date"
-                id="date"
-                name="date"
-                value={formData.date}
-                onChange={handleInputChange}
-                className={`${styles.input} ${styles.dateInput} ${errors.date ? styles.error : ''}`}
-                disabled={isSubmitting}
-              />
-            </div>
-            {errors.date && <span className={styles.errorText}>{errors.date}</span>}
           </div>
 
           <div className={styles.formActions}>

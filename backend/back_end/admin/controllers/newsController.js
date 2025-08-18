@@ -161,12 +161,12 @@ export const getNewsByOrg = async (req, res) => {
 
     const organization = orgRows[0];
 
-    // Get only approved news from news table (no pending submissions)
+    // Get only approved news from news table (no pending submissions and no deleted news)
     const [newsRows] = await db.execute(
       `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
        FROM news n
        LEFT JOIN organizations o ON n.organization_id = o.id
-       WHERE n.organization_id = ? 
+       WHERE n.organization_id = ? AND n.is_deleted = FALSE
        ORDER BY n.created_at DESC`,
       [organization.id]
     );
@@ -417,7 +417,7 @@ export const getNewsById = async (req, res) => {
   }
 };
 
-// Delete news submission (for admin)
+// Delete news submission (for admin) - Now implements soft delete
 export const deleteNewsSubmission = async (req, res) => {
   const { id } = req.params;
 
@@ -431,7 +431,7 @@ export const deleteNewsSubmission = async (req, res) => {
   try {
     // Check if it's a submission ID or approved news ID
     if (id.startsWith('submission_')) {
-      // Delete from submissions table
+      // Delete from submissions table (hard delete for submissions)
       const submissionId = id.replace('submission_', '');
       const [result] = await db.execute(
         "DELETE FROM submissions WHERE id = ? AND section = 'news'",
@@ -445,29 +445,220 @@ export const deleteNewsSubmission = async (req, res) => {
         });
       }
     } else {
-      // Delete from news table
+      // Soft delete from news table
       const [result] = await db.execute(
-        "DELETE FROM news WHERE id = ?",
+        "UPDATE news SET is_deleted = TRUE, deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND is_deleted = FALSE",
         [id]
       );
 
       if (result.affectedRows === 0) {
         return res.status(404).json({
           success: false,
-          message: "News not found",
+          message: "News not found or already deleted",
         });
       }
     }
 
     res.json({
       success: true,
-      message: "News deleted successfully",
+      message: "News moved to recently deleted",
     });
   } catch (error) {
     console.error("❌ Error deleting news:", error);
     res.status(500).json({
       success: false,
       message: "Failed to delete news",
+      error: error.message,
+    });
+  }
+};
+
+// Get recently deleted news for a specific organization
+export const getRecentlyDeletedNews = async (req, res) => {
+  const { orgId } = req.params;
+
+  if (!orgId) {
+    return res.status(400).json({
+      success: false,
+      message: "Organization ID is required",
+    });
+  }
+
+  try {
+    // First try to get organization by ID (numeric) from organizations table
+    let [orgRows] = await db.execute(
+      "SELECT id, orgName, org FROM organizations WHERE id = ?",
+      [orgId]
+    );
+
+    // If not found by ID, try by acronym
+    if (orgRows.length === 0) {
+      [orgRows] = await db.execute(
+        "SELECT id, orgName, org FROM organizations WHERE org = ?",
+        [orgId]
+      );
+    }
+
+    // If still not found, check admins table and sync
+    if (orgRows.length === 0) {
+      const [adminRows] = await db.execute(
+        "SELECT id, orgName, org FROM admins WHERE org = ?",
+        [orgId]
+      );
+      
+      if (adminRows.length > 0) {
+        // Sync organization to organizations table
+        const [syncResult] = await db.execute(
+          "INSERT INTO organizations (orgName, org) VALUES (?, ?) ON DUPLICATE KEY UPDATE orgName = VALUES(orgName)",
+          [adminRows[0].orgName, adminRows[0].org]
+        );
+        
+        [orgRows] = await db.execute(
+          "SELECT id, orgName, org FROM organizations WHERE org = ?",
+          [orgId]
+        );
+      }
+    }
+
+    if (orgRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Organization not found",
+      });
+    }
+
+    const organization = orgRows[0];
+
+    // Get only deleted news from news table
+    const [newsRows] = await db.execute(
+      `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
+       FROM news n
+       LEFT JOIN organizations o ON n.organization_id = o.id
+       WHERE n.organization_id = ? AND n.is_deleted = TRUE
+       ORDER BY n.deleted_at DESC`,
+      [organization.id]
+    );
+
+    // Map news with organization info
+    const news = newsRows.map(news => {
+      let logoUrl;
+      if (news.orgLogo) {
+        // If logo is stored as a filename, construct the proper URL
+        if (news.orgLogo.includes('/')) {
+          // Legacy path - extract filename
+          const filename = news.orgLogo.split('/').pop();
+          logoUrl = `/uploads/organizations/logos/${filename}`;
+        } else {
+          // New structure - direct filename
+          logoUrl = `/uploads/organizations/logos/${news.orgLogo}`;
+        }
+      } else {
+        // Fallback to default logo
+        logoUrl = `/logo/faith_community_logo.png`;
+      }
+      
+      // Calculate days until permanent deletion (15 days from deleted_at)
+      const deletedDate = new Date(news.deleted_at);
+      const permanentDeleteDate = new Date(deletedDate.getTime() + (15 * 24 * 60 * 60 * 1000));
+      const now = new Date();
+      const daysRemaining = Math.ceil((permanentDeleteDate - now) / (24 * 60 * 60 * 1000));
+      
+      return {
+        id: news.id,
+        title: news.title,
+        description: news.description,
+        date: news.date || news.created_at,
+        created_at: news.created_at,
+        deleted_at: news.deleted_at,
+        days_until_permanent_deletion: Math.max(0, daysRemaining),
+        orgID: news.orgAcronym || organization.org,
+        orgName: news.orgName || organization.orgName,
+        icon: logoUrl
+      };
+    });
+
+    res.json(news);
+  } catch (error) {
+    console.error("❌ Error fetching recently deleted news:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch recently deleted news",
+      error: error.message,
+    });
+  }
+};
+
+// Restore deleted news
+export const restoreNews = async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "News ID is required",
+    });
+  }
+
+  try {
+    const [result] = await db.execute(
+      "UPDATE news SET is_deleted = FALSE, deleted_at = NULL WHERE id = ? AND is_deleted = TRUE",
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "News not found or not deleted",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "News restored successfully",
+    });
+  } catch (error) {
+    console.error("❌ Error restoring news:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to restore news",
+      error: error.message,
+    });
+  }
+};
+
+// Permanently delete news (for items older than 15 days or manual permanent delete)
+export const permanentlyDeleteNews = async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "News ID is required",
+    });
+  }
+
+  try {
+    const [result] = await db.execute(
+      "DELETE FROM news WHERE id = ? AND is_deleted = TRUE",
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "News not found or not in deleted state",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "News permanently deleted",
+    });
+  } catch (error) {
+    console.error("❌ Error permanently deleting news:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to permanently delete news",
       error: error.message,
     });
   }

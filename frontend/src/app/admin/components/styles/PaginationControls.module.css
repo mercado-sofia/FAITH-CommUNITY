@@ -33,6 +33,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  user-select: none;
 }
 
 .paginationButton:hover:not(:disabled) {
@@ -80,6 +81,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  user-select: none;
 }
 
 .navButton:hover:not(:disabled) {

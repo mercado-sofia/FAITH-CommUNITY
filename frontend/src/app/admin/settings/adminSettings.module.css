@@ -64,6 +64,7 @@
   font-size: 13px;
   font-weight: 500;
   transition: all 0.2s ease;
+  user-select: none;
 }
 
 .retryButton:hover {
@@ -163,6 +164,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  user-select: none;
 }
 
 .editButton:hover {
@@ -257,6 +259,7 @@
   pointer-events: auto; /* Ensure button is clickable */
   width: 24px;
   height: 24px;
+  user-select: none;
 }
 
 .passwordToggle:hover {
@@ -359,6 +362,7 @@
   cursor: pointer;
   font-family: var(--font-poppins), sans-serif;
   flex: 1;
+  user-select: none;
 }
 .cancelButton {
   background: #ffffff;
@@ -371,6 +375,7 @@
   cursor: pointer;
   font-family: var(--font-poppins), sans-serif;
   flex: 1;
+  user-select: none;
 }
 
 /* Password Form */

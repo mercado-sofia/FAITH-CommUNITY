@@ -1,0 +1,295 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal {
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  border: 1px solid #e5e7eb;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 10;
+}
+
+.modalTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #06100f;
+  font-family: var(--font-poppins);
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 15px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.375rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.closeButton:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.modalContent {
+  padding: 1.5rem;
+}
+
+.errorMessage {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 13px;
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+}
+
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #167c59;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #6b7280;
+}
+
+.emptyState p {
+  margin: 0 0 0.5rem 0;
+  font-size: 14px;
+}
+
+.emptyStateSubtext {
+  font-size: 13px !important;
+  opacity: 0.8;
+}
+
+.deletedNewsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.deletedNewsItem {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1.25rem;
+  transition: all 0.2s ease;
+}
+
+.deletedNewsItem:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.newsInfo {
+  margin-bottom: 1rem;
+}
+
+.newsHeader {
+  margin-bottom: 0.75rem;
+}
+
+.newsTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #06100f;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.4;
+}
+
+.newsMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.dateContainer,
+.daysRemainingContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: #6b7280;
+}
+
+.dateContainer {
+  font-size: 12px;
+}
+
+.daysRemainingContainer{
+  font-size: 13px;
+}
+
+.clockIcon {
+  font-size: 13px;
+  color: #06100f;
+}
+
+.daysRemaining {
+  font-weight: 500;
+}
+
+.newsDescription {
+  color: #4b5563;
+  line-height: 1.5;
+  margin: 0;
+  font-size: 13px;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.restoreButton,
+.permanentDeleteButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  user-select: none;
+  min-width: 120px;
+  justify-content: center;
+}
+
+.restoreButton {
+  background: #06100f;
+  color: #ffffff;
+  border: 1px solid #06100f;
+}
+
+.restoreButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.permanentDeleteButton {
+  background: #ffffff;
+  color: #06100f;
+  border: 1px solid #06100f;
+}
+
+.permanentDeleteButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modal {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+  }
+
+  .modalHeader {
+    padding: 1rem 1.25rem;
+  }
+
+  .modalTitle {
+    font-size: 16px;
+  }
+
+  .modalContent {
+    padding: 1.25rem;
+  }
+
+  .newsMeta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .restoreButton,
+  .permanentDeleteButton {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .modalHeader {
+    padding: 0.875rem 1rem;
+  }
+
+  .modalContent {
+    padding: 1rem;
+  }
+
+  .modalTitle {
+    font-size: 16px;
+  }
+
+  .deletedNewsItem {
+    padding: 1rem;
+  }
+
+  .newsTitle {
+    font-size: 16px;
+  }
+}

@@ -88,6 +88,7 @@
   right: 0;
   top: 60%;
   transform: translateY(-50%);
+  user-select: none;
 }
 
 .closeButton:hover {
@@ -232,6 +233,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   flex: 1;
+  user-select: none;
 }
 
 .statusButton:hover {
@@ -337,6 +339,7 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
+  user-select: none;
 }
 
 .removeImageButton:hover {
@@ -394,6 +397,7 @@
   transition: all 0.2s ease;
   border: none;
   min-width: 120px;
+  user-select: none;
 }
 
 .cancelButton {
@@ -521,6 +525,7 @@
   transition: all 0.2s ease;
   min-width: 120px;
   justify-content: center;
+  user-select: none;
 }
 
 .stepButton:hover:not(:disabled) {
@@ -613,6 +618,7 @@
   cursor: pointer;
   font-size: 10px;
   transition: all 0.2s ease;
+  user-select: none;
 }
 
 .removeAdditionalImageButton:hover {

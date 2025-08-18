@@ -165,4 +165,5 @@
   color: #9ca3af;
   cursor: pointer;
   font-size: 16px;
+  user-select: none;
 }

@@ -75,12 +75,32 @@ const initializeDatabase = async () => {
           title VARCHAR(255) NOT NULL,
           description TEXT NOT NULL,
           date DATE,
+          is_deleted BOOLEAN DEFAULT FALSE,
+          deleted_at TIMESTAMP NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
         )
       `);
       console.log("✅ News table created successfully!");
+    } else {
+      // Check if deleted_at column exists, add it if missing
+      const [deletedAtColumn] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'news' 
+        AND COLUMN_NAME = 'deleted_at'
+      `);
+      
+      if (deletedAtColumn.length === 0) {
+        console.log("Adding deleted_at column to news table...");
+        await connection.query(`
+          ALTER TABLE news 
+          ADD COLUMN deleted_at TIMESTAMP NULL,
+          ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE
+        `);
+        console.log("✅ Added deleted_at and is_deleted columns to news table!");
+      }
     }
 
     // Check if programs_projects table has date fields, add them if missing
@@ -220,6 +240,46 @@ const initializeDatabase = async () => {
         )
       `);
       console.log("✅ Messages table created successfully!");
+    }
+
+    // Check if notifications table exists
+    const [notificationsTables] = await connection.query('SHOW TABLES LIKE "notifications"');
+    
+    if (notificationsTables.length === 0) {
+      console.log("Creating notifications table...");
+      await connection.query(`
+        CREATE TABLE notifications (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          admin_id INT NOT NULL,
+          type ENUM('approval', 'decline', 'system', 'message') NOT NULL,
+          title VARCHAR(255) NOT NULL,
+          message TEXT NOT NULL,
+          section VARCHAR(100),
+          submission_id INT,
+          is_read BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE,
+          INDEX idx_admin_read (admin_id, is_read),
+          INDEX idx_created_at (created_at)
+        )
+      `);
+      console.log("✅ Notifications table created successfully!");
+    } else {
+      // Check if 'message' type exists in the ENUM
+      const [columnInfo] = await connection.query(`
+        SELECT COLUMN_TYPE 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'notifications' 
+        AND COLUMN_NAME = 'type'
+      `);
+      
+      if (columnInfo.length > 0 && !columnInfo[0].COLUMN_TYPE.includes("'message'")) {
+        await connection.query(`
+          ALTER TABLE notifications 
+          MODIFY COLUMN type ENUM('approval', 'decline', 'system', 'message') NOT NULL
+        `);
+      }
     }
 
     connection.release();

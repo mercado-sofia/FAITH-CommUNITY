@@ -10,10 +10,11 @@ import AddNewsModal from './components/AddNewsModal';
 import EditNewsModal from './components/EditNewsModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
+import RecentlyDeletedModal from './components/RecentlyDeletedModal';
 import ErrorBoundary from '../../../components/ErrorBoundary';
 import SuccessModal from '../components/SuccessModal';
 import styles from './news.module.css';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaTrash } from 'react-icons/fa';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -26,6 +27,7 @@ export default function AdminNewsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showRecentlyDeletedModal, setShowRecentlyDeletedModal] = useState(false);
   const [editingNews, setEditingNews] = useState(null);
   const [deletingNews, setDeletingNews] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -330,6 +332,7 @@ export default function AdminNewsPage() {
     setShowAddModal(false);
     setShowEditModal(false);
     setShowDeleteModal(false);
+    setShowRecentlyDeletedModal(false);
     setEditingNews(null);
     setDeletingNews(null);
   };
@@ -352,12 +355,20 @@ export default function AdminNewsPage() {
       <div className={styles.header}>
         <div className={styles.headerTop}>
           <h1>News & Announcements</h1>
-          <button 
-            onClick={() => setShowAddModal(true)}
-            className={styles.addButton}
-          >
-            <FaPlus /> Add News
-          </button>
+          <div className={styles.headerActions}>
+            <button 
+              onClick={() => setShowRecentlyDeletedModal(true)}
+              className={styles.recentlyDeletedButton}
+            >
+              <FaTrash /> Recently Deleted
+            </button>
+            <button 
+              onClick={() => setShowAddModal(true)}
+              className={styles.addButton}
+            >
+              <FaPlus /> Add News
+            </button>
+          </div>
         </div>
       </div>
 
@@ -446,6 +457,20 @@ export default function AdminNewsPage() {
         onConfirm={() => handleDeleteNews(deletingNews?.id)}
         onCancel={handleCloseModals}
         isDeleting={isDeleting}
+      />
+
+      {/* Recently Deleted Modal */}
+      <RecentlyDeletedModal
+        isOpen={showRecentlyDeletedModal}
+        onClose={() => setShowRecentlyDeletedModal(false)}
+        orgId={orgId}
+        onRestore={() => {
+          refreshNews();
+          setSuccessModal({ isVisible: true, message: 'News restored successfully!', type: 'success' });
+        }}
+        onPermanentDelete={() => {
+          setSuccessModal({ isVisible: true, message: 'News permanently deleted!', type: 'success' });
+        }}
       />
 
       <SuccessModal

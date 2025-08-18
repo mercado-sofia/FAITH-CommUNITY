@@ -38,7 +38,7 @@
 /* Navigation Tabs */
 .navTabs {
   display: flex;
-  background: #e6e8ea;
+  background: #e9eef3;
   border-radius: 0.5rem;
   padding: 5px;
   margin-bottom: 1.5rem;
@@ -102,6 +102,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  user-select: none;
 }
 
 .markAllReadButton:hover {
@@ -203,6 +204,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  user-select: none;
 }
 
 .retryButton:hover {
@@ -325,6 +327,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 0.875rem;
+  user-select: none;
 }
 
 .actionButton:hover {
@@ -371,6 +374,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: var(--font-inter), sans-serif;
+  user-select: none;
 }
 
 .paginationBtn:hover:not(:disabled) {
@@ -400,6 +404,7 @@
   transition: all 0.2s ease;
   font-family: var(--font-inter), sans-serif;
   min-width: 40px;
+  user-select: none;
 }
 
 .pageBtn:hover {
@@ -449,6 +454,7 @@
   padding: 0;
   margin-left: 0.5rem;
   line-height: 1;
+  user-select: none;
 }
 
 .dismissError:hover {
@@ -474,6 +480,7 @@
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
+  user-select: none;
 }
 
 .cancelSelectionBtn {
@@ -488,6 +495,7 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  user-select: none;
 }
 
 .cancelSelectionBtn:hover {

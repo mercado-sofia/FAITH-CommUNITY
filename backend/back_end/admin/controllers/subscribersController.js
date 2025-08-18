@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import db from "../../database.js";
-import { sendMail } from "../../utils/";
+import { sendMail } from "../../utils/mailer.js";
 
 const API_BASE = process.env.API_BASE_URL || "http://localhost:8080";
 const APP_BASE = process.env.APP_BASE_URL || "http://localhost:3000";
@@ -13,7 +13,6 @@ export async function subscribe(req, res) {
   const unsubscribeToken = crypto.randomBytes(24).toString("hex");
 
   try {
-    // store or refresh tokens
     await db.execute(
       `INSERT INTO subscribers (email, verify_token, unsubscribe_token, is_verified)
        VALUES (?, ?, ?, 0)
@@ -25,9 +24,8 @@ export async function subscribe(req, res) {
     );
 
     const verifyUrl = `${API_BASE}/api/subscribers/verify?token=${verifyToken}`;
-    console.log("Dev Verify URL:", verifyUrl); // helps if mail fails in dev
+    console.log("Dev Verify URL:", verifyUrl);
 
-    // try to send email, but DON'T fail the API if SMTP has an issue
     try {
       await sendMail({
         to: email,
@@ -40,7 +38,6 @@ export async function subscribe(req, res) {
       });
     } catch (mailErr) {
       console.warn("sendMail failed:", mailErr?.message || mailErr);
-      // still continue — user can use the verify link from logs in dev
     }
 
     return res.json({
@@ -50,4 +47,137 @@ export async function subscribe(req, res) {
     console.error("subscribe DB error:", dbErr);
     return res.status(500).json({ error: "Failed to subscribe" });
   }
+}
+
+export async function verify(req, res) {
+  const token = (req.query?.token || "").trim();
+  if (!token) return res.status(400).send("Missing token.");
+
+  try {
+    const [result] = await db.execute(
+      `UPDATE subscribers
+       SET is_verified = 1, verify_token = NULL
+       WHERE verify_token = ?`,
+      [token]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(400).send("Invalid or already used token.");
+    }
+
+    if (APP_BASE) {
+      return res.redirect(302, `${APP_BASE}/subscription/verified`);
+    }
+    return res.send("Subscription verified. Thank you!");
+  } catch (err) {
+    console.error("verify error:", err);
+    return res.status(500).send("Failed to verify subscription.");
+  }
+}
+
+export async function unsubscribe(req, res) {
+  const token = (req.query?.token || "").trim();
+  if (!token) return res.status(400).send("Missing token.");
+
+  try {
+    const newVerifyToken = crypto.randomBytes(24).toString("hex");
+    const newUnsubToken = crypto.randomBytes(24).toString("hex");
+
+    const [result] = await db.execute(
+      `UPDATE subscribers
+       SET is_verified = 0,
+           verify_token = ?,
+           unsubscribe_token = ?
+       WHERE unsubscribe_token = ?`,
+      [newVerifyToken, newUnsubToken, token]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(400).send("Invalid unsubscribe token.");
+    }
+
+    if (APP_BASE) {
+      return res.redirect(302, `${APP_BASE}/subscription/unsubscribed`);
+    }
+    return res.send("You have been unsubscribed. Sorry to see you go!");
+  } catch (err) {
+    console.error("unsubscribe error:", err);
+    return res.status(500).send("Failed to unsubscribe.");
+  }
+}
+
+// Core reusable sender
+export async function sendToSubscribers({ subject, html, text }) {
+  if (!subject) throw new Error("subject is required");
+  if (!html && !text) throw new Error("html or text is required");
+
+  const [rows] = await db.execute(
+    `SELECT email, unsubscribe_token
+     FROM subscribers
+     WHERE is_verified = 1`
+  );
+
+  if (!rows.length) {
+    return { total: 0, sent: 0, failedCount: 0, failed: [] };
+  }
+
+  let sent = 0;
+  const failed = [];
+
+  await Promise.all(
+    rows.map(async ({ email, unsubscribe_token }) => {
+      try {
+        const unsubscribeUrl = `${API_BASE}/api/subscribers/unsubscribe?token=${unsubscribe_token}`;
+        const baseHtml = html ?? `<p>${escapeHtml(text)}</p>`;
+        const htmlWithFooter = `
+          ${baseHtml}
+          <hr />
+          <p style="font-size:12px;color:#666">
+            You’re receiving this because you subscribed to FAITH CommUNITY updates.
+            <a href="${unsubscribeUrl}">Unsubscribe</a>
+          </p>
+        `;
+
+        await sendMail({
+          to: email,
+          subject,
+          html: htmlWithFooter,
+          text: text ?? undefined,
+        });
+
+        sent += 1;
+      } catch (e) {
+        failed.push({ email, error: e?.message || String(e) });
+      }
+    })
+  );
+
+  return {
+    total: rows.length,
+    sent,
+    failedCount: failed.length,
+    failed,
+  };
+}
+
+// HTTP wrapper
+export async function notifySubscribers(req, res) {
+  try {
+    const result = await sendToSubscribers({
+      subject: req.body?.subject,
+      html: req.body?.html,
+      text: req.body?.text,
+    });
+    return res.json({ message: "Notification finished.", ...result });
+  } catch (err) {
+    console.error("notifySubscribers error:", err);
+    return res.status(400).json({ error: err.message || "Failed to send notifications" });
+  }
+}
+
+function escapeHtml(str = "") {
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }

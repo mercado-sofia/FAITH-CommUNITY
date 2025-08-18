@@ -99,8 +99,38 @@ const initializeDatabase = async () => {
           ADD COLUMN deleted_at TIMESTAMP NULL,
           ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE
         `);
-        console.log("✅ Added deleted_at and is_deleted columns to news table!");
+        console.log("✅ deleted_at and is_deleted columns added to news table!");
       }
+    }
+
+    // Check if organization_id column exists in admins table, add it if missing
+    const [orgIdColumn] = await connection.query(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'admins' 
+      AND COLUMN_NAME = 'organization_id'
+    `);
+    
+    if (orgIdColumn.length === 0) {
+      console.log("Adding organization_id column to admins table...");
+      await connection.query(`
+        ALTER TABLE admins 
+        ADD COLUMN organization_id INT NULL,
+        ADD CONSTRAINT fk_admins_organization 
+        FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL
+      `);
+      console.log("✅ organization_id column and foreign key added to admins table!");
+      
+      // Check if there are existing admins that need organization records
+      const [existingAdmins] = await connection.query(`
+        SELECT COUNT(*) as count FROM admins WHERE organization_id IS NULL
+      `);
+      
+      if (existingAdmins[0].count > 0) {
+              // Found existing admins without organization records - sync endpoint available
+      }
+    } else {
+      console.log("✅ organization_id column already exists in admins table");
     }
 
     // Check if programs_projects table has date fields, add them if missing

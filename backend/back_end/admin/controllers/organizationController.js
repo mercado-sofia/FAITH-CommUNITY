@@ -91,8 +91,7 @@ export const getOrganizationByName = async (req, res) => {
 export const createOrganization = async (req, res) => {
   const { logo, orgName, org, facebook, description, status, orgColor } = req.body
 
-  console.log("Backend: Received create request for new organization")
-  console.log("Backend: Received body data:", { logo, orgName, org, facebook, description, status, orgColor })
+  // Organization creation request received
 
   // Validate required fields
   if (!org || !orgName) {
@@ -130,7 +129,7 @@ export const createOrganization = async (req, res) => {
       [finalLogo, orgName, org, finalFacebook, finalDescription, finalStatus, finalOrgColor]
     )
 
-    console.log("Backend: Successfully created organization with ID:", result.insertId)
+    // Organization created successfully
     res.status(201).json({ 
       success: true, 
       message: "Organization created successfully",
@@ -156,15 +155,7 @@ export const updateOrganizationInfo = async (req, res) => {
   const finalStatus = status || "ACTIVE" // Ensure status is always a string
   const finalOrgColor = orgColor || "#444444"
 
-  console.log("Backend: Prepared values for DB:", {
-    finalLogo,
-    orgName,
-    org,
-    finalFacebook,
-    finalDescription,
-    finalStatus,
-    id,
-  })
+  // Values prepared for database update
 
   // Validate required fields
   if (!orgName || orgName === undefined) {
@@ -218,7 +209,7 @@ export const updateOrganizationInfo = async (req, res) => {
       [org, orgName, currentOrgAcronym]
     )
 
-    console.log(`Backend: Updated ${adminUpdateResult.affectedRows} admin records`)
+    // Admin records updated
 
     // Commit the transaction
     await connection.commit()
@@ -231,7 +222,7 @@ export const updateOrganizationInfo = async (req, res) => {
     
     connection.release()
 
-    console.log("Backend: Successfully updated organization and synced admin data")
+    // Organization and admin data updated successfully
     res.json({ 
       success: true, 
       message: "Organization info updated successfully and admin data synchronized",

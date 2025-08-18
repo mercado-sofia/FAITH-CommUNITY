@@ -49,12 +49,12 @@ export default function LoginPage() {
     setIsLoading(true)
     setShowError(false)
 
-    console.log("🔐 Login attempt:", { email, timestamp: new Date().toISOString() })
+    // Login attempt logged
 
     clearAllSessionData()
 
     if (email === "superadmin@faith.com" && password === "super123") {
-      console.log("👑 Superadmin login detected")
+      // Superadmin login detected
 
       // Set the correct localStorage keys that superadmin layout expects
       document.cookie = "userRole=superadmin; path=/; max-age=86400"
@@ -68,14 +68,14 @@ export default function LoginPage() {
       localStorage.setItem("token", "superadmin")
       localStorage.setItem("userRole", "superadmin")
 
-      console.log("👑 Superadmin tokens set, redirecting to /superadmin")
+              // Superadmin tokens set, redirecting to /superadmin
       setIsLoading(false)
       window.location.href = "/superadmin"
       return
     }
 
     try {
-      console.log("🔍 Attempting admin login via API")
+      // Attempting admin login via API
 
       const response = await fetch("http://localhost:8080/api/admins/login", {
         method: "POST",
@@ -89,7 +89,7 @@ export default function LoginPage() {
       console.log("📡 API Response:", { status: response.status, data })
 
       if (response.ok) {
-        console.log("✅ Admin login successful")
+        // Admin login successful
 
         localStorage.setItem("adminToken", data.token)
         localStorage.setItem("adminData", JSON.stringify(data.admin))
@@ -102,7 +102,7 @@ export default function LoginPage() {
           })
         )
 
-        console.log("🔄 Redux state updated")
+        // Redux state updated
 
         window.location.href = "/admin"
       } else {

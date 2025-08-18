@@ -71,6 +71,7 @@
   width: 28px;
   height: 28px;
   margin-left: 16px;
+  user-select: none;
 }
 
 .closeButton:hover {
@@ -253,6 +254,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
+  user-select: none;
 }
 
 .cancelButton:hover:not(:disabled) {
@@ -278,6 +280,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  user-select: none;
 }
 
 .saveButton:hover:not(:disabled) {

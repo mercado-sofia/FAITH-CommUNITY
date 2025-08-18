@@ -56,6 +56,7 @@
   align-items: center;
   justify-content: space-between;
   text-align: left;
+  user-select: none;
 }
 
 .dropdownButton:hover:not(.disabled) {
@@ -137,6 +138,7 @@
   cursor: pointer;
   transition: all 0.15s ease;
   display: block;
+  user-select: none;
 }
 
 .dropdownOption:hover {
@@ -281,6 +283,7 @@
   font-size: 0.625rem;
   transition: all 0.2s ease;
   padding: 0;
+  user-select: none;
 }
 
 .removeDateButton:hover:not(:disabled) {

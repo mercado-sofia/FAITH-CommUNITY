@@ -5,6 +5,9 @@ import path from "path"
 import { fileURLToPath } from "url"
 import fs from "fs"
 
+// Import cleanup function for deleted news
+import cleanupDeletedNews from "./back_end/utils/cleanupDeletedNews.js"
+
 // Get current directory
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -64,9 +67,11 @@ app.get("/api/debug/tables", async (req, res) => {
 // Public Routes
 import applyRoutes from "./back_end/for_public/routes/apply.js"
 import organizationsRoutes from "./back_end/for_public/routes/organizations.js"
+import messagesRoutes from "./back_end/for_public/routes/messages.js"
 
 app.use("/api", applyRoutes)
 app.use("/api", organizationsRoutes)
+app.use("/api", messagesRoutes)
 
 // ADMIN ROUTES
 import advocaciesRoutes from "./back_end/admin/routes/advocacies.js"
@@ -82,6 +87,7 @@ import volunteersRoutes from "./back_end/admin/routes/volunteers.js"
 import orgSyncRoutes from "./back_end/admin/routes/orgSync.js"
 import newsRoutes from "./back_end/admin/routes/newsRoutes.js"
 import notificationsRoutes from "./back_end/admin/routes/notifications.js"
+import inboxRoutes from "./back_end/admin/routes/inbox.js"
 
 app.use("/api/advocacies", advocaciesRoutes)
 app.use("/api/competencies", competenciesRoutes)
@@ -96,6 +102,7 @@ app.use("/api/volunteers", volunteersRoutes)
 app.use("/api", orgSyncRoutes)
 app.use("/api", newsRoutes)
 app.use("/api/notifications", notificationsRoutes)
+app.use("/api/inbox", inboxRoutes)
 
 // PUBLIC ROUTES
 import publicOrganizationsRoutes from "./back_end/for_public/routes/organizations.js"
@@ -149,6 +156,20 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`)
   console.log(`📁 Uploads directory: ${uploadsDir}`)
   console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`)
+  
+  // Set up daily cleanup job for deleted news (runs every 24 hours)
+  setInterval(async () => {
+    try {
+      await cleanupDeletedNews();
+    } catch (error) {
+      console.error('❌ Error in scheduled cleanup:', error);
+    }
+  }, 24 * 60 * 60 * 1000); // 24 hours in milliseconds
+  
+  // Run initial cleanup on server start
+  cleanupDeletedNews().then(() => {
+    console.log('✅ Initial cleanup completed');
+  }).catch((error) => {
+    console.error('❌ Initial cleanup failed:', error);
+  });
 })
-
-app.use(cors());

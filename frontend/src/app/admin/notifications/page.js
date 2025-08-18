@@ -192,6 +192,13 @@ export default function NotificationsPage() {
             <circle cx="12" cy="12" r="9" stroke="#ef4444" strokeWidth="2" />
           </svg>
         );
+      case 'message':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <polyline points="22,6 12,13 2,6" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        );
 
       default:
         return (
@@ -221,7 +228,7 @@ export default function NotificationsPage() {
          <h1>Notifications</h1>
        </div>
        
-               <div className={styles.headerActions}>
+        <div className={styles.headerActions}>
           {selectedNotifications.length > 0 && (
             <>
               <button 
@@ -248,7 +255,7 @@ export default function NotificationsPage() {
           </button>
         </div>
        
-                      {/* Navigation Tabs */}
+        {/* Navigation Tabs */}
         <div className={styles.navTabs}>
           <button 
             className={`${styles.navTab} ${currentTab === 'all' ? styles.active : ''}`}
@@ -336,7 +343,7 @@ export default function NotificationsPage() {
                         </svg>
                       </button>
                     )}
-                                         <button
+                    <button
                        className={styles.deleteBtn}
                        onClick={() => handleIndividualDeleteClick(notification)}
                        title="Delete notification"

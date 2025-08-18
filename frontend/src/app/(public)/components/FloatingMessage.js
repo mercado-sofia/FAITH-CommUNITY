@@ -6,6 +6,7 @@ import { FiMessageCircle } from "react-icons/fi";
 import { FaAngleDown, FaChevronDown } from "react-icons/fa";
 import { IoChevronDown } from "react-icons/io5";
 import { useGetAllOrganizationsQuery } from "../../../rtk/(public)/organizationsApi";
+import { useSubmitMessageMutation } from "../../../rtk/(public)/messagesApi";
 
 export default function FloatingMessage() {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,6 +16,7 @@ export default function FloatingMessage() {
   const [message, setMessage] = useState("");
   const [emailError, setEmailError] = useState("");
   const [clickLocked, setClickLocked] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const boxRef = useRef(null);
 
@@ -24,6 +26,9 @@ export default function FloatingMessage() {
     isLoading: orgsLoading, 
     error: orgsError 
   } = useGetAllOrganizationsQuery();
+
+  // Submit message mutation
+  const [submitMessage, { isLoading: submitLoading }] = useSubmitMessageMutation();
 
   // Email validation function
   const validateEmail = (email) => {
@@ -92,7 +97,7 @@ export default function FloatingMessage() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validate email before submission
@@ -101,14 +106,57 @@ export default function FloatingMessage() {
       return;
     }
 
-    // Message sent successfully
-    if (typeof window !== 'undefined' && window.showToast) {
-      window.showToast("Message sent successfully!", "success", 4000);
-    } else {
-      // Fallback to alert if toast system is not available
-      alert("Message sent successfully!");
+    // Validate organization selection
+    if (!org) {
+      alert("Please select an organization");
+      return;
     }
-    closeMessageBox();
+
+    // Validate message
+    if (!message.trim() || message.trim().length < 10) {
+      alert("Please enter a message (at least 10 characters)");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Find the selected organization by acronym
+      const selectedOrg = organizations.find(organization => organization.acronym === org);
+      
+      if (!selectedOrg) {
+        throw new Error("Selected organization not found");
+      }
+
+      // Submit message with the numeric organization ID
+      const result = await submitMessage({
+        organization_id: selectedOrg.id, // This should be the numeric ID
+        sender_email: email,
+        sender_name: null, // Optional field
+        message: message.trim()
+      }).unwrap();
+
+      // Show success message
+      if (typeof window !== 'undefined' && window.showToast) {
+        window.showToast("Message sent successfully!", "success", 4000);
+      } else {
+        alert("Message sent successfully!");
+      }
+
+      closeMessageBox();
+    } catch (error) {
+      console.error("Error submitting message:", error);
+      
+      // Show error message
+      const errorMessage = error?.data?.message || "Failed to send message. Please try again.";
+      if (typeof window !== 'undefined' && window.showToast) {
+        window.showToast(errorMessage, "error", 4000);
+      } else {
+        alert(errorMessage);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -199,9 +247,9 @@ export default function FloatingMessage() {
             <button
               className={styles.sendBtn}
               type="submit"
-              disabled={!org || !email || !message.trim() || emailError}
+              disabled={!org || !email || !message.trim() || emailError || isSubmitting}
             >
-              Send
+              {isSubmitting ? "Sending..." : "Send"}
             </button>
           </form>
         </div>

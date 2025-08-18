@@ -20,7 +20,7 @@
 /* Navigation Tabs */
 .navTabs {
   display: flex;
-  background: #e6e8ea;
+  background: #e9eef3;
   border-radius: 0.5rem;
   padding: 5px;
   margin-bottom: 1.5rem;
@@ -264,7 +264,7 @@
 .notificationTitle {
   font-size: 14px;
   font-weight: 600;
-  color: #1e293b;
+  color: #06100f;
   margin: 0;
   line-height: 1.4;
 }

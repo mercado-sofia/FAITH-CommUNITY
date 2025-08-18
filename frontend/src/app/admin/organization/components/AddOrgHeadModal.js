@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import Image from 'next/image'
-import { FaPlus, FaCamera, FaTimes, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa'
+import { FaCamera, FaTimes, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa'
 import { FiImage } from 'react-icons/fi'
 import { getOrganizationImageUrl } from '@/utils/uploadPaths'
 import styles from './styles/AddOrgHeadModal.module.css'

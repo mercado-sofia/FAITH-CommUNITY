@@ -19,6 +19,7 @@ import { manageProfilesApi } from "./superadmin/manageProfilesApi"
 import { faqApi } from "./superadmin/faqApi"
 import { featuredProjectsApi } from "./superadmin/featuredProjectsApi"
 import { superadminProgramsApi } from "./superadmin/programsApi"
+import { dashboardApi } from "./superadmin/dashboardApi"
 import { notificationsApi } from "./admin/notificationsApi"
 import adminReducer from "./superadmin/adminSlice"
 
@@ -43,6 +44,7 @@ export const store = configureStore({
     [faqApi.reducerPath]: faqApi.reducer,
     [featuredProjectsApi.reducerPath]: featuredProjectsApi.reducer,
     [superadminProgramsApi.reducerPath]: superadminProgramsApi.reducer,
+    [dashboardApi.reducerPath]: dashboardApi.reducer,
     [notificationsApi.reducerPath]: notificationsApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
@@ -65,6 +67,7 @@ export const store = configureStore({
       faqApi.middleware,
       featuredProjectsApi.middleware,
       superadminProgramsApi.middleware,
+      dashboardApi.middleware,
       notificationsApi.middleware,
     ),
 })

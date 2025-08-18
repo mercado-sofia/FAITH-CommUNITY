@@ -1,0 +1,50 @@
+/* Main Dashboard Layout */
+.mainArea {
+  padding: 1.5rem;
+  background: #f8fafc;
+  min-height: 100vh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Header Section */
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Recent Row for Table */
+.recentRow {
+  margin-top: 2rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .mainArea {
+    padding: 1rem;
+  }
+  
+  .header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .recentRow {
+    margin-top: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .mainArea {
+    padding: 0.75rem;
+  }
+  
+  .header h1 {
+    font-size: 1.25rem;
+  }
+}

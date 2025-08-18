@@ -33,8 +33,28 @@ export default function NewsSection() {
   const organizations = useMemo(() => {
     if (!orgsData.length || !news.length) return orgsData;
 
+    console.log('Raw news data:', news.slice(0, 3)); // Show first 3 news items
+    console.log('Raw orgs data:', orgsData.slice(0, 3)); // Show first 3 orgs
+
     const orgsWithLatestNews = orgsData.map(org => {
-      const orgNews = news.filter(item => item.organization_id === org.id);
+      const orgNews = news.filter(item => {
+        // Debug the ID comparison - handle both string and number types
+        const newsOrgId = item.organization_id;
+        const orgId = org.id;
+        const match = newsOrgId == orgId; // Use loose equality to handle type differences
+        return match;
+      });
+      
+      // Debug logging after orgNews is defined
+      if (orgNews.length < 5) { // Only log for first few items to avoid spam
+        orgNews.forEach(item => {
+          const newsOrgId = item.organization_id;
+          const orgId = org.id;
+          console.log(`Comparing news org_id: ${newsOrgId} (${typeof newsOrgId}) with org.id: ${orgId} (${typeof orgId}) = ${newsOrgId == orgId}`);
+        });
+      }
+      
+      console.log(`Org ${org.acronym} has ${orgNews.length} news items`);
       
       // Find the latest news by sorting and taking the first one
       const latestNews = orgNews.length > 0 
@@ -45,14 +65,26 @@ export default function NewsSection() {
           })[0] 
         : null;
       
+      const latestDate = latestNews ? new Date(latestNews.date || latestNews.created_at || 0) : new Date(0);
+      console.log(`Org ${org.acronym} latest news date:`, latestDate, 'from news:', latestNews?.title);
+      
       return {
         ...org,
-        latestNewsDate: latestNews ? new Date(latestNews.date || latestNews.created_at || 0) : new Date(0)
+        latestNewsDate: latestDate
       };
     });
 
     // Sort organizations by latest announcement date (newest first)
-    return orgsWithLatestNews.sort((a, b) => b.latestNewsDate - a.latestNewsDate);
+    const sortedOrgs = orgsWithLatestNews.sort((a, b) => b.latestNewsDate - a.latestNewsDate);
+    
+    // Debug: Log the organization order
+    console.log('Organizations sorted by latest news:', sortedOrgs.map(org => ({
+      acronym: org.acronym,
+      latestNewsDate: org.latestNewsDate,
+      id: org.id
+    })));
+    
+    return sortedOrgs;
   }, [orgsData, news]);
 
   // Handle initial organization selection and URL parameters
@@ -69,16 +101,26 @@ export default function NewsSection() {
       }
       
       if (org) {
+        console.log('Selected org from URL:', org.acronym, 'Latest news date:', org.latestNewsDate);
         setSelectedOrg(org);
         initialOrgSetRef.current = true;
+      } else {
+        // If URL parameter is invalid, select the first organization (most recent)
+        const initialOrg = organizations[0];
+        console.log('Invalid URL parameter, selecting most recent org:', initialOrg.acronym, 'Latest news date:', initialOrg.latestNewsDate);
+        setSelectedOrg(initialOrg);
+        initialOrgSetRef.current = true;
+        // Clear the invalid URL parameter
+        router.replace(pathname, { scroll: false });
       }
     } else if (organizations.length > 0 && !initialOrgSetRef.current) {
-      // If no URL parameter and organizations are loaded, select the first one
+      // If no URL parameter and organizations are loaded, select the first one (most recent)
       const initialOrg = organizations[0];
+      console.log('No URL parameter, selecting most recent org:', initialOrg.acronym, 'Latest news date:', initialOrg.latestNewsDate);
       setSelectedOrg(initialOrg);
       initialOrgSetRef.current = true;
     }
-  }, [searchParams, organizations]);
+  }, [searchParams, organizations, pathname, router]);
 
   const handleOrgClick = (orgObj, index) => {
     setSelectedOrg(orgObj);
@@ -97,7 +139,11 @@ export default function NewsSection() {
       });
     }
     
-    const filtered = news.filter(item => item.organization_id == selectedOrg.id);
+    const filtered = news.filter(item => {
+      const newsOrgId = item.organization_id;
+      const selectedOrgId = selectedOrg.id;
+      return newsOrgId == selectedOrgId; // Use loose equality to handle type differences
+    });
     
     // Sort filtered news by date (newest first)
     return filtered.sort((a, b) => {

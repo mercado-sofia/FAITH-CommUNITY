@@ -1,14 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { createPortal } from 'react-dom';
 import styles from './styles/HeroSection.module.css';
 
 export default function HeroSection() {
   const router = useRouter();
   const [showVideo, setShowVideo] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (showVideo) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showVideo]);
 
   return (
     <section className={styles.hero}>
@@ -88,18 +106,18 @@ export default function HeroSection() {
             </div>
           </div>
         </div>
-
-        {showVideo && (
-          <div className={styles.videoOverlay}>
-            <button className={styles.closeButton} onClick={() => setShowVideo(false)}>✖</button>
-            <video controls autoPlay className={styles.videoPlayer}>
-              <source src="/video/sample_video.mp4" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-          </div>
-        )}
-
       </div>
+
+      {showVideo && mounted && createPortal(
+        <div className={styles.videoOverlay}>
+          <button className={styles.closeButton} onClick={() => setShowVideo(false)}>✖</button>
+          <video controls autoPlay className={styles.videoPlayer}>
+            <source src="/video/sample_video.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </div>,
+        document.body
+      )}
     </section>
   );
 }

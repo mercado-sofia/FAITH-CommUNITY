@@ -9,7 +9,7 @@ import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import Loader from "../../components/Loader";
-import styles from "./dashboard/dashboard.module.css";
+import styles from "./dashboard/styles/dashboard.module.css";
 import { Poppins, Inter, Urbanist } from 'next/font/google';
 
 const poppins = Poppins({

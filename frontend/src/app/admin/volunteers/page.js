@@ -9,6 +9,7 @@ import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 import SuccessModal from '../components/SuccessModal'
 import { useAdminVolunteers, useAdminPrograms } from '../../../hooks/useAdminData'
 import { selectCurrentAdmin, selectIsAuthenticated } from '../../../rtk/superadmin/adminSlice'
+import SkeletonLoader from '../components/SkeletonLoader'
 import styles from './volunteers.module.css'
 
 // Track if volunteers page has been visited
@@ -98,6 +99,9 @@ export default function VolunteersPage() {
   // Rate limiter instance
   const rateLimiter = useRef(new RateLimiter(10, 60000)); // 10 calls per minute
 
+  // Memoized skeleton components to prevent unnecessary re-renders
+  const TableSkeleton = useMemo(() => <SkeletonLoader type="table" count={10} />, []);
+
   // Fetch volunteers from API using admin's organization with SWR
   const { 
     volunteers: volunteersData = [], 
@@ -105,6 +109,19 @@ export default function VolunteersPage() {
     error: volunteersError,
     mutate: refreshVolunteers
   } = useAdminVolunteers(currentAdmin?.id)
+
+  // Show skeleton immediately on first load, then show content when data is ready
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
+  
+  // Show skeleton on first load or when loading with no data
+  const shouldShowSkeleton = !hasInitiallyLoaded || (volunteersLoading && !volunteersData.length);
+  
+  // Mark as initially loaded when data is available
+  useEffect(() => {
+    if (!volunteersLoading && volunteersData.length >= 0) {
+      setHasInitiallyLoaded(true);
+    }
+  }, [volunteersLoading, volunteersData.length]);
 
   // Fetch programs from API using admin's organization with SWR
   const { 
@@ -435,8 +452,8 @@ export default function VolunteersPage() {
     )
   }
 
-  // Show loading state
-  if (volunteersLoading) {
+  // Show skeleton loader only when we have no data yet
+  if (shouldShowSkeleton) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
@@ -445,18 +462,8 @@ export default function VolunteersPage() {
             Showing volunteers for {currentAdmin.orgName || currentAdmin.org}
           </p>
         </div>
-        <div style={{ textAlign: 'center', padding: '2rem' }}>
-          <div className="spinner" style={{ 
-            width: 40, 
-            height: 40, 
-            border: "4px solid #f1f5f9", 
-            borderTop: "4px solid #16a085", 
-            borderRadius: "50%", 
-            animation: "spin 1s linear infinite",
-            margin: '0 auto'
-          }} />
-          <p style={{ marginTop: '1rem', color: '#64748b' }}>Loading volunteer applications...</p>
-        </div>
+        
+        {TableSkeleton}
       </div>
     )
   }

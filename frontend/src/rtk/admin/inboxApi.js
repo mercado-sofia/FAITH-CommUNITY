@@ -23,6 +23,8 @@ export const inboxApi = createApi({
         params: { page, limit, unread_only: unreadOnly },
       }),
       providesTags: ['Inbox'],
+      // Optimize for skeleton loading - keep data for 30 seconds
+      keepUnusedDataFor: 30,
     }),
     
     getUnreadCount: builder.query({

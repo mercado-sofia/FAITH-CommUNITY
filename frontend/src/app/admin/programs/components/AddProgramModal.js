@@ -529,11 +529,13 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
                         />
                       ) : (
                         // For file path images (from database)
-                        <img 
+                        <Image 
                           src={preview} 
                           alt={`Additional ${index + 1}`} 
                           className={styles.additionalPreviewImage}
-                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                          width={100}
+                          height={100}
+                          style={{ objectFit: 'cover' }}
                           onError={(e) => {
                             console.error(`Failed to load file image ${index}:`, preview, e);
                           }}

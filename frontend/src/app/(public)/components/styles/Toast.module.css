@@ -1,23 +1,24 @@
 .toast {
-  position: fixed;
-  top: 2rem;
-  right: 2rem;
+  position: fixed !important;
+  top: 25px !important;
+  right: 20px !important;
   background: white;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   border: 1px solid #e5e7eb;
   min-width: 320px;
   max-width: 400px;
-  z-index: 1000000;
+  z-index: 9999999 !important;
   transform: translateX(100%);
   opacity: 0;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  pointer-events: auto;
 }
 
 .toast.show {
-  transform: translateX(0);
-  opacity: 1;
+  transform: translateX(0) !important;
+  opacity: 1 !important;
 }
 
 .toast.hide {

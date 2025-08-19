@@ -13,6 +13,7 @@ import {
 import { FiTrash2, FiX } from 'react-icons/fi';
 import { PiChecksBold } from 'react-icons/pi';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
+import SkeletonLoader from '../components/SkeletonLoader';
 import styles from './notifications.module.css';
 
 export default function NotificationsPage() {
@@ -23,6 +24,9 @@ export default function NotificationsPage() {
   const [showIndividualDeleteModal, setShowIndividualDeleteModal] = useState(false);
   const [notificationToDelete, setNotificationToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Show skeleton immediately on first load, then show content when data is ready
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
   
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -48,6 +52,13 @@ export default function NotificationsPage() {
   const notifications = notificationsData?.notifications || [];
   const totalNotifications = notificationsData?.total || 0;
   const totalPages = Math.ceil(totalNotifications / itemsPerPage);
+  
+  // Mark as initially loaded when data is available
+  useEffect(() => {
+    if (!isLoading && notifications.length >= 0) {
+      setHasInitiallyLoaded(true);
+    }
+  }, [isLoading, notifications.length]);
 
   // Filter notifications based on current tab
   const filteredNotifications = notifications.filter(notification => {
@@ -101,15 +112,6 @@ export default function NotificationsPage() {
         ? prev.filter(id => id !== notificationId)
         : [...prev, notificationId]
     );
-  };
-
-  // Handle select all
-  const handleSelectAll = () => {
-    if (selectedNotifications.length === notifications.length) {
-      setSelectedNotifications([]);
-    } else {
-      setSelectedNotifications(notifications.map(n => n.id));
-    }
   };
 
   // Handle cancel selection
@@ -211,13 +213,14 @@ export default function NotificationsPage() {
     }
   };
 
-  if (isLoading) {
+  // Show skeleton immediately on first load or when loading
+  if (!hasInitiallyLoaded || (isLoading && !notifications.length)) {
     return (
       <div className={styles.container}>
-        <div className={styles.loadingContainer}>
-          <div className={styles.loadingSpinner}></div>
-          <p>Loading notifications...</p>
+        <div className={styles.header}>
+          <h1>Notifications</h1>
         </div>
+        <SkeletonLoader type="table" count={8} />
       </div>
     );
   }

@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { FaEdit, FaEnvelope, FaLock, FaEye, FaEyeSlash, FaCheck } from 'react-icons/fa';
 import { useAdminById } from '../../../hooks/useAdminData';
 import { selectCurrentAdmin, updateAdminEmail } from '../../../rtk/superadmin/adminSlice';
+import SkeletonLoader from '../components/SkeletonLoader';
 import styles from './adminSettings.module.css';
 
 // Utility functions
@@ -668,9 +669,7 @@ export default function SettingsPage() {
       )}
 
       {isLoadingAdmin && (
-        <div className={styles.loading}>
-          Loading admin data...
-        </div>
+        <SkeletonLoader type="form" count={2} />
       )}
 
       {apiError && (

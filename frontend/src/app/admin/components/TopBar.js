@@ -17,8 +17,6 @@ import { useGetUnreadCountQuery as useGetInboxUnreadCountQuery } from '../../../
 import styles from './styles/topbar.module.css';
 
 export default function TopBar() {
-  const [adminData, setAdminData] = useState(null);
-  const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationsRef = useRef(null);
   
@@ -56,7 +54,7 @@ export default function TopBar() {
   useEffect(() => {
     const storedAdminData = localStorage.getItem('adminData');
     if (storedAdminData) {
-      setAdminData(JSON.parse(storedAdminData));
+      // setAdminData(JSON.parse(storedAdminData)); // This line was removed
     }
   }, []);
 

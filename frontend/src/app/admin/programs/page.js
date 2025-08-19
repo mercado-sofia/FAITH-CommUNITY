@@ -18,10 +18,15 @@ import { FaPlus } from 'react-icons/fa';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
+// Track if programs page has been visited
+let hasVisitedPrograms = false;
+
 export default function AdminProgramsPage() {
   const currentAdmin = useSelector(selectCurrentAdmin);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [pageReady, setPageReady] = useState(false);
+  const [isFirstVisit, setIsFirstVisit] = useState(!hasVisitedPrograms);
   
   const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
   const [showAddModal, setShowAddModal] = useState(false);
@@ -42,6 +47,20 @@ export default function AdminProgramsPage() {
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'Active');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
   const [showCount, setShowCount] = useState(parseInt(searchParams.get('show')) || 10);
+
+  // Smart loading logic
+  useEffect(() => {
+    if (!isLoading) {
+      const extraDelay = isFirstVisit ? 600 : 0; // Reduced delay for first visit
+      const timer = setTimeout(() => {
+        setPageReady(true);
+        setIsFirstVisit(false);
+        hasVisitedPrograms = true; // Mark as visited
+      }, extraDelay);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, isFirstVisit]);
 
   // Handle error display
   useEffect(() => {
@@ -315,11 +334,11 @@ export default function AdminProgramsPage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !pageReady) {
     return (
       <div className={styles.container}>
         <div className={styles.loadingContainer}>
-          <div className={styles.spinner}></div>
+          <Loader />
           <p>Loading programs...</p>
         </div>
       </div>

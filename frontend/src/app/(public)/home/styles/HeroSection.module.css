@@ -39,7 +39,6 @@
   height: 560px;
   border-radius: 28px;
   overflow: hidden;
-  background: linear-gradient(180deg, rgba(26, 104, 91, 0.05) 44.71%, #122F2A 100%);
   transition: all 0.3s ease;
   flex-shrink: 0;
   cursor: pointer;

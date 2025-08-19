@@ -16,19 +16,7 @@ export const publicFeaturedProjectsApi = createApi({
       query: () => '/superadmin/featured-projects',
       providesTags: ['PublicFeaturedProject'],
       transformResponse: (response) => {
-        console.log('publicFeaturedProjectsApi - getPublicFeaturedProjects response:', response);
         if (response.success && Array.isArray(response.data)) {
-          // Debug: Log image data for each project
-          response.data.forEach((project, index) => {
-            console.log(`Public API Project ${index + 1} image data:`, {
-              id: project.id,
-              title: project.title,
-              hasImage: !!project.image,
-              imageType: project.image ? (project.image.startsWith('data:') ? 'base64' : 'file') : 'none',
-              imagePreview: project.image ? project.image.substring(0, 100) + '...' : null
-            });
-          });
-          
           return response.data.map(project => ({
             id: project.id,
             programId: project.program_id,

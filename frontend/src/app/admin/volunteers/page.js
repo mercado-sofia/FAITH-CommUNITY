@@ -11,6 +11,9 @@ import { useAdminVolunteers, useAdminPrograms } from '../../../hooks/useAdminDat
 import { selectCurrentAdmin, selectIsAuthenticated } from '../../../rtk/superadmin/adminSlice'
 import styles from './volunteers.module.css'
 
+// Track if volunteers page has been visited
+let hasVisitedVolunteers = false;
+
 // Essential security utilities
 const sanitizeInput = (input) => {
   if (typeof input !== 'string') return '';
@@ -354,12 +357,11 @@ export default function VolunteersPage() {
   useEffect(() => {
     if (volunteersError) {
       console.error('Volunteers error:', volunteersError);
-      const errorInfo = handleApiError(volunteersError, 'volunteers_fetch');
-      // Could show a toast notification here instead of just console.log
+      handleApiError(volunteersError, 'volunteers_fetch');
     }
     if (programsError) {
       console.error('Programs error:', programsError);
-      const errorInfo = handleApiError(programsError, 'programs_fetch');
+      handleApiError(programsError, 'programs_fetch');
     }
   }, [volunteersError, programsError]);
 

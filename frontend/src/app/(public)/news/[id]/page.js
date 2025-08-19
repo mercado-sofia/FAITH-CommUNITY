@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { usePublicNewsArticle } from "../../../hooks/usePublicData";
+import { usePublicNewsArticle } from "../../../../hooks/usePublicData";
+import Loader from "../../../../components/Loader";
 
 export default function NewsDetailPage({ params }) {
-  const { id } = params;
+  const { id } = use(params);
   const [pageReady, setPageReady] = useState(false);
   const [isFirstVisit, setIsFirstVisit] = useState(true);
   
@@ -44,28 +45,7 @@ export default function NewsDetailPage({ params }) {
   };
 
   if (loading || !pageReady) {
-    return (
-      <main style={{ maxWidth: "800px", margin: "2rem auto", padding: "0 1rem" }}>
-        <div style={{ textAlign: 'center', padding: '2rem' }}>
-          <div style={{ 
-            width: '40px', 
-            height: '40px', 
-            border: '4px solid #f3f3f3', 
-            borderTop: '4px solid #167c59', 
-            borderRadius: '50%', 
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 1rem'
-          }}></div>
-          <p>Loading news...</p>
-        </div>
-        <style jsx>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
-      </main>
-    );
+    return <Loader small centered />;
   }
 
   if (error) {

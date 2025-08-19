@@ -44,11 +44,6 @@ export default function StatCardSection() {
   // Show loading state if any data is still loading
   const isLoading = volunteersLoading || programsLoading;
 
-  // Show error state if there are errors
-  if (volunteersError || programsError) {
-    // Handle errors silently in production
-  }
-
   return (
     <div className={styles.cardGrid}>
       <Link href="/admin/volunteers?filter=pending" className={styles.cardWrapper}>

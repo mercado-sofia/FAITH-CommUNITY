@@ -8,12 +8,13 @@ import PageBanner from '../components/PageBanner';
 import SearchAndFilterBar from './components/SearchAndFilterBar';
 import OrgLinks from './components/OrgLinks';
 import ProgramCard from './components/ProgramCard';
-import Pagination from './components/Pagination';
+import Pagination from '../components/Pagination';
 import { usePublicPrograms } from '../../../hooks/usePublicData';
 
 const CARDS_PER_PAGE = 6;
-let hasVisited = false;
-let isFirstVisit = true;
+
+// Track if programs page has been visited
+let hasVisitedPrograms = false;
 
 export default function ProgramsPage() {
   const searchParams = useSearchParams();
@@ -29,7 +30,7 @@ export default function ProgramsPage() {
   const [sort, setSort] = useState(initialSort);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [isLoading, setIsLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(!hasVisited);
+  const [initialLoading, setInitialLoading] = useState(!hasVisitedPrograms);
   const [pageReady, setPageReady] = useState(false);
   const timerRef = useRef(null);
   const pageReadyTimerRef = useRef(null);
@@ -38,8 +39,8 @@ export default function ProgramsPage() {
   const { programs, isLoading: dataLoading, error } = usePublicPrograms();
 
   useEffect(() => {
-    if (!hasVisited && typeof window !== 'undefined') {
-      hasVisited = true;
+    if (!hasVisitedPrograms && typeof window !== 'undefined') {
+      hasVisitedPrograms = true;
       timerRef.current = setTimeout(() => {
         setInitialLoading(false);
       }, 500); // Reduced timeout since data loads faster with caching
@@ -54,11 +55,10 @@ export default function ProgramsPage() {
   useEffect(() => {
     if (!dataLoading && !initialLoading) {
       // Only add extra delay for first-time visitors
-      const extraDelay = isFirstVisit ? 1000 : 0;
+      const extraDelay = !hasVisitedPrograms ? 1000 : 0;
       
       pageReadyTimerRef.current = setTimeout(() => {
         setPageReady(true);
-        isFirstVisit = false; // Mark as no longer first visit
       }, extraDelay);
     }
 
@@ -141,7 +141,7 @@ export default function ProgramsPage() {
     currentPage * CARDS_PER_PAGE
   );
 
-  if (initialLoading || dataLoading || !pageReady) return <Loader small centered />;
+  if (dataLoading) return <Loader small centered />;
 
   return (
     <>

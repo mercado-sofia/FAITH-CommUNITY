@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { FiX, FiTrash2 } from 'react-icons/fi';
-import { IoCloseOutline } from 'react-icons/io5';
 import styles from './styles/BulkActionsBar.module.css';
 
 export default function BulkActionsBar({ selectedCount, selectedItems, submissions, onCancel, onDelete, onClearSelection }) {
@@ -71,7 +70,7 @@ export default function BulkActionsBar({ selectedCount, selectedItems, submissio
           onClick={onClearSelection}
           title="Clear selection"
         >
-          <IoCloseOutline size={20} />
+          <FiX size={20} />
         </button>
       </div>
 

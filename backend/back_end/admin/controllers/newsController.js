@@ -1,5 +1,8 @@
 // controllers/newsController.js
 import db from "../../database.js";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = "faith-community-admin-secret-2024";
 
 /* ------------------------- Email notify helper ------------------------- */
 /** Broadcast to verified subscribers via your /api/subscribers/notify route.
@@ -25,6 +28,21 @@ async function notifySubscribers({ type, subject, messageHtml }) {
 export const createNews = async (req, res) => {
   const { title, description, date } = req.body;
   const { orgId } = req.params;
+
+  // Verify authentication
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: "Access token required" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.admin = decoded;
+  } catch (err) {
+    return res.status(403).json({ success: false, message: "Invalid or expired token" });
+  }
 
   if (!orgId) {
     return res.status(400).json({ success: false, message: "Organization ID is required" });
@@ -113,6 +131,21 @@ export const createNews = async (req, res) => {
 // Get news for a specific organization (for admin view) - Only approved news
 export const getNewsByOrg = async (req, res) => {
   const { orgId } = req.params;
+
+  // Verify authentication
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: "Access token required" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.admin = decoded;
+  } catch (err) {
+    return res.status(403).json({ success: false, message: "Invalid or expired token" });
+  }
 
   if (!orgId) {
     return res.status(400).json({ success: false, message: "Organization ID is required" });
@@ -298,7 +331,6 @@ export const getApprovedNewsByOrg = async (req, res) => {
       };
     });
 
-    console.log("📰 Fetched news for organization:", news);
     return res.json(news);
   } catch (error) {
     console.error("❌ Error fetching approved news by org:", error);
@@ -352,7 +384,6 @@ export const getNewsById = async (req, res) => {
       icon: logoUrl,
     };
 
-    console.log("📰 Fetched news detail:", newsData);
     return res.json(newsData);
   } catch (error) {
     console.error("❌ Error fetching news by ID:", error);
@@ -364,6 +395,21 @@ export const getNewsById = async (req, res) => {
 // Delete news submission (for admin) - Now implements soft delete
 export const deleteNewsSubmission = async (req, res) => {
   const { id } = req.params;
+
+  // Verify authentication
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: "Access token required" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.admin = decoded;
+  } catch (err) {
+    return res.status(403).json({ success: false, message: "Invalid or expired token" });
+  }
 
   if (!id) {
     return res.status(400).json({ success: false, message: "News ID is required" });
@@ -399,6 +445,21 @@ export const deleteNewsSubmission = async (req, res) => {
 // Get recently deleted news for a specific organization
 export const getRecentlyDeletedNews = async (req, res) => {
   const { orgId } = req.params;
+
+  // Verify authentication
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: "Access token required" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.admin = decoded;
+  } catch (err) {
+    return res.status(403).json({ success: false, message: "Invalid or expired token" });
+  }
 
   if (!orgId) {
     return res.status(400).json({ success: false, message: "Organization ID is required" });
@@ -492,6 +553,21 @@ export const getRecentlyDeletedNews = async (req, res) => {
 export const restoreNews = async (req, res) => {
   const { id } = req.params;
 
+  // Verify authentication
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: "Access token required" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.admin = decoded;
+  } catch (err) {
+    return res.status(403).json({ success: false, message: "Invalid or expired token" });
+  }
+
   if (!id) return res.status(400).json({ success: false, message: "News ID is required" });
 
   try {
@@ -514,6 +590,21 @@ export const restoreNews = async (req, res) => {
 // Permanently delete news (for items older than 15 days or manual permanent delete)
 export const permanentlyDeleteNews = async (req, res) => {
   const { id } = req.params;
+
+  // Verify authentication
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: "Access token required" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.admin = decoded;
+  } catch (err) {
+    return res.status(403).json({ success: false, message: "Invalid or expired token" });
+  }
 
   if (!id) return res.status(400).json({ success: false, message: "News ID is required" });
 
@@ -539,6 +630,21 @@ export const permanentlyDeleteNews = async (req, res) => {
 export const updateNews = async (req, res) => {
   const { id } = req.params;
   const { title, description, date } = req.body;
+
+  // Verify authentication
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: "Access token required" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.admin = decoded;
+  } catch (err) {
+    return res.status(403).json({ success: false, message: "Invalid or expired token" });
+  }
 
   if (!id) return res.status(400).json({ success: false, message: "News ID is required" });
   if (!title || !description)

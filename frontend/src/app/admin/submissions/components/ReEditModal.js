@@ -1,57 +1,34 @@
 import { useState } from 'react';
 import styles from './styles/ReEditModal.module.css';
 
+// Helper function to initialize form data based on submission section
+const initializeFormData = (submission) => {
+  const proposedData = submission?.proposed_data || {};
+  
+  if (submission?.section === 'organization') {
+    return {
+      org: proposedData?.org || '',
+      orgName: proposedData?.orgName || '',
+      email: proposedData?.email || '',
+      facebook: proposedData?.facebook || '',
+      description: proposedData?.description || ''
+    };
+  } else if (submission?.section === 'advocacy') {
+    return {
+      advocacy: typeof proposedData === 'string' ? proposedData : (proposedData?.advocacy || '')
+    };
+  } else if (submission?.section === 'competency') {
+    return {
+      competency: typeof proposedData === 'string' ? proposedData : (proposedData?.competency || '')
+    };
+  }
+  
+  return proposedData || {};
+};
+
 export default function ReEditModal({ submission, onClose, onSave }) {
-  const [formData, setFormData] = useState(() => {
-    // Initialize form data based on submission section
-    const proposedData = submission?.proposed_data || {};
-    
-    if (submission?.section === 'organization') {
-      return {
-        org: proposedData?.org || '',
-        orgName: proposedData?.orgName || '',
-        email: proposedData?.email || '',
-        facebook: proposedData?.facebook || '',
-        description: proposedData?.description || ''
-      };
-    } else if (submission?.section === 'advocacy') {
-      return {
-        advocacy: typeof proposedData === 'string' ? proposedData : (proposedData?.advocacy || '')
-      };
-    } else if (submission?.section === 'competency') {
-      return {
-        competency: typeof proposedData === 'string' ? proposedData : (proposedData?.competency || '')
-      };
-    }
-    
-    return proposedData || {};
-  });
-
-  // Store original data for change detection
-  const [originalData] = useState(() => {
-    const proposedData = submission?.proposed_data || {};
-    
-    if (submission?.section === 'organization') {
-      return {
-        org: proposedData?.org || '',
-        orgName: proposedData?.orgName || '',
-        email: proposedData?.email || '',
-        facebook: proposedData?.facebook || '',
-        description: proposedData?.description || ''
-      };
-    } else if (submission?.section === 'advocacy') {
-      return {
-        advocacy: typeof proposedData === 'string' ? proposedData : (proposedData?.advocacy || '')
-      };
-    } else if (submission?.section === 'competency') {
-      return {
-        competency: typeof proposedData === 'string' ? proposedData : (proposedData?.competency || '')
-      };
-    }
-    
-    return proposedData || {};
-  });
-
+  const [formData, setFormData] = useState(() => initializeFormData(submission));
+  const [originalData] = useState(() => initializeFormData(submission));
   const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (field, value) => {

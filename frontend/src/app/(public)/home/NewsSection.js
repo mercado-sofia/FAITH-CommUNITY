@@ -27,46 +27,29 @@ export default function NewsSection() {
   const { organizations: orgsData, isLoading: orgLoading, error: orgError } = usePublicOrganizations();
   const { news, isLoading: newsLoading, error: newsError } = usePublicNews();
 
-  // No debug logging in production
-
   // Process organizations with latest news dates
   const organizations = useMemo(() => {
     if (!orgsData.length || !news.length) return orgsData;
 
-    console.log('Raw news data:', news.slice(0, 3)); // Show first 3 news items
-    console.log('Raw orgs data:', orgsData.slice(0, 3)); // Show first 3 orgs
-
     const orgsWithLatestNews = orgsData.map(org => {
       const orgNews = news.filter(item => {
-        // Debug the ID comparison - handle both string and number types
+        // Handle both string and number types
         const newsOrgId = item.organization_id;
         const orgId = org.id;
-        const match = newsOrgId == orgId; // Use loose equality to handle type differences
+        const match = newsOrgId == orgId;
         return match;
       });
-      
-      // Debug logging after orgNews is defined
-      if (orgNews.length < 5) { // Only log for first few items to avoid spam
-        orgNews.forEach(item => {
-          const newsOrgId = item.organization_id;
-          const orgId = org.id;
-          console.log(`Comparing news org_id: ${newsOrgId} (${typeof newsOrgId}) with org.id: ${orgId} (${typeof orgId}) = ${newsOrgId == orgId}`);
-        });
-      }
-      
-      console.log(`Org ${org.acronym} has ${orgNews.length} news items`);
       
       // Find the latest news by sorting and taking the first one
       const latestNews = orgNews.length > 0 
         ? orgNews.sort((a, b) => {
             const dateA = new Date(a.date || a.created_at || 0);
             const dateB = new Date(b.date || b.created_at || 0);
-            return dateB - dateA; // Descending order (newest first)
+            return dateB - dateA;
           })[0] 
         : null;
       
       const latestDate = latestNews ? new Date(latestNews.date || latestNews.created_at || 0) : new Date(0);
-      console.log(`Org ${org.acronym} latest news date:`, latestDate, 'from news:', latestNews?.title);
       
       return {
         ...org,
@@ -76,13 +59,6 @@ export default function NewsSection() {
 
     // Sort organizations by latest announcement date (newest first)
     const sortedOrgs = orgsWithLatestNews.sort((a, b) => b.latestNewsDate - a.latestNewsDate);
-    
-    // Debug: Log the organization order
-    console.log('Organizations sorted by latest news:', sortedOrgs.map(org => ({
-      acronym: org.acronym,
-      latestNewsDate: org.latestNewsDate,
-      id: org.id
-    })));
     
     return sortedOrgs;
   }, [orgsData, news]);
@@ -101,48 +77,40 @@ export default function NewsSection() {
       }
       
       if (org) {
-        console.log('Selected org from URL:', org.acronym, 'Latest news date:', org.latestNewsDate);
         setSelectedOrg(org);
         initialOrgSetRef.current = true;
       } else {
-        // If URL parameter is invalid, select the first organization (most recent)
         const initialOrg = organizations[0];
-        console.log('Invalid URL parameter, selecting most recent org:', initialOrg.acronym, 'Latest news date:', initialOrg.latestNewsDate);
         setSelectedOrg(initialOrg);
         initialOrgSetRef.current = true;
-        // Clear the invalid URL parameter
-        router.replace(pathname, { scroll: false });
       }
     } else if (organizations.length > 0 && !initialOrgSetRef.current) {
-      // If no URL parameter and organizations are loaded, select the first one (most recent)
+      // No URL parameter, select the most recent org
       const initialOrg = organizations[0];
-      console.log('No URL parameter, selecting most recent org:', initialOrg.acronym, 'Latest news date:', initialOrg.latestNewsDate);
       setSelectedOrg(initialOrg);
       initialOrgSetRef.current = true;
     }
-  }, [searchParams, organizations, pathname, router]);
+  }, [organizations, searchParams]);
 
   const handleOrgClick = (orgObj, index) => {
     setSelectedOrg(orgObj);
-    // Use acronym in URL for better readability
     router.push(`${pathname}?news_org=${orgObj.acronym || orgObj.id}`, { scroll: false });
   };
 
   // Filter news based on selected organization and sort by date (newest first)
   const filteredNews = useMemo(() => {
     if (!selectedOrg) {
-      // If no organization is selected, return all news sorted by date
       return [...news].sort((a, b) => {
         const dateA = new Date(a.date || a.created_at || 0);
         const dateB = new Date(b.date || b.created_at || 0);
-        return dateB - dateA; // Descending order (newest first)
+        return dateB - dateA;
       });
     }
     
     const filtered = news.filter(item => {
       const newsOrgId = item.organization_id;
       const selectedOrgId = selectedOrg.id;
-      return newsOrgId == selectedOrgId; // Use loose equality to handle type differences
+      return newsOrgId == selectedOrgId;
     });
     
     // Sort filtered news by date (newest first)
@@ -169,7 +137,7 @@ export default function NewsSection() {
       // Update scroll position in real-time with smooth following
       const container = orgNavRef.current;
       if (container) {
-        const newScrollPosition = container.scrollLeft - diff * 1.5; // Increased sensitivity
+        const newScrollPosition = container.scrollLeft - diff * 1.5;
         container.scrollLeft = Math.max(0, newScrollPosition);
         setScrollPosition(newScrollPosition);
       }
@@ -191,16 +159,14 @@ export default function NewsSection() {
       // Update scroll position in real-time
       const container = orgNavRef.current;
       if (container) {
-        const newScrollPosition = container.scrollLeft + deltaX * 2; // Increased sensitivity for trackpad
+        const newScrollPosition = container.scrollLeft + deltaX * 2;
         container.scrollLeft = Math.max(0, newScrollPosition);
         setScrollPosition(newScrollPosition);
       }
     }
   };
 
-
-
-  const visibleOrgs = organizations; // Display all organizations
+  const visibleOrgs = organizations;
   const maxDisplay = 6;
 
   const formatDate = (dateString) => {
@@ -326,7 +292,7 @@ export default function NewsSection() {
             </div>
           ) : (
             filteredNews.slice(0, maxDisplay).map((newsItem) => (
-              <Link key={newsItem.id} href={`/news/${newsItem.id}`} className={styles.newsCard}>
+              <Link key={newsItem.id} href={`/news?highlight=${newsItem.id}&news_org=${selectedOrg?.id}`} className={styles.newsCard}>
                 <p className={styles.newsDate}>
                   {formatDate(newsItem.date)} / By {newsItem.orgName || newsItem.orgID || 'Unknown Organization'}
                 </p>
@@ -344,7 +310,7 @@ export default function NewsSection() {
 
         {filteredNews.length > maxDisplay && (
           <div className={styles.seeAllNewsContainer}>
-            <Link href={`/news?news_org=${selectedOrg?.acronym || selectedOrg?.id}`} className={styles.seeAllNewsBtn}>
+            <Link href={`/news?news_org=${selectedOrg?.id}`} className={styles.seeAllNewsBtn}>
               SEE ALL NEWS
             </Link>
           </div>

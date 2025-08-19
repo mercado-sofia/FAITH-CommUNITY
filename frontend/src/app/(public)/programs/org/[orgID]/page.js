@@ -11,8 +11,8 @@ import OrgHeadsCarousel from './components/OrgHeadsCarousel';
 import { usePublicOrganizationData } from '../../../../../hooks/usePublicData';
 import styles from '../org.module.css';
 
-let hasVisited = false;
-let isFirstVisit = true;
+// Track visited org pages globally
+const visitedOrgPages = new Set();
 
 export default function OrgPage() {
   const { orgID } = useParams();
@@ -20,6 +20,10 @@ export default function OrgPage() {
   const [pageReady, setPageReady] = useState(false);
   const timerRef = useRef(null);
   const pageReadyTimerRef = useRef(null);
+
+  // Check if this specific org page has been visited before
+  const hasVisitedThisOrg = visitedOrgPages.has(orgID);
+  const isFirstVisitThisOrg = !hasVisitedThisOrg;
 
   // Use SWR hook for data fetching with caching
   const { organizationData, isLoading, error, isEmpty } = usePublicOrganizationData(orgID);
@@ -37,9 +41,12 @@ export default function OrgPage() {
   useEffect(() => {
     if (!organizationData || isLoading) return;
     
-    const timeoutPromise = new Promise((resolve) => {
-      timerRef.current = setTimeout(resolve, 500); // Reduced timeout since data loads faster
-    });
+    // Only add timeout for first-time visitors to this org
+    const timeoutPromise = isFirstVisitThisOrg 
+      ? new Promise((resolve) => {
+          timerRef.current = setTimeout(resolve, 500);
+        })
+      : Promise.resolve();
 
     const imageLoadPromises = imageUrls.map((src) => {
       return new Promise((resolve) => {
@@ -58,16 +65,17 @@ export default function OrgPage() {
         clearTimeout(timerRef.current);
       }
     };
-  }, [organizationData, imageUrls, isLoading]);
+  }, [organizationData, imageUrls, isLoading, isFirstVisitThisOrg]);
 
-  // Add extra 1 second delay only for first visits after data and images load
+  // Add extra 1 second delay only for first visits to this specific org
   useEffect(() => {
     if (!isLoading && !imageLoading) {
-      const extraDelay = isFirstVisit ? 1000 : 0; // Extra delay only for first visit
+      const extraDelay = isFirstVisitThisOrg ? 1000 : 0; // Extra delay only for first visit to this org
       
       pageReadyTimerRef.current = setTimeout(() => {
         setPageReady(true);
-        isFirstVisit = false; // Mark as no longer first visit
+        // Mark this org page as visited
+        visitedOrgPages.add(orgID);
       }, extraDelay);
     }
 
@@ -76,7 +84,7 @@ export default function OrgPage() {
         clearTimeout(pageReadyTimerRef.current);
       }
     };
-  }, [isLoading, imageLoading]);
+  }, [isLoading, imageLoading, isFirstVisitThisOrg, orgID]);
 
   // Show loading state
   if (isLoading || imageLoading || !pageReady) return <Loader small centered />;

@@ -101,28 +101,27 @@ export default function SubmissionTable({
         formattedData = updatedData;
       }
 
-      console.log('Sending data:', { proposed_data: formattedData, section: submission.section, type: typeof formattedData });
-
       const response = await fetch(`${API_BASE_URL}/api/submissions/${submissionId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ proposed_data: formattedData }),
+        body: JSON.stringify({
+          proposed_data: formattedData,
+          section: submission.section
+        })
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log('Update successful:', result);
-        // Refresh the submissions list
-        if (onRefresh) onRefresh();
-        setReEditSubmission(null);
-        showToast('Submission updated successfully!', 'success');
-      } else {
-        const errorData = await response.json();
-        console.error('Backend error response:', errorData);
-        throw new Error(errorData.message || 'Failed to update submission');
+      if (!response.ok) {
+        throw new Error(`Failed to update submission: ${response.status}`);
       }
+
+      const result = await response.json();
+      console.log('Update successful:', result);
+      // Refresh the submissions list
+      if (onRefresh) onRefresh();
+      setReEditSubmission(null);
+      showToast('Submission updated successfully!', 'success');
     } catch (error) {
       console.error('Error updating submission:', error);
       showToast(`Failed to save changes: ${error.message}`, 'error');
@@ -192,28 +191,24 @@ export default function SubmissionTable({
 
   const handleBulkDelete = async () => {
     try {
-      console.log('[DEBUG] Bulk delete - Selected IDs:', Array.from(selectedItems));
+      const promises = Array.from(selectedItems).map(id => 
+        fetch(`${API_BASE_URL}/api/submissions/${id}`, { method: 'DELETE' })
+      );
       
-      const response = await fetch(`${API_BASE_URL}/api/submissions/bulk-delete`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ ids: Array.from(selectedItems) })
-      });
+      const responses = await Promise.all(promises);
+      const failedResponses = responses.filter(response => !response.ok);
       
-      if (!response.ok) {
-        throw new Error(`Failed to delete submissions: ${response.status}`);
+      if (failedResponses.length > 0) {
+        throw new Error(`${failedResponses.length} deletions failed`);
       }
-      console.log('[DEBUG] All deletions completed successfully');
       
-      if (onRefresh) onRefresh(); // Refresh data from server
+      // Refresh the submissions list
+      if (onRefresh) onRefresh();
       onSelectItems(new Set());
       onShowBulkActions(false);
-      showToast('Submissions deleted successfully!', 'success');
-    } catch (err) {
-      console.error('Bulk delete error:', err);
-      showToast(`Failed to delete some submissions: ${err.message}`, 'error');
+      showToast('Selected submissions deleted successfully!', 'success');
+    } catch (error) {
+      showToast(`Failed to delete some submissions: ${error.message}`, 'error');
     }
   };
 

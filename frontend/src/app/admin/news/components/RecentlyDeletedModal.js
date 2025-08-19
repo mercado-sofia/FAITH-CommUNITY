@@ -21,6 +21,7 @@ const RecentlyDeletedModal = ({ isOpen, onClose, orgId, onRestore, onPermanentDe
   const fetchDeletedNews = useCallback(async () => {
     setLoading(true);
     setError(null);
+    
     try {
       const adminToken = localStorage.getItem("adminToken");
       if (!adminToken) {
@@ -28,7 +29,7 @@ const RecentlyDeletedModal = ({ isOpen, onClose, orgId, onRestore, onPermanentDe
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/news/${orgId}/deleted`, {
+      const response = await fetch(`${API_BASE_URL}/api/news/deleted/${orgId}`, {
         headers: {
           'Authorization': `Bearer ${adminToken}`
         }
@@ -63,8 +64,8 @@ const RecentlyDeletedModal = ({ isOpen, onClose, orgId, onRestore, onPermanentDe
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/news/${newsId}/restore`, {
-        method: 'POST',
+      const response = await fetch(`${API_BASE_URL}/api/news/restore/${newsId}`, {
+        method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${adminToken}`
         }
@@ -104,7 +105,7 @@ const RecentlyDeletedModal = ({ isOpen, onClose, orgId, onRestore, onPermanentDe
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/news/${newsToDelete.id}/permanent`, {
+      const response = await fetch(`${API_BASE_URL}/api/news/permanent/${newsToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${adminToken}`

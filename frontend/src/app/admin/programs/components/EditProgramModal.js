@@ -48,40 +48,38 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
   // Initialize form data when program changes
   useEffect(() => {
     if (program) {
-      // Map database status to frontend status
-      const mapStatus = (dbStatus) => {
-        if (!dbStatus) return '';
-        // Keep the original case since database uses capitalized values
-        return dbStatus;
-      };
-
       setFormData({
         title: program.title || '',
         description: program.description || '',
         category: program.category || '',
-        status: mapStatus(program.status),
-        image: null,
-        additionalImages: [],
-        event_start_date: program.event_start_date || null,
-        event_end_date: program.event_end_date || null,
-        multiple_dates: program.multiple_dates || null
+        status: program.status || 'Upcoming',
+        event_start_date: program.event_start_date || '',
+        event_end_date: program.event_end_date || '',
+        multiple_dates: program.multiple_dates || [],
+        schedule_type: program.schedule_type || 'single',
+        main_image: program.main_image || null,
+        additional_images: program.additional_images || []
       });
-      setImagePreview(program.image ? getProgramImageUrl(program.image) : null);
+      setErrors({});
       
-      // Load existing additional images if they exist
-      if (program.additional_images && Array.isArray(program.additional_images) && program.additional_images.length > 0) {
-        console.log('Loading additional images from program:', program.additional_images);
-        // Convert file paths to proper URLs using the utility function
+      // Load additional images
+      if (program.additional_images && Array.isArray(program.additional_images)) {
         const imageUrls = program.additional_images.map(imagePath => {
-          const url = getProgramImageUrl(imagePath, 'additional');
-          console.log('Converted image path:', imagePath, 'to URL:', url);
-          return url;
+          if (imagePath.startsWith('data:image/')) {
+            return imagePath; // Already a base64 URL
+          } else if (imagePath.startsWith('http')) {
+            return imagePath; // Already a full URL
+          } else {
+            return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${imagePath}`;
+          }
         });
-        console.log('Final image URLs:', imageUrls);
-        setAdditionalImagePreviews(imageUrls);
-      } else {
-        console.log('No additional images found in program');
-        setAdditionalImagePreviews([]);
+        
+        setAdditionalImagePreviews(imageUrls.map((url, index) => ({
+          id: `existing-${index}`,
+          url,
+          type: 'existing',
+          file: null
+        })));
       }
     }
   }, [program]);
@@ -225,10 +223,8 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
     });
 
     Promise.all(previewPromises).then(previews => {
-      console.log('Additional image previews created:', previews.length);
       setAdditionalImagePreviews(prev => {
         const newPreviews = [...prev, ...previews];
-        console.log('Total additional image previews:', newPreviews.length);
         return newPreviews;
       });
     });
@@ -595,13 +591,12 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
             {additionalImagePreviews.length > 0 && (
               <div className={styles.additionalImagesGrid}>
                 {additionalImagePreviews.map((preview, index) => {
-                  console.log(`Rendering additional image ${index}:`, preview);
                   return (
                     <div key={index} className={styles.additionalImagePreview}>
-                      {preview.startsWith('data:') ? (
+                      {preview.url.startsWith('data:') ? (
                         // For base64 images (new uploads)
                         <Image 
-                          src={preview} 
+                          src={preview.url} 
                           alt={`Additional ${index + 1}`} 
                           className={styles.additionalPreviewImage}
                           width={100}
@@ -617,15 +612,15 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
                       ) : (
                         // For file path images (from database)
                         <img 
-                          src={preview} 
+                          src={preview.url} 
                           alt={`Additional ${index + 1}`} 
                           className={styles.additionalPreviewImage}
                           style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                           onError={(e) => {
-                            console.error(`Failed to load file image ${index}:`, preview, e);
+                            console.error(`Failed to load file image ${index}:`, preview.url, e);
                           }}
                           onLoad={() => {
-                            console.log(`Successfully loaded file image ${index}:`, preview);
+                            console.log(`Successfully loaded file image ${index}:`, preview.url);
                           }}
                         />
                       )}

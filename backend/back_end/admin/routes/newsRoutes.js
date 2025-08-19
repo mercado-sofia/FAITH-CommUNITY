@@ -29,6 +29,9 @@ router.patch("/restore/:id", restoreNews);
 router.delete("/permanent/:id", permanentlyDeleteNews);
 router.put("/:id", updateNews);
 
+// Delete news (soft delete)
+router.delete("/:id", deleteNewsSubmission);
+
 // Keep this near the end so it doesn't shadow the specific routes above
 router.get("/:id", getNewsById);
 

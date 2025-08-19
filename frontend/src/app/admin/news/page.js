@@ -13,6 +13,7 @@ import SearchAndFilterControls from './components/SearchAndFilterControls';
 import RecentlyDeletedModal from './components/RecentlyDeletedModal';
 import ErrorBoundary from '../../../components/ErrorBoundary';
 import SuccessModal from '../components/SuccessModal';
+import Loader from '../../../components/Loader';
 import styles from './news.module.css';
 import { FaPlus, FaTrash } from 'react-icons/fa';
 
@@ -36,7 +37,7 @@ export default function AdminNewsPage() {
 
   // Use SWR hook for news data
   const { news = [], isLoading: loading, error, mutate: refreshNews } = useAdminNews(currentAdmin?.org);
-  
+
   // Initialize state from URL parameters
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [sortBy, setSortBy] = useState(() => {
@@ -98,7 +99,8 @@ export default function AdminNewsPage() {
   // Handle error display
   useEffect(() => {
     if (error) {
-      setSuccessModal({ isVisible: true, message: 'Failed to fetch news. Please try again.', type: 'error' });
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setSuccessModal({ isVisible: true, message: `Failed to fetch news: ${errorMessage}`, type: 'error' });
     }
   }, [error]);
 
@@ -141,7 +143,7 @@ export default function AdminNewsPage() {
         return;
       }
       
-      const response = await fetch(`${API_BASE_URL}/api/admin/news/${orgId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/news/${orgId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -211,7 +213,7 @@ export default function AdminNewsPage() {
         return;
       }
       
-      const response = await fetch(`${API_BASE_URL}/api/admin/news/${editingNews.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/news/${newsData.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -254,9 +256,10 @@ export default function AdminNewsPage() {
         return;
       }
       
-      const response = await fetch(`${API_BASE_URL}/api/admin/news/${newsId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/news/${newsId}`, {
         method: 'DELETE',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${adminToken}`
         },
       });
@@ -372,7 +375,6 @@ export default function AdminNewsPage() {
         </div>
       </div>
 
-
       <SearchAndFilterControls
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
@@ -386,14 +388,16 @@ export default function AdminNewsPage() {
 
       {loading && (
         <div className={styles.loadingContainer}>
-          <div className={styles.loadingSpinner}></div>
+          <Loader />
           <p>Loading news...</p>
         </div>
       )}
 
       {error && (
         <div className={styles.errorContainer}>
-          <p className={styles.errorMessage}>{error}</p>
+          <p className={styles.errorMessage}>
+            {error instanceof Error ? error.message : String(error)}
+          </p>
         </div>
       )}
 
@@ -420,7 +424,7 @@ export default function AdminNewsPage() {
       )}
 
       {/* Show More Button */}
-      {(filteredNews?.length || 0) > showCount && (
+      {!loading && !error && (filteredNews?.length || 0) > showCount && (
         <div className={styles.showMoreContainer}>
           <button
             className={styles.showMoreButton}

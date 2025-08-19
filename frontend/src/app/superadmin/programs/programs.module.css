@@ -219,15 +219,16 @@
 
 /* Featured Projects Section */
 .featuredSection {
-  margin-bottom: 3rem;
+  margin-bottom: 5rem;
 }
 
-.sectionTitle {
-  font-size: 1.4rem;
+.featuredSection .sectionTitle {
+  font-size: 1.50rem;
   font-weight: 700;
   font-family: 'Poppins', sans-serif;
   color: #06100f;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2.5rem;
+  text-align: center;
   user-select: none;
 }
 
@@ -360,6 +361,16 @@
 /* Programs Section */
 .programsSection {
   margin-top: 3rem;
+}
+
+.programsSection .sectionTitle {
+  font-size: 1.50rem;
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+  color: #06100f;
+  margin-bottom: 2.5rem;
+  text-align: center;
+  user-select: none;
 }
 
 .organizationSection {

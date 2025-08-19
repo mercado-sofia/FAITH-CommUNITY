@@ -23,6 +23,8 @@ export const notificationsApi = createApi({
         method: 'GET',
       }),
       providesTags: ['Notifications'],
+      // Optimize for skeleton loading - keep data for 30 seconds
+      keepUnusedDataFor: 30,
     }),
 
     // Get unread notification count

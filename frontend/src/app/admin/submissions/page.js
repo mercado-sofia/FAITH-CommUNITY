@@ -8,7 +8,7 @@ import SubmissionTable from './components/SubmissionTable';
 import BulkActionsBar from './components/BulkActionsBar';
 import PaginationControls from '../components/PaginationControls';
 import SuccessModal from '../components/SuccessModal';
-import Loader from '../../../components/Loader';
+import SkeletonLoader from '../components/SkeletonLoader';
 import styles from './submissions.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -43,19 +43,18 @@ export default function SubmissionsPage() {
   // Use SWR hook for submissions data
   const { submissions, isLoading: loading, error, mutate: refreshSubmissions } = useAdminSubmissions(orgAcronym);
 
-  // Smart loading logic
+  // Show skeleton immediately on first load, then show content when data is ready
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
+  
+  // Mark as initially loaded when data is available
   useEffect(() => {
-    if (!loading) {
-      const extraDelay = isFirstVisit ? 400 : 0; // Reduced delay for first visit
-      const timer = setTimeout(() => {
-        setPageReady(true);
-        setIsFirstVisit(false);
-        hasVisitedSubmissions = true; // Mark as visited
-      }, extraDelay);
-      
-      return () => clearTimeout(timer);
+    if (!loading && submissions.length >= 0) {
+      setHasInitiallyLoaded(true);
+      setPageReady(true);
+      setIsFirstVisit(false);
+      hasVisitedSubmissions = true;
     }
-  }, [loading, isFirstVisit]);
+  }, [loading, submissions.length]);
 
   const showToast = useCallback((message, type = 'success') => {
     setSuccessModal({ isVisible: true, message, type });
@@ -214,17 +213,14 @@ export default function SubmissionsPage() {
     }
   }, [selectedItems, refreshSubmissions, showToast]);
 
-  // Show loading state
-  if (loading && !pageReady) {
+  // Show skeleton immediately on first load or when loading
+  if (!hasInitiallyLoaded || (loading && !pageReady)) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
           <h1>Submissions</h1>
         </div>
-        <div style={{ textAlign: 'center', padding: '2rem' }}>
-          <Loader />
-          <p style={{ marginTop: '1rem', color: '#64748b' }}>Loading submissions...</p>
-        </div>
+        <SkeletonLoader type="table" count={8} />
       </div>
     );
   }

@@ -9,7 +9,7 @@ import {
   useDeleteAdminMutation,
 } from "../../../rtk/superadmin/manageProfilesApi"
 import { initializeAuth, selectCurrentAdmin, selectIsAuthenticated } from "../../../rtk/superadmin/adminSlice"
-import styles from "../styles/ManageProfiles.module.css"
+import styles from "./manageProfiles.module.css"
 
 const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
   const [isEditing, setIsEditing] = useState(false)
@@ -494,7 +494,7 @@ const ManageProfiles = () => {
 
   if (isFetching) {
     return (
-      <div className={styles.manageProfilesContainer}>
+      <div className={styles.mainArea}>
         <div className={styles.loading}>Loading admin profiles...</div>
       </div>
     )
@@ -502,7 +502,7 @@ const ManageProfiles = () => {
 
   if (fetchError) {
     return (
-      <div className={styles.manageProfilesContainer}>
+      <div className={styles.mainArea}>
         <div className={styles.error}>
           <h2>Error loading admin profiles</h2>
           <p>{fetchError?.data?.error || fetchError?.message || "Failed to fetch data"}</p>
@@ -515,18 +515,46 @@ const ManageProfiles = () => {
   }
 
   return (
-    <div className={styles.manageProfilesContainer}>
+    <div className={styles.mainArea}>
       <div className={styles.header}>
-        <h1 className={styles.heading}>Manage Admin Profiles</h1>
-        {currentAdmin && (
-          <div className={styles.currentUserInfo}>
-            <span>
-              Logged in as: {currentAdmin.orgName || currentAdmin.org} ({currentAdmin.email})
-            </span>
+        <div className={styles.headerLeft}>
+          <h1>Manage Admin Profiles</h1>
+          <p className={styles.subtitle}>Create and manage administrator accounts</p>
+          {currentAdmin && (
+            <div className={styles.currentUserInfo}>
+              <span>
+                Logged in as: {currentAdmin.orgName || currentAdmin.org} ({currentAdmin.email})
+              </span>
+            </div>
+          )}
+        </div>
+        <div className={styles.headerRight}>
+          <div className={styles.statisticsCard}>
+            <div className={styles.statGrid}>
+              <div className={styles.statItem}>
+                <span className={styles.statNumber}>{adminCounts.total}</span>
+                <span className={styles.statLabel}>Total Admins</span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={`${styles.statNumber} ${styles.activeCount}`}>{adminCounts.active}</span>
+                <span className={styles.statLabel}>Active</span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={`${styles.statNumber} ${styles.inactiveCount}`}>{adminCounts.inactive}</span>
+                <span className={styles.statLabel}>Inactive</span>
+              </div>
+            </div>
           </div>
-        )}
-        <div className={styles.headerActions}>
-          <div className={styles.filterSection}>
+        </div>
+      </div>
+
+      {notification.message && (
+        <div className={`${styles.notification} ${styles[notification.type]}`}>{notification.message}</div>
+      )}
+
+      <div className={styles.controlsSection}>
+        <div className={styles.filterControls}>
+          <div className={styles.filterGroup}>
             <label htmlFor="statusFilter" className={styles.filterLabel}>
               Filter by Status:
             </label>
@@ -541,182 +569,198 @@ const ManageProfiles = () => {
               <option value="inactive">Inactive ({adminCounts.inactive})</option>
             </select>
           </div>
-          <button onClick={handleSyncOrganizations} className={styles.btnSync} disabled={isSyncing}>
-            {isSyncing ? "Syncing..." : "Sync Organizations"}
-          </button>
-          <button onClick={handleRefresh} className={styles.btnRefresh}>
-            Refresh Data
-          </button>
+          <div className={styles.actionButtons}>
+            <button onClick={handleSyncOrganizations} className={styles.syncButton} disabled={isSyncing}>
+              {isSyncing ? "Syncing..." : "Sync Organizations"}
+            </button>
+            <button onClick={handleRefresh} className={styles.refreshButton}>
+              Refresh Data
+            </button>
+          </div>
         </div>
       </div>
 
-      {notification.message && (
-        <div className={`${styles.notification} ${styles[notification.type]}`}>{notification.message}</div>
-      )}
-
       <div className={styles.createSection}>
-        <h2>Create New Admin</h2>
-        <form className={styles.adminForm} onSubmit={handleCreateAdmin}>
-          <div className={styles.formField}>
-            <label htmlFor="admin-org">Organization Acronym:</label>
-            <input
-              type="text"
-              id="admin-org"
-              name="org"
-              placeholder="Organization Acronym (e.g., FAIPS)"
-              value={form.org}
-              onChange={handleInputChange}
-              required
-              disabled={isCreating}
-            />
-          </div>
-          <div className={styles.formField}>
-            <label htmlFor="admin-orgName">Organization Name:</label>
-            <input
-              type="text"
-              id="admin-orgName"
-              name="orgName"
-              placeholder="Organization Name"
-              value={form.orgName}
-              onChange={handleInputChange}
-              required
-              disabled={isCreating}
-            />
-          </div>
-          <div className={styles.formField}>
-            <label htmlFor="admin-email">Email:</label>
-            <input
-              type="email"
-              id="admin-email"
-              name="email"
-              placeholder="Email"
-              value={form.email}
-              onChange={handleInputChange}
-              required
-              disabled={isCreating}
-            />
-          </div>
-          <div className={styles.passwordInputWrapper}>
-            <label htmlFor="admin-password">Password:</label>
-            <input
-              type={showPassword ? "text" : "password"}
-              id="admin-password"
-              name="password"
-              placeholder="Password"
-              value={form.password}
-              onChange={handleInputChange}
-              required
-              disabled={isCreating}
-            />
-            {form.password && (
-              <button
-                type="button"
-                className={styles.eyeIcon}
-                onClick={() => setShowPassword(!showPassword)}
+        <div className={styles.sectionHeader}>
+          <h2>Create New Admin</h2>
+        </div>
+        <form className={styles.createForm} onSubmit={handleCreateAdmin}>
+          <div className={styles.formGrid}>
+            <div className={styles.formField}>
+              <label htmlFor="admin-org">Organization Acronym</label>
+              <input
+                type="text"
+                id="admin-org"
+                name="org"
+                placeholder="Organization Acronym (e.g., FAIPS)"
+                value={form.org}
+                onChange={handleInputChange}
+                required
                 disabled={isCreating}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
-                    fill="currentColor"
-                  />
-                  {!showPassword && (
-                    <path
-                      d="M2 2l20 20M9.9 4.24A9.12 9.12 0 0112 4c5 0 9.27 3.11 11 7.5a11.79 11.79 0 01-4 5.19m-5.6.36A9.12 9.12 0 0112 20c-5 0-9.27-3.11-11-7.5 1.64-4.24 5.81-7.5 10.99-7.5z"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  )}
-                </svg>
-              </button>
-            )}
-          </div>
-          <div className={styles.passwordInputWrapper}>
-            <label htmlFor="admin-confirmPassword">Confirm Password:</label>
-            <input
-              type={showConfirmPassword ? "text" : "password"}
-              id="admin-confirmPassword"
-              name="confirmPassword"
-              placeholder="Confirm Password"
-              value={form.confirmPassword}
-              onChange={handleInputChange}
-              required
-              disabled={isCreating}
-            />
-            {form.confirmPassword && (
-              <button
-                type="button"
-                className={styles.eyeIcon}
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className={styles.formInput}
+              />
+            </div>
+            
+            <div className={styles.formField}>
+              <label htmlFor="admin-orgName">Organization Name</label>
+              <input
+                type="text"
+                id="admin-orgName"
+                name="orgName"
+                placeholder="Full organization name"
+                value={form.orgName}
+                onChange={handleInputChange}
+                required
                 disabled={isCreating}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
-                    fill="currentColor"
-                  />
-                  {!showConfirmPassword && (
-                    <path
-                      d="M2 2l20 20M9.9 4.24A9.12 9.12 0 0112 4c5 0 9.27 3.11 11 7.5a11.79 11.79 0 01-4 5.19m-5.6.36A9.12 9.12 0 0112 20c-5 0-9.27-3.11-11-7.5 1.64-4.24 5.81-7.5 10.99-7.5z"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  )}
-                </svg>
-              </button>
-            )}
+                className={styles.formInput}
+              />
+            </div>
+            
+            <div className={styles.formField}>
+              <label htmlFor="admin-email">Email</label>
+              <input
+                type="email"
+                id="admin-email"
+                name="email"
+                placeholder="admin@organization.com"
+                value={form.email}
+                onChange={handleInputChange}
+                required
+                disabled={isCreating}
+                className={styles.formInput}
+              />
+            </div>
+            
+            <div className={styles.formField}>
+              <label htmlFor="admin-password">Password</label>
+              <div className={styles.passwordInputWrapper}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="admin-password"
+                  name="password"
+                  placeholder="Enter secure password"
+                  value={form.password}
+                  onChange={handleInputChange}
+                  required
+                  disabled={isCreating}
+                  className={styles.formInput}
+                />
+                {form.password && (
+                  <button
+                    type="button"
+                    className={styles.eyeIcon}
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={isCreating}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path
+                        d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+                        fill="currentColor"
+                      />
+                      {!showPassword && (
+                        <path
+                          d="M2 2l20 20M9.9 4.24A9.12 9.12 0 0112 4c5 0 9.27 3.11 11 7.5a11.79 11.79 0 01-4 5.19m-5.6.36A9.12 9.12 0 0112 20c-5 0-9.27-3.11-11-7.5 1.64-4.24 5.81-7.5 10.99-7.5z"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      )}
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            <div className={styles.formField}>
+              <label htmlFor="admin-confirmPassword">Confirm Password</label>
+              <div className={styles.passwordInputWrapper}>
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  id="admin-confirmPassword"
+                  name="confirmPassword"
+                  placeholder="Confirm password"
+                  value={form.confirmPassword}
+                  onChange={handleInputChange}
+                  required
+                  disabled={isCreating}
+                  className={styles.formInput}
+                />
+                {form.confirmPassword && (
+                  <button
+                    type="button"
+                    className={styles.eyeIcon}
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    disabled={isCreating}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path
+                        d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+                        fill="currentColor"
+                      />
+                      {!showConfirmPassword && (
+                        <path
+                          d="M2 2l20 20M9.9 4.24A9.12 9.12 0 0112 4c5 0 9.27 3.11 11 7.5a11.79 11.79 0 01-4 5.19m-5.6.36A9.12 9.12 0 0112 20c-5 0-9.27-3.11-11-7.5 1.64-4.24 5.81-7.5 10.99-7.5z"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      )}
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            <div className={styles.formField}>
+              <label>Role</label>
+              <div className={styles.roleDisplay}>
+                <span className={styles.roleValue}>Admin</span>
+                <span className={styles.roleNote}>Fixed role for this interface</span>
+              </div>
+            </div>
           </div>
-          <div className={styles.roleDisplay}>
-            <span className={styles.roleLabel}>Role: </span>
-            <span className={styles.roleValue}>Admin</span>
+
+          <div className={styles.formActions}>
+            <button type="submit" className={styles.createButton} disabled={isCreating}>
+              {isCreating ? "Creating..." : "Create Admin"}
+            </button>
           </div>
-          <button type="submit" className={styles.btnCreate} disabled={isCreating}>
-            {isCreating ? "Creating..." : "Create Admin"}
-          </button>
         </form>
       </div>
 
-      <div className={styles.adminStats}>
-        <div className={styles.statsGrid}>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>Total Admins:</span>
-            <span className={styles.statValue}>{adminCounts.total}</span>
-          </div>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>Active:</span>
-            <span className={`${styles.statValue} ${styles.activeCount}`}>{adminCounts.active}</span>
-          </div>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>Inactive:</span>
-            <span className={`${styles.statValue} ${styles.inactiveCount}`}>{adminCounts.inactive}</span>
-          </div>
+      <div className={styles.tableSection}>
+        <div className={styles.sectionHeader}>
+          <h2>Admin Profiles</h2>
+          <span className={styles.itemCount}>
+            {filteredAdmins.length} {filteredAdmins.length === 1 ? 'Admin' : 'Admins'}
+          </span>
         </div>
-      </div>
 
-      <div className={styles.adminCardsWrapper}>
         {filteredAdmins.length === 0 ? (
-          <div className={styles.noData}>
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}>👤</div>
+            <h3>No Admin Profiles Found</h3>
             <p>
               {statusFilter === "all"
-                ? "No admin profiles found. Create your first admin profile above."
-                : `No ${statusFilter} admin profiles found.`}
+                ? "No admin profiles have been created yet. Create your first admin profile above."
+                : `No ${statusFilter} admin profiles found. Try adjusting your filters.`}
             </p>
           </div>
         ) : (
-          filteredAdmins.map((admin) => (
-            <AdminCard
-              key={admin.id}
-              admin={admin}
-              onUpdate={handleUpdateAdmin}
-              onRemove={handleRemove}
-              isRemoving={isRemoving}
-              isUpdating={isUpdating}
-            />
-          ))
+          <div className={styles.adminGrid}>
+            {filteredAdmins.map((admin) => (
+              <AdminCard
+                key={admin.id}
+                admin={admin}
+                onUpdate={handleUpdateAdmin}
+                onRemove={handleRemove}
+                isRemoving={isRemoving}
+                isUpdating={isUpdating}
+              />
+            ))}
+          </div>
         )}
       </div>
 

@@ -7,7 +7,7 @@ import {
   useUpdateFaqMutation,
   useDeleteFaqMutation,
 } from "../../../rtk/superadmin/faqApi"
-import styles from "../styles/faqs.module.css"
+import styles from "./faqs.module.css"
 
 const FaqCard = ({ faq, onUpdate, onDelete, isDeleting, isUpdating }) => {
   const [isEditing, setIsEditing] = useState(false)
@@ -260,7 +260,7 @@ const ManageFaqs = () => {
 
   if (isFetching) {
     return (
-      <div className={styles.manageFaqsContainer}>
+      <div className={styles.mainArea}>
         <div className={styles.loading}>Loading FAQs...</div>
       </div>
     )
@@ -268,7 +268,7 @@ const ManageFaqs = () => {
 
   if (fetchError) {
     return (
-      <div className={styles.manageFaqsContainer}>
+      <div className={styles.mainArea}>
         <div className={styles.error}>
           <h2>Error loading FAQs</h2>
           <p>{fetchError?.data?.error || fetchError?.message || "Failed to fetch data"}</p>
@@ -281,11 +281,39 @@ const ManageFaqs = () => {
   }
 
   return (
-    <div className={styles.manageFaqsContainer}>
+    <div className={styles.mainArea}>
       <div className={styles.header}>
-        <h1 className={styles.heading}>Manage FAQs</h1>
-        <div className={styles.headerActions}>
-          <div className={styles.filterSection}>
+        <div className={styles.headerLeft}>
+          <h1>Manage FAQs</h1>
+          <p className={styles.subtitle}>Create and manage frequently asked questions</p>
+        </div>
+        <div className={styles.headerRight}>
+          <div className={styles.statisticsCard}>
+            <div className={styles.statGrid}>
+              <div className={styles.statItem}>
+                <span className={styles.statNumber}>{faqCounts.total}</span>
+                <span className={styles.statLabel}>Total FAQs</span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={`${styles.statNumber} ${styles.activeCount}`}>{faqCounts.active}</span>
+                <span className={styles.statLabel}>Active</span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={`${styles.statNumber} ${styles.inactiveCount}`}>{faqCounts.inactive}</span>
+                <span className={styles.statLabel}>Inactive</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {notification.message && (
+        <div className={`${styles.notification} ${styles[notification.type]}`}>{notification.message}</div>
+      )}
+
+      <div className={styles.controlsSection}>
+        <div className={styles.filterControls}>
+          <div className={styles.filterGroup}>
             <label htmlFor="statusFilter" className={styles.filterLabel}>
               Filter by Status:
             </label>
@@ -300,107 +328,103 @@ const ManageFaqs = () => {
               <option value="inactive">Inactive ({faqCounts.inactive})</option>
             </select>
           </div>
-          <button onClick={handleRefresh} className={styles.btnRefresh}>
+          <button onClick={handleRefresh} className={styles.refreshButton}>
             Refresh Data
           </button>
         </div>
       </div>
 
-      {notification.message && (
-        <div className={`${styles.notification} ${styles[notification.type]}`}>{notification.message}</div>
-      )}
-
       <div className={styles.createSection}>
-        <h2>Create New FAQ</h2>
-        <form className={styles.faqForm} onSubmit={handleCreateFaq}>
-          <div className={styles.formField}>
-            <label htmlFor="faq-question">Question:</label>
-            <textarea
-              id="faq-question"
-              name="question"
-              placeholder="Enter the FAQ question..."
-              value={form.question}
-              onChange={handleInputChange}
-              required
-              disabled={isCreating}
-              className={styles.formTextarea}
-              rows={3}
-            />
+        <div className={styles.sectionHeader}>
+          <h2>Create New FAQ</h2>
+        </div>
+        <form className={styles.createForm} onSubmit={handleCreateFaq}>
+          <div className={styles.formGrid}>
+            <div className={styles.formField}>
+              <label htmlFor="faq-question">Question</label>
+              <textarea
+                id="faq-question"
+                name="question"
+                placeholder="Enter the FAQ question..."
+                value={form.question}
+                onChange={handleInputChange}
+                required
+                disabled={isCreating}
+                className={styles.formTextarea}
+                rows={3}
+              />
+            </div>
+
+            <div className={styles.formField}>
+              <label htmlFor="faq-answer">Answer</label>
+              <textarea
+                id="faq-answer"
+                name="answer"
+                placeholder="Enter the FAQ answer..."
+                value={form.answer}
+                onChange={handleInputChange}
+                required
+                disabled={isCreating}
+                className={styles.formTextarea}
+                rows={5}
+              />
+            </div>
+
+            <div className={styles.formField}>
+              <label htmlFor="faq-status">Status</label>
+              <select
+                id="faq-status"
+                name="status"
+                value={form.status}
+                onChange={handleInputChange}
+                disabled={isCreating}
+                className={styles.formSelect}
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
           </div>
 
-          <div className={styles.formField}>
-            <label htmlFor="faq-answer">Answer:</label>
-            <textarea
-              id="faq-answer"
-              name="answer"
-              placeholder="Enter the FAQ answer..."
-              value={form.answer}
-              onChange={handleInputChange}
-              required
-              disabled={isCreating}
-              className={styles.formTextarea}
-              rows={5}
-            />
+          <div className={styles.formActions}>
+            <button type="submit" className={styles.createButton} disabled={isCreating}>
+              {isCreating ? "Creating..." : "Create FAQ"}
+            </button>
           </div>
-
-          <div className={styles.formField}>
-            <label htmlFor="faq-status">Status:</label>
-            <select
-              id="faq-status"
-              name="status"
-              value={form.status}
-              onChange={handleInputChange}
-              disabled={isCreating}
-              className={styles.formSelect}
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
-
-          <button type="submit" className={styles.btnCreate} disabled={isCreating}>
-            {isCreating ? "Creating..." : "Create FAQ"}
-          </button>
         </form>
       </div>
 
-      <div className={styles.faqStats}>
-        <div className={styles.statsGrid}>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>Total FAQs:</span>
-            <span className={styles.statValue}>{faqCounts.total}</span>
-          </div>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>Active:</span>
-            <span className={`${styles.statValue} ${styles.activeCount}`}>{faqCounts.active}</span>
-          </div>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>Inactive:</span>
-            <span className={`${styles.statValue} ${styles.inactiveCount}`}>{faqCounts.inactive}</span>
-          </div>
+      <div className={styles.tableSection}>
+        <div className={styles.sectionHeader}>
+          <h2>FAQ List</h2>
+          <span className={styles.itemCount}>
+            {filteredFaqs.length} {filteredFaqs.length === 1 ? 'FAQ' : 'FAQs'}
+          </span>
         </div>
-      </div>
 
-      <div className={styles.faqCardsWrapper}>
         {filteredFaqs.length === 0 ? (
-          <div className={styles.noData}>
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}>❓</div>
+            <h3>No FAQs Found</h3>
             <p>
               {statusFilter === "all"
-                ? "No FAQs found. Create your first FAQ above."
-                : `No ${statusFilter} FAQs found.`}
+                ? "No FAQs have been created yet. Create your first FAQ above."
+                : `No ${statusFilter} FAQs found. Try adjusting your filters.`}
             </p>
           </div>
         ) : (
-          filteredFaqs.map((faq) => (
-            <FaqCard
-              key={faq.id}
-              faq={faq}
-              onUpdate={handleUpdateFaq}
-              onDelete={handleDeleteFaq}
-              isDeleting={isDeleting}
-              isUpdating={isUpdating}
-            />
-          ))
+          <div className={styles.faqGrid}>
+            {filteredFaqs.map((faq) => (
+              <FaqCard
+                key={faq.id}
+                faq={faq}
+                onUpdate={handleUpdateFaq}
+                onDelete={handleDeleteFaq}
+                isDeleting={isDeleting}
+                isUpdating={isUpdating}
+              />
+            ))}
+          </div>
         )}
       </div>
 

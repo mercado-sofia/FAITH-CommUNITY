@@ -357,39 +357,6 @@ const SuperadminProgramsPage = () => {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className={styles.filtersContainer}>
-        <div className={styles.filterGroup}>
-          <label className={styles.filterLabel}>Organization:</label>
-          <select 
-            value={selectedOrganization} 
-            onChange={(e) => setSelectedOrganization(e.target.value)}
-            className={styles.filterSelect}
-          >
-            <option value="all">All Organizations</option>
-            {organizationOptions.map(org => (
-              <option key={org.id} value={org.id}>
-                {org.acronym} - {org.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div className={styles.filterGroup}>
-          <label className={styles.filterLabel}>Status:</label>
-          <select 
-            value={selectedStatus} 
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className={styles.filterSelect}
-          >
-            <option value="all">All Status</option>
-            <option value="Upcoming">Upcoming</option>
-            <option value="Active">Active</option>
-            <option value="Completed">Completed</option>
-          </select>
-        </div>
-      </div>
-
       {/* Featured Projects Section */}
       <FeaturedProjects />
 
@@ -397,6 +364,39 @@ const SuperadminProgramsPage = () => {
       <div className={styles.programsSection}>
         <h2 className={styles.sectionTitle}>Programs by Organization</h2>
         
+        {/* Filters */}
+        <div className={styles.filtersContainer}>
+          <div className={styles.filterGroup}>
+            <label className={styles.filterLabel}>Organization:</label>
+            <select 
+              value={selectedOrganization} 
+              onChange={(e) => setSelectedOrganization(e.target.value)}
+              className={styles.filterSelect}
+            >
+              <option value="all">All Organizations</option>
+              {organizationOptions.map(org => (
+                <option key={org.id} value={org.id}>
+                  {org.acronym} - {org.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div className={styles.filterGroup}>
+            <label className={styles.filterLabel}>Status:</label>
+            <select 
+              value={selectedStatus} 
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className={styles.filterSelect}
+            >
+              <option value="all">All Status</option>
+              <option value="Upcoming">Upcoming</option>
+              <option value="Active">Active</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </div>
+        </div>
+
         {filteredOrganizations.length === 0 ? (
           <div className={styles.emptyState}>
             <p>No organizations found with the selected filters.</p>

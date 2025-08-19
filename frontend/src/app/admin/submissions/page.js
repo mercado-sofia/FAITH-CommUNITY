@@ -8,15 +8,21 @@ import SubmissionTable from './components/SubmissionTable';
 import BulkActionsBar from './components/BulkActionsBar';
 import PaginationControls from '../components/PaginationControls';
 import SuccessModal from '../components/SuccessModal';
+import Loader from '../../../components/Loader';
 import styles from './submissions.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
+// Track if submissions page has been visited
+let hasVisitedSubmissions = false;
 
 export default function SubmissionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const admin = useSelector((state) => state.admin.admin);
   const orgAcronym = admin?.org;
+  const [pageReady, setPageReady] = useState(false);
+  const [isFirstVisit, setIsFirstVisit] = useState(!hasVisitedSubmissions);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(
@@ -36,6 +42,20 @@ export default function SubmissionsPage() {
 
   // Use SWR hook for submissions data
   const { submissions, isLoading: loading, error, mutate: refreshSubmissions } = useAdminSubmissions(orgAcronym);
+
+  // Smart loading logic
+  useEffect(() => {
+    if (!loading) {
+      const extraDelay = isFirstVisit ? 400 : 0; // Reduced delay for first visit
+      const timer = setTimeout(() => {
+        setPageReady(true);
+        setIsFirstVisit(false);
+        hasVisitedSubmissions = true; // Mark as visited
+      }, extraDelay);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [loading, isFirstVisit]);
 
   const showToast = useCallback((message, type = 'success') => {
     setSuccessModal({ isVisible: true, message, type });
@@ -195,22 +215,14 @@ export default function SubmissionsPage() {
   }, [selectedItems, refreshSubmissions, showToast]);
 
   // Show loading state
-  if (loading) {
+  if (loading && !pageReady) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
           <h1>Submissions</h1>
         </div>
         <div style={{ textAlign: 'center', padding: '2rem' }}>
-          <div className="spinner" style={{ 
-            width: 40, 
-            height: 40, 
-            border: "4px solid #f1f5f9", 
-            borderTop: "4px solid #16a085", 
-            borderRadius: "50%", 
-            animation: "spin 1s linear infinite",
-            margin: '0 auto'
-          }} />
+          <Loader />
           <p style={{ marginTop: '1rem', color: '#64748b' }}>Loading submissions...</p>
         </div>
       </div>

@@ -5,6 +5,9 @@ import { usePathname } from 'next/navigation';
 
 const NavigationContext = createContext();
 
+// Track visited pages globally to avoid unnecessary loaders
+const visitedPages = new Set();
+
 export function NavigationProvider({ children }) {
   const [loadingPath, setLoadingPath] = useState(null);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -16,12 +19,19 @@ export function NavigationProvider({ children }) {
     if (loadingPath && pathname === loadingPath) {
       setLoadingPath(null);
       setIsNavigating(false);
+      // Mark page as visited
+      visitedPages.add(pathname);
     }
   }, [pathname, loadingPath]);
 
   const handleNavigation = (href) => {
     // Don't show loading if already on the same page
     if (pathname === href) return;
+    
+    // Don't show loading for previously visited pages (instant navigation)
+    if (visitedPages.has(href)) {
+      return; // Skip loading state for visited pages
+    }
     
     setLoadingPath(href);
     setIsNavigating(true);
@@ -30,13 +40,17 @@ export function NavigationProvider({ children }) {
     const timer = setTimeout(() => {
       setLoadingPath(null);
       setIsNavigating(false);
-    }, 5000); // 5 second fallback
+    }, 3000); // Reduced from 5 seconds to 3 seconds
     
     // Cleanup timer when component unmounts or navigation completes
     return () => clearTimeout(timer);
   };
 
-  const isLinkLoading = (href) => loadingPath === href;
+  const isLinkLoading = (href) => {
+    // Don't show loading for visited pages
+    if (visitedPages.has(href)) return false;
+    return loadingPath === href;
+  };
 
   const setPageLoading = (pagePath, isLoading) => {
     setPageLoadingStates(prev => ({
@@ -45,7 +59,11 @@ export function NavigationProvider({ children }) {
     }));
   };
 
-  const isPageLoading = (pagePath) => pageLoadingStates[pagePath] || false;
+  const isPageLoading = (pagePath) => {
+    // Don't show loading for visited pages
+    if (visitedPages.has(pagePath)) return false;
+    return pageLoadingStates[pagePath] || false;
+  };
 
   const value = {
     loadingPath,
@@ -53,7 +71,8 @@ export function NavigationProvider({ children }) {
     handleNavigation,
     isLinkLoading,
     setPageLoading,
-    isPageLoading
+    isPageLoading,
+    visitedPages
   };
 
   return (

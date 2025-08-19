@@ -156,10 +156,8 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
     });
 
     Promise.all(previewPromises).then(previews => {
-      console.log('Additional image previews created:', previews.length);
       setAdditionalImagePreviews(prev => {
         const newPreviews = [...prev, ...previews];
-        console.log('Total additional image previews:', newPreviews.length);
         return newPreviews;
       });
     });
@@ -511,7 +509,6 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
             {additionalImagePreviews.length > 0 && (
               <div className={styles.additionalImagesGrid}>
                 {additionalImagePreviews.map((preview, index) => {
-                  console.log(`Rendering additional image ${index}:`, preview);
                   return (
                     <div key={index} className={styles.additionalImagePreview}>
                       {preview.startsWith('data:') ? (

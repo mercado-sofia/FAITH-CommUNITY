@@ -4,10 +4,26 @@ import logger from '../utils/logger';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-// Fetcher function for SWR with admin authentication
+// Safe localStorage access for SSR
+const getAdminToken = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    return localStorage.getItem("adminToken");
+  } catch (error) {
+    logger.error('Failed to access localStorage', error);
+    return null;
+  }
+};
+
+// Fetcher function for SWR with admin authentication and SSR safety
 const adminFetcher = async (url) => {
   try {
-    const adminToken = localStorage.getItem("adminToken");
+    // Check if we're on the client side
+    if (typeof window === 'undefined') {
+      throw new Error('Cannot fetch on server side');
+    }
+
+    const adminToken = getAdminToken();
     
     if (!adminToken) {
       throw new Error('No admin token found. Please log in again.');
@@ -50,8 +66,12 @@ export const useAdminSubmissions = (orgAcronym) => {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 30000, // Cache for 30 seconds
-      errorRetryCount: 2,
-      errorRetryInterval: 2000,
+      errorRetryCount: 3,
+      errorRetryInterval: 3000,
+      shouldRetryOnError: (error) => {
+        // Don't retry on 401 (auth errors) or 404 (not found)
+        return error.status !== 401 && error.status !== 404;
+      },
       onError: (error) => {
         logger.swrError(`${API_BASE_URL}/api/submissions/${orgAcronym}`, error, { orgAcronym });
       }
@@ -79,8 +99,12 @@ export const useAdminVolunteers = (adminId) => {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 60000, // Cache for 1 minute
-      errorRetryCount: 2,
-      errorRetryInterval: 2000,
+      errorRetryCount: 3,
+      errorRetryInterval: 3000,
+      shouldRetryOnError: (error) => {
+        // Don't retry on 401 (auth errors) or 404 (not found)
+        return error.status !== 401 && error.status !== 404;
+      },
       onError: (error) => {
         logger.swrError(`${API_BASE_URL}/api/volunteers/admin/${adminId}`, error, { adminId });
       }
@@ -120,7 +144,12 @@ export const useAdminVolunteers = (adminId) => {
 // Custom fetcher for organization data
 const organizationFetcher = async (url) => {
   try {
-    const adminToken = localStorage.getItem("adminToken");
+    // Check if we're on the client side
+    if (typeof window === 'undefined') {
+      throw new Error('Cannot fetch on server side');
+    }
+
+    const adminToken = getAdminToken();
     
     if (!adminToken) {
       throw new Error('No admin token found. Please log in again.');
@@ -159,8 +188,12 @@ export const useAdminOrganization = (orgAcronym) => {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 300000, // Cache for 5 minutes
-      errorRetryCount: 2,
-      errorRetryInterval: 2000,
+      errorRetryCount: 3,
+      errorRetryInterval: 3000,
+      shouldRetryOnError: (error) => {
+        // Don't retry on 401 (auth errors) or 404 (not found)
+        return error.status !== 401 && error.status !== 404;
+      },
       onError: (error) => {
         logger.swrError(`${API_BASE_URL}/api/organization/org/${orgAcronym}`, error, { orgAcronym });
       }
@@ -204,8 +237,12 @@ export const useAdminPrograms = (orgAcronym) => {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 120000, // Cache for 2 minutes
-      errorRetryCount: 2,
-      errorRetryInterval: 2000,
+      errorRetryCount: 3,
+      errorRetryInterval: 3000,
+      shouldRetryOnError: (error) => {
+        // Don't retry on 401 (auth errors) or 404 (not found)
+        return error.status !== 401 && error.status !== 404;
+      },
       onError: (error) => {
         logger.swrError(`${API_BASE_URL}/api/programs/org/${orgAcronym}`, error, { orgAcronym });
       }
@@ -227,16 +264,20 @@ export const useAdminPrograms = (orgAcronym) => {
 // Custom hook for admin news data
 export const useAdminNews = (orgAcronym) => {
   const { data, error, isLoading, mutate } = useSWR(
-    orgAcronym ? `${API_BASE_URL}/api/admin/news/${orgAcronym}` : null,
+    orgAcronym ? `${API_BASE_URL}/api/news/org/${orgAcronym}` : null,
     adminFetcher,
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 60000, // Cache for 1 minute
-      errorRetryCount: 2,
-      errorRetryInterval: 2000,
+      errorRetryCount: 3,
+      errorRetryInterval: 3000,
+      shouldRetryOnError: (error) => {
+        // Don't retry on 401 (auth errors) or 404 (not found)
+        return error.status !== 401 && error.status !== 404;
+      },
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/admin/news/${orgAcronym}`, error, { orgAcronym });
+        logger.swrError(`${API_BASE_URL}/api/news/org/${orgAcronym}`, error, { orgAcronym });
       }
     }
   );
@@ -276,8 +317,12 @@ export const useAdminAdvocacies = (orgId) => {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 300000, // Cache for 5 minutes
-      errorRetryCount: 2,
-      errorRetryInterval: 2000,
+      errorRetryCount: 3,
+      errorRetryInterval: 3000,
+      shouldRetryOnError: (error) => {
+        // Don't retry on 401 (auth errors) or 404 (not found)
+        return error.status !== 401 && error.status !== 404;
+      },
       onError: (error) => {
         logger.swrError(`${API_BASE_URL}/api/advocacies/${orgId}`, error, { orgId });
       }
@@ -305,8 +350,12 @@ export const useAdminCompetencies = (orgId) => {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 300000, // Cache for 5 minutes
-      errorRetryCount: 2,
-      errorRetryInterval: 2000,
+      errorRetryCount: 3,
+      errorRetryInterval: 3000,
+      shouldRetryOnError: (error) => {
+        // Don't retry on 401 (auth errors) or 404 (not found)
+        return error.status !== 401 && error.status !== 404;
+      },
       onError: (error) => {
         logger.swrError(`${API_BASE_URL}/api/competencies/${orgId}`, error, { orgId });
       }
@@ -334,8 +383,12 @@ export const useAdminHeads = (orgId) => {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 300000, // Cache for 5 minutes
-      errorRetryCount: 2,
-      errorRetryInterval: 2000,
+      errorRetryCount: 3,
+      errorRetryInterval: 3000,
+      shouldRetryOnError: (error) => {
+        // Don't retry on 401 (auth errors) or 404 (not found)
+        return error.status !== 401 && error.status !== 404;
+      },
       onError: (error) => {
         logger.swrError(`${API_BASE_URL}/api/heads/${orgId}`, error, { orgId });
       }
@@ -363,8 +416,12 @@ export const useAdminById = (adminId) => {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 300000, // Cache for 5 minutes
-      errorRetryCount: 2,
-      errorRetryInterval: 2000,
+      errorRetryCount: 3,
+      errorRetryInterval: 3000,
+      shouldRetryOnError: (error) => {
+        // Don't retry on 401 (auth errors) or 404 (not found)
+        return error.status !== 401 && error.status !== 404;
+      },
       onError: (error) => {
         logger.swrError(`${API_BASE_URL}/api/admins/${adminId}`, error, { adminId });
       }

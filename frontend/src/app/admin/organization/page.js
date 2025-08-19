@@ -18,13 +18,19 @@ import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import SummaryModal from "./components/SummaryModal";
 import SectionSummaryModal from "./components/SectionSummaryModal";
 import SuccessModal from "../components/SuccessModal";
+import Loader from '../../../components/Loader';
 import pageStyles from "./page.module.css";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
+// Track if organization page has been visited
+let hasVisitedOrganization = false;
+
 export default function OrganizationPage() {
   const dispatch = useDispatch();
   const admin = useSelector((state) => state.admin.admin);
+  const [pageReady, setPageReady] = useState(false);
+  const [isFirstVisit, setIsFirstVisit] = useState(!hasVisitedOrganization);
   
   // Use SWR hooks for data fetching
   const { organization, isLoading: orgLoading, error: orgError, mutate: refreshOrganization } = useAdminOrganization(admin?.org);
@@ -155,6 +161,20 @@ export default function OrganizationPage() {
 
   // Combined loading state
   const loading = orgLoading || advocaciesLoading || competenciesLoading || headsLoading || !admin?.org;
+
+  // Smart loading logic
+  useEffect(() => {
+    if (!orgLoading && !advocaciesLoading && !competenciesLoading && !headsLoading) {
+      const extraDelay = isFirstVisit ? 600 : 0; // Reduced delay for first visit
+      const timer = setTimeout(() => {
+        setPageReady(true);
+        setIsFirstVisit(false);
+        hasVisitedOrganization = true; // Mark as visited
+      }, extraDelay);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [orgLoading, advocaciesLoading, competenciesLoading, headsLoading, isFirstVisit]);
 
   // Synchronize editPreviewData when organization data changes from SWR
   // This ensures data consistency and prevents disappearing data
@@ -445,9 +465,9 @@ export default function OrganizationPage() {
       }
       
       const result = await response.json();
-      // console.log('Organization update response:', result);
+        
+        if (result.success) {
 
-      if (result.success) {
         // Note: localStorage update is now handled above when acronym changes
 
         // Create the updated organization data, preserving all fields properly

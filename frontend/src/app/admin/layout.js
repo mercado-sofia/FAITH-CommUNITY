@@ -30,14 +30,23 @@ const urbanist = Urbanist({
   variable: '--font-urbanist',
 });
 
+// Track if admin has been initialized
+let adminInitialized = false;
+
 function AdminLayoutContent({ children }) {
   const dispatch = useDispatch();
   const router = useRouter();
   const pathname = usePathname();
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(!adminInitialized);
 
   useEffect(() => {
     const initializeAdmin = async () => {
+      // Skip initialization if already done
+      if (adminInitialized) {
+        setIsInitialLoading(false);
+        return;
+      }
+
       try {
         const token = localStorage.getItem('adminToken');
         const adminData = localStorage.getItem('adminData');
@@ -54,6 +63,7 @@ function AdminLayoutContent({ children }) {
         const parsedAdminData = JSON.parse(adminData);
         dispatch(initializeAuth({ token, adminData: parsedAdminData }));
         
+        adminInitialized = true;
         setIsInitialLoading(false);
       } catch (error) {
         console.error('Error initializing admin:', error);

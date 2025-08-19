@@ -16,8 +16,6 @@ import { HiViewGrid, HiOfficeBuilding } from "react-icons/hi"
 import { TbChecklist } from "react-icons/tb"
 import { FaRegFolderOpen } from "react-icons/fa6"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
-
 export default function Sidebar() {
   const pathname = usePathname()
   const currentAdmin = useSelector(selectCurrentAdmin)

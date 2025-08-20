@@ -312,6 +312,26 @@ const initializeDatabase = async () => {
       }
     }
 
+    // Check if password_reset_tokens table exists
+    const [passwordResetTables] = await connection.query('SHOW TABLES LIKE "password_reset_tokens"');
+    
+    if (passwordResetTables.length === 0) {
+      console.log("Creating password_reset_tokens table...");
+      await connection.query(`
+        CREATE TABLE password_reset_tokens (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          email VARCHAR(255) NOT NULL,
+          token VARCHAR(255) NOT NULL UNIQUE,
+          expires_at TIMESTAMP NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_email (email),
+          INDEX idx_token (token),
+          INDEX idx_expires_at (expires_at)
+        )
+      `);
+      console.log("✅ Password reset tokens table created successfully!");
+    }
+
     connection.release();
     return promisePool;
   } catch (error) {

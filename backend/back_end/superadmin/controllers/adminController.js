@@ -473,4 +473,134 @@ export const verifyPasswordForPasswordChange = async (req, res) => {
   }
 }
 
+// Forgot password - send reset email
+export const forgotPassword = async (req, res) => {
+  const { email } = req.body
 
+  if (!email || !email.trim()) {
+    return res.status(400).json({ error: "Email is required" })
+  }
+
+  try {
+    // Check if admin exists with this email
+    const [adminRows] = await db.execute(
+      'SELECT id, email, orgName FROM admins WHERE email = ? AND status = "ACTIVE"',
+      [email]
+    )
+
+    if (adminRows.length === 0) {
+      // Don't reveal if email exists or not for security
+      return res.json({ message: "If an account with that email exists, a password reset link has been sent." })
+    }
+
+    const admin = adminRows[0]
+
+    // Generate unique token
+    const crypto = await import('crypto')
+    const token = crypto.randomBytes(32).toString('hex')
+    
+    // Set expiration (1 hour from now)
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
+
+    // Store token in database
+    await db.execute(
+      'INSERT INTO password_reset_tokens (email, token, expires_at) VALUES (?, ?, ?)',
+      [email, token, expiresAt]
+    )
+
+    // Send email with reset link
+    const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`
+    
+    const { sendMail } = await import('../../utils/mailer.js')
+    
+    await sendMail({
+      to: email,
+      subject: "Password Reset Request - FAITH CommUNITY",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #1A685B;">Password Reset Request</h2>
+          <p>Hello,</p>
+          <p>You have requested to reset your password for your FAITH CommUNITY admin account.</p>
+          <p>Click the button below to reset your password:</p>
+          <a href="${resetLink}" style="display: inline-block; background: #1A685B; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;">Reset Password</a>
+          <p>This link will expire in 1 hour.</p>
+          <p>If you didn't request this password reset, please ignore this email.</p>
+          <p>Best regards,<br>FAITH CommUNITY Team</p>
+        </div>
+      `,
+      text: `Password Reset Request - FAITH CommUNITY\n\nHello,\n\nYou have requested to reset your password for your FAITH CommUNITY admin account.\n\nClick the following link to reset your password:\n${resetLink}\n\nThis link will expire in 1 hour.\n\nIf you didn't request this password reset, please ignore this email.\n\nBest regards,\nFAITH CommUNITY Team`
+    })
+
+    res.json({ message: "If an account with that email exists, a password reset link has been sent." })
+  } catch (err) {
+    console.error("Forgot password error:", err)
+    res.status(500).json({ error: "Internal server error while processing password reset request" })
+  }
+}
+
+// Reset password with token
+export const resetPassword = async (req, res) => {
+  const { token, newPassword } = req.body
+
+  if (!token || !newPassword) {
+    return res.status(400).json({ error: "Token and new password are required" })
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: "Password must be at least 6 characters long" })
+  }
+
+  try {
+    // Find valid token
+    const [tokenRows] = await db.execute(
+      'SELECT email, expires_at FROM password_reset_tokens WHERE token = ? AND expires_at > NOW()',
+      [token]
+    )
+
+    if (tokenRows.length === 0) {
+      return res.status(400).json({ error: "Invalid or expired reset token" })
+    }
+
+    const tokenData = tokenRows[0]
+
+    // Hash new password
+    const saltRounds = 10
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds)
+
+    // Update admin password
+    await db.execute(
+      'UPDATE admins SET password = ? WHERE email = ? AND status = "ACTIVE"',
+      [hashedPassword, tokenData.email]
+    )
+
+    // Delete used token
+    await db.execute(
+      'DELETE FROM password_reset_tokens WHERE token = ?',
+      [token]
+    )
+
+    // Send confirmation email
+    const { sendMail } = await import('../../utils/mailer.js')
+    
+    await sendMail({
+      to: tokenData.email,
+      subject: "Password Successfully Reset - FAITH CommUNITY",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #1A685B;">Password Successfully Reset</h2>
+          <p>Hello,</p>
+          <p>Your password has been successfully reset for your FAITH CommUNITY admin account.</p>
+          <p>You can now log in with your new password.</p>
+          <p>If you didn't request this password reset, please contact support immediately.</p>
+          <p>Best regards,<br>FAITH CommUNITY Team</p>
+        </div>
+      `,
+      text: `Password Successfully Reset - FAITH CommUNITY\n\nHello,\n\nYour password has been successfully reset for your FAITH CommUNITY admin account.\n\nYou can now log in with your new password.\n\nIf you didn't request this password reset, please contact support immediately.\n\nBest regards,\nFAITH CommUNITY Team`
+    })
+
+    res.json({ message: "Password has been successfully reset" })
+  } catch (err) {
+    console.error("Reset password error:", err)
+    res.status(500).json({ error: "Internal server error while resetting password" })
+  }
+}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { TbMail } from "react-icons/tb";
 import { MdNotificationsNone } from "react-icons/md";
 import { useNavigation } from '../../../contexts/NavigationContext';
@@ -97,13 +98,7 @@ export default function TopBar() {
     });
   };
 
-  const handleInboxClick = () => {
-    router.push('/admin/inbox');
-  };
 
-  const handleViewAllNotifications = () => {
-    router.push('/admin/notifications');
-  };
 
   // ❗ Detect click outside notification dropdown
   useEffect(() => {
@@ -153,12 +148,14 @@ export default function TopBar() {
         </div>
         <div className={styles.rightSection}>
           {/* Inbox Icon */}
-          <div className={styles.iconButton} onClick={handleInboxClick}>
-            <div className={styles.notificationWrapper}>
-              <TbMail size={20} color="#06100f" />
-              {hasUnreadMessages && <div className={styles.notificationBadge}></div>}
+          <Link href="/admin/inbox" prefetch={true}>
+            <div className={styles.iconButton}>
+              <div className={styles.notificationWrapper}>
+                <TbMail size={20} color="#06100f" />
+                {hasUnreadMessages && <div className={styles.notificationBadge}></div>}
+              </div>
             </div>
-          </div>
+          </Link>
 
           {/* Notifications Icon */}
           <div className={styles.iconButton} onClick={toggleNotifications}>
@@ -226,9 +223,11 @@ export default function TopBar() {
                 )}
               </div>
               <div className={styles.notificationsFooter}>
-                <button className={styles.viewAllBtn} onClick={handleViewAllNotifications}>
-                  View All Notifications
-                </button>
+                <Link href="/admin/notifications" prefetch={true}>
+                  <button className={styles.viewAllBtn}>
+                    View All Notifications
+                  </button>
+                </Link>
               </div>
             </div>
           )}

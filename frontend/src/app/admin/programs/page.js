@@ -13,6 +13,7 @@ import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
 import ErrorBoundary from '../../../components/ErrorBoundary';
 import SuccessModal from '../components/SuccessModal';
+import SkeletonLoader from '../components/SkeletonLoader';
 import styles from './programs.module.css';
 import { FaPlus } from 'react-icons/fa';
 
@@ -48,19 +49,18 @@ export default function AdminProgramsPage() {
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
   const [showCount, setShowCount] = useState(parseInt(searchParams.get('show')) || 10);
 
-  // Smart loading logic
+  // Show skeleton immediately on first load, then show content when data is ready
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
+  
+  // Mark as initially loaded when data is available
   useEffect(() => {
-    if (!isLoading) {
-      const extraDelay = isFirstVisit ? 600 : 0; // Reduced delay for first visit
-      const timer = setTimeout(() => {
-        setPageReady(true);
-        setIsFirstVisit(false);
-        hasVisitedPrograms = true; // Mark as visited
-      }, extraDelay);
-      
-      return () => clearTimeout(timer);
+    if (!isLoading && programs.length >= 0) {
+      setHasInitiallyLoaded(true);
+      setPageReady(true);
+      setIsFirstVisit(false);
+      hasVisitedPrograms = true;
     }
-  }, [isLoading, isFirstVisit]);
+  }, [isLoading, programs.length]);
 
   // Handle error display
   useEffect(() => {
@@ -334,13 +334,17 @@ export default function AdminProgramsPage() {
     }
   };
 
-  if (isLoading && !pageReady) {
+  // Show skeleton immediately on first load or when loading
+  if (!hasInitiallyLoaded || (isLoading && !pageReady)) {
     return (
       <div className={styles.container}>
-        <div className={styles.loadingContainer}>
-          <Loader />
-          <p>Loading programs...</p>
+        <div className={styles.header}>
+          <div className={styles.headerTop}>
+            <h1>Programs</h1>
+          </div>
         </div>
+        
+        <SkeletonLoader type="grid" count={6} />
       </div>
     );
   }

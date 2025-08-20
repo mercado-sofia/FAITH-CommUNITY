@@ -12,18 +12,21 @@ import {
 } from '../../../rtk/admin/inboxApi';
 import { FiMail, FiTrash2, FiEye, FiCheck, FiX } from 'react-icons/fi';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
+import SkeletonLoader from '../components/SkeletonLoader';
 import styles from './inbox.module.css';
 
 export default function InboxPage() {
   const currentAdmin = useSelector(selectCurrentAdmin);
   const [currentPage, setCurrentPage] = useState(1);
   const [currentTab, setCurrentTab] = useState('all'); // 'all' or 'unread'
-  const [selectedMessage, setSelectedMessage] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [messageToDelete, setMessageToDelete] = useState(null);
   const [selectedMessages, setSelectedMessages] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
+  
+  // Show skeleton immediately on first load, then show content when data is ready
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
 
   const itemsPerPage = 10;
 
@@ -63,6 +66,13 @@ export default function InboxPage() {
   const messages = messagesData?.data?.messages || [];
   const pagination = messagesData?.data?.pagination;
   const unreadCount = unreadCountData?.data?.count || 0;
+  
+  // Mark as initially loaded when data is available
+  useEffect(() => {
+    if (!messagesLoading && messages.length >= 0) {
+      setHasInitiallyLoaded(true);
+    }
+  }, [messagesLoading, messages.length]);
 
   const handleMarkAsRead = async (messageId) => {
     try {
@@ -275,11 +285,8 @@ export default function InboxPage() {
       </div>
 
       <div className={styles.content}>
-        {messagesLoading ? (
-          <div className={styles.loadingContainer}>
-            <div className={styles.loadingSpinner}></div>
-            <p>Loading messages...</p>
-          </div>
+        {!hasInitiallyLoaded || (messagesLoading && !messages.length) ? (
+          <SkeletonLoader type="table" count={8} />
         ) : messagesError ? (
           <div className={styles.errorContainer}>
             <p>Error loading messages. Please try again.</p>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { updateAdminOrg } from "../../../rtk/superadmin/adminSlice";
 import { useAdminOrganization, useAdminAdvocacies, useAdminCompetencies, useAdminHeads } from "../../../hooks/useAdminData";
@@ -18,7 +18,7 @@ import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import SummaryModal from "./components/SummaryModal";
 import SectionSummaryModal from "./components/SectionSummaryModal";
 import SuccessModal from "../components/SuccessModal";
-import Loader from '../../../components/Loader';
+import SkeletonLoader from '../components/SkeletonLoader';
 import pageStyles from "./page.module.css";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -40,6 +40,12 @@ export default function OrganizationPage() {
   // Separate state for edit modal preview (doesn't affect main display)
   const [editPreviewData, setEditPreviewData] = useState(null);
 
+  // Progressive loading states - must be declared before hooks that use them
+  const [orgInfoReady, setOrgInfoReady] = useState(false);
+  const [advocacyReady, setAdvocacyReady] = useState(false);
+  const [competencyReady, setCompetencyReady] = useState(false);
+  const [orgHeadsReady, setOrgHeadsReady] = useState(false);
+
   // Safeguard: Ensure we have a stable organization ID for the hooks
   const stableOrgId = useMemo(() => {
     // Prefer organization.id if available, otherwise fall back to admin.id
@@ -50,7 +56,11 @@ export default function OrganizationPage() {
   // Use stable organization ID for hooks to prevent unnecessary re-runs
   const { advocacies: stableAdvocacies, isLoading: advocaciesLoading, error: advocaciesError, mutate: refreshAdvocacies } = useAdminAdvocacies(stableOrgId);
   const { competencies: stableCompetencies, isLoading: competenciesLoading, error: competenciesError, mutate: refreshCompetencies } = useAdminCompetencies(stableOrgId);
-  const { heads: stableHeads, isLoading: headsLoading, error: headsError, mutate: refreshHeads } = useAdminHeads(stableOrgId);
+  
+  // Lazy load organization heads - only fetch when the section is ready to be displayed
+  const { heads: stableHeads, isLoading: headsLoading, error: headsError, mutate: refreshHeads } = useAdminHeads(
+    stableOrgId && (orgHeadsReady || !isFirstVisit) ? stableOrgId : null
+  );
   // Use the stable data directly from SWR hooks with memoization to prevent unnecessary re-renders
   const advocacies = useMemo(() => stableAdvocacies || [], [stableAdvocacies]);
   const competencies = useMemo(() => stableCompetencies || [], [stableCompetencies]);
@@ -159,15 +169,64 @@ export default function OrganizationPage() {
   const [originalData, setOriginalData] = useState(null);
   const [pendingChanges, setPendingChanges] = useState(null);
 
+
+
+  // Memoized skeleton components to prevent unnecessary re-renders
+  const OrgInfoSkeleton = useMemo(() => <SkeletonLoader type="orgInfo" />, []);
+  const AdvocacySkeleton = useMemo(() => <SkeletonLoader type="section" />, []);
+  const CompetencySkeleton = useMemo(() => <SkeletonLoader type="section" />, []);
+  const OrgHeadsSkeleton = useMemo(() => <SkeletonLoader type="orgHeads" count={3} />, []);
+
   // Combined loading state
   const loading = orgLoading || advocaciesLoading || competenciesLoading || headsLoading || !admin?.org;
 
-  // Smart loading logic
+  // Progressive loading logic
+  useEffect(() => {
+    if (!orgLoading && !isFirstVisit) {
+      const timer = setTimeout(() => {
+        setOrgInfoReady(true);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [orgLoading, isFirstVisit]);
+
+  useEffect(() => {
+    if (!advocaciesLoading && !isFirstVisit) {
+      const timer = setTimeout(() => {
+        setAdvocacyReady(true);
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [advocaciesLoading, isFirstVisit]);
+
+  useEffect(() => {
+    if (!competenciesLoading && !isFirstVisit) {
+      const timer = setTimeout(() => {
+        setCompetencyReady(true);
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+  }, [competenciesLoading, isFirstVisit]);
+
+  useEffect(() => {
+    if (!headsLoading && !isFirstVisit) {
+      const timer = setTimeout(() => {
+        setOrgHeadsReady(true);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [headsLoading, isFirstVisit]);
+
+  // Smart loading logic for first visit
   useEffect(() => {
     if (!orgLoading && !advocaciesLoading && !competenciesLoading && !headsLoading) {
-      const extraDelay = isFirstVisit ? 600 : 0; // Reduced delay for first visit
+      const extraDelay = isFirstVisit ? 1000 : 0; // Slightly longer delay for first visit to show skeletons
       const timer = setTimeout(() => {
         setPageReady(true);
+        setOrgInfoReady(true);
+        setAdvocacyReady(true);
+        setCompetencyReady(true);
+        setOrgHeadsReady(true);
         setIsFirstVisit(false);
         hasVisitedOrganization = true; // Mark as visited
       }, extraDelay);
@@ -940,11 +999,22 @@ export default function OrganizationPage() {
     }
   };
 
+  // Show skeleton loader when loading
   if (loading) {
     return (
-      <div style={{ padding: "4rem", textAlign: "center" }}>
-        <div className="spinner" style={{ width: 40, height: 40, border: "4px solid #f1f5f9", borderTop: "4px solid #16a085", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-        <p style={{ marginTop: "1rem", color: "#64748b", fontSize: "1.1rem" }}>Loading organization data...</p>
+      <div>
+        <OrgHeader />
+        <SkeletonLoader type="section" count={3} />
+      </div>
+    );
+  }
+
+  // Show full page loader only on first visit
+  if (isFirstVisit && loading) {
+    return (
+      <div>
+        <OrgHeader />
+        <SkeletonLoader type="section" count={3} />
       </div>
     );
   }
@@ -953,49 +1023,69 @@ export default function OrganizationPage() {
     <div>
       <OrgHeader />
 
-      <OrgInfoSection
-        orgData={orgData}
-        isEditing={isEditing}
-        setIsEditing={setIsEditing}
-        setShowEditModal={setShowEditModal}
-        setOriginalData={setOriginalData}
-        setEditPreviewData={setEditPreviewData}
-        currentSection={currentSection}
-        setCurrentSection={setCurrentSection}
-      />
+      {/* Organization Info Section with Skeleton */}
+      {!orgInfoReady ? (
+        OrgInfoSkeleton
+      ) : (
+        <OrgInfoSection
+          orgData={orgData}
+          isEditing={isEditing}
+          setIsEditing={setIsEditing}
+          setShowEditModal={setShowEditModal}
+          setOriginalData={setOriginalData}
+          setEditPreviewData={setEditPreviewData}
+          currentSection={currentSection}
+          setCurrentSection={setCurrentSection}
+        />
+      )}
 
       <div className={pageStyles.sectionsContainer}>
         <div className={pageStyles.sectionColumn}>
-          <AdvocacySection
-            advocacyData={advocacyData}
-            setIsEditing={setIsEditing}
-            setShowEditModal={setShowSectionEditModal}
-            setOriginalData={setOriginalData}
-            setCurrentSection={setCurrentSection}
-            setTempEditData={setTempEditData}
-          />
+          {/* Advocacy Section with Skeleton */}
+          {!advocacyReady ? (
+            AdvocacySkeleton
+          ) : (
+            <AdvocacySection
+              advocacyData={advocacyData}
+              setIsEditing={setIsEditing}
+              setShowEditModal={setShowSectionEditModal}
+              setOriginalData={setOriginalData}
+              setCurrentSection={setCurrentSection}
+              setTempEditData={setTempEditData}
+            />
+          )}
         </div>
         
         <div className={pageStyles.sectionColumn}>
-          <CompetencySection
-            competencyData={competencyData}
-            setIsEditing={setIsEditing}
-            setShowEditModal={setShowSectionEditModal}
-            setOriginalData={setOriginalData}
-            setCurrentSection={setCurrentSection}
-            setTempEditData={setTempEditData}
-          />
+          {/* Competency Section with Skeleton */}
+          {!competencyReady ? (
+            CompetencySkeleton
+          ) : (
+            <CompetencySection
+              competencyData={competencyData}
+              setIsEditing={setIsEditing}
+              setShowEditModal={setShowSectionEditModal}
+              setOriginalData={setOriginalData}
+              setCurrentSection={setCurrentSection}
+              setTempEditData={setTempEditData}
+            />
+          )}
         </div>
       </div>
 
-      <OrgHeadsSection
-        orgHeadsData={stableOrgHeadsData}
-        onEditIndividualHead={handleEditIndividualHead}
-        onDeleteIndividualHead={handleDeleteIndividualHead}
-        onAddOrgHead={() => setShowAddOrgHeadModal(true)}
-        onReorderHeads={handleReorderHeads}
-        saving={saving}
-      />
+      {/* Organization Heads Section with Skeleton */}
+      {!orgHeadsReady || headsLoading ? (
+        OrgHeadsSkeleton
+      ) : (
+        <OrgHeadsSection
+          orgHeadsData={stableOrgHeadsData}
+          onEditIndividualHead={handleEditIndividualHead}
+          onDeleteIndividualHead={handleDeleteIndividualHead}
+          onAddOrgHead={() => setShowAddOrgHeadModal(true)}
+          onReorderHeads={handleReorderHeads}
+          saving={saving}
+        />
+      )}
 
       <EditModal
         isOpen={showEditModal}

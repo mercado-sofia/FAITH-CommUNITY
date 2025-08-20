@@ -5,30 +5,22 @@ import { FiCheckCircle, FiX, FiAlertCircle, FiInfo, FiAlertTriangle } from 'reac
 import styles from './styles/Toast.module.css';
 
 export default function Toast({ message, type = 'success', duration = 3000, onClose }) {
-  const [isVisible, setIsVisible] = useState(true);
-
   useEffect(() => {
     const timer = setTimeout(() => {
-      setIsVisible(false);
-      setTimeout(() => {
-        onClose?.();
-      }, 300); // Wait for fade out animation
+      onClose?.();
     }, duration);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+    };
   }, [duration, onClose]);
 
   const handleClose = () => {
-    setIsVisible(false);
-    setTimeout(() => {
-      onClose?.();
-    }, 300);
+    onClose?.();
   };
 
-  if (!isVisible) return null;
-
   return (
-    <div className={`${styles.toast} ${styles[type]} ${isVisible ? styles.show : styles.hide}`}>
+    <div className={`${styles.toast} ${styles[type]} ${styles.show}`}>
       <div className={styles.toastContent}>
         <div className={styles.toastIcon}>
           {type === 'success' && <FiCheckCircle />}

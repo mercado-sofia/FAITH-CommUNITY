@@ -7,6 +7,8 @@ import { FaInstagram, FaXTwitter } from "react-icons/fa6";
 import { HiMiniArrowRight } from "react-icons/hi2";
 import { Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import Toast from "./Toast";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
@@ -26,7 +28,7 @@ export default function Footer() {
   // Newsletter state
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
-  const [msg, setMsg] = useState({ type: "", text: "" }); // "success" | "error" | ""
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -53,10 +55,9 @@ export default function Footer() {
 
   async function handleSubscribe(e) {
     e.preventDefault();
-    setMsg({ type: "", text: "" });
 
     if (!isValidEmail(email)) {
-      setMsg({ type: "error", text: "Please enter a valid email address." });
+      setToast({ show: true, message: "Please enter a valid email address.", type: "error" });
       return;
     }
 
@@ -76,27 +77,39 @@ export default function Footer() {
         throw new Error(errText);
       }
 
-      setMsg({
-        type: "success",
-        text:
-          data?.message ||
-          "Thanks! Please check your email to confirm your subscription.",
+      setToast({
+        show: true,
+        message: data?.message || "Thanks! Please check your email to confirm your subscription.",
+        type: "success"
       });
       setEmail("");
     } catch (err) {
-      setMsg({
-        type: "error",
-        text:
-          err?.message ||
-          "Something went wrong while subscribing. Please try again.",
+      setToast({
+        show: true,
+        message: err?.message || "Something went wrong while subscribing. Please try again.",
+        type: "error"
       });
     } finally {
       setSending(false);
     }
   }
 
+  const handleToastClose = () => {
+    setToast({ show: false, message: "", type: "success" });
+  };
+
   return (
-    <footer className={styles.footerWrapper}>
+    <>
+      {toast.show && createPortal(
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={handleToastClose}
+        />,
+        document.body
+      )}
+      <footer className={styles.footerWrapper}>
+      
       <div className={styles.footerContent}>
         <div className={styles.about}>
           <h3>FAITH CommUNITY</h3>
@@ -206,18 +219,19 @@ export default function Footer() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              aria-invalid={msg.type === "error" ? "true" : "false"}
-              aria-describedby="newsletter-feedback"
             />
             <button type="submit" disabled={sending} aria-busy={sending}>
-              {sending ? <span className={styles.loadingDot}>• • •</span> : <Send className={styles.submitIcon} />}
+              {sending ? (
+                <div className={styles.loadingDots}>
+                  <div className={styles.loadingDot}></div>
+                  <div className={styles.loadingDot}></div>
+                  <div className={styles.loadingDot}></div>
+                </div>
+              ) : (
+                <Send className={styles.submitIcon} />
+              )}
             </button>
           </form>
-
-          <div id="newsletter-feedback" aria-live="polite" className={styles.feedback}>
-            {msg.type === "success" && <span className={styles.successText}>{msg.text}</span>}
-            {msg.type === "error" && <span className={styles.errorText}>{msg.text}</span>}
-          </div>
 
           <div className={styles.socials}>
             <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
@@ -237,5 +251,6 @@ export default function Footer() {
         <p>© Copyright 2025 <span>FAITH CommUNITY</span>. All Rights Reserved.</p>
       </div>
     </footer>
+    </>
   );
 }

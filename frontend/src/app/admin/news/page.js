@@ -13,7 +13,7 @@ import SearchAndFilterControls from './components/SearchAndFilterControls';
 import RecentlyDeletedModal from './components/RecentlyDeletedModal';
 import ErrorBoundary from '../../../components/ErrorBoundary';
 import SuccessModal from '../components/SuccessModal';
-import Loader from '../../../components/Loader';
+import SkeletonLoader from '../components/SkeletonLoader';
 import styles from './news.module.css';
 import { FaPlus, FaTrash } from 'react-icons/fa';
 
@@ -387,10 +387,7 @@ export default function AdminNewsPage() {
       />
 
       {loading && (
-        <div className={styles.loadingContainer}>
-          <Loader />
-          <p>Loading news...</p>
-        </div>
+        <SkeletonLoader type="grid" count={6} />
       )}
 
       {error && (

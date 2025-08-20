@@ -98,9 +98,10 @@ export const useAdminVolunteers = (adminId) => {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      dedupingInterval: 60000, // Cache for 1 minute
-      errorRetryCount: 3,
-      errorRetryInterval: 3000,
+      dedupingInterval: 30000, // Cache for 30 seconds (faster updates)
+      errorRetryCount: 2, // Reduced retries for faster failure
+      errorRetryInterval: 1000, // Faster retry interval
+      keepPreviousData: true, // Keep previous data while loading new data
       shouldRetryOnError: (error) => {
         // Don't retry on 401 (auth errors) or 404 (not found)
         return error.status !== 401 && error.status !== 404;
@@ -382,7 +383,7 @@ export const useAdminHeads = (orgId) => {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      dedupingInterval: 300000, // Cache for 5 minutes
+      dedupingInterval: 60000, // Cache for 1 minute (shorter cache for heads)
       errorRetryCount: 3,
       errorRetryInterval: 3000,
       shouldRetryOnError: (error) => {

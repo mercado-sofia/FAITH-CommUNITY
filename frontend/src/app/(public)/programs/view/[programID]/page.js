@@ -13,9 +13,26 @@ export default function ProgramDetailsPage() {
   const router = useRouter();
   const [pageReady, setPageReady] = useState(false);
   const [isFirstVisit, setIsFirstVisit] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // Use SWR hook for data fetching
   const { programs, isLoading: loading, error } = usePublicPrograms();
+
+  // Check user authentication status
+  useEffect(() => {
+    const token = localStorage.getItem('userToken');
+    const storedUserData = localStorage.getItem('userData');
+    
+    if (token && storedUserData) {
+      try {
+        JSON.parse(storedUserData);
+        setIsLoggedIn(true);
+      } catch (error) {
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userData');
+      }
+    }
+  }, []);
 
   // Find the specific program
   const program = programs.find(p => p.id === Number(programID));
@@ -35,7 +52,12 @@ export default function ProgramDetailsPage() {
 
   const handleApplyClick = () => {
     if (program.status === 'Upcoming') {
-      router.push(`/apply?program=${programID}`);
+      if (!isLoggedIn) {
+        // Show login modal for non-authenticated users
+        window.dispatchEvent(new CustomEvent('showLoginModal'));
+      } else {
+        router.push(`/apply?program=${programID}`);
+      }
     }
   };
 

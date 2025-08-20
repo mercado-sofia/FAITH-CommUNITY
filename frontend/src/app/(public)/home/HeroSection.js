@@ -11,6 +11,23 @@ export default function HeroSection() {
   const router = useRouter();
   const [showVideo, setShowVideo] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Check user authentication status
+  useEffect(() => {
+    const token = localStorage.getItem('userToken');
+    const storedUserData = localStorage.getItem('userData');
+    
+    if (token && storedUserData) {
+      try {
+        JSON.parse(storedUserData);
+        setIsLoggedIn(true);
+      } catch (error) {
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userData');
+      }
+    }
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -43,7 +60,13 @@ export default function HeroSection() {
                 <span>Start Your Volunteer Journey</span>
                 <button
                   className={styles.ctaButton}
-                  onClick={() => router.push("/apply")}
+                  onClick={() => {
+                    if (!isLoggedIn) {
+                      window.dispatchEvent(new CustomEvent('showLoginModal'));
+                    } else {
+                      router.push("/apply");
+                    }
+                  }}
                 >
                   Apply Now
                   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 15 15" fill="none">

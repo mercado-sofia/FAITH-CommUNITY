@@ -4,16 +4,12 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import styles from "./volunteerForm.module.css";
 import SubmitStatus from "./SubmitStatus";
 import ProgramSelect from "./ProgramSelect";
-import PersonalInfoSection from "./PersonalInfoSection";
-import TermsCheckbox from "./TermsCheckbox";
-import { handleChange } from "./formUtils";
-import { usePublicApprovedPrograms } from "../../../../../hooks/usePublicData";
 import SuccessModal from "./SuccessModal";
-import { validateForm, validateField } from "./validationUtils";
+import { usePublicApprovedPrograms } from "../../../../../hooks/usePublicData";
 import FormErrorBoundary from "./FormErrorBoundary";
 import logger from "../../../../../utils/logger";
 
-export default function VolunteerForm({ selectedProgramId }) {
+export default function SimplifiedVolunteerForm({ selectedProgramId }) {
   // Fetch approved upcoming programs from the API
   const {
     programs: programOptions = [],
@@ -23,16 +19,7 @@ export default function VolunteerForm({ selectedProgramId }) {
 
   const [formData, setFormData] = useState({
     program: null,
-    fullName: "",
-    age: "",
-    gender: "",
-    email: "",
-    phoneNumber: "",
-    address: "",
-    occupation: "",
-    citizenship: "",
     reason: "",
-    agreeToTerms: false,
   });
 
   // Auto-select program if selectedProgramId is provided
@@ -80,16 +67,12 @@ export default function VolunteerForm({ selectedProgramId }) {
     };
   }, [showSuccessModal]);
 
-
-
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [validationErrors, setValidationErrors] = useState({});
 
   const programRef = useRef(null);
-  const personalInfoRef = useRef(null);
-  const termsRef = useRef(null);
-
+  const reasonRef = useRef(null);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -131,6 +114,22 @@ export default function VolunteerForm({ selectedProgramId }) {
     });
   };
 
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.program) {
+      errors.program = "Please select a program";
+    }
+    
+    if (!formData.reason.trim()) {
+      errors.reason = "Please provide a reason for applying";
+    } else if (formData.reason.trim().length < 10) {
+      errors.reason = "Reason must be at least 10 characters long";
+    }
+    
+    return errors;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -141,20 +140,20 @@ export default function VolunteerForm({ selectedProgramId }) {
       // Add 3-second loading delay
       await new Promise(resolve => setTimeout(resolve, 3000));
 
-      // Comprehensive form validation
-      const validation = validateForm(formData);
+      // Form validation
+      const errors = validateForm();
       
-      if (!validation.isValid) {
-        setValidationErrors(validation.errors);
+      if (Object.keys(errors).length > 0) {
+        setValidationErrors(errors);
         
         // Show all validation errors
-        Object.keys(validation.errors).forEach(fieldName => {
-          showFieldError(fieldName, validation.errors[fieldName]);
+        Object.keys(errors).forEach(fieldName => {
+          showFieldError(fieldName, errors[fieldName]);
         });
         
         // Log validation errors
         logger.warn("Form validation failed", {
-          errors: validation.errors,
+          errors: errors,
           formData: Object.keys(formData)
         });
         
@@ -162,18 +161,24 @@ export default function VolunteerForm({ selectedProgramId }) {
         return;
       }
 
-          // Submit form
+      // Get user data from localStorage
+      const userData = JSON.parse(localStorage.getItem('userData'));
+      if (!userData) {
+        throw new Error("User not authenticated");
+      }
+
+      // Submit form
       const form = new FormData();
       form.append("program_id", formData.program.id);
-      form.append("full_name", formData.fullName);
-      form.append("age", formData.age);
-      form.append("gender", formData.gender);
-      form.append("email", formData.email);
-      form.append("phone_number", formData.phoneNumber);
-      form.append("address", formData.address);
-      form.append("occupation", formData.occupation);
-      form.append("citizenship", formData.citizenship);
-      form.append("reason", formData.reason);
+      form.append("full_name", `${userData.firstName} ${userData.lastName}`);
+      form.append("age", calculateAge(userData.birthDate));
+      form.append("gender", userData.gender);
+      form.append("email", userData.email);
+      form.append("phone_number", userData.contactNumber);
+      form.append("address", userData.address);
+      form.append("occupation", userData.occupation || "");
+      form.append("citizenship", userData.citizenship || "");
+      form.append("reason", formData.reason.trim());
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/volunteers`, {
         method: "POST",
@@ -189,22 +194,13 @@ export default function VolunteerForm({ selectedProgramId }) {
 
       setFormData({
         program: null,
-        fullName: "",
-        age: "",
-        gender: "",
-        email: "",
-        phoneNumber: "",
-        address: "",
-        occupation: "",
-        citizenship: "",
         reason: "",
-        agreeToTerms: false,
       });
 
       // Log successful submission
       logger.info("Volunteer application submitted successfully", {
         programId: formData.program.id,
-        email: formData.email
+        email: userData.email
       });
 
     } catch (error) {
@@ -223,15 +219,29 @@ export default function VolunteerForm({ selectedProgramId }) {
     }
   };
 
+  // Calculate age from birth date
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return "";
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    return age.toString();
+  };
+
   return (
     <>
       <form
-        aria-label="Volunteer Application Form"
+        aria-label="Simplified Volunteer Application Form"
         className={styles.formContainer}
         onSubmit={handleSubmit}
         noValidate
       >
-
         <FormErrorBoundary componentName="ProgramSelect" formSection="program-selection">
           <ProgramSelect
             ref={programRef}
@@ -247,25 +257,33 @@ export default function VolunteerForm({ selectedProgramId }) {
           />
         </FormErrorBoundary>
 
-        <FormErrorBoundary componentName="PersonalInfoSection" formSection="personal-info">
-          <PersonalInfoSection
-            ref={personalInfoRef}
-            formData={formData}
-            handleChange={handleChange(setFormData, clearFieldError)}
-            fieldErrors={fieldErrors}
-            validationErrors={validationErrors}
-            clearFieldError={clearFieldError}
-          />
-        </FormErrorBoundary>
-
-        <FormErrorBoundary componentName="TermsCheckbox" formSection="terms-agreement">
-          <TermsCheckbox
-            ref={termsRef}
-            formData={formData}
-            handleChange={handleChange(setFormData, clearFieldError)}
-            errorMessage={fieldErrors.agreeToTerms || validationErrors.agreeToTerms}
-            isLoading={isLoading}
-          />
+        <FormErrorBoundary componentName="ReasonSection" formSection="reason">
+          <div className={styles.sectionCard} ref={reasonRef}>
+            <h3>Reason for Applying</h3>
+            <div className={styles.fullRow}>
+              <div className={styles.inputGroup}>
+                <label htmlFor="reason">Why do you want to join this program?</label>
+                <textarea
+                  id="reason"
+                  name="reason"
+                  rows={4}
+                  placeholder="Please explain your motivation for joining this program..."
+                  value={formData.reason}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, reason: e.target.value }));
+                    clearFieldError("reason");
+                  }}
+                  required
+                  className={fieldErrors.reason || validationErrors.reason ? styles.inputError : ""}
+                />
+                {(fieldErrors.reason || validationErrors.reason) && (
+                  <div className={styles.errorMessage} role="alert">
+                    {fieldErrors.reason || validationErrors.reason}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </FormErrorBoundary>
 
         <button

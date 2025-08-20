@@ -5,13 +5,42 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import styles from './styles/navbar.module.css';
-import { FaBars, FaChevronRight } from 'react-icons/fa';
+import { FaBars, FaChevronRight, FaUser, FaSignOutAlt } from 'react-icons/fa';
 
 export default function Navbar() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isSlidingOut, setIsSlidingOut] = useState(false);
   const resizeTimeoutRef = useRef(null);
+  const [userData, setUserData] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Check user authentication status
+  useEffect(() => {
+    const token = localStorage.getItem('userToken');
+    const storedUserData = localStorage.getItem('userData');
+    
+    if (token && storedUserData) {
+      try {
+        const user = JSON.parse(storedUserData);
+        setUserData(user);
+        setIsLoggedIn(true);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userData');
+      }
+    }
+  }, []);
+
+  // Handle apply button click
+  const handleApplyClick = (e) => {
+    if (!isLoggedIn) {
+      e.preventDefault();
+      // Dispatch custom event to show login modal
+      window.dispatchEvent(new CustomEvent('showLoginModal'));
+    }
+  };
 
   // Add preload links for navbar pages
   useEffect(() => {
@@ -90,6 +119,16 @@ export default function Navbar() {
     }
   }, [router]);
 
+  // Handle user logout
+  const handleLogout = () => {
+    localStorage.removeItem('userToken');
+    localStorage.removeItem('userData');
+    document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    setUserData(null);
+    setIsLoggedIn(false);
+    router.push('/');
+  };
+
   return (
     <div className={styles.navbarWrapper}>
       <nav className={styles.navbar}>
@@ -165,10 +204,37 @@ export default function Navbar() {
             />
             <span>Go To FAITH Colleges</span>
           </a>
+          
+          {isLoggedIn ? (
+            // User is logged in - show profile and logout
+            <>
+              <div className={styles.userProfile}>
+                <FaUser className={styles.userIcon} />
+                <span className={styles.userName}>
+                  {userData?.firstName} {userData?.lastName}
+                </span>
+                <button onClick={handleLogout} className={styles.logoutBtn}>
+                  <FaSignOutAlt />
+                </button>
+              </div>
+            </>
+          ) : (
+            // User is not logged in - show login/signup buttons
+            <>
+              <Link href="/login" className={styles.loginBtn}>
+                Log In
+              </Link>
+              <Link href="/signup" className={styles.signupBtn}>
+                Sign Up
+              </Link>
+            </>
+          )}
+
           <Link 
             href="/apply" 
             className={styles.applyBtn}
             onMouseEnter={() => handleLinkHover('/apply')}
+            onClick={handleApplyClick}
           >
             Apply
           </Link>
@@ -245,10 +311,45 @@ export default function Navbar() {
                 />
                 <span>FAITH Colleges</span>
               </a>
+              
+              {isLoggedIn ? (
+                // User is logged in - show profile and logout
+                <>
+                  <div className={styles.mobileUserProfile}>
+                    <FaUser className={styles.userIcon} />
+                    <span className={styles.userName}>
+                      {userData?.firstName} {userData?.lastName}
+                    </span>
+                    <button onClick={() => { handleLogout(); toggleMenu(); }} className={styles.logoutBtn}>
+                      <FaSignOutAlt />
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                </>
+              ) : (
+                // User is not logged in - show login/signup buttons
+                <>
+                  <Link 
+                    href="/login" 
+                    className={styles.loginBtn} 
+                    onClick={toggleMenu}
+                  >
+                    Log In
+                  </Link>
+                  <Link 
+                    href="/signup" 
+                    className={styles.signupBtn} 
+                    onClick={toggleMenu}
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
+              
               <Link 
                 href="/apply" 
                 className={styles.applyBtn} 
-                onClick={toggleMenu}
+                onClick={(e) => { handleApplyClick(e); toggleMenu(); }}
                 onMouseEnter={() => handleLinkHover('/apply')}
               >
                 Apply

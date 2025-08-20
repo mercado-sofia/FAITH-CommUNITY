@@ -72,10 +72,12 @@ app.get("/api/debug/tables", async (req, res) => {
 import applyRoutes from "./back_end/for_public/routes/apply.js"
 import organizationsRoutes from "./back_end/for_public/routes/organizations.js"
 import messagesRoutes from "./back_end/for_public/routes/messages.js"
+import usersRoutes from "./back_end/for_public/routes/users.js"
 
 app.use("/api", applyRoutes)
 app.use("/api", organizationsRoutes)
 app.use("/api", messagesRoutes)
+app.use("/api/users", usersRoutes)
 
 // ADMIN ROUTES
 import advocaciesRoutes from "./back_end/admin/routes/advocacies.js"

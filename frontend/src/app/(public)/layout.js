@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import FloatingMessage from './components/FloatingMessage';
 import ToastContainer from './components/ToastContainer';
+import GlobalLoginModal from './components/GlobalLoginModal';
 import '../globals.css';
 import Head from 'next/head';
 import { useEffect, useRef } from 'react';
@@ -101,6 +102,9 @@ export default function PublicLayout({ children }) {
         
         {/* Global toast container */}
         <ToastContainer />
+        
+        {/* Global login modal */}
+        <GlobalLoginModal />
       </div>
     </>
   );

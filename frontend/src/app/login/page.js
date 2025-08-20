@@ -20,6 +20,7 @@ export default function LoginPage() {
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false)
   const [forgotPasswordMessage, setForgotPasswordMessage] = useState("")
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false)
+  const [focusedField, setFocusedField] = useState("")
   const router = useRouter()
   const dispatch = useDispatch()
 
@@ -112,9 +113,8 @@ export default function LoginPage() {
     }
 
     try {
-      // Attempting admin login via API
-
-      const response = await fetch("http://localhost:8080/api/admins/login", {
+      // First try user login
+      const userResponse = await fetch("http://localhost:8080/api/users/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -122,20 +122,42 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       })
 
-      const data = await response.json()
-      console.log("📡 API Response:", { status: response.status, data })
+      if (userResponse.ok) {
+        // User login successful
+        const userData = await userResponse.json()
+        
+        localStorage.setItem("userToken", userData.token)
+        localStorage.setItem("userData", JSON.stringify(userData.user))
+        document.cookie = "userRole=user; path=/; max-age=86400"
 
-      if (response.ok) {
+        // Redirect to home page
+        window.location.href = "/"
+        return
+      }
+
+      // If user login fails, try admin login
+      const adminResponse = await fetch("http://localhost:8080/api/admins/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const adminData = await adminResponse.json()
+      console.log("📡 API Response:", { status: adminResponse.status, adminData })
+
+      if (adminResponse.ok) {
         // Admin login successful
 
-        localStorage.setItem("adminToken", data.token)
-        localStorage.setItem("adminData", JSON.stringify(data.admin))
+        localStorage.setItem("adminToken", adminData.token)
+        localStorage.setItem("adminData", JSON.stringify(adminData.admin))
         document.cookie = "userRole=admin; path=/; max-age=86400"
 
         dispatch(
           loginAdmin({
-            token: data.token,
-            admin: data.admin,
+            token: adminData.token,
+            admin: adminData.admin,
           })
         )
 
@@ -143,8 +165,8 @@ export default function LoginPage() {
 
         window.location.href = "/admin"
       } else {
-        console.log("❌ Login failed:", data.error)
-        setErrorMessage(data.error || "Login failed")
+        console.log("❌ Login failed:", adminData.error)
+        setErrorMessage(adminData.error || "Login failed")
         setShowError(true)
       }
     } catch (error) {
@@ -168,7 +190,7 @@ export default function LoginPage() {
         <form onSubmit={handleLogin} className={styles.form}>
           <h2 className={styles.title}>Log In</h2>
 
-          <label htmlFor="email" className={styles.label}>
+          <label htmlFor="email" className={`${styles.label} ${focusedField === 'email' ? styles.focused : ''}`}>
             Email
           </label>
           <div className={styles.inputGroup}>
@@ -185,12 +207,14 @@ export default function LoginPage() {
                 setEmail(e.target.value)
                 setShowError(false)
               }}
+              onFocus={() => setFocusedField('email')}
+              onBlur={() => setFocusedField('')}
               required
               disabled={isLoading}
             />
           </div>
 
-          <label htmlFor="password" className={styles.label}>
+          <label htmlFor="password" className={`${styles.label} ${focusedField === 'password' ? styles.focused : ''}`}>
             Password
           </label>
           <div className={styles.inputGroup}>
@@ -208,6 +232,8 @@ export default function LoginPage() {
                 setPassword(e.target.value)
                 setShowError(false)
               }}
+              onFocus={() => setFocusedField('password')}
+              onBlur={() => setFocusedField('')}
               required
               disabled={isLoading}
             />
@@ -217,9 +243,19 @@ export default function LoginPage() {
               onClick={() => setShowPassword((prev) => !prev)}
               aria-label={showPassword ? "Hide password" : "Show password"}
               disabled={isLoading}
+              tabIndex={-1}
             >
               {showPassword ? <FaEyeSlash /> : <FaEye />}
             </button>
+            <div className={styles.forgotPasswordLink}>
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                className={styles.forgotPasswordButton}
+              >
+                Forgot Password?
+              </button>
+            </div>
           </div>
 
           {showError && (
@@ -232,14 +268,17 @@ export default function LoginPage() {
             {isLoading ? "Logging in..." : "Log In"}
           </button>
 
-          <div className={styles.forgotPasswordLink}>
-            <button
-              type="button"
-              onClick={() => setShowForgotPassword(true)}
-              className={styles.forgotPasswordButton}
-            >
-              Forgot Password?
-            </button>
+          <div className={styles.signupLink}>
+            <p>
+              Don't have an account?{" "}
+              <button
+                type="button"
+                onClick={() => router.push("/signup")}
+                className={styles.signupButton}
+              >
+                Sign Up
+              </button>
+            </p>
           </div>
         </form>
       </div>
@@ -277,6 +316,8 @@ export default function LoginPage() {
                     placeholder="Enter your email"
                     value={forgotPasswordEmail}
                     onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    onFocus={() => setFocusedField('forgotEmail')}
+                    onBlur={() => setFocusedField('')}
                     required
                     disabled={forgotPasswordLoading}
                   />

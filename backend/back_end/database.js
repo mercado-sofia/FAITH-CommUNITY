@@ -332,6 +332,35 @@ const initializeDatabase = async () => {
       console.log("✅ Password reset tokens table created successfully!");
     }
 
+    // Check if users table exists
+    const [usersTables] = await connection.query('SHOW TABLES LIKE "users"');
+    
+    if (usersTables.length === 0) {
+      console.log("Creating users table...");
+      await connection.query(`
+        CREATE TABLE users (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          first_name VARCHAR(100) NOT NULL,
+          last_name VARCHAR(100) NOT NULL,
+          email VARCHAR(255) NOT NULL UNIQUE,
+          contact_number VARCHAR(20),
+          gender ENUM('Male', 'Female', 'Other') NOT NULL,
+          address TEXT,
+          birth_date DATE,
+          password VARCHAR(255) NOT NULL,
+          profile_photo VARCHAR(500),
+          occupation VARCHAR(100),
+          citizenship VARCHAR(100),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          last_login TIMESTAMP NULL,
+          INDEX idx_email (email),
+          INDEX idx_created_at (created_at)
+        )
+      `);
+      console.log("✅ Users table created successfully!");
+    }
+
     connection.release();
     return promisePool;
   } catch (error) {

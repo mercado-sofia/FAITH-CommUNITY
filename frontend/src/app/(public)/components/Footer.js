@@ -29,6 +29,32 @@ export default function Footer() {
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Check user authentication status
+  useEffect(() => {
+    const token = localStorage.getItem('userToken');
+    const storedUserData = localStorage.getItem('userData');
+    
+    if (token && storedUserData) {
+      try {
+        JSON.parse(storedUserData);
+        setIsLoggedIn(true);
+      } catch (error) {
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userData');
+      }
+    }
+  }, []);
+
+  // Handle apply link click
+  const handleApplyClick = (e) => {
+    if (!isLoggedIn) {
+      e.preventDefault();
+      // Dispatch custom event to show login modal
+      window.dispatchEvent(new CustomEvent('showLoginModal'));
+    }
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -165,7 +191,7 @@ export default function Footer() {
               </Link>
             </li>
             <li>
-              <Link href="/apply" className={styles.link}>
+              <Link href="/apply" className={styles.link} onClick={handleApplyClick}>
                 <HiMiniArrowRight className={styles.linkIcon} />
                 Apply Now
               </Link>

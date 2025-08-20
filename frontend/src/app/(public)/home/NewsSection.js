@@ -235,13 +235,14 @@ export default function NewsSection() {
                   className={`${styles.orgItem} ${isActive ? styles.active : ""}`}
                 >
                   <Image
-                    src={orgObj.logo ? `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${orgObj.logo}` : `/logo/${orgObj.acronym?.toLowerCase()}_logo.jpg`}
+                    src={orgObj.logo ? `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${orgObj.logo}` : '/logo/faith_community_logo.png'}
                     alt={`${orgObj.acronym || orgObj.name} logo`}
                     width={30}
                     height={30}
                     className={styles.orgLogo}
                     onError={(e) => {
-                      e.target.src = `/logo/${orgObj.acronym?.toLowerCase()}_logo.jpg`;
+                      // Use a default logo if the specific one doesn't exist
+                      e.target.src = '/logo/faith_community_logo.png';
                     }}
                   />
                   <span>{orgObj.acronym || orgObj.name}</span>

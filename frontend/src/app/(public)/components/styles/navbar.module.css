@@ -285,3 +285,129 @@
     border-radius: 9999px;
   }
 }
+
+/* Authentication Button Styles */
+.loginBtn,
+.signupBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.loginBtn {
+  background: transparent;
+  color: #0c4b3a;
+  border: 2px solid #0c4b3a;
+}
+
+.loginBtn:hover {
+  background: #0c4b3a;
+  color: white;
+}
+
+.signupBtn {
+  background: #0c4b3a;
+  color: white;
+  border: 2px solid #0c4b3a;
+}
+
+.signupBtn:hover {
+  background: #145847;
+  border-color: #145847;
+}
+
+/* User Profile Styles */
+.userProfile {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.userIcon {
+  color: #0c4b3a;
+  font-size: 1rem;
+}
+
+.userName {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+}
+
+.logoutBtn {
+  background: none;
+  border: none;
+  color: #dc3545;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.logoutBtn:hover {
+  background: #dc3545;
+  color: white;
+}
+
+/* Mobile User Profile */
+.mobileUserProfile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  width: 100%;
+}
+
+.mobileUserProfile .userIcon {
+  font-size: 1.5rem;
+}
+
+.mobileUserProfile .userName {
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.mobileUserProfile .logoutBtn {
+  width: 100%;
+  justify-content: center;
+  padding: 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* Responsive adjustments for auth buttons */
+@media (max-width: 1264px) {
+  .loginBtn,
+  .signupBtn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+  }
+  
+  .userProfile {
+    padding: 0.4rem;
+  }
+  
+  .userName {
+    font-size: 0.85rem;
+  }
+}

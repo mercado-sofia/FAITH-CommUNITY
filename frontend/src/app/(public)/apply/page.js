@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import Loader from '../../../components/Loader';
 import PageBanner from '../components/PageBanner';
 import VolunteerForm from './components/VolunteerForm';
+import SimplifiedVolunteerForm from './components/VolunteerForm/SimplifiedVolunteerForm';
+import LoginSignupModal from './components/LoginSignupModal';
 
 let hasVisitedApply = false;
 let isFirstVisitApply = true;
@@ -12,6 +14,9 @@ let isFirstVisitApply = true;
 export default function ApplyPage() {
   const [loading, setLoading] = useState(!hasVisitedApply);
   const [selectedProgramId, setSelectedProgramId] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userData, setUserData] = useState(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const timerRef = useRef(null);
   const searchParams = useSearchParams();
 
@@ -22,6 +27,27 @@ export default function ApplyPage() {
       setSelectedProgramId(programId);
     }
   }, [searchParams]);
+
+  // Check user authentication status
+  useEffect(() => {
+    const token = localStorage.getItem('userToken');
+    const storedUserData = localStorage.getItem('userData');
+    
+    if (token && storedUserData) {
+      try {
+        const user = JSON.parse(storedUserData);
+        setUserData(user);
+        setIsLoggedIn(true);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userData');
+      }
+    } else {
+      // Show login modal for non-authenticated users
+      setShowLoginModal(true);
+    }
+  }, []);
 
   if (!hasVisitedApply && typeof window !== 'undefined') {
     hasVisitedApply = true;
@@ -66,13 +92,43 @@ export default function ApplyPage() {
             <p style={{ fontSize: "0.9rem", fontWeight: "600", color: "#15803d", marginBottom: "2rem" }}>
               Join our community of volunteers and make a difference today!
             </p>
+            
+
           </div>
 
-          <VolunteerForm 
-            selectedProgramId={selectedProgramId}
-          />
+          {isLoggedIn ? (
+            <SimplifiedVolunteerForm 
+              selectedProgramId={selectedProgramId}
+            />
+          ) : (
+            <div style={{ textAlign: "center", padding: "3rem 1rem" }}>
+              <h3 style={{ color: "#6b7280", marginBottom: "1rem" }}>
+                Please log in or create an account to apply for volunteer programs.
+              </h3>
+              <button 
+                onClick={() => setShowLoginModal(true)}
+                style={{
+                  background: "#15803d",
+                  color: "white",
+                  border: "none",
+                  padding: "0.75rem 1.5rem",
+                  borderRadius: "8px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  fontSize: "0.9rem"
+                }}
+              >
+                Get Started
+              </button>
+            </div>
+          )}
         </div>
       </section>
+
+      <LoginSignupModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)} 
+      />
     </>
   );
 }

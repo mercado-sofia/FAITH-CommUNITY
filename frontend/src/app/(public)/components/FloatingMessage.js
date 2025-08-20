@@ -17,8 +17,29 @@ export default function FloatingMessage() {
   const [emailError, setEmailError] = useState("");
   const [clickLocked, setClickLocked] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userData, setUserData] = useState(null);
 
   const boxRef = useRef(null);
+
+  // Check user authentication status
+  useEffect(() => {
+    const token = localStorage.getItem('userToken');
+    const storedUserData = localStorage.getItem('userData');
+    
+    if (token && storedUserData) {
+      try {
+        const user = JSON.parse(storedUserData);
+        setUserData(user);
+        setIsLoggedIn(true);
+        setEmail(user.email); // Pre-fill email for logged-in users
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userData');
+      }
+    }
+  }, []);
 
   // Fetch organizations from API
   const { 
@@ -219,19 +240,23 @@ export default function FloatingMessage() {
 
             <input type="hidden" name="organization" value={org} />
 
-            <label className={styles.label}>Email Address</label>
-            <input
-              type="email"
-              id="user-email"
-              name="email"
-              placeholder="Enter your email address"
-              value={email}
-              onChange={handleEmailChange}
-              className={`${styles.emailInput} ${emailError ? styles.emailError : ""}`}
-              required
-              autoComplete="email"
-            />
-            {emailError && <span className={styles.errorMessage}>{emailError}</span>}
+            {!isLoggedIn && (
+              <>
+                <label className={styles.label}>Email Address</label>
+                <input
+                  type="email"
+                  id="user-email"
+                  name="email"
+                  placeholder="Enter your email address"
+                  value={email}
+                  onChange={handleEmailChange}
+                  className={`${styles.emailInput} ${emailError ? styles.emailError : ""}`}
+                  required
+                  autoComplete="email"
+                />
+                {emailError && <span className={styles.errorMessage}>{emailError}</span>}
+              </>
+            )}
 
             <textarea
               id="user-message"
@@ -247,7 +272,7 @@ export default function FloatingMessage() {
             <button
               className={styles.sendBtn}
               type="submit"
-              disabled={!org || !email || !message.trim() || emailError || isSubmitting}
+              disabled={!org || (!isLoggedIn && !email) || !message.trim() || emailError || isSubmitting}
             >
               {isSubmitting ? "Sending..." : "Send"}
             </button>

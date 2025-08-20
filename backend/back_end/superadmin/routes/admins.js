@@ -8,12 +8,16 @@ import {
   loginAdmin,
   verifyPasswordForEmailChange,
   verifyPasswordForPasswordChange,
+  forgotPassword,
+  resetPassword,
 } from "../controllers/adminController.js"
 
 const router = express.Router()
 
 // Public routes
 router.post("/login", loginAdmin)
+router.post("/forgot-password", forgotPassword)
+router.post("/reset-password", resetPassword)
 
 // Protected routes (require JWT token)
 router.post("/", createAdmin)

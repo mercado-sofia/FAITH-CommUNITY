@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useDispatch } from "react-redux"
 import { loginAdmin, logoutAdmin } from "../../rtk/superadmin/adminSlice"
 import styles from "./login.module.css"
-import { FaUser, FaLock, FaEye, FaEyeSlash } from "react-icons/fa"
+import { FaUser, FaLock, FaEye, FaEyeSlash, FaTimes } from "react-icons/fa"
 import Image from "next/image"
 
 export default function LoginPage() {
@@ -15,6 +15,11 @@ export default function LoginPage() {
   const [showError, setShowError] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("")
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false)
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState("")
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false)
   const router = useRouter()
   const dispatch = useDispatch()
 
@@ -42,6 +47,38 @@ export default function LoginPage() {
     dispatch(logoutAdmin())
 
     console.log("✅ All session data cleared")
+  }
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault()
+    setForgotPasswordLoading(true)
+    setForgotPasswordMessage("")
+    setForgotPasswordSuccess(false)
+
+    try {
+      const response = await fetch("http://localhost:8080/api/admins/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: forgotPasswordEmail }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setForgotPasswordSuccess(true)
+        setForgotPasswordMessage(data.message)
+        setForgotPasswordEmail("")
+      } else {
+        setForgotPasswordMessage(data.error || "Failed to send reset email")
+      }
+    } catch (error) {
+      console.error("Forgot password error:", error)
+      setForgotPasswordMessage("Network error. Please try again.")
+    }
+
+    setForgotPasswordLoading(false)
   }
 
   const handleLogin = async (e) => {
@@ -194,8 +231,86 @@ export default function LoginPage() {
           <button type="submit" className={styles.loginBtn} disabled={isLoading}>
             {isLoading ? "Logging in..." : "Log In"}
           </button>
+
+          <div className={styles.forgotPasswordLink}>
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(true)}
+              className={styles.forgotPasswordButton}
+            >
+              Forgot Password?
+            </button>
+          </div>
         </form>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <h3>Forgot Password</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForgotPassword(false)
+                  setForgotPasswordEmail("")
+                  setForgotPasswordMessage("")
+                  setForgotPasswordSuccess(false)
+                }}
+                className={styles.closeButton}
+              >
+                <FaTimes />
+              </button>
+            </div>
+            
+            {!forgotPasswordSuccess ? (
+              <form onSubmit={handleForgotPassword} className={styles.forgotPasswordForm}>
+                <p className={styles.modalDescription}>
+                  Enter your email address and we'll send you a link to reset your password.
+                </p>
+                
+                <div className={styles.inputGroup}>
+                  <FaUser className={styles.icon} />
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={forgotPasswordEmail}
+                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    required
+                    disabled={forgotPasswordLoading}
+                  />
+                </div>
+
+                {forgotPasswordMessage && (
+                  <p className={`${styles.forgotPasswordMessage} ${styles.errorMessage}`}>
+                    {forgotPasswordMessage}
+                  </p>
+                )}
+
+                <button 
+                  type="submit" 
+                  className={styles.loginBtn} 
+                  disabled={forgotPasswordLoading}
+                >
+                  {forgotPasswordLoading ? "Sending..." : "Send Reset Link"}
+                </button>
+              </form>
+            ) : (
+              <div className={styles.successMessage}>
+                <p>{forgotPasswordMessage}</p>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(false)}
+                  className={styles.loginBtn}
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

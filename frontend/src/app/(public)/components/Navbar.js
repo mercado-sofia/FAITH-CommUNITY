@@ -13,6 +13,35 @@ export default function Navbar() {
   const [isSlidingOut, setIsSlidingOut] = useState(false);
   const resizeTimeoutRef = useRef(null);
 
+  // Add preload links for navbar pages
+  useEffect(() => {
+    const preloadLinks = [
+      { href: '/about', as: 'document' },
+      { href: '/programs', as: 'document' },
+      { href: '/faqs', as: 'document' },
+      { href: '/apply', as: 'document' }
+    ];
+
+    preloadLinks.forEach(({ href, as }) => {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.href = href;
+      link.as = as;
+      link.crossOrigin = 'anonymous';
+      document.head.appendChild(link);
+    });
+
+    // Cleanup function to remove preload links when component unmounts
+    return () => {
+      preloadLinks.forEach(({ href }) => {
+        const existingLink = document.querySelector(`link[rel="preload"][href="${href}"]`);
+        if (existingLink) {
+          existingLink.remove();
+        }
+      });
+    };
+  }, []);
+
   // Optimized close sidebar function
   const handleCloseSidebar = useCallback(() => {
     setIsSlidingOut(true);

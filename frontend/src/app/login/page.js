@@ -1,5 +1,6 @@
 "use client"
 
+
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch } from "react-redux"
@@ -7,6 +8,7 @@ import { loginAdmin, logoutAdmin } from "../../rtk/superadmin/adminSlice"
 import styles from "./login.module.css"
 import { FaUser, FaLock, FaEye, FaEyeSlash, FaTimes } from "react-icons/fa"
 import Image from "next/image"
+
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -20,41 +22,47 @@ export default function LoginPage() {
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false)
   const [forgotPasswordMessage, setForgotPasswordMessage] = useState("")
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false)
-  const [focusedField, setFocusedField] = useState("")
   const router = useRouter()
   const dispatch = useDispatch()
 
+
   // Function to completely clear all session data
   const clearAllSessionData = () => {
-    console.log("🧹 Clearing all session data")
+    console.log(" Clearing all session data")
+
 
     // Clear admin tokens
     localStorage.removeItem("adminToken")
     localStorage.removeItem("adminData")
-    
+   
     // Clear superadmin tokens
     localStorage.removeItem("superAdminToken")
     localStorage.removeItem("superAdminData")
-    
+   
     // Clear general tokens
     localStorage.removeItem("token")
     localStorage.removeItem("userRole")
     localStorage.removeItem("userEmail")
     localStorage.removeItem("userName")
 
+
     document.cookie = "userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT"
     document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT"
 
+
     dispatch(logoutAdmin())
 
-    console.log("✅ All session data cleared")
+
+    console.log(" All session data cleared")
   }
+
 
   const handleForgotPassword = async (e) => {
     e.preventDefault()
     setForgotPasswordLoading(true)
     setForgotPasswordMessage("")
     setForgotPasswordSuccess(false)
+
 
     try {
       const response = await fetch("http://localhost:8080/api/admins/forgot-password", {
@@ -65,7 +73,9 @@ export default function LoginPage() {
         body: JSON.stringify({ email: forgotPasswordEmail }),
       })
 
+
       const data = await response.json()
+
 
       if (response.ok) {
         setForgotPasswordSuccess(true)
@@ -79,42 +89,26 @@ export default function LoginPage() {
       setForgotPasswordMessage("Network error. Please try again.")
     }
 
+
     setForgotPasswordLoading(false)
   }
+
 
   const handleLogin = async (e) => {
     e.preventDefault()
     setIsLoading(true)
     setShowError(false)
 
+
     // Login attempt logged
+
 
     clearAllSessionData()
 
-    if (email === "superadmin@faith.com" && password === "super123") {
-      // Superadmin login detected
 
-      // Set the correct localStorage keys that superadmin layout expects
-      document.cookie = "userRole=superadmin; path=/; max-age=86400"
-      localStorage.setItem("superAdminToken", "superadmin-token-123")
-      localStorage.setItem("superAdminData", JSON.stringify({
-        id: 1,
-        email: "superadmin@faith.com",
-        name: "Super Administrator",
-        role: "superadmin"
-      }))
-      localStorage.setItem("token", "superadmin")
-      localStorage.setItem("userRole", "superadmin")
-
-              // Superadmin tokens set, redirecting to /superadmin
-      setIsLoading(false)
-      window.location.href = "/superadmin"
-      return
-    }
-
+    // Try superadmin login first
     try {
-      // First try user login
-      const userResponse = await fetch("http://localhost:8080/api/users/login", {
+      const superadminResponse = await fetch("http://localhost:8080/api/superadmin/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -122,21 +116,32 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       })
 
-      if (userResponse.ok) {
-        // User login successful
-        const userData = await userResponse.json()
-        
-        localStorage.setItem("userToken", userData.token)
-        localStorage.setItem("userData", JSON.stringify(userData.user))
-        document.cookie = "userRole=user; path=/; max-age=86400"
 
-        // Redirect to home page
-        window.location.href = "/"
+      if (superadminResponse.ok) {
+        const superadminData = await superadminResponse.json()
+       
+        // Set the correct localStorage keys that superadmin layout expects
+        document.cookie = "userRole=superadmin; path=/; max-age=86400"
+        localStorage.setItem("superAdminToken", superadminData.token)
+        localStorage.setItem("superAdminData", JSON.stringify(superadminData.superadmin))
+        localStorage.setItem("token", "superadmin")
+        localStorage.setItem("userRole", "superadmin")
+
+
+        setIsLoading(false)
+        window.location.href = "/superadmin"
         return
       }
+    } catch (superadminError) {
+      console.log("Superadmin login attempt failed, trying admin login:", superadminError.message)
+    }
 
-      // If user login fails, try admin login
-      const adminResponse = await fetch("http://localhost:8080/api/admins/login", {
+
+    try {
+      // Attempting admin login via API
+
+
+      const response = await fetch("http://localhost:8080/api/admins/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -144,39 +149,47 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       })
 
-      const adminData = await adminResponse.json()
-      console.log("📡 API Response:", { status: adminResponse.status, adminData })
 
-      if (adminResponse.ok) {
+      const data = await response.json()
+      console.log(" API Response:", { status: response.status, data })
+
+
+      if (response.ok) {
         // Admin login successful
 
-        localStorage.setItem("adminToken", adminData.token)
-        localStorage.setItem("adminData", JSON.stringify(adminData.admin))
+
+        localStorage.setItem("adminToken", data.token)
+        localStorage.setItem("adminData", JSON.stringify(data.admin))
         document.cookie = "userRole=admin; path=/; max-age=86400"
+
 
         dispatch(
           loginAdmin({
-            token: adminData.token,
-            admin: adminData.admin,
+            token: data.token,
+            admin: data.admin,
           })
         )
 
+
         // Redux state updated
+
 
         window.location.href = "/admin"
       } else {
-        console.log("❌ Login failed:", adminData.error)
-        setErrorMessage(adminData.error || "Login failed")
+        console.log(" Login failed:", data.error)
+        setErrorMessage(data.error || "Login failed")
         setShowError(true)
       }
     } catch (error) {
-      console.error("🚨 Network error:", error)
+      console.error(" Network error:", error)
       setErrorMessage("Network error. Please try again.")
       setShowError(true)
     }
 
+
     setIsLoading(false)
   }
+
 
   return (
     <div className={styles.container}>
@@ -190,7 +203,8 @@ export default function LoginPage() {
         <form onSubmit={handleLogin} className={styles.form}>
           <h2 className={styles.title}>Log In</h2>
 
-          <label htmlFor="email" className={`${styles.label} ${focusedField === 'email' ? styles.focused : ''}`}>
+
+          <label htmlFor="email" className={styles.label}>
             Email
           </label>
           <div className={styles.inputGroup}>
@@ -207,14 +221,13 @@ export default function LoginPage() {
                 setEmail(e.target.value)
                 setShowError(false)
               }}
-              onFocus={() => setFocusedField('email')}
-              onBlur={() => setFocusedField('')}
               required
               disabled={isLoading}
             />
           </div>
 
-          <label htmlFor="password" className={`${styles.label} ${focusedField === 'password' ? styles.focused : ''}`}>
+
+          <label htmlFor="password" className={styles.label}>
             Password
           </label>
           <div className={styles.inputGroup}>
@@ -232,8 +245,6 @@ export default function LoginPage() {
                 setPassword(e.target.value)
                 setShowError(false)
               }}
-              onFocus={() => setFocusedField('password')}
-              onBlur={() => setFocusedField('')}
               required
               disabled={isLoading}
             />
@@ -243,20 +254,11 @@ export default function LoginPage() {
               onClick={() => setShowPassword((prev) => !prev)}
               aria-label={showPassword ? "Hide password" : "Show password"}
               disabled={isLoading}
-              tabIndex={-1}
             >
               {showPassword ? <FaEyeSlash /> : <FaEye />}
             </button>
-            <div className={styles.forgotPasswordLink}>
-              <button
-                type="button"
-                onClick={() => setShowForgotPassword(true)}
-                className={styles.forgotPasswordButton}
-              >
-                Forgot Password?
-              </button>
-            </div>
           </div>
+
 
           {showError && (
             <p className={styles.errorMessage}>
@@ -264,24 +266,24 @@ export default function LoginPage() {
             </p>
           )}
 
+
           <button type="submit" className={styles.loginBtn} disabled={isLoading}>
             {isLoading ? "Logging in..." : "Log In"}
           </button>
 
-          <div className={styles.signupLink}>
-            <p>
-              Don't have an account?{" "}
-              <button
-                type="button"
-                onClick={() => router.push("/signup")}
-                className={styles.signupButton}
-              >
-                Sign Up
-              </button>
-            </p>
+
+          <div className={styles.forgotPasswordLink}>
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(true)}
+              className={styles.forgotPasswordButton}
+            >
+              Forgot Password?
+            </button>
           </div>
         </form>
       </div>
+
 
       {/* Forgot Password Modal */}
       {showForgotPassword && (
@@ -302,13 +304,13 @@ export default function LoginPage() {
                 <FaTimes />
               </button>
             </div>
-            
+           
             {!forgotPasswordSuccess ? (
               <form onSubmit={handleForgotPassword} className={styles.forgotPasswordForm}>
                 <p className={styles.modalDescription}>
                   Enter your email address and we'll send you a link to reset your password.
                 </p>
-                
+               
                 <div className={styles.inputGroup}>
                   <FaUser className={styles.icon} />
                   <input
@@ -316,12 +318,11 @@ export default function LoginPage() {
                     placeholder="Enter your email"
                     value={forgotPasswordEmail}
                     onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                    onFocus={() => setFocusedField('forgotEmail')}
-                    onBlur={() => setFocusedField('')}
                     required
                     disabled={forgotPasswordLoading}
                   />
                 </div>
+
 
                 {forgotPasswordMessage && (
                   <p className={`${styles.forgotPasswordMessage} ${styles.errorMessage}`}>
@@ -329,9 +330,10 @@ export default function LoginPage() {
                   </p>
                 )}
 
-                <button 
-                  type="submit" 
-                  className={styles.loginBtn} 
+
+                <button
+                  type="submit"
+                  className={styles.loginBtn}
                   disabled={forgotPasswordLoading}
                 >
                   {forgotPasswordLoading ? "Sending..." : "Send Reset Link"}

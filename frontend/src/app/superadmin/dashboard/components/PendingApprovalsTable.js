@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { FiEye } from 'react-icons/fi';
 import styles from './styles/RecentTables.module.css';
 import { useGetRecentPendingApprovalsQuery, useGetOrganizationsForFilterQuery } from '../../../../rtk/superadmin/dashboardApi';
+import { CgOptions } from "react-icons/cg";
 
 export default function PendingApprovalsTable() {
   const [filter, setFilter] = useState('All');

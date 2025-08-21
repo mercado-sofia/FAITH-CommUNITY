@@ -4,9 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Loader from '../../../components/Loader';
 import PageBanner from '../components/PageBanner';
-import VolunteerForm from './components/VolunteerForm';
-import SimplifiedVolunteerForm from './components/VolunteerForm/SimplifiedVolunteerForm';
-import LoginSignupModal from './components/LoginSignupModal';
+import SimplifiedVolunteerForm from './components/VolunteerForm';
+import styles from './apply.module.css';
 
 let hasVisitedApply = false;
 let isFirstVisitApply = true;
@@ -49,6 +48,14 @@ export default function ApplyPage() {
     }
   }, []);
 
+  // Show login modal when needed
+  useEffect(() => {
+    if (showLoginModal && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('showLoginModal'));
+      setShowLoginModal(false);
+    }
+  }, [showLoginModal]);
+
   if (!hasVisitedApply && typeof window !== 'undefined') {
     hasVisitedApply = true;
     const delay = isFirstVisitApply ? 2000 : 1000; // Extra delay only for first visit
@@ -73,27 +80,15 @@ export default function ApplyPage() {
         ]}
       />
 
-      <section aria-labelledby="apply-heading" style={{ padding: "2rem 1rem", background: "#fff" }}>
-        <style jsx>{`
-          @media (min-width: 768px) {
-            section {
-              padding: 4rem 2rem !important;
-            }
-            h2 {
-              font-size: 2rem !important;
-            }
-          }
-        `}</style>
-        <div style={{ maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
-          <div style={{ textAlign: "center" }}>
-            <h2 id="apply-heading" style={{ fontSize: "1.5rem", fontWeight: "700", marginBottom: "0.5rem" }}>
+      <section aria-labelledby="apply-heading" className={styles.applySection}>
+        <div className={styles.applyContainer}>
+          <div className={styles.applyHeader}>
+            <h2 id="apply-heading" className={styles.applyTitle}>
               Volunteer Application
             </h2>
-            <p style={{ fontSize: "0.9rem", fontWeight: "600", color: "#15803d", marginBottom: "2rem" }}>
+            <p className={styles.applySubtitle}>
               Join our community of volunteers and make a difference today!
             </p>
-            
-
           </div>
 
           {isLoggedIn ? (
@@ -101,22 +96,13 @@ export default function ApplyPage() {
               selectedProgramId={selectedProgramId}
             />
           ) : (
-            <div style={{ textAlign: "center", padding: "3rem 1rem" }}>
-              <h3 style={{ color: "#6b7280", marginBottom: "1rem" }}>
+            <div className={styles.loginPrompt}>
+              <h3 className={styles.loginPromptTitle}>
                 Please log in or create an account to apply for volunteer programs.
               </h3>
               <button 
                 onClick={() => setShowLoginModal(true)}
-                style={{
-                  background: "#15803d",
-                  color: "white",
-                  border: "none",
-                  padding: "0.75rem 1.5rem",
-                  borderRadius: "8px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  fontSize: "0.9rem"
-                }}
+                className={styles.loginButton}
               >
                 Get Started
               </button>
@@ -124,11 +110,6 @@ export default function ApplyPage() {
           )}
         </div>
       </section>
-
-      <LoginSignupModal 
-        isOpen={showLoginModal} 
-        onClose={() => setShowLoginModal(false)} 
-      />
     </>
   );
 }

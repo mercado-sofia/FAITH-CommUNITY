@@ -56,7 +56,7 @@ function AdminLayoutContent({ children }) {
           localStorage.removeItem('adminToken');
           localStorage.removeItem('adminData');
           document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-          router.push('/login');
+          window.location.href = '/login';
           return;
         }
 
@@ -70,7 +70,7 @@ function AdminLayoutContent({ children }) {
         localStorage.removeItem('adminToken');
         localStorage.removeItem('adminData');
         document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        router.push('/login');
+        window.location.href = '/login';
       }
     };
 

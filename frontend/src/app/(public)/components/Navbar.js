@@ -4,72 +4,44 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useSelector } from 'react-redux';
+import { useAuthState } from '../../../hooks/useAuthState';
+import { useNotifications } from '../../../hooks/useNotifications';
+import { useDropdown } from '../../../hooks/useDropdown';
+import OptimizedImage from '../../../components/OptimizedImage';
 import styles from './styles/navbar.module.css';
-import { FaBars, FaChevronRight, FaUser, FaSignOutAlt } from 'react-icons/fa';
+import { 
+  FaBars, 
+  FaChevronRight, 
+  FaUser, 
+  FaSignOutAlt, 
+  FaBell,
+  FaCog,
+  FaTimes,
+  FaClipboardList
+} from 'react-icons/fa';
 
 export default function Navbar() {
   const router = useRouter();
+  const { user, isAuthenticated, logout, isLoading: authLoading } = useAuthState();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isSlidingOut, setIsSlidingOut] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const resizeTimeoutRef = useRef(null);
-  const [userData, setUserData] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Check user authentication status
-  useEffect(() => {
-    const token = localStorage.getItem('userToken');
-    const storedUserData = localStorage.getItem('userData');
-    
-    if (token && storedUserData) {
-      try {
-        const user = JSON.parse(storedUserData);
-        setUserData(user);
-        setIsLoggedIn(true);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        localStorage.removeItem('userToken');
-        localStorage.removeItem('userData');
-      }
-    }
-  }, []);
+  // Use custom hooks for dropdowns and notifications
+  const profileDropdown = useDropdown(false);
+  const notificationsDropdown = useDropdown(false);
+  const notifications = useNotifications(isAuthenticated);
 
   // Handle apply button click
   const handleApplyClick = (e) => {
-    if (!isLoggedIn) {
+    if (!isAuthenticated) {
       e.preventDefault();
       // Dispatch custom event to show login modal
       window.dispatchEvent(new CustomEvent('showLoginModal'));
     }
   };
-
-  // Add preload links for navbar pages
-  useEffect(() => {
-    const preloadLinks = [
-      { href: '/about', as: 'document' },
-      { href: '/programs', as: 'document' },
-      { href: '/faqs', as: 'document' },
-      { href: '/apply', as: 'document' }
-    ];
-
-    preloadLinks.forEach(({ href, as }) => {
-      const link = document.createElement('link');
-      link.rel = 'preload';
-      link.href = href;
-      link.as = as;
-      link.crossOrigin = 'anonymous';
-      document.head.appendChild(link);
-    });
-
-    // Cleanup function to remove preload links when component unmounts
-    return () => {
-      preloadLinks.forEach(({ href }) => {
-        const existingLink = document.querySelector(`link[rel="preload"][href="${href}"]`);
-        if (existingLink) {
-          existingLink.remove();
-        }
-      });
-    };
-  }, []);
 
   // Optimized close sidebar function
   const handleCloseSidebar = useCallback(() => {
@@ -121,13 +93,28 @@ export default function Navbar() {
 
   // Handle user logout
   const handleLogout = () => {
-    localStorage.removeItem('userToken');
-    localStorage.removeItem('userData');
-    document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    setUserData(null);
-    setIsLoggedIn(false);
-    router.push('/');
+    setShowLogoutConfirm(true);
+    profileDropdown.close();
+    notificationsDropdown.close();
   };
+
+  // Handle confirmed logout
+  const handleConfirmedLogout = async () => {
+    await logout();
+  };
+
+  // Show loading state while auth is initializing
+  if (authLoading) {
+    return (
+      <div className={styles.navbarWrapper}>
+        <nav className={styles.navbar}>
+          <div className={styles.loadingNavbar}>
+            <div className={styles.loadingSpinner}></div>
+          </div>
+        </nav>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.navbarWrapper}>
@@ -205,39 +192,173 @@ export default function Navbar() {
             <span>Go To FAITH Colleges</span>
           </a>
           
-          {isLoggedIn ? (
-            // User is logged in - show profile and logout
+          {isAuthenticated ? (
+            // User is logged in - show Apply button first, then notification and profile icons
             <>
-              <div className={styles.userProfile}>
-                <FaUser className={styles.userIcon} />
-                <span className={styles.userName}>
-                  {userData?.firstName} {userData?.lastName}
-                </span>
-                <button onClick={handleLogout} className={styles.logoutBtn}>
-                  <FaSignOutAlt />
+              <Link 
+                href="/apply" 
+                className={styles.applyBtn}
+                onMouseEnter={() => handleLinkHover('/apply')}
+                onClick={handleApplyClick}
+              >
+                Apply
+              </Link>
+
+              {/* Notification Icon */}
+              <div className={styles.notificationWrapper} ref={notificationsDropdown.ref}>
+                <button 
+                  className={styles.notificationBtn}
+                  onClick={notificationsDropdown.toggle}
+                >
+                  <FaBell />
+                  {notifications.hasUnreadNotifications && (
+                    <span className={styles.notificationBadge}></span>
+                  )}
                 </button>
+                
+                {/* Notifications Dropdown */}
+                {notificationsDropdown.isOpen && (
+                  <div className={styles.notificationsDropdown}>
+                    <div className={styles.notificationsHeader}>
+                      <h3>Notifications</h3>
+                      {notifications.notifications.length > 0 && (
+                        <button 
+                          className={styles.markAllReadBtn}
+                          onClick={notifications.markAllAsRead}
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+                    <div className={styles.notificationsList}>
+                      {notifications.isLoading ? (
+                        <div className={styles.notificationItem}>
+                          <div className={styles.notificationContent}>
+                            <p className={styles.notificationText}>Loading notifications...</p>
+                          </div>
+                        </div>
+                      ) : notifications.notifications.length === 0 ? (
+                        <div className={styles.notificationItem}>
+                          <div className={styles.notificationContent}>
+                            <p className={styles.notificationText}>No notifications yet</p>
+                          </div>
+                        </div>
+                      ) : (
+                        notifications.notifications.map((notification) => (
+                          <div 
+                            key={notification.id} 
+                            className={`${styles.notificationItem} ${!notification.is_read ? styles.unread : ''}`}
+                            onClick={() => notifications.markAsRead(notification.id)}
+                          >
+                            <div className={styles.notificationContent}>
+                              <p className={styles.notificationText}>{notification.title}</p>
+                              <p className={styles.notificationMessage}>{notification.message}</p>
+                              <span className={styles.notificationTime}>
+                                {notifications.formatNotificationTime(notification.created_at)}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Profile Icon */}
+              <div className={styles.profileWrapper} ref={profileDropdown.ref}>
+                <button 
+                  className={styles.profileBtn}
+                  onClick={profileDropdown.toggle}
+                >
+                  <div className={styles.profileIcon}>
+                    {user?.profile_photo_url ? (
+                      <OptimizedImage
+                        src={user.profile_photo_url}
+                        alt="Profile"
+                        width={32}
+                        height={32}
+                        className={styles.profileImage}
+                        fallbackIcon={FaUser}
+                      />
+                    ) : (
+                      <FaUser className={styles.profileIconDefault} />
+                    )}
+                  </div>
+                  <FaChevronRight className={styles.chevronIcon} />
+                </button>
+                
+                {/* Profile Dropdown */}
+                {profileDropdown.isOpen && (
+                  <div className={styles.profileDropdown}>
+                    <div className={styles.profileDropdownHeader}>
+                      <div className={styles.dropdownProfileIcon}>
+                        {user?.profile_photo_url ? (
+                          <OptimizedImage
+                            src={user.profile_photo_url}
+                            alt="Profile"
+                            width={40}
+                            height={40}
+                            className={styles.dropdownProfileImage}
+                            fallbackIcon={FaUser}
+                          />
+                        ) : (
+                          <FaUser className={styles.dropdownProfileIconDefault} />
+                        )}
+                      </div>
+                      <div className={styles.dropdownUserInfo}>
+                        <p className={styles.dropdownUserName}>
+                          {user?.firstName} {user?.lastName}
+                        </p>
+                        <p className={styles.dropdownUserEmail}>{user?.email}</p>
+                      </div>
+                    </div>
+                    <Link 
+                      href="/profile" 
+                      className={styles.profileDropdownItem}
+                      onClick={profileDropdown.close}
+                    >
+                      <FaCog />
+                      <span>Manage Account</span>
+                    </Link>
+                    <Link 
+                      href="/my-applications" 
+                      className={styles.profileDropdownItem}
+                      onClick={profileDropdown.close}
+                    >
+                      <FaClipboardList />
+                      <span>My Applications</span>
+                    </Link>
+                    <button 
+                      className={styles.profileDropdownItem}
+                      onClick={handleLogout}
+                    >
+                      <FaSignOutAlt />
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </>
           ) : (
-            // User is not logged in - show login/signup buttons
+            // User is not logged in - show login/signup buttons and Apply button
             <>
-              <Link href="/login" className={styles.loginBtn}>
+              <Link href="/login" className={styles.navbarLoginBtn}>
                 Log In
               </Link>
               <Link href="/signup" className={styles.signupBtn}>
                 Sign Up
               </Link>
+              <Link 
+                href="/apply" 
+                className={styles.applyBtn}
+                onMouseEnter={() => handleLinkHover('/apply')}
+                onClick={handleApplyClick}
+              >
+                Apply
+              </Link>
             </>
           )}
-
-          <Link 
-            href="/apply" 
-            className={styles.applyBtn}
-            onMouseEnter={() => handleLinkHover('/apply')}
-            onClick={handleApplyClick}
-          >
-            Apply
-          </Link>
 
           {/* Hamburger Icon */}
           <button className={styles.hamburgerBtn} onClick={toggleMenu}>
@@ -312,15 +433,47 @@ export default function Navbar() {
                 <span>FAITH Colleges</span>
               </a>
               
-              {isLoggedIn ? (
+              {isAuthenticated ? (
                 // User is logged in - show profile and logout
                 <>
                   <div className={styles.mobileUserProfile}>
-                    <FaUser className={styles.userIcon} />
+                    <div className={styles.mobileProfileIcon}>
+                      {user?.profile_photo_url ? (
+                        <OptimizedImage
+                          src={user.profile_photo_url}
+                          alt="Profile"
+                          width={48}
+                          height={48}
+                          className={styles.mobileProfileImage}
+                          fallbackIcon={FaUser}
+                        />
+                      ) : (
+                        <FaUser className={styles.mobileProfileIconDefault} />
+                      )}
+                    </div>
                     <span className={styles.userName}>
-                      {userData?.firstName} {userData?.lastName}
+                      {user?.firstName} {user?.lastName}
                     </span>
-                    <button onClick={() => { handleLogout(); toggleMenu(); }} className={styles.logoutBtn}>
+                    <Link 
+                      href="/profile" 
+                      className={styles.mobileProfileLink}
+                      onClick={toggleMenu}
+                    >
+                      <FaCog />
+                      <span>Manage Account</span>
+                    </Link>
+                    <Link 
+                      href="/my-applications" 
+                      className={styles.mobileProfileLink}
+                      onClick={toggleMenu}
+                    >
+                      <FaClipboardList />
+                      <span>My Applications</span>
+                    </Link>
+                    <button 
+                      onClick={async () => { await handleConfirmedLogout(); toggleMenu(); }} 
+                      className={styles.logoutBtn}
+                    >
                       <FaSignOutAlt />
                       <span>Logout</span>
                     </button>
@@ -331,7 +484,7 @@ export default function Navbar() {
                 <>
                   <Link 
                     href="/login" 
-                    className={styles.loginBtn} 
+                    className={styles.navbarLoginBtn} 
                     onClick={toggleMenu}
                   >
                     Log In
@@ -358,6 +511,41 @@ export default function Navbar() {
           </div>
         )}
       </nav>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <h3>Confirm Logout</h3>
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                className={styles.closeButton}
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <p>Are you sure you want to logout?</p>
+            </div>
+            <div className={styles.modalFooter}>
+              <button
+                onClick={handleConfirmedLogout}
+                className={styles.confirmButton}
+              >
+                Logout
+              </button>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className={styles.cancelButton}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

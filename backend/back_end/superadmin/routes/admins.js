@@ -10,6 +10,9 @@ import {
   verifyPasswordForPasswordChange,
   forgotPassword,
   resetPassword,
+  checkEmailAdmin,
+  verifyAdminToken,
+  validateResetToken,
 } from "../controllers/adminController.js"
 
 const router = express.Router()
@@ -18,10 +21,14 @@ const router = express.Router()
 router.post("/login", loginAdmin)
 router.post("/forgot-password", forgotPassword)
 router.post("/reset-password", resetPassword)
+router.post("/validate-reset-token", validateResetToken)
+router.post("/check-email", checkEmailAdmin)
 
-// Protected routes (require JWT token)
-router.post("/", createAdmin)
+// Protected routes
+router.use(verifyAdminToken)
+
 router.get("/", getAllAdmins)
+router.post("/", createAdmin)
 router.get("/:id", getAdminById)
 router.put("/:id", updateAdmin)
 router.delete("/:id", deleteAdmin)

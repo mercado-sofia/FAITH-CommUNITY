@@ -143,3 +143,5 @@ export const getFallbackImageUrl = (type = 'default') => {
   
   return fallbackImages[type] || fallbackImages.default;
 };
+
+

@@ -2,54 +2,42 @@
 import db from "../../database.js"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
+import crypto from "crypto"
 
-
-// Simple JWT secret for superadmin
+// Simple JWT secret for superadmin (consider moving to .env)
 const JWT_SECRET = "faith-community-superadmin-secret-2024"
 
+// -------------------- Auth: Login / Verify --------------------
 
 // Superadmin login endpoint
 export const loginSuperadmin = async (req, res) => {
   const { email, password } = req.body
 
-
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required" })
   }
 
-
   try {
     const [superadminRows] = await db.execute(
-      'SELECT id, username, password, created_at, updated_at FROM superadmin WHERE username = ?',
+      "SELECT id, username, password, created_at, updated_at FROM superadmin WHERE username = ?",
       [email],
     )
-
 
     if (superadminRows.length === 0) {
       return res.status(401).json({ error: "Invalid credentials" })
     }
 
-
     const superadmin = superadminRows[0]
     const isPasswordValid = await bcrypt.compare(password, superadmin.password)
-
-
     if (!isPasswordValid) {
       return res.status(401).json({ error: "Invalid credentials" })
     }
 
-
-    // Generate JWT token
     const token = jwt.sign(
-      {
-        id: superadmin.id,
-        username: superadmin.username,
-        role: "superadmin",
-      },
+      { id: superadmin.id, username: superadmin.username, role: "superadmin" },
       JWT_SECRET,
       { expiresIn: "24h" },
     )
-
 
     res.json({
       message: "Login successful",
@@ -68,37 +56,30 @@ export const loginSuperadmin = async (req, res) => {
   }
 }
 
-
 // JWT verification middleware for superadmin
 export const verifySuperadminToken = (req, res, next) => {
   const authHeader = req.headers.authorization
   const token = authHeader && authHeader.split(" ")[1] // Bearer TOKEN
 
-
-  if (!token) {
-    return res.status(401).json({ error: "Access token required" })
-  }
-
+  if (!token) return res.status(401).json({ error: "Access token required" })
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET)
     req.superadmin = decoded
     next()
-  } catch (err) {
+  } catch {
     return res.status(403).json({ error: "Invalid or expired token" })
   }
 }
 
+// -------------------- Profile --------------------
 
-// Get superadmin profile
 export const getSuperadminProfile = async (req, res) => {
   const { id } = req.params
-
 
   if (!id || isNaN(id)) {
     return res.status(400).json({ error: "Invalid superadmin ID" })
   }
-
 
   try {
     const [rows] = await db.execute(
@@ -106,11 +87,9 @@ export const getSuperadminProfile = async (req, res) => {
       [id],
     )
 
-
     if (rows.length === 0) {
       return res.status(404).json({ message: "Superadmin not found" })
     }
-
 
     const superadmin = rows[0]
     res.json({
@@ -128,64 +107,48 @@ export const getSuperadminProfile = async (req, res) => {
   }
 }
 
+// -------------------- Update Password --------------------
 
-// Update superadmin password
 export const updateSuperadminPassword = async (req, res) => {
   const { id } = req.params
   const { currentPassword, newPassword } = req.body
-
 
   if (!id || isNaN(id)) {
     return res.status(400).json({ error: "Invalid superadmin ID" })
   }
 
-
   if (!currentPassword || !newPassword) {
     return res.status(400).json({ error: "Current password and new password are required" })
   }
-
 
   if (newPassword.length < 6) {
     return res.status(400).json({ error: "Password must be at least 6 characters long" })
   }
 
-
   try {
-    // Get current superadmin data
     const [superadminRows] = await db.execute(
-      'SELECT id, password FROM superadmin WHERE id = ?',
-      [id]
+      "SELECT id, password FROM superadmin WHERE id = ?",
+      [id],
     )
-
 
     if (superadminRows.length === 0) {
       return res.status(404).json({ error: "Superadmin not found" })
     }
 
-
     const superadmin = superadminRows[0]
 
-
-    // Verify current password
     const isCurrentPasswordValid = await bcrypt.compare(currentPassword, superadmin.password)
-
-
     if (!isCurrentPasswordValid) {
       return res.status(401).json({ error: "Current password is incorrect" })
     }
 
-
-    // Hash new password
     const saltRounds = 10
     const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds)
 
-
-    // Update password
-    await db.execute(
-      'UPDATE superadmin SET password = ?, updated_at = NOW() WHERE id = ?',
-      [hashedNewPassword, id]
-    )
-
+    await db.execute("UPDATE superadmin SET password = ?, updated_at = NOW() WHERE id = ?", [
+      hashedNewPassword,
+      id,
+    ])
 
     res.json({ message: "Password updated successfully" })
   } catch (err) {
@@ -194,8 +157,201 @@ export const updateSuperadminPassword = async (req, res) => {
   }
 }
 
+// -------------------- Forgot / Reset Password (Superadmin) --------------------
 
-// Update superadmin email
+// Forgot password - send reset email for superadmin
+export const forgotPasswordSuperadmin = async (req, res) => {
+  const { email } = req.body
+
+  if (!email || !email.trim()) {
+    return res.status(400).json({ error: "Email is required" })
+  }
+
+  try {
+    const [superadminRows] = await db.execute(
+      "SELECT id, username FROM superadmin WHERE username = ?",
+      [email],
+    )
+
+    // Always respond the same to avoid enumeration
+    const genericOk = { message: "If an account with that email exists, a password reset link has been sent." }
+
+    if (superadminRows.length === 0) {
+      return res.json(genericOk)
+    }
+
+    const token = crypto.randomBytes(32).toString("hex")
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+
+    await db.execute(
+      "INSERT INTO password_reset_tokens (email, token, expires_at) VALUES (?, ?, ?)",
+      [email, token, expiresAt],
+    )
+
+    const resetLink = `${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password?token=${token}&type=superadmin`
+
+    const { sendMail } = await import("../../utils/mailer.js")
+    await sendMail({
+      to: email,
+      subject: "Password Reset Request - FAITH CommUNITY Superadmin",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #1A685B;">Password Reset Request</h2>
+          <p>Hello,</p>
+          <p>You have requested to reset your password for your FAITH CommUNITY superadmin account.</p>
+          <p>Click the button below to reset your password:</p>
+          <a href="${resetLink}" style="display: inline-block; background: #1A685B; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;">Reset Password</a>
+          <p>This link will expire in 1 hour.</p>
+          <p>If you didn't request this password reset, please ignore this email.</p>
+          <p>Best regards,<br>FAITH CommUNITY Team</p>
+        </div>
+      `,
+      text: `Password Reset Request - FAITH CommUNITY Superadmin
+
+Hello,
+
+You requested to reset your FAITH CommUNITY superadmin password.
+
+Reset link (valid 1 hour):
+${resetLink}
+
+If you didn't request this, you can ignore this email.
+
+Best,
+FAITH CommUNITY Team`,
+    })
+
+    res.json(genericOk)
+  } catch (err) {
+    console.error("Superadmin forgot password error:", err)
+    res.status(500).json({ error: "Internal server error while processing password reset request" })
+  }
+}
+
+// Reset password with token for superadmin
+export const resetPasswordSuperadmin = async (req, res) => {
+  const { token, newPassword } = req.body
+
+  if (!token || !newPassword) {
+    return res.status(400).json({ error: "Token and new password are required" })
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: "Password must be at least 6 characters long" })
+  }
+
+  try {
+    const [tokenRows] = await db.execute(
+      "SELECT email, expires_at FROM password_reset_tokens WHERE token = ? AND expires_at > NOW()",
+      [token],
+    )
+
+    if (tokenRows.length === 0) {
+      return res.status(400).json({ error: "Invalid or expired reset token" })
+    }
+
+    const { email } = tokenRows[0]
+
+    const saltRounds = 10
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds)
+
+    // Update superadmin (username is the email)
+    await db.execute("UPDATE superadmin SET password = ? WHERE username = ?", [
+      hashedPassword,
+      email,
+    ])
+
+    // Also update admins (if applicable)
+    await db.execute(
+      'UPDATE admins SET password = ? WHERE email = ? AND status = "ACTIVE"',
+      [hashedPassword, email],
+    )
+
+    // Also update users (if applicable)
+    await db.execute("UPDATE users SET password_hash = ? WHERE email = ?", [
+      hashedPassword,
+      email,
+    ])
+
+    // Consume token
+    await db.execute("DELETE FROM password_reset_tokens WHERE token = ?", [token])
+
+    const { sendMail } = await import("../../utils/mailer.js")
+    await sendMail({
+      to: email,
+      subject: "Password Successfully Reset - FAITH CommUNITY",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #1A685B;">Password Successfully Reset</h2>
+          <p>Hello,</p>
+          <p>Your password has been successfully reset for your FAITH CommUNITY account.</p>
+          <p>You can now log in with your new password.</p>
+          <p>If you didn't request this password reset, please contact support immediately.</p>
+          <p>Best regards,<br>FAITH CommUNITY Team</p>
+        </div>
+      `,
+      text: `Your FAITH CommUNITY password was successfully reset. If this wasn't you, contact support immediately.`,
+    })
+
+    res.json({ message: "Password has been successfully reset" })
+  } catch (err) {
+    console.error("Superadmin reset password error:", err)
+    res.status(500).json({ error: "Internal server error while resetting password" })
+  }
+}
+
+// Validate reset token without using it
+export const validateResetToken = async (req, res) => {
+  const { token } = req.body
+
+  if (!token) {
+    return res.status(400).json({ error: "Token is required" })
+  }
+
+  try {
+    const [tokenRows] = await db.execute(
+      "SELECT email, expires_at FROM password_reset_tokens WHERE token = ? AND expires_at > NOW()",
+      [token],
+    )
+
+    if (tokenRows.length === 0) {
+      return res.status(400).json({ error: "Invalid or expired reset token" })
+    }
+
+    res.json({ message: "Token is valid" })
+  } catch (err) {
+    console.error("Validate reset token error:", err)
+    res.status(500).json({ error: "Internal server error while validating token" })
+  }
+}
+
+// Check if email exists in superadmin system
+export const checkEmailSuperadmin = async (req, res) => {
+  const { email } = req.body
+
+  if (!email || !email.trim()) {
+    return res.status(400).json({ error: "Email is required" })
+  }
+
+  try {
+    const [superadminRows] = await db.execute(
+      "SELECT id FROM superadmin WHERE username = ?",
+      [email],
+    )
+
+    if (superadminRows.length > 0) {
+      res.json({ exists: true })
+    } else {
+      res.status(404).json({ exists: false })
+    }
+  } catch (err) {
+    console.error("Superadmin check email error:", err)
+    res.status(500).json({ error: "Internal server error" })
+  }
+}
+
+// -------------------- Update Email (Username) --------------------
+
 export const updateSuperadminEmail = async (req, res) => {
   const { id } = req.params
   const { newEmail } = req.body
@@ -208,42 +364,33 @@ export const updateSuperadminEmail = async (req, res) => {
     return res.status(400).json({ error: "New email is required" })
   }
 
-  // Basic email validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(newEmail)) {
     return res.status(400).json({ error: "Invalid email format" })
   }
 
   try {
-    // Check if superadmin exists
-    const [superadminRows] = await db.execute(
-      'SELECT id FROM superadmin WHERE id = ?',
-      [id]
-    )
-
+    const [superadminRows] = await db.execute("SELECT id FROM superadmin WHERE id = ?", [id])
     if (superadminRows.length === 0) {
       return res.status(404).json({ error: "Superadmin not found" })
     }
 
-    // Check if email is already in use by another superadmin
     const [existingEmailRows] = await db.execute(
-      'SELECT id FROM superadmin WHERE username = ? AND id != ?',
-      [newEmail, id]
+      "SELECT id FROM superadmin WHERE username = ? AND id != ?",
+      [newEmail, id],
     )
-
     if (existingEmailRows.length > 0) {
       return res.status(409).json({ error: "Email address is already in use" })
     }
 
-    // Update email (username field)
-    await db.execute(
-      'UPDATE superadmin SET username = ?, updated_at = NOW() WHERE id = ?',
-      [newEmail, id]
-    )
+    await db.execute("UPDATE superadmin SET username = ?, updated_at = NOW() WHERE id = ?", [
+      newEmail,
+      id,
+    ])
 
-    res.json({ 
+    res.json({
       message: "Email updated successfully",
-      email: newEmail
+      email: newEmail,
     })
   } catch (err) {
     console.error("Update superadmin email error:", err)

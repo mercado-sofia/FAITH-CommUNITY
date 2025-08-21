@@ -35,7 +35,7 @@
   right: 2rem;
   height: 36rem;
   width: 400px;
-  background: linear-gradient(to bottom, #1CBFA4, #2a9652, #ffffff);
+  background: linear-gradient(to bottom, #1CBFA4, #2a9652, #ffffff 85%);
   border-radius: 16px;
   padding: 2rem 1.5rem 1.4rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
@@ -47,7 +47,27 @@
   z-index: 99999 !important;
 }
 
-.messageBox h2 {
+/* New class for authenticated users - smaller height since email input is hidden */
+.messageBoxAuthenticated {
+  position: fixed;
+  bottom: 6.25rem;
+  right: 2rem;
+  height: 32rem;
+  width: 400px;
+  background: linear-gradient(to bottom, #1CBFA4, #2a9652, #ffffff 85%);
+  border-radius: 16px;
+  padding: 2rem 1.5rem 1.4rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  animation: popIn 0.3s ease forwards;
+  max-height: calc(100vh - 8rem);
+  overflow-y: auto;
+  z-index: 99999 !important;
+}
+
+.messageBox h2,
+.messageBoxAuthenticated h2 {
   margin: 0;
   font-size: 1.5rem;
   color: #b5f1da;
@@ -156,9 +176,10 @@
   border: 3px solid #1A685B;
 }
 
-.messageBox textarea {
+.messageBox textarea,
+.messageBoxAuthenticated textarea {
   font-family: 'Arial', sans-serif;
-  margin-top: 1.2rem;
+  margin-top: 0.45rem;
   min-height: 200px;
   background-color: white !important;
   width: 100%;
@@ -200,7 +221,8 @@
   display: block;
 }
 
-.messageBox textarea::placeholder {
+.messageBox textarea::placeholder,
+.messageBoxAuthenticated textarea::placeholder {
   font-family: 'Arial', sans-serif;
   font-size: 14px;
   color: #999;
@@ -245,7 +267,18 @@
     max-height: calc(100vh - 6rem);
   }
 
-  .messageBox h2 {
+  .messageBoxAuthenticated {
+    width: 82vw;
+    height: 30rem;
+    padding: 1.6rem 1rem;
+    bottom: 5rem;
+    right: 1rem;
+    border-radius: 14px;
+    max-height: calc(100vh - 6rem);
+  }
+
+  .messageBox h2,
+  .messageBoxAuthenticated h2 {
     font-size: 1.2rem;
     margin-bottom: 0.2rem;
   }
@@ -257,7 +290,8 @@
 
   .label, 
   .customDropdown,
-  .messageBox textarea::placeholder {
+  .messageBox textarea::placeholder,
+  .messageBoxAuthenticated textarea::placeholder {
     font-size: 14px;
   }
 
@@ -275,7 +309,8 @@
     padding: 0.5rem;
   }
 
-  .messageBox textarea {
+  .messageBox textarea,
+  .messageBoxAuthenticated textarea {
     min-height: 160px;
     font-size: 14px;
     padding: 0.8rem;

@@ -4,27 +4,27 @@ import {
   verifySuperadminToken,
   getSuperadminProfile,
   updateSuperadminPassword,
+  // frontend/sofia branch
+  forgotPasswordSuperadmin,
+  resetPasswordSuperadmin,
+  checkEmailSuperadmin,
+  validateResetToken,
+  // main branch
   updateSuperadminEmail,
 } from "../controllers/superadminAuthController.js"
 
-
 const router = express.Router()
 
+// ---------- Public auth endpoints ----------
+router.post("/login",        loginSuperadmin)
+router.post("/forgot-password",  forgotPasswordSuperadmin)
+router.post("/reset-password",   resetPasswordSuperadmin)
+router.post("/validate-reset-token", validateResetToken)
+router.post("/check-email",   checkEmailSuperadmin)
 
-// POST /api/superadmin/auth/login - Superadmin login
-router.post("/login", loginSuperadmin)
-
-
-// GET /api/superadmin/auth/profile/:id - Get superadmin profile (protected)
-router.get("/profile/:id", verifySuperadminToken, getSuperadminProfile)
-
-
-// PUT /api/superadmin/auth/email/:id - Update superadmin email (protected)
-router.put("/email/:id", verifySuperadminToken, updateSuperadminEmail)
-
-
-// PUT /api/superadmin/auth/password/:id - Update superadmin password (protected)
-router.put("/password/:id", verifySuperadminToken, updateSuperadminPassword)
-
+// ---------- Protected endpoints ----------
+router.get("/profile/:id",   verifySuperadminToken, getSuperadminProfile)
+router.put("/email/:id",     verifySuperadminToken, updateSuperadminEmail)
+router.put("/password/:id",  verifySuperadminToken, updateSuperadminPassword)
 
 export default router

@@ -122,8 +122,8 @@
 .newsletter p {
   font-size: 15px;
   line-height: 1.4;
-  margin-bottom: 1.2rem;
-  color: #6D7D75;
+  margin-bottom: 1rem;
+  color: #6D7D75; 
 }
 
 .subscribeForm {
@@ -152,6 +152,87 @@
   align-items: center;
   justify-content: flex-start;
   cursor: pointer;
+}
+
+/* Logged-in user newsletter styles */
+.loggedInNewsletter {
+  margin-bottom: 1rem;
+}
+
+.subscribeButton {
+  width: 100%;
+  padding: 12px 24px;
+  background: #FFAC00;
+  border: none;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.subscribeButton:hover {
+  background: #e69c00;
+  transform: translateY(-1px);
+}
+
+.subscribeButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.subscribedState {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.subscribedMessage {
+  color: #ffffff !important;
+  font-weight: 500;
+  margin: 0 0 5px 0;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.checkIcon {
+  color: #FFAC00;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.unsubscribeButton {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid #FFAC00;
+  border-radius: 999px;
+  color: #FFAC00;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  align-self: flex-start;
+}
+
+.unsubscribeButton:hover {
+  background: #FFAC00;
+  color: #fff;
+}
+
+.unsubscribeButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .submitIcon {
@@ -378,6 +459,24 @@
     width: 100%;
     border-radius: 999px;
     justify-content: center;
+  }
+
+  .subscribeButton {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+
+  .subscribedState {
+    padding: 12px;
+  }
+
+  .subscribedMessage {
+    font-size: 14px;
+  }
+
+  .unsubscribeButton {
+    padding: 6px 12px;
+    font-size: 13px;
   }
 
   .socials {

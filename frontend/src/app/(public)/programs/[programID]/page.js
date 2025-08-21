@@ -4,9 +4,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import styles from './programDetails.module.css';
-import { usePublicPrograms } from '../../../../../hooks/usePublicData';
-import Loader from '../../../../../components/Loader';
-import { getProgramImageUrl } from '../../../../../utils/uploadPaths';
+import { usePublicPrograms } from '../../../../hooks/usePublicData';
+import Loader from '../../../../components/Loader';
+import { getProgramImageUrl } from '../../../../utils/uploadPaths';
 
 export default function ProgramDetailsPage() {
   const { programID } = useParams();
@@ -34,7 +34,7 @@ export default function ProgramDetailsPage() {
     }
   }, []);
 
-  // Find the specific program
+  // Find the specific program by ID
   const program = programs.find(p => p.id === Number(programID));
 
   // Add extra 1 second delay only for first visits
@@ -51,7 +51,7 @@ export default function ProgramDetailsPage() {
   }, [loading, isFirstVisit]);
 
   const handleApplyClick = () => {
-    if (program.status === 'Upcoming') {
+    if (program && program.status === 'Upcoming') {
       if (!isLoggedIn) {
         // Show login modal for non-authenticated users
         window.dispatchEvent(new CustomEvent('showLoginModal'));
@@ -138,6 +138,14 @@ export default function ProgramDetailsPage() {
   };
 
   const getApplicationContent = () => {
+    if (!program) return {
+      title: 'Program Not Found',
+      text: 'The program you are looking for could not be found.',
+      buttonText: 'Go Back',
+      icon: '❓',
+      isDisabled: true
+    };
+
     switch (program.status) {
       case 'Upcoming':
         return {
@@ -193,6 +201,13 @@ export default function ProgramDetailsPage() {
       <div className={styles.container}>
         <div className={styles.errorContainer}>
           <div className={styles.errorText}>Program not found.</div>
+          <button 
+            onClick={() => router.push('/programs')}
+            className={styles.applyButton}
+            style={{ marginTop: '1rem' }}
+          >
+            Back to Programs
+          </button>
         </div>
       </div>
     );

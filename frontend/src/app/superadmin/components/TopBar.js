@@ -48,7 +48,7 @@ export default function TopBar() {
     localStorage.removeItem('superAdminToken');
     localStorage.removeItem('superAdminData');
     document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    router.push('/login');
+    window.location.href = '/login';
   };
 
   const toggleNotifications = () => {

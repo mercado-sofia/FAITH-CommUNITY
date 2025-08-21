@@ -79,16 +79,72 @@ app.get("/api/debug/tables", async (req, res) => {
   }
 })
 
+// Debug route to check verification tokens
+app.get("/api/debug/verification-tokens", async (req, res) => {
+  try {
+    const db = await import("./back_end/database.js")
+    const [tokens] = await db.default.execute(`
+      SELECT id, email, verification_token, verification_token_expires, email_verified 
+      FROM users 
+      WHERE verification_token IS NOT NULL
+    `)
+    res.json({ success: true, tokens: tokens })
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// Debug route to check a specific token
+app.get("/api/debug/check-token/:token", async (req, res) => {
+  try {
+    const { token } = req.params
+    const db = await import("./back_end/database.js")
+    
+    // Check for exact match
+    const [exactMatch] = await db.default.execute(`
+      SELECT id, email, verification_token, verification_token_expires, email_verified 
+      FROM users 
+      WHERE verification_token = ?
+    `, [token])
+    
+    // Check for partial matches (first 10 characters)
+    const [partialMatches] = await db.default.execute(`
+      SELECT id, email, LEFT(verification_token, 20) as token_start, verification_token_expires, email_verified 
+      FROM users 
+      WHERE verification_token LIKE ?
+    `, [`${token.substring(0, 10)}%`])
+    
+    // Get all tokens for comparison
+    const [allTokens] = await db.default.execute(`
+      SELECT id, email, LEFT(verification_token, 20) as token_start, verification_token_expires, email_verified 
+      FROM users 
+      WHERE verification_token IS NOT NULL
+    `)
+    
+    res.json({ 
+      success: true, 
+      searchedToken: token,
+      exactMatch: exactMatch,
+      partialMatches: partialMatches,
+      allTokens: allTokens
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
 
 // Public Routes
 import applyRoutes from "./back_end/for_public/routes/apply.js"
 import organizationsRoutes from "./back_end/for_public/routes/organizations.js"
 import messagesRoutes from "./back_end/for_public/routes/messages.js"
+import usersRoutes from "./back_end/for_public/routes/users.js"
 
 
 app.use("/api", applyRoutes)
 app.use("/api", organizationsRoutes)
 app.use("/api", messagesRoutes)
+app.use("/api/users", usersRoutes)
 
 
 // ADMIN ROUTES

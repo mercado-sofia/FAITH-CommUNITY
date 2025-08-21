@@ -10,7 +10,7 @@ export default function LogoutModalTrigger() {
 
   const handleLogout = () => {
     localStorage.removeItem('token')
-    router.push('/login')
+    window.location.href = '/login'
   }
 
   return (

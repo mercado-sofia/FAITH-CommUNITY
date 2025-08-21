@@ -193,3 +193,60 @@ export const updateSuperadminPassword = async (req, res) => {
     res.status(500).json({ error: "Internal server error while updating password" })
   }
 }
+
+
+// Update superadmin email
+export const updateSuperadminEmail = async (req, res) => {
+  const { id } = req.params
+  const { newEmail } = req.body
+
+  if (!id || isNaN(id)) {
+    return res.status(400).json({ error: "Invalid superadmin ID" })
+  }
+
+  if (!newEmail || !newEmail.trim()) {
+    return res.status(400).json({ error: "New email is required" })
+  }
+
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(newEmail)) {
+    return res.status(400).json({ error: "Invalid email format" })
+  }
+
+  try {
+    // Check if superadmin exists
+    const [superadminRows] = await db.execute(
+      'SELECT id FROM superadmin WHERE id = ?',
+      [id]
+    )
+
+    if (superadminRows.length === 0) {
+      return res.status(404).json({ error: "Superadmin not found" })
+    }
+
+    // Check if email is already in use by another superadmin
+    const [existingEmailRows] = await db.execute(
+      'SELECT id FROM superadmin WHERE username = ? AND id != ?',
+      [newEmail, id]
+    )
+
+    if (existingEmailRows.length > 0) {
+      return res.status(409).json({ error: "Email address is already in use" })
+    }
+
+    // Update email (username field)
+    await db.execute(
+      'UPDATE superadmin SET username = ?, updated_at = NOW() WHERE id = ?',
+      [newEmail, id]
+    )
+
+    res.json({ 
+      message: "Email updated successfully",
+      email: newEmail
+    })
+  } catch (err) {
+    console.error("Update superadmin email error:", err)
+    res.status(500).json({ error: "Internal server error while updating email" })
+  }
+}

@@ -19,6 +19,7 @@
   box-shadow: 0 2px 8px rgba(50, 51, 52, 0.1), 0 4px 12px rgba(0, 0, 0, 0.08);
   gap: 0.8rem;
   border: none;
+  min-height: 60px;
 }
 
 .navLinks {
@@ -33,6 +34,7 @@
   font-size: 14px;
   letter-spacing: .5px;
   align-items: center;
+  margin-left: 0.5rem;
 }
 
 .navLink {
@@ -54,6 +56,7 @@
   text-decoration: none;
   color: inherit;
   width: 200px;
+  flex-shrink: 0;
 }
 
 .logoTextWrapper {
@@ -82,7 +85,8 @@
 .rightActions {
   display: flex;
   gap: 0.8rem;
-  align-items: flex-start;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .faithBtn {
@@ -287,30 +291,32 @@
 }
 
 /* Authentication Button Styles */
-.loginBtn,
+.navbarLoginBtn,
 .signupBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  border: none;
-  cursor: pointer;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 6px !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  transition: all 0.3s ease !important;
+  border: none !important;
+  cursor: pointer !important;
+  height: 40px !important;
+  white-space: nowrap !important;
 }
 
-.loginBtn {
-  background: transparent;
-  color: #0c4b3a;
-  border: 2px solid #0c4b3a;
+.navbarLoginBtn {
+  background: transparent !important;
+  color: #0c4b3a !important;
+  border: 2px solid #0c4b3a !important;
 }
 
-.loginBtn:hover {
-  background: #0c4b3a;
-  color: white;
+.navbarLoginBtn:hover {
+  background: #0c4b3a !important;
+  color: white !important;
 }
 
 .signupBtn {
@@ -365,49 +371,558 @@
   color: white;
 }
 
+/* Profile Icon and Dropdown Styles */
+.profileWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.profileBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+  height: 40px;
+}
+
+.profileBtn:hover {
+  border-color: #0c4b3a;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Profile Icon Styles */
+.profileIcon {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+}
+
+.profileIconDefault {
+  width: 16px;
+  height: 16px;
+  color: #6b7280;
+}
+
+.profileImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.chevronIcon {
+  font-size: 0.8rem;
+  color: #6c757d;
+  transition: transform 0.2s ease;
+  transform: rotate(0deg);
+}
+
+.profileBtn:hover .chevronIcon,
+.profileWrapper:hover .chevronIcon {
+  transform: rotate(90deg);
+}
+
+.profileDropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 240px;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  margin-top: 0.5rem;
+  overflow: hidden;
+}
+
+.profileDropdownHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-bottom: 1px solid #e9ecef;
+  background-color: #f8f9fa;
+}
+
+/* Dropdown Profile Icon Styles */
+.dropdownProfileIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  margin-right: 12px;
+}
+
+.dropdownProfileIconDefault {
+  width: 20px;
+  height: 20px;
+  color: #6b7280;
+}
+
+.dropdownProfileImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.dropdownUserInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.dropdownUserName {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdownUserEmail {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #6c757d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profileDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+  font-size: 0.9rem;
+}
+
+.profileDropdownItem:hover {
+  background-color: #f8f9fa;
+}
+
+.profileDropdownItem:first-child {
+  border-bottom: 1px solid #e9ecef;
+}
+
+/* Notification Styles */
+.notificationWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.notificationBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  color: #6c757d;
+  flex-shrink: 0;
+}
+
+.notificationBtn:hover {
+  color: #0c4b3a;
+}
+
+.notificationBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  background-color: #dc3545;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+/* Notifications Dropdown */
+.notificationsDropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 320px;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  margin-top: 0.5rem;
+  overflow: hidden;
+}
+
+.notificationsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #e9ecef;
+  background-color: #f8f9fa;
+}
+
+.notificationsHeader h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.markAllReadBtn {
+  background: none;
+  border: none;
+  color: #0c4b3a;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.markAllReadBtn:hover {
+  color: #145847;
+}
+
+.notificationsList {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.notificationItem {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.notificationItem:hover {
+  background-color: #f8f9fa;
+}
+
+.notificationItem:last-child {
+  border-bottom: none;
+}
+
+.notificationItem.unread {
+  background-color: #f0f8ff;
+}
+
+.notificationItem.unread:hover {
+  background-color: #e6f3ff;
+}
+
+.notificationContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.notificationText {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.notificationMessage {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.notificationTime {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
 /* Mobile User Profile */
 .mobileUserProfile {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 1rem;
+  gap: 0.75rem;
+  padding: 1.5rem;
   background: #f8f9fa;
   border-radius: 8px;
   border: 1px solid #e9ecef;
   width: 100%;
 }
 
-.mobileUserProfile .userIcon {
-  font-size: 1.5rem;
+/* Mobile Profile Icon Styles */
+.mobileProfileIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  margin-bottom: 12px;
+}
+
+.mobileProfileIconDefault {
+  width: 24px;
+  height: 24px;
+  color: #6b7280;
+}
+
+.mobileProfileImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.mobileProfileLink {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  text-decoration: none;
+  color: #333;
+  font-size: 0.9rem;
+  width: 100%;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.mobileProfileLink:hover {
+  border-color: #0c4b3a;
+  color: #0c4b3a;
 }
 
 .mobileUserProfile .userName {
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 600;
   text-align: center;
+  color: #333;
 }
 
 .mobileUserProfile .logoutBtn {
   width: 100%;
   justify-content: center;
-  padding: 0.5rem;
+  padding: 0.75rem;
   font-size: 0.9rem;
+  background: #dc3545;
+  color: white;
+  border: 1px solid #dc3545;
+  border-radius: 6px;
+}
+
+.mobileUserProfile .logoutBtn:hover {
+  background: #c82333;
+  border-color: #c82333;
 }
 
 /* Responsive adjustments for auth buttons */
 @media (max-width: 1264px) {
-  .loginBtn,
+  .navbarLoginBtn,
   .signupBtn {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem !important;
+    font-size: 0.85rem !important;
   }
   
-  .userProfile {
+  .profileBtn {
     padding: 0.4rem;
   }
   
-  .userName {
-    font-size: 0.85rem;
+  .notificationBtn {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .notificationsDropdown {
+    width: 280px;
+  }
+}
+
+@media (max-width: 730px) {
+  .profileBtn {
+    padding: 0.4rem;
+  }
+  
+  .notificationBtn {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .notificationsDropdown {
+    width: 260px;
+    right: -20px;
+  }
+}
+
+/* Loading States */
+.loadingNavbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 60px;
+}
+
+.loadingSpinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #0c4b3a;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Logout Confirmation Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  padding: 0;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 1.5rem 0.5rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: color 0.2s ease;
+}
+
+.closeButton:hover {
+  color: #333;
+}
+
+.modalBody {
+  padding: 1.5rem;
+}
+
+.modalBody p {
+  margin: 0;
+  font-size: 1rem;
+  color: #666;
+  text-align: center;
+}
+
+.modalFooter {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.5rem 1.5rem 1.5rem;
+  justify-content: flex-end;
+}
+
+.confirmButton {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.confirmButton:hover {
+  background: #c82333;
+}
+
+.cancelButton {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.cancelButton:hover {
+  background: #5a6268;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }

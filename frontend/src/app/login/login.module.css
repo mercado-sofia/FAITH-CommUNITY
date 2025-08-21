@@ -75,7 +75,7 @@
 
 .title {
   font-size: 2rem;
-  margin-bottom: 3rem;
+  margin-bottom: 2.5rem;
   color: #169c86;
   font-weight: bold;
   font-family: var(--font-inter);
@@ -89,11 +89,13 @@
   font-size: 13px;
   color: #b4b6b9;
   font-weight: 500;
+  margin-bottom: 2px;
   align-self: flex-start;
   transition: color 0.3s ease;
 }
 
-.label.focused {
+.label.focused,
+.label.hasValue {
   color: #13B79B;
 }
 
@@ -111,7 +113,7 @@
 
 .inputGroup input {
   width: 100%;
-  padding: 0.8rem 1rem 0.8rem 2.6rem;
+  padding: 0.8rem 1rem 0.8rem 2.3rem;
   border: none;
   outline: none;
   border-bottom: 2px solid #e0e0e0;
@@ -122,7 +124,8 @@
   transition: border-bottom-color 0.3s ease;
 }
 
-.inputGroup input:focus {
+.inputGroup input:focus,
+.inputGroup input:not(:placeholder-shown) {
   border-bottom-color: #13B79B;
 }
 
@@ -133,20 +136,21 @@
 .icon {
     position: absolute;
     top: 50%;
-    left: 1rem;
+    left: 0.7rem;
     font-size: 14px;
     transform: translateY(-50%);
     color: #CFCFCF;
     transition: color 0.3s ease;
 }
 
-.inputGroup:has(input:focus) .icon {
+.inputGroup:has(input:focus) .icon,
+.inputGroup:has(input:not(:placeholder-shown)) .icon {
     color: #13B79B;
 }
 
 .loginBtn {
     padding: 1rem;
-    margin-top: 1.4rem;
+    margin-top: 0.5rem;
     font-size: 14px;
     font-weight: 600;
     letter-spacing: 1px;
@@ -167,6 +171,20 @@
   outline: none;
 }
 
+.spinner {
+  margin-left: 8px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .errorMessage {
   font-size: 13px;
   color: rgb(248, 1, 1);
@@ -174,6 +192,21 @@
   margin-bottom: 0.5rem;
   align-self: flex-start;
 }
+
+/* Input error styling */
+.inputError {
+  border-bottom-color: #dc3545 !important;
+}
+
+.inputError:focus {
+  border-bottom-color: #dc3545 !important;
+}
+
+.inputGroup:has(.inputError) .icon {
+  color: #e63a3a !important;
+}
+
+
 
 .passwordToggle {
   position: absolute;
@@ -189,10 +222,9 @@
 }
 
 .forgotPasswordLink {
-  position: absolute;
-  bottom: -1.8rem;
-  right: 0;
   text-align: right;
+  margin-top: -0.75rem;
+  margin-bottom: 1rem;
 }
 
 .forgotPasswordButton {
@@ -238,6 +270,10 @@
   color: #0ECCAC;
 }
 
+.signupButton:focus {
+  outline: none;
+}
+
 /* Modal Styles */
 .modalOverlay {
   position: fixed;
@@ -272,28 +308,27 @@
   margin: 0;
   color: #1A685B;
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: 700;
   font-family: var(--font-inter);
 }
 
 .closeButton {
   background: none;
   border: none;
-  font-size: 18px;
+  font-size: 16px;
   cursor: pointer;
   color: #CFCFCF;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   transition: background-color 0.2s ease;
 }
 
 .closeButton:hover {
-  background-color: #f5f5f5;
   color: #666;
 }
 
@@ -308,10 +343,6 @@
 .forgotPasswordForm {
   display: flex;
   flex-direction: column;
-}
-
-.forgotPasswordMessage {
-  margin-bottom: 1rem;
 }
 
 .successMessage {

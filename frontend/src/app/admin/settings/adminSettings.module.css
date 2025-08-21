@@ -186,13 +186,6 @@
   gap: 1.25rem;
 }
 
-/* Edit Form */
-.editForm {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
 /* Field Groups */
 .fieldGroup {
   display: flex;
@@ -207,75 +200,6 @@
   font-family: var(--font-inter);
 }
 
-.input {
-  padding: 0.6rem 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 13px;
-  transition: all 0.2s ease;
-  font-family: var(--font-poppins), sans-serif;
-  background: white;
-}
-
-.input:focus {
-  outline: none;
-  border-color: #06100f;
-}
-
-.input.inputError {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
-}
-
-/* Password Input Container */
-.passwordInputContainer {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.passwordInput {
-  padding-right: 3rem;
-  width: 100%;
-}
-
-.passwordToggle {
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: #6b7280;
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  z-index: 10;
-  pointer-events: auto;
-  width: 24px;
-  height: 24px;
-  user-select: none;
-}
-
-.passwordToggle:hover {
-  color: #374151;
-  background-color: #f3f4f6;
-}
-
-.passwordToggle:disabled {
-  color: #9ca3af;
-  cursor: not-allowed;
-}
-
-.passwordToggle:disabled:hover {
-  background-color: transparent;
-}
-
 .displayValue {
   padding: 0.75rem 1rem;
   background: #f8fafc;
@@ -287,25 +211,6 @@
   display: flex;
   align-items: center;
   min-height: 44px;
-}
-
-.errorText {
-  font-size: 13px;
-  color: #ef4444;
-  font-weight: 500;
-  font-family: var(--font-poppins), sans-serif;
-}
-
-.required {
-  color: #dc2626;
-  margin-left: 0.25rem;
-}
-
-.helperText {
-  font-size: 12px;
-  color: #6b7280;
-  font-style: italic;
-  font-family: var(--font-poppins), sans-serif;
 }
 
 /* Status Badge */
@@ -342,50 +247,7 @@
   color: #92400e;
 }
 
-/* Action Buttons */
-.actionButtons {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e2e8f0;
-}
-
-.saveButton {
-  background: #06100f;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.25rem;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: var(--font-poppins), sans-serif;
-  flex: 1;
-  user-select: none;
-}
-
-.cancelButton {
-  background: #ffffff;
-  color: #06100f;
-  border: 2px solid #06100f;
-  padding: 0.75rem 1.25rem;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: var(--font-poppins), sans-serif;
-  flex: 1;
-  user-select: none;
-}
-
-/* Password Form */
-.passwordForm {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
+/* Password Info */
 .passwordInfo {
   background: #f8fafc;
   padding: 1rem;
@@ -408,67 +270,6 @@
 .infoText strong {
   color: #374151;
   font-weight: 600;
-}
-
-/* Password Requirements */
-.passwordRequirements {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 0.85rem 1rem;
-  margin-top: 0.75rem;
-}
-
-.passwordRequirementsTitle {
-  font-size: 12px;
-  font-weight: 600;
-  color: #374151;
-  margin: 0 0 0.5rem 0;
-  font-family: var(--font-poppins), sans-serif;
-}
-
-.requirementsList {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.requirementItem {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 12px;
-  color: #5d626a;
-  font-family: var(--font-poppins), sans-serif;
-}
-
-.requirementIcon {
-  width: 12px;
-  height: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.requirementIcon.met {
-  background: #10b981;
-  color: white;
-  font-size: 8px;
-}
-
-.requirementIcon.notMet {
-  background: #e5e7eb;
-  color: #9ca3af;
-  font-size: 6px;
-}
-
-.requirementText {
-  flex: 1;
 }
 
 /* Responsive Design */

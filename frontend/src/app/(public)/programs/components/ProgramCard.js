@@ -262,7 +262,7 @@ export default function ProgramCard({ project }) {
       <div className={styles.cardContent}>
         <p className={styles.cardCategory}>{project.category}</p>
 
-        <Link href={`/programs/view/${project.id}`} className={styles.cardTitle}>
+        <Link href={`/programs/${project.id}`} className={styles.cardTitle}>
           {project.title}
         </Link>
 

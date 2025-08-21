@@ -343,22 +343,188 @@ const initializeDatabase = async () => {
           first_name VARCHAR(100) NOT NULL,
           last_name VARCHAR(100) NOT NULL,
           email VARCHAR(255) NOT NULL UNIQUE,
-          contact_number VARCHAR(20),
+          password_hash VARCHAR(255) NOT NULL,
+          contact_number VARCHAR(20) NOT NULL,
           gender ENUM('Male', 'Female', 'Other') NOT NULL,
-          address TEXT,
-          birth_date DATE,
-          password VARCHAR(255) NOT NULL,
-          profile_photo VARCHAR(500),
-          occupation VARCHAR(100),
+          address TEXT NOT NULL,
+          birth_date DATE NOT NULL,
+          occupation VARCHAR(255),
           citizenship VARCHAR(100),
+          profile_photo_url VARCHAR(500),
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           last_login TIMESTAMP NULL,
+          is_active TINYINT(1) DEFAULT 1,
+          email_verified TINYINT(1) DEFAULT 0,
+          verification_token VARCHAR(255) NULL,
+          verification_token_expires TIMESTAMP NULL,
           INDEX idx_email (email),
-          INDEX idx_created_at (created_at)
+          INDEX idx_created_at (created_at),
+          INDEX idx_verification_token (verification_token),
+          INDEX idx_email_verified (email_verified)
         )
       `);
       console.log("✅ Users table created successfully!");
+    } else {
+      // Check if password_hash column exists, add it if missing
+      const [passwordHashColumn] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'users' 
+        AND COLUMN_NAME = 'password_hash'
+      `);
+      
+      if (passwordHashColumn.length === 0) {
+        console.log("Adding password_hash column to users table...");
+        await connection.query(`
+          ALTER TABLE users 
+          ADD COLUMN password_hash VARCHAR(255) NOT NULL AFTER email
+        `);
+        console.log("✅ password_hash column added to users table!");
+      }
+
+      // Check if is_active column exists, add it if missing
+      const [isActiveColumn] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'users' 
+        AND COLUMN_NAME = 'is_active'
+      `);
+      
+      if (isActiveColumn.length === 0) {
+        console.log("Adding is_active column to users table...");
+        await connection.query(`
+          ALTER TABLE users 
+          ADD COLUMN is_active TINYINT(1) DEFAULT 1
+        `);
+        console.log("✅ is_active column added to users table!");
+      }
+
+      // Check if email_verified column exists, add it if missing
+      const [emailVerifiedColumn] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'users' 
+        AND COLUMN_NAME = 'email_verified'
+      `);
+      
+      if (emailVerifiedColumn.length === 0) {
+        console.log("Adding email_verified column to users table...");
+        await connection.query(`
+          ALTER TABLE users 
+          ADD COLUMN email_verified TINYINT(1) DEFAULT 0
+        `);
+        console.log("✅ email_verified column added to users table!");
+      }
+
+      // Check if verification_token column exists, add it if missing
+      const [verificationTokenColumn] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'users' 
+        AND COLUMN_NAME = 'verification_token'
+      `);
+      
+      if (verificationTokenColumn.length === 0) {
+        console.log("Adding verification_token column to users table...");
+        await connection.query(`
+          ALTER TABLE users 
+          ADD COLUMN verification_token VARCHAR(255) NULL,
+          ADD COLUMN verification_token_expires TIMESTAMP NULL
+        `);
+        console.log("✅ verification_token columns added to users table!");
+      }
+
+      // Check if verification_token index exists, add it if missing
+      const [verificationTokenIndex] = await connection.query(`
+        SELECT INDEX_NAME 
+        FROM INFORMATION_SCHEMA.STATISTICS 
+        WHERE TABLE_NAME = 'users' 
+        AND INDEX_NAME = 'idx_verification_token'
+      `);
+      
+      if (verificationTokenIndex.length === 0) {
+        console.log("Adding verification_token index to users table...");
+        await connection.query(`
+          ALTER TABLE users 
+          ADD INDEX idx_verification_token (verification_token)
+        `);
+        console.log("✅ verification_token index added to users table!");
+      }
+
+      // Check if email_verified index exists, add it if missing
+      const [emailVerifiedIndex] = await connection.query(`
+        SELECT INDEX_NAME 
+        FROM INFORMATION_SCHEMA.STATISTICS 
+        WHERE TABLE_NAME = 'users' 
+        AND INDEX_NAME = 'idx_email_verified'
+      `);
+      
+      if (emailVerifiedIndex.length === 0) {
+        console.log("Adding email_verified index to users table...");
+        await connection.query(`
+          ALTER TABLE users 
+          ADD INDEX idx_email_verified (email_verified)
+        `);
+        console.log("✅ email_verified index added to users table!");
+      }
+
+      // Check if newsletter_subscribed column exists, add it if missing
+      const [newsletterSubscribedColumn] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'users' 
+        AND COLUMN_NAME = 'newsletter_subscribed'
+      `);
+      
+      if (newsletterSubscribedColumn.length === 0) {
+        console.log("Adding newsletter_subscribed column to users table...");
+        await connection.query(`
+          ALTER TABLE users 
+          ADD COLUMN newsletter_subscribed TINYINT(1) DEFAULT 0
+        `);
+        console.log("✅ newsletter_subscribed column added to users table!");
+      }
+
+      // Check if profile_photo_url column exists, add it if missing
+      const [profilePhotoUrlColumn] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'users' 
+        AND COLUMN_NAME = 'profile_photo_url'
+      `);
+      
+      if (profilePhotoUrlColumn.length === 0) {
+        console.log("Adding profile_photo_url column to users table...");
+        await connection.query(`
+          ALTER TABLE users 
+          ADD COLUMN profile_photo_url VARCHAR(500)
+        `);
+        console.log("✅ profile_photo_url column added to users table!");
+      }
+
+      // Check if user_notifications table exists
+      const [userNotificationsTable] = await connection.query('SHOW TABLES LIKE "user_notifications"');
+      
+      if (userNotificationsTable.length === 0) {
+        console.log("Creating user_notifications table...");
+        await connection.query(`
+          CREATE TABLE user_notifications (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            type VARCHAR(50) NOT NULL,
+            title VARCHAR(255) NOT NULL,
+            message TEXT NOT NULL,
+            is_read TINYINT(1) DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            INDEX idx_user_id (user_id),
+            INDEX idx_is_read (is_read),
+            INDEX idx_created_at (created_at)
+          )
+        `);
+        console.log("✅ user_notifications table created successfully!");
+      }
     }
 
     connection.release();

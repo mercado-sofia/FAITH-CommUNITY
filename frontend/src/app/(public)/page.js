@@ -7,7 +7,7 @@ import AboutSection from './home/AboutSection'
 import ImpactSection from './home/ImpactSection'
 import NewsSection from './home/NewsSection'
 import BannerSection from './home/BannerSection'
-import OfficerSection from './components/OfficerSection'
+import OfficerSection from './home/OfficerSection'
 import OrgAdviserSection from './home/OrgAdviserSection'
 import { publicFeaturedProjectsApi } from '../../rtk/(public)/featuredProjectsApi';
 

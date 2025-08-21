@@ -6,6 +6,7 @@ import { programsApi } from "./(public)/programsApi"
 import { organizationsApi } from "./(public)/organizationsApi"
 import { publicFeaturedProjectsApi } from "./(public)/featuredProjectsApi"
 import { messagesApi } from "./(public)/messagesApi"
+import { userNotificationsApi } from "./(public)/userNotificationsApi"
 import { advocaciesApi } from "./admin/advocaciesApi"
 import { competenciesApi } from "./admin/competenciesApi"
 import { headsApi } from "./admin/headsApi"
@@ -31,6 +32,7 @@ export const store = configureStore({
     [organizationsApi.reducerPath]: organizationsApi.reducer,
     [publicFeaturedProjectsApi.reducerPath]: publicFeaturedProjectsApi.reducer,
     [messagesApi.reducerPath]: messagesApi.reducer,
+    [userNotificationsApi.reducerPath]: userNotificationsApi.reducer,
     [advocaciesApi.reducerPath]: advocaciesApi.reducer,
     [competenciesApi.reducerPath]: competenciesApi.reducer,
     [headsApi.reducerPath]: headsApi.reducer,
@@ -54,6 +56,7 @@ export const store = configureStore({
       organizationsApi.middleware,
       publicFeaturedProjectsApi.middleware,
       messagesApi.middleware,
+      userNotificationsApi.middleware,
       advocaciesApi.middleware,
       competenciesApi.middleware,
       headsApi.middleware,

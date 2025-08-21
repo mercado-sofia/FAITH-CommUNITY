@@ -6,7 +6,7 @@ import PageBanner from '../components/PageBanner';
 import AboutMissionVision from './components/AboutMissionVision';
 import AboutMore from './components/AboutMore';
 import AboutOrg from './components/AboutOrg';
-import OfficerSection from '../components/OfficerSection';
+import OfficerSection from '../home/OfficerSection';
 
 let hasVisitedAbout = false;
 let isFirstVisitAbout = true;

@@ -183,7 +183,7 @@ export default function FloatingMessage() {
   return (
     <div className={styles.floatingWrapper}>
       {isOpen && (
-        <div className={styles.messageBox} ref={boxRef}>
+        <div className={isLoggedIn ? styles.messageBoxAuthenticated : styles.messageBox} ref={boxRef}>
           <h2>Good to see you!</h2>
           <p className={styles.subtext}>Tell us how we can help.</p>
           <form onSubmit={handleSubmit}>

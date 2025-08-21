@@ -1,0 +1,60 @@
+/* Apply Page Styles */
+.applySection {
+  padding: 2rem 1rem;
+  background: #fff;
+}
+
+.applyContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.applyHeader {
+  text-align: center;
+}
+
+.applyTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.applySubtitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #15803d;
+  margin-bottom: 2rem;
+}
+
+.loginPrompt {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.loginPromptTitle {
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.loginButton {
+  background: #15803d;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+/* Responsive styles */
+@media (min-width: 768px) {
+  .applySection {
+    padding: 4rem 2rem !important;
+  }
+  
+  .applyTitle {
+    font-size: 2rem !important;
+  }
+}

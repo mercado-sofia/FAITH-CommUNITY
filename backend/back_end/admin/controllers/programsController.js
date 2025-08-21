@@ -633,3 +633,106 @@ export const updateProgram = async (req, res) => {
     });
   }
 };
+
+// Get program by title/slug for public display
+export const getProgramByTitle = async (req, res) => {
+  try {
+    const { title } = req.params;
+    
+    // Convert URL-friendly slug back to title format
+    const decodedTitle = decodeURIComponent(title);
+    
+    const query = `
+      SELECT 
+        pp.id,
+        pp.title,
+        pp.description,
+        pp.category,
+        pp.status,
+        pp.image,
+        pp.event_start_date,
+        pp.event_end_date,
+        pp.created_at,
+        pp.updated_at,
+        pp.organization_id,
+        o.orgName as organization_name,
+        o.org as organization_acronym,
+        o.logo as organization_logo,
+        o.org_color as organization_color
+      FROM programs_projects pp
+      LEFT JOIN organizations o ON pp.organization_id = o.id
+      WHERE pp.title = ?
+    `;
+    
+    const [results] = await db.execute(query, [decodedTitle]);
+    
+    if (results.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Program not found'
+      });
+    }
+    
+    const program = results[0];
+    
+    // Get multiple dates for this program
+    let multipleDates = [];
+    
+    // If program has event_start_date and event_end_date, check if they're the same (single day)
+    if (program.event_start_date && program.event_end_date) {
+      if (program.event_start_date === program.event_end_date) {
+        // Single day program
+        multipleDates = [program.event_start_date];
+      }
+    } else {
+      // Check for multiple dates in program_event_dates table
+      const [dateRows] = await db.execute(
+        'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
+        [program.id]
+      );
+      multipleDates = dateRows.map(row => row.event_date);
+    }
+
+    // Get additional images for this program
+    const [imageRows] = await db.execute(
+      'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
+      [program.id]
+    );
+    const additionalImages = imageRows.map(row => row.image_data);
+
+    // Construct proper logo URL
+    let logoUrl;
+    if (program.organization_logo) {
+      if (program.organization_logo.includes('/')) {
+        // Legacy path - extract filename
+        const filename = program.organization_logo.split('/').pop();
+        logoUrl = `/uploads/organizations/logos/${filename}`;
+      } else {
+        // New structure - direct filename
+        logoUrl = `/uploads/organizations/logos/${program.organization_logo}`;
+      }
+    } else {
+      // Fallback to default logo
+      logoUrl = `/logo/faith_community_logo.png`;
+    }
+
+    const programWithDates = {
+      ...program,
+      organization_logo: logoUrl,
+      multiple_dates: multipleDates,
+      additional_images: additionalImages
+    };
+    
+    res.json({
+      success: true,
+      data: programWithDates
+    });
+  } catch (error) {
+    console.error('Error fetching program by title:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch program',
+      error: error.message
+    });
+  }
+};

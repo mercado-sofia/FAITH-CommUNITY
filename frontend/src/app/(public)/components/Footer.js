@@ -6,6 +6,7 @@ import { FaFacebookF, FaPhoneAlt, FaEnvelope } from "react-icons/fa";
 import { FaInstagram, FaXTwitter } from "react-icons/fa6";
 import { HiMiniArrowRight } from "react-icons/hi2";
 import { Send } from "lucide-react";
+import { LuCircleCheck } from "react-icons/lu";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Toast from "./Toast";
@@ -30,6 +31,8 @@ export default function Footer() {
   const [sending, setSending] = useState(false);
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userData, setUserData] = useState(null);
+  const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
 
   // Check user authentication status
   useEffect(() => {
@@ -38,8 +41,10 @@ export default function Footer() {
     
     if (token && storedUserData) {
       try {
-        JSON.parse(storedUserData);
+        const parsedUserData = JSON.parse(storedUserData);
+        setUserData(parsedUserData);
         setIsLoggedIn(true);
+        setNewsletterSubscribed(parsedUserData.newsletterSubscribed || false);
       } catch (error) {
         localStorage.removeItem('userToken');
         localStorage.removeItem('userData');
@@ -113,6 +118,94 @@ export default function Footer() {
       setToast({
         show: true,
         message: err?.message || "Something went wrong while subscribing. Please try again.",
+        type: "error"
+      });
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function handleLoggedInSubscribe() {
+    try {
+      setSending(true);
+
+      const token = localStorage.getItem('userToken');
+      const res = await fetch(`${API_BASE}/api/users/newsletter/subscribe`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const errText = data?.error || data?.message || "Failed to subscribe.";
+        throw new Error(errText);
+      }
+
+      setNewsletterSubscribed(true);
+      setToast({
+        show: true,
+        message: data?.message || "Successfully subscribed to newsletter!",
+        type: "success"
+      });
+
+      // Update user data in localStorage
+      if (userData) {
+        const updatedUserData = { ...userData, newsletterSubscribed: true };
+        localStorage.setItem('userData', JSON.stringify(updatedUserData));
+        setUserData(updatedUserData);
+      }
+    } catch (err) {
+      setToast({
+        show: true,
+        message: err?.message || "Something went wrong while subscribing. Please try again.",
+        type: "error"
+      });
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function handleLoggedInUnsubscribe() {
+    try {
+      setSending(true);
+
+      const token = localStorage.getItem('userToken');
+      const res = await fetch(`${API_BASE}/api/users/newsletter/unsubscribe`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const errText = data?.error || data?.message || "Failed to unsubscribe.";
+        throw new Error(errText);
+      }
+
+      setNewsletterSubscribed(false);
+      setToast({
+        show: true,
+        message: data?.message || "Successfully unsubscribed from newsletter.",
+        type: "success"
+      });
+
+      // Update user data in localStorage
+      if (userData) {
+        const updatedUserData = { ...userData, newsletterSubscribed: false };
+        localStorage.setItem('userData', JSON.stringify(updatedUserData));
+        setUserData(updatedUserData);
+      }
+    } catch (err) {
+      setToast({
+        show: true,
+        message: err?.message || "Something went wrong while unsubscribing. Please try again.",
         type: "error"
       });
     } finally {
@@ -232,32 +325,78 @@ export default function Footer() {
           </h4>
           <p>Join our mailing list for updates on programs, volunteer opportunities, and stories that make a difference.</p>
           
-          <form className={styles.subscribeForm} onSubmit={handleSubscribe} noValidate>
-            <label htmlFor="newsletter-email" className={styles.visuallyHidden}>
-              Email address for newsletter
-            </label>
-            <input
-              type="email"
-              id="newsletter-email"
-              name="email"
-              placeholder="Enter your email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <button type="submit" disabled={sending} aria-busy={sending}>
-              {sending ? (
-                <div className={styles.loadingDots}>
-                  <div className={styles.loadingDot}></div>
-                  <div className={styles.loadingDot}></div>
-                  <div className={styles.loadingDot}></div>
+          {isLoggedIn ? (
+            // Logged-in user interface
+            <div className={styles.loggedInNewsletter}>
+              {newsletterSubscribed ? (
+                <div className={styles.subscribedState}>
+                  <p className={styles.subscribedMessage}>
+                    <LuCircleCheck className={styles.checkIcon} />
+                    You're subscribed to our newsletter!
+                  </p>
+                  <button 
+                    onClick={handleLoggedInUnsubscribe}
+                    disabled={sending}
+                    className={styles.unsubscribeButton}
+                  >
+                    {sending ? (
+                      <div className={styles.loadingDots}>
+                        <div className={styles.loadingDot}></div>
+                        <div className={styles.loadingDot}></div>
+                        <div className={styles.loadingDot}></div>
+                      </div>
+                    ) : (
+                      "Unsubscribe"
+                    )}
+                  </button>
                 </div>
               ) : (
-                <Send className={styles.submitIcon} />
+                <button 
+                  onClick={handleLoggedInSubscribe}
+                  disabled={sending}
+                  className={styles.subscribeButton}
+                >
+                  {sending ? (
+                    <div className={styles.loadingDots}>
+                      <div className={styles.loadingDot}></div>
+                      <div className={styles.loadingDot}></div>
+                      <div className={styles.loadingDot}></div>
+                    </div>
+                  ) : (
+                    "Subscribe"
+                  )}
+                </button>
               )}
-            </button>
-          </form>
+            </div>
+          ) : (
+            // Non-logged-in user interface
+            <form className={styles.subscribeForm} onSubmit={handleSubscribe} noValidate>
+              <label htmlFor="newsletter-email" className={styles.visuallyHidden}>
+                Email address for newsletter
+              </label>
+              <input
+                type="email"
+                id="newsletter-email"
+                name="email"
+                placeholder="Enter your email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <button type="submit" disabled={sending} aria-busy={sending}>
+                {sending ? (
+                  <div className={styles.loadingDots}>
+                    <div className={styles.loadingDot}></div>
+                    <div className={styles.loadingDot}></div>
+                    <div className={styles.loadingDot}></div>
+                  </div>
+                ) : (
+                  <Send className={styles.submitIcon} />
+                )}
+              </button>
+            </form>
+          )}
 
           <div className={styles.socials}>
             <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">

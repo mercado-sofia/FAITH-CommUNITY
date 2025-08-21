@@ -3,6 +3,7 @@ import db from "../../database.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { createUserNotification } from './userController.js';
 
 // Ensure upload folder exists
 const uploadsDir = path.join(process.cwd(), "uploads", "volunteers", "valid-ids");
@@ -214,6 +215,25 @@ export const updateVolunteerStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     
+    // First, get the volunteer details to find the user
+    const [volunteerRows] = await db.execute(`
+      SELECT v.*, p.title as program_name, u.id as user_id, u.email
+      FROM volunteers v
+      LEFT JOIN programs_projects p ON v.program_id = p.id
+      LEFT JOIN users u ON v.email = u.email
+      WHERE v.id = ? AND v.db_status = 'Active'
+    `, [id]);
+    
+    if (volunteerRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Volunteer not found or inactive"
+      });
+    }
+    
+    const volunteer = volunteerRows[0];
+    
+    // Update the volunteer status
     const [result] = await db.execute(`
       UPDATE volunteers 
       SET status = ?, updated_at = NOW()
@@ -225,6 +245,29 @@ export const updateVolunteerStatus = async (req, res) => {
         success: false,
         message: "Volunteer not found or inactive"
       });
+    }
+    
+    // Create notification for the user if they exist
+    if (volunteer.user_id) {
+      const programName = volunteer.program_name || 'Program';
+      let notificationTitle, notificationMessage;
+      
+      if (status === 'Approved') {
+        notificationTitle = 'Application Approved';
+        notificationMessage = `Your volunteer application for "${programName}" has been approved! You will be contacted soon with further details.`;
+      } else if (status === 'Declined') {
+        notificationTitle = 'Application Status Update';
+        notificationMessage = `Your volunteer application for "${programName}" has been reviewed. Please check your email for more details.`;
+      }
+      
+      if (notificationTitle && notificationMessage) {
+        await createUserNotification(
+          volunteer.user_id,
+          'volunteer_status',
+          notificationTitle,
+          notificationMessage
+        );
+      }
     }
     
     res.status(200).json({

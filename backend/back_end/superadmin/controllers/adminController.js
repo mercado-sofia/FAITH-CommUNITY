@@ -509,7 +509,7 @@ export const forgotPassword = async (req, res) => {
     )
 
     // Send email with reset link
-    const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`
+    const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}&type=admin`
     
     const { sendMail } = await import('../../utils/mailer.js')
     
@@ -573,6 +573,18 @@ export const resetPassword = async (req, res) => {
       [hashedPassword, tokenData.email]
     )
 
+    // Also update superadmin password if email exists there
+    await db.execute(
+      'UPDATE superadmin SET password = ? WHERE username = ?',
+      [hashedPassword, tokenData.email]
+    )
+
+    // Also update user password if email exists there
+    await db.execute(
+      'UPDATE users SET password_hash = ? WHERE email = ?',
+      [hashedPassword, tokenData.email]
+    )
+
     // Delete used token
     await db.execute(
       'DELETE FROM password_reset_tokens WHERE token = ?',
@@ -589,18 +601,69 @@ export const resetPassword = async (req, res) => {
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #1A685B;">Password Successfully Reset</h2>
           <p>Hello,</p>
-          <p>Your password has been successfully reset for your FAITH CommUNITY admin account.</p>
+          <p>Your password has been successfully reset for your FAITH CommUNITY account.</p>
           <p>You can now log in with your new password.</p>
           <p>If you didn't request this password reset, please contact support immediately.</p>
           <p>Best regards,<br>FAITH CommUNITY Team</p>
         </div>
       `,
-      text: `Password Successfully Reset - FAITH CommUNITY\n\nHello,\n\nYour password has been successfully reset for your FAITH CommUNITY admin account.\n\nYou can now log in with your new password.\n\nIf you didn't request this password reset, please contact support immediately.\n\nBest regards,\nFAITH CommUNITY Team`
+      text: `Password Successfully Reset - FAITH CommUNITY\n\nHello,\n\nYour password has been successfully reset for your FAITH CommUNITY account.\n\nYou can now log in with your new password.\n\nIf you didn't request this password reset, please contact support immediately.\n\nBest regards,\nFAITH CommUNITY Team`
     })
 
     res.json({ message: "Password has been successfully reset" })
   } catch (err) {
     console.error("Reset password error:", err)
     res.status(500).json({ error: "Internal server error while resetting password" })
+  }
+}
+
+// Validate reset token without using it
+export const validateResetToken = async (req, res) => {
+  const { token } = req.body
+
+  if (!token) {
+    return res.status(400).json({ error: "Token is required" })
+  }
+
+  try {
+    // Check if token exists and is not expired
+    const [tokenRows] = await db.execute(
+      'SELECT email, expires_at FROM password_reset_tokens WHERE token = ? AND expires_at > NOW()',
+      [token]
+    )
+
+    if (tokenRows.length === 0) {
+      return res.status(400).json({ error: "Invalid or expired reset token" })
+    }
+
+    res.json({ message: "Token is valid" })
+  } catch (err) {
+    console.error("Validate reset token error:", err)
+    res.status(500).json({ error: "Internal server error while validating token" })
+  }
+}
+
+// Check if email exists in admin system
+export const checkEmailAdmin = async (req, res) => {
+  const { email } = req.body
+
+  if (!email || !email.trim()) {
+    return res.status(400).json({ error: "Email is required" })
+  }
+
+  try {
+    const [adminRows] = await db.execute(
+      'SELECT id FROM admins WHERE email = ? AND status = "ACTIVE"',
+      [email]
+    )
+
+    if (adminRows.length > 0) {
+      res.json({ exists: true })
+    } else {
+      res.status(404).json({ exists: false })
+    }
+  } catch (err) {
+    console.error("Admin check email error:", err)
+    res.status(500).json({ error: "Internal server error" })
   }
 }

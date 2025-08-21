@@ -4,6 +4,7 @@ import {
   verifySuperadminToken,
   getSuperadminProfile,
   updateSuperadminPassword,
+  updateSuperadminEmail,
 } from "../controllers/superadminAuthController.js"
 
 
@@ -16,6 +17,10 @@ router.post("/login", loginSuperadmin)
 
 // GET /api/superadmin/auth/profile/:id - Get superadmin profile (protected)
 router.get("/profile/:id", verifySuperadminToken, getSuperadminProfile)
+
+
+// PUT /api/superadmin/auth/email/:id - Update superadmin email (protected)
+router.put("/email/:id", verifySuperadminToken, updateSuperadminEmail)
 
 
 // PUT /api/superadmin/auth/password/:id - Update superadmin password (protected)

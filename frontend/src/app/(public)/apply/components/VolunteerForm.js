@@ -167,22 +167,24 @@ export default function SimplifiedVolunteerForm({ selectedProgramId }) {
         throw new Error("User not authenticated");
       }
 
-      // Submit form
-      const form = new FormData();
-      form.append("program_id", formData.program.id);
-      form.append("full_name", `${userData.firstName} ${userData.lastName}`);
-      form.append("age", calculateAge(userData.birthDate));
-      form.append("gender", userData.gender);
-      form.append("email", userData.email);
-      form.append("phone_number", userData.contactNumber);
-      form.append("address", userData.address);
-      form.append("occupation", userData.occupation || "");
-      form.append("citizenship", userData.citizenship || "");
-      form.append("reason", formData.reason.trim());
+      // Submit form with new structure (user_id will be extracted from JWT token)
+      const requestData = {
+        program_id: formData.program.id,
+        reason: formData.reason.trim()
+      };
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/volunteers`, {
+      const userToken = localStorage.getItem('userToken');
+      console.log('User token:', userToken ? 'Present' : 'Missing');
+      console.log('Token value:', userToken);
+      console.log('Request data:', requestData);
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/apply`, {
         method: "POST",
-        body: form,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userToken}`
+        },
+        body: JSON.stringify(requestData),
       });
 
       if (!response.ok) {
@@ -219,20 +221,7 @@ export default function SimplifiedVolunteerForm({ selectedProgramId }) {
     }
   };
 
-  // Calculate age from birth date
-  const calculateAge = (birthDate) => {
-    if (!birthDate) return "";
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--;
-    }
-    
-    return age.toString();
-  };
+
 
   return (
     <>
@@ -258,30 +247,26 @@ export default function SimplifiedVolunteerForm({ selectedProgramId }) {
         </FormErrorBoundary>
 
         <FormErrorBoundary componentName="ReasonSection" formSection="reason">
-          <div className={styles.sectionCard} ref={reasonRef}>
-            <h3>Reason for Applying</h3>
-            <div className={styles.fullRow}>
-              <div className={styles.inputGroup}>
-                <textarea
-                  id="reason"
-                  name="reason"
-                  rows={4}
-                  placeholder="Please tell us why you want to join this program"
-                  value={formData.reason}
-                  onChange={(e) => {
-                    setFormData(prev => ({ ...prev, reason: e.target.value }));
-                    clearFieldError("reason");
-                  }}
-                  required
-                  className={fieldErrors.reason || validationErrors.reason ? styles.inputError : ""}
-                />
-                {(fieldErrors.reason || validationErrors.reason) && (
-                  <div className={styles.errorMessage} role="alert">
-                    {fieldErrors.reason || validationErrors.reason}
-                  </div>
-                )}
+          <div className={styles.reasonSection} ref={reasonRef}>
+            <h3 className={styles.reasonHeading}>Reason for Applying</h3>
+            <textarea
+              id="reason"
+              name="reason"
+              rows={4}
+              placeholder="Please tell us why you want to join this program"
+              value={formData.reason}
+              onChange={(e) => {
+                setFormData(prev => ({ ...prev, reason: e.target.value }));
+                clearFieldError("reason");
+              }}
+              required
+              className={`${styles.reasonTextarea} ${fieldErrors.reason || validationErrors.reason ? styles.inputError : ""}`}
+            />
+            {(fieldErrors.reason || validationErrors.reason) && (
+              <div className={styles.errorMessage} role="alert">
+                {fieldErrors.reason || validationErrors.reason}
               </div>
-            </div>
+            )}
           </div>
         </FormErrorBoundary>
 

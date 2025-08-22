@@ -1,86 +1,71 @@
 // db table: volunteers
 import db from "../../database.js";
-import multer from "multer";
-import path from "path";
-import fs from "fs";
 import { createUserNotification } from './userController.js';
-
-// Ensure upload folder exists
-const uploadsDir = path.join(process.cwd(), "uploads", "volunteers", "valid-ids");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// File upload config
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${file.originalname}`;
-    cb(null, uniqueName);
-  },
-});
-
-export const upload = multer({
-  storage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB max
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = [".png", ".jpg", ".jpeg", ".pdf"];
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, allowedTypes.includes(ext));
-  },
-}).single("validId");
 
 export const submitVolunteer = async (req, res) => {
   try {
+    console.log('Submit volunteer request received');
+    console.log('Request body:', req.body);
+    console.log('Request user:', req.user);
+    
     const {
       program_id,
-      fullName,
-      age,
-      gender,
-      email,
-      phoneNumber,
-      address,
-      occupation,
-      citizenship,
       reason,
     } = req.body;
 
+    // Get user_id from the authenticated user (from JWT token)
+    const user_id = req.user?.id;
+    
+    console.log('Extracted user_id:', user_id);
+    
+    if (!user_id) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
     // Validate required fields
-    if (!program_id) {
+    if (!program_id || !reason) {
       return res.status(400).json({
-        error: "Program selection is required.",
+        error: "Program selection and reason are required.",
       });
     }
 
-    // Validate gender (dropdown should only allow Male or Female)
-    const validGenders = ["Male", "Female"];
-    if (!validGenders.includes(gender)) {
-      return res.status(400).json({
-        error: "Invalid gender. Only 'Male' or 'Female' are accepted.",
-      });
+    // Check if user exists and is active
+    const [userRows] = await db.execute(
+      'SELECT id FROM users WHERE id = ? AND is_active = 1',
+      [user_id]
+    );
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: 'User not found or inactive' });
     }
 
-    const validIdPath = req.file ? `/uploads/volunteers/valid-ids/${req.file.filename}` : null;
+    // Check if user already applied for this program
+    const [existingApplication] = await db.execute(
+      'SELECT id FROM volunteers WHERE user_id = ? AND program_id = ?',
+      [user_id, program_id]
+    );
+
+    if (existingApplication.length > 0) {
+      return res.status(409).json({ error: 'You have already applied for this program' });
+    }
+
+    // Verify the program exists and is approved
+    const [programRows] = await db.execute(
+      'SELECT id, status FROM programs_projects WHERE id = ? AND status = "Upcoming"',
+      [program_id]
+    );
+
+    if (programRows.length === 0) {
+      return res.status(404).json({ error: 'Program not found or not available for applications' });
+    }
 
     const sql = `
       INSERT INTO volunteers 
-      (program_id, full_name, age, gender, email, phone_number, address, occupation, citizenship, reason, valid_id, status, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', NOW())
+      (user_id, program_id, reason, status, created_at)
+      VALUES (?, ?, ?, 'Pending', NOW())
     `;
 
-    const values = [
-      program_id,
-      fullName,
-      age,
-      gender,
-      email,
-      phoneNumber,
-      address,
-      occupation,
-      citizenship,
-      reason,
-      validIdPath,
-    ];
+    const values = [user_id, program_id, reason];
 
     const [result] = await db.execute(sql, values);
 
@@ -101,17 +86,51 @@ export const submitVolunteer = async (req, res) => {
 export const getAllVolunteers = async (req, res) => {
   try {
     const [results] = await db.query(`
-      SELECT v.*, p.title as program_name, p.title as program_title, o.orgName as organization_name
+      SELECT 
+        v.id,
+        v.program_id,
+        v.reason,
+        v.status,
+        v.created_at,
+        u.id as user_id,
+        u.first_name,
+        u.last_name,
+        u.full_name,
+        u.email,
+        u.contact_number,
+        u.gender,
+        u.address,
+        u.occupation,
+        u.citizenship,
+        u.birth_date,
+        u.profile_photo_url,
+        p.title as program_name,
+        p.title as program_title,
+        o.orgName as organization_name
       FROM volunteers v
+      JOIN users u ON v.user_id = u.id
       LEFT JOIN programs_projects p ON v.program_id = p.id
       LEFT JOIN organizations o ON p.organization_id = o.id
-      WHERE v.db_status = 'active'
+      WHERE u.is_active = 1
       ORDER BY v.created_at DESC
     `);
+
+    // Calculate age from birth_date
+    const volunteersWithAge = results.map(volunteer => {
+      const age = volunteer.birth_date ? 
+        Math.floor((new Date() - new Date(volunteer.birth_date)) / (365.25 * 24 * 60 * 60 * 1000)) : 
+        null;
+      
+      return {
+        ...volunteer,
+        age
+      };
+    });
+
     res.status(200).json({
       success: true,
-      count: results.length,
-      data: results,
+      count: volunteersWithAge.length,
+      data: volunteersWithAge,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -123,18 +142,52 @@ export const getVolunteersByOrganization = async (req, res) => {
     const { orgId } = req.params;
     
     const [results] = await db.query(`
-      SELECT v.*, p.title as program_name, p.title as program_title, o.orgName as organization_name, o.id as organization_id
+      SELECT 
+        v.id,
+        v.program_id,
+        v.reason,
+        v.status,
+        v.created_at,
+        u.id as user_id,
+        u.first_name,
+        u.last_name,
+        u.full_name,
+        u.email,
+        u.contact_number,
+        u.gender,
+        u.address,
+        u.occupation,
+        u.citizenship,
+        u.birth_date,
+        u.profile_photo_url,
+        p.title as program_name,
+        p.title as program_title,
+        o.orgName as organization_name,
+        o.id as organization_id
       FROM volunteers v
+      JOIN users u ON v.user_id = u.id
       LEFT JOIN programs_projects p ON v.program_id = p.id
       LEFT JOIN organizations o ON p.organization_id = o.id
-      WHERE o.id = ? AND v.db_status = 'active'
+      WHERE o.id = ? AND u.is_active = 1
       ORDER BY v.created_at DESC
     `, [orgId]);
+
+    // Calculate age from birth_date
+    const volunteersWithAge = results.map(volunteer => {
+      const age = volunteer.birth_date ? 
+        Math.floor((new Date() - new Date(volunteer.birth_date)) / (365.25 * 24 * 60 * 60 * 1000)) : 
+        null;
+      
+      return {
+        ...volunteer,
+        age
+      };
+    });
     
     res.status(200).json({
       success: true,
-      count: results.length,
-      data: results,
+      count: volunteersWithAge.length,
+      data: volunteersWithAge,
     });
   } catch (err) {
     console.error("Error fetching volunteers by organization:", err);
@@ -162,18 +215,52 @@ export const getVolunteersByAdminOrg = async (req, res) => {
     
     // Now get volunteers for programs from that organization
     const [results] = await db.query(`
-      SELECT v.*, p.title as program_name, p.title as program_title, o.orgName as organization_name, o.id as organization_id
+      SELECT 
+        v.id,
+        v.program_id,
+        v.reason,
+        v.status,
+        v.created_at,
+        u.id as user_id,
+        u.first_name,
+        u.last_name,
+        u.full_name,
+        u.email,
+        u.contact_number,
+        u.gender,
+        u.address,
+        u.occupation,
+        u.citizenship,
+        u.birth_date,
+        u.profile_photo_url,
+        p.title as program_name,
+        p.title as program_title,
+        o.orgName as organization_name,
+        o.id as organization_id
       FROM volunteers v
+      JOIN users u ON v.user_id = u.id
       LEFT JOIN programs_projects p ON v.program_id = p.id
       LEFT JOIN organizations o ON p.organization_id = o.id
-      WHERE o.org = ? AND v.db_status = 'Active'
+      WHERE o.org = ? AND u.is_active = 1
       ORDER BY v.created_at DESC
     `, [adminOrg]);
+
+    // Calculate age from birth_date
+    const volunteersWithAge = results.map(volunteer => {
+      const age = volunteer.birth_date ? 
+        Math.floor((new Date() - new Date(volunteer.birth_date)) / (365.25 * 24 * 60 * 60 * 1000)) : 
+        null;
+      
+      return {
+        ...volunteer,
+        age
+      };
+    });
     
     res.status(200).json({
       success: true,
-      count: results.length,
-      data: results,
+      count: volunteersWithAge.length,
+      data: volunteersWithAge,
     });
   } catch (err) {
     console.error("Error fetching volunteers by admin organization:", err);
@@ -186,11 +273,33 @@ export const getVolunteerById = async (req, res) => {
     const { id } = req.params;
     
     const [results] = await db.query(`
-      SELECT v.*, p.title as program_name, p.title as program_title, o.orgName as organization_name, o.id as organization_id
+      SELECT 
+        v.id,
+        v.program_id,
+        v.reason,
+        v.status,
+        v.created_at,
+        u.id as user_id,
+        u.first_name,
+        u.last_name,
+        u.full_name,
+        u.email,
+        u.contact_number,
+        u.gender,
+        u.address,
+        u.occupation,
+        u.citizenship,
+        u.birth_date,
+        u.profile_photo_url,
+        p.title as program_name,
+        p.title as program_title,
+        o.orgName as organization_name,
+        o.id as organization_id
       FROM volunteers v
+      JOIN users u ON v.user_id = u.id
       LEFT JOIN programs_projects p ON v.program_id = p.id
       LEFT JOIN organizations o ON p.organization_id = o.id
-      WHERE v.id = ?
+      WHERE v.id = ? AND u.is_active = 1
     `, [id]);
     
     if (results.length === 0) {
@@ -199,10 +308,19 @@ export const getVolunteerById = async (req, res) => {
         message: "Volunteer not found"
       });
     }
+
+    const volunteer = results[0];
+    
+    // Calculate age from birth_date
+    const age = volunteer.birth_date ? 
+      Math.floor((new Date() - new Date(volunteer.birth_date)) / (365.25 * 24 * 60 * 60 * 1000)) : 
+      null;
+    
+    volunteer.age = age;
     
     res.status(200).json({
       success: true,
-      data: results[0],
+      data: volunteer,
     });
   } catch (err) {
     console.error("Error fetching volunteer by ID:", err);
@@ -220,14 +338,14 @@ export const updateVolunteerStatus = async (req, res) => {
       SELECT v.*, p.title as program_name, u.id as user_id, u.email
       FROM volunteers v
       LEFT JOIN programs_projects p ON v.program_id = p.id
-      LEFT JOIN users u ON v.email = u.email
-      WHERE v.id = ? AND v.db_status = 'Active'
+      LEFT JOIN users u ON v.user_id = u.id
+      WHERE v.id = ?
     `, [id]);
     
     if (volunteerRows.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "Volunteer not found or inactive"
+        message: "Volunteer not found"
       });
     }
     
@@ -237,13 +355,13 @@ export const updateVolunteerStatus = async (req, res) => {
     const [result] = await db.execute(`
       UPDATE volunteers 
       SET status = ?, updated_at = NOW()
-      WHERE id = ? AND db_status = 'Active'
+      WHERE id = ?
     `, [status, id]);
     
     if (result.affectedRows === 0) {
       return res.status(404).json({
         success: false,
-        message: "Volunteer not found or inactive"
+        message: "Volunteer not found"
       });
     }
     
@@ -285,21 +403,20 @@ export const softDeleteVolunteer = async (req, res) => {
     const { id } = req.params;
     
     const [result] = await db.execute(`
-      UPDATE volunteers 
-      SET db_status = 'Inactive', updated_at = NOW()
-      WHERE id = ? AND db_status = 'Active'
+      DELETE FROM volunteers 
+      WHERE id = ?
     `, [id]);
     
     if (result.affectedRows === 0) {
       return res.status(404).json({
         success: false,
-        message: "Volunteer not found or already inactive"
+        message: "Volunteer not found"
       });
     }
     
     res.status(200).json({
       success: true,
-      message: "Volunteer removed from view successfully"
+      message: "Volunteer deleted successfully"
     });
   } catch (err) {
     console.error("Error soft deleting volunteer:", err);
@@ -310,7 +427,20 @@ export const softDeleteVolunteer = async (req, res) => {
 export const testGet = (req, res) => res.send("Hello from apply.js!");
 
 export const testPost = (req, res) => {
+  console.log('Test POST endpoint hit');
   res.json({ success: true, message: "Test POST successful" });
+};
+
+export const testAuth = (req, res) => {
+  console.log('Test auth endpoint hit');
+  console.log('Request user:', req.user);
+  console.log('Request headers:', req.headers);
+  res.json({ 
+    success: true, 
+    message: "Auth test successful",
+    user: req.user,
+    hasToken: !!req.headers.authorization
+  });
 };
 
 // Get approved programs with status "Upcoming" for volunteer application dropdown

@@ -177,7 +177,8 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       })
-      if (superadminCheck.ok) {
+      const superadminData = await superadminCheck.json()
+      if (superadminCheck.ok && superadminData.exists) {
         authSystems.push("superadmin")
       }
     } catch (error) {
@@ -191,7 +192,8 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       })
-      if (adminCheck.ok) {
+      const adminData = await adminCheck.json()
+      if (adminCheck.ok && adminData.exists) {
         authSystems.push("admin")
       }
     } catch (error) {
@@ -205,7 +207,8 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       })
-      if (userCheck.ok) {
+      const userData = await userCheck.json()
+      if (userCheck.ok && userData.exists) {
         authSystems.push("user")
       }
     } catch (error) {

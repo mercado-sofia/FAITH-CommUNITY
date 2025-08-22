@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import styles from "./styles/floatingMessage.module.css";
 import { FiMessageCircle } from "react-icons/fi";
-import { FaAngleDown, FaChevronDown } from "react-icons/fa";
+import { FaChevronRight, FaSpinner } from "react-icons/fa";
 import { IoChevronDown } from "react-icons/io5";
 import { useGetAllOrganizationsQuery } from "../../../rtk/(public)/organizationsApi";
 import { useSubmitMessageMutation } from "../../../rtk/(public)/messagesApi";
@@ -21,6 +21,7 @@ export default function FloatingMessage() {
   const [userData, setUserData] = useState(null);
 
   const boxRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   // Check user authentication status
   useEffect(() => {
@@ -96,6 +97,25 @@ export default function FloatingMessage() {
     };
   }, [isOpen]);
 
+  // Handle dropdown outside click
+  useEffect(() => {
+    const handleDropdownClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    if (dropdownOpen) {
+      document.addEventListener("mousedown", handleDropdownClickOutside);
+      document.addEventListener("touchstart", handleDropdownClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleDropdownClickOutside);
+      document.removeEventListener("touchstart", handleDropdownClickOutside);
+    };
+  }, [dropdownOpen]);
+
   const closeMessageBox = () => {
     setIsOpen(false);
     setDropdownOpen(false);
@@ -154,7 +174,8 @@ export default function FloatingMessage() {
         organization_id: selectedOrg.id, // This should be the numeric ID
         sender_email: email,
         sender_name: null, // Optional field
-        message: message.trim()
+        message: message.trim(),
+        user_id: isLoggedIn && userData ? userData.id : null // Include user_id if authenticated
       }).unwrap();
 
       // Show success message
@@ -189,7 +210,7 @@ export default function FloatingMessage() {
           <form onSubmit={handleSubmit}>
             <label className={styles.label}>Select an Organization</label>
 
-            <div className={styles.customDropdown}>
+            <div className={styles.customDropdown} ref={dropdownRef}>
               <div
                 id="org-select"
                 className={`${styles.selected} ${org ? styles.selectedFilled : ""}`}
@@ -199,7 +220,7 @@ export default function FloatingMessage() {
                 aria-haspopup="listbox"
               >
                 {org || "Select an Organization"}
-                <FaChevronDown className={styles.dropdownIcon} />
+                <FaChevronRight className={`${styles.dropdownIcon} ${dropdownOpen ? styles.rotated : ''}`} />
               </div>
 
               {dropdownOpen && (
@@ -274,7 +295,8 @@ export default function FloatingMessage() {
               type="submit"
               disabled={!org || (!isLoggedIn && !email) || !message.trim() || emailError || isSubmitting}
             >
-              {isSubmitting ? "Sending..." : "Send"}
+              Send
+              {isSubmitting && <FaSpinner className={styles.spinner} />}
             </button>
           </form>
         </div>

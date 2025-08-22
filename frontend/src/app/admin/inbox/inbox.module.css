@@ -250,7 +250,7 @@
 .messageItem {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  padding: 1.25rem;
+  padding: 1rem;
   background: white;
   transition: all 0.2s ease;
   position: relative;
@@ -276,7 +276,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .messageMeta {
@@ -285,22 +285,29 @@
 
 .senderInfo {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.25rem;
+  flex-direction: column;
+  gap: 0.2rem;
 }
 
 .senderEmail {
+  font-weight: 400;
+  color: #6c727a;
+  font-family: var(--font-inter), sans-serif;
+  font-size: 12px;
+}
+
+.senderName {
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-inter), sans-serif;
+}
+
+.senderEmailUnauth {
   font-weight: 600;
   color: #374151;
   font-family: var(--font-inter), sans-serif;
   font-size: 14px;
-}
-
-.senderName {
-  color: #6b7280;
-  font-size: 13px;
-  font-family: var(--font-inter), sans-serif;
 }
 
 .messageDate {
@@ -311,7 +318,8 @@
 
 .messageActions {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .actionButton {

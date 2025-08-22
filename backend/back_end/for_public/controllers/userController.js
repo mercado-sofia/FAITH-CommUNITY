@@ -209,7 +209,7 @@ export const loginUser = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user.id, email: user.email, role: 'user' },
+      { id: user.id, email: user.email, role: 'user' },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '7d' }
     );
@@ -248,7 +248,7 @@ export const loginUser = async (req, res) => {
 // Get user profile
 export const getUserProfile = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     const [users] = await promisePool.query(
       'SELECT * FROM users WHERE id = ?',
@@ -289,7 +289,7 @@ export const getUserProfile = async (req, res) => {
 // Update user profile
 export const updateUserProfile = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const {
       firstName,
       lastName,
@@ -319,20 +319,70 @@ export const updateUserProfile = async (req, res) => {
   }
 };
 
-// Upload profile photo (temporarily disabled - Cloudinary integration needed)
+// Upload profile photo
 export const uploadProfilePhoto = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    // TODO: Implement Cloudinary upload functionality
-    // For now, return a placeholder response
+    // Move file from temp directory to user-profile directory
+    const fs = await import('fs');
+    const path = await import('path');
+    
+    const tempFilePath = req.file.path;
+    const fileName = req.file.filename;
+    const userProfileDir = path.join(process.cwd(), 'uploads', 'user-profile');
+    
+    // Ensure user-profile directory exists
+    if (!fs.existsSync(userProfileDir)) {
+      fs.mkdirSync(userProfileDir, { recursive: true });
+    }
+    
+    const targetPath = path.join(userProfileDir, fileName);
+    
+    // Move file to user-profile directory
+    fs.renameSync(tempFilePath, targetPath);
+    
+    // Generate the URL for the uploaded file
+    const profilePhotoUrl = `/uploads/user-profile/${fileName}`;
+    
+    // Update user's profile_photo_url in database
+    await promisePool.query(
+      'UPDATE users SET profile_photo_url = ?, updated_at = NOW() WHERE id = ?',
+      [profilePhotoUrl, userId]
+    );
+    
+    // Get updated user data
+    const [users] = await promisePool.query(
+      'SELECT * FROM users WHERE id = ?',
+      [userId]
+    );
+    
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const user = users[0];
+    
     res.json({
-      message: 'Profile photo upload functionality coming soon',
-      profilePhoto: null
+      message: 'Profile photo uploaded successfully',
+      profilePhotoUrl: profilePhotoUrl,
+      user: {
+        id: user.id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        email: user.email,
+        contactNumber: user.contact_number,
+        gender: user.gender,
+        address: user.address,
+        birthDate: user.birth_date,
+        occupation: user.occupation,
+        citizenship: user.citizenship,
+        profile_photo_url: user.profile_photo_url
+      }
     });
 
   } catch (error) {
@@ -344,7 +394,7 @@ export const uploadProfilePhoto = async (req, res) => {
 // Change password
 export const changePassword = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const { currentPassword, newPassword } = req.body;
 
     // Get current password hash
@@ -384,7 +434,7 @@ export const changePassword = async (req, res) => {
 // Subscribe to newsletter (for logged-in users)
 export const subscribeToNewsletter = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     // Get user details
     const [users] = await promisePool.query(
@@ -436,7 +486,7 @@ export const subscribeToNewsletter = async (req, res) => {
 // Unsubscribe from newsletter (for logged-in users)
 export const unsubscribeFromNewsletter = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     // Get user details
     const [users] = await promisePool.query(
@@ -480,7 +530,7 @@ export const unsubscribeFromNewsletter = async (req, res) => {
 // Get newsletter subscription status
 export const getNewsletterStatus = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     const [users] = await promisePool.query(
       'SELECT newsletter_subscribed FROM users WHERE id = ?',
@@ -508,7 +558,7 @@ export const logoutUser = async (req, res) => {
     // by removing the token from storage. However, we can log the logout
     // and update the last_login timestamp if needed.
     
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     if (userId) {
       // Update last login timestamp (optional)
       await promisePool.query(
@@ -656,13 +706,19 @@ export const resendVerificationEmail = async (req, res) => {
 // Verify JWT token middleware
 export const verifyToken = async (req, res, next) => {
   try {
+    console.log('Verifying token...');
+    console.log('Authorization header:', req.headers.authorization);
+    
     const token = req.headers.authorization?.split(' ')[1];
+    console.log('Extracted token:', token ? 'Present' : 'Missing');
 
     if (!token) {
+      console.log('No token provided');
       return res.status(401).json({ error: 'Access token required' });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    console.log('Decoded token:', decoded);
     req.user = decoded;
     next();
 

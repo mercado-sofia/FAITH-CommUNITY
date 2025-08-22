@@ -120,7 +120,7 @@ export const useAdminVolunteers = (adminId) => {
     age: volunteer.age || 'N/A',
     gender: volunteer.gender || 'N/A',
     email: volunteer.email || 'No email',
-    contact: volunteer.phone_number || volunteer.contact || 'No contact',
+    contact: volunteer.contact_number || volunteer.phone_number || volunteer.contact || 'No contact',
     address: volunteer.address || 'No address',
     occupation: volunteer.occupation || 'N/A',
     citizenship: volunteer.citizenship || 'N/A',

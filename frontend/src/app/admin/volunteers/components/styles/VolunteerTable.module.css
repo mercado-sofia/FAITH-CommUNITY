@@ -122,10 +122,19 @@
   font-family: var(--font-inter);
 }
 
-/* Checkbox styling */
+/* Checkbox styling - matching submissions table style */
 .tableHeader input[type="checkbox"],
 .tableBody input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
   cursor: pointer;
+  accent-color: #3b82f6;
+}
+
+.tableHeader input[type="checkbox"]:disabled,
+.tableBody input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .table {

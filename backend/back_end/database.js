@@ -258,6 +258,7 @@ const initializeDatabase = async () => {
         CREATE TABLE messages (
           id INT AUTO_INCREMENT PRIMARY KEY,
           organization_id INT NOT NULL,
+          user_id INT NULL,
           sender_email VARCHAR(255) NOT NULL,
           sender_name VARCHAR(255),
           message TEXT NOT NULL,
@@ -265,11 +266,56 @@ const initializeDatabase = async () => {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
-          INDEX idx_organization_read (organization_id, is_read),
-          INDEX idx_created_at (created_at)
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+          INDEX idx_organization_id (organization_id),
+          INDEX idx_user_id (user_id),
+          INDEX idx_created_at (created_at),
+          INDEX idx_is_read (is_read)
         )
       `);
-      console.log("✅ Messages table created successfully!");
+      console.log("Messages table created successfully");
+    } else {
+      console.log("Messages table already exists");
+      
+      // Check if user_id column exists, if not add it
+      const [userIdColumn] = await connection.query(
+        "SHOW COLUMNS FROM messages LIKE 'user_id'"
+      );
+      
+      if (userIdColumn.length === 0) {
+        console.log("Adding user_id column to messages table...");
+        await connection.query(`
+          ALTER TABLE messages 
+          ADD COLUMN user_id INT NULL,
+          ADD FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+          ADD INDEX idx_user_id (user_id)
+        `);
+        console.log("user_id column added successfully");
+        
+        // Link existing messages with users based on email
+        console.log("Linking existing messages with users...");
+        await connection.query(`
+          UPDATE messages m 
+          JOIN users u ON m.sender_email = u.email 
+          SET m.user_id = u.id 
+          WHERE m.user_id IS NULL
+        `);
+        console.log("Existing messages linked successfully");
+      }
+      
+      // Keep sender_email for unauth users, but remove sender_name since we get it from users table
+      const [senderNameColumn] = await connection.query(
+        "SHOW COLUMNS FROM messages LIKE 'sender_name'"
+      );
+      
+      if (senderNameColumn.length > 0) {
+        console.log("Removing sender_name column from messages table...");
+        await connection.query(`
+          ALTER TABLE messages 
+          DROP COLUMN sender_name
+        `);
+        console.log("sender_name column removed successfully");
+      }
     }
 
     // Check if notifications table exists
@@ -332,6 +378,68 @@ const initializeDatabase = async () => {
       console.log("✅ Password reset tokens table created successfully!");
     }
 
+    // Check if volunteers table exists
+    const [volunteersTables] = await connection.query('SHOW TABLES LIKE "volunteers"');
+    
+    if (volunteersTables.length === 0) {
+      console.log("Creating volunteers table...");
+      await connection.query(`
+        CREATE TABLE volunteers (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id INT NOT NULL,
+          program_id INT NOT NULL,
+          reason TEXT NOT NULL,
+          status ENUM('Pending', 'Approved', 'Declined') DEFAULT 'Pending',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE CASCADE,
+          INDEX idx_user_id (user_id),
+          INDEX idx_program_id (program_id),
+          INDEX idx_status (status),
+          INDEX idx_created_at (created_at)
+        )
+      `);
+      console.log("✅ Volunteers table created successfully!");
+    } else {
+      // Check if volunteers table needs migration to new structure
+      const [oldStructureColumns] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'volunteers' 
+        AND COLUMN_NAME IN ('full_name', 'age', 'gender', 'email', 'phone_number', 'address', 'occupation', 'citizenship', 'valid_id')
+      `);
+      
+      if (oldStructureColumns.length > 0) {
+        console.log("Migrating volunteers table to new structure...");
+        
+        // Create new volunteers table with new structure
+        await connection.query(`
+          CREATE TABLE volunteers_new (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            program_id INT NOT NULL,
+            reason TEXT NOT NULL,
+            status ENUM('Pending', 'Approved', 'Declined') DEFAULT 'Pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE CASCADE,
+            INDEX idx_user_id (user_id),
+            INDEX idx_program_id (program_id),
+            INDEX idx_status (status),
+            INDEX idx_created_at (created_at)
+          )
+        `);
+        
+        // Drop old table and rename new one
+        await connection.query('DROP TABLE volunteers');
+        await connection.query('RENAME TABLE volunteers_new TO volunteers');
+        
+        console.log("✅ Volunteers table migrated to new structure!");
+      }
+    }
+
     // Check if users table exists
     const [usersTables] = await connection.query('SHOW TABLES LIKE "users"');
     
@@ -351,6 +459,7 @@ const initializeDatabase = async () => {
           occupation VARCHAR(255),
           citizenship VARCHAR(100),
           profile_photo_url VARCHAR(500),
+          full_name VARCHAR(200) GENERATED ALWAYS AS (CONCAT(first_name, ' ', last_name)) STORED,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           last_login TIMESTAMP NULL,
@@ -433,6 +542,23 @@ const initializeDatabase = async () => {
           ADD COLUMN verification_token_expires TIMESTAMP NULL
         `);
         console.log("✅ verification_token columns added to users table!");
+      }
+
+      // Check if full_name column exists, add it if missing
+      const [fullNameColumn] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'users' 
+        AND COLUMN_NAME = 'full_name'
+      `);
+      
+      if (fullNameColumn.length === 0) {
+        console.log("Adding full_name column to users table...");
+        await connection.query(`
+          ALTER TABLE users 
+          ADD COLUMN full_name VARCHAR(200) GENERATED ALWAYS AS (CONCAT(first_name, ' ', last_name)) STORED
+        `);
+        console.log("✅ full_name column added to users table!");
       }
 
       // Check if verification_token index exists, add it if missing

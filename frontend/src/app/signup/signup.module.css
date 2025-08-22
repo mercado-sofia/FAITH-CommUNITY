@@ -203,6 +203,18 @@
   color: #13B79B;
 }
 
+/* Error state for labels when fields have validation errors */
+.fieldWrapper:has(.inputGroup:has(.inputError)) .birthDateLabel,
+.fieldWrapper:has(.dateInputGroup:has(.inputError)) .birthDateLabel,
+.fieldWrapper:has(.inputGroup:has(.customDropdown:has(.inputError))) .birthDateLabel {
+  color: rgb(248, 1, 1) !important;
+}
+
+/* Direct error class for labels */
+.birthDateLabel.labelError {
+  color: rgb(248, 1, 1) !important;
+}
+
  .birthDateInputs {
    display: flex;
    align-items: center;
@@ -525,9 +537,9 @@
 .errorMessage {
   font-size: 13px;
   color: rgb(248, 1, 1);
-  margin-top: -0.5rem;
-  margin-bottom: 0.5rem;
-  align-self: flex-end;
+  margin-bottom: 0.8rem;
+  align-self: flex-start;
+  text-align: left;
 }
 
 .passwordRequirements {

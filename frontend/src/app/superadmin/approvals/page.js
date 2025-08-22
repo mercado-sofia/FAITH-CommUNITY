@@ -253,48 +253,51 @@ export default function PendingApprovalsPage() {
   }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <div>
-          <h1>Pending Submissions</h1>
-          <p className={styles.pageSubtitle}>
-            Review and approve organization updates from administrators
-          </p>
-        </div>
-        <div className={styles.headerStats}>
-          <div className={styles.statItem}>
-            <span className={styles.statNumber}>{approvals.length}</span>
-            <span className={styles.statLabel}>Total Submissions</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Organization Filter */}
-      <div className={styles.filterSection}>
-        <div className={styles.filterGroup}>
-          <label className={styles.filterLabel}>Organization:</label>
-          <select 
-            value={selectedOrganization} 
-            onChange={handleOrganizationChange}
-            className={styles.filterSelect}
-            disabled={orgsLoading}
-          >
-            <option value="all">All Organizations</option>
-            {organizations.map(org => (
-              <option key={org.id} value={org.acronym}>
-                {org.acronym} - {org.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
+    <div className={styles.mainArea}>
       {/* Notification Display */}
       {notification.text && (
         <div className={`${styles.notification} ${styles[notification.type]}`}>
           {notification.text}
         </div>
       )}
+
+      {/* Header Section */}
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <h1 className={styles.pageTitle}>Pending Submissions</h1>
+          <p className={styles.pageSubtitle}>
+            Review and approve organization updates from administrators
+          </p>
+        </div>
+        <div className={styles.headerRight}>
+          <div className={styles.statsCard}>
+            <div className={styles.statNumber}>{approvals.length}</div>
+            <div className={styles.statLabel}>Total Submissions</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Controls Section */}
+      <div className={styles.controlsSection}>
+        <div className={styles.filterControls}>
+          <div className={styles.filterGroup}>
+            <label className={styles.filterLabel}>Organization:</label>
+            <select 
+              value={selectedOrganization} 
+              onChange={handleOrganizationChange}
+              className={styles.filterSelect}
+              disabled={orgsLoading}
+            >
+              <option value="all">All Organizations</option>
+              {organizations.map(org => (
+                <option key={org.id} value={org.acronym}>
+                  {org.acronym} - {org.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
       
       {filteredApprovals.length === 0 ? (
         <div className={styles.emptyState}>

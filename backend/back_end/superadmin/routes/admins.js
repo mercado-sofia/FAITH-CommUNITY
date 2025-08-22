@@ -11,9 +11,9 @@ import {
   forgotPassword,
   resetPassword,
   checkEmailAdmin,
-  verifyAdminToken,
   validateResetToken,
 } from "../controllers/adminController.js"
+import { verifySuperadminToken } from "../controllers/superadminAuthController.js"
 
 const router = express.Router()
 
@@ -24,8 +24,8 @@ router.post("/reset-password", resetPassword)
 router.post("/validate-reset-token", validateResetToken)
 router.post("/check-email", checkEmailAdmin)
 
-// Protected routes
-router.use(verifyAdminToken)
+// Protected routes - using superadmin token verification
+router.use(verifySuperadminToken)
 
 router.get("/", getAllAdmins)
 router.post("/", createAdmin)

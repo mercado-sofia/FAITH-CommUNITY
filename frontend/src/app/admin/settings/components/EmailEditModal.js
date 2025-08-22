@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FaEnvelope, FaEye, FaEyeSlash, FaTimes } from 'react-icons/fa';
-import styles from './EmailEditModal.module.css';
+import styles from './styles/EmailEditModal.module.css';
 
 // Utility functions
 const sanitizeEmail = (email) => {

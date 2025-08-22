@@ -161,6 +161,10 @@
     background: linear-gradient(90deg, #237E6F 0%, #0ECCAC 100%);
     box-shadow: 0px 30px 60px -20px rgba(26, 104, 91, 0.40);
     transition: background 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .loginBtn:hover {
@@ -172,7 +176,6 @@
 }
 
 .spinner {
-  margin-left: 8px;
   animation: spin 1s linear infinite;
 }
 
@@ -206,7 +209,10 @@
   color: #e63a3a !important;
 }
 
-
+/* Label error styling */
+.labelError {
+  color: #dc3545 !important;
+}
 
 .passwordToggle {
   position: absolute;

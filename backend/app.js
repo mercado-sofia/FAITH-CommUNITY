@@ -184,9 +184,11 @@ app.use("/api/subscribers", subscribersRoutes);
 
 // PUBLIC ROUTES
 import publicOrganizationsRoutes from "./back_end/for_public/routes/organizations.js"
+import newsletterRoutes from "./back_end/for_public/routes/newsletter.js"
 
 
 app.use("/api", publicOrganizationsRoutes)
+app.use("/api/newsletter", newsletterRoutes)
 
 
 // SUPERADMIN ROUTES

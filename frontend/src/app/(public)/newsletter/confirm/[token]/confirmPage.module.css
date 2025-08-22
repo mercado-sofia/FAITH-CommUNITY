@@ -1,0 +1,247 @@
+.pageContainer {
+  min-height: 90vh;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.contentWrapper {
+  max-width: 480px;
+  width: 100%;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.mainContent {
+  padding: 40px 24px;
+}
+
+/* Loading State */
+.loadingContainer {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.spinner {
+  font-size: 24px;
+  color: #1A685B;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loadingContainer h2 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.loadingContainer p {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+}
+
+/* Success State */
+.successContainer {
+  text-align: center;
+}
+
+.successIcon {
+  font-size: 48px;
+  color: #10B981;
+  margin-bottom: 20px;
+}
+
+.successContainer h2 {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+}
+
+.successMessage {
+  font-size: 14px;
+  color: #4B5563;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.emailInfo {
+  background: #F3F4F6;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.emailInfo strong {
+  color: #1A685B;
+  font-weight: 600;
+}
+
+.successDetails {
+  text-align: left;
+  margin-bottom: 32px;
+}
+
+.successDetails p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #4B5563;
+  font-weight: 500;
+}
+
+.successDetails ul {
+  margin: 0;
+  padding-left: 20px;
+  list-style-type: disc;
+}
+
+.successDetails li {
+  font-size: 13px;
+  color: #6B7280;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+/* Error State */
+.errorContainer {
+  text-align: left;
+}
+
+.errorContainer h2 {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #000000;
+  text-align: center;
+}
+
+.headingIcon {
+  font-size: 48px;
+  color: #DC2626;
+  margin: 0 auto 15px auto;
+  display: block;
+  text-align: center;
+}
+
+.errorMessage {
+  background: #ffffff;
+  border: 1px solid #FECACA;
+  color: #DC2626;
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin: 20px auto 25px;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.errorMessageIcon {
+  font-size: 20px;
+  color: #DC2626;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.errorMessageText {
+  flex: 1;
+}
+
+.errorDetails {
+  text-align: left;
+  margin-bottom: 32px;
+}
+
+.errorDetails p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #4B5563;
+  font-weight: 500;
+}
+
+.errorDetails ul {
+  margin: 0;
+  padding-left: 20px;
+  list-style-type: disc;
+}
+
+.errorDetails li {
+  font-size: 13px;
+  color: #6B7280;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+/* Action Buttons */
+.actionButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.primaryButton {
+  background: #1A685B;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  transition: background-color 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.primaryButton:hover {
+  background: #155F54;
+}
+
+.secondaryButton {
+  background: #F3F4F6;
+  color: #374151;
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  transition: all 0.2s ease;
+  border: 1px solid #D1D5DB;
+  cursor: pointer;
+}
+
+.secondaryButton:hover {
+  background: #E5E7EB;
+  border-color: #9CA3AF;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .contentWrapper {
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  
+  .mainContent {
+    padding: 32px 20px;
+  }
+}

@@ -363,7 +363,7 @@ export default function LoginPage() {
         <form onSubmit={handleLogin} className={styles.form}>
           <h2 className={styles.title}>Log In</h2>
 
-          <label htmlFor="email" className={`${styles.label} ${focusedFields.email ? styles.focused : ''} ${email ? styles.hasValue : ''}`}>
+          <label htmlFor="email" className={`${styles.label} ${focusedFields.email ? styles.focused : ''} ${email ? styles.hasValue : ''} ${fieldErrors.email ? styles.labelError : ''}`}>
             Email
           </label>
           <div className={styles.inputGroup}>
@@ -387,7 +387,7 @@ export default function LoginPage() {
               className={fieldErrors.email ? styles.inputError : ""}
             />
           </div>
-          <label htmlFor="password" className={`${styles.label} ${focusedFields.password ? styles.focused : ''} ${password ? styles.hasValue : ''}`}>
+          <label htmlFor="password" className={`${styles.label} ${focusedFields.password ? styles.focused : ''} ${password ? styles.hasValue : ''} ${fieldErrors.password ? styles.labelError : ''}`}>
             Password
           </label>
           <div className={styles.inputGroup}>

@@ -534,6 +534,11 @@
   color: #e63a3a !important;
 }
 
+/* Label error styling */
+.labelError {
+  color: #dc3545 !important;
+}
+
 .errorMessage {
   font-size: 13px;
   color: rgb(248, 1, 1);

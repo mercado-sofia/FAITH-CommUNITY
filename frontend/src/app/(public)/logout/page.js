@@ -41,12 +41,11 @@ export default function UserLogoutPage() {
         document.cookie = "userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT"
         document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT"
 
-        // Redirect to home page
-        router.push('/')
+        // Redirect to home page with page refresh to ensure clean state
+        window.location.href = '/'
       } catch (error) {
         console.error('Logout error:', error)
         setError('An error occurred during logout')
-      } finally {
         setIsLoggingOut(false)
       }
     }
@@ -84,7 +83,7 @@ export default function UserLogoutPage() {
         <h2>Logout Error</h2>
         <p>{error}</p>
         <button 
-          onClick={() => router.push('/')}
+          onClick={() => window.location.href = '/'}
           style={{
             padding: '10px 20px',
             backgroundColor: '#007bff',

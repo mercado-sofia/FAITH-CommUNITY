@@ -5,14 +5,16 @@ import Footer from './components/Footer';
 import FloatingMessage from './components/FloatingMessage';
 import ToastContainer from './components/ToastContainer';
 import GlobalLoginModal from './components/GlobalLoginModal';
+import Loader from '../../components/Loader';
 import '../globals.css';
 import Head from 'next/head';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from './styles/publicLayout.module.css';
 import PagePreloader from '../../components/PagePreloader';
 
 export default function PublicLayout({ children }) {
   const navbarRef = useRef(null);
+  const [showLogoutLoader, setShowLogoutLoader] = useState(false);
 
   useEffect(() => {
     // Preload critical resources
@@ -62,6 +64,31 @@ export default function PublicLayout({ children }) {
       window.removeEventListener('scroll', throttledScroll);
     };
   }, []);
+
+  // Handle global logout loader
+  useEffect(() => {
+    const handleShowLogoutLoader = () => {
+      setShowLogoutLoader(true);
+    };
+
+    const handleHideLogoutLoader = () => {
+      setShowLogoutLoader(false);
+    };
+
+    // Listen for custom events to show/hide logout loader
+    window.addEventListener('showLogoutLoader', handleShowLogoutLoader);
+    window.addEventListener('hideLogoutLoader', handleHideLogoutLoader);
+
+    return () => {
+      window.removeEventListener('showLogoutLoader', handleShowLogoutLoader);
+      window.removeEventListener('hideLogoutLoader', handleHideLogoutLoader);
+    };
+  }, []);
+
+  // Show full-page loader during logout
+  if (showLogoutLoader) {
+    return <Loader />;
+  }
 
   return (
     <>

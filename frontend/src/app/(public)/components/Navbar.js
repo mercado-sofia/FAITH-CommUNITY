@@ -100,7 +100,20 @@ export default function Navbar() {
 
   // Handle confirmed logout
   const handleConfirmedLogout = async () => {
-    await logout();
+    // Dispatch global event to show full-page loader
+    window.dispatchEvent(new CustomEvent('showLogoutLoader'));
+    
+    setShowLogoutConfirm(false);
+    profileDropdown.close();
+    notificationsDropdown.close();
+    
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Hide loader if logout fails
+      window.dispatchEvent(new CustomEvent('hideLogoutLoader'));
+    }
   };
 
   // Show loading state while auth is initializing

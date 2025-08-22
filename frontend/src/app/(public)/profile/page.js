@@ -90,6 +90,9 @@ export default function ProfilePage() {
   }, [router]);
 
   const handleLogout = async () => {
+    // Dispatch global event to show full-page loader
+    window.dispatchEvent(new CustomEvent('showLogoutLoader'));
+    
     try {
       const userToken = localStorage.getItem('userToken');
       
@@ -117,13 +120,23 @@ export default function ProfilePage() {
       document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       
+      // Redirect with page refresh to ensure clean state
       window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
+      // Hide loader if logout fails
+      window.dispatchEvent(new CustomEvent('hideLogoutLoader'));
+      
       localStorage.removeItem('userToken');
       localStorage.removeItem('userData');
       localStorage.removeItem('token');
       localStorage.removeItem('userRole');
+      localStorage.removeItem('userEmail');
+      localStorage.removeItem('userName');
+      document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      
+      // Redirect with page refresh to ensure clean state
       window.location.href = '/';
     }
   };

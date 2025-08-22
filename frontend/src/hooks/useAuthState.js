@@ -89,7 +89,8 @@ export const useAuthState = () => {
       document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       
-      setUser(null);
+      // Don't update user state here - let the page refresh handle it
+      // This prevents the navbar from showing changes before the refresh
       
       // Refresh page immediately
       window.location.href = '/';
@@ -104,7 +105,8 @@ export const useAuthState = () => {
       localStorage.removeItem('userName');
       document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      setUser(null);
+      
+      // Don't update user state here - let the page refresh handle it
       window.location.href = '/';
     }
   }, []);

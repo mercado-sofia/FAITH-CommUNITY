@@ -463,12 +463,13 @@ export const subscribeToNewsletter = async (req, res) => {
     const unsubscribeToken = crypto.randomBytes(24).toString("hex");
 
     await promisePool.query(
-      `INSERT INTO subscribers (email, verify_token, unsubscribe_token, is_verified)
-       VALUES (?, ?, ?, 1)
+      `INSERT INTO subscribers (email, verify_token, unsubscribe_token, is_verified, verified_at)
+       VALUES (?, ?, ?, 1, NOW())
        ON DUPLICATE KEY UPDATE 
          verify_token = VALUES(verify_token),
          unsubscribe_token = VALUES(unsubscribe_token),
-         is_verified = 1`,
+         is_verified = 1,
+         verified_at = NOW()`,
       [user.email, verifyToken, unsubscribeToken]
     );
 

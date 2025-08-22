@@ -651,6 +651,92 @@ const initializeDatabase = async () => {
         `);
         console.log("✅ user_notifications table created successfully!");
       }
+
+      // Check if subscribers table exists
+      const [subscribersTable] = await connection.query('SHOW TABLES LIKE "subscribers"');
+      
+      if (subscribersTable.length === 0) {
+        console.log("Creating subscribers table...");
+        await connection.query(`
+          CREATE TABLE subscribers (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            email VARCHAR(255) NOT NULL UNIQUE,
+            verify_token VARCHAR(255) NOT NULL,
+            unsubscribe_token VARCHAR(255) NOT NULL,
+            is_verified TINYINT(1) DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            verified_at TIMESTAMP NULL,
+            INDEX idx_email (email),
+            INDEX idx_verify_token (verify_token),
+            INDEX idx_unsubscribe_token (unsubscribe_token),
+            INDEX idx_is_verified (is_verified)
+          )
+        `);
+        console.log("✅ subscribers table created successfully!");
+      } else {
+        // Check and fix the is_verified column default value
+        console.log("Checking subscribers table structure...");
+        const [isVerifiedColumn] = await connection.query(`
+          SELECT COLUMN_DEFAULT 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_NAME = 'subscribers' 
+          AND COLUMN_NAME = 'is_verified'
+        `);
+        
+        if (isVerifiedColumn.length > 0 && isVerifiedColumn[0].COLUMN_DEFAULT !== '0') {
+          console.log("Fixing is_verified column default value...");
+          await connection.query(`
+            ALTER TABLE subscribers 
+            MODIFY COLUMN is_verified TINYINT(1) DEFAULT 0
+          `);
+          console.log("✅ is_verified column default value fixed!");
+        }
+        
+        // Check if there are any verified subscriptions that shouldn't be verified
+        const [verifiedSubs] = await connection.query(`
+          SELECT COUNT(*) as count FROM subscribers 
+          WHERE is_verified = 1 AND verified_at IS NULL
+        `);
+        
+        if (verifiedSubs[0].count > 0) {
+          console.log(`Found ${verifiedSubs[0].count} incorrectly verified subscriptions, fixing...`);
+          await connection.query(`
+            UPDATE subscribers 
+            SET is_verified = 0 
+            WHERE is_verified = 1 AND verified_at IS NULL
+          `);
+          console.log("✅ Incorrectly verified subscriptions fixed!");
+        }
+        
+        // Force update the column default value to ensure it's 0
+        console.log("🔧 Ensuring is_verified column has correct default value...");
+        try {
+          await connection.query(`
+            ALTER TABLE subscribers 
+            MODIFY COLUMN is_verified TINYINT(1) DEFAULT 0 NOT NULL
+          `);
+          console.log("✅ is_verified column default value enforced!");
+        } catch (alterError) {
+          console.log("ℹ️ Column modification not needed or failed (this is normal):", alterError.message);
+        }
+        
+        // Also check if there are any existing subscriptions that need fixing
+        const [allSubs] = await connection.query(`
+          SELECT id, email, is_verified, verified_at 
+          FROM subscribers 
+          WHERE verified_at IS NULL
+        `);
+        
+        if (allSubs.length > 0) {
+          console.log(`Found ${allSubs.length} subscriptions without verification timestamp, ensuring they are unverified...`);
+          await connection.query(`
+            UPDATE subscribers 
+            SET is_verified = 0 
+            WHERE verified_at IS NULL
+          `);
+          console.log("✅ All unverified subscriptions properly marked!");
+        }
+      }
     }
 
     connection.release();

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FaLock, FaEye, FaEyeSlash, FaTimes, FaCheck } from 'react-icons/fa';
-import styles from './PasswordChangeModal.module.css';
+import styles from './styles/PasswordChangeModal.module.css';
 
 // Utility functions
 const sanitizePassword = (password) => {

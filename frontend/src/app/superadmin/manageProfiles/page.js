@@ -519,7 +519,6 @@ const ManageProfiles = () => {
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <h1>Manage Admin Profiles</h1>
-          <p className={styles.subtitle}>Create and manage administrator accounts</p>
           {currentAdmin && (
             <div className={styles.currentUserInfo}>
               <span>

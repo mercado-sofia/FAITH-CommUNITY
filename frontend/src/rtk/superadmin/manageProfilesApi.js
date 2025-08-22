@@ -9,8 +9,13 @@ export const manageProfilesApi = createApi({
     prepareHeaders: (headers, { getState }) => {
       headers.set("Content-Type", "application/json")
 
-      // Add JWT token for admin authentication
-      const token = getState().admin?.token || localStorage.getItem("adminToken")
+      // Add JWT token for authentication - check for both admin and superadmin tokens
+      const adminToken = getState().admin?.token || localStorage.getItem("adminToken")
+      const superadminToken = getState().superadmin?.token || localStorage.getItem("superAdminToken")
+      
+      // Use superadmin token if available, otherwise use admin token
+      const token = superadminToken || adminToken
+      
       if (token && token !== "superadmin") {
         headers.set("Authorization", `Bearer ${token}`)
       }

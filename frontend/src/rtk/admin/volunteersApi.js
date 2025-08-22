@@ -30,7 +30,7 @@ export const volunteersApi = createApi({
           age: volunteer.age,
           gender: volunteer.gender,
           email: volunteer.email,
-          contact: volunteer.phone_number,
+          contact: volunteer.contact_number,
           address: volunteer.address,
           occupation: volunteer.occupation,
           citizenship: volunteer.citizenship,
@@ -38,8 +38,9 @@ export const volunteersApi = createApi({
           date: volunteer.created_at ? new Date(volunteer.created_at).toISOString().split('T')[0] : '',
           status: volunteer.status || 'Pending',
           reason: volunteer.reason,
-          validIdFilename: volunteer.valid_id ? volunteer.valid_id.split('/').pop() : null,
-          program_id: volunteer.program_id
+          profile_photo_url: volunteer.profile_photo_url,
+          program_id: volunteer.program_id,
+          user_id: volunteer.user_id
         }))
       },
     }),
@@ -56,7 +57,7 @@ export const volunteersApi = createApi({
           age: volunteer.age,
           gender: volunteer.gender,
           email: volunteer.email,
-          contact: volunteer.phone_number,
+          contact: volunteer.contact_number,
           address: volunteer.address,
           occupation: volunteer.occupation,
           citizenship: volunteer.citizenship,
@@ -64,8 +65,9 @@ export const volunteersApi = createApi({
           date: volunteer.created_at ? new Date(volunteer.created_at).toISOString().split('T')[0] : '',
           status: volunteer.status || 'Pending',
           reason: volunteer.reason,
-          validIdFilename: volunteer.valid_id ? volunteer.valid_id.split('/').pop() : null,
-          program_id: volunteer.program_id
+          profile_photo_url: volunteer.profile_photo_url,
+          program_id: volunteer.program_id,
+          user_id: volunteer.user_id
         }))
       },
     }),
@@ -86,7 +88,7 @@ export const volunteersApi = createApi({
           age: volunteer.age,
           gender: volunteer.gender,
           email: volunteer.email,
-          contact: volunteer.phone_number,
+          contact: volunteer.contact_number,
           address: volunteer.address,
           occupation: volunteer.occupation,
           citizenship: volunteer.citizenship,
@@ -94,8 +96,9 @@ export const volunteersApi = createApi({
           date: volunteer.created_at ? new Date(volunteer.created_at).toISOString().split('T')[0] : '',
           status: volunteer.status || 'Pending',
           reason: volunteer.reason,
-          validIdFilename: volunteer.valid_id ? volunteer.valid_id.split('/').pop() : null,
+          profile_photo_url: volunteer.profile_photo_url,
           program_id: volunteer.program_id,
+          user_id: volunteer.user_id,
           organization_name: volunteer.organization_name
         }))
       },

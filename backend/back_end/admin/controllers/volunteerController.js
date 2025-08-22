@@ -4,10 +4,8 @@ import db from '../../database.js';
 // Submit volunteer application
 export const applyVolunteer = async (req, res) => {
   try {
-  
-
     // Validate required fields
-    const requiredFields = ['program_id', 'full_name', 'age', 'gender', 'email', 'phone_number', 'address', 'occupation', 'citizenship', 'reason'];
+    const requiredFields = ['program_id', 'user_id', 'reason'];
     for (const field of requiredFields) {
       if (!req.body[field]) {
         return res.status(400).json({ error: `Missing required field: ${field}` });
@@ -16,29 +14,35 @@ export const applyVolunteer = async (req, res) => {
 
     const {
       program_id,
-      full_name,
-      age,
-      gender,
-      email,
-      phone_number,
-      address,
-      occupation,
-      citizenship,
+      user_id,
       reason
     } = req.body;
 
-    // Get the file path if a file was uploaded
-    const valid_id = req.file ? req.file.filename : null;
+    // Check if user exists
+    const [userRows] = await db.execute(
+      'SELECT id FROM users WHERE id = ? AND is_active = 1',
+      [user_id]
+    );
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: 'User not found or inactive' });
+    }
+
+    // Check if user already applied for this program
+    const [existingApplication] = await db.execute(
+      'SELECT id FROM volunteers WHERE user_id = ? AND program_id = ?',
+      [user_id, program_id]
+    );
+
+    if (existingApplication.length > 0) {
+      return res.status(409).json({ error: 'You have already applied for this program' });
+    }
 
     const [result] = await db.execute(
       `INSERT INTO volunteers (
-        program_id, full_name, age, gender, email, phone_number,
-        address, occupation, citizenship, reason, status, valid_id, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, NOW())`,
-      [
-        program_id, full_name, age, gender, email, phone_number,
-        address, occupation, citizenship, reason, valid_id
-      ]
+        user_id, program_id, reason, status, created_at
+      ) VALUES (?, ?, ?, 'Pending', NOW())`,
+      [user_id, program_id, reason]
     );
 
     res.status(201).json({ 
@@ -54,45 +58,51 @@ export const applyVolunteer = async (req, res) => {
 // Admin view: get all volunteers
 export const getAllVolunteers = async (req, res) => {
   try {
-    // First try to get all volunteers without the join
     const [rows] = await db.execute(
       `SELECT 
-        id,
-        program_id,
-        full_name,
-        age,
-        gender,
-        email,
-        phone_number,
-        address,
-        occupation,
-        citizenship,
-        reason,
-        status,
-        valid_id,
-        created_at
-       FROM volunteers 
-       ORDER BY created_at DESC`
+        v.id,
+        v.program_id,
+        v.reason,
+        v.status,
+        v.created_at,
+        u.id as user_id,
+        u.first_name,
+        u.last_name,
+        u.full_name,
+        u.email,
+        u.contact_number,
+        u.gender,
+        u.address,
+        u.occupation,
+        u.citizenship,
+        u.birth_date,
+        u.profile_photo_url,
+        p.title as program_name,
+        p.title as program_title,
+        o.orgName as organization_name
+       FROM volunteers v
+       JOIN users u ON v.user_id = u.id
+       LEFT JOIN programs_projects p ON v.program_id = p.id
+       LEFT JOIN organizations o ON p.organization_id = o.id
+       WHERE u.is_active = 1
+       ORDER BY v.created_at DESC`
     );
 
-    // Map program_id to program name
-    const programNames = {
-      1: "CLIQUE",
-      2: "LinkUp",
-      3: "RiseUp",
-      4: "FaithSteps",
-      5: "ScholarSync"
-    };
+    // Calculate age from birth_date
+    const volunteersWithAge = rows.map(row => {
+      const age = row.birth_date ? 
+        Math.floor((new Date() - new Date(row.birth_date)) / (365.25 * 24 * 60 * 60 * 1000)) : 
+        null;
+      
+      return {
+        ...row,
+        age,
+        // Format the date to a string to avoid JSON serialization issues
+        created_at: row.created_at ? new Date(row.created_at).toISOString() : null
+      };
+    });
 
-    // Add program name to each row
-    const volunteersWithProgram = rows.map(row => ({
-      ...row,
-      program: programNames[row.program_id] || `Program ${row.program_id}`,
-      // Format the date to a string to avoid JSON serialization issues
-      created_at: row.created_at ? new Date(row.created_at).toISOString() : null
-    }));
-
-    res.json(volunteersWithProgram);
+    res.json({ data: volunteersWithAge });
   } catch (error) {
     console.error('Error in getAllVolunteers:', error);
     res.status(500).json({ error: 'Failed to retrieve volunteers' });
@@ -122,7 +132,32 @@ export const getVolunteerById = async (req, res) => {
 
   try {
     const [rows] = await db.execute(
-      `SELECT * FROM volunteers WHERE id = ?`, 
+      `SELECT 
+        v.id,
+        v.program_id,
+        v.reason,
+        v.status,
+        v.created_at,
+        u.id as user_id,
+        u.first_name,
+        u.last_name,
+        u.full_name,
+        u.email,
+        u.contact_number,
+        u.gender,
+        u.address,
+        u.occupation,
+        u.citizenship,
+        u.birth_date,
+        u.profile_photo_url,
+        p.title as program_name,
+        p.title as program_title,
+        o.orgName as organization_name
+       FROM volunteers v
+       JOIN users u ON v.user_id = u.id
+       LEFT JOIN programs_projects p ON v.program_id = p.id
+       LEFT JOIN organizations o ON p.organization_id = o.id
+       WHERE v.id = ? AND u.is_active = 1`, 
       [id]
     );
 
@@ -130,19 +165,14 @@ export const getVolunteerById = async (req, res) => {
       return res.status(404).json({ message: 'Volunteer not found' });
     }
 
-    // Map program_id to program name
-    const programNames = {
-      1: "CLIQUE",
-      2: "LinkUp",
-      3: "RiseUp",
-      4: "FaithSteps",
-      5: "ScholarSync"
-    };
-
-    const volunteer = {
-      ...rows[0],
-      program: programNames[rows[0].program_id] || `Program ${rows[0].program_id}`
-    };
+    const volunteer = rows[0];
+    
+    // Calculate age from birth_date
+    const age = volunteer.birth_date ? 
+      Math.floor((new Date() - new Date(volunteer.birth_date)) / (365.25 * 24 * 60 * 60 * 1000)) : 
+      null;
+    
+    volunteer.age = age;
 
     res.json(volunteer);
   } catch (error) {

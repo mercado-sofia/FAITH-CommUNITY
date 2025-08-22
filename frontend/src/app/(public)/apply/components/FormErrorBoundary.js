@@ -1,7 +1,7 @@
 "use client";
 
 import { Component } from "react";
-import logger from "../../../../../utils/logger";
+import logger from "../../../../utils/logger";
 
 class FormErrorBoundary extends Component {
   constructor(props) {

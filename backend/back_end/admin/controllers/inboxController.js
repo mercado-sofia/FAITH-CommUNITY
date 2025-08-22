@@ -31,9 +31,18 @@ export const getMessagesByOrg = async (req, res) => {
     
     // Build query based on filters
     let query = `
-      SELECT m.*, o.orgName as organization_name, o.org as organization_acronym
+      SELECT 
+        m.*,
+        o.orgName as organization_name, 
+        o.org as organization_acronym,
+        u.full_name as sender_full_name,
+        u.first_name as sender_first_name,
+        u.last_name as sender_last_name,
+        u.email as user_email,
+        COALESCE(u.email, m.sender_email) as sender_email
       FROM messages m
       JOIN organizations o ON m.organization_id = o.id
+      LEFT JOIN users u ON m.user_id = u.id
       WHERE m.organization_id = ?
     `;
     

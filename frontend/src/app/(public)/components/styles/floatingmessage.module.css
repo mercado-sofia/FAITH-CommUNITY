@@ -83,7 +83,7 @@
 }
 
 .label {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   color: #ffffff;
 }
@@ -91,19 +91,20 @@
 .customDropdown {
   position: relative;
   width: 100%;
-  font-size: 13px;
-  margin: 0.4rem 0 0.5rem;
+  font-size: 14px;
+  margin: 0.4rem 0 0.6rem;
 }
 
 .selected {
   background: white;
-  border: 1px solid #ccc;
-  padding: 0.7rem 2.5rem 0.7rem 0.7rem;
+  border: 3px solid #1A685B !important;
+  padding: 0.65rem 2.5rem 0.65rem 0.7rem;
   border-radius: 8px;
   cursor: pointer;
   position: relative;
-  color: #1A685B;
+  color: #999;
   font-weight: 500;
+  transition: border-color 0.2s ease, color 0.2s ease;
 }
 
 .dropdownIcon {
@@ -113,7 +114,12 @@
   transform: translateY(-50%);
   pointer-events: none;
   color: #059d59;
-  font-size: 1rem;
+  font-size: 0.85rem;
+  transition: transform 0.3s ease;
+}
+
+.dropdownIcon.rotated {
+  transform: translateY(-50%) rotate(90deg);
 }
 
 .dropdownList {
@@ -129,13 +135,43 @@
   overflow-y: auto;
   z-index: 100000;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  scrollbar-width: thin !important;
+  scrollbar-color: #1ab097 transparent !important;
+}
+
+/* Webkit scrollbar styling for Chrome/Safari/Edge - Override global styles */
+.dropdownList::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.dropdownList::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.dropdownList::-webkit-scrollbar-thumb {
+  background: #1ab097 !important;
+  border-radius: 3px !important;
+  border: none !important;
+}
+
+.dropdownList::-webkit-scrollbar-thumb:hover {
+  background: #1c7466 !important;
+}
+
+/* Hide scrollbar arrows/buttons */
+.dropdownList::-webkit-scrollbar-button {
+  display: none !important;
 }
 
 .dropdownItem {
-  padding: 0.6rem;
+  padding: 0.65rem 0.85rem;
   cursor: pointer;
   color: #1A685B;
   transition: background 0.2s ease, color 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .dropdownItem:hover {
@@ -159,30 +195,18 @@
   color: white;
 }
 
-.selected {
-  background: white;
-  border: 3px solid white;
-  padding: 0.7rem 2.5rem 0.7rem 0.7rem;
-  border-radius: 8px;
-  cursor: pointer;
-  position: relative;
-  color: #999;
-  font-weight: 500;
-}
-
 .selectedFilled {
-  color: #1A685B;
+  color: #1A685B !important;
   font-weight: 600;
-  border: 3px solid #1A685B;
 }
 
 .messageBox textarea,
 .messageBoxAuthenticated textarea {
   font-family: 'Arial', sans-serif;
-  margin-top: 0.45rem;
   min-height: 200px;
   background-color: white !important;
   width: 100%;
+  margin-top: 0.6rem;
   padding: 1rem;
   border: none;
   border-radius: 8px;
@@ -192,7 +216,7 @@
 
 .emailInput {
   font-family: 'Arial', sans-serif;
-  margin-top: 0.4rem;
+  margin: 0.35rem 0 0.4rem;
   background-color: white !important;
   width: 100%;
   padding: 0.7rem;
@@ -246,6 +270,20 @@
 
 .sendBtn:hover {
   filter: brightness(1.15);
+}
+
+.spinner {
+  margin-left: 8px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive */

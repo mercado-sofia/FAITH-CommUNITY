@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { getVolunteerIdUrl } from '@/utils/uploadPaths'
+
 import styles from './styles/ViewDetailsModal.module.css'
 import { IoClose } from "react-icons/io5"
 
@@ -55,7 +55,7 @@ export default function VolunteerDetailModal({ app, onClose, onUpdate }) {
                 {/* Row 1: Name | Gender | Age */}
                 <div className={styles.dataRow}>
                   <div className={`${styles.formGroup} ${styles.dataField}`}>
-                    <label className={styles.label}>Name</label>
+                    <label className={styles.label}>Full Name</label>
                     <input type="text" value={app.name} readOnly className={styles.cleanInput} />
                   </div>
                   <div className={`${styles.formGroup} ${styles.dataField}`}>
@@ -107,16 +107,16 @@ export default function VolunteerDetailModal({ app, onClose, onUpdate }) {
                  </div>
               </div>
 
-              {/* Right side - Uploaded Valid ID spanning full height of 4 rows */}
+              {/* Right side - Profile Photo spanning full height of 4 rows */}
               <div className={`${styles.formGroup} ${styles.rightSide}`}>
-                <label className={styles.label}>Uploaded Valid ID</label>
-                {app.validIdFilename ? (
+                <label className={styles.label}>Profile Photo</label>
+                {app.profile_photo_url ? (
                   <div className={`${styles.imagePreviewContainer} ${styles.imageContainer}`}>
                     {!imageError ? (
                       <>
                         <Image
-                          src={getVolunteerIdUrl(app.validIdFilename)}
-                          alt="Valid ID"
+                          src={`http://localhost:8080${app.profile_photo_url}`}
+                          alt="Profile Photo"
                           width={IMAGE_DIMENSIONS.PREVIEW.width}
                           height={IMAGE_DIMENSIONS.PREVIEW.height}
                           className={styles.imageWithHint}
@@ -128,20 +128,12 @@ export default function VolunteerDetailModal({ app, onClose, onUpdate }) {
                     ) : (
                       <div className={styles.imageError}>
                         <p>Image not available</p>
-                        <a
-                          href={getVolunteerIdUrl(app.validIdFilename)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={styles.validIdLink}
-                        >
-                          Download: {app.validIdFilename}
-                        </a>
                       </div>
                     )}
                   </div>
                 ) : (
                   <div className={styles.noIdMessage}>
-                    No ID uploaded
+                    No profile photo
                   </div>
                 )}
               </div>
@@ -211,7 +203,7 @@ export default function VolunteerDetailModal({ app, onClose, onUpdate }) {
       </div>
 
       {/* Full-size Image Modal */}
-      {showImageModal && app.validIdFilename && (
+      {showImageModal && app.profile_photo_url && (
         <div className={styles.imageModal} onClick={() => setShowImageModal(false)}>
           <div className={styles.imageModalContent} onClick={(e) => e.stopPropagation()}>
             <button 
@@ -221,14 +213,14 @@ export default function VolunteerDetailModal({ app, onClose, onUpdate }) {
               <IoClose />
             </button>
             <Image
-               src={getVolunteerIdUrl(app.validIdFilename)}
-               alt="Valid ID - Full Size"
+               src={`http://localhost:8080${app.profile_photo_url}`}
+               alt="Profile Photo - Full Size"
                width={IMAGE_DIMENSIONS.FULL_SIZE.width}
                height={IMAGE_DIMENSIONS.FULL_SIZE.height}
                className={styles.fullSizeImage}
              />
             <p className={styles.imageModalCaption}>
-               {app.name}&apos;s Valid ID
+               {app.name}&apos;s Profile Photo
              </p>
           </div>
         </div>

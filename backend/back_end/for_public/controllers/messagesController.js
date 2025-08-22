@@ -3,7 +3,7 @@ import NotificationController from "../../admin/controllers/notificationControll
 
 // Submit a message from public portal
 export const submitMessage = async (req, res) => {
-  const { organization_id, sender_email, sender_name, message } = req.body;
+  const { organization_id, sender_email, sender_name, message, user_id } = req.body;
 
   // Validation
   if (!organization_id || !sender_email || !message) {
@@ -55,11 +55,28 @@ export const submitMessage = async (req, res) => {
     const orgId = orgResult[0].id;
     const orgName = orgResult[0].orgName;
 
+    // Check if user_id is provided and valid (for authenticated users)
+    let actualUserId = null;
+    let actualSenderEmail = sender_email.trim();
+    
+    if (user_id) {
+      const [userResult] = await db.execute(
+        "SELECT id, email FROM users WHERE id = ? AND is_active = 1",
+        [user_id]
+      );
+      
+      if (userResult.length > 0) {
+        actualUserId = userResult[0].id;
+        // Use the email from users table for consistency
+        actualSenderEmail = userResult[0].email;
+      }
+    }
+
     // Insert message
     const [result] = await db.execute(
-      `INSERT INTO messages (organization_id, sender_email, sender_name, message, created_at) 
+      `INSERT INTO messages (organization_id, user_id, sender_email, message, created_at) 
        VALUES (?, ?, ?, ?, NOW())`,
-      [orgId, sender_email.trim(), sender_name?.trim() || null, message.trim()]
+      [orgId, actualUserId, actualSenderEmail, message.trim()]
     );
 
     const messageId = result.insertId;
@@ -96,8 +113,8 @@ export const submitMessage = async (req, res) => {
       data: {
         id: messageId,
         organization_id: orgId,
-        sender_email: sender_email.trim(),
-        sender_name: sender_name?.trim() || null,
+        user_id: actualUserId,
+        sender_email: actualSenderEmail,
         message: message.trim(),
         created_at: new Date()
       }

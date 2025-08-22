@@ -10,9 +10,10 @@ import {
   submitVolunteer,
   testGet,
   testPost,
-  upload,
+  testAuth,
   getApprovedUpcomingPrograms,
 } from '../controllers/applyController.js';
+import { verifyToken } from '../controllers/userController.js';
 
 dotenv.config();
 const router = express.Router();
@@ -24,8 +25,9 @@ router.get('/volunteers/admin/:adminId', getVolunteersByAdminOrg);
 router.get('/volunteers/:id', getVolunteerById);
 router.put('/volunteers/:id/status', updateVolunteerStatus);
 router.put('/volunteers/:id/soft-delete', softDeleteVolunteer);
-router.post('/apply', upload, submitVolunteer);
+router.post('/apply', verifyToken, submitVolunteer);
 router.post('/test-post', testPost);
+router.get('/test-auth', verifyToken, testAuth);
 router.get('/programs/approved/upcoming', getApprovedUpcomingPrograms);
 
 export default router;

@@ -274,7 +274,7 @@ export default function Navbar() {
                   <div className={styles.profileIcon}>
                     {user?.profile_photo_url ? (
                       <OptimizedImage
-                        src={user.profile_photo_url}
+                        src={`http://localhost:8080${user.profile_photo_url}`}
                         alt="Profile"
                         width={32}
                         height={32}
@@ -295,7 +295,7 @@ export default function Navbar() {
                       <div className={styles.dropdownProfileIcon}>
                         {user?.profile_photo_url ? (
                           <OptimizedImage
-                            src={user.profile_photo_url}
+                            src={`http://localhost:8080${user.profile_photo_url}`}
                             alt="Profile"
                             width={40}
                             height={40}

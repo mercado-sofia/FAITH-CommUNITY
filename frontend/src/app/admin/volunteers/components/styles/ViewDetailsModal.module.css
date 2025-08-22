@@ -188,17 +188,9 @@
   color: #fff;
 }
 
-.approve:hover {
-  background-color: #256b27;
-}
-
 .reject {
   background-color: #c62828;
   color: #fff;
-}
-
-.reject:hover {
-  background-color: #a62020;
 }
 
 /* Action button styles moved from inline styles */
@@ -208,29 +200,16 @@
   background-color: #06100f;
 }
 
-.accept:hover {
-  background-color: #0a1a1a;
-}
-
 .decline {
   border: 2px solid #06100f;
   color: #06100f;
   background-color: #ffffff;
 }
 
-.decline:hover {
-  background-color: #f8f9fa;
-}
-
 /* Disabled state for action buttons */
 .actionButton.disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.actionButton.disabled:hover {
-  background-color: inherit;
-  color: inherit;
 }
 
 /* Image Preview Styles */

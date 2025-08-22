@@ -100,9 +100,16 @@ export default function SignupForm({ onRegistrationSuccess }) {
 
   const validateStep2 = () => {
     const errors = {}
+    let hasEmptyFields = false
     
-    if (!formData.password) errors.password = "Password is required"
-    if (!formData.confirmPassword) errors.confirmPassword = "Please confirm your password"
+    if (!formData.password) {
+      errors.password = "Password is required"
+      hasEmptyFields = true
+    }
+    if (!formData.confirmPassword) {
+      errors.confirmPassword = "Please confirm your password"
+      hasEmptyFields = true
+    }
     
     // Password validation
     if (formData.password) {
@@ -122,6 +129,11 @@ export default function SignupForm({ onRegistrationSuccess }) {
       errors.confirmPassword = "Passwords do not match"
     }
     
+    // Add general error message if there are empty fields
+    if (hasEmptyFields) {
+      errors.general = "Please input all fields"
+    }
+    
     return errors
   }
 
@@ -136,13 +148,25 @@ export default function SignupForm({ onRegistrationSuccess }) {
     
     // Clear general error message if all required fields are now filled
     if (fieldErrors.general) {
-      const hasEmptyFields = !formData.firstName?.trim() || 
-                            !formData.lastName?.trim() || 
-                            !formData.email?.trim() || 
-                            !formData.contactNumber?.trim() || 
-                            !formData.gender || 
-                            !formData.address?.trim() || 
-                            (!formData.birthMonth && !formData.birthDay && !formData.birthYear)
+      let hasEmptyFields = false
+      
+      // Check step 1 fields
+      if (currentStep === 1) {
+        hasEmptyFields = !formData.firstName?.trim() || 
+                        !formData.lastName?.trim() || 
+                        !formData.email?.trim() || 
+                        !formData.contactNumber?.trim() || 
+                        !formData.gender || 
+                        !formData.address?.trim() || 
+                        (!formData.birthMonth && !formData.birthDay && !formData.birthYear)
+      }
+      
+      // Check step 2 fields - use the updated value for the current field
+      if (currentStep === 2) {
+        const updatedPassword = field === 'password' ? value : formData.password
+        const updatedConfirmPassword = field === 'confirmPassword' ? value : formData.confirmPassword
+        hasEmptyFields = !updatedPassword || !updatedConfirmPassword
+      }
       
       if (!hasEmptyFields) {
         setFieldErrors(prev => ({ ...prev, general: "" }))
@@ -249,15 +273,15 @@ export default function SignupForm({ onRegistrationSuccess }) {
     if (fieldErrors.confirmPassword) {
       setFieldErrors(prev => ({
         ...prev,
-        confirmPassword: false
+        confirmPassword: ""
       }))
     }
     
-    // Clear general error when user starts typing
-    if (fieldErrors.general) {
+    // Clear general error only when both password fields are filled
+    if (fieldErrors.general && value && formData.password) {
       setFieldErrors(prev => ({
         ...prev,
-        general: false
+        general: ""
       }))
     }
     
@@ -465,7 +489,7 @@ export default function SignupForm({ onRegistrationSuccess }) {
               <div className={styles.fieldWrapper}>
                 <label 
                   htmlFor="gender" 
-                  className={`${styles.birthDateLabel} ${focusedFields.gender || formData.gender ? styles.focused : ''}`}
+                  className={`${styles.birthDateLabel} ${focusedFields.gender || formData.gender ? styles.focused : ''} ${fieldErrors.gender ? styles.labelError : ''}`}
                 >
                   Gender
                 </label>
@@ -491,7 +515,7 @@ export default function SignupForm({ onRegistrationSuccess }) {
               <div className={styles.fieldWrapper}>
                 <label 
                   htmlFor="birthDate" 
-                  className={`${styles.birthDateLabel} ${focusedFields.birthDate || formData.birthMonth || formData.birthDay || formData.birthYear ? styles.focused : ''}`}
+                  className={`${styles.birthDateLabel} ${focusedFields.birthDate || formData.birthMonth || formData.birthDay || formData.birthYear ? styles.focused : ''} ${fieldErrors.birthDate ? styles.labelError : ''}`}
                 >
                   Birth Date
                 </label>
@@ -589,6 +613,19 @@ export default function SignupForm({ onRegistrationSuccess }) {
           <>
             <p className={styles.stepSubheading}>Set up a secure password for your account.</p>
 
+            {/* General error message for step 2 */}
+            {fieldErrors.general && (
+              <p className={styles.errorMessage}>
+                {fieldErrors.general}
+              </p>
+            )}
+
+            {showError && (
+              <p className={styles.errorMessage}>
+                {errorMessage || "Registration failed. Please try again."}
+              </p>
+            )}
+
             {/* Password */}
             <div className={`${styles.inputGroup} ${focusedFields.password || formData.password ? styles.focused : ''}`}>
               <FaLock className={styles.icon} />
@@ -681,12 +718,6 @@ export default function SignupForm({ onRegistrationSuccess }) {
                 </li>
               </ul>
             </div>
-
-            {showError && (
-              <p className={styles.errorMessage}>
-                {errorMessage || "Registration failed. Please try again."}
-              </p>
-            )}
 
             <div className={styles.buttonGroup}>
               <button

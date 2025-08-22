@@ -338,15 +338,27 @@ export default function InboxPage() {
                   <div className={styles.messageHeader}>
                     <div className={styles.messageMeta}>
                       <div className={styles.senderInfo}>
-                        <span className={styles.senderEmail}>{message.sender_email}</span>
-                        {message.sender_name && (
-                          <span className={styles.senderName}>({message.sender_name})</span>
-                        )}
-                      </div>
-                      <span className={styles.messageDate}>{formatDate(message.created_at)}</span>
+                         {/* Check if user is authenticated (has user_id) */}
+                         {message.user_id ? (
+                           // Auth user: name above email
+                           <>
+                             <span className={styles.senderName}>
+                               {message.sender_full_name || `${message.sender_first_name} ${message.sender_last_name}`}
+                             </span>
+                             <span className={styles.senderEmail}>{message.sender_email}</span>
+                           </>
+                         ) : (
+                           // Unauth user: "Guest User" above email
+                           <>
+                             <span className={styles.senderName}>Guest User</span>
+                             <span className={styles.senderEmail}>{message.sender_email}</span>
+                           </>
+                         )}
+                       </div>
                     </div>
                     
                     <div className={styles.messageActions}>
+                      <span className={styles.messageDate}>{formatDate(message.created_at)}</span>
                       {!message.is_read && (
                         <button
                           className={styles.actionButton}

@@ -1,3 +1,5 @@
+//db table: organization_heads
+
 import db from "../../database.js"
 
 export const getHeads = async (req, res) => {

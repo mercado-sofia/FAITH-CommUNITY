@@ -1,3 +1,5 @@
+//db table: organizations
+
 import db from '../../database.js';
 
 export const syncOrganizationsFromAdmins = async (req, res) => {

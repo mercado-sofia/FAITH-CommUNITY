@@ -1,3 +1,5 @@
+// controller: advocacyController.js
+
 import express from "express"
 import { addAdvocacy, getAdvocacies, deleteAdvocacy, getAllAdvocacies } from "../controllers/advocacyController.js"
 

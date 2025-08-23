@@ -1,3 +1,5 @@
+//controller: organizationController.js
+
 import express from "express"
 const router = express.Router()
 import { createOrganization, updateOrganizationInfo, getOrganizationByName } from "../controllers/organizationController.js"

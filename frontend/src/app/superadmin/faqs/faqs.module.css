@@ -1,9 +1,9 @@
 /* Main Layout */
 .mainArea {
   padding: 2rem;
-  background-color: #f8fafc;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   min-height: 100vh;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Header Section */
@@ -18,16 +18,17 @@
 .headerLeft h1 {
   font-size: 2rem;
   font-weight: 700;
-  color: #1e293b;
+  color: #111827;
   margin: 0 0 0.5rem 0;
   line-height: 1.2;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .subtitle {
-  color: #64748b;
+  color: #6b7280;
   font-size: 1rem;
   margin: 0;
-  font-weight: 400;
+  font-weight: 500;
 }
 
 .headerRight {
@@ -36,10 +37,15 @@
 
 .statisticsCard {
   background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+  transition: box-shadow 0.2s ease;
+}
+
+.statisticsCard:hover {
+  box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 .statGrid {
@@ -57,12 +63,12 @@
 .statNumber {
   font-size: 1.875rem;
   font-weight: 700;
-  color: #1e293b;
+  color: #111827;
   line-height: 1;
 }
 
 .statNumber.activeCount {
-  color: #059669;
+  color: #047857;
 }
 
 .statNumber.inactiveCount {
@@ -71,7 +77,7 @@
 
 .statLabel {
   font-size: 0.875rem;
-  color: #64748b;
+  color: #6b7280;
   margin-top: 0.25rem;
   font-weight: 500;
 }
@@ -79,11 +85,16 @@
 /* Controls Section */
 .controlsSection {
   background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: 16px;
+  padding: 2rem;
   margin-bottom: 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+  transition: box-shadow 0.2s ease;
+}
+
+.controlsSection:hover {
+  box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 .filterControls {
@@ -101,54 +112,86 @@
 
 .filterLabel {
   font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
+  font-weight: 600;
+  color: #111827;
   white-space: nowrap;
 }
 
 .filterSelect {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  background: white;
-  color: #374151;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 180px;
+  padding: 12px 16px !important;
+  border: 2px solid #000000 !important;
+  border-radius: 8px !important;
+  background: white !important;
+  font-size: 14px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  color: #000000 !important;
+  font-weight: 500 !important;
+  min-width: 180px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23000000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
+  background-position: right 12px center !important;
+  background-repeat: no-repeat !important;
+  background-size: 16px !important;
+  padding-right: 40px !important;
+  box-shadow: none !important;
+  transform: translateY(0) !important;
+}
+
+.filterSelect:hover {
+  border-color: #000000 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  transform: translateY(-1px) !important;
+  background: white !important;
 }
 
 .filterSelect:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none !important;
+  border-color: #000000 !important;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  transform: translateY(-1px) !important;
 }
 
 .refreshButton {
-  background: #3b82f6;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
+  background: white;
+  color: #000000;
+  border: 2px solid #000000;
+  padding: 12px 20px;
   border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .refreshButton:hover {
-  background: #2563eb;
+  background: #000000;
+  color: white;
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.refreshButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Create Section */
 .createSection {
   background: white;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 2rem;
   margin-bottom: 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+  transition: box-shadow 0.2s ease;
+}
+
+.createSection:hover {
+  box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 .sectionHeader {
@@ -160,14 +203,15 @@
 
 .sectionHeader h2 {
   font-size: 1.25rem;
-  font-weight: 600;
-  color: #1e293b;
+  font-weight: 700;
+  color: #111827;
   margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .itemCount {
   font-size: 0.875rem;
-  color: #64748b;
+  color: #6b7280;
   font-weight: 500;
 }
 
@@ -190,32 +234,33 @@
 
 .formField label {
   font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
+  font-weight: 600;
+  color: #111827;
 }
 
 .formTextarea,
 .formSelect {
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
   border-radius: 8px;
-  font-size: 0.875rem;
-  color: #374151;
+  font-size: 14px;
+  color: #111827;
   background: white;
   transition: all 0.2s ease;
-  font-family: inherit;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 500;
 }
 
 .formTextarea {
   resize: vertical;
-  min-height: 80px;
+  min-height: 100px;
 }
 
 .formTextarea:focus,
 .formSelect:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #000000;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
 }
 
 .formTextarea:disabled,
@@ -231,35 +276,52 @@
 }
 
 .createButton {
-  background: #059669;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
+  background: white;
+  color: #000000;
+  border: 2px solid #000000;
+  padding: 12px 24px;
   border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .createButton:hover:not(:disabled) {
-  background: #047857;
+  background: #000000;
+  color: white;
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.createButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .createButton:disabled {
-  background: #9ca3af;
+  background: #f3f4f6;
+  color: #9ca3af;
+  border-color: #d1d5db;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 /* Table Section */
 .tableSection {
   background: white;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+  transition: box-shadow 0.2s ease;
+}
+
+.tableSection:hover {
+  box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 /* FAQ Grid */
@@ -270,16 +332,18 @@
 
 /* FAQ Cards */
 .faqCard {
-  background: #f8fafc;
-  border-radius: 12px;
-  padding: 1.5rem;
-  border: 1px solid #e2e8f0;
-  transition: all 0.2s ease;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 16px;
+  padding: 2rem;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .faqCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.2);
+  border-color: #d1d5db;
 }
 
 .cardHeader {
@@ -294,22 +358,26 @@
 }
 
 .statusTag {
-  padding: 0.25rem 0.75rem;
+  padding: 6px 16px;
   border-radius: 20px;
-  font-size: 0.75rem;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  border: 1px solid transparent;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .statusTag.active {
-  background: #dcfce7;
-  color: #166534;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #047857;
+  border-color: #10b981;
 }
 
 .statusTag.inactive {
-  background: #fee2e2;
-  color: #991b1b;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #b91c1c;
+  border-color: #ef4444;
 }
 
 .cardContent {
@@ -318,22 +386,25 @@
 
 .question {
   font-size: 1.125rem;
-  font-weight: 600;
-  color: #1e293b;
+  font-weight: 700;
+  color: #111827;
   margin-bottom: 0.75rem;
   line-height: 1.4;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .answer {
-  color: #4b5563;
-  line-height: 1.6;
+  color: #374151;
+  line-height: 1.7;
   margin-bottom: 1rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .createdAt {
   font-size: 0.75rem;
   color: #9ca3af;
   margin: 0;
+  font-weight: 500;
 }
 
 .cardActions {
@@ -342,52 +413,63 @@
 }
 
 .btnEdit {
-  background: #dbeafe;
-  color: #1d4ed8;
-  border: none;
-  padding: 0.5rem 1rem;
+  background: white;
+  color: #000000;
+  border: 2px solid #000000;
+  padding: 8px 16px;
   border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .btnEdit:hover:not(:disabled) {
-  background: #bfdbfe;
+  background: #000000;
+  color: white;
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .btnDelete {
-  background: #fee2e2;
+  background: white;
   color: #dc2626;
-  border: none;
-  padding: 0.5rem 1rem;
+  border: 2px solid #dc2626;
+  padding: 8px 16px;
   border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.1);
 }
 
 .btnDelete:hover:not(:disabled) {
-  background: #fecaca;
+  background: #dc2626;
+  color: white;
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
 }
 
 .btnEdit:disabled,
 .btnDelete:disabled {
   background: #f3f4f6;
   color: #9ca3af;
+  border-color: #d1d5db;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 /* Editing Card */
 .editingCard {
-  background: #fffbeb;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
   border: 2px solid #f59e0b;
   transform: scale(1.02);
+  box-shadow: 0 8px 25px -5px rgba(245, 158, 11, 0.3);
 }
 
 .editForm {
@@ -404,29 +486,32 @@
 
 .editField label {
   font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
+  font-weight: 600;
+  color: #111827;
 }
 
 .editTextarea,
 .editSelect {
-  padding: 0.5rem;
-  border: 1px solid #d1d5db;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
   border-radius: 8px;
-  font-size: 0.875rem;
+  font-size: 14px;
   transition: all 0.2s ease;
-  font-family: inherit;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 500;
+  color: #111827;
 }
 
 .editTextarea {
   resize: vertical;
+  min-height: 80px;
 }
 
 .editTextarea:focus,
 .editSelect:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #000000;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
 }
 
 .editTextarea:disabled,
@@ -442,78 +527,53 @@
 }
 
 .btnSave {
-  background: #059669;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
+  background: white;
+  color: #000000;
+  border: 2px solid #000000;
+  padding: 8px 16px;
   border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   flex: 1;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .btnSave:hover:not(:disabled) {
-  background: #047857;
+  background: #000000;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .btnSave:disabled {
-  background: #9ca3af;
+  background: #f3f4f6;
+  color: #9ca3af;
+  border-color: #d1d5db;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .btnCancel {
   background: #f3f4f6;
   color: #374151;
-  border: none;
-  padding: 0.5rem 1rem;
+  border: 2px solid #d1d5db;
+  padding: 8px 16px;
   border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .btnCancel:hover:not(:disabled) {
   background: #e5e7eb;
-}
-
-.editNote {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-.editNote small {
-  color: #9ca3af;
-  font-style: italic;
-}
-
-/* Empty State */
-.emptyState {
-  text-align: center;
-  padding: 4rem 2rem;
-  color: #64748b;
-}
-
-.emptyIcon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-  opacity: 0.5;
-}
-
-.emptyState h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 0.5rem;
-}
-
-.emptyState p {
-  font-size: 0.875rem;
-  margin: 0;
-  line-height: 1.5;
+  border-color: #9ca3af;
+  transform: translateY(-1px);
 }
 
 /* Modal Styles */
@@ -523,30 +583,48 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .modalContent {
   background: white;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 2rem;
   max-width: 500px;
   width: 90%;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  animation: modalSlideIn 0.3s ease-out;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .modalTitle {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1e293b;
+  color: #111827;
   margin-bottom: 1rem;
   text-align: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .modalBody {
@@ -554,16 +632,18 @@
 }
 
 .modalBody p {
-  color: #64748b;
+  color: #6b7280;
   margin-bottom: 1rem;
   text-align: center;
+  line-height: 1.6;
 }
 
 .confirmDetails {
-  background: #f8fafc;
-  padding: 1rem;
-  border-radius: 8px;
-  border-left: 4px solid #3b82f6;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border-left: 4px solid #000000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .confirmDetails p {
@@ -573,7 +653,7 @@
 }
 
 .confirmDetails strong {
-  color: #1e293b;
+  color: #111827;
 }
 
 .modalActions {
@@ -583,35 +663,33 @@
 }
 
 .btnConfirm {
-  background: #059669;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
+  background: white;
+  color: #000000;
+  border: 2px solid #000000;
+  padding: 12px 24px;
   border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .btnConfirm:hover:not(:disabled) {
-  background: #047857;
+  background: #000000;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .btnConfirm:disabled {
-  background: #9ca3af;
+  background: #f3f4f6;
+  color: #9ca3af;
+  border-color: #d1d5db;
   cursor: not-allowed;
-}
-
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  transform: none;
+  box-shadow: none;
 }
 
 /* Notification */

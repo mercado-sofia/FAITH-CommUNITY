@@ -1,6 +1,7 @@
+//controller: orgSyncController.js
+
 import express from 'express';
 import { syncOrganizationsFromAdmins } from '../controllers/orgSyncController.js';
-
 
 const router = express.Router();
 

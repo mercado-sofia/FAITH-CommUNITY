@@ -1,3 +1,5 @@
+//db table: subscribers
+
 import crypto from "crypto";
 import db from "../../database.js";
 import { sendMail } from "../../utils/mailer.js";

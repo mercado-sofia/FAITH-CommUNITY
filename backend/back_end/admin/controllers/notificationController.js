@@ -1,3 +1,5 @@
+//db table: notifications
+
 import db from '../../database.js';
 
 class NotificationController {

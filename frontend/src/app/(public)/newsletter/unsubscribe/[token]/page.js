@@ -30,7 +30,7 @@ export default function NewsletterUnsubscribePage() {
 
   const unsubscribeFromNewsletter = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/newsletter/unsubscribe/${token}`, {
+      const response = await fetch(`${API_BASE}/api/subscription/unsubscribe/${token}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

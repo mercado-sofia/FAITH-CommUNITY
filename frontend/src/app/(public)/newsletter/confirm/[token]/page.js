@@ -10,7 +10,7 @@ import styles from './confirmPage.module.css';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "http://localhost:8080";
 
-export default function NewsletterConfirmPage() {
+export default function SubscriptionConfirmPage() {
   const params = useParams();
   const token = params.token;
   
@@ -30,7 +30,7 @@ export default function NewsletterConfirmPage() {
 
   const confirmSubscription = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/newsletter/confirm/${token}`, {
+      const response = await fetch(`${API_BASE}/api/subscription/confirm/${token}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

@@ -20,9 +20,6 @@ const uploadDirectories = {
     logos: path.join(baseUploadsDir, "organizations", "logos"),
     heads: path.join(baseUploadsDir, "organizations", "heads")
   },
-  volunteers: {
-    validIds: path.join(baseUploadsDir, "volunteers", "valid-ids")
-  },
   news: {
     images: path.join(baseUploadsDir, "news", "images")
   },
@@ -137,12 +134,6 @@ export const uploadConfigs = {
   // Organization uploads
   organizationLogo: createUploadConfig('organizations', 'logos', { prefix: 'org_logo_' }),
   organizationHead: createUploadConfig('organizations', 'heads', { prefix: 'org_head_' }),
-  
-  // Volunteer uploads
-  volunteerValidId: createUploadConfig('volunteers', 'validIds', { 
-    fileFilter: documentFileFilter,
-    prefix: 'vol_id_' 
-  }),
   
   // News uploads
   newsImage: createUploadConfig('news', 'images', { prefix: 'news_img_' })

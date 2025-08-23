@@ -37,11 +37,14 @@ export default function DeleteConfirmationModal({
 
         <div className={styles.body}>
           <p>
-            Are you sure you want to permanently delete <strong>&ldquo;{itemName}&rdquo;</strong>?
+            Are you sure you want to {itemType === 'news' ? 'delete' : 'permanently delete'} <strong>&ldquo;{itemName}&rdquo;</strong>?
           </p>
           {itemType !== 'notification' && itemType !== 'message' && (
             <p className={styles.warning}>
-              Warning: This action cannot be undone. The {itemType} will be completely removed from your records.
+              {itemType === 'news' 
+                ? 'The news will be moved to recently deleted where it can be restored or permanently deleted later.'
+                : `Warning: This action cannot be undone. The ${itemType} will be completely removed from your records.`
+              }
             </p>
           )}
         </div>
@@ -71,7 +74,7 @@ export default function DeleteConfirmationModal({
             className={styles.deleteBtn}
             disabled={isDeleting}
           >
-            {isDeleting ? 'Deleting...' : 'Delete Permanently'}
+            {isDeleting ? 'Deleting...' : (itemType === 'news' ? 'Delete' : 'Delete Permanently')}
           </button>
         </div>
       </div>

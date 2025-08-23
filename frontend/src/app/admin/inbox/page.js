@@ -58,6 +58,18 @@ export default function InboxPage() {
     skip: !currentAdmin?.org
   });
 
+  // Fetch total count for "All" tab (always get all messages, not just current page)
+  const { 
+    data: totalMessagesData 
+  } = useGetMessagesQuery({
+    organizationId: currentAdmin?.org,
+    page: 1,
+    limit: 1000, // Large limit to get total count
+    unreadOnly: false // Always get all messages
+  }, {
+    skip: !currentAdmin?.org
+  });
+
   // Mutations with loading states
   const [markAsRead, { isLoading: markingAsRead }] = useMarkMessageAsReadMutation();
   const [markAllAsRead, { isLoading: markingAllAsRead }] = useMarkAllAsReadMutation();
@@ -273,7 +285,7 @@ export default function InboxPage() {
           onClick={() => handleTabChange('all')}
         >
           <span>All</span>
-          <span className={styles.tabCount}>{messages.length}</span>
+          <span className={styles.tabCount}>{totalMessagesData?.data?.messages?.length || 0}</span>
         </button>
         <button 
           className={`${styles.navTab} ${currentTab === 'unread' ? styles.active : ''}`}

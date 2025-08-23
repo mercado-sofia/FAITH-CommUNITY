@@ -89,8 +89,23 @@ export const submitMessage = async (req, res) => {
 
     // Create notifications for all admins of this organization
     if (adminResult.length > 0) {
+      // Get sender display name - use full name for registered users or "Guest User" for unregistered
+      let senderDisplayName = "Guest User";
+      
+      if (actualUserId) {
+        // For registered users, get their full name from users table
+        const [userNameResult] = await db.execute(
+          "SELECT first_name, last_name FROM users WHERE id = ?",
+          [actualUserId]
+        );
+        
+        if (userNameResult.length > 0) {
+          const { first_name, last_name } = userNameResult[0];
+          senderDisplayName = `${first_name} ${last_name}`.trim();
+        }
+      }
+      
       const notificationPromises = adminResult.map(admin => {
-        const senderDisplayName = sender_name?.trim() || sender_email.split('@')[0];
         const notificationTitle = "New Message Received";
         const notificationMessage = `You have received a new message from ${senderDisplayName}.`;
         

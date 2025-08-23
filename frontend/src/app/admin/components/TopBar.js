@@ -52,12 +52,7 @@ export default function TopBar() {
   const pathname = usePathname();
   const { isNavigating } = useNavigation();
 
-  useEffect(() => {
-    const storedAdminData = localStorage.getItem('adminData');
-    if (storedAdminData) {
-      // setAdminData(JSON.parse(storedAdminData)); // This line was removed
-    }
-  }, []);
+
 
   const getBreadcrumbParts = () => {
     const pathSegments = pathname.split('/').filter(segment => segment !== '');
@@ -96,6 +91,14 @@ export default function TopBar() {
       }
       return !prev;
     });
+  };
+
+  // Handle clicking on message notifications to navigate to inbox
+  const handleNotificationClick = (notification) => {
+    if (notification.type === 'message') {
+      setShowNotifications(false); // Close dropdown
+      router.push('/admin/inbox');
+    }
   };
 
 
@@ -189,7 +192,11 @@ export default function TopBar() {
                   </div>
                 ) : (
                   notifications.map((notification) => (
-                    <div key={notification.id} className={styles.notificationItem}>
+                    <div 
+                      key={notification.id} 
+                      className={`${styles.notificationItem} ${notification.type === 'message' ? styles.clickableMessage : ''}`}
+                      onClick={() => handleNotificationClick(notification)}
+                    >
                       <div className={styles.notificationIcon}>
                         {notification.type === 'approval' ? (
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">

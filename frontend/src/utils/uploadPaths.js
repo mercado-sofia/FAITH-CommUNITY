@@ -91,15 +91,6 @@ export const getOrganizationImageUrl = (imagePath, subType = 'logo') => {
 };
 
 /**
- * Get volunteer valid ID URL
- * @param {string} imagePath - Image path from database
- * @returns {string} Full URL
- */
-export const getVolunteerIdUrl = (imagePath) => {
-  return getImageUrl(imagePath, 'volunteers', 'valid-ids');
-};
-
-/**
  * Get news image URL
  * @param {string} imagePath - Image path from database
  * @returns {string} Full URL

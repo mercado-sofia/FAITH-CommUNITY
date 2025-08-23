@@ -2,6 +2,7 @@
   max-width: 1200px;
   margin: 0 auto;
   min-height: 100vh;
+  padding: 0 0 1rem;
 }
 
 /* Header Styles */
@@ -131,7 +132,6 @@
 /* Content Styles */
 .content {
   background: white;
-  border-radius: 0.75rem;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
   overflow: hidden;
 }
@@ -190,8 +190,38 @@
 
 /* Notifications List */
 .notificationsList {
-  max-height: 600px;
-  overflow-y: auto;
+  /* Removed max-height and overflow-y to allow natural expansion */
+  position: relative;
+}
+
+/* Infinite Scroll Loading States */
+.loadingMore {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  gap: 1rem;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.loadingMore .loadingSpinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.endOfList {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: #9ca3af;
+  font-size: 13px;
+  border-top: 1px solid #f1f5f9;
 }
 
 .notificationItem {
@@ -211,13 +241,24 @@
   border-bottom: none;
 }
 
+/* Unread notifications - light blue-gray background for emphasis */
 .notificationItem.unread {
-  background: #fef3c7;
-  border-left: 4px solid #f59e0b;
+  background: #e9edf2;
 }
 
 .notificationItem.unread:hover {
-  background: #fde68a;
+  background: #e6eaef;
+}
+
+/* Clickable message notifications */
+.notificationItem.clickableMessage {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.notificationItem.clickableMessage:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Checkbox */
@@ -246,6 +287,29 @@
   border-radius: 50%;
   background: #f8fafc;
   flex-shrink: 0;
+  transition: background-color 0.2s;
+}
+
+/* Green background for unread notification icons (submissions) */
+.notificationItem.unread .notificationIcon {
+  background: #10c4a6;
+}
+
+/* Blue background for unread message notification icons */
+.notificationItem.unread .notificationIcon.messageIcon {
+  background: #3b82f6;
+}
+
+/* White icon color for unread message notifications */
+.notificationItem.unread .messageIcon svg path,
+.notificationItem.unread .messageIcon svg polyline {
+  stroke: #ffffff !important;
+}
+
+/* Blue icon color for read message notifications (default state) */
+.messageIcon svg path,
+.messageIcon svg polyline {
+  stroke: #3b82f6;
 }
 
 /* Content */
@@ -329,12 +393,13 @@
 }
 
 .markReadBtn {
-  background: #10b981;
-  color: white;
+  background: #f3f4f6;
+  color: #6b7280;
 }
 
 .markReadBtn:hover {
-  background: #059669;
+  background: #e5e7eb;
+  color: #374151;
 }
 
 .deleteBtn {
@@ -412,8 +477,6 @@
 .pageBtn.active:hover {
   background: #2563eb;
 }
-
-
 
 /* Responsive Design */
 @media (max-width: 768px) {

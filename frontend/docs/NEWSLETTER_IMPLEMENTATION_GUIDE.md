@@ -15,10 +15,10 @@ This document outlines the complete newsletter subscription system implemented f
    - Email confirmation functionality
 
 2. **Newsletter Routes** (`backend/back_end/for_public/routes/newsletter.js`)
-   - `POST /api/newsletter/subscribe` - Public subscription
-   - `GET /api/newsletter/confirm/:token` - Confirm subscription
-   - `GET /api/newsletter/unsubscribe/:token` - Unsubscribe
-   - `GET /api/newsletter/admin/subscriptions` - Admin view
+   - `POST /api/subscription/subscribe` - Public subscription
+   - `GET /api/subscription/confirm/:token` - Confirm subscription
+   - `GET /api/subscription/unsubscribe/:token` - Unsubscribe
+   - `GET /api/subscription/admin/subscriptions` - Admin view
 
 3. **Database Schema**
    - `subscribers` table with verification tokens
@@ -93,12 +93,12 @@ FRONTEND_URL=http://localhost:3000
 ## API Endpoints
 
 ### Public Endpoints
-- `POST /api/newsletter/subscribe` - Subscribe to newsletter
-- `GET /api/newsletter/confirm/:token` - Confirm subscription
-- `GET /api/newsletter/unsubscribe/:token` - Unsubscribe
+- `POST /api/subscription/subscribe` - Subscribe to newsletter
+- `GET /api/subscription/confirm/:token` - Confirm subscription
+- `GET /api/subscription/unsubscribe/:token` - Unsubscribe
 
 ### Admin Endpoints
-- `GET /api/newsletter/admin/subscriptions` - View all subscriptions
+- `GET /api/subscription/admin/subscriptions` - View all subscriptions
 
 ## Database Schema
 
@@ -196,7 +196,7 @@ npm run dev
 curl http://localhost:8080/api/debug/tables
 
 # Test newsletter subscription
-curl -X POST http://localhost:8080/api/newsletter/subscribe \
+curl -X POST http://localhost:8080/api/subscription/subscribe \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com"}'
 ```

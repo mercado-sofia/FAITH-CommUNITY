@@ -232,7 +232,7 @@ export const loginUser = async (req, res) => {
         gender: user.gender,
         address: user.address,
         birthDate: user.birth_date,
-        profilePhoto: user.profile_photo_url,
+        profile_photo_url: user.profile_photo_url,
         occupation: user.occupation,
         citizenship: user.citizenship,
         newsletterSubscribed: Boolean(user.newsletter_subscribed)
@@ -271,7 +271,7 @@ export const getUserProfile = async (req, res) => {
         gender: user.gender,
         address: user.address,
         birthDate: user.birth_date,
-        profilePhoto: user.profile_photo_url,
+        profile_photo_url: user.profile_photo_url,
         occupation: user.occupation,
         citizenship: user.citizenship,
         newsletterSubscribed: Boolean(user.newsletter_subscribed),

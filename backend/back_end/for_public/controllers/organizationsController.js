@@ -2,12 +2,17 @@ import db from '../../database.js';
 
 export const getAllOrganizations = async (req, res) => {
   try {
-    // Fetch organizations from organizations table
+    // Fetch organizations from admins table since org and orgName are now there
     const [rows] = await db.execute(`
-      SELECT id, org as acronym, orgName as name, logo 
-      FROM organizations 
-      WHERE org IS NOT NULL AND org != '' AND orgName IS NOT NULL
-      ORDER BY org ASC
+      SELECT DISTINCT 
+        o.id, 
+        a.org as acronym, 
+        a.orgName as name, 
+        o.logo 
+      FROM organizations o
+      INNER JOIN admins a ON a.organization_id = o.id
+      WHERE a.org IS NOT NULL AND a.org != '' AND a.orgName IS NOT NULL AND a.status = 'ACTIVE'
+      ORDER BY a.org ASC
     `);
 
     // Format the data for the frontend

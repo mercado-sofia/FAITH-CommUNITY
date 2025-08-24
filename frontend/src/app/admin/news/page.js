@@ -14,6 +14,7 @@ import RecentlyDeletedModal from './components/RecentlyDeletedModal';
 import ErrorBoundary from '../../../components/ErrorBoundary';
 import SuccessModal from '../components/SuccessModal';
 import SkeletonLoader from '../components/SkeletonLoader';
+import { invalidateNewsCache } from '../../../utils/cacheInvalidator';
 import styles from './news.module.css';
 import { FaPlus, FaTrash } from 'react-icons/fa';
 
@@ -162,7 +163,8 @@ export default function AdminNewsPage() {
 
       setSuccessModal({ isVisible: true, message: 'News created successfully!', type: 'success' });
       setShowAddModal(false);
-      refreshNews(); // Refresh the list
+      refreshNews(); // Refresh the admin list
+      invalidateNewsCache(); // Invalidate public news cache
     } catch (error) {
       console.error('News creation error:', error);
       const errorMessage = error.message.includes('Failed to fetch') 
@@ -233,7 +235,8 @@ export default function AdminNewsPage() {
       setSuccessModal({ isVisible: true, message: 'News updated successfully!', type: 'success' });
       setShowEditModal(false);
       setEditingNews(null);
-      refreshNews(); // Refresh the list
+      refreshNews(); // Refresh the admin list
+      invalidateNewsCache(); // Invalidate public news cache
     } catch (error) {
       console.error('News update error:', error);
       const errorMessage = error.message.includes('Failed to fetch') 
@@ -275,7 +278,8 @@ export default function AdminNewsPage() {
       setSuccessModal({ isVisible: true, message: 'News deleted successfully!', type: 'success' });
       setShowDeleteModal(false);
       setDeletingNews(null);
-      refreshNews(); // Refresh the list
+      refreshNews(); // Refresh the admin list
+      invalidateNewsCache(); // Invalidate public news cache
     } catch (error) {
       console.error('News deletion error:', error);
       const errorMessage = error.message.includes('Failed to fetch') 
@@ -467,9 +471,12 @@ export default function AdminNewsPage() {
         orgId={orgId}
         onRestore={() => {
           refreshNews();
+          invalidateNewsCache(); // Invalidate public news cache
           setSuccessModal({ isVisible: true, message: 'News restored successfully!', type: 'success' });
         }}
         onPermanentDelete={() => {
+          refreshNews();
+          invalidateNewsCache(); // Invalidate public news cache
           setSuccessModal({ isVisible: true, message: 'News permanently deleted!', type: 'success' });
         }}
       />

@@ -121,11 +121,11 @@ export const createAdmin = async (req, res) => {
     const saltRounds = 10
     const hashedPassword = await bcrypt.hash(password, saltRounds)
 
-    // First, create the organization record
+    // First, create the organization record (without org/orgName fields)
     const [orgResult] = await connection.execute(
-      `INSERT INTO organizations (org, orgName, status, org_color) 
-       VALUES (?, ?, 'ACTIVE', '#444444')`,
-      [org, orgName]
+      `INSERT INTO organizations (status, org_color) 
+       VALUES ('ACTIVE', '#444444')`,
+      []
     )
 
     const organizationId = orgResult.insertId
@@ -260,13 +260,8 @@ export const updateAdmin = async (req, res) => {
 
       await connection.execute(adminQuery, adminParams)
       
-      // Update organization record if org or orgName changed
-      if (admin.organization_id && (updateData.org !== admin.org || updateData.orgName !== admin.orgName)) {
-        await connection.execute(
-          "UPDATE organizations SET org = ?, orgName = ? WHERE id = ?",
-          [updateData.org, updateData.orgName, admin.organization_id]
-        )
-      }
+      // Note: org and orgName are now stored in admins table, not organizations table
+      // No need to update organizations table for these fields
 
       await connection.commit()
 
@@ -332,14 +327,8 @@ export const updateAdmin = async (req, res) => {
     // Update admin table
     await connection.execute(adminQuery, adminParams)
     
-    // Update organization record if org or orgName changed
-    if (currentAdmin.organization_id) {
-      await connection.execute(
-        "UPDATE organizations SET org = ?, orgName = ? WHERE id = ?",
-        [org, orgName, currentAdmin.organization_id]
-      )
-      // Organization updated
-    }
+    // Note: org and orgName are now stored in admins table, not organizations table
+    // No need to update organizations table for these fields
 
     await connection.commit()
 

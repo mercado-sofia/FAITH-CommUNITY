@@ -5,14 +5,27 @@ import db from "../../database.js"
 export const getOrganizationByName = async (req, res) => {
   const { org_name } = req.params
 
-
   try {
-    const [orgRows] = await db.execute('SELECT * FROM organizations WHERE org = ? AND status = "ACTIVE"', [org_name])
+    // Get organization details from admins table since org/orgName are no longer in organizations table
+    const [adminRows] = await db.execute(
+      'SELECT org, orgName, email FROM admins WHERE org = ? AND status = "ACTIVE" LIMIT 1',
+      [org_name]
+    )
 
-    console.log("🔍 orgRows:", orgRows)
+    if (adminRows.length === 0) {
+      return res.status(404).json({ success: false, message: "Organization not found" })
+    }
+
+    const adminData = adminRows[0]
+    
+    // Get organization details from organizations table using organization_id
+    const [orgRows] = await db.execute(
+      'SELECT * FROM organizations WHERE id = (SELECT organization_id FROM admins WHERE org = ? AND status = "ACTIVE" LIMIT 1)',
+      [org_name]
+    )
 
     if (orgRows.length === 0) {
-      return res.status(404).json({ success: false, message: "Organization not found" })
+      return res.status(404).json({ success: false, message: "Organization details not found" })
     }
 
     const org = orgRows[0]
@@ -20,12 +33,6 @@ export const getOrganizationByName = async (req, res) => {
 
     const [advocacies] = await db.execute("SELECT advocacy FROM advocacies WHERE organization_id = ?", [org.id])
     const [competencies] = await db.execute("SELECT competency FROM competencies WHERE organization_id = ?", [org.id])
-    // Get email from admins table (Single Source of Truth)
-    const [adminRows] = await db.execute(
-      'SELECT email FROM admins WHERE org = ? AND status = "ACTIVE" LIMIT 1',
-      [org.org]
-    )
-    const adminEmail = adminRows.length > 0 ? adminRows[0].email : null
 
     const [heads] = await db.execute(
       "SELECT head_name, role, facebook, email, photo, display_order FROM organization_heads WHERE organization_id = ?",
@@ -68,15 +75,17 @@ export const getOrganizationByName = async (req, res) => {
       }
     } else {
       // Fallback to expected logo path
-      logoUrl = `/logo/${org.org.toLowerCase()}_logo.jpg`;
+      logoUrl = `/logo/${adminData.org.toLowerCase()}_logo.jpg`;
     }
 
     res.json({
       success: true,
       data: {
         ...org,
+        org: adminData.org, // From admins table
+        orgName: adminData.orgName, // From admins table
         logo: logoUrl, // Use the constructed logo URL
-        email: adminEmail, // Email from admins table
+        email: adminData.email, // Email from admins table
         // Fix: Return single strings instead of arrays
         advocacies: advocacies.length > 0 ? advocacies[0].advocacy : "",
         competencies: competencies.length > 0 ? competencies[0].competency : "",
@@ -110,24 +119,24 @@ export const createOrganization = async (req, res) => {
   const finalOrgColor = orgColor || "#444444"
 
   try {
-    // Check if organization with this acronym already exists
-    const [existingOrg] = await db.execute(
-      'SELECT id FROM organizations WHERE org = ?',
+    // Check if organization with this acronym already exists in admins table
+    const [existingAdmin] = await db.execute(
+      'SELECT id FROM admins WHERE org = ?',
       [org]
     )
 
-    if (existingOrg.length > 0) {
+    if (existingAdmin.length > 0) {
       return res.status(409).json({ 
         success: false, 
         message: "Organization with this acronym already exists" 
       })
     }
 
-    // Insert new organization
+    // Insert new organization (without org/orgName fields)
     const [result] = await db.execute(
-      `INSERT INTO organizations (logo, orgName, org, facebook, description, status, org_color)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [finalLogo, orgName, org, finalFacebook, finalDescription, finalStatus, finalOrgColor]
+      `INSERT INTO organizations (logo, facebook, description, status, org_color)
+       VALUES (?, ?, ?, ?, ?)`,
+      [finalLogo, finalFacebook, finalDescription, finalStatus, finalOrgColor]
     )
 
     // Organization created successfully
@@ -156,18 +165,27 @@ export const updateOrganizationInfo = async (req, res) => {
   const finalStatus = status || "ACTIVE" // Ensure status is always a string
   const finalOrgColor = orgColor || "#444444"
 
+  console.log("Backend: Final processed values:", { 
+    finalLogo, 
+    finalFacebook, 
+    finalDescription, 
+    finalStatus, 
+    finalOrgColor 
+  })
+
   // Values prepared for database update
 
-  // Validate required fields
-  if (!orgName || orgName === undefined) {
-    return res.status(400).json({ success: false, error: "Organization name is required" })
-  }
-  if (!org || org === undefined) {
-    return res.status(400).json({ success: false, error: "Organization acronym is required" })
-  }
+  // Note: org and orgName are now managed in the admins table via admin settings
+  // These fields are no longer required for organization updates
+  // The organization update only handles: logo, facebook, description, status, org_color
 
   // Get a connection for transaction
   const connection = await db.getConnection()
+  
+  if (!connection) {
+    console.error("❌ Backend: Failed to get database connection")
+    return res.status(500).json({ success: false, error: "Database connection failed" })
+  }
   
   try {
     // Start transaction using connection
@@ -175,7 +193,7 @@ export const updateOrganizationInfo = async (req, res) => {
 
     // First, get the current organization data before updating
     const [currentOrgData] = await connection.execute(
-      'SELECT org FROM organizations WHERE id = ?',
+      'SELECT id FROM organizations WHERE id = ?',
       [id]
     )
 
@@ -185,14 +203,15 @@ export const updateOrganizationInfo = async (req, res) => {
       return res.status(404).json({ success: false, message: "Organization not found" })
     }
 
-    const currentOrgAcronym = currentOrgData[0].org
+    // Note: org and orgName are now managed in the admins table via admin settings
+    // No need to fetch or update admin data in this endpoint
 
-    // Update the organizations table
+    // Update the organizations table (without org/orgName fields)
     const [orgResult] = await connection.execute(
       `UPDATE organizations
-       SET logo = ?, orgName = ?, org = ?, facebook = ?, description = ?, status = ?, org_color = ?
+       SET logo = ?, facebook = ?, description = ?, status = ?, org_color = ?
        WHERE id = ?`,
-      [finalLogo, orgName, org, finalFacebook, finalDescription, finalStatus, finalOrgColor, id],
+      [finalLogo, finalFacebook, finalDescription, finalStatus, finalOrgColor, id],
     )
 
     if (orgResult.affectedRows === 0) {
@@ -201,16 +220,8 @@ export const updateOrganizationInfo = async (req, res) => {
       return res.status(404).json({ success: false, message: "Organization not found" })
     }
 
-    // Update all admins that belong to this organization
-    // Update org and orgName fields in the admins table (email stays in admins table)
-    const [adminUpdateResult] = await connection.execute(
-      `UPDATE admins 
-       SET org = ?, orgName = ?
-       WHERE org = ?`,
-      [org, orgName, currentOrgAcronym]
-    )
-
-    // Admin records updated
+    // Note: org and orgName are now managed in the admins table via admin settings
+    // No need to update admin data in this endpoint
 
     // Commit the transaction
     await connection.commit()
@@ -223,10 +234,10 @@ export const updateOrganizationInfo = async (req, res) => {
     
     connection.release()
 
-    // Organization and admin data updated successfully
+    // Organization data updated successfully
     res.json({ 
       success: true, 
-      message: "Organization info updated successfully and admin data synchronized",
+      message: "Organization information updated successfully",
       data: updatedOrgData[0] || { id }
     })
   } catch (err) {
@@ -240,6 +251,13 @@ export const updateOrganizationInfo = async (req, res) => {
     }
     
     console.error("❌ Backend: Update organization error:", err)
+    console.error("❌ Backend: Error stack:", err.stack)
+    console.error("❌ Backend: Error details:", {
+      message: err.message,
+      code: err.code,
+      sqlMessage: err.sqlMessage,
+      sqlState: err.sqlState
+    })
     res.status(500).json({ success: false, error: err.message })
   }
 }

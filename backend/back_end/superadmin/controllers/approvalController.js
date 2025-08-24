@@ -4,10 +4,10 @@ import NotificationController from '../../admin/controllers/notificationControll
 export const getPendingSubmissions = async (req, res) => {
   try {
     const [rows] = await db.execute(`
-      SELECT s.*, o.orgName, o.org, a.orgName as submitted_by_name 
+      SELECT s.*, a.orgName, a.org, submitted_admin.orgName as submitted_by_name 
       FROM submissions s 
-      LEFT JOIN organizations o ON s.organization_id = o.id 
-      LEFT JOIN admins a ON s.submitted_by = a.id 
+      LEFT JOIN admins a ON a.organization_id = s.organization_id 
+      LEFT JOIN admins submitted_admin ON s.submitted_by = submitted_admin.id 
       WHERE s.status = 'pending' 
       ORDER BY s.submitted_at DESC
     `);
@@ -58,9 +58,16 @@ export const approveSubmission = async (req, res) => {
 
     // Apply changes based on section
     if (section === 'organization') {
+      // Update organizations table (without org/orgName fields)
       await db.execute(
-        `UPDATE organizations SET orgName = ?, org = ?, logo = ?, facebook = ?, description = ? WHERE id = ?`,
-        [data.orgName, data.org, data.logo, data.facebook, data.description, orgId]
+        `UPDATE organizations SET logo = ?, facebook = ?, description = ? WHERE id = ?`,
+        [data.logo, data.facebook, data.description, orgId]
+      );
+      
+      // Update admins table with org/orgName changes
+      await db.execute(
+        `UPDATE admins SET org = ?, orgName = ? WHERE organization_id = ?`,
+        [data.org, data.orgName, orgId]
       );
     }
 
@@ -348,9 +355,16 @@ export const bulkApproveSubmissions = async (req, res) => {
 
         // Apply changes based on section - same logic as individual approveSubmission
         if (section === 'organization') {
+          // Update organizations table (without org/orgName fields)
           await db.execute(
-            `UPDATE organizations SET orgName = ?, org = ?, logo = ?, facebook = ?, description = ? WHERE id = ?`,
-            [data.orgName, data.org, data.logo, data.facebook, data.description, orgId]
+            `UPDATE organizations SET logo = ?, facebook = ?, description = ? WHERE id = ?`,
+            [data.logo, data.facebook, data.description, orgId]
+          );
+          
+          // Update admins table with org/orgName changes
+          await db.execute(
+            `UPDATE admins SET org = ?, orgName = ? WHERE organization_id = ?`,
+            [data.org, data.orgName, orgId]
           );
         }
 

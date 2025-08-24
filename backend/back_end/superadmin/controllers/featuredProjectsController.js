@@ -14,8 +14,8 @@ const getAllFeaturedProjects = async (req, res) => {
         fp.status,
         fp.completed_date,
         fp.created_at,
-        o.org as org_acronym,
-        o.orgName as org_name,
+        a.org as org_acronym,
+        a.orgName as org_name,
         o.logo as org_logo,
         o.org_color as org_color,
         pp.title as program_title,
@@ -23,6 +23,7 @@ const getAllFeaturedProjects = async (req, res) => {
         pp.image as program_image
       FROM featured_projects fp
       LEFT JOIN organizations o ON fp.organization_id = o.id
+      LEFT JOIN admins a ON fp.organization_id = a.organization_id
       LEFT JOIN programs_projects pp ON fp.program_id = pp.id
       ORDER BY fp.id DESC
     `;
@@ -88,14 +89,15 @@ const getFeaturedProjectById = async (req, res) => {
         fp.status,
         fp.completed_date,
         fp.created_at,
-        o.org as org_acronym,
-        o.orgName as org_name,
+        a.org as org_acronym,
+        a.orgName as org_name,
         o.logo as org_logo,
         pp.title as program_title,
         pp.category as program_category,
         pp.image as program_image
       FROM featured_projects fp
       LEFT JOIN organizations o ON fp.organization_id = o.id
+      LEFT JOIN admins a ON fp.organization_id = a.organization_id
       LEFT JOIN programs_projects pp ON fp.program_id = pp.id
       WHERE fp.id = ?
     `;
@@ -152,9 +154,10 @@ const addFeaturedProject = async (req, res) => {
     
     // First, get program details
     const programQuery = `
-      SELECT pp.*, o.id as org_id, o.org, o.orgName 
+      SELECT pp.*, o.id as org_id, a.org, a.orgName 
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
+      LEFT JOIN admins a ON pp.organization_id = a.organization_id
       WHERE pp.id = ?
     `;
     

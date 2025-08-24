@@ -93,10 +93,11 @@ export const getCompetencies = async (req, res) => {
 export const getAllCompetencies = async (req, res) => {
   try {
     const [rows] = await db.execute(`
-      SELECT c.*, o.orgName, o.org 
+      SELECT c.*, a.orgName, a.org 
       FROM competencies c 
       LEFT JOIN organizations o ON c.organization_id = o.id 
-      ORDER BY o.orgName
+      LEFT JOIN admins a ON c.organization_id = a.organization_id
+      ORDER BY a.orgName
     `)
     res.json({
       success: true,

@@ -33,16 +33,25 @@ export const submitMessage = async (req, res) => {
   try {
     // Verify organization exists - try by ID first, then by acronym
     let [orgResult] = await db.execute(
-      "SELECT id, orgName FROM organizations WHERE id = ?",
+      "SELECT id FROM organizations WHERE id = ?",
       [organization_id]
     );
 
-    // If not found by ID, try by acronym
+    // If not found by ID, try by acronym from admins table
     if (orgResult.length === 0) {
-      [orgResult] = await db.execute(
-        "SELECT id, orgName FROM organizations WHERE org = ?",
+      const [adminRows] = await db.execute(
+        "SELECT organization_id, orgName FROM admins WHERE org = ? LIMIT 1",
         [organization_id]
       );
+      if (adminRows.length > 0) {
+        // Use the organization_id from admins table
+        [orgResult] = await db.execute(
+          "SELECT id FROM organizations WHERE id = ?",
+          [adminRows[0].organization_id]
+        );
+        // Get orgName from admins table
+        orgResult[0].orgName = adminRows[0].orgName;
+      }
     }
 
     if (orgResult.length === 0) {

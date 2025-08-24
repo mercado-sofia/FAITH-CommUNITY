@@ -1,5 +1,18 @@
 /* Organization Page Layout Styles */
 
+.header {
+  margin-bottom: 2.5rem;
+}
+
+.header h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: var(--font-poppins), sans-serif;
+  color: #06100f;
+  user-select: none;
+  margin: 0;
+}
+
 .sectionsContainer {
   display: flex;
   gap: 1.5rem;

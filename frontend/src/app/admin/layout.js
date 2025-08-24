@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { initializeAuth } from "../../rtk/superadmin/adminSlice";
 import { NavigationProvider } from "../../contexts/NavigationContext";
@@ -36,7 +36,6 @@ let adminInitialized = false;
 function AdminLayoutContent({ children }) {
   const dispatch = useDispatch();
   const router = useRouter();
-  const pathname = usePathname();
   const [isInitialLoading, setIsInitialLoading] = useState(!adminInitialized);
 
   useEffect(() => {

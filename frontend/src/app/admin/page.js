@@ -1,7 +1,7 @@
 'use client';
 
 import { useSelector } from 'react-redux';
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import styles from './dashboard/styles/dashboard.module.css';
 import StatCardSection from './dashboard/StatCardSection';
 import RecentApplicationsTable from './dashboard/RecentApplicationsTable';
@@ -9,8 +9,7 @@ import { useAdminVolunteers } from '../../hooks/useAdminData';
 import { selectCurrentAdmin, selectIsAuthenticated } from '../../rtk/superadmin/adminSlice';
 import SkeletonLoader from './components/SkeletonLoader';
 
-// Track if dashboard has been visited
-let hasVisitedDashboard = false;
+
 
 export default function AdminIndexPage() {
   const currentAdmin = useSelector(selectCurrentAdmin);
@@ -43,14 +42,7 @@ export default function AdminIndexPage() {
     })
     .slice(0, 5);
 
-  // Debug logging
-  console.log('Dashboard Debug:', {
-    currentAdmin: currentAdmin?.id,
-    volunteersLoading,
-    volunteersDataLength: volunteersData.length,
-    recentVolunteersLength: recentVolunteers.length,
-    error: volunteersError
-  });
+
 
   if (!isAuthenticated) {
     return null;

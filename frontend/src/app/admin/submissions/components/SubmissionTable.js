@@ -117,7 +117,6 @@ export default function SubmissionTable({
       }
 
       const result = await response.json();
-      console.log('Update successful:', result);
       // Refresh the submissions list
       if (onRefresh) onRefresh();
       setReEditSubmission(null);
@@ -327,11 +326,10 @@ export default function SubmissionTable({
           onSave={handleSaveReEdit}
         />
       )}
-      {confirmId && <CancelConfirmation onConfirm={() => handleCancel(confirmId)} onCancel={() => setConfirmId(null)} />}
+      {confirmId && <CancelConfirmation isOpen={!!confirmId} onConfirm={() => handleCancel(confirmId)} onCancel={() => setConfirmId(null)} />}
       {deleteId && (
         <DeleteConfirmationModal
           isOpen={!!deleteId}
-          itemName="this submission"
           itemType="submission"
           onConfirm={() => handleDelete(deleteId)}
           onCancel={() => setDeleteId(null)}

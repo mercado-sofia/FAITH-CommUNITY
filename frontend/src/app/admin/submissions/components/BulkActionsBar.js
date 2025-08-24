@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { FiX, FiTrash2 } from 'react-icons/fi';
+import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
+import CancelConfirmationModal from './CancelConfirmationModal';
 import styles from './styles/BulkActionsBar.module.css';
 
 export default function BulkActionsBar({ selectedCount, selectedItems, submissions, onCancel, onDelete, onClearSelection }) {
@@ -74,53 +76,23 @@ export default function BulkActionsBar({ selectedCount, selectedItems, submissio
         </button>
       </div>
 
-      {/* Cancel Confirmation */}
-      {showCancelConfirm && (
-        <div className={styles.confirmOverlay}>
-          <div className={styles.confirmModal}>
-            <h4>Cancel {selectedCount} Submission{selectedCount !== 1 ? 's' : ''}?</h4>
-            <p>This will withdraw the selected submissions from superadmin review.</p>
-            <div className={styles.confirmActions}>
-              <button 
-                className={`${styles.confirmButton} ${styles.confirmCancel}`}
-                onClick={() => setShowCancelConfirm(false)}
-              >
-                Keep Submissions
-              </button>
-              <button 
-                className={`${styles.confirmButton} ${styles.confirmAction}`}
-                onClick={handleBulkCancel}
-              >
-                Cancel Submissions
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Cancel Confirmation Modal */}
+      <CancelConfirmationModal
+        isOpen={showCancelConfirm}
+        itemName={`${pendingCount} submission${pendingCount !== 1 ? 's' : ''}`}
+        itemType="submission"
+        onConfirm={handleBulkCancel}
+        onCancel={() => setShowCancelConfirm(false)}
+      />
 
-      {/* Delete Confirmation */}
-      {showDeleteConfirm && (
-        <div className={styles.confirmOverlay}>
-          <div className={styles.confirmModal}>
-            <h4>Delete {selectedCount} Submission{selectedCount !== 1 ? 's' : ''}?</h4>
-            <p>This action cannot be undone. The selected submissions will be permanently removed.</p>
-            <div className={styles.confirmActions}>
-              <button 
-                className={`${styles.confirmButton} ${styles.confirmCancel}`}
-                onClick={() => setShowDeleteConfirm(false)}
-              >
-                Keep Submissions
-              </button>
-              <button 
-                className={`${styles.confirmButton} ${styles.confirmAction}`}
-                onClick={handleBulkDelete}
-              >
-                Delete Submissions
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={showDeleteConfirm}
+        itemName={`${selectedCount} submission${selectedCount !== 1 ? 's' : ''}`}
+        itemType="submission"
+        onConfirm={handleBulkDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </div>
   );
 }

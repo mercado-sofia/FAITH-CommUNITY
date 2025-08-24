@@ -133,7 +133,7 @@ export const usePublicNews = () => {
     fetcher,
     {
       revalidateOnFocus: false,
-      dedupingInterval: 180000, // Cache for 3 minutes (news updates more frequently)
+      dedupingInterval: 60000, // Cache for 1 minute (news updates more frequently)
       errorRetryCount: 2,
       onError: (error) => {
         logger.swrError(`${API_BASE_URL}/api/news`, error);

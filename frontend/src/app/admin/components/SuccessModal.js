@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { FiCheckCircle, FiX } from 'react-icons/fi';
+import { FaCircleCheck } from "react-icons/fa6";
+import { FiX } from 'react-icons/fi';
 import styles from './styles/SuccessModal.module.css';
 
 export default function SuccessModal({ 
@@ -21,50 +22,37 @@ export default function SuccessModal({
 
   if (!isVisible) return null;
 
-  const getIcon = () => {
-    switch (type) {
-      case 'success':
-        return <FiCheckCircle className={styles.successIcon} />;
-      case 'error':
-        return <FiX className={styles.errorIcon} />;
-      case 'warning':
-        return <FiX className={styles.warningIcon} />;
-      default:
-        return <FiCheckCircle className={styles.successIcon} />;
-    }
-  };
-
-  const getTitle = () => {
-    switch (type) {
-      case 'success':
-        return 'Success!';
-      case 'error':
-        return 'Error!';
-      case 'warning':
-        return 'Warning!';
-      default:
-        return 'Success!';
-    }
-  };
-
   return (
-    <div className={styles.modalOverlay}>
-      <div className={`${styles.modalContent} ${styles[type] || ''}`}>
-        <div className={styles.modalHeader}>
-          <div className={styles.modalTitle}>
-            {getIcon()}
-            <span>{getTitle()}</span>
+    <div className={styles.overlay}>
+      <div className={styles.modal}>
+        <div className={styles.topRow}>
+          <div className={styles.successIconContainer}>
+            <div className={styles.successIconInner}>
+              <FaCircleCheck />
+            </div>
           </div>
+          
           <button 
-            className={styles.closeButton}
+            className={styles.closeBtn}
             onClick={onClose}
-            aria-label="Close notification"
           >
-            <FiX size={20} />
+            <FiX />
           </button>
         </div>
-        <div className={styles.modalBody}>
-          <p className={styles.modalMessage}>{message}</p>
+        
+        <div className={styles.content}>
+          <h3>Success</h3>
+          
+          <p>{message}</p>
+        </div>
+
+        <div className={styles.actions}>
+          <button
+            onClick={onClose}
+            className={styles.confirmBtn}
+          >
+            Confirm
+          </button>
         </div>
       </div>
     </div>

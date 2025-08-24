@@ -160,11 +160,12 @@ import programsRoutes from "./back_end/admin/routes/programsRoutes.js"
 import submissionRoutes from "./back_end/admin/routes/submission.js"
 import uploadRoutes from "./back_end/admin/routes/upload.js"
 import volunteersRoutes from "./back_end/admin/routes/volunteers.js"
-import orgSyncRoutes from "./back_end/admin/routes/orgSync.js"
+
 import newsRoutes from "./back_end/admin/routes/newsRoutes.js"
 import notificationsRoutes from "./back_end/admin/routes/notifications.js"
 import inboxRoutes from "./back_end/admin/routes/inbox.js"
 import subscribersRoutes from "./back_end/admin/routes/subscribers.js";
+
 
 app.use("/api/advocacies", advocaciesRoutes)
 app.use("/api/competencies", competenciesRoutes)
@@ -176,11 +177,21 @@ app.use("/api", programsRoutes)
 app.use("/api/submissions", submissionRoutes)
 app.use("/api/upload", uploadRoutes)
 app.use("/api/volunteers", volunteersRoutes)
-app.use("/api", orgSyncRoutes)
+
 app.use("/api/news", newsRoutes)
 app.use("/api/notifications", notificationsRoutes)
 app.use("/api/inbox", inboxRoutes)
 app.use("/api/subscribers", subscribersRoutes);
+
+
+// PUBLIC ROUTES
+import publicOrganizationsRoutes from "./back_end/for_public/routes/organizations.js"
+import newsletterRoutes from "./back_end/for_public/routes/newsletter.js"
+
+
+app.use("/api", publicOrganizationsRoutes)
+app.use("/api/newsletter", newsletterRoutes)
+
 
 // SUPERADMIN ROUTES
 import adminsRoutes from "./back_end/superadmin/routes/admins.js"

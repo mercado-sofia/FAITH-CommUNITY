@@ -285,7 +285,17 @@ export default function VolunteersPage() {
     setIsDeleting(false);
   }, [])
 
-  // Handle bulk delete
+  // Store selected volunteer IDs for bulk delete
+  const [selectedVolunteerIds, setSelectedVolunteerIds] = useState([]);
+
+  // Handle bulk delete confirmation
+  const handleBulkDeleteConfirm = useCallback((volunteerIds) => {
+    setSelectedVolunteerIds(volunteerIds);
+    setBulkDeleteCount(volunteerIds.length);
+    setShowBulkDeleteModal(true);
+  }, []);
+
+  // Handle bulk delete execution
   const handleBulkDelete = useCallback(async (volunteerIds) => {
     if (!volunteerIds || volunteerIds.length === 0) return;
 
@@ -357,6 +367,8 @@ export default function VolunteersPage() {
   // Modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [volunteerToDelete, setVolunteerToDelete] = useState(null)
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
+  const [bulkDeleteCount, setBulkDeleteCount] = useState(0)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
@@ -525,7 +537,7 @@ export default function VolunteersPage() {
         volunteers={filteredVolunteers}
         onStatusUpdate={handleStatusUpdate}
         onSoftDelete={handleSoftDelete}
-        onBulkDelete={handleBulkDelete}
+        onBulkDelete={handleBulkDeleteConfirm}
         itemsPerPage={showCount}
       />
 
@@ -536,6 +548,21 @@ export default function VolunteersPage() {
         itemType="volunteer"
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
+        isDeleting={isDeleting}
+      />
+
+      {/* Bulk Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={showBulkDeleteModal}
+        itemName={`${bulkDeleteCount} volunteer${bulkDeleteCount !== 1 ? 's' : ''}`}
+        itemType="volunteer"
+        onConfirm={() => {
+          setShowBulkDeleteModal(false);
+          // Execute bulk delete with the stored selected volunteer IDs
+          handleBulkDelete(selectedVolunteerIds);
+          setSelectedVolunteerIds([]);
+        }}
+        onCancel={() => setShowBulkDeleteModal(false)}
         isDeleting={isDeleting}
       />
 

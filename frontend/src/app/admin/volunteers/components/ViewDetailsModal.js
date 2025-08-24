@@ -1,17 +1,11 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react'
-import Image from 'next/image'
+import { useEffect, useRef } from 'react'
 
 import styles from './styles/ViewDetailsModal.module.css'
 import { IoClose } from "react-icons/io5"
 
-// Constants for magic numbers
-const IMAGE_DIMENSIONS = {
-  PREVIEW: { width: 200, height: 150 },
-  FULL_SIZE: { width: 600, height: 400 }
-}
-
+// Constants for button styles
 const BUTTON_STYLES = {
   DECLINE: {
     border: '2px solid #06100f',
@@ -26,8 +20,6 @@ const BUTTON_STYLES = {
 }
 
 export default function VolunteerDetailModal({ app, onClose, onUpdate }) {
-  const [showImageModal, setShowImageModal] = useState(false)
-  const [imageError, setImageError] = useState(false)
   const reasonTextareaRef = useRef(null)
 
   // Auto-resize textarea based on content
@@ -48,9 +40,9 @@ export default function VolunteerDetailModal({ app, onClose, onUpdate }) {
         <h3 className={styles.modalHeading}>{app.name}&apos;s Application</h3>
 
             <form className={styles.formGrid}>
-            {/* First 4 rows with Uploaded Valid ID spanning full height */}
+            {/* Data fields using full width */}
             <div className={styles.mainContainer}>
-              {/* Left side - Data fields in 4 rows */}
+              {/* Left side - Data fields in 4 rows, now using full width */}
               <div className={styles.leftSide}>
                 {/* Row 1: Name | Gender | Age */}
                 <div className={styles.dataRow}>
@@ -68,7 +60,7 @@ export default function VolunteerDetailModal({ app, onClose, onUpdate }) {
                   </div>
                 </div>
 
-                {/* Row 2: Email | Contact Number */}
+                {/* Row 2: Email | Contact Number | Citizenship */}
                 <div className={styles.dataRow}>
                   <div className={`${styles.formGroup} ${styles.dataField}`}>
                     <label className={styles.label}>Email</label>
@@ -79,63 +71,26 @@ export default function VolunteerDetailModal({ app, onClose, onUpdate }) {
                     <input type="text" value={app.contact} readOnly className={styles.cleanInput} />
                   </div>
                   <div className={`${styles.formGroup} ${styles.dataField}`}>
-                    {/* Empty space to maintain alignment */}
+                    <label className={styles.label}>Citizenship</label>
+                    <input type="text" value={app.citizenship} readOnly className={styles.cleanInput} />
                   </div>
                 </div>
 
-                {/* Row 3: Occupation | Citizenship */}
+                {/* Row 3: Occupation */}
                 <div className={styles.dataRow}>
                   <div className={`${styles.formGroup} ${styles.dataField}`}>
                     <label className={styles.label}>Occupation</label>
                     <input type="text" value={app.occupation} readOnly className={styles.cleanInput} />
                   </div>
-                  <div className={`${styles.formGroup} ${styles.dataField}`}>
-                    <label className={styles.label}>Citizenship</label>
-                    <input type="text" value={app.citizenship} readOnly className={styles.cleanInput} />
-                  </div>
-                  <div className={`${styles.formGroup} ${styles.dataField}`}>
-                    {/* Empty space to maintain alignment */}
-                  </div>
                 </div>
 
-                 {/* Row 4: Address (full width) */}
-                 <div className={styles.dataRow}>
-                   <div className={`${styles.formGroup} ${styles.dataField} ${styles.fullWidthField}`}>
-                     <label className={styles.label}>Address</label>
-                     <input type="text" value={app.address} readOnly className={styles.cleanInput} />
-                   </div>
-                 </div>
-              </div>
-
-              {/* Right side - Profile Photo spanning full height of 4 rows */}
-              <div className={`${styles.formGroup} ${styles.rightSide}`}>
-                <label className={styles.label}>Profile Photo</label>
-                {app.profile_photo_url ? (
-                  <div className={`${styles.imagePreviewContainer} ${styles.imageContainer}`}>
-                    {!imageError ? (
-                      <>
-                        <Image
-                          src={`http://localhost:8080${app.profile_photo_url}`}
-                          alt="Profile Photo"
-                          width={IMAGE_DIMENSIONS.PREVIEW.width}
-                          height={IMAGE_DIMENSIONS.PREVIEW.height}
-                          className={styles.imageWithHint}
-                          onClick={() => setShowImageModal(true)}
-                          onError={() => setImageError(true)}
-                        />
-                        <p className={`${styles.imageHint} ${styles.imageHintBottom}`}>Click image to view larger</p>
-                      </>
-                    ) : (
-                      <div className={styles.imageError}>
-                        <p>Image not available</p>
-                      </div>
-                    )}
+                {/* Row 4: Address (full width) */}
+                <div className={styles.dataRow}>
+                  <div className={`${styles.formGroup} ${styles.dataField} ${styles.fullWidthField}`}>
+                    <label className={styles.label}>Address</label>
+                    <input type="text" value={app.address} readOnly className={styles.cleanInput} />
                   </div>
-                ) : (
-                  <div className={styles.noIdMessage}>
-                    No profile photo
-                  </div>
-                )}
+                </div>
               </div>
             </div>
 
@@ -201,30 +156,6 @@ export default function VolunteerDetailModal({ app, onClose, onUpdate }) {
            </button>
         </div>
       </div>
-
-      {/* Full-size Image Modal */}
-      {showImageModal && app.profile_photo_url && (
-        <div className={styles.imageModal} onClick={() => setShowImageModal(false)}>
-          <div className={styles.imageModalContent} onClick={(e) => e.stopPropagation()}>
-            <button 
-              className={styles.imageModalClose} 
-              onClick={() => setShowImageModal(false)}
-            >
-              <IoClose />
-            </button>
-            <Image
-               src={`http://localhost:8080${app.profile_photo_url}`}
-               alt="Profile Photo - Full Size"
-               width={IMAGE_DIMENSIONS.FULL_SIZE.width}
-               height={IMAGE_DIMENSIONS.FULL_SIZE.height}
-               className={styles.fullSizeImage}
-             />
-            <p className={styles.imageModalCaption}>
-               {app.name}&apos;s Profile Photo
-             </p>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

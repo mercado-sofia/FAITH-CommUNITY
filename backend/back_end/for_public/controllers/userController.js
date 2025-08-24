@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import promisePool from '../../database.js';
+import db from '../../database.js';
 
 // User registration
 export const registerUser = async (req, res) => {
@@ -40,7 +40,7 @@ export const registerUser = async (req, res) => {
     }
 
     // Check if user already exists
-    const [existingUsers] = await promisePool.query(
+    const [existingUsers] = await db.query(
       'SELECT id FROM users WHERE email = ?',
       [email]
     );
@@ -85,7 +85,7 @@ export const registerUser = async (req, res) => {
     console.log('Token expires at:', verificationExpires);
 
     // Insert new user with verification token
-    const [result] = await promisePool.query(
+    const [result] = await db.query(
       `INSERT INTO users (
         first_name, last_name, email, contact_number, gender, 
         address, birth_date, password_hash, verification_token, 
@@ -182,7 +182,7 @@ export const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     // Find user by email
-    const [users] = await promisePool.query(
+    const [users] = await db.query(
       'SELECT * FROM users WHERE email = ?',
       [email]
     );
@@ -215,7 +215,7 @@ export const loginUser = async (req, res) => {
     );
 
     // Update last login
-    await promisePool.query(
+    await db.query(
       'UPDATE users SET last_login = NOW() WHERE id = ?',
       [user.id]
     );
@@ -250,7 +250,7 @@ export const getUserProfile = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const [users] = await promisePool.query(
+    const [users] = await db.query(
       'SELECT * FROM users WHERE id = ?',
       [userId]
     );
@@ -302,7 +302,7 @@ export const updateUserProfile = async (req, res) => {
     } = req.body;
 
     // Update user profile
-    await promisePool.query(
+    await db.query(
       `UPDATE users SET 
         first_name = ?, last_name = ?, contact_number = ?, 
         gender = ?, address = ?, birth_date = ?, 
@@ -350,13 +350,13 @@ export const uploadProfilePhoto = async (req, res) => {
     const profilePhotoUrl = `/uploads/user-profile/${fileName}`;
     
     // Update user's profile_photo_url in database
-    await promisePool.query(
+    await db.query(
       'UPDATE users SET profile_photo_url = ?, updated_at = NOW() WHERE id = ?',
       [profilePhotoUrl, userId]
     );
     
     // Get updated user data
-    const [users] = await promisePool.query(
+    const [users] = await db.query(
       'SELECT * FROM users WHERE id = ?',
       [userId]
     );
@@ -398,7 +398,7 @@ export const changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
     // Get current password hash
-    const [users] = await promisePool.query(
+    const [users] = await db.query(
       'SELECT password_hash FROM users WHERE id = ?',
       [userId]
     );
@@ -418,7 +418,7 @@ export const changePassword = async (req, res) => {
     const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
 
     // Update password
-    await promisePool.query(
+    await db.query(
       'UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?',
       [hashedNewPassword, userId]
     );
@@ -437,7 +437,7 @@ export const subscribeToNewsletter = async (req, res) => {
     const userId = req.user.id;
 
     // Get user details
-    const [users] = await promisePool.query(
+    const [users] = await db.query(
       'SELECT email, newsletter_subscribed FROM users WHERE id = ?',
       [userId]
     );
@@ -453,7 +453,7 @@ export const subscribeToNewsletter = async (req, res) => {
     }
 
     // Update user's newsletter subscription status
-    await promisePool.query(
+    await db.query(
       'UPDATE users SET newsletter_subscribed = 1, updated_at = NOW() WHERE id = ?',
       [userId]
     );
@@ -462,7 +462,7 @@ export const subscribeToNewsletter = async (req, res) => {
     const verifyToken = crypto.randomBytes(24).toString("hex");
     const unsubscribeToken = crypto.randomBytes(24).toString("hex");
 
-    await promisePool.query(
+    await db.query(
       `INSERT INTO subscribers (email, verify_token, unsubscribe_token, is_verified, verified_at)
        VALUES (?, ?, ?, 1, NOW())
        ON DUPLICATE KEY UPDATE 
@@ -490,7 +490,7 @@ export const unsubscribeFromNewsletter = async (req, res) => {
     const userId = req.user.id;
 
     // Get user details
-    const [users] = await promisePool.query(
+    const [users] = await db.query(
       'SELECT email, newsletter_subscribed FROM users WHERE id = ?',
       [userId]
     );
@@ -506,13 +506,13 @@ export const unsubscribeFromNewsletter = async (req, res) => {
     }
 
     // Update user's newsletter subscription status
-    await promisePool.query(
+    await db.query(
       'UPDATE users SET newsletter_subscribed = 0, updated_at = NOW() WHERE id = ?',
       [userId]
     );
 
     // Also remove from subscribers table for consistency
-    await promisePool.query(
+    await db.query(
       'DELETE FROM subscribers WHERE email = ?',
       [user.email]
     );
@@ -533,7 +533,7 @@ export const getNewsletterStatus = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const [users] = await promisePool.query(
+    const [users] = await db.query(
       'SELECT newsletter_subscribed FROM users WHERE id = ?',
       [userId]
     );
@@ -562,7 +562,7 @@ export const logoutUser = async (req, res) => {
     const userId = req.user?.id;
     if (userId) {
       // Update last login timestamp (optional)
-      await promisePool.query(
+      await db.query(
         'UPDATE users SET last_login = NOW() WHERE id = ?',
         [userId]
       );
@@ -587,7 +587,7 @@ export const verifyEmail = async (req, res) => {
     }
 
     // Find user with this verification token
-    const [users] = await promisePool.query(
+    const [users] = await db.query(
       'SELECT id, email, verification_token, verification_token_expires FROM users WHERE verification_token = ?',
       [token]
     );
@@ -596,7 +596,7 @@ export const verifyEmail = async (req, res) => {
 
     if (users.length === 0) {
       // Let's also check if there are any users with verification tokens at all
-      const [allUsersWithTokens] = await promisePool.query(
+      const [allUsersWithTokens] = await db.query(
         'SELECT id, email, verification_token FROM users WHERE verification_token IS NOT NULL'
       );
       console.log('All users with verification tokens:', allUsersWithTokens);
@@ -612,7 +612,7 @@ export const verifyEmail = async (req, res) => {
     }
 
     // Update user to verified and clear verification token
-    await promisePool.query(
+    await db.query(
       'UPDATE users SET email_verified = 1, verification_token = NULL, verification_token_expires = NULL, updated_at = NOW() WHERE id = ?',
       [user.id]
     );
@@ -638,7 +638,7 @@ export const resendVerificationEmail = async (req, res) => {
     }
 
     // Find user by email
-    const [users] = await promisePool.query(
+    const [users] = await db.query(
       'SELECT id, first_name, email, email_verified FROM users WHERE email = ?',
       [email]
     );
@@ -658,7 +658,7 @@ export const resendVerificationEmail = async (req, res) => {
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
 
     // Update user with new verification token
-    await promisePool.query(
+    await db.query(
       'UPDATE users SET verification_token = ?, verification_token_expires = ?, updated_at = NOW() WHERE id = ?',
       [verificationToken, verificationExpires, user.id]
     );
@@ -707,25 +707,26 @@ export const resendVerificationEmail = async (req, res) => {
 // Verify JWT token middleware
 export const verifyToken = async (req, res, next) => {
   try {
-    console.log('Verifying token...');
-    console.log('Authorization header:', req.headers.authorization);
-    
     const token = req.headers.authorization?.split(' ')[1];
-    console.log('Extracted token:', token ? 'Present' : 'Missing');
 
     if (!token) {
-      console.log('No token provided');
       return res.status(401).json({ error: 'Access token required' });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    console.log('Decoded token:', decoded);
     req.user = decoded;
     next();
 
   } catch (error) {
     console.error('Token verification error:', error);
-    res.status(401).json({ error: 'Invalid or expired token' });
+    
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: 'Invalid token format' });
+    } else if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token has expired' });
+    } else {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
   }
 };
 
@@ -734,7 +735,7 @@ export const getUserNotifications = async (req, res) => {
   try {
     const userId = req.user.id;
     
-    const [notifications] = await promisePool.query(
+    const [notifications] = await db.query(
       `SELECT id, user_id, type, title, message, is_read, created_at 
        FROM user_notifications 
        WHERE user_id = ? 
@@ -760,7 +761,7 @@ export const getUnreadNotificationCount = async (req, res) => {
   try {
     const userId = req.user.id;
     
-    const [result] = await promisePool.query(
+    const [result] = await db.query(
       `SELECT COUNT(*) as count 
        FROM user_notifications 
        WHERE user_id = ? AND is_read = 0`,
@@ -785,7 +786,7 @@ export const markNotificationAsRead = async (req, res) => {
     const userId = req.user.id;
     const { notificationId } = req.params;
     
-    const [result] = await promisePool.query(
+    const [result] = await db.query(
       `UPDATE user_notifications 
        SET is_read = 1 
        WHERE id = ? AND user_id = ?`,
@@ -816,7 +817,7 @@ export const markAllNotificationsAsRead = async (req, res) => {
   try {
     const userId = req.user.id;
     
-    await promisePool.query(
+    await db.query(
       `UPDATE user_notifications 
        SET is_read = 1 
        WHERE user_id = ?`,
@@ -839,7 +840,7 @@ export const markAllNotificationsAsRead = async (req, res) => {
 // Helper function to create notification (used by other controllers)
 export const createUserNotification = async (userId, type, title, message) => {
   try {
-    await promisePool.query(
+    await db.query(
       `INSERT INTO user_notifications (user_id, type, title, message, created_at) 
        VALUES (?, ?, ?, ?, NOW())`,
       [userId, type, title, message]
@@ -859,7 +860,7 @@ export const forgotPasswordUser = async (req, res) => {
 
   try {
     // Check if user exists with this email
-    const [userRows] = await promisePool.query(
+    const [userRows] = await db.query(
       'SELECT id, email FROM users WHERE email = ?',
       [email]
     )
@@ -874,7 +875,7 @@ export const forgotPasswordUser = async (req, res) => {
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
 
     // Store token in password_reset_tokens table
-    await promisePool.query(
+    await db.query(
       'INSERT INTO password_reset_tokens (email, token, expires_at) VALUES (?, ?, ?)',
       [email, token, expiresAt]
     )
@@ -923,7 +924,7 @@ export const resetPasswordUser = async (req, res) => {
 
   try {
     // Find valid token
-    const [tokenRows] = await promisePool.query(
+    const [tokenRows] = await db.query(
       'SELECT email, expires_at FROM password_reset_tokens WHERE token = ? AND expires_at > NOW()',
       [token]
     )
@@ -939,25 +940,25 @@ export const resetPasswordUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, saltRounds)
 
     // Update user password
-    await promisePool.query(
+    await db.query(
       'UPDATE users SET password_hash = ? WHERE email = ?',
       [hashedPassword, tokenData.email]
     )
 
     // Also update admin password if email exists there
-    await promisePool.query(
+    await db.query(
       'UPDATE admins SET password = ? WHERE email = ? AND status = "ACTIVE"',
       [hashedPassword, tokenData.email]
     )
 
     // Also update superadmin password if email exists there
-    await promisePool.query(
+    await db.query(
       'UPDATE superadmin SET password = ? WHERE username = ?',
       [hashedPassword, tokenData.email]
     )
 
     // Delete used token
-    await promisePool.query(
+    await db.query(
       'DELETE FROM password_reset_tokens WHERE token = ?',
       [token]
     )
@@ -998,7 +999,7 @@ export const validateResetToken = async (req, res) => {
 
   try {
     // Check if token exists and is not expired
-    const [tokenRows] = await promisePool.query(
+    const [tokenRows] = await db.query(
       'SELECT email, expires_at FROM password_reset_tokens WHERE token = ? AND expires_at > NOW()',
       [token]
     )
@@ -1023,7 +1024,7 @@ export const checkEmailUser = async (req, res) => {
   }
 
   try {
-    const [userRows] = await promisePool.query(
+    const [userRows] = await db.query(
       'SELECT id FROM users WHERE email = ?',
       [email]
     )

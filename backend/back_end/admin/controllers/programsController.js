@@ -16,56 +16,23 @@ export const getProgramsByOrg = async (req, res) => {
     
     // First try to get organization by ID (numeric) from organizations table
     let [orgRows] = await db.execute(
-      "SELECT id, orgName, org FROM organizations WHERE id = ?",
+      "SELECT id FROM organizations WHERE id = ?",
       [orgId]
     );
 
-    // If not found by ID, try by org acronym from organizations table
+    // If not found by ID, try to find by org acronym from admins table
     if (orgRows.length === 0) {
-      [orgRows] = await db.execute(
-        "SELECT id, orgName, org FROM organizations WHERE org = ?",
-        [orgId]
-      );
-    }
-
-    // If still not found, try admins table as fallback and sync to organizations
-    if (orgRows.length === 0) {
-      [orgRows] = await db.execute(
-        "SELECT id, orgName, org FROM admins WHERE org = ?",
+      const [adminRows] = await db.execute(
+        "SELECT organization_id FROM admins WHERE org = ? LIMIT 1",
         [orgId]
       );
       
-      // If found in admins table, sync to organizations table
-      if (orgRows.length > 0) {
-        const adminOrg = orgRows[0];
-  
-        
-        // Check if organization already exists in organizations table
-        const [existingOrg] = await db.execute(
-          "SELECT id FROM organizations WHERE org = ?",
-          [adminOrg.org]
+      if (adminRows.length > 0) {
+        // Use the organization_id from admins table
+        [orgRows] = await db.execute(
+          "SELECT id FROM organizations WHERE id = ?",
+          [adminRows[0].organization_id]
         );
-        
-        if (existingOrg.length === 0) {
-          // Insert into organizations table
-          const [insertResult] = await db.execute(
-            "INSERT INTO organizations (org, orgName, description, status) VALUES (?, ?, NULL, 'ACTIVE')",
-            [adminOrg.org, adminOrg.orgName]
-          );
-  
-          
-          // Update the orgRows with the new organization data
-          [orgRows] = await db.execute(
-            "SELECT id, orgName, org FROM organizations WHERE id = ?",
-            [insertResult.insertId]
-          );
-        } else {
-          // Use existing organization
-          [orgRows] = await db.execute(
-            "SELECT id, orgName, org FROM organizations WHERE org = ?",
-            [adminOrg.org]
-          );
-        }
       }
     }
 
@@ -81,9 +48,10 @@ export const getProgramsByOrg = async (req, res) => {
 
     // Get only approved programs from programs_projects table
     const [approvedRows] = await db.execute(
-      `SELECT p.*, 'approved' as source_type, o.org as orgAcronym, o.logo as orgLogo
+      `SELECT p.*, 'approved' as source_type, a.org as orgAcronym, a.orgName as orgName, o.logo as orgLogo
        FROM programs_projects p
        LEFT JOIN organizations o ON p.organization_id = o.id
+       LEFT JOIN admins a ON a.organization_id = o.id
        WHERE p.organization_id = ? 
        ORDER BY p.created_at DESC`,
       [organization.id]
@@ -174,9 +142,10 @@ export const getProgramsByOrg = async (req, res) => {
 export const getApprovedPrograms = async (req, res) => {
   try {
     const [rows] = await db.execute(`
-      SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
+      SELECT p.*, a.orgName, a.org as orgAcronym, o.logo as orgLogo
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
+      LEFT JOIN admins a ON a.organization_id = o.id
       ORDER BY p.created_at DESC
     `);
 
@@ -275,29 +244,30 @@ export const getApprovedProgramsByOrg = async (req, res) => {
   }
 
   try {
-    // Get organization info
-    const [orgRows] = await db.execute(
-      "SELECT id, orgName, org FROM admins WHERE org = ?",
+    // Get organization info from admins table
+    const [adminRows] = await db.execute(
+      "SELECT organization_id, orgName, org FROM admins WHERE org = ? LIMIT 1",
       [orgId]
     );
 
-    if (orgRows.length === 0) {
+    if (adminRows.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Organization not found",
       });
     }
 
-    const organization = orgRows[0];
+    const adminOrg = adminRows[0];
 
     // Get approved programs for this organization
     const [rows] = await db.execute(`
-       SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
+       SELECT p.*, a.orgName, a.org as orgAcronym, o.logo as orgLogo
        FROM programs_projects p
        LEFT JOIN organizations o ON p.organization_id = o.id
-       WHERE o.org = ?
+       LEFT JOIN admins a ON a.organization_id = o.id
+       WHERE p.organization_id = ?
        ORDER BY p.created_at DESC
-    `, [orgId]);
+    `, [adminOrg.organization_id]);
 
     // Get multiple dates and additional images for each program
     const programsWithDates = await Promise.all(rows.map(async (program) => {
@@ -372,9 +342,9 @@ export const getApprovedProgramsByOrg = async (req, res) => {
       success: true,
       data: programs,
       organization: {
-        id: organization.id,
-        name: organization.orgName,
-        acronym: organization.org
+        id: adminOrg.organization_id,
+        name: adminOrg.orgName,
+        acronym: adminOrg.org
       }
     });
   } catch (error) {
@@ -655,12 +625,13 @@ export const getProgramByTitle = async (req, res) => {
         pp.created_at,
         pp.updated_at,
         pp.organization_id,
-        o.orgName as organization_name,
-        o.org as organization_acronym,
+        a.orgName as organization_name,
+        a.org as organization_acronym,
         o.logo as organization_logo,
         o.org_color as organization_color
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
+      LEFT JOIN admins a ON a.organization_id = o.id
       WHERE pp.title = ?
     `;
     

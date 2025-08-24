@@ -4,10 +4,6 @@ import { createUserNotification } from './userController.js';
 
 export const submitVolunteer = async (req, res) => {
   try {
-    console.log('Submit volunteer request received');
-    console.log('Request body:', req.body);
-    console.log('Request user:', req.user);
-    
     const {
       program_id,
       reason,
@@ -15,8 +11,6 @@ export const submitVolunteer = async (req, res) => {
 
     // Get user_id from the authenticated user (from JWT token)
     const user_id = req.user?.id;
-    
-    console.log('Extracted user_id:', user_id);
     
     if (!user_id) {
       return res.status(401).json({ error: 'User not authenticated' });
@@ -85,7 +79,7 @@ export const submitVolunteer = async (req, res) => {
 
 export const getAllVolunteers = async (req, res) => {
   try {
-    const [results] = await db.query(`
+    const [results] = await db.execute(`
       SELECT 
         v.id,
         v.program_id,
@@ -106,11 +100,11 @@ export const getAllVolunteers = async (req, res) => {
         u.profile_photo_url,
         p.title as program_name,
         p.title as program_title,
-        o.orgName as organization_name
+        a.orgName as organization_name
       FROM volunteers v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN programs_projects p ON v.program_id = p.id
-      LEFT JOIN organizations o ON p.organization_id = o.id
+      LEFT JOIN admins a ON a.organization_id = p.organization_id
       WHERE u.is_active = 1
       ORDER BY v.created_at DESC
     `);
@@ -141,7 +135,7 @@ export const getVolunteersByOrganization = async (req, res) => {
   try {
     const { orgId } = req.params;
     
-    const [results] = await db.query(`
+    const [results] = await db.execute(`
       SELECT 
         v.id,
         v.program_id,
@@ -162,13 +156,13 @@ export const getVolunteersByOrganization = async (req, res) => {
         u.profile_photo_url,
         p.title as program_name,
         p.title as program_title,
-        o.orgName as organization_name,
-        o.id as organization_id
+        a.orgName as organization_name,
+        a.organization_id as organization_id
       FROM volunteers v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN programs_projects p ON v.program_id = p.id
-      LEFT JOIN organizations o ON p.organization_id = o.id
-      WHERE o.id = ? AND u.is_active = 1
+      LEFT JOIN admins a ON a.organization_id = p.organization_id
+      WHERE a.organization_id = ? AND u.is_active = 1
       ORDER BY v.created_at DESC
     `, [orgId]);
 
@@ -200,7 +194,7 @@ export const getVolunteersByAdminOrg = async (req, res) => {
     const { adminId } = req.params;
     
     // First get the admin's organization
-    const [adminRows] = await db.query(`
+    const [adminRows] = await db.execute(`
       SELECT org FROM admins WHERE id = ?
     `, [adminId]);
     
@@ -214,7 +208,7 @@ export const getVolunteersByAdminOrg = async (req, res) => {
     const adminOrg = adminRows[0].org;
     
     // Now get volunteers for programs from that organization
-    const [results] = await db.query(`
+    const [results] = await db.execute(`
       SELECT 
         v.id,
         v.program_id,
@@ -235,13 +229,13 @@ export const getVolunteersByAdminOrg = async (req, res) => {
         u.profile_photo_url,
         p.title as program_name,
         p.title as program_title,
-        o.orgName as organization_name,
-        o.id as organization_id
+        a.orgName as organization_name,
+        a.organization_id as organization_id
       FROM volunteers v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN programs_projects p ON v.program_id = p.id
-      LEFT JOIN organizations o ON p.organization_id = o.id
-      WHERE o.org = ? AND u.is_active = 1
+      LEFT JOIN admins a ON a.organization_id = p.organization_id
+      WHERE a.org = ? AND u.is_active = 1
       ORDER BY v.created_at DESC
     `, [adminOrg]);
 
@@ -272,7 +266,7 @@ export const getVolunteerById = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const [results] = await db.query(`
+    const [results] = await db.execute(`
       SELECT 
         v.id,
         v.program_id,
@@ -293,12 +287,12 @@ export const getVolunteerById = async (req, res) => {
         u.profile_photo_url,
         p.title as program_name,
         p.title as program_title,
-        o.orgName as organization_name,
-        o.id as organization_id
+        a.orgName as organization_name,
+        a.organization_id as organization_id
       FROM volunteers v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN programs_projects p ON v.program_id = p.id
-      LEFT JOIN organizations o ON p.organization_id = o.id
+      LEFT JOIN admins a ON a.organization_id = p.organization_id
       WHERE v.id = ? AND u.is_active = 1
     `, [id]);
     
@@ -447,9 +441,10 @@ export const testAuth = (req, res) => {
 export const getApprovedUpcomingPrograms = async (req, res) => {
   try {
     const [rows] = await db.execute(`
-      SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
+      SELECT p.*, a.orgName, a.org as orgAcronym, o.logo as orgLogo
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
+      LEFT JOIN admins a ON a.organization_id = o.id
       WHERE p.status = 'Upcoming'
       ORDER BY p.created_at DESC
     `);

@@ -17,9 +17,24 @@ export const getMessagesByOrg = async (req, res) => {
   try {
     // First, try to find the organization by ID or org
     let [orgResult] = await db.execute(
-      "SELECT id FROM organizations WHERE id = ? OR org = ?",
-      [organization_id, organization_id]
+      "SELECT id FROM organizations WHERE id = ?",
+      [organization_id]
     );
+
+    if (orgResult.length === 0) {
+      // Try to find by org acronym from admins table
+      const [adminRows] = await db.execute(
+        "SELECT organization_id FROM admins WHERE org = ? LIMIT 1",
+        [organization_id]
+      );
+      if (adminRows.length > 0) {
+        // Use the organization_id from admins table
+        [orgResult] = await db.execute(
+          "SELECT id FROM organizations WHERE id = ?",
+          [adminRows[0].organization_id]
+        );
+      }
+    }
 
     if (orgResult.length === 0) {
       return res.status(404).json({
@@ -35,15 +50,16 @@ export const getMessagesByOrg = async (req, res) => {
     let query = `
       SELECT 
         m.*,
-        o.orgName as organization_name, 
-        o.org as organization_acronym,
+        a.orgName as organization_name, 
+        a.org as organization_acronym,
         u.full_name as sender_full_name,
         u.first_name as sender_first_name,
         u.last_name as sender_last_name,
         u.email as user_email,
         COALESCE(u.email, m.sender_email) as sender_email
       FROM messages m
-      JOIN organizations o ON m.organization_id = o.id
+      LEFT JOIN organizations o ON m.organization_id = o.id
+      LEFT JOIN admins a ON a.organization_id = o.id
       LEFT JOIN users u ON m.user_id = u.id
       WHERE m.organization_id = ?
     `;
@@ -107,9 +123,24 @@ export const markMessageAsRead = async (req, res) => {
   try {
     // First, get the actual organization ID
     let [orgResult] = await db.execute(
-      "SELECT id FROM organizations WHERE id = ? OR org = ?",
-      [organization_id, organization_id]
+      "SELECT id FROM organizations WHERE id = ?",
+      [organization_id]
     );
+
+    if (orgResult.length === 0) {
+      // Try to find by org acronym from admins table
+      const [adminRows] = await db.execute(
+        "SELECT organization_id FROM admins WHERE org = ? LIMIT 1",
+        [organization_id]
+      );
+      if (adminRows.length > 0) {
+        // Use the organization_id from admins table
+        [orgResult] = await db.execute(
+          "SELECT id FROM organizations WHERE id = ?",
+          [adminRows[0].organization_id]
+        );
+      }
+    }
 
     if (orgResult.length === 0) {
       return res.status(404).json({
@@ -167,9 +198,24 @@ export const markAllMessagesAsRead = async (req, res) => {
   try {
     // First, get the actual organization ID
     let [orgResult] = await db.execute(
-      "SELECT id FROM organizations WHERE id = ? OR org = ?",
-      [organization_id, organization_id]
+      "SELECT id FROM organizations WHERE id = ?",
+      [organization_id]
     );
+
+    if (orgResult.length === 0) {
+      // Try to find by org acronym from admins table
+      const [adminRows] = await db.execute(
+        "SELECT organization_id FROM admins WHERE org = ? LIMIT 1",
+        [organization_id]
+      );
+      if (adminRows.length > 0) {
+        // Use the organization_id from admins table
+        [orgResult] = await db.execute(
+          "SELECT id FROM organizations WHERE id = ?",
+          [adminRows[0].organization_id]
+        );
+      }
+    }
 
     if (orgResult.length === 0) {
       return res.status(404).json({
@@ -214,9 +260,24 @@ export const deleteMessage = async (req, res) => {
   try {
     // First, get the actual organization ID
     let [orgResult] = await db.execute(
-      "SELECT id FROM organizations WHERE id = ? OR org = ?",
-      [organization_id, organization_id]
+      "SELECT id FROM organizations WHERE id = ?",
+      [organization_id]
     );
+
+    if (orgResult.length === 0) {
+      // Try to find by org acronym from admins table
+      const [adminRows] = await db.execute(
+        "SELECT organization_id FROM admins WHERE org = ? LIMIT 1",
+        [organization_id]
+      );
+      if (adminRows.length > 0) {
+        // Use the organization_id from admins table
+        [orgResult] = await db.execute(
+          "SELECT id FROM organizations WHERE id = ?",
+          [adminRows[0].organization_id]
+        );
+      }
+    }
 
     if (orgResult.length === 0) {
       return res.status(404).json({
@@ -274,9 +335,24 @@ export const getUnreadCount = async (req, res) => {
   try {
     // First, get the actual organization ID
     let [orgResult] = await db.execute(
-      "SELECT id FROM organizations WHERE id = ? OR org = ?",
-      [organization_id, organization_id]
+      "SELECT id FROM organizations WHERE id = ?",
+      [organization_id]
     );
+
+    if (orgResult.length === 0) {
+      // Try to find by org acronym from admins table
+      const [adminRows] = await db.execute(
+        "SELECT organization_id FROM admins WHERE org = ? LIMIT 1",
+        [organization_id]
+      );
+      if (adminRows.length > 0) {
+        // Use the organization_id from admins table
+        [orgResult] = await db.execute(
+          "SELECT id FROM organizations WHERE id = ?",
+          [adminRows[0].organization_id]
+        );
+      }
+    }
 
     if (orgResult.length === 0) {
       return res.status(404).json({

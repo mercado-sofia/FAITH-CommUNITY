@@ -70,19 +70,19 @@ export const submitChanges = async (req, res) => {
     // Get unique organization identifiers from submissions
     const orgIdentifiers = [...new Set(submissions.map((item) => item.organization_id))]
     
-    // Query organizations table to get numeric IDs for both numeric IDs and acronyms
+    // Query admins table to get numeric IDs for both numeric IDs and acronyms
     const placeholders = orgIdentifiers.map(() => "?").join(",")
     
-    const [orgCheck] = await db.execute(
-      `SELECT id, org FROM organizations WHERE id IN (${placeholders}) OR org IN (${placeholders})`,
+    const [adminCheck] = await db.execute(
+      `SELECT organization_id, org FROM admins WHERE organization_id IN (${placeholders}) OR org IN (${placeholders})`,
       [...orgIdentifiers, ...orgIdentifiers]
     )
     
     // Create mapping from identifier to numeric ID
     const orgIdMap = new Map()
-    orgCheck.forEach(org => {
-      orgIdMap.set(org.id.toString(), org.id)
-      orgIdMap.set(org.org, org.id)
+    adminCheck.forEach(admin => {
+      orgIdMap.set(admin.organization_id.toString(), admin.organization_id)
+      orgIdMap.set(admin.org, admin.organization_id)
     })
     
     // Check if all identifiers were found
@@ -147,17 +147,17 @@ export const getSubmissionsByOrg = async (req, res) => {
   }
 
   try {
-    // Get organization ID
-    const [orgRows] = await db.execute("SELECT id, orgName FROM organizations WHERE org = ?", [orgAcronym])
+    // Get organization ID from admins table
+    const [adminRows] = await db.execute("SELECT organization_id, orgName FROM admins WHERE org = ? LIMIT 1", [orgAcronym])
 
-    if (orgRows.length === 0) {
+    if (adminRows.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Organization not found",
       })
     }
 
-    const org = orgRows[0]
+    const adminOrg = adminRows[0]
 
     // Get submissions with additional info
     const [rows] = await db.execute(
@@ -166,7 +166,7 @@ export const getSubmissionsByOrg = async (req, res) => {
        LEFT JOIN admins a ON s.submitted_by = a.id 
        WHERE s.organization_id = ? 
        ORDER BY s.submitted_at DESC`,
-      [org.id],
+      [adminOrg.organization_id],
     )
 
     // Parse JSON data and add metadata
@@ -195,7 +195,7 @@ export const getSubmissionsByOrg = async (req, res) => {
         ...row,
         previous_data: previous_data_parsed,
         proposed_data: proposed_data_parsed,
-        organization_name: org.orgName,
+        organization_name: adminOrg.orgName,
         can_edit: row.status === "pending",
         can_cancel: row.status === "pending",
         parse_error: parse_error, // Indicate if any parsing error occurred for this row
@@ -207,8 +207,8 @@ export const getSubmissionsByOrg = async (req, res) => {
       success: true,
       data: parsedRows,
       organization: {
-        id: org.id,
-        name: org.orgName,
+        id: adminOrg.organization_id,
+        name: adminOrg.orgName,
         acronym: orgAcronym,
       },
       count: parsedRows.length,
@@ -414,9 +414,9 @@ export const getSubmissionById = async (req, res) => {
 
   try {
     const [rows] = await db.execute(
-      `SELECT s.*, o.orgName, o.org 
+      `SELECT s.*, a.orgName, a.org 
        FROM submissions s
-       LEFT JOIN organizations o ON s.organization_id = o.id
+       LEFT JOIN admins a ON a.organization_id = s.organization_id
        WHERE s.id = ?`,
       [id]
     )

@@ -676,6 +676,24 @@ const initializeDatabase = async () => {
       } else {
         // Check and fix the is_verified column default value
         console.log("Checking subscribers table structure...");
+        
+        // First, check if verified_at column exists
+        const [verifiedAtColumn] = await connection.query(`
+          SELECT COLUMN_NAME 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_NAME = 'subscribers' 
+          AND COLUMN_NAME = 'verified_at'
+        `);
+        
+        if (verifiedAtColumn.length === 0) {
+          console.log("Adding missing verified_at column to subscribers table...");
+          await connection.query(`
+            ALTER TABLE subscribers 
+            ADD COLUMN verified_at TIMESTAMP NULL
+          `);
+          console.log("✅ verified_at column added successfully!");
+        }
+        
         const [isVerifiedColumn] = await connection.query(`
           SELECT COLUMN_DEFAULT 
           FROM INFORMATION_SCHEMA.COLUMNS 

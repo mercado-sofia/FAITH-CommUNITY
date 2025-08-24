@@ -35,13 +35,14 @@ export default function SimplifiedVolunteerForm({ selectedProgramId }) {
     }
   }, [selectedProgramId, programOptions, formData.program]);
 
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [alreadyApplied, setAlreadyApplied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [submitStatus, setSubmitStatus] = useState({
     submitted: false,
     success: false,
     message: "",
   });
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Memoize the close function to prevent unnecessary re-renders
   const handleCloseModal = useCallback(() => {
@@ -174,9 +175,6 @@ export default function SimplifiedVolunteerForm({ selectedProgramId }) {
       };
 
       const userToken = localStorage.getItem('userToken');
-      console.log('User token:', userToken ? 'Present' : 'Missing');
-      console.log('Token value:', userToken);
-      console.log('Request data:', requestData);
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/apply`, {
         method: "POST",
@@ -189,7 +187,40 @@ export default function SimplifiedVolunteerForm({ selectedProgramId }) {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || "Failed to submit application. Please try again.");
+        const status = response.status;
+        
+        // Handle different HTTP status codes appropriately
+        if (status === 409) {
+          // User already applied - this is actually a success case
+          setShowSuccessModal(true);
+          setAlreadyApplied(true);
+          
+          setFormData({
+            program: null,
+            reason: "",
+          });
+          
+          // Log as info since this is expected behavior
+          logger.info("User already applied for this program", {
+            programId: formData.program.id,
+            email: userData.email,
+            status: 'already_applied'
+          });
+          
+          return; // Exit early, don't treat as error
+        } else if (status === 400) {
+          // Bad request - validation error
+          throw new Error(errorData?.error || "Please check your input and try again.");
+        } else if (status === 401) {
+          // Unauthorized - authentication error
+          throw new Error("Please log in again to submit your application.");
+        } else if (status === 404) {
+          // Not found - program not available
+          throw new Error("This program is no longer available for applications.");
+        } else {
+          // Other server errors
+          throw new Error(errorData?.error || errorData?.message || "Failed to submit application. Please try again.");
+        }
       }
 
       setShowSuccessModal(true);
@@ -287,7 +318,8 @@ export default function SimplifiedVolunteerForm({ selectedProgramId }) {
         <SuccessModal 
           isOpen={showSuccessModal}
           onClose={handleCloseModal}
-          message="Application submitted successfully!"
+          message={alreadyApplied ? "You have already applied for this program. You can only apply once per program." : "Application submitted successfully!"}
+          type={alreadyApplied ? "already_applied" : "success"}
         />
       </form>
     </>

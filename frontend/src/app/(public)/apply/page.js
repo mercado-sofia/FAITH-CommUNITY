@@ -7,11 +7,8 @@ import PageBanner from '../components/PageBanner';
 import SimplifiedVolunteerForm from './components/VolunteerForm';
 import styles from './apply.module.css';
 
-let hasVisitedApply = false;
-let isFirstVisitApply = true;
-
 export default function ApplyPage() {
-  const [loading, setLoading] = useState(!hasVisitedApply);
+  const [loading, setLoading] = useState(true);
   const [selectedProgramId, setSelectedProgramId] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userData, setUserData] = useState(null);
@@ -29,20 +26,30 @@ export default function ApplyPage() {
 
   // Check user authentication status
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    console.log('Checking user authentication...');
     const token = localStorage.getItem('userToken');
     const storedUserData = localStorage.getItem('userData');
+    
+    console.log('Token exists:', !!token);
+    console.log('User data exists:', !!storedUserData);
     
     if (token && storedUserData) {
       try {
         const user = JSON.parse(storedUserData);
+        console.log('Parsed user data:', user);
         setUserData(user);
         setIsLoggedIn(true);
+        console.log('User is now logged in');
       } catch (error) {
         console.error('Error parsing user data:', error);
         localStorage.removeItem('userToken');
         localStorage.removeItem('userData');
+        setShowLoginModal(true);
       }
     } else {
+      console.log('No token or user data, showing login modal');
       // Show login modal for non-authenticated users
       setShowLoginModal(true);
     }
@@ -51,23 +58,47 @@ export default function ApplyPage() {
   // Show login modal when needed
   useEffect(() => {
     if (showLoginModal && typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('showLoginModal'));
-      setShowLoginModal(false);
+      try {
+        // Dispatch the event to show the login modal
+        window.dispatchEvent(new CustomEvent('showLoginModal'));
+        // Don't immediately set showLoginModal to false - let the modal handle its own state
+        // The modal will close itself when the user takes action
+      } catch (error) {
+        console.error('Error dispatching login modal event:', error);
+        // Only reset if there was an error
+        setShowLoginModal(false);
+      }
     }
   }, [showLoginModal]);
 
-  if (!hasVisitedApply && typeof window !== 'undefined') {
-    hasVisitedApply = true;
-    const delay = isFirstVisitApply ? 2000 : 1000; // Extra delay only for first visit
-    timerRef.current = setTimeout(() => {
-      setLoading(false);
-      isFirstVisitApply = false; // Mark as no longer first visit
-    }, delay);
-  }
+  // Handle loading state
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Simple loading delay
+      timerRef.current = setTimeout(() => {
+        setLoading(false);
+      }, 1000);
+
+      // Fallback timeout to ensure loading never gets stuck
+      const fallbackTimeout = setTimeout(() => {
+        setLoading(false);
+      }, 3000);
+
+      // Cleanup function to clear both timeouts
+      return () => {
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+        }
+        clearTimeout(fallbackTimeout);
+      };
+    }
+  }, []); // Only run once on mount
 
   if (loading) {
     return <Loader small centered />;
   }
+
+  console.log('Render state:', { loading, isLoggedIn, showLoginModal, userData: !!userData });
 
   return (
     <>

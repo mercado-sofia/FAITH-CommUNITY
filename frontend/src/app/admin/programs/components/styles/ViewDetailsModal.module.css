@@ -309,7 +309,8 @@
   padding: 12px 24px;
   border-radius: 8px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
+  font-family: var(--font-inter);
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
@@ -317,7 +318,6 @@
 
 .closeModalButton:hover {
   background: #142220;
-  transform: translateY(-1px);
 }
 
 /* Mobile Responsive */

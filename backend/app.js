@@ -139,13 +139,15 @@ import applyRoutes from "./back_end/for_public/routes/apply.js"
 import organizationsRoutes from "./back_end/for_public/routes/organizations.js"
 import messagesRoutes from "./back_end/for_public/routes/messages.js"
 import usersRoutes from "./back_end/for_public/routes/users.js"
+import publicOrganizationsRoutes from "./back_end/for_public/routes/organizations.js"
+import subscriptionRoutes from "./back_end/for_public/routes/subscription.js"
 
-
+app.use("/api", publicOrganizationsRoutes)
+app.use("/api/subscription", subscriptionRoutes)
 app.use("/api", applyRoutes)
 app.use("/api", organizationsRoutes)
 app.use("/api", messagesRoutes)
 app.use("/api/users", usersRoutes)
-
 
 // ADMIN ROUTES
 import advocaciesRoutes from "./back_end/admin/routes/advocacies.js"
@@ -163,7 +165,6 @@ import newsRoutes from "./back_end/admin/routes/newsRoutes.js"
 import notificationsRoutes from "./back_end/admin/routes/notifications.js"
 import inboxRoutes from "./back_end/admin/routes/inbox.js"
 import subscribersRoutes from "./back_end/admin/routes/subscribers.js";
-import adminProfileRoutes from "./back_end/admin/routes/profile.js";
 
 
 app.use("/api/advocacies", advocaciesRoutes)
@@ -180,23 +181,16 @@ app.use("/api/volunteers", volunteersRoutes)
 app.use("/api/news", newsRoutes)
 app.use("/api/notifications", notificationsRoutes)
 app.use("/api/inbox", inboxRoutes)
-app.use("/api/subscribers", subscribersRoutes)
-app.use("/api/admin/profile", adminProfileRoutes);
+app.use("/api/subscribers", subscribersRoutes);
 
 
 // PUBLIC ROUTES
 import publicOrganizationsRoutes from "./back_end/for_public/routes/organizations.js"
 import newsletterRoutes from "./back_end/for_public/routes/newsletter.js"
-import publicApplyRoutes from "./back_end/for_public/routes/apply.js"
-import publicUsersRoutes from "./back_end/for_public/routes/users.js"
-import publicMessagesRoutes from "./back_end/for_public/routes/messages.js"
 
 
 app.use("/api", publicOrganizationsRoutes)
 app.use("/api/newsletter", newsletterRoutes)
-app.use("/api", publicApplyRoutes)
-app.use("/api", publicUsersRoutes)
-app.use("/api", publicMessagesRoutes)
 
 
 // SUPERADMIN ROUTES
@@ -210,7 +204,6 @@ import superadminProgramsRoutes from "./back_end/superadmin/routes/programsRoute
 import featuredProjectsRoutes from "./back_end/superadmin/routes/featuredProjectsRoutes.js"
 import superadminAuthRoutes from "./back_end/superadmin/routes/superadminAuth.js"
 
-
 app.use("/api/admins", adminsRoutes)
 app.use("/api/approvals", approvalRoutes)
 app.use("/api/faqs", faqRoutes)
@@ -221,10 +214,7 @@ app.use("/api/projects/superadmin", superadminProgramsRoutes)
 app.use("/api/superadmin/featured-projects", featuredProjectsRoutes)
 app.use("/api/superadmin/auth", superadminAuthRoutes)
 
-
 // Error Handling
-
-
 // General server error handler
 app.use((err, req, res, next) => {
   console.error("Server error:", err)
@@ -234,7 +224,6 @@ app.use((err, req, res, next) => {
     error: process.env.NODE_ENV === "development" ? err.message : "Internal server error",
   })
 })
-
 
 // 404 handler
 app.use((req, res) => {
@@ -246,7 +235,6 @@ app.use((req, res) => {
     method: req.method,
   })
 })
-
 
 // Start Server
 app.listen(PORT, () => {
@@ -270,7 +258,6 @@ app.listen(PORT, () => {
     console.error('❌ Initial cleanup failed:', error);
   });
 })
-
 
 // Function to list all registered routes
 function listRoutes(app) {
@@ -297,6 +284,5 @@ function listRoutes(app) {
   });
   console.log("Registered routes:\n" + out.join("\n"));
 }
-
 
 listRoutes(app);

@@ -6,6 +6,15 @@ export const dashboardApi = createApi({
     baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api",
     prepareHeaders: (headers, { getState }) => {
       headers.set("Content-Type", "application/json")
+      
+      // Add authentication token for superadmin endpoints
+      if (typeof window !== 'undefined') {
+        const superadminToken = localStorage.getItem('superAdminToken');
+        if (superadminToken) {
+          headers.set('Authorization', `Bearer ${superadminToken}`);
+        }
+      }
+      
       return headers
     },
   }),

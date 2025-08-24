@@ -95,7 +95,7 @@ export default function Footer() {
     try {
       setSending(true);
 
-      const res = await fetch(`${API_BASE}/api/newsletter/subscribe`, {
+      const res = await fetch(`${API_BASE}/api/subscription/subscribe`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim() }),

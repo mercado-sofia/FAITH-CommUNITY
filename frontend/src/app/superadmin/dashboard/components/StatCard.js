@@ -1,22 +1,14 @@
 'use client';
 
-import styles from './styles/StatCard.module.css';
+import styles from '../dashboard.module.css';
 
 export default function StatCard({ label, count, isLoading = false }) {
   return (
-    <div className={styles.statCard}>
-      <div className={styles.cardContent}>
-        <div>
-          <div className={styles.count}>
-            {isLoading ? (
-              <div className={styles.skeletonCount}></div>
-            ) : (
-              count
-            )}
-          </div>
-          <div className={styles.label}>{label}</div>
-        </div>
-      </div>
-    </div>
+    <>
+      <h3>{label}</h3>
+      <p>
+        {isLoading ? "—" : count}
+      </p>
+    </>
   );
 }

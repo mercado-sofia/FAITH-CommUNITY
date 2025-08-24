@@ -1,3 +1,5 @@
+//db table: competencies
+
 import db from "../../database.js"
 
 export const addCompetency = async (req, res) => {

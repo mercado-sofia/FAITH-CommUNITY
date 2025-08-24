@@ -1,4 +1,4 @@
-// controllers/submissionController.js
+// db table: submissions
 import db from "../../database.js"
 
 // Validation helper for submission data

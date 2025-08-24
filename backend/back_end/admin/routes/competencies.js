@@ -1,3 +1,5 @@
+//controller: competencyController.js
+
 import express from "express"
 import {
   addCompetency,

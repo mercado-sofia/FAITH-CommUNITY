@@ -1,4 +1,5 @@
-// back_end/admin/routes/subscribers.js
+//controller: subscribersController.js
+
 import { Router } from "express";
 import {
   subscribe,

@@ -1,4 +1,4 @@
-// controllers/programsController.js
+// db table: programs_projects
 import db from "../../database.js";
 
 // Get programs for a specific organization (for admin view)

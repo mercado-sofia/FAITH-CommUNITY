@@ -1,3 +1,5 @@
+//controller: adminProfileController.js
+
 import express from "express"
 import {
   getAdminProfile,

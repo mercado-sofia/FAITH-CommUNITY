@@ -1,3 +1,5 @@
+//controller: headController.js
+
 import express from "express"
 import { getHeads, addHead, updateHead, deleteHead, bulkUpdateHeads, bulkDeleteHeads, reorderHeads } from "../controllers/headController.js"
 

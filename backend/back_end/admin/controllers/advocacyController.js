@@ -1,3 +1,5 @@
+//db table: advocacies
+
 import db from "../../database.js"
 
 export const addAdvocacy = async (req, res) => {

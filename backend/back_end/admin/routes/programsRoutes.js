@@ -1,4 +1,5 @@
-// routes/programsRoutes.js
+//controller: programsController.js
+
 import express from 'express';
 import { 
   getProgramsByOrg, 

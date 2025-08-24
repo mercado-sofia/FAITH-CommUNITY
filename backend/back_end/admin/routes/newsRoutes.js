@@ -1,3 +1,5 @@
+//controller: newsController.js
+
 import { Router } from "express";
 import {
   createNews,

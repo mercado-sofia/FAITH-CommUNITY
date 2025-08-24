@@ -1,3 +1,5 @@
+//db table: messages
+
 import db from "../../database.js";
 
 // Get messages for a specific organization (admin inbox)

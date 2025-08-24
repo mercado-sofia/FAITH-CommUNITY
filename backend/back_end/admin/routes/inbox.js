@@ -1,3 +1,5 @@
+//controller: inboxController.js
+
 import express from "express";
 import { 
   getMessagesByOrg, 

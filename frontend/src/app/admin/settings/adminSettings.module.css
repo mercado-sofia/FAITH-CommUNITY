@@ -99,6 +99,10 @@
   background: white;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin-bottom: 2rem;
+  border: 1px solid #e2e8f0;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   overflow: hidden;
   height: fit-content;
@@ -197,62 +201,81 @@
   font-size: 13px;
   font-weight: 600;
   color: #374151;
-  font-family: var(--font-inter);
+  font-family: var(--font-poppins), sans-serif;
 }
 
 .displayValue {
-  padding: 0.75rem 1rem;
-  background: #f8fafc;
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 13px;
-  color: #374151;
+  font-size: 14px;
+  color: #64748b;
   font-family: var(--font-poppins), sans-serif;
+  line-height: 1.4;
+}
+
+/* Organization Profile Specific Display Styles */
+.orgProfileFieldGroup {
   display: flex;
   align-items: center;
-  min-height: 44px;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
 
-/* Status Badge */
-.statusBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.4rem 1rem;
-  border-radius: 20px;
-  font-size: 11px;
+.orgProfileFieldGroup:last-child {
+  margin-bottom: 0;
+}
+
+.orgProfileLabel {
+  font-size: 13px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: #374151;
   font-family: var(--font-poppins), sans-serif;
-  width: fit-content;
-  min-width: fit-content;
-  white-space: nowrap;
+  min-width: 140px;
   flex-shrink: 0;
-  align-self: flex-start;
 }
 
-.statusBadge.active {
-  background: #d1fae5;
-  color: #065f46;
+.orgProfileDisplayValue {
+  font-size: 14px;
+  color: #64748b;
+  font-family: var(--font-poppins), sans-serif;
+  line-height: 1.4;
+  flex: 1;
 }
 
-.statusBadge.inactive {
-  background: #fee2e2;
-  color: #991b1b;
+/* Organization Profile Specific Styles */
+.orgAcronym {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #19a48d;
+  font-size: 16px;
 }
 
-.statusBadge.pending {
-  background: #fef3c7;
-  color: #92400e;
+.acronymIcon {
+  color: #9ca3af;
+  font-size: 14px;
 }
 
-/* Password Info */
+/* Email Display Styles */
+.emailDisplay {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+  font-size: 14px;
+}
+
+.emailIcon {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+/* Password Info Styles */
 .passwordInfo {
   background: #f8fafc;
-  padding: 1rem;
-  border-radius: 10px;
   border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
 }
 
 .infoText {
@@ -260,76 +283,9 @@
   font-size: 13px;
   color: #64748b;
   font-family: var(--font-poppins), sans-serif;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .infoText:last-child {
   margin-bottom: 0;
-}
-
-.infoText strong {
-  color: #374151;
-  font-weight: 600;
-}
-
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .settingsGrid {
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-  
-  .settingsGrid > * {
-    flex: none;
-  }
-}
-
-@media (max-width: 768px) {
-  .header h1 {
-    font-size: 1.25rem;
-  }
-  
-  .panelHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-    padding: 1.25rem 1.25rem 1rem 1.25rem;
-  }
-  
-  .panelIcon {
-    width: 40px;
-    height: 40px;
-    font-size: 1rem;
-  }
-  
-  .panelTitle h2 {
-    font-size: 1rem;
-  }
-  
-  .panelTitle p {
-    font-size: 13px;
-  }
-  
-  .editButton {
-    align-self: stretch;
-    text-align: center;
-    justify-content: center;
-  }
-  
-  .actionButtons {
-    flex-direction: column;
-  }
-  
-  .saveButton,
-  .cancelButton {
-    width: 100%;
-  }
-  
-  .panelContent {
-    padding: 1.25rem;
-  }
-  
-  .settingsPanel {
-    border-radius: 12px;
-  }
 }

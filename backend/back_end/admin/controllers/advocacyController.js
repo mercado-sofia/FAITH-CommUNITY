@@ -125,10 +125,11 @@ export const deleteAdvocacy = async (req, res) => {
 export const getAllAdvocacies = async (req, res) => {
   try {
     const [rows] = await db.execute(`
-      SELECT a.*, o.orgName, o.org 
+      SELECT a.*, admins.orgName, admins.org 
       FROM advocacies a 
       LEFT JOIN organizations o ON a.organization_id = o.id 
-      ORDER BY o.orgName
+      LEFT JOIN admins ON a.organization_id = admins.organization_id
+      ORDER BY admins.orgName
     `)
     res.json({
       success: true,

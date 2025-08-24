@@ -26,10 +26,11 @@
 
 .modalHeader {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid #f3f4f6;
+  position: relative;
 }
 
 .modalTitle {
@@ -41,23 +42,27 @@
 }
 
 .closeButton {
-  background: none;
+  background: transparent;
   border: none;
-  font-size: 14px;
-  color: #6b7280;
-  cursor: pointer;
-  padding: 0.6rem;
-  border-radius: 6px;
-  transition: all 0.2s ease;
+  border-radius: 8px;
+  width: 35px;
+  height: 35px;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s ease;
+  position: absolute;
+  right: 10px;
+  top: 45%;
+  transform: translateY(-50%);
   user-select: none;
 }
 
 .closeButton:hover {
   background: #f3f4f6;
-  color: #374151;
+  color: #06100f;
 }
 
 .closeButton:disabled {

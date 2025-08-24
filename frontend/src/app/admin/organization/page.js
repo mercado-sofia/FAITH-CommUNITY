@@ -4,19 +4,11 @@ import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { updateAdminOrg } from "../../../rtk/superadmin/adminSlice";
 import { useAdminOrganization, useAdminAdvocacies, useAdminCompetencies, useAdminHeads } from "../../../hooks/useAdminData";
-import { applyRoleHierarchyOrdering } from "./components/utils/roleHierarchy";
-import OrgHeader from "./components/OrgHeader";
-import OrgInfoSection from "./components/OrgInfoSection";
-import AdvocacySection from "./components/AdvocacySection";
-import CompetencySection from "./components/CompetencySection";
-import OrgHeadsSection from "./components/OrgHeadsSection";
-import EditModal from "./components/EditModal";
-import SectionEditModal from "./components/SectionEditModal";
-import AddOrgHeadModal from "./components/AddOrgHeadModal";
-import OrgHeadsEditModal from "./components/OrgHeadsEditModal";
+import { applyRoleHierarchyOrdering } from "./OrgHeads/utils/roleHierarchy";
+import { EditModal, OrgInfoSection, SummaryModal } from "./OrgInfo";
+import { AdvocacySection, CompetencySection, SectionEditModal, SectionSummaryModal } from "./AdvocacyCompetency";
+import { OrgHeadsSection, AddOrgHeadModal, OrgHeadsEditModal } from "./OrgHeads";
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
-import SummaryModal from "./components/SummaryModal";
-import SectionSummaryModal from "./components/SectionSummaryModal";
 import SuccessModal from "../components/SuccessModal";
 import SkeletonLoader from '../components/SkeletonLoader';
 import pageStyles from "./page.module.css";
@@ -35,22 +27,20 @@ export default function OrganizationPage() {
   // Use SWR hooks for data fetching
   const { organization, isLoading: orgLoading, error: orgError, mutate: refreshOrganization } = useAdminOrganization(admin?.org);
   
-  // Note: SWR will automatically re-run when admin?.org changes due to Redux state updates
-
   // Separate state for edit modal preview (doesn't affect main display)
   const [editPreviewData, setEditPreviewData] = useState(null);
 
-  // Progressive loading states - must be declared before hooks that use them
-  const [orgInfoReady, setOrgInfoReady] = useState(false);
-  const [advocacyReady, setAdvocacyReady] = useState(false);
-  const [competencyReady, setCompetencyReady] = useState(false);
-  const [orgHeadsReady, setOrgHeadsReady] = useState(false);
+  // Consolidated progressive loading states
+  const [sectionStates, setSectionStates] = useState({
+    orgInfo: false,
+    advocacy: false,
+    competency: false,
+    orgHeads: false
+  });
 
   // Safeguard: Ensure we have a stable organization ID for the hooks
   const stableOrgId = useMemo(() => {
-    // Prefer organization.id if available, otherwise fall back to admin.id
-    const orgId = organization?.id || admin?.id;
-    return orgId;
+    return organization?.id || admin?.id;
   }, [organization?.id, admin?.id]);
 
   // Use stable organization ID for hooks to prevent unnecessary re-runs
@@ -59,44 +49,28 @@ export default function OrganizationPage() {
   
   // Lazy load organization heads - only fetch when the section is ready to be displayed
   const { heads: stableHeads, isLoading: headsLoading, error: headsError, mutate: refreshHeads } = useAdminHeads(
-    stableOrgId && (orgHeadsReady || !isFirstVisit) ? stableOrgId : null
+    stableOrgId && (sectionStates.orgHeads || !isFirstVisit) ? stableOrgId : null
   );
-  // Use the stable data directly from SWR hooks with memoization to prevent unnecessary re-renders
-  const advocacies = useMemo(() => stableAdvocacies || [], [stableAdvocacies]);
-  const competencies = useMemo(() => stableCompetencies || [], [stableCompetencies]);
-  const heads = useMemo(() => stableHeads || [], [stableHeads]);
 
-  // Safeguard: Ensure data arrays are never undefined
-  const safeAdvocacies = useMemo(() => {
-    const safe = Array.isArray(advocacies) ? advocacies : [];
-    return safe;
-  }, [advocacies]);
-
-  const safeCompetencies = useMemo(() => {
-    const safe = Array.isArray(competencies) ? competencies : [];
-    return safe;
-  }, [competencies]);
-
-  const safeHeads = useMemo(() => {
-    const safe = Array.isArray(heads) ? heads : [];
-    return safe;
-  }, [heads]);
+  // Consolidated data safety check - single useMemo for all arrays
+  const safeData = useMemo(() => ({
+    advocacies: Array.isArray(stableAdvocacies) ? stableAdvocacies : [],
+    competencies: Array.isArray(stableCompetencies) ? stableCompetencies : [],
+    heads: Array.isArray(stableHeads) ? stableHeads : []
+  }), [stableAdvocacies, stableCompetencies, stableHeads]);
 
   // Derived state from SWR data, with instant updates from editPreviewData
-  // Use useMemo to prevent unnecessary recalculations and ensure consistency
   const orgData = useMemo(() => {
-    // If we have edit preview data, use it (for immediate UI updates during editing)
     if (editPreviewData) {
       return editPreviewData;
     }
     
-    // Otherwise, use the organization data from SWR
     if (organization) {
       return {
         id: organization.id,
         logo: organization.logo || "",
-        org: organization.org || admin?.org || "",
-        orgName: organization.orgName || admin?.orgName || "",
+        org: admin?.org || "",
+        orgName: admin?.orgName || "",
         email: organization.email || admin?.email || "",
         facebook: organization.facebook || "",
         description: organization.description || "",
@@ -104,7 +78,6 @@ export default function OrganizationPage() {
       };
     }
     
-    // Fallback to admin data if no organization exists yet
     return {
       id: null,
       logo: "",
@@ -118,129 +91,109 @@ export default function OrganizationPage() {
   }, [editPreviewData, organization, admin]);
 
   const advocacyData = useMemo(() => {
-    return safeAdvocacies.length > 0 ? {
-      id: safeAdvocacies[0].id,
-      advocacy: safeAdvocacies[0].advocacy || ""
+    return safeData.advocacies.length > 0 ? {
+      id: safeData.advocacies[0].id,
+      advocacy: safeData.advocacies[0].advocacy || ""
     } : {
       id: null,
       advocacy: ""
     };
-  }, [safeAdvocacies]);
+  }, [safeData.advocacies]);
 
   const competencyData = useMemo(() => {
-    return safeCompetencies.length > 0 ? {
-      id: safeCompetencies[0].id,
-      competency: safeCompetencies[0].competency || ""
+    return safeData.competencies.length > 0 ? {
+      id: safeData.competencies[0].id,
+      competency: safeData.competencies[0].competency || ""
     } : {
       id: null,
       competency: ""
     };
-  }, [safeCompetencies]);
+  }, [safeData.competencies]);
 
-  const orgHeadsData = safeHeads;
+  const orgHeadsData = safeData.heads;
   
   // Stabilize orgHeadsData to prevent infinite loops in modal
-  const stableOrgHeadsData = useMemo(() => {
-    return orgHeadsData;
-  }, [orgHeadsData]); // Include orgHeadsData as dependency since we're returning it
+  const stableOrgHeadsData = useMemo(() => orgHeadsData, [orgHeadsData]);
 
   // Modal-specific message state
   const [modalMessage, setModalMessage] = useState({ text: "", type: "" });
 
   // Temporary state for editing advocacy/competency without affecting main display
   const [tempEditData, setTempEditData] = useState({});
-  const [reEditSubmissionId, setReEditSubmissionId] = useState(null); // Track if we're re-editing an existing submission
+  const [reEditSubmissionId, setReEditSubmissionId] = useState(null);
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showSectionEditModal, setShowSectionEditModal] = useState(false);
-  const [showAddOrgHeadModal, setShowAddOrgHeadModal] = useState(false);
-  const [showIndividualHeadEditModal, setShowIndividualHeadEditModal] = useState(false);
+  // Consolidated modal and UI state
+  const [uiState, setUiState] = useState({
+    isEditing: false,
+    showEditModal: false,
+    showSectionEditModal: false,
+    showAddOrgHeadModal: false,
+    showIndividualHeadEditModal: false,
+    showDeleteConfirmationModal: false,
+    showSummaryModal: false,
+    showSectionSummaryModal: false,
+    saving: false,
+    uploading: false
+  });
+
   const [selectedHeadForEdit, setSelectedHeadForEdit] = useState(null);
-  const [showDeleteConfirmationModal, setShowDeleteConfirmationModal] = useState(false);
   const [selectedHeadForDelete, setSelectedHeadForDelete] = useState(null);
-  const [currentSection, setCurrentSection] = useState(''); // 'organization', 'advocacy', 'competency', 'orgHeads'
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [currentSection, setCurrentSection] = useState('');
   const [errors, setErrors] = useState({});
   const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
-  const [showSummaryModal, setShowSummaryModal] = useState(false);
-  const [showSectionSummaryModal, setShowSectionSummaryModal] = useState(false);
   const [originalData, setOriginalData] = useState(null);
   const [pendingChanges, setPendingChanges] = useState(null);
 
-
-
   // Memoized skeleton components to prevent unnecessary re-renders
-  const OrgInfoSkeleton = useMemo(() => <SkeletonLoader type="orgInfo" />, []);
-  const AdvocacySkeleton = useMemo(() => <SkeletonLoader type="section" />, []);
-  const CompetencySkeleton = useMemo(() => <SkeletonLoader type="section" />, []);
-  const OrgHeadsSkeleton = useMemo(() => <SkeletonLoader type="orgHeads" count={3} />, []);
+  const skeletonComponents = useMemo(() => ({
+    orgInfo: <SkeletonLoader type="orgInfo" />,
+    advocacy: <SkeletonLoader type="section" />,
+    competency: <SkeletonLoader type="section" />,
+    orgHeads: <SkeletonLoader type="orgHeads" count={3} />
+  }), []);
 
   // Combined loading state
   const loading = orgLoading || advocaciesLoading || competenciesLoading || headsLoading || !admin?.org;
 
-  // Progressive loading logic
+  // Consolidated progressive loading logic - single useEffect instead of 4 separate ones
   useEffect(() => {
-    if (!orgLoading && !isFirstVisit) {
+    if (!loading && !isFirstVisit) {
       const timer = setTimeout(() => {
-        setOrgInfoReady(true);
-      }, 200);
+        setSectionStates({
+          orgInfo: true,
+          advocacy: true,
+          competency: true,
+          orgHeads: true
+        });
+      }, 300); // Single delay instead of multiple progressive delays
+      
       return () => clearTimeout(timer);
     }
-  }, [orgLoading, isFirstVisit]);
-
-  useEffect(() => {
-    if (!advocaciesLoading && !isFirstVisit) {
-      const timer = setTimeout(() => {
-        setAdvocacyReady(true);
-      }, 400);
-      return () => clearTimeout(timer);
-    }
-  }, [advocaciesLoading, isFirstVisit]);
-
-  useEffect(() => {
-    if (!competenciesLoading && !isFirstVisit) {
-      const timer = setTimeout(() => {
-        setCompetencyReady(true);
-      }, 600);
-      return () => clearTimeout(timer);
-    }
-  }, [competenciesLoading, isFirstVisit]);
-
-  useEffect(() => {
-    if (!headsLoading && !isFirstVisit) {
-      const timer = setTimeout(() => {
-        setOrgHeadsReady(true);
-      }, 800);
-      return () => clearTimeout(timer);
-    }
-  }, [headsLoading, isFirstVisit]);
+  }, [loading, isFirstVisit]);
 
   // Smart loading logic for first visit
   useEffect(() => {
-    if (!orgLoading && !advocaciesLoading && !competenciesLoading && !headsLoading) {
-      const extraDelay = isFirstVisit ? 1000 : 0; // Slightly longer delay for first visit to show skeletons
+    if (!loading) {
+      const extraDelay = isFirstVisit ? 800 : 0; // Reduced from 1000ms to 800ms
       const timer = setTimeout(() => {
         setPageReady(true);
-        setOrgInfoReady(true);
-        setAdvocacyReady(true);
-        setCompetencyReady(true);
-        setOrgHeadsReady(true);
+        setSectionStates({
+          orgInfo: true,
+          advocacy: true,
+          competency: true,
+          orgHeads: true
+        });
         setIsFirstVisit(false);
-        hasVisitedOrganization = true; // Mark as visited
+        hasVisitedOrganization = true;
       }, extraDelay);
       
       return () => clearTimeout(timer);
     }
-  }, [orgLoading, advocaciesLoading, competenciesLoading, headsLoading, isFirstVisit]);
+  }, [loading, isFirstVisit]);
 
   // Synchronize editPreviewData when organization data changes from SWR
-  // This ensures data consistency and prevents disappearing data
   useEffect(() => {
-    // Only sync if we have fresh organization data and no existing edit preview data
-    // This prevents overwriting user changes during editing
-    if (organization && !editPreviewData && !isEditing) {
+    if (organization && !editPreviewData && !uiState.isEditing) {
       const syncedData = {
         id: organization.id,
         logo: organization.logo || "",
@@ -253,7 +206,7 @@ export default function OrganizationPage() {
       };
       setEditPreviewData(syncedData);
     }
-  }, [organization, admin, editPreviewData, isEditing]);
+  }, [organization, admin, editPreviewData, uiState.isEditing]);
 
   // Initialize editPreviewData when organization data is first loaded
   useEffect(() => {
@@ -272,6 +225,11 @@ export default function OrganizationPage() {
     }
   }, [organization, editPreviewData, loading, admin]);
 
+  // Helper function to update UI state
+  const updateUiState = useCallback((updates) => {
+    setUiState(prev => ({ ...prev, ...updates }));
+  }, []);
+
   const showMessage = (text, type, section = "") => {
     setSuccessModal({ isVisible: true, message: text, type: type });
   };
@@ -280,17 +238,10 @@ export default function OrganizationPage() {
     setSuccessModal({ isVisible: false, message: '', type: 'success' });
   };
 
-    const validateForm = () => {
+  const validateForm = () => {
     const newErrors = {};
-    // Use editPreviewData if available, otherwise fall back to orgData
     const dataToValidate = editPreviewData || orgData;
     
-    if (!dataToValidate.org?.trim()) {
-      newErrors.org = "Organization acronym is required";
-    }
-    if (!dataToValidate.orgName?.trim()) {
-      newErrors.orgName = "Organization name is required";
-    }
     if (dataToValidate.facebook && !dataToValidate.facebook.includes("facebook.com")) {
       newErrors.facebook = "Please enter a valid Facebook URL";
     }
@@ -327,26 +278,21 @@ export default function OrganizationPage() {
         try {
           const submission = JSON.parse(reEditData);
           
-          // Set up for re-editing the specific section
           setCurrentSection(submission.section);
-          setIsEditing(true);
-          setReEditSubmissionId(submission.id); // Store the submission ID for updating
+          updateUiState({ isEditing: true });
+          setReEditSubmissionId(submission.id);
           
-          // Initialize temp data with the submission's proposed data
           if (submission.section === 'advocacy') {
             setTempEditData({ advocacy: submission.data });
             setOriginalData({ ...advocacyData });
-            setShowSectionEditModal(true);
+            updateUiState({ showSectionEditModal: true });
           } else if (submission.section === 'competency') {
             setTempEditData({ competency: submission.data });
             setOriginalData({ ...competencyData });
-            setShowSectionEditModal(true);
+            updateUiState({ showSectionEditModal: true });
           }
           
-          // Clear the session storage
           sessionStorage.removeItem('reEditSubmission');
-          
-          // Show message
           showMessage(`Re-editing ${submission.section} submission`, "info", submission.section);
           
         } catch (error) {
@@ -355,27 +301,19 @@ export default function OrganizationPage() {
         }
       }
     }
-  }, [advocacyData, competencyData]); // Dependencies to ensure data is loaded first
+  }, [advocacyData, competencyData, updateUiState]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
-    // Skip email field since it's managed in admin settings
     if (name === 'email') return;
     
-    // Handle different sections
     if (currentSection === 'organization') {
-      // When editing organization data, update preview data instead of main orgData
       setEditPreviewData((prev) => {
         const currentData = prev || orgData;
-        const newData = { 
-          ...currentData, 
-          [name]: value 
-        };
-        return newData;
+        return { ...currentData, [name]: value };
       });
     } else {
-      // For advocacy and competency, store changes in temporary editing state
       setTempEditData((prev) => ({ ...prev, [name]: value }));
     }
     
@@ -396,7 +334,7 @@ export default function OrganizationPage() {
     }
 
     try {
-      setUploading(true);
+      updateUiState({ uploading: true });
       
       const formData = new FormData();
       formData.append("file", file);
@@ -409,7 +347,6 @@ export default function OrganizationPage() {
       
       if (response.ok) {
         const result = await response.json();
-        // Only update the edit preview data, not the main orgData
         setEditPreviewData((prev) => ({ 
           ...(prev || orgData), 
           logo: result.url 
@@ -422,7 +359,7 @@ export default function OrganizationPage() {
     } catch (error) {
       setModalMessage({ text: "Failed to upload logo", type: "error" });
     } finally {
-      setUploading(false);
+      updateUiState({ uploading: false });
     }
   };
 
@@ -434,28 +371,30 @@ export default function OrganizationPage() {
       }
 
       const currentOrgData = editPreviewData || orgData;
-      const hasChanges = originalData && Object.keys(currentOrgData).some((key) => key !== "id" && key !== "email" && currentOrgData[key] !== originalData[key]);
+      const hasChanges = originalData && Object.keys(currentOrgData).some((key) => 
+        key !== "id" && 
+        key !== "email" && 
+        key !== "org" && 
+        key !== "orgName" && 
+        currentOrgData[key] !== originalData[key]
+      );
 
       if (!hasChanges) {
         showMessage("No changes detected", "info");
-        setShowEditModal(false);
-        setIsEditing(false);
+        updateUiState({ showEditModal: false, isEditing: false });
         setEditPreviewData(null);
         return;
       }
 
       setPendingChanges({ ...currentOrgData });
-      setShowEditModal(false);
-      setShowSummaryModal(true);
+      updateUiState({ showEditModal: false });
+      updateUiState({ showSummaryModal: true });
     } else if (currentSection === 'orgHeads') {
-      // Handle organization heads section - immediate save like organization
       handleOrgHeadsSave();
     } else {
-      // Handle advocacy and competency sections
       const currentData = currentSection === 'advocacy' ? advocacyData : competencyData;
       const editedData = { ...currentData, ...tempEditData };
       
-      // Trim whitespace for advocacy and competency content
       if (currentSection === 'advocacy' && editedData.advocacy) {
         editedData.advocacy = editedData.advocacy.trim();
       } else if (currentSection === 'competency' && editedData.competency) {
@@ -466,37 +405,32 @@ export default function OrganizationPage() {
 
       if (!hasChanges) {
         showMessage("No changes detected", "info", currentSection);
-        setShowSectionEditModal(false);
-        setIsEditing(false);
+        updateUiState({ showSectionEditModal: false, isEditing: false });
         setTempEditData({});
         return;
       }
 
       setPendingChanges({ ...editedData });
-      setShowSectionEditModal(false);
-      setShowSectionSummaryModal(true);
+      updateUiState({ showSectionEditModal: false });
+      updateUiState({ showSectionSummaryModal: true });
     }
   };
 
   const handleConfirmChanges = async () => {
     if (!pendingChanges) return;
     try {
-      setSaving(true);
-      setShowSummaryModal(false);
+      updateUiState({ saving: true });
+      updateUiState({ showSummaryModal: false });
       
-      // If no organization ID exists, we need to create a new organization
-      // Otherwise, update the existing one
       const method = pendingChanges.id ? "PUT" : "POST";
       const url = pendingChanges.id
         ? `${API_BASE_URL}/api/organization/${pendingChanges.id}`
         : `${API_BASE_URL}/api/organization`;
 
       const requestBody = {
-        logo: pendingChanges.logo || null,
-        org: pendingChanges.org,
-        orgName: pendingChanges.orgName,
-        facebook: pendingChanges.facebook || null,
-        description: pendingChanges.description || null,
+        logo: pendingChanges.logo || "",
+        facebook: pendingChanges.facebook || "",
+        description: pendingChanges.description || "",
         orgColor: pendingChanges.orgColor || "#444444",
         status: "ACTIVE"
       };
@@ -513,32 +447,18 @@ export default function OrganizationPage() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Organization update error:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorText,
-          url,
-          requestBody
-        });
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
       
       const result = await response.json();
         
-        if (result.success) {
-
-        // Note: localStorage update is now handled above when acronym changes
-
-        // Create the updated organization data, preserving all fields properly
+      if (result.success) {
         const updatedOrganization = {
           ...(organization || {}),
           ...pendingChanges,
-          ...result.data, // Include any data returned from the backend
+          ...result.data,
           id: result.data?.id || organization?.id || pendingChanges.id,
-          // CRITICAL: Always preserve the existing logo unless a new one was explicitly uploaded
-          // This prevents the logo from disappearing in the sidebar
           logo: pendingChanges.logo || organization?.logo || result.data?.logo || "",
-          // Ensure all other fields are preserved
           org: result.data?.org || pendingChanges.org || organization?.org || admin?.org || "",
           orgName: result.data?.orgName || pendingChanges.orgName || organization?.orgName || admin?.orgName || "",
           email: result.data?.email || pendingChanges.email || organization?.email || admin?.email || "",
@@ -547,84 +467,69 @@ export default function OrganizationPage() {
           org_color: result.data?.orgColor || pendingChanges.orgColor || organization?.org_color || "#444444"
         };
         
-        // Only update SWR cache if the organization acronym changed (which affects the cache key)
-        // For other changes like description, just update local state to avoid sidebar re-renders
         if (pendingChanges.org && pendingChanges.org !== admin?.org) {
-          // Update the SWR cache immediately with the new data
-          // This provides instant updates without revalidation
           const cacheUpdateData = {
             ...updatedOrganization,
-            logo: updatedOrganization.logo || organization?.logo || "" // Double-check logo preservation
+            logo: updatedOrganization.logo || organization?.logo || ""
           };
-          refreshOrganization(cacheUpdateData, false); // false = don't revalidate
+          refreshOrganization(cacheUpdateData, false);
         }
         
-        // Always update the local state immediately for instant UI feedback
-        // Keep the editPreviewData for immediate UI updates
         setEditPreviewData(updatedOrganization);
         
-        // If the organization acronym changed, we need to update the Redux store and localStorage
         if (pendingChanges.org && pendingChanges.org !== admin?.org) {
-          // Update Redux store
           dispatch(updateAdminOrg({
             org: pendingChanges.org,
             orgName: pendingChanges.orgName
           }));
-          
-          // Don't force revalidation - let SWR handle it naturally
-          // The logo will be preserved in the cache
         }
 
-        setIsEditing(false);
+        updateUiState({ isEditing: false });
         setPendingChanges(null);
         setOriginalData(null);
-        // Keep editPreviewData for instant UI updates, it will be cleared when modal is closed
         showMessage("Organization information saved successfully", "success");
       } else {
         throw new Error(result.message || "Failed to save organization information");
       }
     } catch (error) {
+      console.error('Full error details:', error);
       showMessage(error.message || "Failed to save organization information", "error");
-      setShowSummaryModal(true);
+      updateUiState({ showSummaryModal: true });
     } finally {
-      setSaving(false);
+      updateUiState({ saving: false });
     }
   };
 
   const handleCancelModal = () => {
-    setShowSummaryModal(false);
+    updateUiState({ showSummaryModal: false });
     setPendingChanges(null);
   };
 
   const handleCancel = () => {
     if (currentSection === 'organization') {
-      setShowEditModal(false);
-      // Only clear editPreviewData if we're not in the middle of saving
-      // This prevents data loss during save operations
-      if (!saving) {
-        setEditPreviewData(null); // Reset edit preview data when modal is closed
+      updateUiState({ showEditModal: false });
+      if (!uiState.saving) {
+        setEditPreviewData(null);
       }
     } else {
-      setShowSectionEditModal(false);
+      updateUiState({ showSectionEditModal: false });
     }
-    setIsEditing(false);
+    updateUiState({ isEditing: false });
     setErrors({});
-    setCurrentSection(''); // Reset to empty string instead of 'organization'
+    setCurrentSection('');
     setPendingChanges(null);
     setOriginalData(null);
-    setTempEditData({}); // Clear temporary editing data
-    setReEditSubmissionId(null); // Clear re-edit submission ID
-    // Don't force refresh - let SWR handle it naturally
+    setTempEditData({});
+    setReEditSubmissionId(null);
   };
 
   const handleSectionConfirmChanges = async () => {
     if (!pendingChanges || !admin?.id) return;
     
     try {
-      setSaving(true);
-      setShowSectionSummaryModal(false);
+      updateUiState({ saving: true });
+      updateUiState({ showSectionSummaryModal: false });
       
-      // Prepare submission data
       const submissions = [];
       
       if (currentSection === 'advocacy') {
@@ -649,11 +554,9 @@ export default function OrganizationPage() {
         throw new Error('No changes to submit');
       }
       
-      // Submit to backend - either create new or update existing submission
       const adminToken = localStorage.getItem("adminToken");
       let response;
       if (reEditSubmissionId) {
-        // Update existing submission
         response = await fetch(`${API_BASE_URL}/api/submissions/${reEditSubmissionId}`, {
           method: 'PUT',
           headers: {
@@ -666,7 +569,6 @@ export default function OrganizationPage() {
           })
         });
       } else {
-        // Create new submission
         response = await fetch(`${API_BASE_URL}/api/submissions`, {
           method: 'POST',
           headers: {
@@ -683,28 +585,27 @@ export default function OrganizationPage() {
         throw new Error(result.message || 'Failed to submit changes for approval');
       }
       
-      // Reset form state
-      setIsEditing(false);
+      updateUiState({ isEditing: false });
       setPendingChanges(null);
       setOriginalData(null);
       setCurrentSection('');
-      setTempEditData({}); // Clear temporary editing data
+      setTempEditData({});
       
       const actionText = reEditSubmissionId ? 'updated' : 'submitted';
-      setReEditSubmissionId(null); // Clear re-edit submission ID
+      setReEditSubmissionId(null);
       
       showMessage(`${currentSection.charAt(0).toUpperCase() + currentSection.slice(1)} changes ${actionText} for approval successfully`, "success", currentSection);
       
     } catch (error) {
       showMessage(error.message || "Failed to submit changes for approval", "error", currentSection);
-      setShowSectionSummaryModal(true);
+      updateUiState({ showSectionSummaryModal: true });
     } finally {
-      setSaving(false);
+      updateUiState({ saving: false });
     }
   };
 
   const handleSectionCancelModal = () => {
-    setShowSectionSummaryModal(false);
+    updateUiState({ showSectionSummaryModal: false });
     setPendingChanges(null);
     setCurrentSection('');
   };
@@ -712,8 +613,8 @@ export default function OrganizationPage() {
   // Add Organization Head handler
   const handleAddOrgHead = async (newHeadData) => {
     try {
-      setSaving(true);
-      setShowAddOrgHeadModal(false);
+      updateUiState({ saving: true });
+      updateUiState({ showAddOrgHeadModal: false });
       
       const orgId = orgData.id || admin.id;
       
@@ -725,10 +626,9 @@ export default function OrganizationPage() {
         throw new Error('Invalid head data provided');
       }
       
-      // Clean up photo data before sending to backend
       const cleanedHeadData = {
         ...newHeadData,
-        photo: newHeadData.photo && newHeadData.photo.startsWith('data:') ? null : newHeadData.photo // Remove base64 data
+        photo: newHeadData.photo && newHeadData.photo.startsWith('data:') ? null : newHeadData.photo
       };
       
       const adminToken = localStorage.getItem("adminToken");
@@ -756,19 +656,15 @@ export default function OrganizationPage() {
       const result = await response.json();
       
       if (result.success) {
-
         showMessage('Organization head added successfully', 'success', 'orgHeads');
         
-        // Apply role hierarchy ordering to all heads including the new one
         const allHeadsWithNew = [...stableOrgHeadsData, result.data];
         const reorderedHeads = applyRoleHierarchyOrdering(allHeadsWithNew);
         
-        // Update SWR cache with the reordered data
-        refreshHeads(reorderedHeads, false); // false = don't revalidate
+        refreshHeads(reorderedHeads, false);
         
-        // Also trigger a revalidation to ensure data consistency
         setTimeout(() => {
-          refreshHeads(); // Trigger revalidation to fetch fresh data
+          refreshHeads();
         }, 500);
         
       } else {
@@ -777,26 +673,26 @@ export default function OrganizationPage() {
     } catch (error) {
       console.error('Error in handleAddOrgHead:', error);
       showMessage(error.message || 'Failed to add organization head', 'error', 'orgHeads');
-      setShowAddOrgHeadModal(true); // Reopen modal on error
+      updateUiState({ showAddOrgHeadModal: true });
     } finally {
-      setSaving(false);
+      updateUiState({ saving: false });
     }
   };
 
   const handleAddOrgHeadCancel = () => {
-    setShowAddOrgHeadModal(false);
+    updateUiState({ showAddOrgHeadModal: false });
   };
 
   // Individual head editing handlers
   const handleEditIndividualHead = (head) => {
     setSelectedHeadForEdit(head);
-    setShowIndividualHeadEditModal(true);
+    updateUiState({ showIndividualHeadEditModal: true });
   };
 
   const handleIndividualHeadSave = async (updatedHead) => {
     try {
-      setSaving(true);
-      setShowIndividualHeadEditModal(false);
+      updateUiState({ saving: true });
+      updateUiState({ showIndividualHeadEditModal: false });
       
       const orgId = orgData.id || admin.id;
       
@@ -808,10 +704,9 @@ export default function OrganizationPage() {
         throw new Error('Invalid head data provided');
       }
       
-      // Clean up photo data before sending to backend
       const cleanedHeadData = {
         ...updatedHead,
-        photo: updatedHead.photo && updatedHead.photo.startsWith('data:') ? null : updatedHead.photo // Remove base64 data
+        photo: updatedHead.photo && updatedHead.photo.startsWith('data:') ? null : updatedHead.photo
       };
       
       const adminToken = localStorage.getItem("adminToken");
@@ -839,20 +734,16 @@ export default function OrganizationPage() {
       const result = await response.json();
       
       if (result.success) {
-
         showMessage('Organization head updated successfully', 'success', 'orgHeads');
         
-        // Update SWR cache with the new data
         const updatedHeads = stableOrgHeadsData.map(head => 
           head.id === updatedHead.id ? { ...head, ...cleanedHeadData } : head
         );
         
-        // Update the SWR cache immediately with the new data
-        refreshHeads(updatedHeads, false); // false = don't revalidate
+        refreshHeads(updatedHeads, false);
         
-        // Also trigger a revalidation to ensure data consistency
         setTimeout(() => {
-          refreshHeads(); // Trigger revalidation to fetch fresh data
+          refreshHeads();
         }, 500);
         
       } else {
@@ -861,28 +752,28 @@ export default function OrganizationPage() {
     } catch (error) {
       console.error('Error in handleIndividualHeadSave:', error);
       showMessage(error.message || 'Failed to update organization head', 'error', 'orgHeads');
-      setShowIndividualHeadEditModal(true); // Reopen modal on error
+      updateUiState({ showIndividualHeadEditModal: true });
     } finally {
-      setSaving(false);
+      updateUiState({ saving: false });
       setSelectedHeadForEdit(null);
     }
   };
 
   const handleIndividualHeadCancel = () => {
-    setShowIndividualHeadEditModal(false);
+    updateUiState({ showIndividualHeadEditModal: false });
     setSelectedHeadForEdit(null);
   };
 
   const handleDeleteIndividualHead = (head) => {
     setSelectedHeadForDelete(head);
-    setShowDeleteConfirmationModal(true);
+    updateUiState({ showDeleteConfirmationModal: true });
   };
 
   const handleConfirmDelete = async () => {
     if (!selectedHeadForDelete) return;
     
     try {
-      setSaving(true);
+      updateUiState({ saving: true });
       
       const orgId = orgData.id || admin.id;
       
@@ -915,18 +806,14 @@ export default function OrganizationPage() {
       const result = await response.json();
       
       if (result.success) {
-
         showMessage('Organization head deleted successfully', 'success', 'orgHeads');
         
-        // Update SWR cache by removing the deleted head
         const updatedHeads = stableOrgHeadsData.filter(h => h.id !== selectedHeadForDelete.id);
         
-        // Update the SWR cache immediately with the new data
-        refreshHeads(updatedHeads, false); // false = don't revalidate
+        refreshHeads(updatedHeads, false);
         
-        // Also trigger a revalidation to ensure data consistency
         setTimeout(() => {
-          refreshHeads(); // Trigger revalidation to fetch fresh data
+          refreshHeads();
         }, 500);
         
       } else {
@@ -936,28 +823,26 @@ export default function OrganizationPage() {
       console.error('Error in handleConfirmDelete:', error);
       showMessage(error.message || 'Failed to delete organization head', 'error', 'orgHeads');
     } finally {
-      setSaving(false);
-      setShowDeleteConfirmationModal(false);
+      updateUiState({ saving: false });
+      updateUiState({ showDeleteConfirmationModal: false });
       setSelectedHeadForDelete(null);
     }
   };
 
   const handleCancelDelete = () => {
-    setShowDeleteConfirmationModal(false);
+    updateUiState({ showDeleteConfirmationModal: false });
     setSelectedHeadForDelete(null);
   };
 
   // Handle reordering of organization heads
   const handleReorderHeads = async (reorderedHeads) => {
     try {
-      setSaving(true);
+      updateUiState({ saving: true });
       
       const adminToken = localStorage.getItem("adminToken");
       if (!adminToken) {
         throw new Error('No admin token found');
       }
-
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
       
       const response = await fetch(`${API_BASE_URL}/api/heads/reorder`, {
         method: 'PUT',
@@ -976,15 +861,12 @@ export default function OrganizationPage() {
       const result = await response.json();
 
       if (result.success) {
-
         showMessage('Organization heads reordered successfully', 'success', 'orgHeads');
           
-        // Update the SWR cache immediately with the new data
-        refreshHeads(reorderedHeads, false); // false = don't revalidate
+        refreshHeads(reorderedHeads, false);
         
-        // Also trigger a revalidation to ensure data consistency
         setTimeout(() => {
-          refreshHeads(); // Trigger revalidation to fetch fresh data
+          refreshHeads();
         }, 500);
         
       } else {
@@ -993,9 +875,9 @@ export default function OrganizationPage() {
     } catch (error) {
       console.error('Error in handleReorderHeads:', error);
       showMessage(error.message || 'Failed to reorder organization heads', 'error', 'orgHeads');
-      throw error; // Re-throw to let the component handle the error
+      throw error;
     } finally {
-      setSaving(false);
+      updateUiState({ saving: false });
     }
   };
 
@@ -1003,7 +885,9 @@ export default function OrganizationPage() {
   if (loading) {
     return (
       <div>
-        <OrgHeader />
+        <div className={pageStyles.header}>
+          <h1>Organization Information</h1>
+        </div>
         <SkeletonLoader type="section" count={3} />
       </div>
     );
@@ -1013,7 +897,9 @@ export default function OrganizationPage() {
   if (isFirstVisit && loading) {
     return (
       <div>
-        <OrgHeader />
+        <div className={pageStyles.header}>
+          <h1>Organization Information</h1>
+        </div>
         <SkeletonLoader type="section" count={3} />
       </div>
     );
@@ -1021,17 +907,19 @@ export default function OrganizationPage() {
 
   return (
     <div>
-      <OrgHeader />
+      <div className={pageStyles.header}>
+        <h1>Organization Information</h1>
+      </div>
 
       {/* Organization Info Section with Skeleton */}
-      {!orgInfoReady ? (
-        OrgInfoSkeleton
+      {!sectionStates.orgInfo ? (
+        skeletonComponents.orgInfo
       ) : (
         <OrgInfoSection
           orgData={orgData}
-          isEditing={isEditing}
-          setIsEditing={setIsEditing}
-          setShowEditModal={setShowEditModal}
+          isEditing={uiState.isEditing}
+          setIsEditing={(value) => updateUiState({ isEditing: value })}
+          setShowEditModal={(value) => updateUiState({ showEditModal: value })}
           setOriginalData={setOriginalData}
           setEditPreviewData={setEditPreviewData}
           currentSection={currentSection}
@@ -1042,13 +930,13 @@ export default function OrganizationPage() {
       <div className={pageStyles.sectionsContainer}>
         <div className={pageStyles.sectionColumn}>
           {/* Advocacy Section with Skeleton */}
-          {!advocacyReady ? (
-            AdvocacySkeleton
+          {!sectionStates.advocacy ? (
+            skeletonComponents.advocacy
           ) : (
             <AdvocacySection
               advocacyData={advocacyData}
-              setIsEditing={setIsEditing}
-              setShowEditModal={setShowSectionEditModal}
+              setIsEditing={(value) => updateUiState({ isEditing: value })}
+              setShowEditModal={(value) => updateUiState({ showSectionEditModal: value })}
               setOriginalData={setOriginalData}
               setCurrentSection={setCurrentSection}
               setTempEditData={setTempEditData}
@@ -1058,13 +946,13 @@ export default function OrganizationPage() {
         
         <div className={pageStyles.sectionColumn}>
           {/* Competency Section with Skeleton */}
-          {!competencyReady ? (
-            CompetencySkeleton
+          {!sectionStates.competency ? (
+            skeletonComponents.competency
           ) : (
             <CompetencySection
               competencyData={competencyData}
-              setIsEditing={setIsEditing}
-              setShowEditModal={setShowSectionEditModal}
+              setIsEditing={(value) => updateUiState({ isEditing: value })}
+              setShowEditModal={(value) => updateUiState({ showSectionEditModal: value })}
               setOriginalData={setOriginalData}
               setCurrentSection={setCurrentSection}
               setTempEditData={setTempEditData}
@@ -1074,109 +962,107 @@ export default function OrganizationPage() {
       </div>
 
       {/* Organization Heads Section with Skeleton */}
-      {!orgHeadsReady || headsLoading ? (
-        OrgHeadsSkeleton
+      {!sectionStates.orgHeads || headsLoading ? (
+        skeletonComponents.orgHeads
       ) : (
         <OrgHeadsSection
           orgHeadsData={stableOrgHeadsData}
           onEditIndividualHead={handleEditIndividualHead}
           onDeleteIndividualHead={handleDeleteIndividualHead}
-          onAddOrgHead={() => setShowAddOrgHeadModal(true)}
+          onAddOrgHead={() => updateUiState({ showAddOrgHeadModal: true })}
           onReorderHeads={handleReorderHeads}
-          saving={saving}
+          saving={uiState.saving}
         />
       )}
 
       <EditModal
-        isOpen={showEditModal}
+        isOpen={uiState.showEditModal}
         orgData={editPreviewData || orgData}
         setOrgData={setEditPreviewData}
         errors={errors}
-        uploading={uploading}
+        uploading={uiState.uploading}
         handleInputChange={handleInputChange}
         handleFileUpload={handleFileUpload}
         handleSave={handleSave}
         handleCancel={handleCancel}
-        saving={saving}
+        saving={uiState.saving}
         modalMessage={modalMessage}
         setModalMessage={setModalMessage}
         originalData={originalData}
       />
 
       <SectionEditModal
-        isOpen={showSectionEditModal}
+        isOpen={uiState.showSectionEditModal}
         currentSection={currentSection}
         advocacyData={{ ...advocacyData, ...tempEditData }}
         competencyData={{ ...competencyData, ...tempEditData }}
         handleInputChange={handleInputChange}
         handleSave={handleSave}
         handleCancel={handleCancel}
-        saving={saving}
+        saving={uiState.saving}
         originalData={originalData}
       />
 
       {/* Add Organization Head Modal */}
       <AddOrgHeadModal
-        isOpen={showAddOrgHeadModal}
+        isOpen={uiState.showAddOrgHeadModal}
         onSave={handleAddOrgHead}
         onCancel={handleAddOrgHeadCancel}
-        saving={saving}
+        saving={uiState.saving}
         existingHeads={stableOrgHeadsData}
       />
 
       {/* Individual Head Edit Modal */}
       {selectedHeadForEdit && (
         <OrgHeadsEditModal
-          isOpen={showIndividualHeadEditModal}
-          orgHeadsData={[selectedHeadForEdit]} // Pass only the selected head
+          isOpen={uiState.showIndividualHeadEditModal}
+          orgHeadsData={[selectedHeadForEdit]}
           setOrgHeadsData={(heads) => {
-            // Update the selected head with the first (and only) head from the array
             if (heads && heads.length > 0) {
               setSelectedHeadForEdit(heads[0]);
             }
           }}
           handleSave={(heads) => {
-            // Pass the first (and only) head to the save handler
             if (heads && heads.length > 0) {
               handleIndividualHeadSave(heads[0]);
             }
           }}
           handleCancel={handleIndividualHeadCancel}
-          saving={saving}
-          originalData={[selectedHeadForEdit]} // Pass only the selected head as original data
-          isIndividualEdit={true} // Flag to indicate this is individual editing
+          saving={uiState.saving}
+          originalData={[selectedHeadForEdit]}
+          isIndividualEdit={true}
         />
       )}
 
-      {showSummaryModal && originalData && pendingChanges && (
+      {uiState.showSummaryModal && originalData && pendingChanges && (
         <SummaryModal
           originalData={originalData}
           pendingChanges={pendingChanges}
-          saving={saving}
+          saving={uiState.saving}
           handleCancelModal={handleCancelModal}
           handleConfirmChanges={handleConfirmChanges}
         />
       )}
 
-      {showSectionSummaryModal && originalData && pendingChanges && (
+      {uiState.showSectionSummaryModal && originalData && pendingChanges && (
         <SectionSummaryModal
-          isOpen={showSectionSummaryModal}
+          isOpen={uiState.showSectionSummaryModal}
           currentSection={currentSection}
           originalData={originalData}
           pendingChanges={pendingChanges}
-          saving={saving}
+          saving={uiState.saving}
           handleCancelModal={handleSectionCancelModal}
           handleConfirmChanges={handleSectionConfirmChanges}
         />
       )}
 
       <DeleteConfirmationModal
-        isOpen={showDeleteConfirmationModal}
+        isOpen={uiState.showDeleteConfirmationModal}
         itemName={selectedHeadForDelete?.head_name || selectedHeadForDelete?.name || 'this organization head'}
         itemType="organization head"
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
-        isDeleting={saving}
+        isDeleting={uiState.saving}
       />
 
       <SuccessModal

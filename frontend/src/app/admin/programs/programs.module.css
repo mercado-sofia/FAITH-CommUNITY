@@ -13,7 +13,7 @@
   font-size: 1.4rem;
   font-weight: 700;
   font-family: var(--font-poppins), sans-serif;
-  color: #050809;
+  color: #06100f;
   user-select: none;
   margin: 0;
 }
@@ -79,8 +79,6 @@
   border-bottom-color: #06100f;
 }
 
-
-
 /* Programs Section */
 .programsSection {
   margin-top: 2.4rem;
@@ -113,39 +111,6 @@
   line-height: 1.5;
 }
 
-/* Loading State */
-.loadingContainer {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 300px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f4f6;
-  border-top: 4px solid #3b82f6;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.loadingContainer p {
-  font-size: 16px;
-  color: #6b7280;
-  margin: 0;
-}
-
 /* Mobile Responsive */
 @media (max-width: 1024px) {
   .programsGrid {
@@ -166,21 +131,6 @@
     padding: 16px;
   }
 
-  .headerSection {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 20px;
-    padding: 24px;
-  }
-
-  .pageTitle {
-    font-size: 24px;
-  }
-
-  .pageDescription {
-    font-size: 14px;
-  }
-
   .addButton {
     align-self: flex-start;
     padding: 12px 20px;
@@ -195,31 +145,11 @@
   .emptyState {
     padding: 60px 20px;
   }
-
-  .emptyIcon {
-    font-size: 48px;
-  }
-
-  .emptyState h3 {
-    font-size: 18px;
-  }
-
-  .emptyState p {
-    font-size: 14px;
-  }
 }
 
 @media (max-width: 480px) {
   .container {
     padding: 12px;
-  }
-
-  .headerSection {
-    padding: 20px;
-  }
-
-  .pageTitle {
-    font-size: 20px;
   }
 
   .addButton {
@@ -230,6 +160,4 @@
   .emptyState {
     padding: 40px 16px;
   }
-
-
 }

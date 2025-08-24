@@ -6,6 +6,7 @@ import styles from './styles/EditNewsModal.module.css';
 
 const EditNewsModal = ({ news, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
+    id: '',
     title: '',
     description: '',
     date: ''
@@ -34,6 +35,7 @@ const EditNewsModal = ({ news, onClose, onSubmit }) => {
       };
 
       setFormData({
+        id: news.id || '',
         title: news.title || '',
         description: news.description || '',
         date: formatDateForInput(news.date)

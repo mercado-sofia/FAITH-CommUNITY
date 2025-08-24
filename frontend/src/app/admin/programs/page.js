@@ -11,7 +11,6 @@ import EditProgramModal from './components/EditProgramModal';
 import ViewDetailsModal from './components/ViewDetailsModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
-import ErrorBoundary from '../../../components/ErrorBoundary';
 import SuccessModal from '../components/SuccessModal';
 import SkeletonLoader from '../components/SkeletonLoader';
 import styles from './programs.module.css';
@@ -27,16 +26,12 @@ export default function AdminProgramsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [pageReady, setPageReady] = useState(false);
-  const [isFirstVisit, setIsFirstVisit] = useState(!hasVisitedPrograms);
   
   const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [editingProgram, setEditingProgram] = useState(null);
   const [viewingProgram, setViewingProgram] = useState(null);
   const [deletingProgram, setDeletingProgram] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Use SWR hook for programs data
@@ -57,7 +52,6 @@ export default function AdminProgramsPage() {
     if (!isLoading && programs.length >= 0) {
       setHasInitiallyLoaded(true);
       setPageReady(true);
-      setIsFirstVisit(false);
       hasVisitedPrograms = true;
     }
   }, [isLoading, programs.length]);

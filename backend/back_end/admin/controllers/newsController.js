@@ -52,32 +52,23 @@ export const createNews = async (req, res) => {
   }
 
   try {
-    // 1) Resolve organization (by numeric ID → by acronym → sync from admins if needed)
+    // 1) Resolve organization (by numeric ID → by acronym → get from admins if needed)
     let [orgRows] = await db.execute(
-      "SELECT id, orgName, org FROM organizations WHERE id = ?",
+      "SELECT id FROM organizations WHERE id = ?",
       [orgId]
     );
 
     if (orgRows.length === 0) {
-      [orgRows] = await db.execute(
-        "SELECT id, orgName, org FROM organizations WHERE org = ?",
-        [orgId]
-      );
-    }
-
-    if (orgRows.length === 0) {
+      // Try to find by org acronym from admins table
       const [adminRows] = await db.execute(
-        "SELECT id, orgName, org FROM admins WHERE org = ?",
+        "SELECT organization_id FROM admins WHERE org = ? LIMIT 1",
         [orgId]
       );
       if (adminRows.length > 0) {
-        await db.execute(
-          "INSERT INTO organizations (orgName, org) VALUES (?, ?) ON DUPLICATE KEY UPDATE orgName = VALUES(orgName)",
-          [adminRows[0].orgName, adminRows[0].org]
-        );
+        // Use the organization_id from admins table
         [orgRows] = await db.execute(
-          "SELECT id, orgName, org FROM organizations WHERE org = ?",
-          [orgId]
+          "SELECT id FROM organizations WHERE id = ?",
+          [adminRows[0].organization_id]
         );
       }
     }
@@ -153,30 +144,21 @@ export const getNewsByOrg = async (req, res) => {
 
   try {
     let [orgRows] = await db.execute(
-      "SELECT id, orgName, org FROM organizations WHERE id = ?",
+      "SELECT id FROM organizations WHERE id = ?",
       [orgId]
     );
 
     if (orgRows.length === 0) {
-      [orgRows] = await db.execute(
-        "SELECT id, orgName, org FROM organizations WHERE org = ?",
-        [orgId]
-      );
-    }
-
-    if (orgRows.length === 0) {
+      // Try to find by org acronym from admins table
       const [adminRows] = await db.execute(
-        "SELECT id, orgName, org FROM admins WHERE org = ?",
+        "SELECT organization_id FROM admins WHERE org = ? LIMIT 1",
         [orgId]
       );
       if (adminRows.length > 0) {
-        await db.execute(
-          "INSERT INTO organizations (orgName, org) VALUES (?, ?) ON DUPLICATE KEY UPDATE orgName = VALUES(orgName)",
-          [adminRows[0].orgName, adminRows[0].org]
-        );
+        // Use the organization_id from admins table
         [orgRows] = await db.execute(
-          "SELECT id, orgName, org FROM organizations WHERE org = ?",
-          [orgId]
+          "SELECT id FROM organizations WHERE id = ?",
+          [adminRows[0].organization_id]
         );
       }
     }
@@ -188,9 +170,10 @@ export const getNewsByOrg = async (req, res) => {
     const organization = orgRows[0];
 
     const [newsRows] = await db.execute(
-      `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
+      `SELECT n.*, a.org as orgAcronym, a.orgName, o.logo as orgLogo
        FROM news n
        LEFT JOIN organizations o ON n.organization_id = o.id
+       LEFT JOIN admins a ON a.organization_id = o.id
        WHERE n.organization_id = ? AND n.is_deleted = FALSE
        ORDER BY n.created_at DESC`,
       [organization.id]
@@ -232,9 +215,11 @@ export const getNewsByOrg = async (req, res) => {
 export const getApprovedNews = async (req, res) => {
   try {
     const [rows] = await db.execute(
-      `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
+      `SELECT n.*, a.org as orgAcronym, a.orgName, o.logo as orgLogo
        FROM news n
        LEFT JOIN organizations o ON n.organization_id = o.id
+       LEFT JOIN admins a ON a.organization_id = o.id
+       WHERE n.is_deleted = FALSE
        ORDER BY n.created_at DESC`
     );
 
@@ -280,15 +265,23 @@ export const getApprovedNewsByOrg = async (req, res) => {
 
   try {
     let [orgRows] = await db.execute(
-      "SELECT id, orgName, org FROM organizations WHERE id = ?",
+      "SELECT id FROM organizations WHERE id = ?",
       [orgId]
     );
 
     if (orgRows.length === 0) {
-      [orgRows] = await db.execute(
-        "SELECT id, orgName, org FROM organizations WHERE org = ?",
+      // Try to find by org acronym from admins table
+      const [adminRows] = await db.execute(
+        "SELECT organization_id FROM admins WHERE org = ? LIMIT 1",
         [orgId]
       );
+      if (adminRows.length > 0) {
+        // Use the organization_id from admins table
+        [orgRows] = await db.execute(
+          "SELECT id FROM organizations WHERE id = ?",
+          [adminRows[0].organization_id]
+        );
+      }
     }
 
     if (orgRows.length === 0) {
@@ -298,10 +291,11 @@ export const getApprovedNewsByOrg = async (req, res) => {
     const organization = orgRows[0];
 
     const [rows] = await db.execute(
-      `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
+      `SELECT n.*, a.org as orgAcronym, a.orgName, o.logo as orgLogo
        FROM news n
        LEFT JOIN organizations o ON n.organization_id = o.id
-       WHERE n.organization_id = ?
+       LEFT JOIN admins a ON a.organization_id = o.id
+       WHERE n.organization_id = ? AND n.is_deleted = FALSE
        ORDER BY n.created_at DESC`,
       [organization.id]
     );
@@ -348,10 +342,11 @@ export const getNewsById = async (req, res) => {
 
   try {
     const [rows] = await db.execute(
-      `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
+      `SELECT n.*, a.org as orgAcronym, a.orgName, o.logo as orgLogo
        FROM news n
        LEFT JOIN organizations o ON n.organization_id = o.id
-       WHERE n.id = ?`,
+       LEFT JOIN admins a ON a.organization_id = o.id
+       WHERE n.id = ? AND n.is_deleted = FALSE`,
       [id]
     );
 
@@ -467,30 +462,21 @@ export const getRecentlyDeletedNews = async (req, res) => {
 
   try {
     let [orgRows] = await db.execute(
-      "SELECT id, orgName, org FROM organizations WHERE id = ?",
+      "SELECT id FROM organizations WHERE id = ?",
       [orgId]
     );
 
     if (orgRows.length === 0) {
-      [orgRows] = await db.execute(
-        "SELECT id, orgName, org FROM organizations WHERE org = ?",
-        [orgId]
-      );
-    }
-
-    if (orgRows.length === 0) {
+      // Try to find by org acronym from admins table
       const [adminRows] = await db.execute(
-        "SELECT id, orgName, org FROM admins WHERE org = ?",
+        "SELECT organization_id FROM admins WHERE org = ? LIMIT 1",
         [orgId]
       );
       if (adminRows.length > 0) {
-        await db.execute(
-          "INSERT INTO organizations (orgName, org) VALUES (?, ?) ON DUPLICATE KEY UPDATE orgName = VALUES(orgName)",
-          [adminRows[0].orgName, adminRows[0].org]
-        );
+        // Use the organization_id from admins table
         [orgRows] = await db.execute(
-          "SELECT id, orgName, org FROM organizations WHERE org = ?",
-          [orgId]
+          "SELECT id FROM organizations WHERE id = ?",
+          [adminRows[0].organization_id]
         );
       }
     }
@@ -502,9 +488,10 @@ export const getRecentlyDeletedNews = async (req, res) => {
     const organization = orgRows[0];
 
     const [newsRows] = await db.execute(
-      `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
+      `SELECT n.*, a.org as orgAcronym, a.orgName, o.logo as orgLogo
        FROM news n
        LEFT JOIN organizations o ON n.organization_id = o.id
+       LEFT JOIN admins a ON a.organization_id = o.id
        WHERE n.organization_id = ? AND n.is_deleted = TRUE
        ORDER BY n.deleted_at DESC`,
       [organization.id]

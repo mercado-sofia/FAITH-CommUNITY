@@ -79,11 +79,11 @@ export const getAllVolunteers = async (req, res) => {
         u.profile_photo_url,
         p.title as program_name,
         p.title as program_title,
-        o.orgName as organization_name
+        a.orgName as organization_name
        FROM volunteers v
        JOIN users u ON v.user_id = u.id
        LEFT JOIN programs_projects p ON v.program_id = p.id
-       LEFT JOIN organizations o ON p.organization_id = o.id
+       LEFT JOIN admins a ON a.organization_id = p.organization_id
        WHERE u.is_active = 1
        ORDER BY v.created_at DESC`
     );
@@ -152,11 +152,11 @@ export const getVolunteerById = async (req, res) => {
         u.profile_photo_url,
         p.title as program_name,
         p.title as program_title,
-        o.orgName as organization_name
+        a.orgName as organization_name
        FROM volunteers v
        JOIN users u ON v.user_id = u.id
        LEFT JOIN programs_projects p ON v.program_id = p.id
-       LEFT JOIN organizations o ON p.organization_id = o.id
+       LEFT JOIN admins a ON a.organization_id = p.organization_id
        WHERE v.id = ? AND u.is_active = 1`, 
       [id]
     );

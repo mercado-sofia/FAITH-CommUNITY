@@ -130,7 +130,7 @@ export default function LoginPage() {
       errors.password = "Password is required"
     }
     
-    // Check for valid email format
+    // Check for valid email format only if email is not empty
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errors.email = "Please enter a valid email address"
     }
@@ -231,7 +231,7 @@ export default function LoginPage() {
 
     // If no systems found, show generic error
     if (authSystems.length === 0) {
-      setErrorMessage("Invalid email or password")
+      setErrorMessage("Invalid email or password. Please check your credentials and try again.")
       setShowError(true)
       setFieldErrors({
         email: "Invalid email or password",
@@ -326,10 +326,10 @@ export default function LoginPage() {
           setShowError(true)
           setFieldErrors({
             email: "Please verify your email address",
-            password: true
+            password: "Please verify your email address"
           })
         } else {
-          setErrorMessage(data.error || "Invalid email or password")
+          setErrorMessage(data.error || "Invalid email or password. Please check your credentials and try again.")
           setShowError(true)
           setFieldErrors({
             email: "Invalid email or password",
@@ -340,7 +340,7 @@ export default function LoginPage() {
       
     } catch (error) {
       console.error("Login error:", error)
-      setErrorMessage("Network error. Please try again.")
+      setErrorMessage("Network error. Please check your connection and try again.")
       setShowError(true)
       setFieldErrors({
         email: "Network error",
@@ -360,7 +360,7 @@ export default function LoginPage() {
         <div className={styles.logoWrapper}>
           <Image src="/logo/faith_community_logo.png" alt="Logo" width={80} height={80} />
         </div>
-        <form onSubmit={handleLogin} className={styles.form}>
+        <form onSubmit={handleLogin} className={styles.form} noValidate>
           <h2 className={styles.title}>Log In</h2>
 
           <label htmlFor="email" className={`${styles.label} ${focusedFields.email ? styles.focused : ''} ${email ? styles.hasValue : ''} ${fieldErrors.email ? styles.labelError : ''}`}>
@@ -370,7 +370,7 @@ export default function LoginPage() {
             <FaUser className={styles.icon} />
             <input
               id="email"
-              type="email"
+              type="text"
               name="email"
               placeholder="Enter your email"
               aria-label="Email"
@@ -378,8 +378,10 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value)
-                setShowError(false)
-                setFieldErrors({}) // Clear field errors when typing
+                if (showError || Object.keys(fieldErrors).length > 0) {
+                  setShowError(false)
+                  setFieldErrors({})
+                }
               }}
               onFocus={() => handleFocus('email')}
               onBlur={() => handleBlur('email')}
@@ -402,8 +404,10 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value)
-                setShowError(false)
-                setFieldErrors({}) // Clear field errors when typing
+                if (showError || Object.keys(fieldErrors).length > 0) {
+                  setShowError(false)
+                  setFieldErrors({})
+                }
               }}
               onFocus={() => handleFocus('password')}
               onBlur={() => handleBlur('password')}

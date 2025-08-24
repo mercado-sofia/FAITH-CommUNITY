@@ -5,7 +5,38 @@ import { useState, useRef, useEffect } from 'react';
 import { HiOutlineDotsHorizontal } from "react-icons/hi"
 import { FiEye } from 'react-icons/fi';
 import { CgOptions } from "react-icons/cg";
+import { FaUser } from "react-icons/fa";
+import Image from "next/image";
 import styles from './styles/RecentTables.module.css';
+
+// Avatar component for volunteers
+const VolunteerAvatar = ({ volunteer, size = 32 }) => {
+  const [imageError, setImageError] = useState(false);
+  
+  if (!volunteer.profile_photo_url || imageError) {
+    return (
+      <div 
+        className={styles.avatarFallback}
+        style={{ width: size, height: size }}
+      >
+        <FaUser size={size * 0.4} />
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.avatarContainer} style={{ width: size, height: size }}>
+      <Image
+        src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${volunteer.profile_photo_url}`}
+        alt={`${volunteer.name}'s profile`}
+        width={size}
+        height={size}
+        className={styles.avatarImage}
+        onError={() => setImageError(true)}
+      />
+    </div>
+  );
+};
 
 export default function RecentApplicationsTable({ volunteers = [], onStatusUpdate, onSoftDelete, isLoading = false }) {
   const [filter, setFilter] = useState('All');
@@ -215,7 +246,7 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
 
           <table className={styles.table}>
             <colgroup>
-              <col style={{ width: '160px' }} />
+              <col style={{ width: '240px' }} />
               <col style={{ width: '200px' }} />
               <col style={{ width: '135px' }} />
               <col style={{ width: '100px' }} />
@@ -223,7 +254,7 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
             </colgroup>
             <thead>
               <tr>
-                <th>Name</th>
+                <th>Volunteer</th>
                 <th>Program</th>
                 <th>Date</th>
                 <th>Status</th>
@@ -233,7 +264,12 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
             <tbody>
               {displayList.map((volunteer) => (
                 <tr key={volunteer.id}>
-                  <td className={styles.truncate}>{volunteer.name}</td>
+                  <td className={styles.volunteerCell}>
+                    <div className={styles.volunteerInfo}>
+                      <VolunteerAvatar volunteer={volunteer} size={32} />
+                      <span className={styles.volunteerName}>{volunteer.name}</span>
+                    </div>
+                  </td>
                   <td className={styles.truncate}>{volunteer.program}</td>
                   <td>{volunteer.date}</td>
                   <td>

@@ -4,7 +4,9 @@
 import { useState, useRef, useEffect } from "react"
 import { HiOutlineDotsHorizontal } from "react-icons/hi"
 import { IoCloseOutline } from "react-icons/io5";
-import { FiTrash2 } from "react-icons/fi";
+import { FiTrash2, FiX } from "react-icons/fi";
+import { FaUser } from "react-icons/fa";
+import Image from "next/image";
 import PaginationControls from "../../components/PaginationControls"
 import ViewDetailsModal from "./ViewDetailsModal"
 import styles from "./styles/VolunteerTable.module.css"
@@ -21,6 +23,35 @@ const validateVolunteerData = (volunteer) => {
   return true;
 };
 
+// Avatar component for volunteers
+const VolunteerAvatar = ({ volunteer, size = 40 }) => {
+  const [imageError, setImageError] = useState(false);
+  
+  if (!volunteer.profile_photo_url || imageError) {
+    return (
+      <div 
+        className={styles.avatarFallback}
+        style={{ width: size, height: size }}
+      >
+        <FaUser size={size * 0.4} />
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.avatarContainer} style={{ width: size, height: size }}>
+      <Image
+        src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${volunteer.profile_photo_url}`}
+        alt={`${volunteer.name}'s profile`}
+        width={size}
+        height={size}
+        className={styles.avatarImage}
+        onError={() => setImageError(true)}
+      />
+    </div>
+  );
+};
+
 export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelete, onBulkDelete, itemsPerPage = 10 }) {
   const [selectedVolunteer, setSelectedVolunteer] = useState(null)
   const [showDropdown, setShowDropdown] = useState(null)
@@ -30,7 +61,7 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
   const [selectedVolunteers, setSelectedVolunteers] = useState([])
   const [showBulkModal, setShowBulkModal] = useState(false)
   const [bulkAction, setBulkAction] = useState(null)
-  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
+
 
   // itemsPerPage is now passed as a prop with default value of 10
   const dropdownRefs = useRef({})
@@ -119,7 +150,9 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
 
   const handleBulkDelete = () => {
     if (selectedVolunteers.length === 0) return
-    setShowBulkDeleteModal(true)
+    if (onBulkDelete) {
+      onBulkDelete(selectedVolunteers)
+    }
   }
 
   const handleConfirmBulkAction = () => {
@@ -140,21 +173,9 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
     setBulkAction(null)
   }
 
-  const handleConfirmBulkDelete = () => {
-    if (selectedVolunteers.length === 0) return
-    
-    // Call the bulk delete handler with the selected volunteer IDs
-    if (onBulkDelete) {
-      onBulkDelete(selectedVolunteers)
-    }
-    
-    setSelectedVolunteers([])
-    setShowBulkDeleteModal(false)
-  }
 
-  const closeBulkDeleteModal = () => {
-    setShowBulkDeleteModal(false)
-  }
+
+
 
   const cancelSelection = () => {
     setSelectedVolunteers([])
@@ -246,8 +267,7 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
               <th>
                 <input type="checkbox" checked={isAllSelected} onChange={toggleSelectAll} />
               </th>
-              <th>Name</th>
-              <th>Email</th>
+              <th>Volunteer</th>
               <th>Program</th>
               <th>Date</th>
               <th>Status</th>
@@ -257,7 +277,7 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
           <tbody className={styles.tableBody}>
             {currentVolunteers.length === 0 ? (
               <tr>
-                <td colSpan="7" className={styles.noApplicants}>
+                <td colSpan="6" className={styles.noApplicants}>
                   No applicants found
                 </td>
               </tr>
@@ -283,11 +303,18 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
                       onChange={() => toggleSelectOne(volunteer.id)}
                     />
                   </td>
-                  <td className={styles.truncatedText} style={{ color: "#2e3136", fontWeight: "500" }}>
-                    {sanitizedName}
-                  </td>
-                  <td className={styles.truncatedText} style={{ color: "#8a919c", fontWeight: "400" }}>
-                    {sanitizedEmail}
+                  <td className={styles.volunteerInfoCell}>
+                    <div className={styles.volunteerInfo}>
+                      <VolunteerAvatar volunteer={volunteer} size={40} />
+                      <div className={styles.volunteerDetails}>
+                        <div className={styles.volunteerName} title={sanitizedName}>
+                          {sanitizedName}
+                        </div>
+                        <div className={styles.volunteerEmail} title={sanitizedEmail}>
+                          {sanitizedEmail}
+                        </div>
+                      </div>
+                    </div>
                   </td>
                   <td className={styles.truncatedText} style={{ color: "#2e3136", fontWeight: "500" }}>
                     {sanitizedProgram}
@@ -362,17 +389,39 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
       {(modalType === "approve" || modalType === "reject") && selectedVolunteer && (
         <div className={styles.modalOverlay}>
           <div className={styles.confirmModal}>
-            <h2>{modalType === "approve" ? "Approve" : "Reject"} Application</h2>
-            <p>
-              Are you sure you want to {modalType} <strong>{sanitizeInput(selectedVolunteer.name)}</strong>&apos;s application?
-            </p>
-            <div className={styles.confirmActions}>
-              <button onClick={closeModal}>Cancel</button>
+            <button 
+              className={styles.modalCloseBtn}
+              onClick={closeModal}
+            >
+              <FiX />
+            </button>
+            
+            <div className={styles.modalContent}>
+              <h2>
+                <span 
+                  className={modalType === "approve" ? styles.approveHeading : styles.declineHeading}
+                  style={{ color: modalType === "approve" ? "#10b981" : "#d50808" }}
+                >
+                  {modalType === "approve" ? "Approve" : "Reject"}
+                </span> Application
+              </h2>
+              <p>
+                Are you sure you want to {modalType} <strong>{sanitizeInput(selectedVolunteer.name)}</strong>&apos;s application?
+              </p>
+            </div>
+
+            <div className={styles.modalActions}>
               <button 
-                onClick={handleConfirmAction}
-                className={modalType === 'approve' ? '' : styles.declineButton}
+                className={styles.modalCancelBtn}
+                onClick={() => setModalType(null)}
               >
-                Yes, {modalType === 'approve' ? 'Approve' : 'Decline'}
+                Cancel
+              </button>
+              <button 
+                className={modalType === 'approve' ? styles.modalApproveBtn : styles.modalDeclineBtn}
+                onClick={handleConfirmAction}
+              >
+                {modalType === 'approve' ? 'Approve' : 'Reject'}
               </button>
             </div>
           </div>
@@ -383,48 +432,48 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
       {showBulkModal && bulkAction && (
         <div className={styles.modalOverlay}>
           <div className={styles.confirmModal}>
-            <h2>{bulkAction === 'approve' ? 'Approve' : 'Decline'} Selected Volunteers</h2>
-            <p>
-              Are you sure you want to {bulkAction} <strong>
-                {bulkAction === 'approve' ? volunteersToApprove : volunteersToDecline}
-              </strong> selected volunteer{(bulkAction === 'approve' ? volunteersToApprove : volunteersToDecline) !== 1 ? 's' : ''}?
-            </p>
-            <div className={styles.confirmActions}>
-              <button onClick={closeBulkModal}>Cancel</button>
+            <button 
+              className={styles.modalCloseBtn}
+              onClick={closeBulkModal}
+            >
+              <FiX />
+            </button>
+            
+            <div className={styles.modalContent}>
+              <h2>
+                <span 
+                  className={bulkAction === 'approve' ? styles.approveHeading : styles.declineHeading}
+                  style={{ color: bulkAction === 'approve' ? '#10b981' : '#d50808' }}
+                >
+                  {bulkAction === 'approve' ? 'Approve' : 'Decline'}
+                </span> Selected Volunteers
+              </h2>
+              <p>
+                Are you sure you want to {bulkAction} <strong>
+                  {bulkAction === 'approve' ? volunteersToApprove : volunteersToDecline}
+                </strong> selected volunteer{(bulkAction === 'approve' ? volunteersToApprove : volunteersToDecline) !== 1 ? 's' : ''}?
+              </p>
+            </div>
+
+            <div className={styles.modalActions}>
               <button 
-                onClick={handleConfirmBulkAction}
-                className={bulkAction === 'approve' ? '' : styles.declineButton}
+                className={styles.modalCancelBtn}
+                onClick={() => setShowBulkModal(false)}
               >
-                Yes, {bulkAction === 'approve' ? 'Approve' : 'Decline'} All
+                Cancel
+              </button>
+              <button 
+                className={bulkAction === 'approve' ? styles.modalApproveBtn : styles.modalDeclineBtn}
+                onClick={handleConfirmBulkAction}
+              >
+                {bulkAction === 'approve' ? 'Approve' : 'Decline'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Bulk Delete Confirmation Modal */}
-      {showBulkDeleteModal && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.confirmModal}>
-            <h2>Delete Selected Volunteers</h2>
-            <p>
-              Are you sure you want to delete <strong>{selectedVolunteers.length}</strong> selected volunteer{selectedVolunteers.length !== 1 ? 's' : ''}?
-            </p>
-            <p className={styles.warning}>
-              Warning: This action will hide the selected volunteers from the list but preserve their data.
-            </p>
-            <div className={styles.confirmActions}>
-              <button onClick={closeBulkDeleteModal}>Cancel</button>
-              <button 
-                onClick={handleConfirmBulkDelete}
-                className={styles.deleteButton}
-              >
-                Yes, Delete All
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </>
   )
 }

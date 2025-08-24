@@ -2,12 +2,33 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { FiCheckCircle, FiX } from "react-icons/fi";
+import { FiCheckCircle, FiX, FiInfo } from "react-icons/fi";
 import styles from "./volunteerForm.module.css";
 
-export default function SuccessModal({ isOpen, onClose, message = "Application submitted successfully!" }) {
+export default function SuccessModal({ isOpen, onClose, message = "Application submitted successfully!", type = "success" }) {
   const [mounted, setMounted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(5);
+
+  // Determine if this is an "already applied" case
+  const isAlreadyApplied = type === "already_applied";
+  
+  // Set appropriate styling and content based on type
+  const modalConfig = {
+    success: {
+      icon: "FiCheckCircle",
+      title: "Success!",
+      iconColor: "#10B981", // Green
+      titleColor: "#059669"
+    },
+    already_applied: {
+      icon: "FiInfo",
+      title: "Already Applied",
+      iconColor: "#3B82F6", // Blue
+      titleColor: "#2563EB"
+    }
+  };
+
+  const config = modalConfig[type] || modalConfig.success;
 
   useEffect(() => {
     setMounted(true);
@@ -54,7 +75,7 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
   return createPortal(
     <div className={styles.successModalOverlay}>
       <div className={styles.successModalBackdrop} onClick={onClose} />
-      <div className={styles.successModalContent}>
+      <div className={`${styles.successModalContent} ${isAlreadyApplied ? styles.alreadyApplied : ''}`}>
         <button
           className={styles.successModalClose}
           onClick={onClose}
@@ -65,10 +86,16 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
         
         <div className={styles.successModalBody}>
           <div className={styles.successIcon}>
-            <FiCheckCircle size={48} />
+            {type === "already_applied" ? (
+              <FiInfo size={48} style={{ color: config.iconColor }} />
+            ) : (
+              <FiCheckCircle size={48} style={{ color: config.iconColor }} />
+            )}
           </div>
           
-          <h2 className={styles.successTitle}>Success!</h2>
+          <h2 className={styles.successTitle} style={{ color: config.titleColor }}>
+            {config.title}
+          </h2>
           
           <p className={styles.successMessage}>{message}</p>
           

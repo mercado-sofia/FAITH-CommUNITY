@@ -1,190 +1,146 @@
-.modalOverlay {
+/* SuccessModal.module.css */
+.overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   z-index: 9999;
-  animation: fadeIn 0.3s ease-in-out;
-  padding: 20px;
 }
 
-.modalContent {
-  background: white;
-  border-radius: 14px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  min-width: 400px;
-  max-width: 500px;
-  position: relative;
-  animation: slideIn 0.3s ease-out;
+.modal {
+  background-color: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.2s ease-in-out;
   overflow: hidden;
+  position: relative;
 }
 
-.modalHeader {
+.topRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 24px 0 24px;
-  margin-bottom: 16px;
+  padding: 1.5rem 2rem 1rem 2rem;
 }
 
-.modalTitle {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 18px;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.modalTitle span {
-  font-family: var(--font-inter);
-}
-
-.closeButton {
-  background: #f3f4f6;
-  border: none;
-  border-radius: 8px;
-  width: 32px;
-  height: 32px;
+.successIconContainer {
+  width: 56px;
+  height: 56px;
+  background-color: #F0FDF4;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  position: relative;
+}
+
+.successIconInner {
+  width: 40px;
+  height: 40px;
+  background-color: #DCFCE7;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #17c9a8;
+  font-size: 1.4rem;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
   color: #6b7280;
-  transition: all 0.2s ease;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  font-size: 1.25rem;
+  line-height: 1;
+  margin-top: -25px;
+  margin-right: -2px;
+}
+
+.closeBtn:hover {
+  color: #39404d;
+}
+
+.content {
+  padding: 0 2rem 2rem 2rem;
+  text-align: left;
+}
+
+.content h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 18px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  color: #181D27;
+}
+
+.content p {
+  margin: 0;
+  font-size: 14px;
+  font-family: var(--font-inter);
+  line-height: 1.6;
+  color: #535862;
+}
+
+.actions {
+  padding: 0 2rem 2rem 2rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.confirmBtn {
+  background-color: #1bbca1;
+  color: white;
+  border: 1px solid #1bbca1;
+  box-shadow: 0 1px 2px 0 rgba(10, 13, 18, 0.05);
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.15s ease;
   user-select: none;
 }
 
-.closeButton:hover {
-  background: #e5e7eb;
-  color: #374151;
+.confirmBtn:hover {
+  background-color: #20b39b;
+  border-color: #20b39b;
 }
 
-.modalBody {
-  padding: 0 24px 20px 24px;
-}
-
-.modalMessage {
-  font-size: 14px;
-  color: #6b7280;
-  line-height: 1.5;
-  margin: 0;
-  font-family: var(--font-inter);
-}
-
-/* Success styles */
-.success {
-  border-top: 4px solid #10b981;
-}
-
-.successIcon {
-  color: #10b981;
-  font-size: 24px;
-  flex-shrink: 0;
-}
-
-/* Error styles */
-.error {
-  border-top: 4px solid #ef4444;
-}
-
-.errorIcon {
-  color: #ef4444;
-  font-size: 24px;
-  flex-shrink: 0;
-}
-
-/* Warning styles */
-.warning {
-  border-top: 4px solid #f59e0b;
-}
-
-.warningIcon {
-  color: #f59e0b;
-  font-size: 24px;
-  flex-shrink: 0;
-}
-
-/* Animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
+    transform: translateY(-8px);
   }
   to {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@keyframes slideIn {
-  from {
-    transform: translateY(-20px) scale(0.95);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
-}
-
-@keyframes slideOut {
-  from {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
-  to {
-    transform: translateY(-20px) scale(0.95);
-    opacity: 0;
-  }
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .modalOverlay {
-    padding: 16px;
-  }
-  
-  .modalContent {
-    min-width: auto;
-    width: 100%;
-    max-width: 100%;
-  }
-  
-  .modalHeader {
-    padding: 20px 20px 0 20px;
-  }
-  
-  .modalBody {
-    padding: 0 20px 16px 20px;
-  }
-  
-  .modalTitle {
-    font-size: 16px;
-  }
-  
-  .modalMessage {
-    font-size: 14px;
-  }
-}
-
+/* Responsive Design */
 @media (max-width: 480px) {
-  .modalOverlay {
-    padding: 12px;
+  .modal {
+    max-width: 90%;
+    margin: 1rem;
   }
   
-  .modalHeader {
-    padding: 16px 16px 0 16px;
+  .topRow,
+  .content,
+  .actions {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
   }
   
-  .modalBody {
-    padding: 0 16px 12px 16px;
-  }
-  
-  .modalTitle {
-    font-size: 15px;
+  .confirmBtn {
+    width: 100%;
+    justify-content: center;
   }
 }

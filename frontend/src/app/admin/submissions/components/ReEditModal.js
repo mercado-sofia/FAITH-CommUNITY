@@ -7,8 +7,6 @@ const initializeFormData = (submission) => {
   
   if (submission?.section === 'organization') {
     return {
-      org: proposedData?.org || '',
-      orgName: proposedData?.orgName || '',
       email: proposedData?.email || '',
       facebook: proposedData?.facebook || '',
       description: proposedData?.description || ''
@@ -45,8 +43,8 @@ export default function ReEditModal({ submission, onClose, onSave }) {
     if (!submission?.section) return false;
 
     if (submission.section === 'organization') {
-      // Compare all organization fields
-      const fields = ['org', 'orgName', 'email', 'facebook', 'description'];
+      // Compare organization fields (org and orgName are now managed in admin settings)
+      const fields = ['email', 'facebook', 'description'];
       return fields.some(field => {
         const original = (originalData[field] || '').toString().trim();
         const current = (formData[field] || '').toString().trim();
@@ -76,16 +74,17 @@ export default function ReEditModal({ submission, onClose, onSave }) {
     }
 
     if (submission.section === 'organization') {
-      // Validate organization fields
+      // Validate organization fields (org and orgName are now managed in admin settings)
       if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
         return { isValid: false, message: 'Please enter a valid email address' };
       }
       if (formData.facebook && !/^https?:\/\/.+/.test(formData.facebook)) {
         return { isValid: false, message: 'Facebook link must be a valid URL starting with http:// or https://' };
       }
-      // Check if at least one organization field has content
-      const hasContent = Object.values(formData || {}).some(value => 
-        value && value.toString().trim() !== ''
+      // Check if at least one organization field has content (excluding org/orgName)
+      const relevantFields = ['email', 'facebook', 'description'];
+      const hasContent = relevantFields.some(field => 
+        formData[field] && formData[field].toString().trim() !== ''
       );
       if (!hasContent) {
         return { isValid: false, message: 'Please fill in at least one organization field' };
@@ -148,24 +147,6 @@ export default function ReEditModal({ submission, onClose, onSave }) {
     if (submission.section === 'organization') {
       return (
         <div className={styles.formFields}>
-          <div className={styles.fieldGroup}>
-            <label>Organization Acronym:</label>
-            <input
-              type="text"
-              value={formData?.org || ''}
-              onChange={(e) => handleInputChange('org', e.target.value)}
-              className={styles.formInput}
-            />
-          </div>
-          <div className={styles.fieldGroup}>
-            <label>Organization Name:</label>
-            <input
-              type="text"
-              value={formData?.orgName || ''}
-              onChange={(e) => handleInputChange('orgName', e.target.value)}
-              className={styles.formInput}
-            />
-          </div>
           <div className={styles.fieldGroup}>
             <label>Email:</label>
             <input

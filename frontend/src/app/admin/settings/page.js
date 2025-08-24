@@ -2,20 +2,20 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { FaEnvelope, FaLock } from 'react-icons/fa';
-import { useAdminById } from '../../../hooks/useAdminData';
+import { FaLock } from 'react-icons/fa';
+import { useAdminProfile } from '../../../hooks/useAdminProfile';
 import { selectCurrentAdmin, updateAdminEmail } from '../../../rtk/superadmin/adminSlice';
 import SkeletonLoader from '../components/SkeletonLoader';
-import EmailEditModal from './components/EmailEditModal';
-import PasswordChangeModal from './components/PasswordChangeModal';
+import { PasswordChangeModal, OrgProfileSection } from './ProfileSection';
+import SuccessModal from '../components/SuccessModal';
 import styles from './adminSettings.module.css';
 
 // Utility function for password change time
 const getPasswordChangeTime = (effectiveAdminData) => {
   const passwordChangedAt = effectiveAdminData?.password_changed_at || 
                            effectiveAdminData?.passwordChangedAt ||
-                           effectiveAdminData?.updated_at ||
-                           effectiveAdminData?.updatedAt;
+                           effectiveAdminData?.created_at ||
+                           effectiveAdminData?.createdAt;
   
   if (!passwordChangedAt) {
     return effectiveAdminData && Object.keys(effectiveAdminData).length > 0 ? 'Recently' : 'Unknown';
@@ -54,7 +54,7 @@ export default function SettingsPage() {
   const dispatch = useDispatch();
   const currentAdmin = useSelector(selectCurrentAdmin);
   
-  const { admin: adminFromApi, isLoading: isLoadingAdmin, error: apiError, mutate: refreshAdmin } = useAdminById(currentAdmin?.id);
+  const { admin: adminFromApi, isLoading: isLoadingAdmin, error: apiError, mutate: refreshAdmin } = useAdminProfile();
 
   const effectiveAdminData = useMemo(() => {
     return adminFromApi ? {
@@ -63,25 +63,83 @@ export default function SettingsPage() {
     } : currentAdmin;
   }, [adminFromApi, currentAdmin]);
 
-  const [message, setMessage] = useState({ text: '', type: '' });
-  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  
+  // Organization profile state
+  const [orgEditData, setOrgEditData] = useState(null);
+  const [orgErrors, setOrgErrors] = useState({});
+  const [orgSaving, setOrgSaving] = useState(false);
 
-  const handleEmailSuccess = (newEmail) => {
-    // Update Redux if email changed
-    if (newEmail !== effectiveAdminData?.email) {
-      dispatch(updateAdminEmail({ email: newEmail }));
-    }
-    
-    setMessage({ text: 'Email updated successfully!', type: 'success' });
-    setTimeout(() => setMessage({ text: '', type: '' }), 3000);
+  const handlePasswordSuccess = () => {
+    setSuccessMessage('Password changed successfully!');
+    setShowSuccessModal(true);
     refreshAdmin();
   };
 
-  const handlePasswordSuccess = () => {
-    setMessage({ text: 'Password changed successfully!', type: 'success' });
-    setTimeout(() => setMessage({ text: '', type: '' }), 3000);
-    refreshAdmin();
+  const handleOrgProfileSave = async (orgData) => {
+    setOrgSaving(true);
+    setOrgErrors({});
+    
+    try {
+      // Validate required fields
+      const errors = {};
+      if (!orgData.org?.trim()) {
+        errors.org = 'Organization acronym is required';
+      }
+      if (!orgData.orgName?.trim()) {
+        errors.orgName = 'Organization name is required';
+      }
+      if (!orgData.email?.trim()) {
+        errors.email = 'Email is required';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(orgData.email)) {
+        errors.email = 'Please enter a valid email address';
+      }
+      
+      if (Object.keys(errors).length > 0) {
+        setOrgErrors(errors);
+        setOrgSaving(false);
+        return;
+      }
+
+      // Check if email has changed to update Redux
+      const emailChanged = orgData.email !== effectiveAdminData?.email;
+      
+      // Call API to update organization profile and email
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admin/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify({
+          org: orgData.org.trim(),
+          orgName: orgData.orgName.trim(),
+          email: orgData.email.trim(),
+          password: orgData.password || null
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to update organization profile');
+      }
+
+      // Update Redux if email changed
+      if (emailChanged) {
+        dispatch(updateAdminEmail({ email: orgData.email.trim() }));
+      }
+
+      setSuccessMessage('Organization profile updated successfully!');
+      setShowSuccessModal(true);
+      refreshAdmin();
+    } catch (error) {
+      console.error('Error updating organization profile:', error);
+      setOrgErrors({ general: error.message || 'Failed to update organization profile. Please try again.' });
+    } finally {
+      setOrgSaving(false);
+    }
   };
 
   return (
@@ -89,12 +147,6 @@ export default function SettingsPage() {
       <div className={styles.header}>
         <h1>Settings</h1>
       </div>
-
-      {message.text && (
-        <div className={`${styles.message} ${styles[message.type]}`}>
-          {message.text}
-        </div>
-      )}
 
       {isLoadingAdmin && (
         <SkeletonLoader type="form" count={2} />
@@ -113,33 +165,15 @@ export default function SettingsPage() {
       )}
 
       <div className={styles.settingsGrid}>
-        {/* Email Settings Panel */}
-        <div className={styles.settingsPanel}>
-          <div className={styles.panelHeader}>
-            <div className={styles.panelIcon}>
-              <FaEnvelope />
-            </div>
-            <div className={styles.panelTitle}>
-              <h2>Email Address</h2>
-              <p>Update your email address for notifications and login</p>
-            </div>
-            <button 
-              className={styles.editButton}
-              onClick={() => setShowEmailModal(true)}
-            >
-              Edit
-            </button>
-          </div>
-
-          <div className={styles.panelContent}>
-            <div className={styles.displayContent}>
-              <div className={styles.fieldGroup}>
-                <label className={styles.label}>Current Email</label>
-                <div className={styles.displayValue}>{effectiveAdminData?.email || 'No email set'}</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Organization Profile Panel */}
+        <OrgProfileSection
+          orgData={effectiveAdminData}
+          onSave={handleOrgProfileSave}
+          editData={orgEditData}
+          setEditData={setOrgEditData}
+          errors={orgErrors}
+          saving={orgSaving}
+        />
 
         {/* Password Settings Panel */}
         <div className={styles.settingsPanel}>
@@ -177,21 +211,20 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Email Edit Modal */}
-      <EmailEditModal
-        isOpen={showEmailModal}
-        currentEmail={effectiveAdminData?.email}
-        adminId={currentAdmin?.id}
-        onClose={() => setShowEmailModal(false)}
-        onSuccess={handleEmailSuccess}
-      />
-
       {/* Password Change Modal */}
       <PasswordChangeModal
         isOpen={showPasswordModal}
-        adminId={currentAdmin?.id}
         onClose={() => setShowPasswordModal(false)}
         onSuccess={handlePasswordSuccess}
+      />
+      
+      {/* Success Modal */}
+      <SuccessModal
+        message={successMessage}
+        isVisible={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        type="success"
+        autoHideDuration={3000}
       />
     </div>
   );

@@ -86,65 +86,6 @@
   border: 1px solid #e5e7eb;
 }
 
-.loadingContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 2rem;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e5e7eb;
-}
-
-.loadingSpinner {
-  width: 2rem;
-  height: 2rem;
-  border: 2px solid #e5e7eb;
-  border-top: 2px solid #167c59;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.errorContainer {
-  text-align: center;
-  padding: 3rem 2rem;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e5e7eb;
-}
-
-.errorMessage {
-  color: #991b1b;
-  text-align: center;
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
-}
-
-.retryButton {
-  background: #167c59;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  user-select: none;
-}
-
-.retryButton:hover {
-  background: #0f5a3f;
-}
-
 .newsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
@@ -219,10 +160,6 @@
 
   .header h1 {
     font-size: 24px;
-  }
-
-  .subheader {
-    font-size: 14px;
   }
 
   .addButton,

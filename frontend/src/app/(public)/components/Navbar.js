@@ -354,13 +354,10 @@ export default function Navbar() {
               </div>
             </>
           ) : (
-            // User is not logged in - show login/signup buttons and Apply button
+            // User is not logged in - show single login/signup button and Apply button
             <>
               <Link href="/login" className={styles.navbarLoginBtn}>
-                Log In
-              </Link>
-              <Link href="/signup" className={styles.signupBtn}>
-                Sign Up
+                Log In or Sign Up
               </Link>
               <Link 
                 href="/apply" 
@@ -493,21 +490,14 @@ export default function Navbar() {
                   </div>
                 </>
               ) : (
-                // User is not logged in - show login/signup buttons
+                // User is not logged in - show single login/signup button
                 <>
                   <Link 
                     href="/login" 
                     className={styles.navbarLoginBtn} 
                     onClick={toggleMenu}
                   >
-                    Log In
-                  </Link>
-                  <Link 
-                    href="/signup" 
-                    className={styles.signupBtn} 
-                    onClick={toggleMenu}
-                  >
-                    Sign Up
+                    Log In or Sign Up
                   </Link>
                 </>
               )}

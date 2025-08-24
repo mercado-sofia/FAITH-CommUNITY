@@ -521,10 +521,10 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
                           height={100}
                           style={{ objectFit: 'cover' }}
                           onError={(e) => {
-                            console.error(`Failed to load base64 image ${index}:`, e);
+                            // Image failed to load
                           }}
                           onLoad={() => {
-                            console.log(`Successfully loaded base64 image ${index}`);
+                            // Image loaded successfully
                           }}
                         />
                       ) : (
@@ -537,10 +537,10 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
                           height={100}
                           style={{ objectFit: 'cover' }}
                           onError={(e) => {
-                            console.error(`Failed to load file image ${index}:`, preview, e);
+                            // Image failed to load
                           }}
                           onLoad={() => {
-                            console.log(`Successfully loaded file image ${index}:`, preview);
+                            // Image loaded successfully
                           }}
                         />
                       )}

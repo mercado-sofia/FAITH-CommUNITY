@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { FaExclamationTriangle } from 'react-icons/fa'
+import { FiTrash2, FiX } from 'react-icons/fi'
 import styles from './styles/DeleteConfirmationModal.module.css'
 
 export default function DeleteConfirmationModal({
@@ -31,25 +31,51 @@ export default function DeleteConfirmationModal({
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
-        <div className={styles.header}>
-          <h3>Delete {capitalizedItemType}</h3>
+        <div className={styles.topRow}>
+          <div className={styles.trashIconContainer}>
+            <div className={styles.trashIconInner}>
+              <FiTrash2 />
+            </div>
+          </div>
+          
+          <button 
+            className={styles.closeBtn}
+            onClick={onCancel}
+            disabled={isDeleting}
+          >
+            <FiX />
+          </button>
         </div>
-
-        <div className={styles.body}>
+        
+        <div className={styles.content}>
+          <h3>Delete {itemType === 'organization head' ? 'Org Head' : capitalizedItemType}{itemName && /\d/.test(itemName) ? `: ${itemName}` : ''}</h3>
+          
           <p>
-            Are you sure you want to {itemType === 'news' ? 'delete' : 'permanently delete'} <strong>&ldquo;{itemName}&rdquo;</strong>?
-          </p>
-          {itemType !== 'notification' && itemType !== 'message' && (
-            <p className={styles.warning}>
-              {itemType === 'news' 
-                ? 'The news will be moved to recently deleted where it can be restored or permanently deleted later.'
-                : `Warning: This action cannot be undone. The ${itemType} will be completely removed from your records.`
+            Are you sure you want to delete {(() => {
+              // Extract the count from itemName (e.g., "1 submission" -> 1)
+              if (itemName && /\d/.test(itemName)) {
+                const countMatch = itemName.match(/^(\d+)/);
+                if (countMatch) {
+                  const count = parseInt(countMatch[1]);
+                  return count === 1 ? 'this' : 'these';
+                }
               }
-            </p>
-          )}
+              return 'this';
+            })()} {itemType}{(() => {
+              // Add 's' only when count > 1
+              if (itemName && /\d/.test(itemName)) {
+                const countMatch = itemName.match(/^(\d+)/);
+                if (countMatch) {
+                  const count = parseInt(countMatch[1]);
+                  return count > 1 ? 's' : '';
+                }
+              }
+              return '';
+            })()}? This action cannot be undone.
+          </p>
         </div>
 
-        <div className={styles.footer}>
+        <div className={styles.actions}>
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -74,7 +100,7 @@ export default function DeleteConfirmationModal({
             className={styles.deleteBtn}
             disabled={isDeleting}
           >
-            {isDeleting ? 'Deleting...' : (itemType === 'news' ? 'Delete' : 'Delete Permanently')}
+            {isDeleting ? 'Deleting...' : 'Delete'}
           </button>
         </div>
       </div>

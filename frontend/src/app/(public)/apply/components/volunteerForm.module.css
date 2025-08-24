@@ -189,7 +189,7 @@
   background-color: white;
   border: 3px solid #1A685B;
   padding: 1rem;
-  color: #1A685B;
+  color: #000000;
   box-shadow: 0 4px 6px rgba(26, 104, 91, 0.2);
   border-radius: .5rem;
   font-size: 0.95rem;
@@ -197,7 +197,7 @@
   box-sizing: border-box;
   line-height: 1.4;
   resize: none;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .reasonTextarea::placeholder {
@@ -357,6 +357,11 @@
   width: 100%;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   animation: modalSlideIn 0.3s ease-out;
+  border: 3px solid #10b981; /* Default green border for success */
+}
+
+.successModalContent.alreadyApplied {
+  border-color: #3b82f6; /* Blue border for already applied */
 }
 
 @keyframes modalSlideIn {

@@ -1,5 +1,0 @@
-backend/app.js
-backend/back_end/admin/controllers/orgSyncController.js
-backend/back_end/admin/routes/orgSync.js
-backend/back_end/admin/routes/programsRoutes.js
-backend/back_end/admin/routes/upload.js

@@ -1019,10 +1019,12 @@ export default function ProfilePage() {
               </div>
               <div className={styles.cropPreview}>
                 <div className={styles.cropArea}>
-                  <img
+                  <Image
                     src={URL.createObjectURL(selectedFile)}
                     alt="Crop preview"
                     className={styles.cropImage}
+                    width={400}
+                    height={400}
                     style={{
                       transform: `rotate(${cropData.rotation}deg) scale(${cropData.scale})`,
                       transformOrigin: 'center'

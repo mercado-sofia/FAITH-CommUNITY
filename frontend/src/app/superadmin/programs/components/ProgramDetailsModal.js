@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Image from 'next/image'
 import { FaTimes, FaTag, FaCalendar, FaEye } from 'react-icons/fa'
 import { getProgramImageUrl } from '@/utils/uploadPaths'
 import { useGetProgramByIdQuery } from '@/rtk/superadmin/programsApi'
@@ -109,10 +110,12 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
               {/* Left - Program Image */}
               <div className={styles.imageSection}>
                 {imageSource ? (
-                  <img 
+                  <Image 
                     src={imageSource}
                     alt={programData.title}
                     className={styles.programImage}
+                    width={400}
+                    height={300}
                     onError={(e) => {
                       e.target.style.display = 'none'
                       e.target.nextSibling.style.display = 'flex'
@@ -191,10 +194,12 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
               {programData.additional_images && programData.additional_images.length > 0 ? (
                 programData.additional_images.map((imagePath, index) => (
                   <div key={index} className={styles.additionalImageContainer}>
-                    <img
+                    <Image
                       src={getProgramImageUrl(imagePath, 'additional')}
                       alt={`Additional ${index + 1}`}
                       className={styles.additionalImage}
+                      width={150}
+                      height={150}
                       onError={(e) => e.target.style.display = 'none'}
                     />
                   </div>

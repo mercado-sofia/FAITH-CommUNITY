@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import Image from 'next/image'
 import { useGetAllProgramsByOrganizationQuery, useGetProgramsStatisticsQuery } from '@/rtk/superadmin/programsApi'
 import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/featuredProjectsApi'
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths'
@@ -118,10 +119,12 @@ const SuperadminProgramsPage = () => {
         {/* Enhanced Image Section */}
         <div className={styles.programImageContainer}>
           {imageSource ? (
-            <img 
+            <Image 
               src={imageSource}
               alt={program.title}
               className={styles.programImage}
+              width={300}
+              height={200}
               onError={(e) => {
                 e.target.style.display = 'none'
                 e.target.nextSibling.style.display = 'flex'
@@ -217,9 +220,11 @@ const SuperadminProgramsPage = () => {
               <div className={styles.additionalImagesThumbnails}>
                 {program.additional_images.slice(0, 4).map((imagePath, index) => (
                   <div key={index} className={styles.additionalImageThumbnail}>
-                    <img 
+                    <Image 
                       src={getProgramImageUrl(imagePath, 'additional')}
                       alt={`Additional ${index + 1}`}
+                      width={80}
+                      height={80}
                       onError={(e) => e.target.style.display = 'none'}
                     />
                   </div>
@@ -417,10 +422,12 @@ const SuperadminProgramsPage = () => {
                 <div className={styles.organizationHeader}>
                   <div className={styles.organizationInfo}>
                     {org.organizationLogo && (
-                      <img 
+                      <Image 
                         src={getOrganizationImageUrl(org.organizationLogo, 'logo')}
                         alt={`${org.organizationName} logo`}
                         className={styles.organizationLogo}
+                        width={60}
+                        height={60}
                         onError={(e) => e.target.style.display = 'none'}
                       />
                     )}

@@ -201,9 +201,11 @@ export default function ProgramCard({ project }) {
       <div className={styles.cardImageContainer}>
         {project.image && project.image.startsWith('data:image/') && project.image.includes('base64,') ? (
           // Use regular img tag for valid base64 images
-          <img
+          <Image
             src={project.image}
             alt={project.title}
+            width={400}
+            height={240}
             className={styles.cardImage}
             onError={(e) => {
               logger.error('Failed to load base64 image', null, { 

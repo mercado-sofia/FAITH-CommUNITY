@@ -173,6 +173,10 @@
   100% { transform: rotate(360deg); }
 }
 
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
 .loadingContainer p {
   color: #6b7280;
   font-family: var(--font-inter), sans-serif;

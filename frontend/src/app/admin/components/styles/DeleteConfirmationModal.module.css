@@ -134,6 +134,10 @@
   cursor: pointer;
   transition: all 0.15s ease;
   user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .deleteBtn:hover {
@@ -163,6 +167,19 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { FaCamera, FaTimes, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa'
+import { FaCamera, FaTimes, FaCheckCircle, FaExclamationTriangle, FaSpinner } from 'react-icons/fa'
 import { FiImage } from 'react-icons/fi'
 import { getOrganizationImageUrl } from '@/utils/uploadPaths'
 import styles from './AddOrgHeadModal.module.css'
@@ -452,7 +452,8 @@ export default function AddOrgHeadModal({
             className={styles.saveButton}
             disabled={saving}
           >
-            {saving ? 'Adding...' : 'Add Head'}
+            {saving ? <FaSpinner className={styles.spinner} /> : null}
+            Add Head
           </button>
         </div>
       </div>

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { FaTimes, FaUpload, FaImage, FaChevronRight, FaChevronLeft } from 'react-icons/fa';
+import { FaTimes, FaUpload, FaImage, FaChevronRight, FaChevronLeft, FaSpinner } from 'react-icons/fa';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import UnsavedChangesModal from './UnsavedChangesModal';
 import DateSelectionField from './DateSelectionField';
@@ -688,7 +688,8 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
           className={`${styles.stepButton} ${styles.submitButton}`}
           disabled={isSubmitting}
         >
-          {isSubmitting ? 'Updating...' : 'Update Program'}
+          {isSubmitting ? <FaSpinner className={styles.spinner} /> : null}
+          Update Program
         </button>
       )}
     </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FaLock, FaEye, FaEyeSlash, FaTimes, FaCheck } from 'react-icons/fa';
+import { FaLock, FaEye, FaEyeSlash, FaTimes, FaCheck, FaSpinner } from 'react-icons/fa';
 import styles from './styles/PasswordChangeModal.module.css';
 import SuccessModal from '../../components/SuccessModal';
 
@@ -450,7 +450,8 @@ export default function PasswordChangeModal({
                 onClick={handleChangePassword}
                 disabled={isUpdating || isVerifyingPassword}
               >
-                {isUpdating ? 'Updating...' : isVerifyingPassword ? 'Verifying...' : 'Update Password'}
+                {(isUpdating || isVerifyingPassword) ? <FaSpinner className={styles.spinner} /> : null}
+                Update Password
               </button>
             </div>
           </div>

@@ -11,6 +11,7 @@ import {
   useDeleteMessageMutation 
 } from '../../../rtk/admin/inboxApi';
 import { FiMail, FiTrash2, FiEye, FiCheck, FiX } from 'react-icons/fi';
+import { FaSpinner } from 'react-icons/fa';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import SkeletonLoader from '../components/SkeletonLoader';
 import styles from './inbox.module.css';
@@ -254,12 +255,8 @@ export default function InboxPage() {
               onClick={handleMarkAllAsRead}
               disabled={markingAllAsRead}
             >
-              {markingAllAsRead ? (
-                <div className={styles.loadingSpinner}></div>
-              ) : (
-                <FiCheck />
-              )}
-              {markingAllAsRead ? 'Marking...' : 'Mark All Read'}
+              {markingAllAsRead ? <FaSpinner className={styles.spinner} /> : <FiCheck />}
+              Mark All Read
             </button>
           )}
         </div>

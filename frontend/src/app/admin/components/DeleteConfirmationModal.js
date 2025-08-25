@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { FiTrash2, FiX } from 'react-icons/fi'
+import { FaSpinner } from 'react-icons/fa'
 import styles from './styles/DeleteConfirmationModal.module.css'
 
 export default function DeleteConfirmationModal({
@@ -100,7 +101,8 @@ export default function DeleteConfirmationModal({
             className={styles.deleteBtn}
             disabled={isDeleting}
           >
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {isDeleting ? <FaSpinner className={styles.spinner} /> : null}
+            Delete
           </button>
         </div>
       </div>

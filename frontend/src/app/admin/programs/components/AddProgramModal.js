@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import Image from 'next/image';
-import { FaTimes, FaUpload, FaImage, FaChevronRight, FaChevronLeft } from 'react-icons/fa';
+import { FaTimes, FaUpload, FaImage, FaChevronRight, FaChevronLeft, FaSpinner } from 'react-icons/fa';
 import DateSelectionField from './DateSelectionField';
 import styles from './styles/addModal.module.css';
 
@@ -605,7 +605,8 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
           className={`${styles.stepButton} ${styles.submitButton}`}
           disabled={isSubmitting}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit for Approval'}
+          {isSubmitting ? <FaSpinner className={styles.spinner} /> : null}
+          Submit for Approval
         </button>
       )}
     </div>

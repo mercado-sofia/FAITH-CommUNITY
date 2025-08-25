@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { FaTimes, FaTag, FaCalendar, FaEye, FaChartBar, FaExclamationTriangle } from 'react-icons/fa';
 import styles from './styles/SubmissionModal.module.css';
 
@@ -75,10 +76,12 @@ export default function SubmissionModal({ data, onClose }) {
           {/* Left side - Image */}
           <div className={styles.programImageSection}>
             {dataObj.image ? (
-              <img 
+              <Image 
                 src={dataObj.image} 
                 alt="Program image" 
                 className={styles.programMainImage}
+                width={300}
+                height={200}
                 onError={(e) => {
                   e.target.style.display = 'none';
                   e.target.nextSibling.style.display = 'flex';
@@ -212,10 +215,12 @@ export default function SubmissionModal({ data, onClose }) {
                 <div className={styles.additionalImagesGrid}>
                   {dataObj.additionalImages.map((image, index) => (
                     <div key={index} className={styles.additionalImagePreview}>
-                      <img 
+                      <Image 
                         src={image} 
                         alt={`Additional image ${index + 1}`} 
                         className={styles.additionalImage}
+                        width={120}
+                        height={120}
                         onError={(e) => {
                           e.target.style.display = 'none';
                           e.target.nextSibling.style.display = 'block';

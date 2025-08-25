@@ -143,9 +143,11 @@ export default function ImpactSection() {
               >
               <div className={styles.imageContainer}>
                 {card.image.startsWith('data:') ? (
-                  <img
+                  <Image
                     src={card.image}
                     alt={card.title}
+                    width={480}
+                    height={300}
                     className={styles.impactcardImg}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />

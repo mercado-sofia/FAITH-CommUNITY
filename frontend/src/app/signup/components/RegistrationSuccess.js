@@ -27,7 +27,7 @@ export default function RegistrationSuccess({ registrationData }) {
               <span className={styles.emailTitle}>Check Your Email</span>
             </div>
             <p className={styles.emailText}>
-              We've sent a verification link to <strong className={styles.emailAddress}>{registrationData?.user?.email}</strong>
+              We&apos;ve sent a verification link to <strong className={styles.emailAddress}>{registrationData?.user?.email}</strong>
             </p>
           </div>
           

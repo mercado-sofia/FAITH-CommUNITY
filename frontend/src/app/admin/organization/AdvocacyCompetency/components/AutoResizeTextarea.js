@@ -12,23 +12,25 @@ export default function AutoResizeTextarea({
 }) {
   const textareaRef = useRef(null);
 
-  // Auto-resize textarea function
-  const autoResizeTextarea = (textarea) => {
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
-    }
-  };
-
   // Auto-resize when content changes
   useEffect(() => {
+    const autoResizeTextarea = (textarea) => {
+      if (textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
+      }
+    };
+
     if (textareaRef.current) {
       autoResizeTextarea(textareaRef.current);
     }
-  }, [value]);
+  }, [value, maxHeight]);
 
   const handleInput = (e) => {
-    autoResizeTextarea(e.target);
+    if (textareaRef.current) {
+      e.target.style.height = 'auto';
+      e.target.style.height = Math.min(e.target.scrollHeight, maxHeight) + 'px';
+    }
     if (onChange) {
       onChange(e);
     }

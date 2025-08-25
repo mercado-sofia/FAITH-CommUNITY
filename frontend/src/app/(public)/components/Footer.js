@@ -332,7 +332,7 @@ export default function Footer() {
                 <div className={styles.subscribedState}>
                   <p className={styles.subscribedMessage}>
                     <LuCircleCheck className={styles.checkIcon} />
-                    You're subscribed to our newsletter!
+                    You&apos;re subscribed to our newsletter!
                   </p>
                   <button 
                     onClick={handleLoggedInUnsubscribe}

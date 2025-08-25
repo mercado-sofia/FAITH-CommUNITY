@@ -8,13 +8,11 @@ import { FaRegCircleXmark } from 'react-icons/fa6';
 import { MdErrorOutline } from 'react-icons/md';
 import styles from './unsubscribePage.module.css';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "http://localhost:8080";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') || 'http://localhost:8080';
 
 export default function NewsletterUnsubscribePage() {
-  const params = useParams();
-  const token = params.token;
-  
-  const [status, setStatus] = useState('loading'); // 'loading', 'success', 'error'
+  const { token } = useParams();
+  const [status, setStatus] = useState('loading'); // 'loading' | 'success' | 'error'
   const [message, setMessage] = useState('');
   const [email, setEmail] = useState('');
 
@@ -25,34 +23,36 @@ export default function NewsletterUnsubscribePage() {
       return;
     }
 
-    unsubscribeFromNewsletter();
-  }, [token]);
+    const ac = new AbortController();
 
-  const unsubscribeFromNewsletter = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/api/subscription/unsubscribe/${token}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/subscription/unsubscribe/${token}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          signal: ac.signal,
+        });
+        const data = await res.json();
 
-      const data = await response.json();
+        if (ac.signal.aborted) return;
 
-      if (response.ok) {
-        setStatus('success');
-        setMessage(data.message || 'Successfully unsubscribed from newsletter.');
-        setEmail(data.email || '');
-      } else {
+        if (res.ok) {
+          setStatus('success');
+          setMessage(data.message || 'Successfully unsubscribed from newsletter.');
+          setEmail(data.email || '');
+        } else {
+          setStatus('error');
+          setMessage(data.error || 'Failed to unsubscribe. Please try again.');
+        }
+      } catch (err) {
+        if (ac.signal.aborted) return;
         setStatus('error');
-        setMessage(data.error || 'Failed to unsubscribe. Please try again.');
+        setMessage('Network error. Please check your connection and try again.');
       }
-    } catch (error) {
-      console.error('Unsubscribe error:', error);
-      setStatus('error');
-      setMessage('Network error. Please check your connection and try again.');
-    }
-  };
+    })();
+
+    return () => ac.abort();
+  }, [token]);
 
   const renderContent = () => {
     switch (status) {
@@ -114,7 +114,7 @@ export default function NewsletterUnsubscribePage() {
                 <li>The unsubscribe link has expired</li>
                 <li>The link has already been used</li>
                 <li>There was a temporary issue with our servers</li>
-                <li>You're not currently subscribed to our newsletter</li>
+                <li>You&apos;re not currently subscribed to our newsletter</li>
               </ul>
             </div>
             <div className={styles.actionButtons}>

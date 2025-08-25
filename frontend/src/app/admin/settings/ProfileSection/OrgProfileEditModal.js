@@ -97,7 +97,7 @@ export default function OrgProfileEditModal({
             </div>
             <div className={styles.headerText}>
               <h2>Edit Organization Profile</h2>
-              <p>Update your organization's basic information and email</p>
+              <p>Update your organization&apos;s basic information and email</p>
             </div>
           </div>
           <button 

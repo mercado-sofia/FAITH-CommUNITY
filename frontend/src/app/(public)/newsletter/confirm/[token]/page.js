@@ -8,13 +8,11 @@ import { FaRegCircleXmark } from 'react-icons/fa6';
 import { MdErrorOutline } from 'react-icons/md';
 import styles from './confirmPage.module.css';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "http://localhost:8080";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') || 'http://localhost:8080';
 
 export default function SubscriptionConfirmPage() {
-  const params = useParams();
-  const token = params.token;
-  
-  const [status, setStatus] = useState('loading'); // 'loading', 'success', 'error'
+  const { token } = useParams();
+  const [status, setStatus] = useState('loading'); // 'loading' | 'success' | 'error'
   const [message, setMessage] = useState('');
   const [email, setEmail] = useState('');
 
@@ -25,34 +23,36 @@ export default function SubscriptionConfirmPage() {
       return;
     }
 
-    confirmSubscription();
-  }, [token]);
+    const ac = new AbortController();
 
-  const confirmSubscription = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/api/subscription/confirm/${token}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/subscription/confirm/${token}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          signal: ac.signal,
+        });
+        const data = await res.json();
 
-      const data = await response.json();
+        if (ac.signal.aborted) return;
 
-      if (response.ok) {
-        setStatus('success');
-        setMessage(data.message || 'Subscription confirmed successfully!');
-        setEmail(data.email || '');
-      } else {
+        if (res.ok) {
+          setStatus('success');
+          setMessage(data.message || 'Subscription confirmed successfully!');
+          setEmail(data.email || '');
+        } else {
+          setStatus('error');
+          setMessage(data.error || 'Failed to confirm subscription. Please try again.');
+        }
+      } catch (err) {
+        if (ac.signal.aborted) return;
         setStatus('error');
-        setMessage(data.error || 'Failed to confirm subscription. Please try again.');
+        setMessage('Network error. Please check your connection and try again.');
       }
-    } catch (error) {
-      console.error('Confirmation error:', error);
-      setStatus('error');
-      setMessage('Network error. Please check your connection and try again.');
-    }
-  };
+    })();
+
+    return () => ac.abort();
+  }, [token]);
 
   const renderContent = () => {
     switch (status) {
@@ -77,7 +77,7 @@ export default function SubscriptionConfirmPage() {
               </p>
             )}
             <div className={styles.successDetails}>
-              <p>You're now subscribed to our newsletter and will receive updates about:</p>
+              <p>You&apos;re now subscribed to our newsletter and will receive updates about:</p>
               <ul>
                 <li>Upcoming programs and events</li>
                 <li>Volunteer opportunities</li>

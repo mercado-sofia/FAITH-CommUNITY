@@ -2,7 +2,7 @@
 .mainArea {
   padding: 2rem 3rem;
   min-height: calc(100vh - 60px);
-  background: #ffffff;
+  background: #F0F4F7;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -18,10 +18,10 @@
 }
 
 .header h1 {
-  font-size: 1.875rem;
-  font-weight: 600;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: #1f2937;
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: var(--font-poppins), sans-serif;
+  color: #06100f;
   user-select: none;
   margin: 0;
   line-height: 1.2;
@@ -36,60 +36,82 @@
 }
 
 .cardContainer {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
   margin-bottom: 2.5rem;
 }
 
 .card {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
+  flex: 1;
+  min-width: 260px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  padding: 1.4rem 1.8rem;
   text-align: left;
-  border: 1px solid #e5e7eb;
-  transition: all 0.2s ease;
+  transition: transform 0.3s ease;
   text-decoration: none;
   color: inherit;
-  display: block;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .card:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
+  transform: translateY(-6px);
+  cursor: pointer;
+}
+
+.cardContent {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .card h3 {
-  font-size: 0.875rem;
-  margin: 0 0 0.5rem 0;
-  color: #6b7280;
-  font-weight: 500;
+  font-size: 13px;
+  margin: 0 0 0.3rem 0;
+  color: #8b8e8d;
+  font-weight: 400;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.3;
 }
 
 .card p {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1f2937;
+  font-size: 28px;
+  font-weight: 800;
+  color: #050809;
   margin: 0;
   line-height: 1;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+.iconWrapper {
+  background-color: #e2f7f0;
+  padding: 0.85rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon {
+  font-size: 1.2rem;
+  color: #1d9782;
+}
+
 /* Pending Approvals Section */
 .pendingApprovalsSection {
   background: white;
-  border-radius: 8px;
+  border-radius: 20px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
-  transition: all 0.2s ease;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  transition: transform 0.3s ease;
 }
 
 .pendingApprovalsSection:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
 }
 
 .sectionHeader {
@@ -116,59 +138,59 @@
 }
 
 .filterSelect {
-  padding: 8px 12px !important;
-  border: 1px solid #d1d5db !important;
-  border-radius: 6px !important;
-  background: white !important;
-  font-size: 14px !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-  color: #374151 !important;
-  font-weight: 500 !important;
-  min-width: 180px !important;
-  cursor: pointer !important;
-  transition: all 0.2s ease !important;
-  appearance: none !important;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23374151' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
-  background-position: right 8px center !important;
-  background-repeat: no-repeat !important;
-  background-size: 16px !important;
-  padding-right: 32px !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+  background: white;
+  border: 2px solid #06100f;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  color: #050809;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  user-select: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23050809' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 8px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  padding-right: 32px;
+  min-width: 180px;
 }
 
 .filterSelect:hover {
-  border-color: #9ca3af !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  background: #f3f3f3;
 }
 
 .filterSelect:focus {
-  outline: none !important;
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+  outline: none;
+  background: #f3f3f3;
 }
 
 .viewAllButton {
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  text-decoration: none;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
+  text-decoration: none;
+  background: white;
+  border: 2px solid #06100f;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  color: #050809;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  user-select: none;
 }
 
 .viewAllButton:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
-  color: #111827;
+  background: #f3f3f3;
 }
 
 /* Table Styles */

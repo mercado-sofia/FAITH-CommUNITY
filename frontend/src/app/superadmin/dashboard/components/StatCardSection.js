@@ -42,6 +42,7 @@ export default function StatCardSection() {
           label="Total Organizations"
           count={isLoading ? "—" : organizationsCount}
           isLoading={organizationsLoading}
+          iconKey="organizations"
         />
       </Link>
       <Link href="/superadmin/approvals" className={styles.card}>
@@ -49,6 +50,7 @@ export default function StatCardSection() {
           label="Pending Approvals"
           count={isLoading ? "—" : pendingApprovalsCount}
           isLoading={pendingLoading}
+          iconKey="pending"
         />
       </Link>
       <div className={styles.card}>
@@ -56,6 +58,7 @@ export default function StatCardSection() {
           label="Total Volunteers"
           count={isLoading ? "—" : totalVolunteersCount}
           isLoading={volunteersLoading}
+          iconKey="volunteers"
         />
       </div>
       <Link href="/superadmin/programs" className={styles.card}>
@@ -63,6 +66,7 @@ export default function StatCardSection() {
           label="Active Programs & Services"
           count={isLoading ? "—" : activeProgramsCount}
           isLoading={programsLoading}
+          iconKey="programs"
         />
       </Link>
     </div>

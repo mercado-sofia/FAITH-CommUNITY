@@ -285,7 +285,6 @@ const ManageFaqs = () => {
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <h1>Manage FAQs</h1>
-          <p className={styles.subtitle}>Create and manage frequently asked questions</p>
         </div>
         <div className={styles.headerRight}>
           <div className={styles.statisticsCard}>

@@ -265,9 +265,6 @@ export default function PendingApprovalsPage() {
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <h1 className={styles.pageTitle}>Pending Submissions</h1>
-          <p className={styles.pageSubtitle}>
-            Review and approve organization updates from administrators
-          </p>
         </div>
         <div className={styles.headerRight}>
           <div className={styles.statsCard}>

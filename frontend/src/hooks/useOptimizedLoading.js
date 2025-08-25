@@ -7,7 +7,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 export const useOptimizedLoading = (options = {}) => {
   const {
     minDisplayTime = 200, // Reduced from 500ms for faster perceived performance
-    instantFeedback = true, // Show loading immediately
+    instantFeedback = true, // Show loading immediately (reserved for future use)
     cacheKey = null, // For caching loading states
   } = options;
 
@@ -23,9 +23,7 @@ export const useOptimizedLoading = (options = {}) => {
 
   const startLoading = useCallback(() => {
     // If we have cached data, show it immediately
-    if (hasCachedData) {
-      return;
-    }
+    if (hasCachedData) return;
 
     setIsLoading(true);
     setStartTime(Date.now());
@@ -56,12 +54,11 @@ export const useOptimizedLoading = (options = {}) => {
     }
   }, [startTime, minDisplayTime]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount — capture a snapshot of the ref
   useEffect(() => {
+    const tRef = timeoutRef; // snapshot the ref object (not its .current value)
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      if (tRef.current) clearTimeout(tRef.current);
     };
   }, []);
 
@@ -77,58 +74,59 @@ export const useOptimizedLoading = (options = {}) => {
  * Hook for managing multiple optimized loading states
  */
 export const useMultiOptimizedLoading = (keys = [], options = {}) => {
-  const {
-    minDisplayTime = 200,
-    instantFeedback = true,
-  } = options;
+  const { minDisplayTime = 200, instantFeedback = true } = options;
 
   const [loadingStates, setLoadingStates] = useState({});
   const [startTimes, setStartTimes] = useState({});
   const timeoutRefs = useRef({});
 
   const startLoading = useCallback((key) => {
-    setLoadingStates(prev => ({ ...prev, [key]: true }));
-    setStartTimes(prev => ({ ...prev, [key]: Date.now() }));
+    setLoadingStates((prev) => ({ ...prev, [key]: true }));
+    setStartTimes((prev) => ({ ...prev, [key]: Date.now() }));
   }, []);
 
-  const stopLoading = useCallback((key) => {
-    const startTime = startTimes[key];
-    if (!startTime) {
-      setLoadingStates(prev => ({ ...prev, [key]: false }));
-      return;
-    }
+  const stopLoading = useCallback(
+    (key) => {
+      const startTime = startTimes[key];
+      if (!startTime) {
+        setLoadingStates((prev) => ({ ...prev, [key]: false }));
+        return;
+      }
 
-    const elapsed = Date.now() - startTime;
-    const remaining = Math.max(0, minDisplayTime - elapsed);
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, minDisplayTime - elapsed);
 
-    // Clear existing timeout
-    if (timeoutRefs.current[key]) {
-      clearTimeout(timeoutRefs.current[key]);
-    }
+      // Clear existing timeout
+      if (timeoutRefs.current[key]) {
+        clearTimeout(timeoutRefs.current[key]);
+      }
 
-    if (remaining > 0) {
-      timeoutRefs.current[key] = setTimeout(() => {
-        setLoadingStates(prev => ({ ...prev, [key]: false }));
-        setStartTimes(prev => {
+      if (remaining > 0) {
+        timeoutRefs.current[key] = setTimeout(() => {
+          setLoadingStates((prev) => ({ ...prev, [key]: false }));
+          setStartTimes((prev) => {
+            const newTimes = { ...prev };
+            delete newTimes[key];
+            return newTimes;
+          });
+        }, remaining);
+      } else {
+        setLoadingStates((prev) => ({ ...prev, [key]: false }));
+        setStartTimes((prev) => {
           const newTimes = { ...prev };
           delete newTimes[key];
           return newTimes;
         });
-      }, remaining);
-    } else {
-      setLoadingStates(prev => ({ ...prev, [key]: false }));
-      setStartTimes(prev => {
-        const newTimes = { ...prev };
-        delete newTimes[key];
-        return newTimes;
-      });
-    }
-  }, [startTimes, minDisplayTime]);
+      }
+    },
+    [startTimes, minDisplayTime]
+  );
 
-  // Cleanup on unmount
+  // Cleanup on unmount — snapshot the ref's current object
   useEffect(() => {
+    const currentTimeouts = timeoutRefs.current; // snapshot the current object
     return () => {
-      Object.values(timeoutRefs.current).forEach(timeout => {
+      Object.values(currentTimeouts).forEach((timeout) => {
         if (timeout) clearTimeout(timeout);
       });
     };
@@ -155,8 +153,8 @@ export const useInstantPageTransition = (pageKey) => {
   const startTransition = useCallback(() => {
     setIsTransitioning(true);
     setShowSkeleton(true);
-    
-    // Show skeleton immediately for instant feedback
+
+    // Clear any pending hide timer to avoid flicker
     if (transitionTimeoutRef.current) {
       clearTimeout(transitionTimeoutRef.current);
     }
@@ -164,19 +162,18 @@ export const useInstantPageTransition = (pageKey) => {
 
   const completeTransition = useCallback(() => {
     setIsTransitioning(false);
-    
+
     // Hide skeleton after a short delay to prevent flicker
     transitionTimeoutRef.current = setTimeout(() => {
       setShowSkeleton(false);
     }, 100);
   }, []);
 
-  // Cleanup
+  // Cleanup — capture a snapshot of the ref object
   useEffect(() => {
+    const tRef = transitionTimeoutRef;
     return () => {
-      if (transitionTimeoutRef.current) {
-        clearTimeout(transitionTimeoutRef.current);
-      }
+      if (tRef.current) clearTimeout(tRef.current);
     };
   }, []);
 

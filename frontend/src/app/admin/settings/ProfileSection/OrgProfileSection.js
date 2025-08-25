@@ -118,9 +118,9 @@ export default function OrgProfileSection({
         </div>
         <div className={styles.panelTitle}>
           <h2>Organization Profile</h2>
-          <p>Your organization's basic information, identity, and email address</p>
+          <p>Your organization&apos;s basic information, identity, and email address</p>
         </div>
-        <button 
+        <button
           className={styles.editButton}
           onClick={handleEditClick}
         >

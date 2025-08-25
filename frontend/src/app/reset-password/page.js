@@ -243,7 +243,7 @@ export default function ResetPasswordPage() {
             <form onSubmit={handleSubmit} className={styles.form}>
               <h2 className={styles.title}>Reset Your Password</h2>
               <p className={styles.description}>
-                Enter your new password below for your {getUserTypeDisplay()} account. Make sure it's secure and easy to remember.
+                Enter your new password below for your {getUserTypeDisplay()} account. Make sure it&apos;s secure and easy to remember.
               </p>
 
               <label htmlFor="newPassword" className={`${styles.label} ${focusedField === 'newPassword' || newPassword ? styles.focused : ''}`}>

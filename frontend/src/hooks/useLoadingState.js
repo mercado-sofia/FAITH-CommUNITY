@@ -10,28 +10,31 @@ export const useOptimizedLoading = (isLoading, containerRef) => {
   const [shouldShowLoader, setShouldShowLoader] = useState(true);
 
   useEffect(() => {
-    if (!containerRef.current || isLoading) {
+    // If we don't have a target yet or we're still loading, show loader and skip observing
+    if (!containerRef?.current || isLoading) {
       setShouldShowLoader(true);
       return;
     }
 
+    // Capture the current node once; use the same node in cleanup
+    const target = containerRef.current;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setShouldShowLoader(false);
-        }
+        if (entry.isIntersecting) setShouldShowLoader(false);
       },
       { threshold: 0.1 }
     );
 
-    observer.observe(containerRef.current);
+    observer.observe(target);
 
     return () => {
-      if (containerRef.current) {
-        observer.unobserve(containerRef.current);
-      }
+      observer.unobserve(target); // use captured reference, not containerRef.current
     };
   }, [isLoading, containerRef]);
+
+  // (Optional) return the state if you want to consume it in the component
+  // return shouldShowLoader;
 };
 
 /**
@@ -43,14 +46,14 @@ export const useDashboardLoadingState = () => {
   const [loadingProgress, setLoadingProgress] = useState(0);
 
   // Fetch all required data
-  const { 
-    volunteers: volunteersData = [], 
+  const {
+    volunteers: volunteersData = [],
     isLoading: volunteersLoading,
     error: volunteersError
   } = useAdminVolunteers(currentAdmin?.id);
 
-  const { 
-    programs: programsData = [], 
+  const {
+    programs: programsData = [],
     isLoading: programsLoading,
     error: programsError
   } = useAdminPrograms(currentAdmin?.org);

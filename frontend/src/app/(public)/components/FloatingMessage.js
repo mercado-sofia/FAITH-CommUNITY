@@ -116,13 +116,16 @@ export default function FloatingMessage() {
     };
   }, [dropdownOpen]);
 
-  const closeMessageBox = () => {
+  const closeMessageBox = (resetAll = true) => {
     setIsOpen(false);
     setDropdownOpen(false);
-    setOrg("");
-    setEmail("");
-    setMessage("");
-    setEmailError("");
+    
+    if (resetAll) {
+      setOrg("");
+      setEmail("");
+      setMessage("");
+      setEmailError("");
+    }
 
     setClickLocked(true);
     setTimeout(() => setClickLocked(false), 300);
@@ -185,7 +188,10 @@ export default function FloatingMessage() {
         alert("Message sent successfully!");
       }
 
-      closeMessageBox();
+      // Clear message field and organization selection after successful submission
+      setMessage("");
+      setOrg("");
+      setEmailError("");
     } catch (error) {
       console.error("Error submitting message:", error);
       

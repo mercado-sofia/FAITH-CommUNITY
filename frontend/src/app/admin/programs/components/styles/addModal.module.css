@@ -415,6 +415,10 @@
   background: #06100f;
   color: white;
   border: 1px solid #0b1b19;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .submitButton:hover:not(:disabled) {
@@ -779,5 +783,18 @@
   .formTextarea,
   .formSelect {
     font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }

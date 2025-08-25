@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Image from 'next/image'
 import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/featuredProjectsApi'
 import { getFeaturedProjectImageUrl } from '@/utils/uploadPaths'
 import styles from './featured.module.css'
@@ -36,10 +37,12 @@ const FeaturedProjectsPage = () => {
       <div key={project.id} className={styles.projectCard}>
         <div className={styles.projectImageContainer}>
           {imageSource ? (
-            <img 
+            <Image 
               src={imageSource}
               alt={project.title}
               className={styles.projectImage}
+              width={300}
+              height={200}
               onError={(e) => {
                 e.target.style.display = 'none'
                 e.target.nextSibling.style.display = 'flex'

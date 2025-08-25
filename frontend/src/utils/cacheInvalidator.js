@@ -80,10 +80,12 @@ export const invalidateAllCaches = () => {
   console.log('🔄 All caches invalidated');
 };
 
-export default {
+const cacheInvalidator = {
   invalidateCache,
   invalidateNewsCache,
   invalidateOrganizationCache,
   invalidateProgramsCache,
   invalidateAllCaches
 };
+
+export default cacheInvalidator;

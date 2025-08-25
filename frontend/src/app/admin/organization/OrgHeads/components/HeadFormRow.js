@@ -5,7 +5,7 @@ import { FiTrash2 } from 'react-icons/fi';
 import { getOrganizationImageUrl } from '@/utils/uploadPaths';
 import { PhotoUtils } from '../utils/photoUtils';
 import LazyImage from '../LazyImage';
-import styles from '../OrgHeadsEditModal.module.css';
+import styles from '../AddOrgHeadModal.module.css';
 
 export default function HeadFormRow({
   head,
@@ -50,10 +50,12 @@ export default function HeadFormRow({
       if (head.photo.startsWith('data:')) {
         return (
           <div className={styles.photoPreview}>
-            <img 
+            <Image 
               src={head.photo} 
               alt="Preview" 
               className={styles.photoImage}
+              width={100}
+              height={100}
             />
             <button
               type="button"

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FaBuilding, FaTimes } from 'react-icons/fa';
+import { FaBuilding, FaTimes, FaSpinner } from 'react-icons/fa';
 import styles from './styles/OrgProfileEditModal.module.css';
 
 export default function OrgProfileEditModal({ 
@@ -180,7 +180,8 @@ export default function OrgProfileEditModal({
                 className={styles.saveButton}
                 disabled={saving}
               >
-                {saving ? 'Saving...' : 'Save Changes'}
+                {saving ? <FaSpinner className={styles.spinner} /> : null}
+                Save Changes
               </button>
             </div>
           </form>

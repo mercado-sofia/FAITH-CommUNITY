@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Image from 'next/image'
 import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/featuredProjectsApi'
 import { getFeaturedProjectImageUrl } from '@/utils/uploadPaths'
 import styles from '../programs.module.css'
@@ -82,10 +83,12 @@ const FeaturedProjects = () => {
           <div key={project.id} className={styles.featuredCard}>
             <div className={styles.cardImageContainer}>
               {project.image ? (
-                <img 
+                <Image 
                   src={getFeaturedProjectImageUrl(project.image)}
                   alt={project.title}
                   className={styles.cardImage}
+                  width={300}
+                  height={200}
                   onLoad={() => {
                     console.log(`Image loaded successfully for: ${project.title}`);
                   }}

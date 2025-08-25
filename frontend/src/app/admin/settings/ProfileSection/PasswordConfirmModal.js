@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FaLock, FaEye, FaEyeSlash, FaTimes } from 'react-icons/fa';
+import { FaLock, FaEye, FaEyeSlash, FaTimes, FaSpinner } from 'react-icons/fa';
 import styles from './styles/PasswordConfirmModal.module.css';
 
 export default function PasswordConfirmModal({ 
@@ -141,7 +141,8 @@ export default function PasswordConfirmModal({
                 className={styles.saveButton}
                 disabled={isVerifying}
               >
-                {isVerifying ? 'Verifying...' : 'Confirm Changes'}
+                {isVerifying ? <FaSpinner className={styles.spinner} /> : null}
+                Confirm Changes
               </button>
             </div>
           </form>

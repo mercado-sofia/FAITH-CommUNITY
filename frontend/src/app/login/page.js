@@ -448,7 +448,7 @@ export default function LoginPage() {
           </button>
 
           <div className={styles.signupLink}>
-            <p>Don't have an account? <button type="button" onClick={() => router.push('/signup')} className={styles.signupButton}>Sign Up</button></p>
+            <p>Don&apos;t have an account? <button type="button" onClick={() => router.push('/signup')} className={styles.signupButton}>Sign Up</button></p>
           </div>
         </form>
       </div>
@@ -476,7 +476,7 @@ export default function LoginPage() {
             {!forgotPasswordSuccess ? (
               <form onSubmit={handleForgotPassword} className={styles.forgotPasswordForm}>
                 <p className={styles.modalDescription}>
-                  Enter your email address and we'll send you a link to reset your password.
+                  Enter your email address and we&apos;ll send you a link to reset your password.
                 </p>
                
                 <div className={styles.inputGroup}>

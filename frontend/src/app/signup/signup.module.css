@@ -548,12 +548,12 @@
 }
 
 .passwordRequirements {
-  margin: 0.5rem 0 1.5rem;
+  margin: 0.65rem 0 1rem;
   padding: 0;
 }
 
 .passwordRequirements h4 {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #495057;
   margin: 0 0 0.75rem 0;
@@ -569,7 +569,7 @@
 .passwordRequirements li {
   display: flex;
   align-items: center;
-  font-size: 11px;
+  font-size: 12px;
   color: #6c757d;
   margin-bottom: 0.5rem;
   font-family: var(--font-inter);

@@ -1,6 +1,6 @@
 .container {
   padding: 4rem 2rem;
-  min-height: 580px;
+  min-height: 80dvh;
   max-width: 1200px;
   margin: auto;
   font-family: var(--font-roboto);

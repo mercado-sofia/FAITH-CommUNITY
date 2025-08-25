@@ -4,46 +4,36 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useSelector } from 'react-redux';
 import { useAuthState } from '../../../hooks/useAuthState';
 import { useNotifications } from '../../../hooks/useNotifications';
 import { useDropdown } from '../../../hooks/useDropdown';
 import OptimizedImage from '../../../components/OptimizedImage';
 import styles from './styles/navbar.module.css';
-import { 
-  FaBars, 
-  FaChevronRight, 
-  FaUser, 
-  FaSignOutAlt, 
-  FaBell,
-  FaCog,
-  FaTimes,
-  FaClipboardList
-} from 'react-icons/fa';
+import { FaBars, FaChevronRight, FaUser, FaSignOutAlt, FaBell, FaCog, FaClipboardList } from 'react-icons/fa';
+import { FiLogOut } from 'react-icons/fi';
 
 export default function Navbar() {
   const router = useRouter();
-  const { user, isAuthenticated, logout, isLoading: authLoading } = useAuthState();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuthState();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isSlidingOut, setIsSlidingOut] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const resizeTimeoutRef = useRef(null);
 
-  // Use custom hooks for dropdowns and notifications
+  // Dropdowns + notifications
   const profileDropdown = useDropdown(false);
   const notificationsDropdown = useDropdown(false);
   const notifications = useNotifications(isAuthenticated);
 
-  // Handle apply button click
+  // Apply guard
   const handleApplyClick = (e) => {
     if (!isAuthenticated) {
       e.preventDefault();
-      // Dispatch custom event to show login modal
       window.dispatchEvent(new CustomEvent('showLoginModal'));
     }
   };
 
-  // Optimized close sidebar function
+  // Sidebar open/close
   const handleCloseSidebar = useCallback(() => {
     setIsSlidingOut(true);
     setTimeout(() => {
@@ -52,25 +42,16 @@ export default function Navbar() {
     }, 300);
   }, []);
 
-  // Optimized toggle menu function
   const toggleMenu = useCallback(() => {
-    if (menuOpen) {
-      handleCloseSidebar();
-    } else {
-      setMenuOpen(true);
-    }
+    if (menuOpen) handleCloseSidebar();
+    else setMenuOpen(true);
   }, [menuOpen, handleCloseSidebar]);
 
-  // Optimized resize handler with debouncing
+  // Debounced resize handler
   const handleResize = useCallback(() => {
-    if (resizeTimeoutRef.current) {
-      clearTimeout(resizeTimeoutRef.current);
-    }
-    
+    if (resizeTimeoutRef.current) clearTimeout(resizeTimeoutRef.current);
     resizeTimeoutRef.current = setTimeout(() => {
-      if (window.innerWidth > 1180) {
-        setMenuOpen(false);
-      }
+      if (window.innerWidth > 1180) setMenuOpen(false);
     }, 100);
   }, []);
 
@@ -78,45 +59,75 @@ export default function Navbar() {
     window.addEventListener('resize', handleResize, { passive: true });
     return () => {
       window.removeEventListener('resize', handleResize);
-      if (resizeTimeoutRef.current) {
-        clearTimeout(resizeTimeoutRef.current);
-      }
+      if (resizeTimeoutRef.current) clearTimeout(resizeTimeoutRef.current);
     };
   }, [handleResize]);
 
-  // Prefetch pages on hover for instant navigation
-  const handleLinkHover = useCallback((href) => {
-    if (href && href !== '/') {
-      router.prefetch(href);
-    }
-  }, [router]);
+  // Prefetch on hover
+  const handleLinkHover = useCallback(
+    (href) => {
+      if (href && href !== '/') router.prefetch(href);
+    },
+    [router]
+  );
 
-  // Handle user logout
-  const handleLogout = () => {
+  // ===== Logout Modal helpers =====
+  useEffect(() => {
+    if (!showLogoutConfirm) return;
+    const onKey = (e) => e.key === 'Escape' && setShowLogoutConfirm(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showLogoutConfirm]);
+
+  const openLogoutModal = () => {
     setShowLogoutConfirm(true);
     profileDropdown.close();
     notificationsDropdown.close();
   };
 
-  // Handle confirmed logout
-  const handleConfirmedLogout = async () => {
-    // Dispatch global event to show full-page loader
-    window.dispatchEvent(new CustomEvent('showLogoutLoader'));
-    
-    setShowLogoutConfirm(false);
-    profileDropdown.close();
-    notificationsDropdown.close();
-    
+  const handleConfirmLogout = async () => {
     try {
-      await logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Hide loader if logout fails
-      window.dispatchEvent(new CustomEvent('hideLogoutLoader'));
+      const userToken = localStorage.getItem('userToken');
+
+      // Best-effort API call
+      if (userToken) {
+        try {
+          await fetch('http://localhost:8080/api/users/logout', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${userToken}`,
+              'Content-Type': 'application/json',
+            },
+          });
+        } catch {
+          // ignore network errors, continue cleanup
+        }
+      }
+
+      // Client-side cleanup
+      localStorage.removeItem('userToken');
+      localStorage.removeItem('userData');
+      localStorage.removeItem('token');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('userEmail');
+      localStorage.removeItem('userName');
+
+      document.cookie = 'userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+      document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+
+      setShowLogoutConfirm(false);
+      window.location.href = '/'; // or '/login'
+    } catch (e) {
+      console.error('Logout error:', e);
+      setShowLogoutConfirm(false);
+      window.location.href = '/';
     }
   };
 
-  // Show loading state while auth is initializing
+  const handleOverlayClick = () => setShowLogoutConfirm(false);
+  const stop = (e) => e.stopPropagation();
+
+  // Loading state while auth initializes
   if (authLoading) {
     return (
       <div className={styles.navbarWrapper}>
@@ -206,7 +217,6 @@ export default function Navbar() {
           </a>
           
           {isAuthenticated ? (
-            // User is logged in - show Apply button first, then notification and profile icons
             <>
               <Link 
                 href="/apply" 
@@ -344,7 +354,7 @@ export default function Navbar() {
                     </Link>
                     <button 
                       className={styles.profileDropdownItem}
-                      onClick={handleLogout}
+                      onClick={openLogoutModal}
                     >
                       <FaSignOutAlt />
                       <span>Logout</span>
@@ -354,7 +364,7 @@ export default function Navbar() {
               </div>
             </>
           ) : (
-            // User is not logged in - show single login/signup button and Apply button
+            // Not logged in
             <>
               <Link href="/login" className={styles.navbarLoginBtn}>
                 Log In or Sign Up
@@ -370,7 +380,7 @@ export default function Navbar() {
             </>
           )}
 
-          {/* Hamburger Icon */}
+          {/* Hamburger */}
           <button className={styles.hamburgerBtn} onClick={toggleMenu}>
             <FaBars />
           </button>
@@ -444,53 +454,49 @@ export default function Navbar() {
               </a>
               
               {isAuthenticated ? (
-                // User is logged in - show profile and logout
-                <>
-                  <div className={styles.mobileUserProfile}>
-                    <div className={styles.mobileProfileIcon}>
-                      {user?.profile_photo_url ? (
-                        <OptimizedImage
-                          src={user.profile_photo_url}
-                          alt="Profile"
-                          width={48}
-                          height={48}
-                          className={styles.mobileProfileImage}
-                          fallbackIcon={FaUser}
-                        />
-                      ) : (
-                        <FaUser className={styles.mobileProfileIconDefault} />
-                      )}
-                    </div>
-                    <span className={styles.userName}>
-                      {user?.firstName} {user?.lastName}
-                    </span>
-                    <Link 
-                      href="/profile" 
-                      className={styles.mobileProfileLink}
-                      onClick={toggleMenu}
-                    >
-                      <FaCog />
-                      <span>Manage Account</span>
-                    </Link>
-                    <Link 
-                      href="/my-applications" 
-                      className={styles.mobileProfileLink}
-                      onClick={toggleMenu}
-                    >
-                      <FaClipboardList />
-                      <span>My Applications</span>
-                    </Link>
-                    <button 
-                      onClick={async () => { await handleConfirmedLogout(); toggleMenu(); }} 
-                      className={styles.logoutBtn}
-                    >
-                      <FaSignOutAlt />
-                      <span>Logout</span>
-                    </button>
+                <div className={styles.mobileUserProfile}>
+                  <div className={styles.mobileProfileIcon}>
+                    {user?.profile_photo_url ? (
+                      <OptimizedImage
+                        src={user.profile_photo_url}
+                        alt="Profile"
+                        width={48}
+                        height={48}
+                        className={styles.mobileProfileImage}
+                        fallbackIcon={FaUser}
+                      />
+                    ) : (
+                      <FaUser className={styles.mobileProfileIconDefault} />
+                    )}
                   </div>
-                </>
+                  <span className={styles.userName}>
+                    {user?.firstName} {user?.lastName}
+                  </span>
+                  <Link 
+                    href="/profile" 
+                    className={styles.mobileProfileLink}
+                    onClick={toggleMenu}
+                  >
+                    <FaCog />
+                    <span>Manage Account</span>
+                  </Link>
+                  <Link 
+                    href="/my-applications" 
+                    className={styles.mobileProfileLink}
+                    onClick={toggleMenu}
+                  >
+                    <FaClipboardList />
+                    <span>My Applications</span>
+                  </Link>
+                  <button 
+                    onClick={() => { openLogoutModal(); toggleMenu(); }} 
+                    className={styles.logoutBtn}
+                  >
+                    <FaSignOutAlt />
+                    <span>Logout</span>
+                  </button>
+                </div>
               ) : (
-                // User is not logged in - show single login/signup button
                 <>
                   <Link 
                     href="/login" 
@@ -515,34 +521,30 @@ export default function Navbar() {
         )}
       </nav>
 
-      {/* Logout Confirmation Modal */}
+      {/* ===== Logout Confirmation Modal (green gradient style) ===== */}
       {showLogoutConfirm && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modal}>
-            <div className={styles.modalHeader}>
-              <h3>Confirm Logout</h3>
-              <button
-                type="button"
-                onClick={() => setShowLogoutConfirm(false)}
-                className={styles.closeButton}
-              >
-                <FaTimes />
-              </button>
+        <div 
+          className={styles.logoutModalOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="logout-title"
+          onClick={handleOverlayClick}
+        >
+          <div className={styles.logoutModal} role="document" onClick={stop}>
+            
+            <div id="logout-title" className={styles.logoutModalTitle}>
+              Logout
             </div>
-            <div className={styles.modalBody}>
-              <p>Are you sure you want to logout?</p>
+            
+            <div className={styles.logoutModalText}>
+              Are you sure you want to logout?
             </div>
-            <div className={styles.modalFooter}>
-              <button
-                onClick={handleConfirmedLogout}
-                className={styles.confirmButton}
-              >
+
+            <div className={styles.logoutButtonGroup}>
+              <button className={styles.logoutTextBtn} onClick={handleConfirmLogout}>
                 Logout
               </button>
-              <button
-                onClick={() => setShowLogoutConfirm(false)}
-                className={styles.cancelButton}
-              >
+              <button className={styles.cancelBtn} onClick={() => setShowLogoutConfirm(false)}>
                 Cancel
               </button>
             </div>

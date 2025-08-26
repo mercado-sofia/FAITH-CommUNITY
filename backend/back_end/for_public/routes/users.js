@@ -23,6 +23,7 @@ import {
   resetPasswordUser,
   checkEmailUser,
   validateResetToken,
+  deleteAccount,
 } from '../controllers/userController.js';
 
 const router = express.Router();
@@ -68,6 +69,7 @@ router.get('/profile', verifyToken, getUserProfile);
 router.put('/profile', verifyToken, updateUserProfile);
 router.post('/profile/photo', verifyToken, upload.single('profilePhoto'), uploadProfilePhoto);
 router.put('/password', verifyToken, changePassword);
+router.post('/delete-account', verifyToken, deleteAccount);
 
 // Newsletter routes (authentication required)
 router.post('/newsletter/subscribe', verifyToken, subscribeToNewsletter);

@@ -26,7 +26,8 @@ import {
   FaUndo,
   FaCrop,
   FaCheck,
-  FaRedo
+  FaRedo,
+  FaTrash
 } from 'react-icons/fa';
 import { createPortal } from 'react-dom';
 import styles from './profile.module.css';
@@ -35,6 +36,8 @@ export default function ProfilePage() {
   const router = useRouter();
   const [userData, setUserData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editData, setEditData] = useState({});
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -49,16 +52,20 @@ export default function ProfilePage() {
     new: false,
     confirm: false
   });
+  // Delete Account States
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [deleteSuccess, setDeleteSuccess] = useState('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState('');
   const [photoSuccess, setPhotoSuccess] = useState('');
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editData, setEditData] = useState({});
-  const [isSaving, setIsSaving] = useState(false);
-  const [editError, setEditError] = useState('');
-  const [editSuccess, setEditSuccess] = useState('');
-  const [showCropModal, setShowCropModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [showCropModal, setShowCropModal] = useState(false);
   const [cropData, setCropData] = useState({
     x: 0,
     y: 0,
@@ -68,6 +75,9 @@ export default function ProfilePage() {
     rotation: 0
   });
   const [isCropping, setIsCropping] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [editSuccess, setEditSuccess] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('userToken');
@@ -595,6 +605,76 @@ export default function ProfilePage() {
     document.addEventListener('mouseup', handleMouseUp);
   };
 
+  // Delete Account Functions
+  const handleDeleteAccount = () => {
+    setShowConfirmModal(true);
+    document.body.classList.add(styles.modalOpen);
+  };
+
+  const handleConfirmDelete = () => {
+    setShowConfirmModal(false);
+    setShowDeleteModal(true);
+  };
+
+  const handleCancelDelete = () => {
+    setShowConfirmModal(false);
+    document.body.classList.remove(styles.modalOpen);
+  };
+
+  const handleDeleteAccountSubmit = async (e) => {
+    e.preventDefault();
+    setDeleteError('');
+    setDeleteSuccess('');
+    setIsDeletingAccount(true);
+
+    try {
+      const token = localStorage.getItem('userToken');
+      const response = await fetch('http://localhost:8080/api/users/delete-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          password: deletePassword
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setDeleteSuccess('Your account has been permanently deleted');
+        setTimeout(() => {
+          localStorage.removeItem('userToken');
+          localStorage.removeItem('userData');
+          localStorage.removeItem('token');
+          localStorage.removeItem('userRole');
+          localStorage.removeItem('userEmail');
+          localStorage.removeItem('userName');
+          document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          window.location.href = '/';
+        }, 2000);
+      } else {
+        setDeleteError(data.message || 'Incorrect password, please try again');
+      }
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      setDeleteError('An error occurred while deleting your account');
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setDeletePassword('');
+    setDeleteError('');
+    setDeleteSuccess('');
+    setShowDeletePassword(false);
+    document.body.classList.remove(styles.modalOpen);
+  };
+
   if (isLoading) {
     return (
       <div className={styles.container}>
@@ -895,6 +975,13 @@ export default function ProfilePage() {
             <FaLock />
             <span>Change Password</span>
           </button>
+          <button 
+            onClick={handleDeleteAccount} 
+            className={styles.deleteButton}
+          >
+            <FaTrash />
+            <span>Delete Account</span>
+          </button>
           <button onClick={handleLogout} className={styles.logoutButton}>
             <FaSignOutAlt />
             <span>Logout</span>
@@ -1009,6 +1096,122 @@ export default function ProfilePage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>,
+        document.body
+      )}
+      
+      {/* Delete Account Modal */}
+      {showDeleteModal && createPortal(
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <h2>Delete Account</h2>
+              <button 
+                className={styles.modalCloseButton}
+                onClick={closeDeleteModal}
+                type="button"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            
+            <form onSubmit={handleDeleteAccountSubmit} className={styles.deleteForm}>
+              {deleteError && (
+                <div className={styles.deleteError}>
+                  <FaTimes className={styles.errorIcon} />
+                  {deleteError}
+                </div>
+              )}
+              
+              {deleteSuccess && (
+                <div className={styles.deleteSuccess}>
+                  <FaCheck className={styles.successIcon} />
+                  {deleteSuccess}
+                </div>
+              )}
+
+              <div className={styles.deleteWarning}>
+                <p>Warning: Deleting your account is permanent and cannot be undone.</p>
+              </div>
+
+              <div className={styles.passwordField}>
+                <label>Password</label>
+                <div className={styles.passwordInputWrapper}>
+                  <input
+                    type={showDeletePassword ? 'text' : 'password'}
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    placeholder="Enter your password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    className={styles.passwordToggle}
+                    onClick={() => setShowDeletePassword(!showDeletePassword)}
+                  >
+                    {showDeletePassword ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
+              </div>
+
+              <div className={styles.deleteModalButtons}>
+                <button 
+                  type="button" 
+                  className={styles.cancelButton}
+                  onClick={closeDeleteModal}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className={styles.deleteButton}
+                  disabled={isDeletingAccount}
+                >
+                  {isDeletingAccount ? 'Deleting...' : 'Delete Account'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+      
+      {/* Confirm Delete Modal */}
+      {showConfirmModal && createPortal(
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <h2>Confirm Delete Account</h2>
+              <button 
+                className={styles.modalCloseButton}
+                onClick={handleCancelDelete}
+                type="button"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            
+            <div className={styles.confirmDeleteMessage}>
+              <p>Are you sure you want to delete your account? This action is permanent and cannot be undone.</p>
+            </div>
+
+            <div className={styles.confirmDeleteButtons}>
+              <button 
+                type="button" 
+                className={styles.cancelButton}
+                onClick={handleCancelDelete}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                className={styles.deleteButton}
+                onClick={handleConfirmDelete}
+              >
+                Confirm Delete
+              </button>
+            </div>
           </div>
         </div>,
         document.body

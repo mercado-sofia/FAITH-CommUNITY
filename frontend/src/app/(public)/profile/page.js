@@ -28,6 +28,7 @@ import {
   FaCheck,
   FaRedo
 } from 'react-icons/fa';
+import { createPortal } from 'react-dom';
 import styles from './profile.module.css';
 
 export default function ProfilePage() {
@@ -40,14 +41,14 @@ export default function ProfilePage() {
     newPassword: '',
     confirmPassword: ''
   });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [showPasswords, setShowPasswords] = useState({
     current: false,
     new: false,
     confirm: false
   });
-  const [passwordError, setPasswordError] = useState('');
-  const [passwordSuccess, setPasswordSuccess] = useState('');
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState('');
   const [photoSuccess, setPhotoSuccess] = useState('');
@@ -297,6 +298,8 @@ export default function ProfilePage() {
         setTimeout(() => {
           setShowPasswordModal(false);
           setPasswordSuccess('');
+          // Re-enable body scrolling
+          document.body.classList.remove(styles.modalOpen);
         }, 2000);
       } else {
         setPasswordError(data.message || 'Failed to change password');
@@ -323,6 +326,8 @@ export default function ProfilePage() {
       new: false,
       confirm: false
     });
+    // Re-enable body scrolling
+    document.body.classList.remove(styles.modalOpen);
   };
 
   const handlePhotoUpload = async (event) => {
@@ -880,7 +885,11 @@ export default function ProfilePage() {
             </>
           )}
           <button 
-            onClick={() => setShowPasswordModal(true)} 
+            onClick={() => {
+              setShowPasswordModal(true);
+              // Disable body scrolling
+              document.body.classList.add(styles.modalOpen);
+            }} 
             className={styles.changePasswordButton}
           >
             <FaLock />
@@ -893,105 +902,107 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Password Change Modal */}
-      {showPasswordModal && (
+      {/* Change Password Modal */}
+      {showPasswordModal && createPortal(
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
             <div className={styles.modalHeader}>
-              <h3>Change Password</h3>
-              <button onClick={closePasswordModal} className={styles.closeButton}>
+              <h2>Change Password</h2>
+              <button 
+                className={styles.modalCloseButton}
+                onClick={closePasswordModal}
+                type="button"
+              >
                 <FaTimes />
               </button>
             </div>
             
             <form onSubmit={handleChangePassword} className={styles.passwordForm}>
-              <div className={styles.formGroup}>
+              {passwordError && (
+                <div className={styles.passwordError}>
+                  <FaTimes className={styles.errorIcon} />
+                  {passwordError}
+                </div>
+              )}
+              
+              {passwordSuccess && (
+                <div className={styles.passwordSuccess}>
+                  <FaCheck className={styles.successIcon} />
+                  {passwordSuccess}
+                </div>
+              )}
+
+              <div className={styles.passwordField}>
                 <label>Current Password</label>
-                <div className={styles.passwordInput}>
+                <div className={styles.passwordInputWrapper}>
                   <input
                     type={showPasswords.current ? 'text' : 'password'}
-                    name="currentPassword"
                     value={passwordData.currentPassword}
-                    onChange={handlePasswordChange}
+                    onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
                     placeholder="Enter current password"
                     required
                   />
                   <button
                     type="button"
-                    onClick={() => togglePasswordVisibility('current')}
-                    className={styles.eyeButton}
+                    className={styles.passwordToggle}
+                    onClick={() => setShowPasswords({...showPasswords, current: !showPasswords.current})}
                   >
                     {showPasswords.current ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 </div>
               </div>
 
-              <div className={styles.formGroup}>
+              <div className={styles.passwordField}>
                 <label>New Password</label>
-                <div className={styles.passwordInput}>
+                <div className={styles.passwordInputWrapper}>
                   <input
                     type={showPasswords.new ? 'text' : 'password'}
-                    name="newPassword"
                     value={passwordData.newPassword}
-                    onChange={handlePasswordChange}
+                    onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
                     placeholder="Enter new password"
                     required
                   />
                   <button
                     type="button"
-                    onClick={() => togglePasswordVisibility('new')}
-                    className={styles.eyeButton}
+                    className={styles.passwordToggle}
+                    onClick={() => setShowPasswords({...showPasswords, new: !showPasswords.new})}
                   >
                     {showPasswords.new ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 </div>
               </div>
 
-              <div className={styles.formGroup}>
+              <div className={styles.passwordField}>
                 <label>Confirm New Password</label>
-                <div className={styles.passwordInput}>
+                <div className={styles.passwordInputWrapper}>
                   <input
                     type={showPasswords.confirm ? 'text' : 'password'}
-                    name="confirmPassword"
                     value={passwordData.confirmPassword}
-                    onChange={handlePasswordChange}
+                    onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
                     placeholder="Confirm new password"
                     required
                   />
                   <button
                     type="button"
-                    onClick={() => togglePasswordVisibility('confirm')}
-                    className={styles.eyeButton}
+                    className={styles.passwordToggle}
+                    onClick={() => setShowPasswords({...showPasswords, confirm: !showPasswords.confirm})}
                   >
                     {showPasswords.confirm ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 </div>
               </div>
 
-              {passwordError && (
-                <div className={styles.errorMessage}>
-                  {passwordError}
-                </div>
-              )}
-
-              {passwordSuccess && (
-                <div className={styles.successMessage}>
-                  {passwordSuccess}
-                </div>
-              )}
-
-              <div className={styles.modalActions}>
-                <button
-                  type="button"
-                  onClick={closePasswordModal}
+              <div className={styles.passwordModalButtons}>
+                <button 
+                  type="button" 
                   className={styles.cancelButton}
-                  disabled={isChangingPassword}
+                  onClick={closePasswordModal}
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className={styles.submitButton}
+                <button 
+                  type="submit" 
+                  className={styles.changePasswordButton}
                   disabled={isChangingPassword}
                 >
                   {isChangingPassword ? 'Changing...' : 'Change Password'}
@@ -999,9 +1010,10 @@ export default function ProfilePage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-
+      
       {/* Photo Crop Modal */}
       {showCropModal && selectedFile && (
         <div className={styles.modalOverlay}>

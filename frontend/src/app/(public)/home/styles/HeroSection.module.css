@@ -1,5 +1,5 @@
 .wrapper {
-  max-width: 1460px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0 1.5rem;
 }
@@ -13,7 +13,7 @@
 }
 
 .hero {
-  padding: 2.4rem 2rem 2rem 5rem;
+  padding: 2.4rem 0;
   background: #ffffff;
   min-height: auto;
 }

@@ -292,7 +292,8 @@ export default function LoginPage() {
             document.cookie = "userRole=superadmin; path=/; max-age=86400"
             localStorage.setItem("superAdminToken", data.token)
             localStorage.setItem("superAdminData", JSON.stringify(data.superadmin))
-            localStorage.setItem("token", "superadmin")
+            localStorage.setItem("token", data.token)
+            localStorage.setItem("user", JSON.stringify(data.superadmin))
             localStorage.setItem("userRole", "superadmin")
             break
             

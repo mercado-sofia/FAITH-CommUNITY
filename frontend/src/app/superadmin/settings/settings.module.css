@@ -93,7 +93,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
   max-width: 1200px;
-  align-items: stretch;
+  align-items: start;
 }
 
 /* Card Styles */

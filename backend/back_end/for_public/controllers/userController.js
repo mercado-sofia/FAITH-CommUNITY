@@ -1039,3 +1039,53 @@ export const checkEmailUser = async (req, res) => {
     res.status(500).json({ error: "Internal server error" })
   }
 }
+
+// Delete account (deactivate by setting is_active to 0)
+export const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ error: 'Password is required' });
+    }
+
+    // Get current password hash and check if user is active
+    const [users] = await db.query(
+      'SELECT password_hash, is_active FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = users[0];
+
+    // Check if account is already deactivated
+    if (!user.is_active) {
+      return res.status(400).json({ error: 'Account is already deactivated' });
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    if (!isPasswordValid) {
+      return res.status(400).json({ error: 'Incorrect password, please try again' });
+    }
+
+    // Deactivate account by setting is_active to 0
+    await db.query(
+      'UPDATE users SET is_active = 0, updated_at = NOW() WHERE id = ?',
+      [userId]
+    );
+
+    res.json({ 
+      message: 'Your account has been permanently deleted',
+      success: true 
+    });
+
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({ error: 'An error occurred while deleting your account' });
+  }
+};

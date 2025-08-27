@@ -48,7 +48,7 @@ export default function SuperAdminSettings() {
           return;
         }
 
-        const response = await fetch(`http://localhost:8080/api/superadmin/auth/profile`, {
+        const response = await fetch(`http://localhost:8080/api/superadmin/auth/profile/1`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -60,7 +60,7 @@ export default function SuperAdminSettings() {
         if (response.ok) {
           setCurrentUser(data);
           setEmailForm({ newEmail: data.email || data.username || '' });
-          setPasswordChangedAt(data.passwordChangedAt);
+          setPasswordChangedAt(data.password_changed_at);
         } else {
           showNotification(data.error || 'Failed to load user data', 'error');
         }
@@ -208,7 +208,7 @@ export default function SuperAdminSettings() {
       if (response.ok) {
         setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
         setPasswordEditMode(false);
-        setPasswordChangedAt(data.passwordChangedAt || new Date().toISOString());
+        setPasswordChangedAt(data.password_changed_at || new Date().toISOString());
         showNotification('Password updated successfully');
       } else {
         showNotification(data.error || 'Failed to update password', 'error');

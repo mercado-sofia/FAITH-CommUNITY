@@ -11,6 +11,7 @@ export default function SuperAdminSettings() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [passwordChangedAt, setPasswordChangedAt] = useState(null);
 
   // Form states
   const [emailForm, setEmailForm] = useState({
@@ -39,37 +40,32 @@ export default function SuperAdminSettings() {
 
   // Load current user data
   useEffect(() => {
-    const loadUserData = () => {
+    const loadUserData = async () => {
       try {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-          const user = JSON.parse(userData);
-          setCurrentUser(user);
-          setEmailForm({ newEmail: user.email || user.username || '' });
+        const token = localStorage.getItem('token');
+        if (!token || token === 'superadmin') {
+          showNotification('Authentication token is invalid. Please log out and log back in.', 'error');
+          return;
+        }
+
+        const response = await fetch(`http://localhost:8080/api/superadmin/auth/profile`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setCurrentUser(data);
+          setEmailForm({ newEmail: data.email || data.username || '' });
+          setPasswordChangedAt(data.passwordChangedAt);
         } else {
-          // Fallback: create a default user object if no data exists
-          const defaultUser = {
-            id: 1,
-            email: 'superadmin@faith.com',
-            username: 'superadmin@faith.com',
-            name: 'Super Administrator',
-            role: 'superadmin'
-          };
-          setCurrentUser(defaultUser);
-          setEmailForm({ newEmail: defaultUser.email });
+          showNotification(data.error || 'Failed to load user data', 'error');
         }
       } catch (error) {
-        console.error('Error loading user data:', error);
-        // Fallback on error
-        const defaultUser = {
-          id: 1,
-          email: 'superadmin@faith.com',
-          username: 'superadmin@faith.com',
-          name: 'Super Administrator',
-          role: 'superadmin'
-        };
-        setCurrentUser(defaultUser);
-        setEmailForm({ newEmail: defaultUser.email });
+        showNotification('Failed to load user data', 'error');
       }
     };
 
@@ -126,6 +122,13 @@ export default function SuperAdminSettings() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      console.log('Token from localStorage:', token);
+      
+      if (!token || token === 'superadmin') {
+        showNotification('Authentication token is invalid. Please log out and log back in.', 'error');
+        return;
+      }
+
       const response = await fetch(`http://localhost:8080/api/superadmin/auth/email/${currentUser.id}`, {
         method: 'PUT',
         headers: {
@@ -181,6 +184,13 @@ export default function SuperAdminSettings() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      console.log('Token from localStorage:', token);
+      
+      if (!token || token === 'superadmin') {
+        showNotification('Authentication token is invalid. Please log out and log back in.', 'error');
+        return;
+      }
+
       const response = await fetch(`http://localhost:8080/api/superadmin/auth/password/${currentUser.id}`, {
         method: 'PUT',
         headers: {
@@ -198,6 +208,7 @@ export default function SuperAdminSettings() {
       if (response.ok) {
         setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
         setPasswordEditMode(false);
+        setPasswordChangedAt(data.passwordChangedAt || new Date().toISOString());
         showNotification('Password updated successfully');
       } else {
         showNotification(data.error || 'Failed to update password', 'error');
@@ -342,7 +353,7 @@ export default function SuperAdminSettings() {
                   <h3 className={styles.statusTitle}>Password Status</h3>
                   <div className={styles.statusItem}>
                     <span className={styles.statusLabel}>Last changed:</span>
-                    <span className={styles.statusValue}>Recently</span>
+                    <span className={styles.statusValue}>{passwordChangedAt ? new Date(passwordChangedAt).toLocaleDateString() : 'Recently'}</span>
                   </div>
                   <p className={styles.securityNote}>
                     For security, we recommend changing your password regularly.

@@ -14,7 +14,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.85rem 3rem;
+  padding: 0.85rem 6rem;
   background-color: white;
   box-shadow: 0 2px 8px rgba(50, 51, 52, 0.1), 0 4px 12px rgba(0, 0, 0, 0.08);
   gap: 0.8rem;
@@ -26,9 +26,9 @@
   display: flex;
   flex: 1;
   justify-content: flex-start;
-  background: linear-gradient(to right, #1A685B, #238172);
+  background: none;
   padding: 0.7rem 2.4rem;
-  border-radius: 9999px;
+  border-radius: 0;
   gap: 2.4rem;
   font-weight: 500;
   font-size: 14px;
@@ -38,14 +38,49 @@
 }
 
 .navLink {
-  color: white;
+  color: black;
   text-decoration: none;
   white-space: nowrap;
   transition: color 0.2s ease;
+  position: relative;
+  font-weight: 600;
+}
+
+.navLink::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -4px;
+  left: 0;
+  background-color: #2F796C;
+  transition: width 0.3s ease;
 }
 
 .navLink:hover {
-  color: #FFAC00;
+  color: #0D594C;
+}
+
+.navLink:hover::after {
+  width: 100%;
+}
+
+/* Active state - only changes text color, no underline */
+.navLink.active {
+  color: #0D594C;
+}
+
+.navLink.active::after {
+  width: 0;
+}
+
+/* Disable hover effect for active links */
+.navLink.active:hover {
+  color: #0D594C;
+}
+
+.navLink.active:hover::after {
+  width: 0;
 }
 
 /* Logo Section */
@@ -55,7 +90,7 @@
   gap: 0.6rem;
   text-decoration: none;
   color: inherit;
-  width: 200px;
+  width: 160px;
   flex-shrink: 0;
 }
 

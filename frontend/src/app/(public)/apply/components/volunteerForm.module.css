@@ -466,6 +466,11 @@
   transition: width 0.3s ease;
 }
 
+/* Blue progress bar for "already applied" modal */
+.alreadyApplied .progressFill {
+  background: linear-gradient(90deg, #3B82F6, #2563EB);
+}
+
 @media (max-width: 640px) {
   .successModalContent {
     margin: 1rem;

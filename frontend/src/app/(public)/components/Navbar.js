@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuthState } from '../../../hooks/useAuthState';
 import { useNotifications } from '../../../hooks/useNotifications';
 import { useDropdown } from '../../../hooks/useDropdown';
@@ -14,6 +14,7 @@ import { FiLogOut } from 'react-icons/fi';
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isAuthenticated, isLoading: authLoading } = useAuthState();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isSlidingOut, setIsSlidingOut] = useState(false);
@@ -70,6 +71,17 @@ export default function Navbar() {
     },
     [router]
   );
+
+  // Check if link is active
+  const isLinkActive = useCallback((href) => {
+    if (href === '/') {
+      return pathname === '/';
+    }
+    if (href === '/faithree') {
+      return pathname === '/' || pathname.includes('faithree');
+    }
+    return pathname.startsWith(href);
+  }, [pathname]);
 
   // ===== Logout Modal helpers =====
   useEffect(() => {
@@ -164,35 +176,35 @@ export default function Navbar() {
         <div className={styles.navLinks}>
           <Link 
             href="/" 
-            className={styles.navLink}
+            className={`${styles.navLink} ${isLinkActive('/') ? styles.active : ''}`}
             onMouseEnter={() => handleLinkHover('/')}
           >
             Home
           </Link>
           <Link 
             href="/about" 
-            className={styles.navLink}
+            className={`${styles.navLink} ${isLinkActive('/about') ? styles.active : ''}`}
             onMouseEnter={() => handleLinkHover('/about')}
           >
             About Us
           </Link>
           <Link 
             href="/programs" 
-            className={styles.navLink}
+            className={`${styles.navLink} ${isLinkActive('/programs') ? styles.active : ''}`}
             onMouseEnter={() => handleLinkHover('/programs')}
           >
             Programs and Services
           </Link>
           <Link 
-            href="/#faithree" 
-            className={styles.navLink}
-            onMouseEnter={() => handleLinkHover('/#faithree')}
+            href="/faithree" 
+            className={`${styles.navLink} ${isLinkActive('/faithree') ? styles.active : ''}`}
+            onMouseEnter={() => handleLinkHover('/faithree')}
           >
             FAIThree
           </Link>
           <Link 
             href="/faqs" 
-            className={styles.navLink}
+            className={`${styles.navLink} ${isLinkActive('/faqs') ? styles.active : ''}`}
             onMouseEnter={() => handleLinkHover('/faqs')}
           >
             FAQs
@@ -420,10 +432,10 @@ export default function Navbar() {
               Programs and Services
             </Link>
             <Link 
-              href="/#faithree" 
+              href="/faithree" 
               className={styles.mobileNavLink} 
               onClick={toggleMenu}
-              onMouseEnter={() => handleLinkHover('/#faithree')}
+              onMouseEnter={() => handleLinkHover('/faithree')}
             >
               FAIThree
             </Link>

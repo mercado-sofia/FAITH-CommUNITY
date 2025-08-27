@@ -4,10 +4,7 @@ import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Loader from '../../../../../components/Loader';
 import BannerSection from '../../../components/PageBanner';
-import OrgInfoCard from './components/OrgInfoCard';
-import AdvocacyCompetency from './components/AdvocacyCompetency';
-import FeaturedProjects from './components/FeaturedProjects';
-import OrgHeadsCarousel from './components/OrgHeadsCarousel';
+import { OrgInfoCard, AdvocacyCompetency, FeaturedProjects, OrgHeadsCarousel } from './components';
 import { usePublicOrganizationData } from '../../../../../hooks/usePublicData';
 import styles from '../org.module.css';
 
@@ -128,7 +125,7 @@ export default function OrgPage() {
           advocacies={fallbackData.advocacies}
           competencies={fallbackData.competencies}
         />
-        <FeaturedProjects projects={fallbackData.featuredProjects} />
+        <FeaturedProjects orgID={orgID} />
 
         <section className={styles.volunteerBanner}>
           <div className={styles.bannerContent}>
@@ -160,7 +157,7 @@ export default function OrgPage() {
         advocacies={organizationData.advocacies}
         competencies={organizationData.competencies}
       />
-      <FeaturedProjects projects={organizationData.featuredProjects} />
+      <FeaturedProjects orgID={orgID} />
 
       <section className={styles.volunteerBanner}>
         <div className={styles.bannerContent}>

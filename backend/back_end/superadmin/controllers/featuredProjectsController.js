@@ -56,7 +56,8 @@ const getAllFeaturedProjects = async (req, res) => {
     console.log('Featured projects query results:', {
       count: transformedResults.length,
       firstResult: transformedResults[0] || null,
-      hasCreatedAt: transformedResults[0] ? 'created_at' in transformedResults[0] : false
+      hasCreatedAt: transformedResults[0] ? 'created_at' in transformedResults[0] : false,
+      statusValues: transformedResults.map(p => ({ id: p.id, title: p.title, status: p.status }))
     });
     
     res.json({
@@ -176,6 +177,8 @@ const addFeaturedProject = async (req, res) => {
     console.log('addFeaturedProject - Program data:', {
       id: program.id,
       title: program.title,
+      originalStatus: program.status,
+      convertedStatus: program.status.toLowerCase(),
       hasImage: !!program.image,
       imageType: program.image ? (program.image.startsWith('data:') ? 'base64' : 'file') : 'none',
       imageLength: program.image ? program.image.length : 0,
@@ -205,7 +208,7 @@ const addFeaturedProject = async (req, res) => {
       program.title,
       program.description,
       program.image,
-      program.status
+      program.status.toLowerCase() // Convert to lowercase to match featured_projects ENUM
     ]);
     
     res.json({

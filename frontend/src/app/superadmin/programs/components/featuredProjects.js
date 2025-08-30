@@ -19,7 +19,8 @@ const FeaturedProjects = () => {
     featuredProjectsLength: featuredProjects.length,
     isLoading,
     error,
-    firstProject: featuredProjects[0] || null
+    firstProject: featuredProjects[0] || null,
+    allStatuses: featuredProjects.map(p => ({ id: p.id, title: p.title, status: p.status }))
   });
 
   if (isLoading) {

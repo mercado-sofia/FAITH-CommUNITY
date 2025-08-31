@@ -347,29 +347,6 @@
   align-items: center;
 }
 
-.statusBadge {
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.statusBadge.Upcoming {
-  background: #e6fffa;
-  color: #00b894;
-}
-
-.statusBadge.Active {
-  background: #e6f7ff;
-  color: #0984e3;
-}
-
-.statusBadge.Completed {
-  background: #f0f9ff;
-  color: #6c5ce7;
-}
 
 .cardDate {
   font-size: 0.75rem;
@@ -1301,19 +1278,19 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.statusBadge.Upcoming {
+.statusBadge.upcoming {
   background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
   color: #1e40af;
   border-color: #3b82f6;
 }
 
-.statusBadge.Active {
+.statusBadge.active {
   background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
   color: #047857;
   border-color: #10b981;
 }
 
-.statusBadge.Completed {
+.statusBadge.completed {
   background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
   color: #374151;
   border-color: #6b7280;

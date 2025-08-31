@@ -53,7 +53,7 @@ const initializeDatabase = async () => {
           title VARCHAR(255) NOT NULL,
           description TEXT,
           image VARCHAR(255),
-          status ENUM('active', 'completed', 'pending') DEFAULT 'active',
+          status ENUM('upcoming', 'active', 'completed', 'pending') DEFAULT 'active',
           completed_date DATE,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE CASCADE,
@@ -61,6 +61,31 @@ const initializeDatabase = async () => {
         )
       `);
       console.log("✅ Featured_projects table created successfully!");
+    } else {
+      // Migration: Add 'upcoming' to existing featured_projects status ENUM
+      try {
+        console.log("🔧 Checking featured_projects status ENUM...");
+        await connection.query(`
+          ALTER TABLE featured_projects 
+          MODIFY COLUMN status ENUM('upcoming', 'active', 'completed', 'pending') DEFAULT 'active'
+        `);
+        console.log("✅ Featured_projects status ENUM updated to include 'upcoming'!");
+        
+        // Fix existing featured projects with incorrect status case
+        console.log("🔧 Fixing status case mismatch in existing featured projects...");
+        await connection.query(`
+          UPDATE featured_projects fp
+          JOIN programs_projects pp ON fp.program_id = pp.id
+          SET fp.status = LOWER(pp.status)
+          WHERE fp.status != LOWER(pp.status)
+        `);
+        console.log("✅ Fixed status case mismatch in featured projects!");
+        
+      } catch (error) {
+        if (error.code !== 'ER_DUP_FIELDNAME') {
+          console.error('Error updating featured_projects status ENUM:', error);
+        }
+      }
     }
 
     // Check if news table exists

@@ -78,7 +78,7 @@ export default function Navbar() {
       return pathname === '/';
     }
     if (href === '/faithree') {
-      return pathname === '/' || pathname.includes('faithree');
+      return pathname.includes('faithree');
     }
     return pathname.startsWith(href);
   }, [pathname]);

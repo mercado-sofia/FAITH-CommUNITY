@@ -863,7 +863,7 @@
 .logoutModal {
   background: linear-gradient(to bottom right, #f9fffe, #ffffff);
   padding: 2.6rem 2rem 2.2rem;
-  border-radius: 12px;
+  border-radius: 14px;
   width: 90%;
   max-width: 320px;
   text-align: center;
@@ -874,15 +874,15 @@
 
 /* Title */
 .logoutModalTitle {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   color: #050809;
-  margin-bottom: 0.85rem;
+  margin-bottom: 1rem;
 }
 
 /* Body text */
 .logoutModalText {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   color: #2c2c2c;
 }
@@ -891,7 +891,7 @@
 .logoutButtonGroup {
   display: flex;
   justify-content: center;
-  margin-top: 2.0rem;
+  margin-top: 2rem;
   gap: 10px;
 }
 
@@ -901,7 +901,7 @@
   border: none;
   color: #238172;
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: 14px;
   font-family: var(--font-inter);
   cursor: pointer;
   padding: 0.75rem 1rem;

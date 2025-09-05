@@ -1,3 +1,4 @@
+//db table: messages
 import db from "../../database.js";
 import NotificationController from "../../admin/controllers/notificationController.js";
 

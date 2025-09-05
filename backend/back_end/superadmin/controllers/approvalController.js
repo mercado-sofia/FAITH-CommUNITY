@@ -1,3 +1,4 @@
+//db table: submissions
 import db from '../../database.js';
 import NotificationController from '../../admin/controllers/notificationController.js';
 

@@ -1,3 +1,4 @@
+//db table: featured_projects
 import db from "../../database.js";
 
 // Get all featured projects with organization and program details

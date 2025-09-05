@@ -1,3 +1,4 @@
+//db table: subscribers
 import db from '../../database.js';
 
 // CREATE (subscribe)

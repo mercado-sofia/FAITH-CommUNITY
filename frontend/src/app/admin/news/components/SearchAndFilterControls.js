@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiChevronDown, FiSearch, FiX } from 'react-icons/fi';
+import { FiChevronDown, FiSearch, FiX, FiTrash2 } from 'react-icons/fi';
 import styles from './styles/SearchAndFilterControls.module.css';
 
 const SearchAndFilterControls = ({
@@ -12,7 +12,8 @@ const SearchAndFilterControls = ({
   onSortChange,
   onShowCountChange,
   totalCount,
-  filteredCount
+  filteredCount,
+  onRecentlyDeletedClick
 }) => {
   const [showDropdown, setShowDropdown] = useState(null);
   const [localQuery, setLocalQuery] = useState(searchQuery || '');
@@ -113,6 +114,20 @@ const SearchAndFilterControls = ({
           )}
         </div>
       </div>
+
+      {/* Recently Deleted Button */}
+      {onRecentlyDeletedClick && (
+        <div className={styles.recentlyDeletedWrapper}>
+          <button
+            className={styles.recentlyDeletedButton}
+            onClick={onRecentlyDeletedClick}
+            title="View recently deleted news items"
+          >
+            <FiTrash2 size={16} />
+            Recently Deleted
+          </button>
+        </div>
+      )}
     </div>
   );
 };

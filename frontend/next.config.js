@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Fix workspace root detection warning
+  outputFileTracingRoot: __dirname,
+  
   // Enable experimental features for better performance
   experimental: {
     optimizePackageImports: ['react-icons'],

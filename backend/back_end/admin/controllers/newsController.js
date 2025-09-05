@@ -1,6 +1,6 @@
 //db table: news
-import db from "../../database.js";
 import jwt from "jsonwebtoken";
+import db from "../../database.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env";
 
@@ -26,8 +26,9 @@ async function notifySubscribers({ type, subject, messageHtml }) {
 /* ----------------------------- Create News ---------------------------- */
 // Create news directly (for admin)
 export const createNews = async (req, res) => {
-  const { title, description, date } = req.body;
+  const { title, slug, content, excerpt, published_at } = req.body;
   const { orgId } = req.params;
+  const featured_image = req.file ? req.file.path : null;
 
   // Verify authentication
   const authHeader = req.headers.authorization;
@@ -38,7 +39,10 @@ export const createNews = async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
+    });
     req.admin = decoded;
   } catch (err) {
     return res.status(403).json({ success: false, message: "Invalid or expired token" });
@@ -47,8 +51,8 @@ export const createNews = async (req, res) => {
   if (!orgId) {
     return res.status(400).json({ success: false, message: "Organization ID is required" });
   }
-  if (!title || !description) {
-    return res.status(400).json({ success: false, message: "Title and description are required" });
+  if (!title || !slug || !content || !excerpt || !published_at) {
+    return res.status(400).json({ success: false, message: "Title, slug, content, excerpt, and published_at are required" });
   }
 
   try {
@@ -79,11 +83,20 @@ export const createNews = async (req, res) => {
 
     const organization = orgRows[0];
 
-    // 2) Insert news
+    // 2) Check slug uniqueness
+    const [slugCheck] = await db.execute(
+      "SELECT id FROM news WHERE slug = ? AND is_deleted = FALSE",
+      [slug]
+    );
+    if (slugCheck.length > 0) {
+      return res.status(400).json({ success: false, message: "Slug already exists" });
+    }
+
+    // 3) Insert news with new fields
     const [result] = await db.execute(
-      `INSERT INTO news (organization_id, title, description, date)
-       VALUES (?, ?, ?, ?)`,
-      [organization.id, title, description, date || null]
+      `INSERT INTO news (organization_id, title, slug, content, excerpt, featured_image, published_at, date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [organization.id, title, slug, content, excerpt, featured_image, published_at, published_at]
     );
 
     if (result.affectedRows === 0) {
@@ -92,9 +105,9 @@ export const createNews = async (req, res) => {
 
     const newsId = result.insertId;
 
-    // 3) 🔔 Notify subscribers (announcement)
+    // 4) 🔔 Notify subscribers (announcement)
     const appBase = process.env.APP_BASE_URL || "http://localhost:3000";
-    const url = `${appBase}/news/${newsId}`;
+    const url = `${appBase}/news/${slug}`;
 
     // Fire-and-forget (remove await to make it truly background)
     notifySubscribers({
@@ -102,7 +115,7 @@ export const createNews = async (req, res) => {
       subject: `New Announcement: ${title}`,
       messageHtml: `
         <h2>${title}</h2>
-        <p>${String(description)}</p>
+        <p>${excerpt}</p>
         <p><a href="${url}">Read more</a></p>
       `,
     }).catch(e => console.warn("Notify failed:", e?.message || e));
@@ -110,7 +123,16 @@ export const createNews = async (req, res) => {
     return res.json({
       success: true,
       message: "News created successfully",
-      data: { id: newsId, title, description, date: date || null, organization_id: organization.id }
+      data: { 
+        id: newsId, 
+        title, 
+        slug, 
+        content, 
+        excerpt, 
+        featured_image, 
+        published_at, 
+        organization_id: organization.id 
+      }
     });
   } catch (error) {
     console.error("❌ Error creating news:", error);
@@ -122,39 +144,53 @@ export const createNews = async (req, res) => {
 // Get news for a specific organization (for admin view) - Only approved news
 export const getNewsByOrg = async (req, res) => {
   const { orgId } = req.params;
+  
+  console.log(`🔍 getNewsByOrg called with orgId: ${orgId}`);
 
   // Verify authentication
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
   if (!token) {
+    console.log("❌ No token provided");
     return res.status(401).json({ success: false, message: "Access token required" });
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      issuer: process.env.JWT_ISS || "faith-community",
+      audience: process.env.JWT_AUD || "admin",
+    });
     req.admin = decoded;
+    console.log(`✅ Token verified for admin: ${decoded.org || decoded.id}`);
   } catch (err) {
+    console.log("❌ Token verification failed:", err.message);
     return res.status(403).json({ success: false, message: "Invalid or expired token" });
   }
 
   if (!orgId) {
+    console.log("❌ No orgId provided");
     return res.status(400).json({ success: false, message: "Organization ID is required" });
   }
 
   try {
+    console.log(`🔍 Looking up organization with ID/acronym: ${orgId}`);
+    
     let [orgRows] = await db.execute(
       "SELECT id FROM organizations WHERE id = ?",
       [orgId]
     );
 
     if (orgRows.length === 0) {
+      console.log(`🔍 Organization not found directly, trying admins table for acronym: ${orgId}`);
       // Try to find by org acronym from admins table
       const [adminRows] = await db.execute(
         "SELECT organization_id FROM admins WHERE org = ? LIMIT 1",
         [orgId]
       );
+      
       if (adminRows.length > 0) {
+        console.log(`✅ Found organization_id ${adminRows[0].organization_id} from admins table`);
         // Use the organization_id from admins table
         [orgRows] = await db.execute(
           "SELECT id FROM organizations WHERE id = ?",
@@ -164,10 +200,12 @@ export const getNewsByOrg = async (req, res) => {
     }
 
     if (orgRows.length === 0) {
+      console.log(`❌ Organization not found for: ${orgId}`);
       return res.status(404).json({ success: false, message: "Organization not found" });
     }
 
     const organization = orgRows[0];
+    console.log(`✅ Found organization:`, organization);
 
     const [newsRows] = await db.execute(
       `SELECT n.*, a.org as orgAcronym, a.orgName, o.logo as orgLogo
@@ -178,6 +216,8 @@ export const getNewsByOrg = async (req, res) => {
        ORDER BY n.created_at DESC`,
       [organization.id]
     );
+
+    console.log(`📰 Found ${newsRows.length} news items for organization ${organization.id}`);
 
     const news = newsRows.map(n => {
       let logoUrl;
@@ -194,15 +234,21 @@ export const getNewsByOrg = async (req, res) => {
       return {
         id: n.id,
         title: n.title,
-        description: n.description,
+        slug: n.slug,
+        content: n.content,
+        description: n.description, // Keep for backward compatibility
+        excerpt: n.excerpt,
+        featured_image: n.featured_image,
+        published_at: n.published_at,
         date: n.date || n.created_at,
         created_at: n.created_at,
-        orgID: n.orgAcronym || organization.org,
-        orgName: n.orgName || organization.orgName,
+        orgID: n.orgAcronym || 'Unknown',
+        orgName: n.orgName || 'Unknown Organization',
         icon: logoUrl
       };
     });
 
+    console.log(`✅ Returning ${news.length} formatted news items`);
     return res.json(news);
   } catch (error) {
     console.error("❌ Error fetching news:", error);
@@ -238,7 +284,12 @@ export const getApprovedNews = async (req, res) => {
       return {
         id: n.id,
         title: n.title,
-        description: n.description,
+        slug: n.slug,
+        content: n.content,
+        description: n.description, // Keep for backward compatibility
+        excerpt: n.excerpt,
+        featured_image: n.featured_image,
+        published_at: n.published_at,
         date: n.date || n.date_published || n.created_at,
         created_at: n.created_at,
         organization_id: n.organization_id,
@@ -315,7 +366,12 @@ export const getApprovedNewsByOrg = async (req, res) => {
       return {
         id: n.id,
         title: n.title,
-        description: n.description,
+        slug: n.slug,
+        content: n.content,
+        description: n.description, // Keep for backward compatibility
+        excerpt: n.excerpt,
+        featured_image: n.featured_image,
+        published_at: n.published_at,
         date: n.date || n.date_published || n.created_at,
         created_at: n.created_at,
         organization_id: n.organization_id,
@@ -370,7 +426,12 @@ export const getNewsById = async (req, res) => {
     const newsData = {
       id: n.id,
       title: n.title,
-      description: n.description,
+      slug: n.slug,
+      content: n.content,
+      description: n.description, // Keep for backward compatibility
+      excerpt: n.excerpt,
+      featured_image: n.featured_image,
+      published_at: n.published_at,
       date: n.date || n.date_published || n.created_at,
       created_at: n.created_at,
       organization_id: n.organization_id,
@@ -400,7 +461,10 @@ export const deleteNewsSubmission = async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
+    });
     req.admin = decoded;
   } catch (err) {
     return res.status(403).json({ success: false, message: "Invalid or expired token" });
@@ -450,7 +514,10 @@ export const getRecentlyDeletedNews = async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
+    });
     req.admin = decoded;
   } catch (err) {
     return res.status(403).json({ success: false, message: "Invalid or expired token" });
@@ -518,13 +585,18 @@ export const getRecentlyDeletedNews = async (req, res) => {
       return {
         id: n.id,
         title: n.title,
-        description: n.description,
+        slug: n.slug,
+        content: n.content,
+        description: n.description, // Keep for backward compatibility
+        excerpt: n.excerpt,
+        featured_image: n.featured_image,
+        published_at: n.published_at,
         date: n.date || n.created_at,
         created_at: n.created_at,
         deleted_at: n.deleted_at,
         days_until_permanent_deletion: Math.max(0, daysRemaining),
-        orgID: n.orgAcronym || organization.org,
-        orgName: n.orgName || organization.orgName,
+        orgID: n.orgAcronym || 'Unknown',
+        orgName: n.orgName || 'Unknown Organization',
         icon: logoUrl
       };
     });
@@ -549,7 +621,10 @@ export const restoreNews = async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
+    });
     req.admin = decoded;
   } catch (err) {
     return res.status(403).json({ success: false, message: "Invalid or expired token" });
@@ -587,7 +662,10 @@ export const permanentlyDeleteNews = async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
+    });
     req.admin = decoded;
   } catch (err) {
     return res.status(403).json({ success: false, message: "Invalid or expired token" });
@@ -616,7 +694,8 @@ export const permanentlyDeleteNews = async (req, res) => {
 // Update news (for admin)
 export const updateNews = async (req, res) => {
   const { id } = req.params;
-  const { title, description, date } = req.body;
+  const { title, slug, content, excerpt, published_at } = req.body;
+  const featured_image = req.file ? req.file.path : null;
 
   // Verify authentication
   const authHeader = req.headers.authorization;
@@ -627,15 +706,18 @@ export const updateNews = async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
+    });
     req.admin = decoded;
   } catch (err) {
     return res.status(403).json({ success: false, message: "Invalid or expired token" });
   }
 
   if (!id) return res.status(400).json({ success: false, message: "News ID is required" });
-  if (!title || !description)
-    return res.status(400).json({ success: false, message: "Title and description are required" });
+  if (!title || !slug || !content || !excerpt || !published_at)
+    return res.status(400).json({ success: false, message: "Title, slug, content, excerpt, and published_at are required" });
 
   try {
     const [existingNews] = await db.execute("SELECT id FROM news WHERE id = ?", [id]);
@@ -643,10 +725,27 @@ export const updateNews = async (req, res) => {
       return res.status(404).json({ success: false, message: "News not found" });
     }
 
-    const [result] = await db.execute(
-      `UPDATE news SET title = ?, description = ?, date = ? WHERE id = ?`,
-      [title, description, date || null, id]
+    // Check slug uniqueness (excluding current record)
+    const [slugCheck] = await db.execute(
+      "SELECT id FROM news WHERE slug = ? AND id != ? AND is_deleted = FALSE",
+      [slug, id]
     );
+    if (slugCheck.length > 0) {
+      return res.status(400).json({ success: false, message: "Slug already exists" });
+    }
+
+    let query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?`;
+    let params = [title, slug, content, excerpt, published_at, published_at];
+    
+    if (featured_image) {
+      query += ', featured_image = ?';
+      params.push(featured_image);
+    }
+    
+    query += ' WHERE id = ?';
+    params.push(id);
+
+    const [result] = await db.execute(query, params);
 
     if (result.affectedRows === 0) {
       return res.status(500).json({ success: false, message: "Failed to update news" });

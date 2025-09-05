@@ -270,15 +270,20 @@ export const useAdminNews = (orgAcronym) => {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
+      revalidateOnMount: true,
       dedupingInterval: 60000, // Cache for 1 minute
-      errorRetryCount: 3,
-      errorRetryInterval: 3000,
+      errorRetryCount: 2, // Reduced retry count
+      errorRetryInterval: 2000, // Faster retry interval
+      keepPreviousData: true, // Keep previous data while loading
       shouldRetryOnError: (error) => {
-        // Don't retry on 401 (auth errors) or 404 (not found)
-        return error.status !== 401 && error.status !== 404;
+        // Don't retry on 401 (auth errors), 404 (not found), or 403 (forbidden)
+        return error.status !== 401 && error.status !== 404 && error.status !== 403;
       },
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/news/org/${orgAcronym}`, error, { orgAcronym });
+        // Only log if orgAcronym is valid to avoid spam
+        if (orgAcronym) {
+          logger.swrError(`${API_BASE_URL}/api/news/org/${orgAcronym}`, error, { orgAcronym });
+        }
       }
     }
   );

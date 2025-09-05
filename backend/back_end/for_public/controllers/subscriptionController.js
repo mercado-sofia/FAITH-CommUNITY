@@ -1,4 +1,4 @@
-// backend/back_end/for_public/controllers/subscriptionController.js
+//db table: subscribers
 import db from '../../database.js';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';

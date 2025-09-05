@@ -43,13 +43,13 @@ export default function NewsSection() {
       // Find the latest news by sorting and taking the first one
       const latestNews = orgNews.length > 0 
         ? orgNews.sort((a, b) => {
-            const dateA = new Date(a.date || a.created_at || 0);
-            const dateB = new Date(b.date || b.created_at || 0);
+            const dateA = new Date(a.published_at || a.date || a.created_at || 0);
+            const dateB = new Date(b.published_at || b.date || b.created_at || 0);
             return dateB - dateA;
           })[0] 
         : null;
       
-      const latestDate = latestNews ? new Date(latestNews.date || latestNews.created_at || 0) : new Date(0);
+      const latestDate = latestNews ? new Date(latestNews.published_at || latestNews.date || latestNews.created_at || 0) : new Date(0);
       
       return {
         ...org,
@@ -101,8 +101,8 @@ export default function NewsSection() {
   const filteredNews = useMemo(() => {
     if (!selectedOrg) {
       return [...news].sort((a, b) => {
-        const dateA = new Date(a.date || a.created_at || 0);
-        const dateB = new Date(b.date || b.created_at || 0);
+        const dateA = new Date(a.published_at || a.date || a.created_at || 0);
+        const dateB = new Date(b.published_at || b.date || b.created_at || 0);
         return dateB - dateA;
       });
     }
@@ -115,8 +115,8 @@ export default function NewsSection() {
     
     // Sort filtered news by date (newest first)
     return filtered.sort((a, b) => {
-      const dateA = new Date(a.date || a.created_at || 0);
-      const dateB = new Date(b.date || b.created_at || 0);
+      const dateA = new Date(a.published_at || a.date || a.created_at || 0);
+      const dateB = new Date(b.published_at || b.date || b.created_at || 0);
       return dateB - dateA; // Descending order (newest first)
     });
   }, [news, selectedOrg]);
@@ -292,20 +292,43 @@ export default function NewsSection() {
               <p>No announcements yet</p>
             </div>
           ) : (
-            filteredNews.slice(0, maxDisplay).map((newsItem) => (
-              <Link key={newsItem.id} href={`/news?highlight=${newsItem.id}&news_org=${selectedOrg?.id}`} className={styles.newsCard}>
-                <p className={styles.newsDate}>
-                  {formatDate(newsItem.date)} / By {newsItem.orgName || newsItem.orgID || 'Unknown Organization'}
-                </p>
-                <h3 className={styles.newsTitle}>{newsItem.title}</h3>
-                <p className={styles.newsDesc}>
-                  {newsItem.description && newsItem.description.length > 128
-                    ? `${newsItem.description.substring(0, 128)}...`
-                    : newsItem.description}
-                </p>
-                <span className={styles.readMore}>Read More</span>
-              </Link>
-            ))
+            filteredNews.slice(0, maxDisplay).map((newsItem) => {
+              const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+              const imagePath = newsItem.featured_image ? 
+                (newsItem.featured_image.startsWith('/') ? newsItem.featured_image : `/${newsItem.featured_image}`) : null;
+              const imageUrl = imagePath ? `${baseUrl}${imagePath}` : null;
+              
+              return (
+                <Link key={newsItem.id} href={`/news/${newsItem.id}`} className={styles.newsCard}>
+                  {imageUrl && (
+                    <div className={styles.newsImageContainer}>
+                      <Image
+                        src={imageUrl}
+                        alt={newsItem.title || 'News image'}
+                        width={200}
+                        height={120}
+                        className={styles.newsImage}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                  <div className={styles.newsContent}>
+                    <p className={styles.newsDate}>
+                      {formatDate(newsItem.published_at || newsItem.date)} / By {newsItem.orgName || newsItem.orgID || 'Unknown Organization'}
+                    </p>
+                    <h3 className={styles.newsTitle}>{newsItem.title}</h3>
+                    <p className={styles.newsDesc}>
+                      {(newsItem.excerpt || newsItem.description) && (newsItem.excerpt || newsItem.description).length > 128
+                        ? `${(newsItem.excerpt || newsItem.description).substring(0, 128)}...`
+                        : (newsItem.excerpt || newsItem.description)}
+                    </p>
+                    <span className={styles.readMore}>Read More</span>
+                  </div>
+                </Link>
+              );
+            })
           )}
         </div>
 

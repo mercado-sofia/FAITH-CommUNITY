@@ -46,9 +46,13 @@ export const loginSuperadmin = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: superadmin.id, username: superadmin.username, role: "superadmin", iss: process.env.JWT_ISS || "faith-community-api", aud: process.env.JWT_AUD || "faith-community-client" },
+      { id: superadmin.id, username: superadmin.username, role: "superadmin" },
       JWT_SECRET,
-      { expiresIn: "30m" },
+      { 
+        expiresIn: "30m",
+        issuer: process.env.JWT_ISS || "faith-community",
+        audience: process.env.JWT_AUD || "admin"
+      },
     )
 
     res.json({
@@ -84,8 +88,8 @@ export const verifySuperadminToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community-api",
-      audience: process.env.JWT_AUD || "faith-community-client",
+      issuer: process.env.JWT_ISS || "faith-community",
+      audience: process.env.JWT_AUD || "admin",
     })
     console.log("Token decoded successfully:", { 
       id: decoded.id, 

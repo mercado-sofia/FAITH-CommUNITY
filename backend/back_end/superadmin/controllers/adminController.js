@@ -2,13 +2,15 @@
 import db from "../../database.js"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
+import { authenticator } from "otplib"
+import { logAdminAction } from "../../utils/audit.js"
 
-// Simple JWT secret - you can change this to any string
-const JWT_SECRET = "faith-community-admin-secret-2024"
+// JWT secret via env
+const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
 
 // Admin login endpoint
 export const loginAdmin = async (req, res) => {
-  const { email, password } = req.body
+  const { email, password, otp } = req.body
 
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required" })
@@ -16,7 +18,7 @@ export const loginAdmin = async (req, res) => {
 
   try {
     const [adminRows] = await db.execute(
-      'SELECT id, org, orgName, email, password, role, status FROM admins WHERE email = ? AND status = "ACTIVE"',
+      'SELECT id, org, orgName, email, password, role, status, mfa_enabled, mfa_secret FROM admins WHERE email = ? AND status = "ACTIVE"',
       [email],
     )
 
@@ -31,7 +33,18 @@ export const loginAdmin = async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" })
     }
 
-    // Generate JWT token
+    // Enforce TOTP if enabled
+    if (admin.mfa_enabled) {
+      if (!otp) {
+        return res.status(401).json({ error: "OTP required", requireMfa: true })
+      }
+      const ok = authenticator.check(String(otp), admin.mfa_secret || "")
+      if (!ok) {
+        return res.status(401).json({ error: "Invalid OTP", requireMfa: true })
+      }
+    }
+
+    // Generate JWT token (shorter expiry)
     const token = jwt.sign(
       {
         id: admin.id,
@@ -39,11 +52,14 @@ export const loginAdmin = async (req, res) => {
         role: admin.role,
         org: admin.org,
         orgName: admin.orgName,
+        iss: process.env.JWT_ISS || "faith-community-api",
+        aud: process.env.JWT_AUD || "faith-community-client",
       },
       JWT_SECRET,
-      { expiresIn: "24h" },
+      { expiresIn: "30m" },
     )
 
+    await logAdminAction(admin.id, 'login', 'Admin logged in', req)
     res.json({
       message: "Login successful",
       token,
@@ -72,11 +88,63 @@ export const verifyAdminToken = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET)
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
+    })
     req.admin = decoded
     next()
   } catch (err) {
     return res.status(403).json({ error: "Invalid or expired token" })
+  }
+}
+
+// -------------------- MFA (TOTP) for Admins --------------------
+export const setupMfaAdmin = async (req, res) => {
+  try {
+    const { id } = req.params
+    const [rows] = await db.execute('SELECT id, email FROM admins WHERE id = ? AND status = "ACTIVE"', [id])
+    if (rows.length === 0) return res.status(404).json({ error: 'Admin not found' })
+    const secret = authenticator.generateSecret()
+    const label = encodeURIComponent(`FAITH-CommUNITY:admin-${rows[0].email}`)
+    const issuer = encodeURIComponent(process.env.TOTP_ISSUER || 'FAITH-CommUNITY')
+    const otpauth = `otpauth://totp/${label}?secret=${secret}&issuer=${issuer}`
+    await db.execute('ALTER TABLE admins ADD COLUMN mfa_secret VARCHAR(255) NULL', []).catch(() => {})
+    await db.execute('ALTER TABLE admins ADD COLUMN mfa_enabled TINYINT(1) DEFAULT 0', []).catch(() => {})
+    await db.execute('UPDATE admins SET mfa_secret = ? WHERE id = ?', [secret, id])
+    res.json({ otpauth, secret })
+  } catch (e) {
+    console.error('Admin MFA setup error:', e)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+export const verifyMfaAdmin = async (req, res) => {
+  try {
+    const { id } = req.params
+    const { otp } = req.body
+    const [rows] = await db.execute('SELECT id, mfa_secret FROM admins WHERE id = ?', [id])
+    if (rows.length === 0) return res.status(404).json({ error: 'Admin not found' })
+    const ok = authenticator.check(String(otp || ''), rows[0].mfa_secret || '')
+    if (!ok) return res.status(400).json({ error: 'Invalid OTP' })
+    await db.execute('UPDATE admins SET mfa_enabled = 1 WHERE id = ?', [id])
+    await logAdminAction(id, 'mfa_enable', 'Admin enabled MFA')
+    res.json({ message: 'MFA enabled' })
+  } catch (e) {
+    console.error('Admin MFA verify error:', e)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+export const disableMfaAdmin = async (req, res) => {
+  try {
+    const { id } = req.params
+    await db.execute('UPDATE admins SET mfa_enabled = 0, mfa_secret = NULL WHERE id = ?', [id])
+    await logAdminAction(id, 'mfa_disable', 'Admin disabled MFA')
+    res.json({ message: 'MFA disabled' })
+  } catch (e) {
+    console.error('Admin MFA disable error:', e)
+    res.status(500).json({ error: 'Internal server error' })
   }
 }
 

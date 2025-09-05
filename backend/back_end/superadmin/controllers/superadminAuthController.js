@@ -3,15 +3,16 @@ import db from "../../database.js"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import crypto from "crypto"
+import { authenticator } from "otplib"
 
-// Simple JWT secret for superadmin (consider moving to .env)
-const JWT_SECRET = "faith-community-superadmin-secret-2024"
+// JWT secret via env
+const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
 
 // -------------------- Auth: Login / Verify --------------------
 
 // Superadmin login endpoint
 export const loginSuperadmin = async (req, res) => {
-  const { email, password } = req.body
+  const { email, password, otp } = req.body
 
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required" })
@@ -19,7 +20,7 @@ export const loginSuperadmin = async (req, res) => {
 
   try {
     const [superadminRows] = await db.execute(
-      "SELECT id, username, password, created_at, updated_at FROM superadmin WHERE username = ?",
+      "SELECT id, username, password, mfa_enabled, mfa_secret, created_at, updated_at FROM superadmin WHERE username = ?",
       [email],
     )
 
@@ -33,10 +34,21 @@ export const loginSuperadmin = async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" })
     }
 
+    // Enforce TOTP if enabled
+    if (superadmin.mfa_enabled) {
+      if (!otp) {
+        return res.status(401).json({ error: "OTP required", requireMfa: true })
+      }
+      const isValidOtp = authenticator.check(String(otp), superadmin.mfa_secret || "")
+      if (!isValidOtp) {
+        return res.status(401).json({ error: "Invalid OTP", requireMfa: true })
+      }
+    }
+
     const token = jwt.sign(
-      { id: superadmin.id, username: superadmin.username, role: "superadmin" },
+      { id: superadmin.id, username: superadmin.username, role: "superadmin", iss: process.env.JWT_ISS || "faith-community-api", aud: process.env.JWT_AUD || "faith-community-client" },
       JWT_SECRET,
-      { expiresIn: "24h" },
+      { expiresIn: "30m" },
     )
 
     res.json({
@@ -71,7 +83,10 @@ export const verifySuperadminToken = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET)
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
+    })
     console.log("Token decoded successfully:", { 
       id: decoded.id, 
       username: decoded.username, 
@@ -98,18 +113,9 @@ export const getSuperadminProfile = async (req, res) => {
 
   try {
     // Ensure password_changed_at column exists
-    try {
-      await db.execute(`
-        ALTER TABLE superadmin 
-        ADD COLUMN password_changed_at TIMESTAMP NULL DEFAULT NULL
-      `)
-      console.log("Added password_changed_at column to superadmin table")
-    } catch (err) {
-      // Column already exists or other error - continue
-      if (!err.message.includes("Duplicate column name")) {
-        console.log("password_changed_at column check:", err.message)
-      }
-    }
+    try { await db.execute(`ALTER TABLE superadmin ADD COLUMN password_changed_at TIMESTAMP NULL DEFAULT NULL`) } catch {}
+    try { await db.execute(`ALTER TABLE superadmin ADD COLUMN mfa_secret VARCHAR(255) NULL`) } catch {}
+    try { await db.execute(`ALTER TABLE superadmin ADD COLUMN mfa_enabled TINYINT(1) DEFAULT 0`) } catch {}
 
     const [rows] = await db.execute(
       "SELECT id, username, created_at, updated_at, password_changed_at FROM superadmin WHERE id = ?",
@@ -309,6 +315,14 @@ export const resetPasswordSuperadmin = async (req, res) => {
     // Consume token
     await db.execute("DELETE FROM password_reset_tokens WHERE token = ?", [token])
 
+    // Revoke any existing refresh tokens for this user across roles (if using shared refresh mechanism)
+    try {
+      const [sa] = await db.execute('SELECT id FROM superadmin WHERE username = ? LIMIT 1', [email])
+      if (sa.length > 0) {
+        await db.execute('UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = ?', [sa[0].id])
+      }
+    } catch {}
+
     const { sendMail } = await import("../../utils/mailer.js")
     await sendMail({
       to: email,
@@ -380,6 +394,57 @@ export const checkEmailSuperadmin = async (req, res) => {
   } catch (err) {
     console.error("Superadmin check email error:", err)
     res.status(500).json({ error: "Internal server error" })
+  }
+}
+
+// -------------------- MFA (TOTP) Setup/Verify/Disable --------------------
+
+export const setupMfaSuperadmin = async (req, res) => {
+  try {
+    const { id } = req.params
+    const [rows] = await db.execute('SELECT id, username FROM superadmin WHERE id = ?', [id])
+    if (rows.length === 0) return res.status(404).json({ error: 'Superadmin not found' })
+
+    const secret = authenticator.generateSecret()
+    const label = encodeURIComponent(`FAITH-CommUNITY:superadmin-${rows[0].username}`)
+    const issuer = encodeURIComponent(process.env.TOTP_ISSUER || 'FAITH-CommUNITY')
+    const otpauth = `otpauth://totp/${label}?secret=${secret}&issuer=${issuer}`
+
+    // Temporarily store secret until verified
+    await db.execute('UPDATE superadmin SET mfa_secret = ? WHERE id = ?', [secret, id])
+    res.json({ otpauth, secret })
+  } catch (e) {
+    console.error('MFA setup error:', e)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+export const verifyMfaSuperadmin = async (req, res) => {
+  try {
+    const { id } = req.params
+    const { otp } = req.body
+    const [rows] = await db.execute('SELECT id, mfa_secret FROM superadmin WHERE id = ?', [id])
+    if (rows.length === 0) return res.status(404).json({ error: 'Superadmin not found' })
+    const secret = rows[0].mfa_secret || ''
+    if (!secret) return res.status(400).json({ error: 'MFA not in setup' })
+    const ok = authenticator.check(String(otp || ''), secret)
+    if (!ok) return res.status(400).json({ error: 'Invalid OTP' })
+    await db.execute('UPDATE superadmin SET mfa_enabled = 1 WHERE id = ?', [id])
+    res.json({ message: 'MFA enabled' })
+  } catch (e) {
+    console.error('MFA verify error:', e)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+export const disableMfaSuperadmin = async (req, res) => {
+  try {
+    const { id } = req.params
+    await db.execute('UPDATE superadmin SET mfa_enabled = 0, mfa_secret = NULL WHERE id = ?', [id])
+    res.json({ message: 'MFA disabled' })
+  } catch (e) {
+    console.error('MFA disable error:', e)
+    res.status(500).json({ error: 'Internal server error' })
   }
 }
 

@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken"
 
 // JWT secret for admin (should match the one used in admin login)
-const JWT_SECRET = "faith-community-admin-secret-2024"
+const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
 
 // JWT verification middleware for admin
 export const verifyAdminToken = (req, res, next) => {
@@ -13,7 +13,10 @@ export const verifyAdminToken = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET)
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
+    })
     req.admin = decoded
     next()
   } catch (err) {

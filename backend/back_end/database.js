@@ -403,6 +403,28 @@ const initializeDatabase = async () => {
       console.log("✅ Password reset tokens table created successfully!");
     }
 
+    // Check if refresh_tokens table exists
+    const [refreshTokensTable] = await connection.query('SHOW TABLES LIKE "refresh_tokens"');
+    if (refreshTokensTable.length === 0) {
+      console.log("Creating refresh_tokens table...");
+      await connection.query(`
+        CREATE TABLE refresh_tokens (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id INT NOT NULL,
+          token VARCHAR(255) NOT NULL UNIQUE,
+          expires_at TIMESTAMP NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          user_agent VARCHAR(255) NULL,
+          ip_address VARCHAR(45) NULL,
+          revoked_at TIMESTAMP NULL,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          INDEX idx_user_id (user_id),
+          INDEX idx_expires_at (expires_at)
+        )
+      `);
+      console.log("✅ refresh_tokens table created successfully!");
+    }
+
     // Check if volunteers table exists
     const [volunteersTables] = await connection.query('SHOW TABLES LIKE "volunteers"');
     
@@ -781,6 +803,14 @@ const initializeDatabase = async () => {
         }
       }
     }
+
+    // Ensure admins table has MFA columns
+    try {
+      await connection.query(`ALTER TABLE admins ADD COLUMN mfa_secret VARCHAR(255) NULL`)
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE admins ADD COLUMN mfa_enabled TINYINT(1) DEFAULT 0`)
+    } catch (e) {}
 
     connection.release();
     return promisePool;

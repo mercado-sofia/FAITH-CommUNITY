@@ -6,15 +6,13 @@ export function middleware(request) {
 
   const role = request.cookies.get("userRole")?.value
 
-  console.log("🛡️ Middleware Check:", {
-    path: pathname,
-    role: role,
-    timestamp: new Date().toISOString(),
-    allCookies: request.cookies
-      .getAll()
-      .map((c) => `${c.name}=${c.value}`)
-      .join("; "),
-  })
+  if (process.env.NODE_ENV !== "production") {
+    console.log("🛡️ Middleware Check:", {
+      path: pathname,
+      role: role,
+      timestamp: new Date().toISOString(),
+    })
+  }
 
   // Allow login page for everyone
   if (pathname === "/login") {

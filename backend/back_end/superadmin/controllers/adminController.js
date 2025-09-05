@@ -4,6 +4,7 @@ import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import { authenticator } from "otplib"
 import { logAdminAction } from "../../utils/audit.js"
+import { SessionSecurity } from "../../utils/sessionSecurity.js"
 
 // JWT secret via env
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
@@ -52,11 +53,21 @@ export const loginAdmin = async (req, res) => {
         role: admin.role,
         org: admin.org,
         orgName: admin.orgName,
-        iss: process.env.JWT_ISS || "faith-community-api",
-        aud: process.env.JWT_AUD || "faith-community-client",
       },
       JWT_SECRET,
-      { expiresIn: "30m" },
+      { 
+        expiresIn: "30m",
+        issuer: process.env.JWT_ISS || "faith-community",
+        audience: process.env.JWT_AUD || "admin"
+      },
+    )
+
+    // Create secure session with IP/UA binding
+    await SessionSecurity.createAdminSession(
+      admin.id,
+      req.ip || req.connection.remoteAddress,
+      req.headers['user-agent'],
+      token
     )
 
     await logAdminAction(admin.id, 'login', 'Admin logged in', req)

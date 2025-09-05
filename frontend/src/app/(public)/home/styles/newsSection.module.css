@@ -115,6 +115,26 @@
   display: flex;
   flex-direction: column;
   height: auto;
+  gap: 1rem;
+}
+
+.newsImageContainer {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.newsImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.newsContent {
+  display: flex;
+  flex-direction: column;
 }
 
 .newsCard:hover .newsTitle {
@@ -178,6 +198,12 @@
 }
 
 /* Responsive adjustments */
+@media (max-width: 768px) {
+  .newsList {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 640px) {
   .heading {
     font-size: 1.5rem;

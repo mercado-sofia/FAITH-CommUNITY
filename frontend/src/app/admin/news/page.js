@@ -5,8 +5,9 @@ import { useSelector } from 'react-redux';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { selectCurrentAdmin } from '../../../rtk/superadmin/adminSlice';
 import { useAdminNews } from '../../../hooks/useAdminData';
-import NewsCard from './components/NewsCard';
-import AddNewsModal from './components/AddNewsModal';
+import NewsTable from './components/NewsTable';
+import ViewNewsModal from './components/ViewNewsModal';
+import CreatePostForm from './components/CreatePostForm';
 import EditNewsModal from './components/EditNewsModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
@@ -26,18 +27,28 @@ export default function AdminNewsPage() {
   const searchParams = useSearchParams();
   
   const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [pageMode, setPageMode] = useState('list'); // 'list', 'create', or 'edit'
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [showRecentlyDeletedModal, setShowRecentlyDeletedModal] = useState(false);
   const [editingNews, setEditingNews] = useState(null);
   const [deletingNews, setDeletingNews] = useState(null);
+  const [viewingNews, setViewingNews] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedItems, setSelectedItems] = useState([]);
 
-  // Use SWR hook for news data
-  const { news = [], isLoading: loading, error, mutate: refreshNews } = useAdminNews(currentAdmin?.org);
+  // Memoize the selection change handler to prevent unnecessary re-renders
+  const handleSelectionChange = useCallback((newSelection) => {
+    setSelectedItems(newSelection);
+  }, []);
+
+  // Use SWR hook for news data - only fetch when currentAdmin and org are available
+  const { news = [], isLoading: loading, error, mutate: refreshNews } = useAdminNews(
+    currentAdmin?.org && currentAdmin.org !== '' ? currentAdmin.org : null
+  );
 
   // Initialize state from URL parameters
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
@@ -114,28 +125,43 @@ export default function AdminNewsPage() {
         return;
       }
 
-      // Validate news data
       if (!newsData.title || !newsData.title.trim()) {
         setSuccessModal({ isVisible: true, message: 'News title is required.', type: 'error' });
         return;
       }
 
-      if (!newsData.description || !newsData.description.trim()) {
-        setSuccessModal({ isVisible: true, message: 'News description is required.', type: 'error' });
+      if (!newsData.slug || !newsData.slug.trim()) {
+        setSuccessModal({ isVisible: true, message: 'News slug is required.', type: 'error' });
         return;
       }
 
-      if (!newsData.date) {
-        setSuccessModal({ isVisible: true, message: 'News date is required.', type: 'error' });
+      if (!newsData.content || !newsData.content.trim()) {
+        setSuccessModal({ isVisible: true, message: 'News content is required.', type: 'error' });
         return;
       }
 
-      // Sanitize data
-      const sanitizedData = {
-        title: newsData.title.trim(),
-        description: newsData.description.trim(),
-        date: newsData.date
-      };
+      if (!newsData.excerpt || !newsData.excerpt.trim()) {
+        setSuccessModal({ isVisible: true, message: 'News excerpt is required.', type: 'error' });
+        return;
+      }
+
+      if (!newsData.publishedAt) {
+        setSuccessModal({ isVisible: true, message: 'Published date is required.', type: 'error' });
+        return;
+      }
+
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('title', newsData.title.trim());
+      formData.append('slug', newsData.slug.trim());
+      formData.append('content', newsData.content.trim());
+      formData.append('excerpt', newsData.excerpt.trim());
+      formData.append('published_at', newsData.publishedAt);
+      
+      // Add featured image if provided
+      if (newsData.featuredImage) {
+        formData.append('featured_image', newsData.featuredImage);
+      }
 
       const adminToken = localStorage.getItem("adminToken");
       
@@ -147,10 +173,10 @@ export default function AdminNewsPage() {
       const response = await fetch(`${API_BASE_URL}/api/news/${orgId}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${adminToken}`
+          // Don't set Content-Type header - let browser set it with boundary for FormData
         },
-        body: JSON.stringify(sanitizedData),
+        body: formData
       });
 
       if (!response.ok) {
@@ -162,7 +188,7 @@ export default function AdminNewsPage() {
       const result = await response.json();
 
       setSuccessModal({ isVisible: true, message: 'News created successfully!', type: 'success' });
-      setShowAddModal(false);
+      setPageMode('list');
       refreshNews(); // Refresh the admin list
       invalidateNewsCache(); // Invalidate public news cache
     } catch (error) {
@@ -176,9 +202,9 @@ export default function AdminNewsPage() {
     }
   };
 
-  // Handle news update
+  // Handle news update (using CreatePostForm)
   const handleUpdateNews = async (newsData) => {
-    setIsUpdating(true);
+    setIsSubmitting(true);
     try {
       if (!editingNews?.id) {
         setSuccessModal({ isVisible: true, message: 'News ID not found. Please try again.', type: 'error' });
@@ -191,22 +217,38 @@ export default function AdminNewsPage() {
         return;
       }
 
-      if (!newsData.description || !newsData.description.trim()) {
-        setSuccessModal({ isVisible: true, message: 'News description is required.', type: 'error' });
+      if (!newsData.slug || !newsData.slug.trim()) {
+        setSuccessModal({ isVisible: true, message: 'News slug is required.', type: 'error' });
         return;
       }
 
-      if (!newsData.date) {
-        setSuccessModal({ isVisible: true, message: 'News date is required.', type: 'error' });
+      if (!newsData.content || !newsData.content.trim()) {
+        setSuccessModal({ isVisible: true, message: 'News content is required.', type: 'error' });
         return;
       }
 
-      // Sanitize data
-      const sanitizedData = {
-        title: newsData.title.trim(),
-        description: newsData.description.trim(),
-        date: newsData.date
-      };
+      if (!newsData.excerpt || !newsData.excerpt.trim()) {
+        setSuccessModal({ isVisible: true, message: 'News excerpt is required.', type: 'error' });
+        return;
+      }
+
+      if (!newsData.publishedAt) {
+        setSuccessModal({ isVisible: true, message: 'Published date is required.', type: 'error' });
+        return;
+      }
+
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('title', newsData.title.trim());
+      formData.append('slug', newsData.slug.trim());
+      formData.append('content', newsData.content.trim());
+      formData.append('excerpt', newsData.excerpt.trim());
+      formData.append('published_at', newsData.publishedAt);
+      
+      // Add featured image if provided
+      if (newsData.featuredImage) {
+        formData.append('featured_image', newsData.featuredImage);
+      }
 
       const adminToken = localStorage.getItem("adminToken");
       
@@ -215,13 +257,13 @@ export default function AdminNewsPage() {
         return;
       }
       
-      const response = await fetch(`${API_BASE_URL}/api/news/${newsData.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/news/${editingNews.id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${adminToken}`
+          // Don't set Content-Type header - let browser set it with boundary for FormData
         },
-        body: JSON.stringify(sanitizedData),
+        body: formData
       });
 
       if (!response.ok) {
@@ -233,7 +275,7 @@ export default function AdminNewsPage() {
       const result = await response.json();
 
       setSuccessModal({ isVisible: true, message: 'News updated successfully!', type: 'success' });
-      setShowEditModal(false);
+      setPageMode('list');
       setEditingNews(null);
       refreshNews(); // Refresh the admin list
       invalidateNewsCache(); // Invalidate public news cache
@@ -244,7 +286,7 @@ export default function AdminNewsPage() {
         : 'Failed to update news. Please try again.';
       setSuccessModal({ isVisible: true, message: errorMessage, type: 'error' });
     } finally {
-      setIsUpdating(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -323,11 +365,17 @@ export default function AdminNewsPage() {
     }
   });
 
-  const displayedNews = (sortedNews || []).slice(0, showCount);
+  // Remove the slice here since NewsTable will handle pagination
+  const displayedNews = sortedNews || [];
+
+  const handleView = (newsItem) => {
+    setViewingNews(newsItem);
+    setShowViewModal(true);
+  };
 
   const handleEdit = (newsItem) => {
     setEditingNews(newsItem);
-    setShowEditModal(true);
+    setPageMode('edit');
   };
 
   const handleDelete = (newsItem) => {
@@ -335,14 +383,96 @@ export default function AdminNewsPage() {
     setShowDeleteModal(true);
   };
 
+  const handleBulkDeleteRequest = (selectedNewsIds) => {
+    // Store selected items and show confirmation modal
+    setSelectedItems(selectedNewsIds);
+    setShowDeleteModal(true);
+  };
+
+  const handleBulkDelete = async (selectedNewsIds) => {
+    setIsDeleting(true);
+    try {
+      const adminToken = localStorage.getItem("adminToken");
+      
+      if (!adminToken) {
+        setSuccessModal({ isVisible: true, message: 'Authentication required. Please log in again.', type: 'error' });
+        return;
+      }
+
+      // Delete each selected news item
+      const deletePromises = selectedNewsIds.map(newsId => 
+        fetch(`${API_BASE_URL}/api/news/${newsId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${adminToken}`
+          },
+        })
+      );
+
+      const results = await Promise.allSettled(deletePromises);
+      const failedDeletes = results.filter(result => result.status === 'rejected').length;
+      
+      if (failedDeletes > 0) {
+        setSuccessModal({ 
+          isVisible: true, 
+          message: `${selectedNewsIds.length - failedDeletes} news items deleted successfully. ${failedDeletes} failed to delete.`, 
+          type: 'warning' 
+        });
+      } else {
+        setSuccessModal({ 
+          isVisible: true, 
+          message: `${selectedNewsIds.length} news items deleted successfully!`, 
+          type: 'success' 
+        });
+      }
+
+      // Clear selections and close modal
+      setSelectedItems([]);
+      setShowDeleteModal(false);
+      refreshNews(); // Refresh the admin list
+      invalidateNewsCache(); // Invalidate public news cache
+    } catch (error) {
+      console.error('Bulk delete error:', error);
+      setSuccessModal({ isVisible: true, message: 'Failed to delete news items. Please try again.', type: 'error' });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleCloseModals = () => {
-    setShowAddModal(false);
     setShowEditModal(false);
     setShowDeleteModal(false);
+    setShowViewModal(false);
     setShowRecentlyDeletedModal(false);
     setEditingNews(null);
     setDeletingNews(null);
+    setViewingNews(null);
+    setSelectedItems([]); // Clear bulk selections when closing modals
   };
+
+
+  // Display error message if there's an error and we have a valid admin
+  if (error && currentAdmin?.org) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.errorMessage}>
+          Error loading news: {error.message}
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state if admin data is not yet available
+  if (!currentAdmin?.org) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.loadingMessage}>
+          Loading admin data...
+        </div>
+      </div>
+    );
+  }
 
   // Loading state
   if (!currentAdmin) {
@@ -358,108 +488,111 @@ export default function AdminNewsPage() {
   return (
     <ErrorBoundary>
       <div className={styles.container}>
-      {/* Header Section - Consistent with other admin pages */}
-      <div className={styles.header}>
-        <div className={styles.headerTop}>
-          <h1>News & Announcements</h1>
-          <div className={styles.headerActions}>
-            <button 
-              onClick={() => setShowRecentlyDeletedModal(true)}
-              className={styles.recentlyDeletedButton}
-            >
-              <FaTrash /> Recently Deleted
-            </button>
-            <button 
-              onClick={() => setShowAddModal(true)}
-              className={styles.addButton}
-            >
-              <FaPlus /> Add News
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <SearchAndFilterControls
-        searchQuery={searchQuery}
-        onSearchChange={handleSearchChange}
-        sortBy={sortBy}
-        onSortChange={handleSortChange}
-        showCount={showCount}
-        onShowCountChange={handleShowCountChange}
-        totalCount={news?.length || 0}
-        filteredCount={filteredNews?.length || 0}
-      />
-
-      {loading && (
-        <SkeletonLoader type="grid" count={6} />
-      )}
-
-      {error && (
-        <div className={styles.errorContainer}>
-          <p className={styles.errorMessage}>
-            {error instanceof Error ? error.message : String(error)}
-          </p>
-        </div>
-      )}
-
-      {!loading && !error && (
-        <div className={styles.newsGrid}>
-          {(displayedNews?.length || 0) === 0 ? (
-            <div className={styles.emptyState}>
-              <p>No news found.</p>
-              {searchQuery && (
-                <p>Try adjusting your search terms.</p>
-              )}
+        {pageMode === 'list' ? (
+          <>
+            <div className={styles.headerTop}>
+              <h1>News</h1>
+              <div className={styles.headerActions}>
+                <button
+                  onClick={() => setPageMode('create')}
+                  className={styles.addButton}
+                  disabled={isSubmitting}
+                >
+                  <FaPlus /> New Post
+                </button>
+              </div>
             </div>
-          ) : (
-            (displayedNews || []).map((newsItem) => (
-              <NewsCard
-                key={newsItem.id}
-                news={newsItem}
-                onEdit={() => handleEdit(newsItem)}
-                onDelete={() => handleDelete(newsItem)}
+
+            <SearchAndFilterControls
+              searchQuery={searchQuery}
+              onSearchChange={handleSearchChange}
+              sortBy={sortBy}
+              onSortChange={handleSortChange}
+              showCount={showCount}
+              onShowCountChange={handleShowCountChange}
+              totalCount={news?.length || 0}
+              filteredCount={filteredNews?.length || 0}
+              onRecentlyDeletedClick={() => setShowRecentlyDeletedModal(true)}
+            />
+
+            {loading && (
+              <SkeletonLoader type="grid" count={6} />
+            )}
+
+            {error && (
+              <div className={styles.errorContainer}>
+                <p className={styles.errorMessage}>
+                  {error instanceof Error ? error.message : String(error)}
+                </p>
+              </div>
+            )}
+
+            {!loading && !error && (
+              <NewsTable
+                news={displayedNews || []}
+                onView={handleView}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onBulkDelete={handleBulkDeleteRequest}
+                onSelectionChange={handleSelectionChange}
+                selectedItems={selectedItems}
+                itemsPerPage={showCount}
               />
-            ))
-          )}
-        </div>
-      )}
+            )}
+          </>
+        ) : pageMode === 'create' ? (
+          <>
+            <div className={styles.createPostHeader}>
+              <h1>Create New Post</h1>
+            </div>
+            <CreatePostForm
+              onCancel={() => setPageMode('list')}
+              onSubmit={handleSubmitNews}
+              isSubmitting={isSubmitting}
+            />
+          </>
+        ) : pageMode === 'edit' ? (
+          <>
+            <div className={styles.createPostHeader}>
+              <h1>Edit Post</h1>
+            </div>
+            <CreatePostForm
+              onCancel={() => {
+                setPageMode('list');
+                setEditingNews(null);
+              }}
+              onSubmit={handleUpdateNews}
+              isSubmitting={isSubmitting}
+              initialData={editingNews}
+              isEditMode={true}
+            />
+          </>
+        ) : null}
 
-      {/* Show More Button */}
-      {!loading && !error && (filteredNews?.length || 0) > showCount && (
-        <div className={styles.showMoreContainer}>
-          <button
-            className={styles.showMoreButton}
-            onClick={() => setShowCount(showCount + 10)}
-          >
-            Show More ({(filteredNews?.length || 0) - showCount} remaining)
-          </button>
-        </div>
-      )}
 
-      {/* Add News Modal */}
-      {showAddModal && (
-        <AddNewsModal
+      {/* View News Modal */}
+      {showViewModal && viewingNews && (
+        <ViewNewsModal
+          news={viewingNews}
           onClose={handleCloseModals}
-          onSubmit={handleSubmitNews}
-          orgId={orgId}
         />
       )}
 
-      {/* Edit News Modal */}
-      {showEditModal && editingNews && (
-        <EditNewsModal
-          news={editingNews}
-          onClose={handleCloseModals}
-          onSubmit={handleUpdateNews}
-        />
-      )}
+
+      {/* Edit News Modal - Removed, now using CreatePostForm in edit mode */}
 
       {/* Delete News Modal */}
       <DeleteConfirmationModal
-        isOpen={showDeleteModal && !!deletingNews}
-        itemName={deletingNews?.title || 'this news item'}
+        isOpen={showDeleteModal && (!!deletingNews || selectedItems.length > 0)}
+        itemName={deletingNews?.title || `${selectedItems.length} selected news items`}
         itemType="news"
-        onConfirm={() => handleDeleteNews(deletingNews?.id)}
+        onConfirm={() => {
+          if (deletingNews) {
+            handleDeleteNews(deletingNews.id);
+          } else if (selectedItems.length > 0) {
+            handleBulkDelete(selectedItems);
+          }
+        }}
         onCancel={handleCloseModals}
         isDeleting={isDeleting}
       />

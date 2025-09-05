@@ -3,25 +3,18 @@
   margin: 0 auto 2rem;
 }
 
-/* Header - Consistent with other admin pages */
-.header {
-  margin-bottom: 2rem;
-}
-
-.header h1 {
+.headerTop h1 {
   font-size: 1.4rem;
   font-weight: 700;
   font-family: var(--font-poppins), sans-serif;
   color: #06100f;
-  user-select: none;
-  margin: 0;
 }
 
 .headerTop {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.2rem;
+  margin-bottom: 2rem;
 }
 
 .headerActions {
@@ -50,6 +43,18 @@
 .addButton:hover {
   background: #142220;
   border-color: #06100f;
+}
+
+.createPostHeader {
+  margin-bottom: 24px;
+}
+
+.createPostHeader h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  font-family: var(--font-poppins);
 }
 
 .recentlyDeletedButton {

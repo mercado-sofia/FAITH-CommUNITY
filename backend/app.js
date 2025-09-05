@@ -84,6 +84,16 @@ app.use(
         "frame-ancestors": ["'none'"],
       },
     },
+    permissionsPolicy: {
+      camera: [],
+      microphone: [],
+      geolocation: [],
+      gyroscope: [],
+      magnetometer: [],
+      usb: [],
+      bluetooth: [],
+      payment: [],
+    },
   })
 )
 
@@ -217,6 +227,7 @@ import organizationsRoutes from "./back_end/for_public/routes/organizations.js"
 import messagesRoutes from "./back_end/for_public/routes/messages.js"
 import usersRoutes from "./back_end/for_public/routes/users.js"
 import subscriptionRoutes from "./back_end/for_public/routes/subscription.js"
+import captchaRoutes from "./back_end/for_public/routes/captcha.js"
 
 // Auth endpoint specific rate limits
 const authLimiter = rateLimit({
@@ -236,6 +247,7 @@ app.use("/api", organizationsRoutes)
 app.use("/api/subscription", subscriptionRoutes)
 app.use("/api", applyRoutes)
 app.use("/api", messagesRoutes)
+app.use("/api", captchaRoutes)
 app.use(["/api/users/login", "/api/users/forgot-password", "/api/users/reset-password", "/api/users/verify-email"], authSpeedLimiter, authLimiter)
 app.use("/api/users", usersRoutes)
 
@@ -251,6 +263,7 @@ import submissionRoutes from "./back_end/admin/routes/submission.js"
 import uploadRoutes from "./back_end/admin/routes/upload.js"
 import volunteersRoutes from "./back_end/admin/routes/volunteers.js"
 import profileRoutes from "./back_end/admin/routes/profile.js"
+import mfaRoutes from "./back_end/admin/routes/mfa.js"
 
 import newsRoutes from "./back_end/admin/routes/newsRoutes.js"
 import notificationsRoutes from "./back_end/admin/routes/notifications.js"
@@ -269,6 +282,7 @@ app.use("/api/submissions", submissionRoutes)
 app.use("/api/upload", uploadRoutes)
 app.use("/api/volunteers", volunteersRoutes)
 app.use("/api/admin/profile", profileRoutes)
+app.use("/api/admin/mfa", mfaRoutes)
 
 app.use("/api/news", newsRoutes)
 app.use("/api/notifications", notificationsRoutes)

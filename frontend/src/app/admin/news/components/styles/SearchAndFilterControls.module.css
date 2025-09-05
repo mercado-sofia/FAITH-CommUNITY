@@ -1,4 +1,4 @@
-/* Container that wraps both filter dropdowns (left) and search input (right) */
+/* Container that wraps filter dropdowns (left), search input (center), and recently deleted (right) */
 .controlsRow {
   display: flex;
   justify-content: space-between;
@@ -150,6 +150,38 @@
   color: #6b7280;
 }
 
+/* Recently Deleted Button */
+.recentlyDeletedWrapper {
+  flex-shrink: 0;
+}
+
+.recentlyDeletedButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #fff;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  box-shadow: 0 6px 12px rgba(7, 42, 46, 0.06);
+  transition: all 0.2s ease-in-out;
+  font-family: var(--font-inter);
+}
+
+.recentlyDeletedButton:hover {
+  background: #f9fafb;
+  color: #374151;
+  box-shadow: 0 8px 16px rgba(7, 42, 46, 0.08);
+}
+
+.recentlyDeletedButton:active {
+  transform: translateY(1px);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .controlsRow {
@@ -168,6 +200,10 @@
 
   .searchInputContainer {
     width: 100%;
+  }
+
+  .recentlyDeletedWrapper {
+    align-self: flex-end;
   }
 }
 

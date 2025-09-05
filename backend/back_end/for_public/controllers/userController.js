@@ -1,3 +1,4 @@
+//db table: users, notifications
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import {
@@ -11,6 +12,8 @@ import {
 } from '../../utils/jwt.js';
 import crypto from 'crypto';
 import db from '../../database.js';
+import { CaptchaService, LoginAttemptTracker } from '../../utils/captcha.js';
+import { SecurityMonitoring } from '../../utils/securityMonitoring.js';
 
 // User registration
 export const registerUser = async (req, res) => {
@@ -188,7 +191,29 @@ export const registerUser = async (req, res) => {
 // User login
 export const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, captchaToken, captchaAnswer } = req.body;
+    const ipAddress = req.ip || req.connection.remoteAddress;
+
+    // Check failed login attempts
+    const failedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress);
+    
+    // Require CAPTCHA after 3 failed attempts
+    if (failedAttempts >= 3) {
+      if (!captchaToken || !captchaAnswer) {
+        return res.status(429).json({ 
+          error: 'CAPTCHA required due to multiple failed attempts',
+          requiresCaptcha: true 
+        });
+      }
+      
+      const isCaptchaValid = await CaptchaService.verifyCaptcha(captchaToken, captchaAnswer);
+      if (!isCaptchaValid) {
+        return res.status(400).json({ 
+          error: 'Invalid CAPTCHA. Please try again.',
+          requiresCaptcha: true 
+        });
+      }
+    }
 
     // Find user by email
     const [users] = await db.query(
@@ -197,6 +222,8 @@ export const loginUser = async (req, res) => {
     );
 
     if (users.length === 0) {
+      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress);
+      await SecurityMonitoring.logSecurityEvent('failed_login', 'warn', { email, reason: 'user_not_found' }, req);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
@@ -205,6 +232,8 @@ export const loginUser = async (req, res) => {
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
+      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress);
+      await SecurityMonitoring.logSecurityEvent('failed_login', 'warn', { email, reason: 'invalid_password' }, req);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
@@ -222,6 +251,12 @@ export const loginUser = async (req, res) => {
       userAgent: req.headers['user-agent'],
       ipAddress: req.ip,
     })
+
+    // Clear failed login attempts on successful login
+    await LoginAttemptTracker.clearFailedAttempts(email, ipAddress);
+    
+    // Log successful login
+    await SecurityMonitoring.logSecurityEvent('successful_login', 'info', { email, userId: user.id }, req);
 
     // Update last login
     await db.query(

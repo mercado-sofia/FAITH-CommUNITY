@@ -5,8 +5,33 @@ import upload from '../middleware/upload.js';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env";
+
+// Authentication middleware for upload routes
+const authenticateAdmin = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+  
+  const token = authHeader.substring(7);
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
+    });
+    req.admin = decoded;
+    next();
+  } catch (err) {
+    console.error('JWT verification error:', err);
+    return res.status(403).json({ error: 'Invalid or expired token' });
+  }
+};
 
 // Ensure uploads directory exists
 const uploadsDir = path.resolve('uploads');
@@ -18,7 +43,7 @@ if (!fs.existsSync(uploadsDir)) {
   console.log('📁 Uploads directory already exists:', uploadsDir);
 }
 
-router.post('/', upload.single('file'), (req, res, next) => {
+router.post('/', authenticateAdmin, upload.single('file'), (req, res, next) => {
   console.log('🔄 Upload route hit');
   console.log('📁 Request body:', req.body);
   console.log('📎 Request file:', req.file);

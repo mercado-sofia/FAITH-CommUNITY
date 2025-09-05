@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { usePublicOrganizations, usePublicNews } from "../../../hooks/usePublicData";
 import styles from "./news.module.css";
@@ -41,7 +42,7 @@ export default function AllNewsPage() {
     }
     
     // Sort by most recent date first
-    return filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+    return filtered.sort((a, b) => new Date(b.published_at || b.date) - new Date(a.published_at || a.date));
   }, [news, orgFilter, organizations]);
 
   useEffect(() => {
@@ -197,39 +198,64 @@ export default function AllNewsPage() {
            Showing {((currentPage - 1) * NEWS_PER_PAGE) + 1}-{Math.min(currentPage * NEWS_PER_PAGE, filteredNews.length)} of {filteredNews.length} results
          </div>
          <ul className={styles.newsList}>
-           {currentNews.map((newsItem) => (
-             <li 
-               key={newsItem.id} 
-               id={`news-${newsItem.id}`}
-               className={`${styles.newsItem} ${highlightedNewsId === newsItem.id.toString() ? styles.highlighted : ''}`}
-               onClick={() => router.push(`/news/${newsItem.id}`)}
-             >
-               <Link
-                 href={`/news/${newsItem.id}`}
-                 className={styles.newsTitle}
+           {currentNews.map((newsItem) => {
+             const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+             const imagePath = newsItem.featured_image ? 
+               (newsItem.featured_image.startsWith('/') ? newsItem.featured_image : `/${newsItem.featured_image}`) : null;
+             const imageUrl = imagePath ? `${baseUrl}${imagePath}` : null;
+             
+             return (
+               <li 
+                 key={newsItem.id} 
+                 id={`news-${newsItem.id}`}
+                 className={`${styles.newsItem} ${highlightedNewsId === newsItem.id.toString() ? styles.highlighted : ''}`}
+                 onClick={() => router.push(`/news/${newsItem.id}`)}
                >
-                 {newsItem.title}
-               </Link>
-               <p className={styles.newsDescription}>
-                 {newsItem.description && newsItem.description.length > 150
-                   ? `${newsItem.description.substring(0, 150)}...`
-                   : newsItem.description}
-               </p>
-               <div className={styles.newsMetadata}>
-                 <div>
-                   <p className={styles.newsDate}>
-                     <em>Published:</em> {formatDate(newsItem.date)} &nbsp;&nbsp; <em>By:</em> {newsItem.orgName || newsItem.orgID || 'Unknown Organization'}
-                   </p>
-                   <p className={styles.readMore}>Read More</p>
+                 <div className={styles.newsItemContent}>
+                   {imageUrl && (
+                     <div className={styles.newsImageContainer}>
+                       <Image
+                         src={imageUrl}
+                         alt={newsItem.title || 'News image'}
+                         width={200}
+                         height={120}
+                         className={styles.newsImage}
+                         onError={(e) => {
+                           e.target.style.display = 'none';
+                         }}
+                       />
+                     </div>
+                   )}
+                   <div className={styles.newsTextContent}>
+                     <Link
+                       href={`/news/${newsItem.id}`}
+                       className={styles.newsTitle}
+                     >
+                       {newsItem.title}
+                     </Link>
+                     <p className={styles.newsDescription}>
+                       {(newsItem.excerpt || newsItem.description) && (newsItem.excerpt || newsItem.description).length > 150
+                         ? `${(newsItem.excerpt || newsItem.description).substring(0, 150)}...`
+                         : (newsItem.excerpt || newsItem.description)}
+                     </p>
+                     <div className={styles.newsMetadata}>
+                       <div>
+                         <p className={styles.newsDate}>
+                           <em>Published:</em> {formatDate(newsItem.published_at || newsItem.date)} &nbsp;&nbsp; <em>By:</em> {newsItem.orgName || newsItem.orgID || 'Unknown Organization'}
+                         </p>
+                         <p className={styles.readMore}>Read More</p>
+                       </div>
+                       {highlightedNewsId === newsItem.id.toString() && (
+                         <span className={styles.highlightedBadge}>
+                           Highlighted
+                         </span>
+                       )}
+                     </div>
+                   </div>
                  </div>
-                 {highlightedNewsId === newsItem.id.toString() && (
-                   <span className={styles.highlightedBadge}>
-                     Highlighted
-                   </span>
-                 )}
-               </div>
-             </li>
-           ))}
+               </li>
+             );
+           })}
          </ul>
          
          {totalPages > 1 && (

@@ -340,15 +340,20 @@ export default function OrganizationPage() {
       formData.append("file", file);
       formData.append("uploadType", "organization-logo");
       
+      const adminToken = localStorage.getItem("adminToken");
       const response = await fetch(`${API_BASE_URL}/api/upload`, {
         method: "POST",
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        },
         body: formData,
       });
       
       if (response.ok) {
         const result = await response.json();
+        // Only update editPreviewData for the modal preview, not the main display
         setEditPreviewData((prev) => ({ 
-          ...(prev || orgData), 
+          ...prev, 
           logo: result.url 
         }));
         setModalMessage({ text: "Logo uploaded successfully", type: "success" });
@@ -357,7 +362,10 @@ export default function OrganizationPage() {
         throw new Error(`Upload failed: ${response.status} - ${errorText}`);
       }
     } catch (error) {
-      setModalMessage({ text: "Failed to upload logo", type: "error" });
+      console.error("Upload error details:", error);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+      setModalMessage({ text: `Failed to upload logo: ${error.message}`, type: "error" });
     } finally {
       updateUiState({ uploading: false });
     }

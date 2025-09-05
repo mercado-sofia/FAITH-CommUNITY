@@ -1,3 +1,4 @@
+//db table: footer_content
 import db from '../../database.js';
 
 // CREATE

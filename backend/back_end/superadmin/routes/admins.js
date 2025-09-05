@@ -12,6 +12,9 @@ import {
   resetPassword,
   checkEmailAdmin,
   validateResetToken,
+  setupMfaAdmin,
+  verifyMfaAdmin,
+  disableMfaAdmin,
 } from "../controllers/adminController.js"
 import { verifySuperadminToken } from "../controllers/superadminAuthController.js"
 
@@ -34,5 +37,8 @@ router.put("/:id", updateAdmin)
 router.delete("/:id", deleteAdmin)
 router.post("/:id/verify-password", verifyPasswordForEmailChange)
 router.post("/:id/verify-password-change", verifyPasswordForPasswordChange)
+router.post("/:id/mfa/setup", setupMfaAdmin)
+router.post("/:id/mfa/verify", verifyMfaAdmin)
+router.post("/:id/mfa/disable", disableMfaAdmin)
 
 export default router

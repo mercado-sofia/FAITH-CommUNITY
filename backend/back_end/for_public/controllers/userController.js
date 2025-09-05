@@ -1,5 +1,14 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import {
+  signAccessToken,
+  issueRefreshToken,
+  rotateRefreshToken,
+  findValidRefreshToken,
+  revokeAllUserRefreshTokens,
+  revokeRefreshToken,
+  getRefreshCookieOptions,
+} from '../../utils/jwt.js';
 import crypto from 'crypto';
 import db from '../../database.js';
 
@@ -207,12 +216,12 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: user.id, email: user.email, role: 'user' },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '7d' }
-    );
+    // Issue short-lived access token and refresh token
+    const accessToken = signAccessToken({ id: user.id, email: user.email, role: 'user' })
+    const { token: refreshToken, expiresAt } = await issueRefreshToken(user.id, {
+      userAgent: req.headers['user-agent'],
+      ipAddress: req.ip,
+    })
 
     // Update last login
     await db.query(
@@ -220,9 +229,10 @@ export const loginUser = async (req, res) => {
       [user.id]
     );
 
+    res.cookie('refresh_token', refreshToken, getRefreshCookieOptions())
     res.json({
       message: 'Login successful',
-      token,
+      token: accessToken,
       user: {
         id: user.id,
         firstName: user.first_name,
@@ -423,6 +433,14 @@ export const changePassword = async (req, res) => {
       [hashedNewPassword, userId]
     );
 
+    // Revoke all existing refresh tokens and clear cookie
+    try {
+      await revokeAllUserRefreshTokens(userId)
+    } catch {}
+    if (res.clearCookie) {
+      res.clearCookie('refresh_token', { path: '/' })
+    }
+
     res.json({ message: 'Password changed successfully' });
 
   } catch (error) {
@@ -568,12 +586,45 @@ export const logoutUser = async (req, res) => {
       );
     }
 
+    // Revoke presented refresh token cookie if present
+    const presented = req.cookies?.refresh_token
+    if (presented) {
+      await revokeRefreshToken(presented)
+      res.clearCookie('refresh_token', { path: '/' })
+    }
+
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
     console.error('User logout error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+// Refresh access token
+export const refreshAccessToken = async (req, res) => {
+  try {
+    const presented = req.cookies?.refresh_token
+    if (!presented) return res.status(401).json({ error: 'Refresh token required' })
+
+    const record = await findValidRefreshToken(presented)
+    if (!record) return res.status(401).json({ error: 'Invalid or expired refresh token' })
+
+    const [users] = await db.query('SELECT id, email FROM users WHERE id = ?', [record.user_id])
+    if (users.length === 0) return res.status(401).json({ error: 'User not found' })
+
+    // Rotate refresh token and issue new access
+    const { token: newRefresh } = await rotateRefreshToken(presented, record.user_id, {
+      userAgent: req.headers['user-agent'],
+      ipAddress: req.ip,
+    })
+    const accessToken = signAccessToken({ id: record.user_id, email: users[0].email, role: 'user' })
+    res.cookie('refresh_token', newRefresh, getRefreshCookieOptions())
+    res.json({ token: accessToken })
+  } catch (e) {
+    console.error('Refresh token error:', e)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
 
 // Verify email address
 export const verifyEmail = async (req, res) => {

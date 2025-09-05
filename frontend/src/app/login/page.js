@@ -11,6 +11,8 @@ import Image from "next/image"
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [otp, setOtp] = useState("")
+  const [needsOtp, setNeedsOtp] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showError, setShowError] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
@@ -93,9 +95,13 @@ export default function LoginPage() {
           if (response.ok) {
             successCount++
           } else {
-            const data = await response.json()
-            if (data.error) {
-              errorMessages.push(data.error)
+            if (response.status === 429) {
+              errorMessages.push("Too many requests. Please wait before trying again.")
+            } else {
+              const data = await response.json()
+              if (data.error) {
+                errorMessages.push(data.error)
+              }
             }
           }
         } catch (error) {
@@ -252,7 +258,7 @@ export default function LoginPage() {
           response = await fetch("http://localhost:8080/api/superadmin/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email, password, otp: needsOtp ? otp : undefined }),
           })
           data = await response.json()
           redirectUrl = "/superadmin"
@@ -262,7 +268,7 @@ export default function LoginPage() {
           response = await fetch("http://localhost:8080/api/admins/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email, password, otp: needsOtp ? otp : undefined }),
           })
           data = await response.json()
           redirectUrl = "/admin"
@@ -322,6 +328,24 @@ export default function LoginPage() {
         
       } else {
         // Login failed
+        if (response.status === 429) {
+          setErrorMessage("Too many login attempts. Please wait a few minutes before trying again.")
+          setShowError(true)
+          setFieldErrors({
+            email: "Rate limit exceeded",
+            password: "Rate limit exceeded"
+          })
+          setIsLoading(false)
+          return
+        }
+        
+        if (data && (data.requireMfa || /(otp|one-time)/i.test(data.error || ""))) {
+          setNeedsOtp(true)
+          setErrorMessage("Enter the 6-digit OTP from your authenticator app.")
+          setShowError(true)
+          setIsLoading(false)
+          return
+        }
         if (system === "user" && data.requiresVerification) {
           setErrorMessage("Please verify your email address before logging in. Check your email for a verification link.")
           setShowError(true)
@@ -426,6 +450,25 @@ export default function LoginPage() {
               {showPassword ? <FaEyeSlash /> : <FaEye />}
             </button>
           </div>
+
+          {needsOtp && (
+            <div className={styles.inputGroup}>
+              <FaLock className={styles.icon} />
+              <input
+                id="otp"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                placeholder="Enter 6-digit OTP"
+                aria-label="One-time password"
+                autoComplete="off"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                disabled={isLoading}
+              />
+            </div>
+          )}
 
           <div className={styles.forgotPasswordLink}>
             <button

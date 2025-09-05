@@ -1,4 +1,5 @@
 import express from 'express';
+import { doubleCsrfProtection } from '../../utils/csrf.js';
 import multer from 'multer';
 import path from 'path';
 import { 
@@ -24,6 +25,7 @@ import {
   checkEmailUser,
   validateResetToken,
   deleteAccount,
+  refreshAccessToken,
 } from '../controllers/userController.js';
 
 const router = express.Router();
@@ -62,6 +64,7 @@ router.post('/validate-reset-token', validateResetToken);
 router.post('/check-email', checkEmailUser);
 router.get('/verify-email', verifyEmail);
 router.post('/resend-verification', resendVerificationEmail);
+router.post('/refresh', doubleCsrfProtection, refreshAccessToken);
 
 // Protected routes (authentication required)
 router.post('/logout', verifyToken, logoutUser);

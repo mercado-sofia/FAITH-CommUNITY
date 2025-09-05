@@ -11,6 +11,9 @@ import {
   validateResetToken,
   // main branch
   updateSuperadminEmail,
+  setupMfaSuperadmin,
+  verifyMfaSuperadmin,
+  disableMfaSuperadmin,
 } from "../controllers/superadminAuthController.js"
 
 const router = express.Router()
@@ -26,5 +29,8 @@ router.post("/check-email",   checkEmailSuperadmin)
 router.get("/profile/:id",   verifySuperadminToken, getSuperadminProfile)
 router.put("/email/:id",     verifySuperadminToken, updateSuperadminEmail)
 router.put("/password/:id",  verifySuperadminToken, updateSuperadminPassword)
+router.post("/mfa/setup/:id", verifySuperadminToken, setupMfaSuperadmin)
+router.post("/mfa/verify/:id", verifySuperadminToken, verifyMfaSuperadmin)
+router.post("/mfa/disable/:id", verifySuperadminToken, disableMfaSuperadmin)
 
 export default router

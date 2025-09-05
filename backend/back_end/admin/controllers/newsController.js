@@ -2,7 +2,7 @@
 import db from "../../database.js";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = "faith-community-admin-secret-2024";
+const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env";
 
 /* ------------------------- Email notify helper ------------------------- */
 /** Broadcast to verified subscribers via your /api/subscribers/notify route.

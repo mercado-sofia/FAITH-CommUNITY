@@ -659,6 +659,120 @@
   will-change: background-position;
 }
 
+/* News Table Skeleton */
+.newsTableSkeleton {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.newsTableContainer {
+  background-color: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.newsTableSkeletonTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.newsTableSkeletonTable thead {
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.newsTableSkeletonTable th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-right: 1px solid #f1f5f9;
+}
+
+.newsTableSkeletonTable th:last-child {
+  border-right: none;
+}
+
+.newsTableSkeletonTable tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.newsTableSkeletonTable tbody tr:last-child {
+  border-bottom: none;
+}
+
+.newsTableSkeletonTable tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.newsTableSkeletonTable td {
+  padding: 1rem;
+  vertical-align: middle;
+  border-right: 1px solid #f1f5f9;
+}
+
+.newsTableSkeletonTable td:last-child {
+  border-right: none;
+}
+
+.checkboxSkeleton {
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 3px;
+  will-change: background-position;
+}
+
+.tableHeaderTextSkeleton {
+  width: 80px;
+  height: 16px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  will-change: background-position;
+}
+
+.newsTitleSkeleton {
+  width: 70%;
+  height: 18px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  will-change: background-position;
+}
+
+.newsDateSkeleton {
+  width: 60%;
+  height: 16px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  will-change: background-position;
+}
+
+.newsActionsSkeleton {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.actionButtonSkeleton {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+  will-change: background-position;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .contentSkeleton {

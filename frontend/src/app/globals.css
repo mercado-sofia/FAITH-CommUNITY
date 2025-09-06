@@ -11,3 +11,65 @@ html {
 html, body {
   overflow-x: hidden;
 }
+
+/* Custom Calendar Picker Styling */
+/* Global styles for date picker popup - cannot be in CSS modules */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+/* Custom calendar popup styling */
+::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+/* Style the calendar popup when it appears */
+::-webkit-datetime-edit {
+  color: inherit;
+}
+
+::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+::-webkit-datetime-edit-text {
+  color: #64748b;
+  padding: 0 2px;
+}
+
+::-webkit-datetime-edit-month-field,
+::-webkit-datetime-edit-day-field,
+::-webkit-datetime-edit-year-field {
+  color: inherit;
+  font-weight: 500;
+  padding: 0 2px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+::-webkit-datetime-edit-month-field:focus,
+::-webkit-datetime-edit-day-field:focus,
+::-webkit-datetime-edit-year-field:focus {
+  background: rgba(28, 191, 164, 0.1);
+  color: #1CBFA4;
+  outline: none;
+}
+
+/* Custom calendar dropdown styling - limited browser support */
+/* These styles attempt to customize the actual calendar popup */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Calendar popup container - very limited browser support */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  input[type="date"]:focus::-webkit-datetime-edit {
+    color: #1e293b;
+  }
+  
+  input[type="date"]::-webkit-inner-spin-button,
+  input[type="date"]::-webkit-clear-button {
+    display: none;
+  }
+}

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { IoCloseOutline } from "react-icons/io5"
 import { FiTrash2, FiX } from "react-icons/fi"
-import { FaEdit, FaEye } from "react-icons/fa"
+import { FaEdit } from "react-icons/fa"
 import PaginationControls from "../../components/PaginationControls"
 import styles from "./styles/NewsTable.module.css"
 
@@ -25,7 +25,7 @@ const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
-      month: 'short',
+      month: 'long',
       day: 'numeric'
     });
   } catch (error) {
@@ -35,7 +35,6 @@ const formatDate = (dateString) => {
 
 export default function NewsTable({ 
   news = [], 
-  onView, 
   onEdit, 
   onDelete, 
   onBulkDelete, 
@@ -136,9 +135,6 @@ export default function NewsTable({
     setShowDropdown(null)
     
     switch (action) {
-      case 'view':
-        onView && onView(newsItem);
-        break;
       case 'edit':
         onEdit && onEdit(newsItem);
         break;
@@ -277,13 +273,6 @@ export default function NewsTable({
                   </td>
                   <td>
                     <div className={styles.actionsCell}>
-                      <button
-                        className={`${styles.actionButton} ${styles.viewButton}`}
-                        onClick={() => handleAction(newsItem, 'view')}
-                        title="View details"
-                      >
-                        <FaEye /> View
-                      </button>
                       <button
                         className={`${styles.actionButton} ${styles.editButton}`}
                         onClick={() => handleAction(newsItem, 'edit')}

@@ -2,7 +2,7 @@
 
 import styles from './styles/SkeletonLoader.module.css'
 
-export default function SkeletonLoader({ type = 'section', count = 1, className = '' }) {
+export default function SkeletonLoader({ type = 'section', count = 1, className = '', columns = [] }) {
   const renderSkeleton = () => {
     switch (type) {
       case 'orgInfo':
@@ -49,6 +49,48 @@ export default function SkeletonLoader({ type = 'section', count = 1, className 
         )
       
       case 'table':
+        if (columns && columns.length > 0) {
+          return (
+            <div className={styles.newsTableSkeleton}>
+              <div className={styles.newsTableContainer}>
+                <table className={styles.newsTableSkeletonTable}>
+                  <thead>
+                    <tr>
+                      {columns.map((col, index) => (
+                        <th key={index} style={{ width: col.width }}>
+                          <div className={styles.tableHeaderTextSkeleton} />
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: count }).map((_, rowIndex) => (
+                      <tr key={rowIndex}>
+                        {columns.map((col, colIndex) => (
+                          <td key={colIndex}>
+                            {col.type === 'checkbox' && <div className={styles.checkboxSkeleton} />}
+                            {col.type === 'title' && <div className={styles.newsTitleSkeleton} />}
+                            {col.type === 'date' && <div className={styles.newsDateSkeleton} />}
+                            {col.type === 'actions' && (
+                              <div className={styles.newsActionsSkeleton}>
+                                <div className={styles.actionButtonSkeleton} />
+                                <div className={styles.actionButtonSkeleton} />
+                                <div className={styles.actionButtonSkeleton} />
+                              </div>
+                            )}
+                            {!col.type && <div className={styles.tableCellSkeleton} />}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        }
+        
+        // Default table skeleton (existing behavior)
         return (
           <div className={styles.tableSkeleton}>
             <div className={styles.tableHeaderSkeleton}>
@@ -60,17 +102,17 @@ export default function SkeletonLoader({ type = 'section', count = 1, className 
             </div>
             <div className={styles.tableContentSkeleton}>
               <div className={styles.tableRowSkeleton}>
-                {Array.from({ length: count }).map((_, index) => (
+                {Array.from({ length: 4 }).map((_, index) => (
                   <div key={index} className={styles.tableCellSkeleton} />
                 ))}
               </div>
               <div className={styles.tableRowSkeleton}>
-                {Array.from({ length: count }).map((_, index) => (
+                {Array.from({ length: 4 }).map((_, index) => (
                   <div key={index} className={styles.tableCellSkeleton} />
                 ))}
               </div>
               <div className={styles.tableRowSkeleton}>
-                {Array.from({ length: count }).map((_, index) => (
+                {Array.from({ length: 4 }).map((_, index) => (
                   <div key={index} className={styles.tableCellSkeleton} />
                 ))}
               </div>

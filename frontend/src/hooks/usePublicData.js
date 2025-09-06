@@ -148,25 +148,28 @@ export const usePublicNews = () => {
   };
 };
 
-// Custom hook for single news article
-export const usePublicNewsArticle = (articleId) => {
+// Custom hook for single news article by slug
+export const usePublicNewsArticle = (slug) => {
+  const url = slug ? `${API_BASE_URL}/api/news/slug/${slug}` : null;
+  
   const { data, error, isLoading } = useSWR(
-    articleId ? `${API_BASE_URL}/api/news/${articleId}` : null,
+    url,
     fetcher,
     {
       revalidateOnFocus: false,
       dedupingInterval: 600000, // Cache for 10 minutes (single articles don't change often)
       errorRetryCount: 2,
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/news/${articleId}`, error, { articleId });
+        logger.swrError(url, error, { slug });
       }
     }
   );
 
+
   return {
     article: data,
     isLoading,
-    error,
+    error: error?.message || error,
   };
 };
 

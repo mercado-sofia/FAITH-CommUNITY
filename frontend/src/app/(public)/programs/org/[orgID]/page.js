@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Loader from '../../../../../components/Loader';
 import BannerSection from '../../../components/PageBanner';
-import { OrgInfoCard, AdvocacyCompetency, FeaturedProjects, OrgHeadsCarousel } from './components';
+import { OrgInfoCard, AdvocacyCompetency, FeaturedProjects, OrgHeadsCarousel, LatestPosts } from './sections';
 import { usePublicOrganizationData } from '../../../../../hooks/usePublicData';
 import styles from '../org.module.css';
 
@@ -127,6 +127,8 @@ export default function OrgPage() {
         />
         <FeaturedProjects orgID={orgID} />
 
+        <LatestPosts orgID={orgID} />
+
         <section className={styles.volunteerBanner}>
           <div className={styles.bannerContent}>
             <p>Support {fallbackData.acronym}&apos;s Initiatives and Volunteer with Us!</p>
@@ -158,6 +160,8 @@ export default function OrgPage() {
         competencies={organizationData.competencies}
       />
       <FeaturedProjects orgID={orgID} />
+
+      <LatestPosts orgID={orgID} />
 
       <section className={styles.volunteerBanner}>
         <div className={styles.bannerContent}>

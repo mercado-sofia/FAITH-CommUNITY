@@ -10,6 +10,7 @@ import {
   getApprovedNews,
   getApprovedNewsByOrg,
   getNewsById,
+  getNewsBySlug,
   deleteNewsSubmission,
   getRecentlyDeletedNews,
   restoreNews,
@@ -66,6 +67,9 @@ router.get("/org/:orgId", getNewsByOrg);
 router.get("/deleted/:orgId", getRecentlyDeletedNews);
 router.patch("/restore/:id", restoreNews);
 router.delete("/permanent/:id", permanentlyDeleteNews);
+
+// Get news by slug (must come before /:id route)
+router.get("/slug/:slug", getNewsBySlug);
 
 // Generic CRUD operations for individual news items - with file upload for updates
 router.put("/:id", upload.single('featured_image'), updateNews);

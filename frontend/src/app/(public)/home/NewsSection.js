@@ -18,10 +18,7 @@ export default function NewsSection() {
   
   // Swipe functionality states
   const [touchStartX, setTouchStartX] = useState(0);
-  const [touchEndX, setTouchEndX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState(0);
-  const [scrollPosition, setScrollPosition] = useState(0);
 
   // Use SWR hooks for data fetching
   const { organizations: orgsData, isLoading: orgLoading, error: orgError } = usePublicOrganizations();
@@ -125,28 +122,24 @@ export default function NewsSection() {
   const handleTouchStart = (e) => {
     setTouchStartX(e.touches[0].clientX);
     setIsDragging(true);
-    setDragOffset(0);
   };
 
   const handleTouchMove = (e) => {
     if (isDragging) {
       const currentX = e.touches[0].clientX;
       const diff = currentX - touchStartX;
-      setDragOffset(diff);
       
-      // Update scroll position in real-time with smooth following
+      // Update scroll position in real-time
       const container = orgNavRef.current;
       if (container) {
         const newScrollPosition = container.scrollLeft - diff * 1.5;
         container.scrollLeft = Math.max(0, newScrollPosition);
-        setScrollPosition(newScrollPosition);
       }
     }
   };
 
   const handleTouchEnd = () => {
     setIsDragging(false);
-    setDragOffset(0);
   };
 
   // Trackpad wheel handler
@@ -161,12 +154,10 @@ export default function NewsSection() {
       if (container) {
         const newScrollPosition = container.scrollLeft + deltaX * 2;
         container.scrollLeft = Math.max(0, newScrollPosition);
-        setScrollPosition(newScrollPosition);
       }
     }
   };
 
-  const visibleOrgs = organizations;
   const maxDisplay = 6;
 
   const formatDate = (dateString) => {
@@ -186,17 +177,12 @@ export default function NewsSection() {
     return (
       <section className={styles.newsSection}>
         <div className={styles.newsContainer}>
-          <h2 className={styles.heading}>Latest News & Announcements</h2>
+          <div className={styles.headingContainer}>
+            <h2 className={styles.heading}>Latest News & Announcements</h2>
+            <Link href="/news" className={styles.seeAllLink}>See All</Link>
+          </div>
           <div style={{ textAlign: 'center', padding: '2rem' }}>
-            <div style={{ 
-              width: '40px', 
-              height: '40px', 
-              border: '4px solid #f3f3f3', 
-              borderTop: '4px solid #167c59', 
-              borderRadius: '50%', 
-              animation: 'spin 1s linear infinite',
-              margin: '0 auto 1rem'
-            }}></div>
+            <div className={styles.spinner}></div>
             <p>Loading news...</p>
           </div>
         </div>
@@ -207,7 +193,10 @@ export default function NewsSection() {
   return (
     <section className={styles.newsSection}>
       <div className={styles.newsContainer}>
-        <h2 className={styles.heading}>Latest News & Announcements</h2>
+        <div className={styles.headingContainer}>
+          <h2 className={styles.heading}>Latest News & Announcements</h2>
+          <Link href="/news" className={styles.seeAllLink}>See All News</Link>
+        </div>
       </div>
 
       {organizations.length > 0 && (
@@ -220,7 +209,7 @@ export default function NewsSection() {
             onTouchEnd={handleTouchEnd}
             onWheel={handleWheel}
           >
-                         {visibleOrgs.map((orgObj, index) => {
+            {organizations.map((orgObj, index) => {
                // Check if this organization is active by comparing with selectedOrg
                const isActive = selectedOrg && selectedOrg.id === orgObj.id;
                
@@ -262,15 +251,7 @@ export default function NewsSection() {
                padding: '2rem',
                color: '#6b7280'
              }}>
-               <div style={{ 
-                 width: '40px', 
-                 height: '40px', 
-                 border: '4px solid #f3f3f3', 
-                 borderTop: '4px solid #167c59', 
-                 borderRadius: '50%', 
-                 animation: 'spin 1s linear infinite',
-                 margin: '0 auto 1rem'
-               }}></div>
+               <div className={styles.spinner}></div>
                <p>Loading news...</p>
              </div>
            ) : newsError ? (
@@ -299,7 +280,7 @@ export default function NewsSection() {
               const imageUrl = imagePath ? `${baseUrl}${imagePath}` : null;
               
               return (
-                <Link key={newsItem.id} href={`/news/${newsItem.id}`} className={styles.newsCard}>
+                <Link key={newsItem.id} href={`/news/${newsItem.slug}`} className={styles.newsCard}>
                   {imageUrl && (
                     <div className={styles.newsImageContainer}>
                       <Image
@@ -315,14 +296,13 @@ export default function NewsSection() {
                     </div>
                   )}
                   <div className={styles.newsContent}>
-                    <p className={styles.newsDate}>
-                      {formatDate(newsItem.published_at || newsItem.date)} / By {newsItem.orgName || newsItem.orgID || 'Unknown Organization'}
-                    </p>
                     <h3 className={styles.newsTitle}>{newsItem.title}</h3>
                     <p className={styles.newsDesc}>
-                      {(newsItem.excerpt || newsItem.description) && (newsItem.excerpt || newsItem.description).length > 128
-                        ? `${(newsItem.excerpt || newsItem.description).substring(0, 128)}...`
-                        : (newsItem.excerpt || newsItem.description)}
+                      {newsItem.excerpt || newsItem.description}
+                    </p>
+                    <p className={styles.newsDate}>
+                      <em>Published:</em> {formatDate(newsItem.published_at || newsItem.date)}<br />
+                      <em>By:</em> {newsItem.orgName || newsItem.orgID || 'Unknown Organization'}
                     </p>
                     <span className={styles.readMore}>Read More</span>
                   </div>
@@ -341,12 +321,6 @@ export default function NewsSection() {
         )}
       </div>
 
-      <style jsx>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </section>
   );
 }

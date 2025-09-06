@@ -6,9 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { selectCurrentAdmin } from '../../../rtk/superadmin/adminSlice';
 import { useAdminNews } from '../../../hooks/useAdminData';
 import NewsTable from './components/NewsTable';
-import ViewNewsModal from './components/ViewNewsModal';
 import CreatePostForm from './components/CreatePostForm';
-import EditNewsModal from './components/EditNewsModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
 import RecentlyDeletedModal from './components/RecentlyDeletedModal';
@@ -17,7 +15,7 @@ import SuccessModal from '../components/SuccessModal';
 import SkeletonLoader from '../components/SkeletonLoader';
 import { invalidateNewsCache } from '../../../utils/cacheInvalidator';
 import styles from './news.module.css';
-import { FaPlus, FaTrash } from 'react-icons/fa';
+import { FaPlus } from 'react-icons/fa';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -28,15 +26,11 @@ export default function AdminNewsPage() {
   
   const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
   const [pageMode, setPageMode] = useState('list'); // 'list', 'create', or 'edit'
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showViewModal, setShowViewModal] = useState(false);
   const [showRecentlyDeletedModal, setShowRecentlyDeletedModal] = useState(false);
   const [editingNews, setEditingNews] = useState(null);
   const [deletingNews, setDeletingNews] = useState(null);
-  const [viewingNews, setViewingNews] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
 
@@ -108,6 +102,17 @@ export default function AdminNewsPage() {
     updateURLParams({ show: value.toString() });
   };
 
+  // Validation helper function
+  const validateNewsData = (newsData) => {
+    const errors = [];
+    if (!newsData.title?.trim()) errors.push('News title is required.');
+    if (!newsData.slug?.trim()) errors.push('News slug is required.');
+    if (!newsData.content?.trim()) errors.push('News content is required.');
+    if (!newsData.excerpt?.trim()) errors.push('News excerpt is required.');
+    if (!newsData.publishedAt) errors.push('Published date is required.');
+    return errors;
+  };
+
   // Handle error display
   useEffect(() => {
     if (error) {
@@ -125,28 +130,10 @@ export default function AdminNewsPage() {
         return;
       }
 
-      if (!newsData.title || !newsData.title.trim()) {
-        setSuccessModal({ isVisible: true, message: 'News title is required.', type: 'error' });
-        return;
-      }
-
-      if (!newsData.slug || !newsData.slug.trim()) {
-        setSuccessModal({ isVisible: true, message: 'News slug is required.', type: 'error' });
-        return;
-      }
-
-      if (!newsData.content || !newsData.content.trim()) {
-        setSuccessModal({ isVisible: true, message: 'News content is required.', type: 'error' });
-        return;
-      }
-
-      if (!newsData.excerpt || !newsData.excerpt.trim()) {
-        setSuccessModal({ isVisible: true, message: 'News excerpt is required.', type: 'error' });
-        return;
-      }
-
-      if (!newsData.publishedAt) {
-        setSuccessModal({ isVisible: true, message: 'Published date is required.', type: 'error' });
+      // Validate required fields
+      const validationErrors = validateNewsData(newsData);
+      if (validationErrors.length > 0) {
+        setSuccessModal({ isVisible: true, message: validationErrors[0], type: 'error' });
         return;
       }
 
@@ -211,29 +198,10 @@ export default function AdminNewsPage() {
         return;
       }
 
-      // Validate news data
-      if (!newsData.title || !newsData.title.trim()) {
-        setSuccessModal({ isVisible: true, message: 'News title is required.', type: 'error' });
-        return;
-      }
-
-      if (!newsData.slug || !newsData.slug.trim()) {
-        setSuccessModal({ isVisible: true, message: 'News slug is required.', type: 'error' });
-        return;
-      }
-
-      if (!newsData.content || !newsData.content.trim()) {
-        setSuccessModal({ isVisible: true, message: 'News content is required.', type: 'error' });
-        return;
-      }
-
-      if (!newsData.excerpt || !newsData.excerpt.trim()) {
-        setSuccessModal({ isVisible: true, message: 'News excerpt is required.', type: 'error' });
-        return;
-      }
-
-      if (!newsData.publishedAt) {
-        setSuccessModal({ isVisible: true, message: 'Published date is required.', type: 'error' });
+      // Validate required fields
+      const validationErrors = validateNewsData(newsData);
+      if (validationErrors.length > 0) {
+        setSuccessModal({ isVisible: true, message: validationErrors[0], type: 'error' });
         return;
       }
 
@@ -365,13 +333,8 @@ export default function AdminNewsPage() {
     }
   });
 
-  // Remove the slice here since NewsTable will handle pagination
   const displayedNews = sortedNews || [];
 
-  const handleView = (newsItem) => {
-    setViewingNews(newsItem);
-    setShowViewModal(true);
-  };
 
   const handleEdit = (newsItem) => {
     setEditingNews(newsItem);
@@ -441,16 +404,12 @@ export default function AdminNewsPage() {
   };
 
   const handleCloseModals = () => {
-    setShowEditModal(false);
     setShowDeleteModal(false);
-    setShowViewModal(false);
     setShowRecentlyDeletedModal(false);
     setEditingNews(null);
     setDeletingNews(null);
-    setViewingNews(null);
-    setSelectedItems([]); // Clear bulk selections when closing modals
+    setSelectedItems([]);
   };
-
 
   // Display error message if there's an error and we have a valid admin
   if (error && currentAdmin?.org) {
@@ -516,7 +475,16 @@ export default function AdminNewsPage() {
             />
 
             {loading && (
-              <SkeletonLoader type="grid" count={6} />
+              <SkeletonLoader 
+                type="table" 
+                count={showCount} 
+                columns={[
+                  { type: 'checkbox', width: '40px' },
+                  { type: 'title', width: '50%' },
+                  { type: 'date', width: '30%' },
+                  { type: 'actions', width: '20%' }
+                ]}
+              />
             )}
 
             {error && (
@@ -530,7 +498,6 @@ export default function AdminNewsPage() {
             {!loading && !error && (
               <NewsTable
                 news={displayedNews || []}
-                onView={handleView}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onBulkDelete={handleBulkDeleteRequest}
@@ -568,18 +535,6 @@ export default function AdminNewsPage() {
             />
           </>
         ) : null}
-
-
-      {/* View News Modal */}
-      {showViewModal && viewingNews && (
-        <ViewNewsModal
-          news={viewingNews}
-          onClose={handleCloseModals}
-        />
-      )}
-
-
-      {/* Edit News Modal - Removed, now using CreatePostForm in edit mode */}
 
       {/* Delete News Modal */}
       <DeleteConfirmationModal

@@ -63,12 +63,18 @@ export default function DeleteConfirmationModal({
               }
               return 'this';
             })()} {itemType}{(() => {
-              // Add 's' only when count > 1
+              // Handle pluralization - special case for "news" which doesn't need 's'
               if (itemName && /\d/.test(itemName)) {
                 const countMatch = itemName.match(/^(\d+)/);
                 if (countMatch) {
                   const count = parseInt(countMatch[1]);
-                  return count > 1 ? 's' : '';
+                  if (count > 1) {
+                    // Special case for "news" - it's already plural
+                    if (itemType === 'news') {
+                      return ' items';
+                    }
+                    return 's';
+                  }
                 }
               }
               return '';

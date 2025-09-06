@@ -447,6 +447,66 @@ export const getNewsById = async (req, res) => {
   }
 };
 
+/* -------------------------- Get One by Slug -------------------------- */
+export const getNewsBySlug = async (req, res) => {
+  const { slug } = req.params;
+
+  if (!slug) {
+    return res.status(400).json({ success: false, message: "News slug is required" });
+  }
+
+  try {
+    const [rows] = await db.execute(
+      `SELECT n.*, a.org as orgAcronym, a.orgName, o.logo as orgLogo
+       FROM news n
+       LEFT JOIN organizations o ON n.organization_id = o.id
+       LEFT JOIN admins a ON a.organization_id = o.id
+       WHERE n.slug = ? AND n.is_deleted = FALSE`,
+      [slug]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: "News not found" });
+    }
+
+    const n = rows[0];
+    let logoUrl;
+    if (n.orgLogo) {
+      if (n.orgLogo.includes('/')) {
+        const filename = n.orgLogo.split('/').pop();
+        logoUrl = `/uploads/organizations/logos/${filename}`;
+      } else {
+        logoUrl = `/uploads/organizations/logos/${n.orgLogo}`;
+      }
+    } else {
+      logoUrl = `/logo/faith_community_logo.png`;
+    }
+
+    const newsData = {
+      id: n.id,
+      title: n.title,
+      slug: n.slug,
+      content: n.content,
+      description: n.description, // Keep for backward compatibility
+      excerpt: n.excerpt,
+      featured_image: n.featured_image,
+      published_at: n.published_at,
+      date: n.date || n.date_published || n.created_at,
+      created_at: n.created_at,
+      updated_at: n.updated_at,
+      organization_id: n.organization_id,
+      orgID: n.orgAcronym || `Org-${n.organization_id}`,
+      orgName: n.orgName || `Organization ${n.organization_id}`,
+      icon: logoUrl,
+    };
+
+    return res.json(newsData);
+  } catch (error) {
+    console.error("❌ Error fetching news by slug:", error);
+    return res.status(500).json({ success: false, message: "Failed to fetch news", error: error.message });
+  }
+};
+
 /* -------------------------- Soft Delete flows ------------------------- */
 // Delete news submission (for admin) - Now implements soft delete
 export const deleteNewsSubmission = async (req, res) => {

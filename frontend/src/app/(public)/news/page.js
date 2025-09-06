@@ -94,7 +94,7 @@ export default function AllNewsPage() {
     } else {
       const targetOrg = organizations.find(org => org.id === orgId);
       if (targetOrg) {
-        router.push(`/news?news_org=${targetOrg.id}`);
+        router.push(`/news?news_org=${targetOrg.acronym || targetOrg.id}`);
       } else {
         router.push('/news');
       }
@@ -179,7 +179,7 @@ export default function AllNewsPage() {
           <button
             key={org.id}
             onClick={() => handleOrgTabClick(org.id)}
-            className={`${styles.orgTab} ${orgFilter === org.id.toString() ? styles.active : ''}`}
+            className={`${styles.orgTab} ${orgFilter === org.acronym || orgFilter === org.id.toString() ? styles.active : ''}`}
             title={org.name}
           >
             {org.acronym}
@@ -209,7 +209,7 @@ export default function AllNewsPage() {
                  key={newsItem.id} 
                  id={`news-${newsItem.id}`}
                  className={`${styles.newsItem} ${highlightedNewsId === newsItem.id.toString() ? styles.highlighted : ''}`}
-                 onClick={() => router.push(`/news/${newsItem.id}`)}
+                 onClick={() => router.push(`/news/${newsItem.slug}`)}
                >
                  <div className={styles.newsItemContent}>
                    {imageUrl && (
@@ -217,8 +217,8 @@ export default function AllNewsPage() {
                        <Image
                          src={imageUrl}
                          alt={newsItem.title || 'News image'}
-                         width={200}
-                         height={120}
+                         width={280}
+                         height={180}
                          className={styles.newsImage}
                          onError={(e) => {
                            e.target.style.display = 'none';
@@ -228,15 +228,13 @@ export default function AllNewsPage() {
                    )}
                    <div className={styles.newsTextContent}>
                      <Link
-                       href={`/news/${newsItem.id}`}
+                       href={`/news/${newsItem.slug}`}
                        className={styles.newsTitle}
                      >
                        {newsItem.title}
                      </Link>
                      <p className={styles.newsDescription}>
-                       {(newsItem.excerpt || newsItem.description) && (newsItem.excerpt || newsItem.description).length > 150
-                         ? `${(newsItem.excerpt || newsItem.description).substring(0, 150)}...`
-                         : (newsItem.excerpt || newsItem.description)}
+                       {newsItem.excerpt || newsItem.description}
                      </p>
                      <div className={styles.newsMetadata}>
                        <div>

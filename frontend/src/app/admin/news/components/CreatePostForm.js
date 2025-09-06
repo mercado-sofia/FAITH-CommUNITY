@@ -1,20 +1,30 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { FiUpload, FiCalendar } from 'react-icons/fi';
+import { FiUpload } from 'react-icons/fi';
 import Image from 'next/image';
 import ContentEditor from './ContentEditor';
+import DatePickerPopover from './DatePickerPopover';
 import DOMPurify from 'dompurify';
 import styles from './styles/CreatePostForm.module.css';
 
 const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData = null, isEditMode = false }) => {
+  // Get current local date in YYYY-MM-DD format
+  const getCurrentLocalDate = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
     content: '',
     excerpt: '',
     featuredImage: null,
-    publishedAt: new Date().toISOString().slice(0, 16), // YYYY-MM-DDTHH:MM format
+    publishedAt: getCurrentLocalDate(),
   });
   
   const [errors, setErrors] = useState({});
@@ -26,9 +36,12 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
     if (isEditMode && initialData) {
       // Format the published_at date for datetime-local input
       const formatDateForInput = (dateString) => {
-        if (!dateString) return new Date().toISOString().slice(0, 16);
+        if (!dateString) return getCurrentLocalDate();
         const date = new Date(dateString);
-        return date.toISOString().slice(0, 16);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
       };
 
       setFormData({
@@ -90,16 +103,23 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
 
   // Handle form field changes
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
+    const newFormData = {
+      ...formData,
       [field]: value,
       // Auto-generate slug when title changes
       ...(field === 'title' && { slug: generateSlug(value) })
-    }));
+    };
+    
+    setFormData(newFormData);
     
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+    
+    // Clear slug error when slug is auto-generated from title
+    if (field === 'title' && errors.slug && newFormData.slug.trim()) {
+      setErrors(prev => ({ ...prev, slug: '' }));
     }
   };
 
@@ -158,6 +178,7 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
     if (!formData.slug.trim()) newErrors.slug = 'Slug is required';
     if (!formData.content.trim()) newErrors.content = 'Content is required';
     if (!formData.excerpt.trim()) newErrors.excerpt = 'Excerpt is required';
+    if (!formData.featuredImage && !imagePreview) newErrors.featuredImage = 'Featured image is required';
     if (!formData.publishedAt) newErrors.publishedAt = 'Published date is required';
 
     setErrors(newErrors);
@@ -278,7 +299,9 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
         <div className={styles.rightPanel}>
           {/* Featured Image Container */}
           <div className={styles.container}>
-            <h3 className={styles.containerTitle}>Featured Image</h3>
+            <h3 className={styles.containerTitle}>
+              Featured Image <span className={styles.required}>*</span>
+            </h3>
             <div
               className={`${styles.uploadArea} ${dragActive ? styles.dragActive : ''} ${errors.featuredImage ? styles.uploadError : ''}`}
               onDragEnter={handleDrag}
@@ -330,16 +353,14 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
 
           {/* Published At Container */}
           <div className={styles.container}>
-            <h3 className={styles.containerTitle}>Published at</h3>
-            <div className={styles.dateInputWrapper}>
-              <FiCalendar className={styles.dateIcon} />
-              <input
-                type="datetime-local"
-                value={formData.publishedAt}
-                onChange={(e) => handleInputChange('publishedAt', e.target.value)}
-                className={`${styles.dateInput} ${errors.publishedAt ? styles.inputError : ''}`}
-              />
-            </div>
+            <h3 className={styles.containerTitle}>
+              Published at <span className={styles.required}>*</span>
+            </h3>
+            <DatePickerPopover
+              value={formData.publishedAt}
+              onChange={(value) => handleInputChange('publishedAt', value)}
+              placeholder="Select published date"
+            />
             {errors.publishedAt && <span className={styles.errorText}>{errors.publishedAt}</span>}
           </div>
         </div>

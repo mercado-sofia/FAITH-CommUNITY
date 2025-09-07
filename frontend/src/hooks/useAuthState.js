@@ -23,12 +23,13 @@ export const useAuthState = () => {
       const token = localStorage.getItem('userToken');
       const storedUserData = localStorage.getItem('userData');
       
-      if (token && storedUserData && isTokenValid(token)) {
+      // Only proceed if we have both token and userData, and token is valid
+      if (token && storedUserData && storedUserData !== 'undefined' && storedUserData !== 'null' && isTokenValid(token)) {
         const userData = JSON.parse(storedUserData);
         setUser(userData);
       } else {
-        // Clear invalid data
-        if (token || storedUserData) {
+        // Clear invalid data only if we have user-related data
+        if (token || (storedUserData && storedUserData !== 'undefined' && storedUserData !== 'null')) {
           localStorage.removeItem('userToken');
           localStorage.removeItem('userData');
           localStorage.removeItem('token');
@@ -125,5 +126,3 @@ export const useAuthState = () => {
     isTokenValid
   };
 };
-
-

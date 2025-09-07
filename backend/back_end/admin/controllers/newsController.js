@@ -145,14 +145,14 @@ export const createNews = async (req, res) => {
 export const getNewsByOrg = async (req, res) => {
   const { orgId } = req.params;
   
-  console.log(`🔍 getNewsByOrg called with orgId: ${orgId}`);
+  // Getting news by organization
 
   // Verify authentication
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
   if (!token) {
-    console.log("❌ No token provided");
+    // No token provided
     return res.status(401).json({ success: false, message: "Access token required" });
   }
 
@@ -162,19 +162,19 @@ export const getNewsByOrg = async (req, res) => {
       audience: process.env.JWT_AUD || "admin",
     });
     req.admin = decoded;
-    console.log(`✅ Token verified for admin: ${decoded.org || decoded.id}`);
+    // Token verified for admin
   } catch (err) {
-    console.log("❌ Token verification failed:", err.message);
+    // Token verification failed
     return res.status(403).json({ success: false, message: "Invalid or expired token" });
   }
 
   if (!orgId) {
-    console.log("❌ No orgId provided");
+    // No orgId provided
     return res.status(400).json({ success: false, message: "Organization ID is required" });
   }
 
   try {
-    console.log(`🔍 Looking up organization with ID/acronym: ${orgId}`);
+    // Looking up organization
     
     let [orgRows] = await db.execute(
       "SELECT id FROM organizations WHERE id = ?",
@@ -182,7 +182,7 @@ export const getNewsByOrg = async (req, res) => {
     );
 
     if (orgRows.length === 0) {
-      console.log(`🔍 Organization not found directly, trying admins table for acronym: ${orgId}`);
+      // Organization not found directly, trying admins table
       // Try to find by org acronym from admins table
       const [adminRows] = await db.execute(
         "SELECT organization_id FROM admins WHERE org = ? LIMIT 1",
@@ -190,7 +190,7 @@ export const getNewsByOrg = async (req, res) => {
       );
       
       if (adminRows.length > 0) {
-        console.log(`✅ Found organization_id ${adminRows[0].organization_id} from admins table`);
+        // Found organization_id from admins table
         // Use the organization_id from admins table
         [orgRows] = await db.execute(
           "SELECT id FROM organizations WHERE id = ?",
@@ -200,12 +200,12 @@ export const getNewsByOrg = async (req, res) => {
     }
 
     if (orgRows.length === 0) {
-      console.log(`❌ Organization not found for: ${orgId}`);
+      // Organization not found
       return res.status(404).json({ success: false, message: "Organization not found" });
     }
 
     const organization = orgRows[0];
-    console.log(`✅ Found organization:`, organization);
+    // Found organization
 
     const [newsRows] = await db.execute(
       `SELECT n.*, a.org as orgAcronym, a.orgName, o.logo as orgLogo
@@ -217,7 +217,7 @@ export const getNewsByOrg = async (req, res) => {
       [organization.id]
     );
 
-    console.log(`📰 Found ${newsRows.length} news items for organization ${organization.id}`);
+    // Found news items for organization
 
     const news = newsRows.map(n => {
       let logoUrl;
@@ -248,7 +248,7 @@ export const getNewsByOrg = async (req, res) => {
       };
     });
 
-    console.log(`✅ Returning ${news.length} formatted news items`);
+    // Returning formatted news items
     return res.json(news);
   } catch (error) {
     console.error("❌ Error fetching news:", error);

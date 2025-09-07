@@ -3,21 +3,27 @@ export function getBaseUrl() {
 }
 
 export async function postJson(path, body, options = {}) {
-	const res = await fetch(`${getBaseUrl()}${path}`, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			...(options.headers || {}),
-		},
-		body: JSON.stringify(body),
-		credentials: options.credentials || 'same-origin',
-		cache: 'no-store',
-	})
-	let data
 	try {
-		data = await res.json()
-	} catch (e) {
-		data = null
+		const res = await fetch(`${getBaseUrl()}${path}`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				...(options.headers || {}),
+			},
+			body: JSON.stringify(body),
+			credentials: options.credentials || 'include',
+			cache: 'no-store',
+		})
+		
+		let data
+		try {
+			data = await res.json()
+		} catch (e) {
+			data = null
+		}
+		return { ok: res.ok, status: res.status, data }
+	} catch (error) {
+		console.error('API request failed:', error)
+		return { ok: false, status: 0, data: null, error: error.message }
 	}
-	return { ok: res.ok, status: res.status, data }
 }

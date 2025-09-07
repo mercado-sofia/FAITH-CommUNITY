@@ -420,10 +420,7 @@ export const updateProgram = async (req, res) => {
   const { id } = req.params;
   const { title, description, category, status, image, additionalImages, event_start_date, event_end_date, multiple_dates } = req.body;
 
-  console.log('🔄 Update program request received:', { id, title, description, category, status });
-  console.log('📅 Date data:', { event_start_date, event_end_date, multiple_dates });
-  console.log('🖼️ Image data:', image ? 'Image provided' : 'No image provided');
-  console.log('🖼️ Additional images:', additionalImages ? `${additionalImages.length} images` : 'No additional images');
+  // Update program request received
 
   if (!id) {
     return res.status(400).json({
@@ -447,14 +444,14 @@ export const updateProgram = async (req, res) => {
     );
 
     if (existingProgram.length === 0) {
-      console.log('❌ Program not found:', id);
+      // Program not found
       return res.status(404).json({
         success: false,
         message: "Program not found",
       });
     }
 
-    console.log('✅ Program found:', existingProgram[0]);
+    // Program found
     let imagePath = existingProgram[0].image; // Keep existing image by default
 
     // Handle main image if provided
@@ -483,20 +480,20 @@ export const updateProgram = async (req, res) => {
       fs.writeFileSync(filePath, buffer);
       
       imagePath = `programs/main-images/${filename}`;
-      console.log('✅ Main image saved:', imagePath);
+      // Main image saved
     } else if (image === null) {
       // User wants to remove the image
       imagePath = null;
-      console.log('🗑️ User requested to remove main image');
+      // User requested to remove main image
     } else if (image === undefined) {
       // No change to image - keep existing
-      console.log('🔄 Keeping existing main image:', imagePath);
+      // Keeping existing main image
     } else {
-      console.log('🔄 Keeping existing main image:', imagePath);
+      // Keeping existing main image
     }
     // If image is null, keep the existing image (imagePath already set to existingProgram[0].image)
 
-    console.log('📝 Updating program in database...');
+    // Updating program in database
     // Update the program
     const [result] = await db.execute(
       `UPDATE programs_projects 
@@ -506,18 +503,18 @@ export const updateProgram = async (req, res) => {
     );
 
     if (result.affectedRows === 0) {
-      console.log('❌ No rows affected during update');
+      // No rows affected during update
       return res.status(404).json({
         success: false,
         message: "Program not found or no changes made",
       });
     }
 
-    console.log('✅ Program updated successfully, rows affected:', result.affectedRows);
+    // Program updated successfully
 
     // Handle multiple dates if provided
     if (multiple_dates && Array.isArray(multiple_dates)) {
-      console.log('📅 Processing multiple dates:', multiple_dates);
+      // Processing multiple dates
       // First, delete existing multiple dates for this program
       await db.execute('DELETE FROM program_event_dates WHERE program_id = ?', [id]);
       
@@ -530,12 +527,12 @@ export const updateProgram = async (req, res) => {
           );
         }
       }
-      console.log('✅ Multiple dates updated');
+      // Multiple dates updated
     }
 
     // Handle additional images if provided
     if (additionalImages && Array.isArray(additionalImages)) {
-      console.log('🖼️ Processing additional images:', additionalImages.length);
+      // Processing additional images
       // First, delete existing additional images for this program
       await db.execute('DELETE FROM program_additional_images WHERE program_id = ?', [id]);
       
@@ -575,10 +572,10 @@ export const updateProgram = async (req, res) => {
           }
         }
       }
-      console.log('✅ Additional images updated');
+      // Additional images updated
     }
 
-    console.log('🎉 Program update completed successfully');
+    // Program update completed successfully
     res.json({
       success: true,
       message: "Program updated successfully",

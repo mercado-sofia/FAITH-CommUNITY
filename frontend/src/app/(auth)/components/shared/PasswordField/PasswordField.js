@@ -9,10 +9,13 @@ export default function PasswordField({
 	name = "password",
 	value,
 	onChange,
+	onFocus,
+	onBlur,
 	placeholder = "Enter your password",
 	disabled = false,
 	ariaLabel = "Password",
 	className = "",
+	error = false,
 }) {
 	const [show, setShow] = useState(false)
 	const fallbackId = useId()
@@ -24,12 +27,14 @@ export default function PasswordField({
 				id={inputId}
 				name={name}
 				type={show ? "text" : "password"}
-				className={`${styles.input} ${className}`}
+				className={`${styles.input} ${error ? styles.inputError : ''} ${className}`}
 				placeholder={placeholder}
 				aria-label={ariaLabel}
 				autoComplete="off"
 				value={value}
 				onChange={onChange}
+				onFocus={onFocus}
+				onBlur={onBlur}
 				disabled={disabled}
 			/>
 			<button

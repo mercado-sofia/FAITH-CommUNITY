@@ -33,8 +33,7 @@ if (process.env.NODE_ENV === 'development') {
     devIndicator.textContent = 'DEV MODE';
     devIndicator.title = 'Click to open logger tools';
     devIndicator.onclick = () => {
-      console.log('🔧 FAITH Logger Tools:', window.__FAITH_LOGGER__);
-      console.log('📊 Stored Logs:', window.__FAITH_LOGGER__.getLogs());
+      // FAITH Logger Tools available
     };
     document.body.appendChild(devIndicator);
 
@@ -69,7 +68,7 @@ export const devTools = {
   // Clear all stored logs
   clearAllLogs: () => {
     logger.clearStoredLogs();
-    console.log('🧹 All stored logs cleared');
+    // All stored logs cleared
   },
 
   // Export logs for debugging

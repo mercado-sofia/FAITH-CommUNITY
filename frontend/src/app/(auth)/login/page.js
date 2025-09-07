@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch } from "react-redux"
 import { loginAdmin, logoutAdmin } from "../../../rtk/superadmin/adminSlice"
@@ -31,7 +31,6 @@ export default function LoginPage() {
 
   // Function to completely clear all session data
   const clearAllSessionData = () => {
-    console.log("Clearing all session data")
 
     // Clear admin tokens
     localStorage.removeItem("adminToken")
@@ -55,8 +54,6 @@ export default function LoginPage() {
     document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT"
 
     dispatch(logoutAdmin())
-
-    console.log("All session data cleared")
   }
 
   const handleFocus = (fieldName) => {
@@ -155,16 +152,21 @@ export default function LoginPage() {
     clearAllSessionData()
 
     try {
-      const systems = needsOtp && lastAttemptedSystem ? [lastAttemptedSystem] : ["superadmin", "admin", "user"]
+      const systems = needsOtp && lastAttemptedSystem ? [lastAttemptedSystem] : ["admin", "superadmin", "user"]
       let result
+      let successfulSystem = null
+      
       for (const s of systems) {
         result = await attempt(s)
-        if (result.ok) break
+        if (result.ok) {
+          successfulSystem = s
+          break
+        }
       }
 
       if (result && result.ok) {
         const data = result.data
-        switch (lastAttemptedSystem) {
+        switch (successfulSystem) {
           case "superadmin":
             document.cookie = "userRole=superadmin; path=/; max-age=86400"
             localStorage.setItem("superAdminToken", data.token)
@@ -189,7 +191,7 @@ export default function LoginPage() {
         }
 
         setIsLoading(false)
-        window.location.href = lastAttemptedSystem === 'user' ? '/' : `/${lastAttemptedSystem}`
+        window.location.href = successfulSystem === 'user' ? '/' : `/${successfulSystem}`
         return
       }
 
@@ -197,6 +199,13 @@ export default function LoginPage() {
         setErrorMessage("Too many login attempts. Please wait a few minutes before trying again.")
         setShowError(true)
         setFieldErrors({ email: "Rate limit exceeded", password: "Rate limit exceeded" })
+        setIsLoading(false)
+        return
+      }
+
+      if (result && result.error) {
+        setErrorMessage("Network error: Unable to connect to the server. Please check your internet connection and try again.")
+        setShowError(true)
         setIsLoading(false)
         return
       }
@@ -210,7 +219,7 @@ export default function LoginPage() {
         return
       }
 
-      if (lastAttemptedSystem === "user" && data?.requiresVerification) {
+      if (successfulSystem === "user" && data?.requiresVerification) {
         setErrorMessage("Please verify your email address before logging in. Check your email for a verification link.")
         setShowError(true)
         setFieldErrors({ email: "Please verify your email address", password: "Please verify your email address" })
@@ -278,7 +287,10 @@ export default function LoginPage() {
                 setFieldErrors({})
               }
             }}
+            onFocus={() => handleFocus('password')}
+            onBlur={() => handleBlur('password')}
             disabled={isLoading}
+            error={fieldErrors.password}
           />
 
           {needsOtp && (

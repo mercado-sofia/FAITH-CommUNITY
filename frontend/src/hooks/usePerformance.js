@@ -34,9 +34,7 @@ export const usePerformance = () => {
       observer.observe({ entryTypes: ['largest-contentful-paint'] });
 
       // Log performance data in development
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Performance Metrics:', performanceData.current);
-      }
+      // Performance metrics collected
     }
   }, []);
 

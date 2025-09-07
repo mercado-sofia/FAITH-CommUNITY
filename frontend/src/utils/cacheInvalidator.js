@@ -36,7 +36,7 @@ export const invalidateNewsCache = () => {
     invalidateCache(`${API_BASE_URL}/api/news/org/${org}`);
   });
   
-  console.log('🗑️ News cache invalidated');
+  // News cache invalidated
 };
 
 /**
@@ -49,7 +49,7 @@ export const invalidateOrganizationCache = () => {
   invalidateCache(`${API_BASE_URL}/api/organization/org/FABCOMMS`);
   invalidateCache(`${API_BASE_URL}/api/organization/org/FAIEES`);
   
-  console.log('🏢 Organization cache invalidated');
+  // Organization cache invalidated
 };
 
 /**
@@ -66,7 +66,7 @@ export const invalidateProgramsCache = () => {
     invalidateCache(`${API_BASE_URL}/api/admin/programs/${org}`);
   });
   
-  console.log('📚 Programs cache invalidated');
+  // Programs cache invalidated
 };
 
 /**
@@ -77,7 +77,7 @@ export const invalidateAllCaches = () => {
   invalidateOrganizationCache();
   invalidateProgramsCache();
   
-  console.log('🔄 All caches invalidated');
+  // All caches invalidated
 };
 
 const cacheInvalidator = {

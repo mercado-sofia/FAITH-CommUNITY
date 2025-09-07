@@ -100,17 +100,7 @@ export const updateHead = async (req, res) => {
   const { id } = req.params
   const { head_name, role, facebook, email, photo, priority, display_order } = req.body
 
-  console.log('🔄 Individual head update request:', {
-    id,
-    head_name,
-    role,
-    facebook,
-    email,
-    photo: photo ? 'photo provided' : 'no photo',
-    priority,
-    display_order
-  });
-
+  // Individual head update request
   if (!id) {
     return res.status(400).json({
       success: false,
@@ -163,7 +153,7 @@ export const updateHead = async (req, res) => {
       })
     }
 
-    console.log('✅ Individual head update completed successfully');
+    // Individual head update completed successfully
     res.json({
       success: true,
       message: "Organization head updated successfully",
@@ -215,12 +205,10 @@ export const deleteHead = async (req, res) => {
 export const bulkDeleteHeads = async (req, res) => {
   const { organization_id, head_ids } = req.body
 
-  console.log('Bulk delete heads request:');
-  console.log('Organization ID:', organization_id);
-  console.log('Head IDs:', head_ids);
+  // Bulk delete heads request
 
   if (!organization_id || !Array.isArray(head_ids) || head_ids.length === 0) {
-    console.log('Validation failed: Missing organization_id or head_ids is not array or empty');
+    // Validation failed: Missing organization_id or head_ids is not array or empty
     return res.status(400).json({
       success: false,
       message: "Organization ID and head IDs array are required",
@@ -231,10 +219,10 @@ export const bulkDeleteHeads = async (req, res) => {
     // Verify organization exists first
     console.log('Checking if organization exists with ID:', organization_id);
     const [orgCheck] = await db.execute("SELECT id FROM organizations WHERE id = ?", [organization_id])
-    console.log('Organization check result:', orgCheck);
+    // Organization check result
     
     if (orgCheck.length === 0) {
-      console.log('Organization not found');
+      // Organization not found
       return res.status(404).json({
         success: false,
         message: "Organization not found",
@@ -320,10 +308,10 @@ export const bulkUpdateHeads = async (req, res) => {
     // Verify organization exists first
     console.log('Checking if organization exists with ID:', organization_id);
     const [orgCheck] = await db.execute("SELECT id FROM organizations WHERE id = ?", [organization_id])
-    console.log('Organization check result:', orgCheck);
+    // Organization check result
     
     if (orgCheck.length === 0) {
-      console.log('Organization not found');
+      // Organization not found
       return res.status(404).json({
         success: false,
         message: "Organization not found",

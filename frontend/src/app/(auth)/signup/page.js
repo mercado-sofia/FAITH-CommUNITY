@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import styles from "./signup.module.css"
-import { VerifyEmail, SignupForm, RegistrationSuccess } from "../components"
+import { VerifyEmail, SignupForm, RegistrationSuccess, AuthLeftPanel } from "../components"
 
 export default function SignupPage() {
   const [currentView, setCurrentView] = useState('signup') // 'signup', 'success', 'verification'
@@ -17,9 +17,7 @@ export default function SignupPage() {
   if (token) {
     return (
       <div className={styles.container}>
-        <div className={styles.leftPane}>
-          <span className={styles.signupLabel}>Sign Up</span>
-        </div>
+        <AuthLeftPanel labelText="Sign Up" />
         <div className={styles.rightPane}>
           <div className={styles.contentContainer}>
             <VerifyEmail token={token} />
@@ -36,9 +34,7 @@ export default function SignupPage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.leftPane}>
-        <span className={styles.signupLabel}>Sign Up</span>
-      </div>
+      <AuthLeftPanel labelText="Sign Up" />
              <div className={styles.rightPane}>
         <div className={styles.contentContainer}>
           {currentView === 'signup' && (

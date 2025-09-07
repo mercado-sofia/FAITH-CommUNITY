@@ -42,13 +42,14 @@ export default function SuperAdminSettings() {
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token || token === 'superadmin') {
-          showNotification('Authentication token is invalid. Please log out and log back in.', 'error');
+        const token = localStorage.getItem('superAdminToken');
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        if (!token) {
+          showNotification('Authentication required. Please log in again.', 'error');
           return;
         }
 
-        const response = await fetch(`http://localhost:8080/api/superadmin/auth/profile/1`, {
+        const response = await fetch(`${baseUrl}/api/superadmin/auth/profile`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -121,15 +122,14 @@ export default function SuperAdminSettings() {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      console.log('Token from localStorage:', token);
-      
-      if (!token || token === 'superadmin') {
-        showNotification('Authentication token is invalid. Please log out and log back in.', 'error');
+      const token = localStorage.getItem('superAdminToken');
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      if (!token) {
+        showNotification('Authentication required. Please log in again.', 'error');
         return;
       }
 
-      const response = await fetch(`http://localhost:8080/api/superadmin/auth/email/${currentUser.id}`, {
+      const response = await fetch(`${baseUrl}/api/superadmin/auth/email/${currentUser.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -183,15 +183,14 @@ export default function SuperAdminSettings() {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      console.log('Token from localStorage:', token);
-      
-      if (!token || token === 'superadmin') {
-        showNotification('Authentication token is invalid. Please log out and log back in.', 'error');
+      const token = localStorage.getItem('superAdminToken');
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      if (!token) {
+        showNotification('Authentication required. Please log in again.', 'error');
         return;
       }
 
-      const response = await fetch(`http://localhost:8080/api/superadmin/auth/password/${currentUser.id}`, {
+      const response = await fetch(`${baseUrl}/api/superadmin/auth/password/${currentUser.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { FaEnvelope, FaSpinner } from 'react-icons/fa'
 import { BiSolidMessageAltError } from 'react-icons/bi'
 import { FiCheckCircle } from 'react-icons/fi'
-import styles from './styles/VerifyEmail.module.css'
+import styles from './VerifyEmail.module.css'
 
 export default function VerifyEmail({ token }) {
   const [verificationStatus, setVerificationStatus] = useState('verifying') // 'verifying', 'success', 'error'

@@ -2,13 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Loader from '../../components/Loader';
-import HeroSection from './home/HeroSection'
-import AboutSection from './home/AboutSection'
-import ImpactSection from './home/ImpactSection'
-import NewsSection from './home/NewsSection'
-import BannerSection from './home/BannerSection'
-import OfficerSection from './home/OfficerSection'
-import OrgAdviserSection from './home/OrgAdviserSection'
+import { HeroSection, AboutSection, ImpactSection, NewsSection, BannerSection, OfficerSection, OrgAdviserSection } from './home';
 import { publicFeaturedProjectsApi } from '../../rtk/(public)/featuredProjectsApi';
 
 let hasVisitedHome = false;

@@ -1,13 +1,31 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { usePublicPrograms } from '../../../../../../hooks/usePublicData';
-import { getProgramImageUrl } from '../../../../../../utils/uploadPaths';
-import styles from '../../org.module.css';
+import { usePublicPrograms } from '../../../../../hooks/usePublicData';
+import { getProgramImageUrl } from '../../../../../utils/uploadPaths';
+import styles from './FeaturedProjects.module.css';
 
 export default function FeaturedProjects({ orgID }) {
   const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Check user authentication status
+  useEffect(() => {
+    const token = localStorage.getItem('userToken');
+    const storedUserData = localStorage.getItem('userData');
+    
+    if (token && storedUserData) {
+      try {
+        JSON.parse(storedUserData);
+        setIsLoggedIn(true);
+      } catch (error) {
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userData');
+      }
+    }
+  }, []);
 
   // Fetch programs for this organization
   const { programs, isLoading, error } = usePublicPrograms(orgID);
@@ -19,8 +37,20 @@ export default function FeaturedProjects({ orgID }) {
     )
     .slice(0, 6);
 
-  const handleButtonClick = (programId) => {
-    router.push(`/programs/${programId}`);
+  const handleButtonClick = (program, isApplyButton = false) => {
+    // If it's an "Apply Now" button for an upcoming program
+    if (isApplyButton && program.status === 'Upcoming') {
+      if (!isLoggedIn) {
+        // Show login modal for non-authenticated users
+        window.dispatchEvent(new CustomEvent('showLoginModal'));
+      } else {
+        // Navigate to apply page with pre-selected program
+        router.push(`/apply?program=${program.id}`);
+      }
+    } else {
+      // Default behavior - navigate to program details
+      router.push(`/programs/${program.id}`);
+    }
   };
 
   const handleExploreAll = () => {
@@ -129,14 +159,14 @@ export default function FeaturedProjects({ orgID }) {
                       <div className={styles.programBottomSection}>
                         <button 
                           className={getActionButtonClass()}
-                          onClick={() => handleButtonClick(program.id)}
+                          onClick={() => handleButtonClick(program, isUpcoming)}
                         >
                           {getActionButtonText()}
                         </button>
                         {isUpcoming ? (
                           <span 
                             className={`${styles.programStatusText} ${styles.statusOrange} ${styles.clickableText}`}
-                            onClick={() => handleButtonClick(program.id)}
+                            onClick={() => handleButtonClick(program, false)}
                           >
                             {getStatusText()}
                           </span>

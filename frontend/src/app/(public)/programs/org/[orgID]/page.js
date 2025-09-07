@@ -2,10 +2,12 @@
 
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import Loader from '../../../../../components/Loader';
 import BannerSection from '../../../components/PageBanner';
-import { OrgInfoCard, AdvocacyCompetency, FeaturedProjects, OrgHeadsCarousel, LatestPosts } from './sections';
+import { OrgInfoCard, AdvocacyCompetency, FeaturedProjects, OrgHeadsCarousel, LatestPosts } from '../../components';
 import { usePublicOrganizationData } from '../../../../../hooks/usePublicData';
+import { useAuthState } from '../../../../../hooks/useAuthState';
 import styles from '../org.module.css';
 
 // Track visited org pages globally
@@ -24,6 +26,17 @@ export default function OrgPage() {
 
   // Use SWR hook for data fetching with caching
   const { organizationData, isLoading, error, isEmpty } = usePublicOrganizationData(orgID);
+  
+  // Authentication state
+  const { isAuthenticated } = useAuthState();
+
+  // Handle volunteer button click - same logic as Apply Now button
+  const handleVolunteerClick = (e) => {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      window.dispatchEvent(new CustomEvent('showLoginModal'));
+    }
+  };
 
   // Image preloading and loading management
   const imageUrls = useMemo(() => {
@@ -132,7 +145,13 @@ export default function OrgPage() {
         <section className={styles.volunteerBanner}>
           <div className={styles.bannerContent}>
             <p>Support {fallbackData.acronym}&apos;s Initiatives and Volunteer with Us!</p>
-            <button className={styles.joinBtn}>Join as a Volunteer</button>
+            <Link 
+              href="/apply" 
+              className={styles.joinBtn}
+              onClick={handleVolunteerClick}
+            >
+              Join as a Volunteer
+            </Link>
           </div>
         </section>
 
@@ -166,7 +185,13 @@ export default function OrgPage() {
       <section className={styles.volunteerBanner}>
         <div className={styles.bannerContent}>
           <p>Support {organizationData.acronym}&apos;s Initiatives and Volunteer with Us!</p>
-          <button className={styles.joinBtn}>Join as a Volunteer</button>
+          <Link 
+            href="/apply" 
+            className={styles.joinBtn}
+            onClick={handleVolunteerClick}
+          >
+            Join as a Volunteer
+          </Link>
         </div>
       </section>
 

@@ -5,9 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import styles from './programs.module.css';
 import Loader from '../../../components/Loader';
 import PageBanner from '../components/PageBanner';
-import SearchAndFilterBar from './components/SearchAndFilterBar';
-import OrgLinks from './components/OrgLinks';
-import ProgramCard from './components/ProgramCard';
+import { SearchAndFilterBar, OrgLinks, ProgramCard } from './components';
 import Pagination from '../components/Pagination';
 import { usePublicPrograms } from '../../../hooks/usePublicData';
 

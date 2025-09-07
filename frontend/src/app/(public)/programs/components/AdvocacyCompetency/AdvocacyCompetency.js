@@ -1,4 +1,4 @@
-import styles from '../../org.module.css';
+import styles from './AdvocacyCompetency.module.css';
 import { FaHeart, FaBrain } from 'react-icons/fa';
 
 export default function AdvocacyCompetency({ acronym, advocacies, competencies }) {

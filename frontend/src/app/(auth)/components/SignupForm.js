@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import styles from "../signup.module.css"
+import styles from "../signup/signup.module.css"
 import { FaUser, FaLock, FaEye, FaEyeSlash, FaPhone, FaMapMarkerAlt, FaVenusMars, FaSpinner } from "react-icons/fa"
 import CustomDropdown from "./CustomDropdown"
 

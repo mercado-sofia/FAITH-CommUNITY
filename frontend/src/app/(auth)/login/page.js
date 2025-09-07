@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch } from "react-redux"
-import { loginAdmin, logoutAdmin } from "../../rtk/superadmin/adminSlice"
+import { loginAdmin, logoutAdmin } from "../../../rtk/superadmin/adminSlice"
 import styles from "./login.module.css"
 import { FaUser, FaLock, FaEye, FaEyeSlash, FaTimes, FaSpinner } from "react-icons/fa"
 import Image from "next/image"

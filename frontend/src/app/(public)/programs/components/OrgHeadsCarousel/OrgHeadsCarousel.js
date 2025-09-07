@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
-import styles from '../../org.module.css';
+import styles from './OrgHeadsCarousel.module.css';
 import Image from 'next/image';
 import { FaFacebookF, FaEnvelope, FaPlus } from 'react-icons/fa';
 import { ChevronLeft, ChevronRight } from 'lucide-react';

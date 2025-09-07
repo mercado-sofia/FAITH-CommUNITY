@@ -3,9 +3,7 @@
 import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import styles from "./signup.module.css"
-import VerifyEmail from "./components/VerifyEmail"
-import SignupForm from "./components/SignupForm"
-import RegistrationSuccess from "./components/RegistrationSuccess"
+import { VerifyEmail, SignupForm, RegistrationSuccess } from "../components"
 
 export default function SignupPage() {
   const [currentView, setCurrentView] = useState('signup') // 'signup', 'success', 'verification'

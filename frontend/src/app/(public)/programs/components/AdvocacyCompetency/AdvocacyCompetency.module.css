@@ -1,0 +1,80 @@
+/* Section 2 */
+.details {
+  padding: 4rem 2rem;
+  text-align: center;
+  cursor: default;
+}
+
+.sectionTag {
+  color: #ffac00;
+  font-weight: bold;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.sectionTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 4.6rem;
+}
+
+.cardWrapper {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.card {
+  background: white;
+  max-width: 500px;
+  padding: 2.5rem 3.6rem 3rem;
+  border-radius: 2rem;
+  box-shadow: 0 8px 35px rgba(0, 0, 0, 0.12);
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.18);
+}
+
+.iconCircle {
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  width: 85px;
+  height: 85px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.iconReact {
+  color: #1A685B;
+  font-size: 32px;
+}
+
+.card:hover .iconReact {
+  color: #FFAC00;
+}
+
+.card h4 {
+  color: #1A685B;
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-top: 1.8rem;
+  margin-bottom: 1rem;
+}
+
+.card p {
+  font-size: 14px;
+  text-align: justify;
+  line-height: 1.8;
+}

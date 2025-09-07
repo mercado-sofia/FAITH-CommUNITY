@@ -3,8 +3,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePublicNews, usePublicOrganizations } from '../../../../../../hooks/usePublicData';
-import styles from './styles/LatestPosts.module.css';
+import { usePublicNews, usePublicOrganizations } from '../../../../../hooks/usePublicData';
+import styles from './LatestPosts.module.css';
 
 export default function LatestPosts({ orgID }) {
   const { news, isLoading, error } = usePublicNews();
@@ -64,18 +64,6 @@ export default function LatestPosts({ orgID }) {
     return sortedNews;
   }, [news, orgID, organizations]);
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Not specified';
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    } catch (error) {
-      return 'Invalid date';
-    }
-  };
 
   const truncateToWords = (text, maxWords = 19) => {
     if (!text) return '';
@@ -112,16 +100,7 @@ export default function LatestPosts({ orgID }) {
   }
 
   if (latestPosts.length === 0) {
-    return (
-      <section className={styles.latestPostsSection}>
-        <div className={styles.container}>
-          <h2 className={styles.heading}>Latest Posts</h2>
-          <div className={styles.emptyContainer}>
-            <p>No posts available yet.</p>
-          </div>
-        </div>
-      </section>
-    );
+    return null; // Don't render the section at all if no posts
   }
 
   return (
@@ -163,10 +142,6 @@ export default function LatestPosts({ orgID }) {
                   <h3 className={styles.newsTitle}>{newsItem.title}</h3>
                   <p className={styles.newsDesc}>
                     {truncateToWords(newsItem.excerpt || newsItem.description, 19)}
-                  </p>
-                  <p className={styles.newsDate}>
-                    <em>Published:</em> {formatDate(newsItem.published_at || newsItem.date)}<br />
-                    <em>By:</em> {newsItem.orgName || newsItem.orgID || 'Unknown Organization'}
                   </p>
                   <span className={styles.readMore}>Read More</span>
                 </div>

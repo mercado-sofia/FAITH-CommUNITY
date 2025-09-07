@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation'
 import { FaEnvelopeOpenText } from 'react-icons/fa6'
 import { FaEnvelope } from 'react-icons/fa'
-import styles from './styles/RegistrationSuccess.module.css'
+import styles from './RegistrationSuccess.module.css'
 
 export default function RegistrationSuccess({ registrationData }) {
   const router = useRouter()

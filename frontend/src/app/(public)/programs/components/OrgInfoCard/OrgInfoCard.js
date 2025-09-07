@@ -1,4 +1,4 @@
-import styles from '../../org.module.css';
+import styles from './OrgInfoCard.module.css';
 import Image from 'next/image';
 import { FaFacebookF, FaEnvelope } from 'react-icons/fa';
 

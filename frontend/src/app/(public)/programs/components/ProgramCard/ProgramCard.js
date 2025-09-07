@@ -3,8 +3,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
-import styles from './styles/ProgramCard.module.css';
-import logger from '../../../../utils/logger';
+import styles from './ProgramCard.module.css';
+import logger from '../../../../../utils/logger';
 
 // Utility function to get date information from various date formats
 const getDateInfo = (project) => {

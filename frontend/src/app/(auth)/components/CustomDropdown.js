@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { FaChevronDown } from 'react-icons/fa'
-import styles from '../signup.module.css'
+import styles from '../signup/signup.module.css'
 
 export default function CustomDropdown({ 
   options, 

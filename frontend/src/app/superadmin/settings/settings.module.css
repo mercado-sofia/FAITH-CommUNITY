@@ -1,9 +1,7 @@
-/* Settings Container */
-.settingsContainer {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  padding: 2rem;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+/* Main Layout */
+.mainArea {
+  width: 100%;
+  padding: 2rem 3rem;
 }
 
 /* Loading Container */
@@ -75,513 +73,247 @@
 
 /* Header */
 .header {
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
 }
 
-.title {
-  font-size: 2rem;
+.header h1 {
+  font-size: 1.4rem;
   font-weight: 700;
-  color: #111827;
+  font-family: var(--font-poppins), sans-serif;
+  color: #06100f;
+  user-select: none;
   margin: 0;
-  line-height: 1.2;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Cards Container */
-.cardsContainer {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+/* Settings Layout - Changed from Grid to Flexbox */
+.settingsGrid {
+  display: flex;
   gap: 2rem;
   max-width: 1200px;
-  align-items: start;
 }
 
-/* Card Styles */
-.card {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e5e7eb;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  min-height: 400px;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-.cardHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 2rem 2rem 1.5rem 2rem;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.cardHeaderLeft {
+.settingsGrid > * {
   flex: 1;
+  min-width: 0;
 }
 
-/* Card Title with Icon */
-.cardTitleWithIcon {
+/* Settings Panel */
+.settingsPanel {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin-bottom: 2rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  height: fit-content;
+}
+
+/* Panel Header */
+.panelHeader {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
+  gap: 1rem;
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
-.cardIcon {
+.panelIcon {
   font-size: 1rem;
-  color: #111827;
-  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-  padding: 0.625rem;
-  border-radius: 8px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
-  border: 1px solid #e5e7eb;
+  color: #c7cccf;
 }
 
-.cardTitle {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #111827;
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.cardSubtitle {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin: 0;
-  line-height: 1.5;
-  font-weight: 500;
-}
-
-.cardContent {
-  padding: 0 2rem 2rem 2rem;
+.panelTitle {
   flex: 1;
+}
+
+.panelTitle h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #06100f;
+  margin: 0 0 4px 0;
+  font-family: var(--font-poppins), sans-serif;
+} 
+
+.panelTitle p {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+  font-family: var(--font-poppins), sans-serif;
+  line-height: 1.4;
+}
+
+/* Panel Content */
+.panelContent {
+  padding: 1.5rem;
+}
+
+/* Display Content */
+.displayContent {
   display: flex;
   flex-direction: column;
+  gap: 1.25rem;
 }
 
-/* Current Email Display */
-.currentEmailDisplay {
-  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 12px 16px;
+/* Field Groups */
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  font-family: var(--font-poppins), sans-serif;
+}
+
+.displayValue {
   font-size: 14px;
-  color: #111827;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-weight: 500;
+  color: #64748b;
+  font-family: var(--font-poppins), sans-serif;
+  line-height: 1.4;
 }
 
 /* Edit Button */
 .editButton {
-  background: white;
-  border: 2px solid #000000;
-  color: #000000;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  background: #f8fafc;
+  color: #06100f;
+  border: 2px solid #06100f;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-family: var(--font-poppins), sans-serif;
+  white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  min-width: auto;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  user-select: none;
+  outline: none; /* Remove default outline */
 }
 
 .editButton:hover {
-  background: #000000;
-  color: white;
+  background: #06100f;
+  color: #f8fafc;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 8px rgba(6, 16, 15, 0.3);
 }
 
 .editButton:focus {
+  outline: none !important; /* Force remove outline */
+  box-shadow: 0 0 0 3px rgba(6, 16, 15, 0.2), 0 4px 12px rgba(6, 16, 15, 0.3);
+}
+
+.editButton:active {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(0);
 }
 
-/* Input Groups */
-.inputGroup {
-  margin-bottom: 2rem;
+/* Password Info Styles */
+.passwordInfo {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
 }
 
-.inputGroup:last-child {
+.infoText {
+  margin: 0 0 0.5rem 0;
+  font-size: 13px;
+  color: #64748b;
+  font-family: var(--font-poppins), sans-serif;
+  line-height: 1.4;
+}
+
+.infoText:last-child {
   margin-bottom: 0;
 }
 
-.label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 0.75rem;
-}
-
-.input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  background-color: white;
-  color: #111827;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+/* Message Notifications */
+.message {
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  margin-bottom: 2rem;
+  font-size: 13px;
   font-weight: 500;
+  animation: slideIn 0.3s ease-out;
+  border: 1px solid transparent;
 }
 
-.input:focus {
-  outline: none;
-  border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+.message.success {
+  background-color: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
 }
 
-.input::placeholder {
-  color: #9ca3af;
-  font-weight: 400;
-}
-
-.disabledInput {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 14px;
-  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-  color: #6b7280;
-  cursor: not-allowed;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-weight: 500;
-}
-
-/* Password Input Wrapper */
-.passwordInputWrapper {
-  position: relative;
-}
-
-.passwordToggle {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: #6b7280;
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-}
-
-.passwordToggle:hover {
-  color: #000000;
-  background: rgba(0, 0, 0, 0.1);
-}
-
-.passwordToggle:focus {
-  outline: none;
-  color: #000000;
-  background: rgba(0, 0, 0, 0.1);
-}
-
-/* Password Status */
-.passwordStatus {
-  padding: 1rem 0;
-  flex: 1;
-}
-
-.statusTitle {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #111827;
-  margin: 0 0 1rem 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.statusItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-  padding: 0.5rem 0;
-}
-
-.statusLabel {
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.statusValue {
-  font-size: 0.875rem;
-  color: #047857;
-  font-weight: 700;
-  background: linear-gradient(135d, #d1fae5 0%, #a7f3d0 100%);
-  padding: 4px 12px;
-  border-radius: 20px;
-  border: 1px solid #10b981;
-  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
-}
-
-.securityNote {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin: 1rem 0 0 0;
-  line-height: 1.5;
-  font-weight: 500;
-}
-
-/* Password Requirements */
-.passwordRequirements {
-  margin: 1.5rem 0;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-  border-radius: 12px;
-  border: 2px solid #e5e7eb;
-}
-
-.requirementsTitle {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #111827;
-  margin: 0 0 1rem 0;
-}
-
-.requirementsList {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.requirement {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 0.875rem;
+.message.error {
+  background-color: #fef2f2;
   color: #dc2626;
-  transition: color 0.2s ease;
-  font-weight: 500;
-}
-
-.requirement.met {
-  color: #047857;
-}
-
-.requirement svg {
-  width: 1rem;
-  height: 1rem;
-  flex-shrink: 0;
-}
-
-/* Password Form */
-.passwordForm {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  flex: 1;
-}
-
-/* Button Groups */
-.buttonGroup {
-  display: flex;
-  gap: 1rem;
-  margin-top: auto;
-  padding-top: 1.5rem;
-  justify-content: flex-end;
-}
-
-.cancelButton {
-  background: white;
-  border: 2px solid #000000;
-  color: #000000;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 120px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.cancelButton:hover:not(:disabled) {
-  background: #f9fafb;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.cancelButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.saveButton {
-  background: #000000;
-  border: 2px solid #000000;
-  color: white;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 140px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.saveButton:hover:not(:disabled) {
-  background: #1f2937;
-  border-color: #1f2937;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.saveButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+  border-color: #fecaca;
 }
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .cardsContainer {
-    grid-template-columns: 1fr;
+  .settingsGrid {
+    flex-direction: column;
     gap: 1.5rem;
-  }
-  
-  .settingsContainer {
-    padding: 1.5rem;
   }
 }
 
 @media (max-width: 768px) {
-  .settingsContainer {
-    padding: 1rem;
-  }
-
-  .title {
-    font-size: 1.5rem;
-  }
-
-  .cardHeader {
+  .panelHeader {
     flex-direction: column;
     gap: 1rem;
     align-items: flex-start;
-    padding: 1.5rem 1.5rem 1rem 1.5rem;
+    padding: 1.25rem 1.25rem 1rem 1.25rem;
   }
 
   .editButton {
     align-self: flex-start;
   }
 
-  .cardContent {
-    padding: 1rem 1.5rem 1.5rem 1.5rem;
-  }
-
-  .buttonGroup {
-    flex-direction: column-reverse;
-    gap: 0.75rem;
-  }
-
-  .cancelButton,
-  .saveButton {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .notification {
-    left: 1rem;
-    right: 1rem;
-    top: 1rem;
-    max-width: none;
-  }
-}
-
-@media (max-width: 480px) {
-  .settingsContainer {
-    padding: 0.75rem;
-  }
-
-  .title {
-    font-size: 1.25rem;
-  }
-
-  .cardHeader {
-    padding: 1.25rem 1.25rem 1rem 1.25rem;
-  }
-
-  .cardContent {
+  .panelContent {
     padding: 1rem 1.25rem 1.25rem 1.25rem;
-  }
-
-  .cardTitle {
-    font-size: 0.875rem;
-  }
-
-  .passwordRequirements {
-    padding: 0.625rem;
-  }
-
-  .requirementsList {
-    gap: 0.25rem;
   }
 }
 
 /* Focus and Accessibility */
-.input:focus,
-.editButton:focus,
-.cancelButton:focus,
-.saveButton:focus,
-.passwordToggle:focus {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
+.editButton:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(6, 16, 15, 0.2), 0 4px 12px rgba(6, 16, 15, 0.3);
 }
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
-  .card {
+  .settingsPanel {
     border: 2px solid #000;
   }
   
-  .input {
-    border: 2px solid #000;
-  }
-  
-  .editButton,
-  .cancelButton {
+  .editButton {
     border: 2px solid #000;
   }
 }
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
-  .card,
-  .input,
-  .editButton,
-  .cancelButton,
-  .saveButton,
-  .passwordToggle,
-  .requirement {
+  .settingsPanel,
+  .editButton {
     transition: none;
   }
   

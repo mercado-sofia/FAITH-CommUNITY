@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FiLogOut } from 'react-icons/fi'
-import styles from '../styles/sidebar.module.css'
+import styles from '../components/styles/sidebar.module.css'
 
 export default function LogoutModalTrigger() {
   const [showModal, setShowModal] = useState(false)

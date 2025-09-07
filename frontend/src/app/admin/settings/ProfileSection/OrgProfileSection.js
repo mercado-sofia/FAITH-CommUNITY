@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { FaBuilding } from 'react-icons/fa';
 import styles from '../adminSettings.module.css';
-import PasswordConfirmModal from './PasswordConfirmModal';
 import OrgProfileEditModal from './OrgProfileEditModal';
 
 export default function OrgProfileSection({ 
@@ -18,9 +17,6 @@ export default function OrgProfileSection({
   saving
 }) {
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [localEditData, setLocalEditData] = useState(null);
 
   const handleEditClick = () => {
     setShowEditModal(true);
@@ -31,84 +27,10 @@ export default function OrgProfileSection({
   };
 
   const handleEditSave = async (editData) => {
-    // Check if there are actual changes
-    const hasChanges = editData.org !== orgData?.org || 
-                      editData.orgName !== orgData?.orgName || 
-                      editData.email !== orgData?.email;
-
-    if (hasChanges) {
-      // Store the edit data for later use
-      setLocalEditData(editData);
-      // Close the edit modal first
-      setShowEditModal(false);
-      // Then show password confirmation modal
-      setShowPasswordModal(true);
-    } else {
-      // No changes, just close the edit modal
-      setShowEditModal(false);
-    }
+    // Call the onSave function directly - the modal will handle password confirmation internally
+    await onSave(editData);
+    setShowEditModal(false);
   };
-
-
-
-  const handleSaveWithPassword = async (password = null) => {
-    try {
-      setIsVerifying(true);
-      
-      // If password is provided, verify it first
-      if (password) {
-        const verifyResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admin/profile/verify-password-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-          },
-          body: JSON.stringify({ password })
-        });
-
-        if (!verifyResponse.ok) {
-          const errorData = await verifyResponse.json().catch(() => ({}));
-          if (verifyResponse.status === 401) {
-            // Password verification failed - return error instead of throwing
-            return { error: 'Incorrect password. Please try again.' };
-          } else {
-            return { error: errorData.message || 'Password verification failed' };
-          }
-        }
-      }
-
-      // Call the onSave function with the updated data including password
-      await onSave({
-        ...localEditData,
-        password: password || undefined
-      });
-      
-      setShowEditModal(false);
-      setShowPasswordModal(false);
-      return { success: true };
-    } catch (error) {
-      console.error('Failed to save organization profile:', error);
-      return { error: error.message || 'Failed to save organization profile' };
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-
-  const handlePasswordConfirm = async (password) => {
-    const result = await handleSaveWithPassword(password);
-    
-    if (result.error) {
-      // Return the error so the modal can display it
-      return Promise.reject(new Error(result.error));
-    }
-    
-    // Success - no need to do anything else
-    return result;
-  };
-
-
-
-
 
   return (
     <div className={styles.settingsPanel}>
@@ -173,14 +95,6 @@ export default function OrgProfileSection({
         orgData={orgData}
         errors={errors}
         saving={saving}
-      />
-
-      {/* Password Confirmation Modal */}
-      <PasswordConfirmModal
-        isOpen={showPasswordModal}
-        onClose={() => setShowPasswordModal(false)}
-        onConfirm={handlePasswordConfirm}
-        isVerifying={isVerifying}
       />
     </div>
   );

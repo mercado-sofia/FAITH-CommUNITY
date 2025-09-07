@@ -142,7 +142,10 @@ export const featuredProjectsApi = createApi({
         return response.success ? response.isFeatured : false;
       },
       transformErrorResponse: (response) => {
-        console.error('featuredProjectsApi - checkFeaturedStatus error:', response);
+        // Only log if there's actual error data
+        if (response && Object.keys(response).length > 0) {
+          console.error('featuredProjectsApi - checkFeaturedStatus error:', response);
+        }
         return response;
       }
     }),

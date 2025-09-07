@@ -147,6 +147,50 @@ export const getSuperadminProfile = async (req, res) => {
   }
 }
 
+// -------------------- Password Verification --------------------
+
+export const verifySuperadminPassword = async (req, res) => {
+  const { id } = req.params
+  const { password } = req.body
+
+  if (!id || isNaN(id)) {
+    return res.status(400).json({ error: "Invalid superadmin ID" })
+  }
+
+  if (!password || password.trim() === "") {
+    return res.status(400).json({ error: "Password is required" })
+  }
+
+  try {
+    // Get superadmin data including hashed password
+    const [superadminRows] = await db.execute(
+      "SELECT id, password FROM superadmin WHERE id = ?",
+      [id]
+    )
+
+    if (superadminRows.length === 0) {
+      return res.status(404).json({ error: "Superadmin not found" })
+    }
+
+    const superadmin = superadminRows[0]
+
+    // Verify the current password
+    const isPasswordValid = await bcrypt.compare(password, superadmin.password)
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: "Invalid password" })
+    }
+
+    res.json({
+      success: true,
+      message: "Password verified successfully"
+    })
+  } catch (err) {
+    console.error("Superadmin password verification error:", err)
+    res.status(500).json({ error: "Internal server error during password verification" })
+  }
+}
+
 // -------------------- Update Password --------------------
 
 export const updateSuperadminPassword = async (req, res) => {

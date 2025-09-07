@@ -1,42 +1,57 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FaEye, FaEyeSlash, FaCheck, FaTimes, FaEdit, FaKey, FaEnvelope } from 'react-icons/fa';
+import { FaEnvelope, FaLock } from 'react-icons/fa';
 import styles from './settings.module.css';
+import EmailChangeModal from './ProfileSection/EmailChangeModal';
+import PasswordChangeModal from './ProfileSection/PasswordChangeModal';
+
+// Utility function for password change time
+const getPasswordChangeTime = (userData) => {
+  const passwordChangedAt = userData?.password_changed_at || 
+                            userData?.passwordChangedAt ||
+                            userData?.created_at ||
+                            userData?.createdAt;
+  
+  if (!passwordChangedAt) {
+    return userData && Object.keys(userData).length > 0 ? 'Recently' : 'Unknown';
+  }
+
+  try {
+    const now = new Date();
+    const changeDate = new Date(passwordChangedAt);
+    
+    if (isNaN(changeDate.getTime())) {
+      return 'Recently';
+    }
+    
+    const diffTime = Math.abs(now - changeDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return '1 day ago';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+    }
+    if (diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      return `${months} month${months > 1 ? 's' : ''} ago`;
+    }
+    const years = Math.floor(diffDays / 365);
+    return `${years} year${years > 1 ? 's' : ''} ago`;
+  } catch (error) {
+    return 'Recently';
+  }
+};
 
 export default function SuperAdminSettings() {
-  // State management
-  const [emailEditMode, setEmailEditMode] = useState(false);
-  const [passwordEditMode, setPasswordEditMode] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState(null);
-  const [passwordChangedAt, setPasswordChangedAt] = useState(null);
-
-  // Form states
-  const [emailForm, setEmailForm] = useState({
-    newEmail: ''
-  });
-
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-
-  const [passwordVisibility, setPasswordVisibility] = useState({
-    current: false,
-    new: false,
-    confirm: false
-  });
-
-  // Password validation state
-  const [passwordValidation, setPasswordValidation] = useState({
-    minLength: false,
-    lowercase: false,
-    uppercase: false,
-    number: false
-  });
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   // Load current user data
   useEffect(() => {
@@ -49,7 +64,21 @@ export default function SuperAdminSettings() {
           return;
         }
 
-        const response = await fetch(`${baseUrl}/api/superadmin/auth/profile`, {
+        // Get superadmin ID from token or localStorage
+        const superAdminData = localStorage.getItem('superAdminData');
+        let superadminId = null;
+        
+        if (superAdminData) {
+          const parsedData = JSON.parse(superAdminData);
+          superadminId = parsedData.id;
+        }
+        
+        if (!superadminId) {
+          showNotification('Unable to get superadmin ID. Please log in again.', 'error');
+          return;
+        }
+
+        const response = await fetch(`${baseUrl}/api/superadmin/auth/profile/${superadminId}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -60,29 +89,18 @@ export default function SuperAdminSettings() {
 
         if (response.ok) {
           setCurrentUser(data);
-          setEmailForm({ newEmail: data.email || data.username || '' });
-          setPasswordChangedAt(data.password_changed_at);
         } else {
           showNotification(data.error || 'Failed to load user data', 'error');
         }
       } catch (error) {
         showNotification('Failed to load user data', 'error');
+      } finally {
+        setLoading(false);
       }
     };
 
     loadUserData();
   }, []);
-
-  // Password validation effect
-  useEffect(() => {
-    const password = passwordForm.newPassword;
-    setPasswordValidation({
-      minLength: password.length >= 8,
-      lowercase: /[a-z]/.test(password),
-      uppercase: /[A-Z]/.test(password),
-      number: /[0-9]/.test(password)
-    });
-  }, [passwordForm.newPassword]);
 
   // Show notification
   const showNotification = (message, type = 'success') => {
@@ -90,147 +108,51 @@ export default function SuperAdminSettings() {
     setTimeout(() => setNotification(null), 5000);
   };
 
-  // Handle email form changes
-  const handleEmailChange = (e) => {
-    setEmailForm({ ...emailForm, [e.target.name]: e.target.value });
-  };
-
-  // Handle password form changes
-  const handlePasswordChange = (e) => {
-    setPasswordForm({ ...passwordForm, [e.target.name]: e.target.value });
-  };
-
-  // Toggle password visibility
-  const togglePasswordVisibility = (field) => {
-    setPasswordVisibility(prev => ({
-      ...prev,
-      [field]: !prev[field]
-    }));
-  };
-
-  // Handle email update
-  const handleEmailUpdate = async () => {
-    if (!emailForm.newEmail.trim()) {
-      showNotification('Email address is required', 'error');
-      return;
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailForm.newEmail)) {
-      showNotification('Please enter a valid email address', 'error');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('superAdminToken');
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      if (!token) {
-        showNotification('Authentication required. Please log in again.', 'error');
-        return;
-      }
-
-      const response = await fetch(`${baseUrl}/api/superadmin/auth/email/${currentUser.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          newEmail: emailForm.newEmail
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Update local storage
-        const updatedUser = { ...currentUser, email: emailForm.newEmail, username: emailForm.newEmail };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        setCurrentUser(updatedUser);
+  // Handle successful updates
+  const handleUpdateSuccess = () => {
+    // Reload user data after successful update
+    const loadUserData = async () => {
+      try {
+        const token = localStorage.getItem('superAdminToken');
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
         
-        setEmailEditMode(false);
-        showNotification('Email address updated successfully');
-      } else {
-        showNotification(data.error || 'Failed to update email address', 'error');
+        const superAdminData = localStorage.getItem('superAdminData');
+        let superadminId = null;
+        
+        if (superAdminData) {
+          const parsedData = JSON.parse(superAdminData);
+          superadminId = parsedData.id;
+        }
+
+        const response = await fetch(`${baseUrl}/api/superadmin/auth/profile/${superadminId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setCurrentUser(data);
+        }
+      } catch (error) {
+        console.error('Failed to reload user data:', error);
       }
-    } catch (error) {
-      showNotification('Failed to update email address', 'error');
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    loadUserData();
   };
 
-  // Handle password update
-  const handlePasswordUpdate = async () => {
-    const { currentPassword, newPassword, confirmPassword } = passwordForm;
-
-    // Validation
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      showNotification('All password fields are required', 'error');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      showNotification('New passwords do not match', 'error');
-      return;
-    }
-
-    const allValidationsPassed = Object.values(passwordValidation).every(Boolean);
-    if (!allValidationsPassed) {
-      showNotification('Please meet all password requirements', 'error');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('superAdminToken');
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      if (!token) {
-        showNotification('Authentication required. Please log in again.', 'error');
-        return;
-      }
-
-      const response = await fetch(`${baseUrl}/api/superadmin/auth/password/${currentUser.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          currentPassword,
-          newPassword
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-        setPasswordEditMode(false);
-        setPasswordChangedAt(data.password_changed_at || new Date().toISOString());
-        showNotification('Password updated successfully');
-      } else {
-        showNotification(data.error || 'Failed to update password', 'error');
-      }
-    } catch (error) {
-      showNotification('Failed to update password', 'error');
-    } finally {
-      setLoading(false);
-    }
+  const handleEmailSuccess = () => {
+    handleUpdateSuccess();
   };
 
-  // Cancel edit modes
-  const cancelEmailEdit = () => {
-    setEmailForm({ newEmail: currentUser?.email || currentUser?.username || '' });
-    setEmailEditMode(false);
+  const handlePasswordSuccess = () => {
+    handleUpdateSuccess();
   };
 
-  const cancelPasswordEdit = () => {
-    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    setPasswordEditMode(false);
-  };
-
-  if (!currentUser) {
+  if (loading) {
     return (
       <div className={styles.loadingContainer}>
         <div className={styles.spinner}></div>
@@ -239,243 +161,116 @@ export default function SuperAdminSettings() {
     );
   }
 
+  if (!currentUser) {
+    return (
+      <div className={styles.mainArea}>
+        <div className={styles.header}>
+          <h1>Settings</h1>
+        </div>
+        <div className={`${styles.message} ${styles.error}`}>
+          Failed to load user data. Please refresh the page.
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={styles.settingsContainer}>
+    <div className={styles.mainArea}>
       {/* Notification */}
       {notification && (
-        <div className={`${styles.notification} ${styles[notification.type]}`}>
+        <div className={`${styles.message} ${styles[notification.type]}`}>
           {notification.message}
         </div>
       )}
 
       {/* Header */}
       <div className={styles.header}>
-        <h1 className={styles.title}>Settings</h1>
+        <h1>Settings</h1>
       </div>
 
-      {/* Settings Cards */}
-      <div className={styles.cardsContainer}>
-        {/* Email Address Card */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <div className={styles.cardHeaderLeft}>
-              <div className={styles.cardTitleWithIcon}>
-                <FaEnvelope className={styles.cardIcon} />
-                <h2 className={styles.cardTitle}>Email Address</h2>
-              </div>
-              <p className={styles.cardSubtitle}>Update your email address for notifications and login</p>
+      {/* Profile Section */}
+      <div className={styles.settingsGrid}>
+        {/* Email Address Panel */}
+        <div className={styles.settingsPanel}>
+          <div className={styles.panelHeader}>
+            <div className={styles.panelIcon}>
+              <FaEnvelope />
             </div>
-            {!emailEditMode && (
-              <button 
-                className={styles.editButton}
-                onClick={() => setEmailEditMode(true)}
-              >
-                <FaEdit /> Edit
-              </button>
-            )}
+            <div className={styles.panelTitle}>
+              <h2>Email Address</h2>
+              <p>Update your email address for notifications and login</p>
+            </div>
+            <button 
+              className={styles.editButton}
+              onClick={() => setShowEmailModal(true)}
+            >
+              Edit
+            </button>
           </div>
 
-          <div className={styles.cardContent}>
-            {!emailEditMode ? (
-              // View Mode
-              <div className={styles.viewMode}>
-                <div className={styles.inputGroup}>
-                  <label className={styles.label}>Current Email</label>
-                  <input
-                    type="email"
-                    value={currentUser.email || currentUser.username || ''}
-                    disabled
-                    className={styles.disabledInput}
-                  />
+          <div className={styles.panelContent}>
+            <div className={styles.displayContent}>
+              <div className={styles.fieldGroup}>
+                <label className={styles.label}>Current Email</label>
+                <div className={styles.displayValue}>
+                  {currentUser?.email || currentUser?.username || 'Not specified'}
                 </div>
               </div>
-            ) : (
-              // Edit Mode
-              <div className={styles.editMode}>
-                <div className={styles.inputGroup}>
-                  <label className={styles.label}>Email Address</label>
-                  <input
-                    type="email"
-                    name="newEmail"
-                    value={emailForm.newEmail}
-                    onChange={handleEmailChange}
-                    className={styles.input}
-                    placeholder="Enter new email address"
-                  />
-                </div>
-                <div className={styles.buttonGroup}>
-                  <button 
-                    className={styles.cancelButton}
-                    onClick={cancelEmailEdit}
-                    disabled={loading}
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    className={styles.saveButton}
-                    onClick={handleEmailUpdate}
-                    disabled={loading}
-                  >
-                    {loading ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         </div>
 
-        {/* Password & Security Card */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <div className={styles.cardHeaderLeft}>
-              <div className={styles.cardTitleWithIcon}>
-                <FaKey className={styles.cardIcon} />
-                <h2 className={styles.cardTitle}>Password & Security</h2>
-              </div>
-              <p className={styles.cardSubtitle}>Change your password and manage security settings</p>
+        {/* Password & Security Panel */}
+        <div className={styles.settingsPanel}>
+          <div className={styles.panelHeader}>
+            <div className={styles.panelIcon}>
+              <FaLock />
             </div>
-            {!passwordEditMode && (
-              <button 
-                className={styles.editButton}
-                onClick={() => setPasswordEditMode(true)}
-              >
-                <FaKey /> Change
-              </button>
-            )}
+            <div className={styles.panelTitle}>
+              <h2>Password & Security</h2>
+              <p>Change your password and manage security settings</p>
+            </div>
+            <button 
+              className={styles.editButton}
+              onClick={() => setShowPasswordModal(true)}
+            >
+              Change
+            </button>
           </div>
 
-          <div className={styles.cardContent}>
-            {!passwordEditMode ? (
-              // View Mode
-              <div className={styles.viewMode}>
-                <div className={styles.passwordStatus}>
-                  <h3 className={styles.statusTitle}>Password Status</h3>
-                  <div className={styles.statusItem}>
-                    <span className={styles.statusLabel}>Last changed:</span>
-                    <span className={styles.statusValue}>{passwordChangedAt ? new Date(passwordChangedAt).toLocaleDateString() : 'Recently'}</span>
-                  </div>
-                  <p className={styles.securityNote}>
+          <div className={styles.panelContent}>
+            <div className={styles.displayContent}>
+              <div className={styles.fieldGroup}>
+                <label className={styles.label}>Password Status</label>
+                <div className={styles.passwordInfo}>
+                  <p className={styles.infoText}>
+                    Last changed: <strong>{getPasswordChangeTime(currentUser)}</strong>
+                  </p>
+                  <p className={styles.infoText}>
                     For security, we recommend changing your password regularly.
                   </p>
                 </div>
               </div>
-            ) : (
-              // Edit Mode
-              <div className={styles.editMode}>
-                <div className={styles.passwordForm}>
-                  {/* Current Password */}
-                  <div className={styles.inputGroup}>
-                    <label className={styles.label}>Current Password</label>
-                    <div className={styles.passwordInputWrapper}>
-                      <input
-                        type={passwordVisibility.current ? 'text' : 'password'}
-                        name="currentPassword"
-                        value={passwordForm.currentPassword}
-                        onChange={handlePasswordChange}
-                        className={styles.input}
-                        placeholder="Enter your current password"
-                      />
-                      <button
-                        type="button"
-                        className={styles.passwordToggle}
-                        onClick={() => togglePasswordVisibility('current')}
-                      >
-                        {passwordVisibility.current ? <FaEyeSlash /> : <FaEye />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* New Password */}
-                  <div className={styles.inputGroup}>
-                    <label className={styles.label}>New Password</label>
-                    <div className={styles.passwordInputWrapper}>
-                      <input
-                        type={passwordVisibility.new ? 'text' : 'password'}
-                        name="newPassword"
-                        value={passwordForm.newPassword}
-                        onChange={handlePasswordChange}
-                        className={styles.input}
-                        placeholder="Enter your new password"
-                      />
-                      <button
-                        type="button"
-                        className={styles.passwordToggle}
-                        onClick={() => togglePasswordVisibility('new')}
-                      >
-                        {passwordVisibility.new ? <FaEyeSlash /> : <FaEye />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Password Requirements */}
-                  {passwordForm.newPassword && (
-                    <div className={styles.passwordRequirements}>
-                      <h4 className={styles.requirementsTitle}>Password Requirements:</h4>
-                      <div className={styles.requirementsList}>
-                        <div className={`${styles.requirement} ${passwordValidation.minLength ? styles.met : ''}`}>
-                          {passwordValidation.minLength ? <FaCheck /> : <FaTimes />}
-                          <span>Minimum of 8 characters</span>
-                        </div>
-                        <div className={`${styles.requirement} ${passwordValidation.lowercase ? styles.met : ''}`}>
-                          {passwordValidation.lowercase ? <FaCheck /> : <FaTimes />}
-                          <span>At least one lowercase letter (a-z)</span>
-                        </div>
-                        <div className={`${styles.requirement} ${passwordValidation.uppercase ? styles.met : ''}`}>
-                          {passwordValidation.uppercase ? <FaCheck /> : <FaTimes />}
-                          <span>At least one uppercase letter (A-Z)</span>
-                        </div>
-                        <div className={`${styles.requirement} ${passwordValidation.number ? styles.met : ''}`}>
-                          {passwordValidation.number ? <FaCheck /> : <FaTimes />}
-                          <span>At least one number (0-9)</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Confirm Password */}
-                  <div className={styles.inputGroup}>
-                    <label className={styles.label}>Confirm New Password</label>
-                    <div className={styles.passwordInputWrapper}>
-                      <input
-                        type={passwordVisibility.confirm ? 'text' : 'password'}
-                        name="confirmPassword"
-                        value={passwordForm.confirmPassword}
-                        onChange={handlePasswordChange}
-                        className={styles.input}
-                        placeholder="Confirm your new password"
-                      />
-                      <button
-                        type="button"
-                        className={styles.passwordToggle}
-                        onClick={() => togglePasswordVisibility('confirm')}
-                      >
-                        {passwordVisibility.confirm ? <FaEyeSlash /> : <FaEye />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className={styles.buttonGroup}>
-                    <button 
-                      className={styles.cancelButton}
-                      onClick={cancelPasswordEdit}
-                      disabled={loading}
-                    >
-                      Cancel
-                    </button>
-                    <button 
-                      className={styles.saveButton}
-                      onClick={handlePasswordUpdate}
-                      disabled={loading}
-                    >
-                      {loading ? 'Updating...' : 'Update Password'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Email Change Modal */}
+      <EmailChangeModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        onSuccess={handleEmailSuccess}
+        currentUser={currentUser}
+      />
+
+      {/* Password Change Modal */}
+      <PasswordChangeModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        onSuccess={handlePasswordSuccess}
+        currentUser={currentUser}
+      />
     </div>
   );
 }

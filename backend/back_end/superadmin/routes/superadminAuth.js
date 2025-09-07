@@ -3,6 +3,7 @@ import {
   loginSuperadmin,
   verifySuperadminToken,
   getSuperadminProfile,
+  verifySuperadminPassword,
   updateSuperadminPassword,
   // frontend/sofia branch
   forgotPasswordSuperadmin,
@@ -27,6 +28,7 @@ router.post("/check-email",   checkEmailSuperadmin)
 
 // ---------- Protected endpoints ----------
 router.get("/profile/:id",   verifySuperadminToken, getSuperadminProfile)
+router.post("/verify-password/:id", verifySuperadminToken, verifySuperadminPassword)
 router.put("/email/:id",     verifySuperadminToken, updateSuperadminEmail)
 router.put("/password/:id",  verifySuperadminToken, updateSuperadminPassword)
 router.post("/mfa/setup/:id", verifySuperadminToken, setupMfaSuperadmin)

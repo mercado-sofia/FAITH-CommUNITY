@@ -40,7 +40,7 @@ class RateLimiter {
 // Enhanced error handling
 const handleApiError = (error, context) => {
   if (error.status === 401) {
-    if (context === 'email_verification' || context === 'password_verification') {
+    if (context === 'password_verification') {
       return {
         type: 'password_error',
         message: 'Incorrect password. Please try again.',
@@ -124,7 +124,8 @@ const PasswordRequirements = ({ password }) => {
 export default function PasswordChangeModal({ 
   isOpen, 
   onClose, 
-  onSuccess 
+  onSuccess,
+  currentUser
 }) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isVerifyingPassword, setIsVerifyingPassword] = useState(false);
@@ -242,43 +243,23 @@ export default function PasswordChangeModal({
       }
 
       try {
-        setIsVerifyingPassword(true);
+        setIsUpdating(true);
         
-        // Verify current password
-        const verifyResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admin/profile/verify-password-change`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-          },
-          body: JSON.stringify({ password: passwordData.currentPassword })
-        });
-
-        if (!verifyResponse.ok) {
-          const errorData = await verifyResponse.json().catch(() => ({}));
-          const errorInfo = handleApiError({ status: verifyResponse.status, message: errorData.message }, 'password_verification');
-          
-          if (errorInfo.type === 'password_error') {
-            // Set password-specific error
-            setErrors(prev => ({ ...prev, currentPassword: errorInfo.message }));
-            setErrorMessage('');
-          } else {
-            // Set general error message
-            setErrorMessage(errorInfo.message);
-            setTimeout(() => setErrorMessage(''), 5000);
-          }
+        const token = localStorage.getItem('superAdminToken');
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        
+        if (!token) {
+          setErrorMessage('Authentication required. Please log in again.');
+          setTimeout(() => setErrorMessage(''), 5000);
           return;
         }
 
-        setIsVerifyingPassword(false);
-        setIsUpdating(true);
-
-        // Update password
-        const updateResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admin/profile/password`, {
+        // Update password using superadmin API
+        const updateResponse = await fetch(`${baseUrl}/api/superadmin/auth/password/${currentUser.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
             currentPassword: passwordData.currentPassword,
@@ -289,26 +270,31 @@ export default function PasswordChangeModal({
         if (!updateResponse.ok) {
           const errorData = await updateResponse.json().catch(() => ({}));
           const errorInfo = handleApiError({ status: updateResponse.status, message: errorData.message }, 'password_update');
-          throw new Error(errorInfo.message);
+          
+          if (errorInfo.type === 'password_error') {
+            setErrors(prev => ({ ...prev, currentPassword: errorInfo.message }));
+            setErrorMessage('');
+          } else {
+            setErrorMessage(errorInfo.message);
+            setTimeout(() => setErrorMessage(''), 5000);
+          }
+          return;
         }
         
         rateLimiter.reset(rateLimitKey);
+        
+        // Close modal immediately
+        onClose();
         
         // Show success modal
         setShowSuccessModal(true);
         
         // Call onSuccess callback
         onSuccess();
-        
-        // Close modal after a short delay
-        setTimeout(() => {
-          onClose();
-        }, 1500);
       } catch (error) {
         setErrorMessage(error.message || 'Failed to change password. Please try again.');
         setTimeout(() => setErrorMessage(''), 5000);
       } finally {
-        setIsVerifyingPassword(false);
         setIsUpdating(false);
       }
     }
@@ -330,136 +316,138 @@ export default function PasswordChangeModal({
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className={styles.modalOverlay} onClick={handleCancel}>
-      <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <div className={styles.headerContent}>
-            <div className={styles.headerIcon}>
-              <FaLock />
-            </div>
-            <div className={styles.headerText}>
-              <h2>Change Password</h2>
-              <p>Update your password to keep your account secure</p>
-            </div>
-          </div>
-          <button 
-            className={styles.closeButton}
-            onClick={handleCancel}
-            disabled={isUpdating || isVerifyingPassword}
-          >
-            <FaTimes />
-          </button>
-        </div>
-
-        <div className={styles.modalContent}>
-          {errorMessage && (
-            <div className={`${styles.message} ${styles.error}`}>
-              {errorMessage}
-            </div>
-          )}
-
-          <div className={styles.form}>
-            <div className={styles.fieldGroup}>
-              <label className={styles.label}>Current Password</label>
-              <div className={styles.passwordInputContainer}>
-                <input
-                  type={passwordVisibility.currentPassword ? "text" : "password"}
-                  name="currentPassword"
-                  value={passwordData.currentPassword}
-                  onChange={handlePasswordInputChange}
-                  className={`${styles.input} ${styles.passwordInput} ${errors.currentPassword ? styles.inputError : ''}`}
-                  placeholder="Enter your current password"
-                  disabled={isUpdating || isVerifyingPassword}
-                />
-                <button
-                  type="button"
-                  className={styles.passwordToggle}
-                  onClick={() => togglePasswordVisibility('currentPassword')}
-                  disabled={isUpdating || isVerifyingPassword}
-                  tabIndex={-1}
-                >
-                  {passwordVisibility.currentPassword ? <FaEyeSlash /> : <FaEye />}
-                </button>
+    <>
+      {isOpen && (
+        <div className={styles.modalOverlay} onClick={handleCancel}>
+          <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <div className={styles.headerContent}>
+                <div className={styles.headerIcon}>
+                  <FaLock />
+                </div>
+                <div className={styles.headerText}>
+                  <h2>Change Password</h2>
+                  <p>Update your password to keep your account secure</p>
+                </div>
               </div>
-              {errors.currentPassword && <span className={styles.errorText}>{errors.currentPassword}</span>}
-            </div>
-
-            <div className={styles.fieldGroup}>
-              <label className={styles.label}>New Password</label>
-              <div className={styles.passwordInputContainer}>
-                <input
-                  type={passwordVisibility.newPassword ? "text" : "password"}
-                  name="newPassword"
-                  value={passwordData.newPassword}
-                  onChange={handlePasswordInputChange}
-                  className={`${styles.input} ${styles.passwordInput} ${errors.newPassword ? styles.inputError : ''}`}
-                  placeholder="Enter your new password"
-                  disabled={isUpdating || isVerifyingPassword}
-                />
-                <button
-                  type="button"
-                  className={styles.passwordToggle}
-                  onClick={() => togglePasswordVisibility('newPassword')}
-                  disabled={isUpdating || isVerifyingPassword}
-                  tabIndex={-1}
-                >
-                  {passwordVisibility.newPassword ? <FaEyeSlash /> : <FaEye />}
-                </button>
-              </div>
-              {errors.newPassword && <span className={styles.errorText}>{errors.newPassword}</span>}
-              <PasswordRequirements password={passwordData.newPassword} />
-            </div>
-
-            <div className={styles.fieldGroup}>
-              <label className={styles.label}>Confirm New Password</label>
-              <div className={styles.passwordInputContainer}>
-                <input
-                  type={passwordVisibility.confirmPassword ? "text" : "password"}
-                  name="confirmPassword"
-                  value={passwordData.confirmPassword}
-                  onChange={handlePasswordInputChange}
-                  className={`${styles.input} ${styles.passwordInput} ${errors.confirmPassword ? styles.inputError : ''}`}
-                  placeholder="Confirm your new password"
-                  disabled={isUpdating || isVerifyingPassword}
-                />
-                <button
-                  type="button"
-                  className={styles.passwordToggle}
-                  onClick={() => togglePasswordVisibility('confirmPassword')}
-                  disabled={isUpdating || isVerifyingPassword}
-                  tabIndex={-1}
-                >
-                  {passwordVisibility.confirmPassword ? <FaEyeSlash /> : <FaEye />}
-                </button>
-              </div>
-              {errors.confirmPassword && <span className={styles.errorText}>{errors.confirmPassword}</span>}
-            </div>
-
-            <div className={styles.actionButtons}>
               <button 
-                className={styles.cancelButton}
+                className={styles.closeButton}
                 onClick={handleCancel}
                 disabled={isUpdating || isVerifyingPassword}
               >
-                Cancel
+                <FaTimes />
               </button>
-              <button 
-                className={styles.saveButton}
-                onClick={handleChangePassword}
-                disabled={isUpdating || isVerifyingPassword}
-              >
-                {(isUpdating || isVerifyingPassword) ? <FaSpinner className={styles.spinner} /> : null}
-                Update Password
-              </button>
+            </div>
+
+            <div className={styles.modalContent}>
+              {errorMessage && (
+                <div className={`${styles.message} ${styles.error}`}>
+                  {errorMessage}
+                </div>
+              )}
+
+              <div className={styles.form}>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.label}>Current Password</label>
+                  <div className={styles.passwordInputContainer}>
+                    <input
+                      type={passwordVisibility.currentPassword ? "text" : "password"}
+                      name="currentPassword"
+                      value={passwordData.currentPassword}
+                      onChange={handlePasswordInputChange}
+                      className={`${styles.input} ${styles.passwordInput} ${errors.currentPassword ? styles.inputError : ''}`}
+                      placeholder="Enter your current password"
+                      disabled={isUpdating || isVerifyingPassword}
+                    />
+                    <button
+                      type="button"
+                      className={styles.passwordToggle}
+                      onClick={() => togglePasswordVisibility('currentPassword')}
+                      disabled={isUpdating || isVerifyingPassword}
+                      tabIndex={-1}
+                    >
+                      {passwordVisibility.currentPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                  {errors.currentPassword && <span className={styles.errorText}>{errors.currentPassword}</span>}
+                </div>
+
+                <div className={styles.fieldGroup}>
+                  <label className={styles.label}>New Password</label>
+                  <div className={styles.passwordInputContainer}>
+                    <input
+                      type={passwordVisibility.newPassword ? "text" : "password"}
+                      name="newPassword"
+                      value={passwordData.newPassword}
+                      onChange={handlePasswordInputChange}
+                      className={`${styles.input} ${styles.passwordInput} ${errors.newPassword ? styles.inputError : ''}`}
+                      placeholder="Enter your new password"
+                      disabled={isUpdating || isVerifyingPassword}
+                    />
+                    <button
+                      type="button"
+                      className={styles.passwordToggle}
+                      onClick={() => togglePasswordVisibility('newPassword')}
+                      disabled={isUpdating || isVerifyingPassword}
+                      tabIndex={-1}
+                    >
+                      {passwordVisibility.newPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                  {errors.newPassword && <span className={styles.errorText}>{errors.newPassword}</span>}
+                  <PasswordRequirements password={passwordData.newPassword} />
+                </div>
+
+                <div className={styles.fieldGroup}>
+                  <label className={styles.label}>Confirm New Password</label>
+                  <div className={styles.passwordInputContainer}>
+                    <input
+                      type={passwordVisibility.confirmPassword ? "text" : "password"}
+                      name="confirmPassword"
+                      value={passwordData.confirmPassword}
+                      onChange={handlePasswordInputChange}
+                      className={`${styles.input} ${styles.passwordInput} ${errors.confirmPassword ? styles.inputError : ''}`}
+                      placeholder="Confirm your new password"
+                      disabled={isUpdating || isVerifyingPassword}
+                    />
+                    <button
+                      type="button"
+                      className={styles.passwordToggle}
+                      onClick={() => togglePasswordVisibility('confirmPassword')}
+                      disabled={isUpdating || isVerifyingPassword}
+                      tabIndex={-1}
+                    >
+                      {passwordVisibility.confirmPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && <span className={styles.errorText}>{errors.confirmPassword}</span>}
+                </div>
+
+                <div className={styles.actionButtons}>
+                  <button 
+                    className={styles.cancelButton}
+                    onClick={handleCancel}
+                    disabled={isUpdating || isVerifyingPassword}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    className={styles.saveButton}
+                    onClick={handleChangePassword}
+                    disabled={isUpdating || isVerifyingPassword}
+                  >
+                    {(isUpdating || isVerifyingPassword) ? <FaSpinner className={styles.spinner} /> : null}
+                    Update Password
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
       
-      {/* Success Modal */}
+      {/* Success Modal - Always rendered, shown when needed */}
       <SuccessModal
         message="Password changed successfully!"
         isVisible={showSuccessModal}
@@ -467,6 +455,6 @@ export default function PasswordChangeModal({
         type="success"
         autoHideDuration={2000}
       />
-    </div>
+    </>
   );
 }

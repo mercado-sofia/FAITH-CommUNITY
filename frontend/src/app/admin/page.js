@@ -9,8 +9,6 @@ import { useAdminVolunteers } from '../../hooks/useAdminData';
 import { selectCurrentAdmin, selectIsAuthenticated } from '../../rtk/superadmin/adminSlice';
 import SkeletonLoader from './components/SkeletonLoader';
 
-
-
 export default function AdminIndexPage() {
   const currentAdmin = useSelector(selectCurrentAdmin);
   const isAuthenticated = useSelector(selectIsAuthenticated);

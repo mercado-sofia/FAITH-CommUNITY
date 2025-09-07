@@ -1,19 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch } from "react-redux"
 import { loginAdmin, logoutAdmin } from "../../../rtk/superadmin/adminSlice"
 import styles from "./login.module.css"
-import { FaUser, FaLock, FaEye, FaEyeSlash, FaTimes, FaSpinner } from "react-icons/fa"
+import { FaUser, FaSpinner } from "react-icons/fa"
 import Image from "next/image"
+import { AuthLeftPanel, ForgotPasswordModal, OtpInput, PasswordField } from "../components"
+import { postJson } from "../api/authClient"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [otp, setOtp] = useState("")
   const [needsOtp, setNeedsOtp] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
   const [showError, setShowError] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -24,6 +25,7 @@ export default function LoginPage() {
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false)
   const [focusedFields, setFocusedFields] = useState({})
   const [fieldErrors, setFieldErrors] = useState({})
+  const [lastAttemptedSystem, setLastAttemptedSystem] = useState(null)
   const router = useRouter()
   const dispatch = useDispatch()
 
@@ -72,41 +74,21 @@ export default function LoginPage() {
     setForgotPasswordSuccess(false)
 
     try {
-      // Try to send reset emails to all authentication systems
       const endpoints = [
-        "http://localhost:8080/api/admins/forgot-password",
-        "http://localhost:8080/api/superadmin/auth/forgot-password", 
-        "http://localhost:8080/api/users/forgot-password"
+        "/api/admins/forgot-password",
+        "/api/superadmin/auth/forgot-password", 
+        "/api/users/forgot-password"
       ]
 
       let successCount = 0
-      let errorMessages = []
 
       for (const endpoint of endpoints) {
-        try {
-          const response = await fetch(endpoint, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ email: forgotPasswordEmail }),
-          })
-
-          if (response.ok) {
-            successCount++
-          } else {
-            if (response.status === 429) {
-              errorMessages.push("Too many requests. Please wait before trying again.")
-            } else {
-              const data = await response.json()
-              if (data.error) {
-                errorMessages.push(data.error)
-              }
-            }
-          }
-        } catch (error) {
-          console.error(`Error with endpoint ${endpoint}:`, error)
-          errorMessages.push(`Network error for ${endpoint.split('/').pop()}`)
+        const { ok, status, data } = await postJson(endpoint, { email: forgotPasswordEmail })
+        if (ok) successCount++
+        else if (status === 429) {
+          setForgotPasswordMessage("Too many requests. Please wait before trying again.")
+        } else if (data && data.error) {
+          setForgotPasswordMessage(data.error)
         }
       }
 
@@ -114,7 +96,7 @@ export default function LoginPage() {
         setForgotPasswordSuccess(true)
         setForgotPasswordMessage("If an account with that email exists, password reset links have been sent to all associated accounts.")
         setForgotPasswordEmail("")
-      } else {
+      } else if (!forgotPasswordMessage) {
         setForgotPasswordMessage("Failed to send reset emails. Please try again.")
       }
     } catch (error) {
@@ -127,38 +109,38 @@ export default function LoginPage() {
 
   const validateForm = () => {
     const errors = {}
-    
-    // Check for empty fields
-    if (!email.trim()) {
-      errors.email = "Email is required"
-    }
-    if (!password.trim()) {
-      errors.password = "Password is required"
-    }
-    
-    // Check for valid email format only if email is not empty
+    if (!email.trim()) errors.email = "Email is required"
+    if (!password.trim()) errors.password = "Password is required"
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errors.email = "Please enter a valid email address"
     }
-    
     return errors
   }
 
   const getGeneralErrorMessage = (errors) => {
-    if (errors.email && errors.password) {
-      return "Email and password are required"
-    } else if (errors.email) {
-      return errors.email
-    } else if (errors.password) {
-      return errors.password
-    }
+    if (errors.email && errors.password) return "Email and password are required"
+    if (errors.email) return errors.email
+    if (errors.password) return errors.password
     return ""
+  }
+
+  const attempt = async (system) => {
+    setLastAttemptedSystem(system)
+    switch (system) {
+      case "superadmin":
+        return await postJson('/api/superadmin/auth/login', { email, password, otp: needsOtp ? otp : undefined })
+      case "admin":
+        return await postJson('/api/admins/login', { email, password, otp: needsOtp ? otp : undefined })
+      case "user":
+        return await postJson('/api/users/login', { email, password })
+      default:
+        throw new Error("Unknown authentication system")
+    }
   }
 
   const handleLogin = async (e) => {
     e.preventDefault()
-    
-    // Validate form first
+
     const validationErrors = validateForm()
     if (Object.keys(validationErrors).length > 0) {
       setFieldErrors(validationErrors)
@@ -166,134 +148,23 @@ export default function LoginPage() {
       setShowError(true)
       return
     }
-    
+
     setIsLoading(true)
     setShowError(false)
-    setFieldErrors({}) // Clear field errors
-
+    setFieldErrors({})
     clearAllSessionData()
 
-    // First, check which authentication systems have this email
-    const authSystems = []
-    
     try {
-      // Check superadmin
-      const superadminCheck = await fetch("http://localhost:8080/api/superadmin/auth/check-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      })
-      const superadminData = await superadminCheck.json()
-      if (superadminCheck.ok && superadminData.exists) {
-        authSystems.push("superadmin")
-      }
-    } catch (error) {
-      console.log("Superadmin check failed:", error.message)
-    }
-
-    try {
-      // Check admin
-      const adminCheck = await fetch("http://localhost:8080/api/admins/check-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      })
-      const adminData = await adminCheck.json()
-      if (adminCheck.ok && adminData.exists) {
-        authSystems.push("admin")
-      }
-    } catch (error) {
-      console.log("Admin check failed:", error.message)
-    }
-
-    try {
-      // Check user
-      const userCheck = await fetch("http://localhost:8080/api/users/check-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      })
-      const userData = await userCheck.json()
-      if (userCheck.ok && userData.exists) {
-        authSystems.push("user")
-      }
-    } catch (error) {
-      console.log("User check failed:", error.message)
-    }
-
-    console.log("Available auth systems for email:", authSystems)
-
-    // If email exists in multiple systems, show a message asking user to specify
-    if (authSystems.length > 1) {
-      setErrorMessage(`This email is associated with multiple accounts (${authSystems.join(', ')}). Please contact support to resolve this.`)
-      setShowError(true)
-      setFieldErrors({
-        email: "Multiple accounts found",
-        password: "Multiple accounts found"
-      })
-      setIsLoading(false)
-      return
-    }
-
-    // If no systems found, show generic error
-    if (authSystems.length === 0) {
-      setErrorMessage("Invalid email or password. Please check your credentials and try again.")
-      setShowError(true)
-      setFieldErrors({
-        email: "Invalid email or password",
-        password: "Invalid email or password"
-      })
-      setIsLoading(false)
-      return
-    }
-
-    // Try login with the specific system
-    const system = authSystems[0]
-    
-    try {
-      let response, data, redirectUrl
-      
-      switch (system) {
-        case "superadmin":
-          response = await fetch("http://localhost:8080/api/superadmin/auth/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password, otp: needsOtp ? otp : undefined }),
-          })
-          data = await response.json()
-          redirectUrl = "/superadmin"
-          break
-          
-        case "admin":
-          response = await fetch("http://localhost:8080/api/admins/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password, otp: needsOtp ? otp : undefined }),
-          })
-          data = await response.json()
-          redirectUrl = "/admin"
-          break
-          
-        case "user":
-          response = await fetch("http://localhost:8080/api/users/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
-          })
-          data = await response.json()
-          redirectUrl = "/"
-          break
-          
-        default:
-          throw new Error("Unknown authentication system")
+      const systems = needsOtp && lastAttemptedSystem ? [lastAttemptedSystem] : ["superadmin", "admin", "user"]
+      let result
+      for (const s of systems) {
+        result = await attempt(s)
+        if (result.ok) break
       }
 
-      if (response.ok) {
-        // Login successful
-        console.log(`${system} login successful:`, data)
-        
-        // Set appropriate localStorage based on system
-        switch (system) {
+      if (result && result.ok) {
+        const data = result.data
+        switch (lastAttemptedSystem) {
           case "superadmin":
             document.cookie = "userRole=superadmin; path=/; max-age=86400"
             localStorage.setItem("superAdminToken", data.token)
@@ -302,17 +173,12 @@ export default function LoginPage() {
             localStorage.setItem("user", JSON.stringify(data.superadmin))
             localStorage.setItem("userRole", "superadmin")
             break
-            
           case "admin":
             localStorage.setItem("adminToken", data.token)
             localStorage.setItem("adminData", JSON.stringify(data.admin))
             document.cookie = "userRole=admin; path=/; max-age=86400"
-            dispatch(loginAdmin({
-              token: data.token,
-              admin: data.admin,
-            }))
+            dispatch(loginAdmin({ token: data.token, admin: data.admin }))
             break
-            
           case "user":
             localStorage.setItem("userToken", data.token)
             localStorage.setItem("userData", JSON.stringify(data.user))
@@ -321,56 +187,43 @@ export default function LoginPage() {
             localStorage.setItem("userRole", "user")
             break
         }
-        
+
         setIsLoading(false)
-        window.location.href = redirectUrl
+        window.location.href = lastAttemptedSystem === 'user' ? '/' : `/${lastAttemptedSystem}`
         return
-        
-      } else {
-        // Login failed
-        if (response.status === 429) {
-          setErrorMessage("Too many login attempts. Please wait a few minutes before trying again.")
-          setShowError(true)
-          setFieldErrors({
-            email: "Rate limit exceeded",
-            password: "Rate limit exceeded"
-          })
-          setIsLoading(false)
-          return
-        }
-        
-        if (data && (data.requireMfa || /(otp|one-time)/i.test(data.error || ""))) {
-          setNeedsOtp(true)
-          setErrorMessage("Enter the 6-digit OTP from your authenticator app.")
-          setShowError(true)
-          setIsLoading(false)
-          return
-        }
-        if (system === "user" && data.requiresVerification) {
-          setErrorMessage("Please verify your email address before logging in. Check your email for a verification link.")
-          setShowError(true)
-          setFieldErrors({
-            email: "Please verify your email address",
-            password: "Please verify your email address"
-          })
-        } else {
-          setErrorMessage(data.error || "Invalid email or password. Please check your credentials and try again.")
-          setShowError(true)
-          setFieldErrors({
-            email: "Invalid email or password",
-            password: "Invalid email or password"
-          })
-        }
       }
-      
+
+      if (result && result.status === 429) {
+        setErrorMessage("Too many login attempts. Please wait a few minutes before trying again.")
+        setShowError(true)
+        setFieldErrors({ email: "Rate limit exceeded", password: "Rate limit exceeded" })
+        setIsLoading(false)
+        return
+      }
+
+      const data = result?.data
+      if (data && (data.requireMfa || /(otp|one-time)/i.test(data.error || ""))) {
+        setNeedsOtp(true)
+        setErrorMessage("Enter the 6-digit OTP from your authenticator app.")
+        setShowError(true)
+        setIsLoading(false)
+        return
+      }
+
+      if (lastAttemptedSystem === "user" && data?.requiresVerification) {
+        setErrorMessage("Please verify your email address before logging in. Check your email for a verification link.")
+        setShowError(true)
+        setFieldErrors({ email: "Please verify your email address", password: "Please verify your email address" })
+      } else {
+        setErrorMessage((data && data.error) || "Invalid email or password. Please check your credentials and try again.")
+        setShowError(true)
+        setFieldErrors({ email: "Invalid email or password", password: "Invalid email or password" })
+      }
     } catch (error) {
       console.error("Login error:", error)
       setErrorMessage("Network error. Please check your connection and try again.")
       setShowError(true)
-      setFieldErrors({
-        email: "Network error",
-        password: "Network error"
-      })
+      setFieldErrors({ email: "Network error", password: "Network error" })
     }
 
     setIsLoading(false)
@@ -378,9 +231,7 @@ export default function LoginPage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.leftPane}>
-        <span className={styles.loginLabel}>Log In</span>
-      </div>
+      <AuthLeftPanel labelText="Log In" />
       <div className={styles.rightPane}>
         <div className={styles.logoWrapper}>
           <Image src="/logo/faith_community_logo.png" alt="Logo" width={80} height={80} />
@@ -414,60 +265,24 @@ export default function LoginPage() {
               className={fieldErrors.email ? styles.inputError : ""}
             />
           </div>
+
           <label htmlFor="password" className={`${styles.label} ${focusedFields.password ? styles.focused : ''} ${password ? styles.hasValue : ''} ${fieldErrors.password ? styles.labelError : ''}`}>
             Password
           </label>
-          <div className={styles.inputGroup}>
-            <FaLock className={styles.icon} />
-            <input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              name={process.env.NODE_ENV === "development" ? `dev-password-${Math.random()}` : "password"}
-              placeholder="Enter your password"
-              aria-label="Password"
-              autoComplete="off"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value)
-                if (showError || Object.keys(fieldErrors).length > 0) {
-                  setShowError(false)
-                  setFieldErrors({})
-                }
-              }}
-              onFocus={() => handleFocus('password')}
-              onBlur={() => handleBlur('password')}
-              disabled={isLoading}
-              className={fieldErrors.password ? styles.inputError : ""}
-            />
-            <button
-              type="button"
-              className={styles.passwordToggle}
-              onClick={() => setShowPassword((prev) => !prev)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              disabled={isLoading}
-              tabIndex={-1}
-            >
-              {showPassword ? <FaEyeSlash /> : <FaEye />}
-            </button>
-          </div>
+          <PasswordField
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              if (showError || Object.keys(fieldErrors).length > 0) {
+                setShowError(false)
+                setFieldErrors({})
+              }
+            }}
+            disabled={isLoading}
+          />
 
           {needsOtp && (
-            <div className={styles.inputGroup}>
-              <FaLock className={styles.icon} />
-              <input
-                id="otp"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={6}
-                placeholder="Enter 6-digit OTP"
-                aria-label="One-time password"
-                autoComplete="off"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                disabled={isLoading}
-              />
-            </div>
+            <OtpInput value={otp} onChange={setOtp} disabled={isLoading} />
           )}
 
           <div className={styles.forgotPasswordLink}>
@@ -486,7 +301,7 @@ export default function LoginPage() {
             </p>
           )}
 
-          <button type="submit" className={styles.loginBtn} disabled={isLoading}>
+          <button type="submit" className={styles.loginBtn} disabled={isLoading} aria-busy={isLoading}>
             Log In
             {isLoading && <FaSpinner className={styles.spinner} />}
           </button>
@@ -497,74 +312,21 @@ export default function LoginPage() {
         </form>
       </div>
 
-      {/* Forgot Password Modal */}
-      {showForgotPassword && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modal}>
-            <div className={styles.modalHeader}>
-              <h3>Forgot Password</h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForgotPassword(false)
-                  setForgotPasswordEmail("")
-                  setForgotPasswordMessage("")
-                  setForgotPasswordSuccess(false)
-                }}
-                className={styles.closeButton}
-              >
-                <FaTimes />
-              </button>
-            </div>
-           
-            {!forgotPasswordSuccess ? (
-              <form onSubmit={handleForgotPassword} className={styles.forgotPasswordForm}>
-                <p className={styles.modalDescription}>
-                  Enter your email address and we&apos;ll send you a link to reset your password.
-                </p>
-               
-                <div className={styles.inputGroup}>
-                  <FaUser className={styles.icon} />
-                  <input
-                    type="email"
-                    placeholder="Enter your email"
-                    value={forgotPasswordEmail}
-                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                    required
-                    disabled={forgotPasswordLoading}
-                  />
-                </div>
-
-                {forgotPasswordMessage && (
-                  <p className={styles.errorMessage}>
-                    {forgotPasswordMessage}
-                  </p>
-                )}
-
-                <button
-                  type="submit"
-                  className={styles.loginBtn}
-                  disabled={forgotPasswordLoading}
-                >
-                  Send Reset Link
-                  {forgotPasswordLoading && <FaSpinner className={styles.spinner} />}
-                </button>
-              </form>
-            ) : (
-              <div className={styles.successMessage}>
-                <p>{forgotPasswordMessage}</p>
-                <button
-                  type="button"
-                  onClick={() => setShowForgotPassword(false)}
-                  className={styles.loginBtn}
-                >
-                  Close
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        email={forgotPasswordEmail}
+        setEmail={setForgotPasswordEmail}
+        message={forgotPasswordMessage}
+        success={forgotPasswordSuccess}
+        loading={forgotPasswordLoading}
+        onClose={() => {
+          setShowForgotPassword(false)
+          setForgotPasswordEmail("")
+          setForgotPasswordMessage("")
+          setForgotPasswordSuccess(false)
+        }}
+        onSubmit={handleForgotPassword}
+      />
     </div>
   )
 }

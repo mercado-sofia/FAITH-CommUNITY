@@ -16,4 +16,3 @@ export async function fetchWithCsrf(input, init = {}) {
   if (token) headers.set('x-csrf-token', token)
   return fetch(input, { ...init, headers, credentials: 'include' })
 }
-

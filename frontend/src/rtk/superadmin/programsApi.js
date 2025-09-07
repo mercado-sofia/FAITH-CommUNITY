@@ -3,12 +3,12 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 export const superadminProgramsApi = createApi({
   reducerPath: "superadminProgramsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:8080/api",
+    baseUrl: (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080") + "/api",
     prepareHeaders: (headers, { getState }) => {
       headers.set("Content-Type", "application/json")
 
       // Add JWT token for superadmin authentication
-      const token = getState().superadmin?.token || localStorage.getItem("superadminToken")
+      const token = getState().superadmin?.token || localStorage.getItem("superAdminToken")
       if (token) {
         headers.set("Authorization", `Bearer ${token}`)
       }

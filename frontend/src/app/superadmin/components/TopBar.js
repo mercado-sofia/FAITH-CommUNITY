@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { TbMail } from "react-icons/tb";
 import { MdNotificationsNone } from "react-icons/md";
-import styles from '../styles/topbar.module.css';
+import styles from './styles/topbar.module.css';
 
 export default function TopBar() {
   const [superAdminData, setSuperAdminData] = useState(null);

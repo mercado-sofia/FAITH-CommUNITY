@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import styles from '../styles/sidebar.module.css';
+import styles from './styles/sidebar.module.css';
 import LogoutModalTrigger from '../logout/page.js';
 
 import { TbChecklist } from "react-icons/tb";
@@ -52,7 +52,7 @@ export default function Sidebar() {
         <nav className={styles.nav}>
           <Link
             href="/superadmin"
-            className={`${styles.navBase} ${styles.navItem} ${pathname === '/superadmin' ? styles.active : ''}`}
+            className={`${styles.navBase} ${styles.navItem} ${pathname === '/superadmin' || pathname === '/superadmin/dashboard' ? styles.active : ''}`}
           >
             <HiViewGrid className={styles.dashbIcon} />
             <span>Dashboard</span>
@@ -88,7 +88,7 @@ export default function Sidebar() {
 
           <Link
             href="/superadmin/manageProfiles"
-            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith('/superadmin/manageprofiles') ? styles.active : ''}`}
+            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith('/superadmin/manageProfiles') ? styles.active : ''}`}
           >
             <FaAddressCard className={styles.icon} />
             <span>Manage Profiles</span>

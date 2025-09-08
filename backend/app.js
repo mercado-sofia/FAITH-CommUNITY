@@ -143,13 +143,18 @@ if (process.env.NODE_ENV !== "production") {
 // Global rate limiting and burst control
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: Number(process.env.RATE_LIMIT_GLOBAL_MAX || 100),
+  max: Number(process.env.RATE_LIMIT_GLOBAL_MAX || 500), // Increased from 100 to 500
   standardHeaders: true,
   legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many requests, please try again later.',
+    retryAfter: '15 minutes'
+  }
 })
 const globalSpeedLimiter = slowDown({
   windowMs: 15 * 60 * 1000,
-  delayAfter: Number(process.env.SLOWDOWN_GLOBAL_AFTER || 100),
+  delayAfter: Number(process.env.SLOWDOWN_GLOBAL_AFTER || 200), // Increased from 100 to 200
   delayMs: 250,
 })
 app.use(globalSpeedLimiter)
@@ -242,7 +247,22 @@ const authSpeedLimiter = slowDown({
   delayMs: 500,
 })
 
+// Public endpoints rate limiting (more lenient)
+const publicLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.RATE_LIMIT_PUBLIC_MAX || 1000), // Very high limit for public endpoints
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many requests, please try again later.',
+    retryAfter: '15 minutes'
+  }
+})
+
 // Public Routes with per-route protection
+app.use("/api/organizations", publicLimiter) // Apply public limiter to organizations
+app.use("/api/news", publicLimiter) // Apply public limiter to news
 app.use("/api", organizationsRoutes)
 app.use("/api/subscription", subscriptionRoutes)
 app.use("/api", applyRoutes)

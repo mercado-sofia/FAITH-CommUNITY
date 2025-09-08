@@ -38,7 +38,10 @@ export const publicFeaturedProjectsApi = createApi({
         return []
       },
       transformErrorResponse: (response) => {
-        console.error('publicFeaturedProjectsApi - getPublicFeaturedProjects error:', response);
+        // Only log errors in development
+        if (process.env.NODE_ENV === 'development') {
+          console.error('publicFeaturedProjectsApi - getPublicFeaturedProjects error:', response);
+        }
         return response;
       }
     }),

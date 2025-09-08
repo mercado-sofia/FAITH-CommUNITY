@@ -10,7 +10,6 @@ import { useDropdown } from '../../../hooks/useDropdown';
 import OptimizedImage from '../../../components/OptimizedImage';
 import styles from './styles/navbar.module.css';
 import { FaBars, FaChevronRight, FaUser, FaSignOutAlt, FaBell, FaCog, FaClipboardList } from 'react-icons/fa';
-import { FiLogOut } from 'react-icons/fi';
 
 export default function Navbar() {
   const router = useRouter();

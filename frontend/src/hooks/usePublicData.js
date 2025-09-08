@@ -1,30 +1,11 @@
 import useSWR from 'swr';
 import logger from '../utils/logger';
+import { swrConfig } from '../utils/swrConfig';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-// Fetcher function for SWR
-const fetcher = async (url) => {
-  try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
-      logger.apiError(url, error, { status: response.status });
-      throw error;
-    }
-
-    return response.json();
-  } catch (error) {
-    logger.apiError(url, error);
-    throw error;
-  }
-};
+// Use the global fetcher from swrConfig
+const fetcher = swrConfig.fetcher;
 
 // Custom hook for public organization data (optimized for public pages)
 export const usePublicOrganizationData = (orgID) => {
@@ -32,12 +13,7 @@ export const usePublicOrganizationData = (orgID) => {
     orgID ? `${API_BASE_URL}/api/organization/org/${orgID}` : null,
     fetcher,
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
       dedupingInterval: 60000, // Cache for 1 minute (to reflect admin changes quickly)
-      errorRetryCount: 2,
-      errorRetryInterval: 2000,
-      fallbackData: null, // Provide fallback while loading
       onError: (error) => {
         logger.swrError(`${API_BASE_URL}/api/organization/org/${orgID}`, error, { orgID });
       }
@@ -88,9 +64,7 @@ export const usePublicOrganizations = () => {
     `${API_BASE_URL}/api/organizations`,
     fetcher,
     {
-      revalidateOnFocus: false,
       dedupingInterval: 300000, // Cache for 5 minutes
-      errorRetryCount: 3,
       onError: (error) => {
         logger.swrError(`${API_BASE_URL}/api/organizations`, error);
       }
@@ -132,9 +106,7 @@ export const usePublicNews = () => {
     `${API_BASE_URL}/api/news`,
     fetcher,
     {
-      revalidateOnFocus: false,
       dedupingInterval: 60000, // Cache for 1 minute (news updates more frequently)
-      errorRetryCount: 2,
       onError: (error) => {
         logger.swrError(`${API_BASE_URL}/api/news`, error);
       }

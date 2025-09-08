@@ -4,6 +4,10 @@ export const organizationsApi = createApi({
   reducerPath: "organizationsApi",
   baseQuery: fetchBaseQuery({
     baseUrl: "http://localhost:8080/api",
+    prepareHeaders: (headers) => {
+      headers.set('Content-Type', 'application/json')
+      return headers
+    },
   }),
   tagTypes: ["Organizations"],
   endpoints: (builder) => ({
@@ -23,6 +27,13 @@ export const organizationsApi = createApi({
         }
         return []
       },
+      transformErrorResponse: (response) => {
+        // Only log errors in development
+        if (process.env.NODE_ENV === 'development') {
+          console.error('organizationsApi - getAllOrganizations error:', response);
+        }
+        return response;
+      }
     }),
   }),
 })

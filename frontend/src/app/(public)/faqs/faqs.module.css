@@ -50,7 +50,7 @@
   padding: 0;
   transition: background 0.3s ease;
   overflow: hidden;
-  font-family: var(--font-poppins);
+  font-family: var(--font-roboto);
 }
 
 .faqItem:hover {
@@ -68,6 +68,11 @@
   transition: background 0.3s ease, color 0.3s ease;
   cursor: pointer;
   user-select: none;
+  font-weight: 600; /* Semi-bold font weight */
+}
+
+.question strong {
+  font-weight: 600; /* Override the default bold styling of strong tag */
 }
 
 .faqItem.open .question {
@@ -79,7 +84,7 @@
   padding: 0 1.5rem;
   font-size: 14px;
   line-height: 1.5;
-  color: #000000;
+  color: #2a2b2d;
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.3s ease, padding 0.3s ease;

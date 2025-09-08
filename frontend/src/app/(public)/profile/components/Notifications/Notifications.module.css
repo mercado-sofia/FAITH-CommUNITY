@@ -1,0 +1,337 @@
+/* Notifications Section */
+.notificationsSection {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 4rem 2rem 2rem;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #000;
+}
+
+.notificationsList h3 {
+  margin: 0 0 1.5rem 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #000;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+.emptyIcon {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+  opacity: 0.5;
+}
+
+.emptyState p {
+  margin: 0 0 0.5rem 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.emptyState span {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.notificationsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.notificationItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  transition: all 0.2s ease;
+}
+
+.notificationItem.unread {
+  border-left: 4px solid #0c4b3a;
+  background: #f8fffe;
+}
+
+.notificationItem.read {
+  opacity: 0.7;
+}
+
+.notificationIcon {
+  width: 32px;
+  height: 32px;
+  background: #ecf1f5;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0c4b3a;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.notificationContent {
+  flex: 1;
+}
+
+.notificationContent h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+}
+
+.notificationContent p {
+  margin: 0 0 0.5rem 0;
+  color: #6c757d;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.notificationDate {
+  font-size: 0.75rem;
+  color: #adb5bd;
+}
+
+.notificationActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.markReadButton,
+.deleteButton {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.markReadButton {
+  background: #f1fff4;
+  border: 1px solid #bce5c4;
+  color: #0c4b3a;
+}
+
+.markReadButton:hover {
+  border: 1px solid #0c4b3a;
+}
+
+.deleteButton {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.deleteButton:hover {
+  border-color: #dc2626;
+}
+
+/* Loading and Spinner */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 1rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #0c4b3a;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modalOpen {
+  overflow: hidden !important;
+  height: 100vh !important;
+}
+
+.modal {
+  background-color: white;
+  border-radius: 16px;
+  width: 100%;
+  padding: 2rem 2rem 1.8rem;
+  max-width: 400px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.2s ease-in-out;
+  overflow: hidden;
+  position: relative;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1.5rem;
+}
+
+.modalTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-inter);
+  color: #000;
+}
+
+.warningIconContainer {
+  width: 28px;
+  height: 28px;
+  background-color: #FEE2E2;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #DC2626;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.confirmDeleteMessage {
+  margin-bottom: 2.2rem;
+}
+
+.confirmDeleteMessage p {
+  margin: 0;
+  color: #6B7280;
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+  padding: 0 0.5rem;
+}
+
+.confirmDeleteButtons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.cancelBtn {
+  flex: 1;
+  background-color: #F9FAFB;
+  color: #374151;
+  border: 1px solid #E5E7EB;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.cancelBtn:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.deleteBtn {
+  flex: 1;
+  background-color: #DC2626;
+  color: white;
+  border: 1px solid #DC2626;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  gap: 8px;
+}
+
+.deleteBtn:hover {
+  background-color: #b91c1c;
+  border-color: #b91c1c;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .notificationItem {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .notificationActions {
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal {
+    max-width: 90%;
+    margin: 1rem;
+  }
+  
+  .confirmDeleteButtons {
+    flex-direction: column;
+  }
+  
+  .cancelBtn,
+  .deleteBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}

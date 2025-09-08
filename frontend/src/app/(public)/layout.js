@@ -11,6 +11,19 @@ import Head from 'next/head';
 import { useEffect, useRef, useState } from 'react';
 import styles from './styles/publicLayout.module.css';
 import PagePreloader from '../../components/PagePreloader';
+import { Poppins, Inter } from 'next/font/google';
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  variable: '--font-poppins',
+});
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-inter',
+});
 
 export default function PublicLayout({ children }) {
   const navbarRef = useRef(null);
@@ -112,7 +125,7 @@ export default function PublicLayout({ children }) {
       <PagePreloader />
       
       {/* Optimized layout container */}
-      <div className={styles['public-layout-container']}>
+      <div className={`${styles['public-layout-container']} ${poppins.variable} ${inter.variable}`}>
         {/* Fixed navbar */}
         <div ref={navbarRef} className={styles['public-navbar-wrapper']}>
           <Navbar />

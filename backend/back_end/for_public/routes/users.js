@@ -9,6 +9,8 @@ import {
   getUserProfile, 
   updateUserProfile, 
   uploadProfilePhoto, 
+  removeProfilePhoto,
+  changeEmail,
   changePassword,
   subscribeToNewsletter,
   unsubscribeFromNewsletter,
@@ -20,12 +22,14 @@ import {
   getUnreadNotificationCount,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  deleteNotification,
   forgotPasswordUser,
   resetPasswordUser,
   checkEmailUser,
   validateResetToken,
   deleteAccount,
   refreshAccessToken,
+  getUserApplications,
 } from '../controllers/userController.js';
 
 const router = express.Router();
@@ -71,6 +75,8 @@ router.post('/logout', verifyToken, logoutUser);
 router.get('/profile', verifyToken, getUserProfile);
 router.put('/profile', verifyToken, updateUserProfile);
 router.post('/profile/photo', verifyToken, upload.single('profilePhoto'), uploadProfilePhoto);
+router.delete('/profile/photo', verifyToken, removeProfilePhoto);
+router.put('/email', verifyToken, changeEmail);
 router.put('/password', verifyToken, changePassword);
 router.post('/delete-account', verifyToken, deleteAccount);
 
@@ -84,5 +90,9 @@ router.get('/notifications', verifyToken, getUserNotifications);
 router.get('/notifications/unread-count', verifyToken, getUnreadNotificationCount);
 router.put('/notifications/:notificationId/read', verifyToken, markNotificationAsRead);
 router.put('/notifications/mark-all-read', verifyToken, markAllNotificationsAsRead);
+router.delete('/notifications/:notificationId', verifyToken, deleteNotification);
+
+// User applications routes (authentication required)
+router.get('/applications', verifyToken, getUserApplications);
 
 export default router;

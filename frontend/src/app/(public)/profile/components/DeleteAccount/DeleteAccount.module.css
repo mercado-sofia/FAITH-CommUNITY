@@ -1,0 +1,405 @@
+/* Delete Account Section */
+.deleteAccountSection {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.deleteAccountSection h3 {
+  margin: 0 0 1rem 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #000;
+}
+
+.deleteAccountInfo {
+  margin-bottom: 1rem;
+}
+
+.infoBox {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #ffffff;
+  border: 2px solid #edf0f4;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.infoIcon {
+  color: #4d4f53;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.infoBox span {
+  margin: 0;
+  color: #6c757d;
+  font-size: 13px;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.infoBox span strong {
+  margin: 0 0.25em;
+  color: #000;
+}
+
+.deleteAccountInfo p {
+  color: #6c757d;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.deleteAccountButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.2rem;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: auto;
+  outline: none;
+}
+
+.deleteAccountButton:hover {
+  border-color: #dc2626;
+}
+
+.deleteAccountButton svg {
+  color: #dc2626;
+}
+
+.deleteAccountButton span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #cb303f;
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modalOpen {
+  overflow: hidden !important;
+  height: 100vh !important;
+}
+
+.modal {
+  background-color: white;
+  border-radius: 16px;
+  width: 100%;
+  padding: 2rem 2rem 1.8rem;
+  max-width: 400px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.2s ease-in-out;
+  overflow: hidden;
+  position: relative;
+}
+
+.topRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: -1rem 0 0;
+  margin-bottom: 1.5rem;
+}
+
+.topRow h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-inter);
+  color: #000;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1.5rem;
+}
+
+.modalTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-inter);
+  color: #000;
+}
+
+.warningIconContainer {
+  width: 28px;
+  height: 28px;
+  background-color: #FEE2E2;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #DC2626;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 8px;
+  margin: 0;
+}
+
+.closeBtn:hover {
+  color: #39404d;
+}
+
+.closeBtn:disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.deleteForm {
+  padding: 0;
+}
+
+.passwordField {
+  margin-bottom: 2rem;
+}
+
+.passwordField label {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+  color: #000;
+  font-size: 14px;
+}
+
+.passwordInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.passwordInputWrapper input {
+  width: 100%;
+  padding: 0.875rem 3rem 0.875rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: white;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.passwordInputWrapper input:focus {
+  outline: none;
+  border-color: #000;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s ease;
+}
+
+.passwordToggle:hover {
+  color: #374151;
+}
+
+.deleteError {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-bottom: 20px;
+}
+
+.deleteSuccess {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #d1fae5;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  color: #065f46;
+  font-size: 0.875rem;
+  margin-bottom: 20px;
+}
+
+.errorIcon, .successIcon {
+  font-size: 1rem;
+}
+
+.actions {
+  padding: 0;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.confirmDeleteMessage {
+  margin-bottom: 2.2rem;
+}
+
+.confirmDeleteMessage p {
+  margin: 0;
+  color: #6B7280;
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+  padding: 0 0.5rem;
+}
+
+.confirmDeleteButtons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 0;
+}
+
+.cancelBtn {
+  flex: 1;
+  background-color: #F9FAFB;
+  color: #374151;
+  border: 1px solid #E5E7EB;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.cancelBtn:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.deleteBtn {
+  flex: 1;
+  background-color: #DC2626;
+  color: white;
+  border: 1px solid #DC2626;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  gap: 8px;
+}
+
+.deleteBtn:hover {
+  background-color: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.deleteBtn:disabled {
+  background-color: #9ca3af;
+  border-color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.cancelBtn:disabled {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .modal {
+    max-width: 90%;
+    margin: 1rem;
+  }
+  
+  .topRow,
+  .content,
+  .deleteForm,
+  .actions {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  
+  .actions {
+    flex-direction: column;
+  }
+  
+  .cancelBtn,
+  .deleteBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}

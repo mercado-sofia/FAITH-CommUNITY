@@ -92,9 +92,6 @@ export const registerUser = async (req, res) => {
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
 
-    console.log('Generated verification token:', verificationToken);
-    console.log('Token length:', verificationToken.length);
-    console.log('Token expires at:', verificationExpires);
 
     // Insert new user with verification token
     const [result] = await db.query(
@@ -106,8 +103,6 @@ export const registerUser = async (req, res) => {
       [firstName, lastName, email, contactNumber, gender, address, formattedBirthDate, hashedPassword, verificationToken, verificationExpires]
     );
 
-    console.log('User inserted with ID:', result.insertId);
-    console.log('Stored verification token in database:', verificationToken);
 
     const userId = result.insertId;
 
@@ -436,6 +431,136 @@ export const uploadProfilePhoto = async (req, res) => {
   }
 };
 
+// Remove profile photo
+export const removeProfilePhoto = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Get current profile photo URL
+    const [users] = await db.query(
+      'SELECT profile_photo_url FROM users WHERE id = ?',
+      [userId]
+    );
+    
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const currentPhotoUrl = users[0].profile_photo_url;
+    
+    // Delete the photo file if it exists
+    if (currentPhotoUrl) {
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      // Remove the leading slash and construct the full path
+      const photoPath = path.join(process.cwd(), currentPhotoUrl.substring(1));
+      
+      if (fs.existsSync(photoPath)) {
+        fs.unlinkSync(photoPath);
+      }
+    }
+    
+    // Update user's profile_photo_url to null in database
+    await db.query(
+      'UPDATE users SET profile_photo_url = NULL, updated_at = NOW() WHERE id = ?',
+      [userId]
+    );
+    
+    // Get updated user data
+    const [updatedUsers] = await db.query(
+      'SELECT * FROM users WHERE id = ?',
+      [userId]
+    );
+    
+    const user = updatedUsers[0];
+    
+    res.json({
+      message: 'Profile photo removed successfully',
+      user: {
+        id: user.id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        email: user.email,
+        contactNumber: user.contact_number,
+        gender: user.gender,
+        address: user.address,
+        birthDate: user.birth_date,
+        occupation: user.occupation,
+        citizenship: user.citizenship,
+        profile_photo_url: user.profile_photo_url
+      }
+    });
+
+  } catch (error) {
+    console.error('Remove profile photo error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Change email
+export const changeEmail = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { newEmail, currentPassword } = req.body;
+
+    if (!newEmail || !currentPassword) {
+      return res.status(400).json({ error: 'New email and current password are required' });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    // Get current user data
+    const [users] = await db.query(
+      'SELECT email, password_hash FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = users[0];
+
+    // Check if new email is different from current email
+    if (newEmail === user.email) {
+      return res.status(400).json({ error: 'New email must be different from current email' });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+
+    // Check if new email is already taken
+    const [existingUsers] = await db.query(
+      'SELECT id FROM users WHERE email = ? AND id != ?',
+      [newEmail, userId]
+    );
+
+    if (existingUsers.length > 0) {
+      return res.status(400).json({ error: 'Email is already taken by another user' });
+    }
+
+    // Update email
+    await db.query(
+      'UPDATE users SET email = ?, updated_at = NOW() WHERE id = ?',
+      [newEmail, userId]
+    );
+
+    res.json({ message: 'Email changed successfully' });
+
+  } catch (error) {
+    console.error('Change email error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // Change password
 export const changePassword = async (req, res) => {
   try {
@@ -666,7 +791,6 @@ export const verifyEmail = async (req, res) => {
   try {
     const { token } = req.query;
 
-    console.log('Verification attempt with token:', token);
 
     if (!token) {
       return res.status(400).json({ error: 'Verification token is required' });
@@ -678,15 +802,7 @@ export const verifyEmail = async (req, res) => {
       [token]
     );
 
-    console.log('Found users with token:', users.length);
-
     if (users.length === 0) {
-      // Let's also check if there are any users with verification tokens at all
-      const [allUsersWithTokens] = await db.query(
-        'SELECT id, email, verification_token FROM users WHERE verification_token IS NOT NULL'
-      );
-      console.log('All users with verification tokens:', allUsersWithTokens);
-      
       return res.status(400).json({ error: 'Invalid verification token' });
     }
 
@@ -794,7 +910,6 @@ export const resendVerificationEmail = async (req, res) => {
 export const verifyToken = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-
     if (!token) {
       return res.status(401).json({ error: 'Access token required' });
     }
@@ -830,9 +945,20 @@ export const getUserNotifications = async (req, res) => {
       [userId]
     );
 
+    // Transform the data to match frontend expectations
+    const transformedNotifications = notifications.map(notification => ({
+      id: notification.id,
+      userId: notification.user_id,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      isRead: notification.is_read === 1,
+      createdAt: notification.created_at
+    }));
+
     res.json({
       success: true,
-      notifications: notifications
+      notifications: transformedNotifications
     });
   } catch (error) {
     console.error('Error fetching user notifications:', error);
@@ -919,6 +1045,37 @@ export const markAllNotificationsAsRead = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to mark notifications as read'
+    });
+  }
+};
+
+export const deleteNotification = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { notificationId } = req.params;
+    
+    const [result] = await db.query(
+      `DELETE FROM user_notifications 
+       WHERE id = ? AND user_id = ?`,
+      [notificationId, userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Notification not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Notification deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting notification:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete notification'
     });
   }
 };
@@ -1173,5 +1330,72 @@ export const deleteAccount = async (req, res) => {
   } catch (error) {
     console.error('Delete account error:', error);
     res.status(500).json({ error: 'An error occurred while deleting your account' });
+  }
+};
+
+// Get user applications (volunteer applications)
+export const getUserApplications = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const [applications] = await db.query(
+      `SELECT 
+        v.id,
+        v.program_id,
+        v.reason,
+        v.status,
+        v.created_at as appliedAt,
+        p.title as programName,
+        p.description as programDescription,
+        p.event_start_date as programStartDate,
+        p.event_end_date as programEndDate,
+        p.organization_id,
+        a.orgName as organizationName,
+        a.org as organizationAcronym
+      FROM volunteers v
+      LEFT JOIN programs_projects p ON v.program_id = p.id
+      LEFT JOIN admins a ON p.organization_id = a.organization_id
+      WHERE v.user_id = ?
+      ORDER BY v.created_at DESC`,
+      [userId]
+    );
+    
+
+    // Transform the data to match frontend expectations
+    const transformedApplications = applications.map(application => ({
+      id: application.id,
+      programId: application.program_id,
+      programName: application.programName,
+      programDescription: application.programDescription,
+      programLocation: null, // Location not available in current database structure
+      programStartDate: application.programStartDate,
+      programEndDate: application.programEndDate,
+      organizationId: application.organization_id,
+      organizationName: application.organizationName,
+      organizationAcronym: application.organizationAcronym,
+      reason: application.reason,
+      status: application.status === 'Declined' ? 'rejected' : application.status.toLowerCase(),
+      appliedAt: application.appliedAt,
+      notes: application.reason, // Using reason as notes for now
+      feedback: null // This could be added later if feedback system is implemented
+    }));
+
+    res.json({
+      success: true,
+      applications: transformedApplications
+    });
+  } catch (error) {
+    console.error('Error fetching user applications:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState
+    });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch applications',
+      error: error.message
+    });
   }
 };

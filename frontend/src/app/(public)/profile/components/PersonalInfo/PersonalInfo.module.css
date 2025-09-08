@@ -1,0 +1,405 @@
+/* Personal Information Section */
+.personalInfoSection {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 4rem 2rem 2rem;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 0 0.8rem 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #000;
+}
+
+/* Personal Information Styles */
+.personalInfoContainer {
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 0.85rem 1.6rem;
+  background: white;
+}
+
+.profilePhotoSection {
+  margin-bottom: 1.5rem;
+}
+
+.profilePhotoContainer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.photoActionsContainer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.profileImageContainer {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #e9ecef;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+
+.profileImageContainer.editMode {
+  cursor: pointer;
+}
+
+.profileImageContainer:not(.editMode) {
+  cursor: default;
+}
+
+.profileImage {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.changePhotoButton {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+.uploadButton {
+  color: #000;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.removePhotoButton {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  transition: all 0.2s ease;
+}
+
+.removePhotoButton:hover {
+  border-color: #dc2626;
+}
+
+.removePhotoButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.uploadingOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  border-radius: 50%;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.uploadingOverlay .spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.photoErrorMessage {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  border: 1px solid #f5c6cb;
+}
+
+
+.photoSelectedMessage {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #14782b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.checkIcon {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.editErrorMessage {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  border: 1px solid #f5c6cb;
+}
+
+.editSuccessMessage {
+  background: #d4edda;
+  color: #155724;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  border: 1px solid #c3e6cb;
+}
+
+/* Personal Information Form */
+.personalInfoForm {
+  margin-bottom: 2rem;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+}
+
+.formField label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+  margin-bottom: 0.5rem;
+}
+
+.required {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.formField p {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  color: #000;
+  font-weight: 500;
+  font-size: 14px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.editInput,
+.editTextarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  transition: border-color 0.2s ease;
+  background: white;
+}
+
+.editInput:focus,
+.editTextarea:focus {
+  outline: none;
+  border-color: #06100f;
+  box-shadow: 0 0 0 3px rgba(12, 75, 58, 0.1);
+}
+
+/* Date input specific styling */
+.editInput[type="date"] {
+  font-family: inherit;
+  font-weight: 500;
+  color: #000;
+  cursor: pointer;
+}
+
+.editInput[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.editInput[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.editInput[type="date"]::-webkit-datetime-edit-text {
+  color: #000;
+  font-weight: 500;
+}
+
+.editInput[type="date"]::-webkit-datetime-edit-month-field,
+.editInput[type="date"]::-webkit-datetime-edit-day-field,
+.editInput[type="date"]::-webkit-datetime-edit-year-field {
+  color: #000;
+  font-weight: 500;
+}
+
+/* Error input styling */
+.errorInput {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
+}
+
+.errorInput:focus {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
+}
+
+/* Field error message */
+.fieldErrorMessage {
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.editTextarea {
+  resize: none;
+  min-height: 80px;
+  font-family: inherit;
+  line-height: 1.5;
+  transition: all 0.2s ease;
+}
+
+.editTextarea::placeholder {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.editTextarea:hover {
+  border-color: #d1d5db;
+}
+
+.editTextarea:focus {
+  outline: none;
+  border-color: #06100f;
+  box-shadow: 0 0 0 3px rgba(12, 75, 58, 0.1);
+}
+
+/* Edit Actions */
+.editActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.editButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  color: #000;
+  border: 2px solid #ebebf0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.editButton:hover {
+  border-color: #000;
+}
+
+
+/* Common button styles */
+.actionButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 2px solid #000;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.actionButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Save button specific styles */
+.saveButton {
+  background: #000;
+  color: white;
+}
+
+.saveButton:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+/* Cancel button specific styles */
+.cancelButton {
+  background: white;
+  color: #000;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .formRow {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}

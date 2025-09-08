@@ -1,0 +1,90 @@
+/* Custom Select Component */
+.customSelect {
+  position: relative;
+  width: 100%;
+}
+
+.selectTrigger {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: border-color 0.2s ease;
+  min-height: 40px;
+}
+
+.selectTrigger:hover {
+  border-color: #0c4b3a;
+}
+
+.selectTrigger.open {
+  border-color: #0c4b3a;
+  box-shadow: 0 0 0 3px rgba(12, 75, 58, 0.1);
+}
+
+.selectValue {
+  color: #000;
+  flex: 1;
+}
+
+.selectValue:empty::before {
+  content: attr(data-placeholder);
+  color: #6c757d;
+}
+
+.selectArrow {
+  color: #374151;
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+  margin-left: 0.5rem;
+}
+
+.selectArrow.rotated {
+  transform: rotate(180deg);
+}
+
+.selectOptions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.selectOption {
+  padding: 0.75rem 0.75rem;
+  font-size: 14px;
+  font-weight: 400;
+  color: #000;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f8f9fa;
+}
+
+.selectOption:last-child {
+  border-bottom: none;
+}
+
+.selectOption:hover {
+  background: #eef0f3;
+}
+
+.selectOption.selected {
+  background: #c0ddd7;
+  color: #0c3d35;
+  font-weight: 600;
+}

@@ -628,6 +628,12 @@
   background-color: #f8f9fa;
 }
 
+.notificationsHeaderActions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .notificationsHeader h3 {
   margin: 0;
   font-size: 1rem;
@@ -647,6 +653,23 @@
 
 .markAllReadBtn:hover {
   color: #145847;
+}
+
+.viewAllBtn {
+  background: none;
+  border: none;
+  color: #0c4b3a;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.viewAllBtn:hover {
+  color: #145847;
+  background-color: rgba(12, 75, 58, 0.1);
 }
 
 .notificationsList {

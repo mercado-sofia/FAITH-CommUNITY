@@ -1,0 +1,264 @@
+/* My Applications Section */
+.myApplicationsSection {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 4rem 2rem 2rem;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #000;
+}
+
+.filterTabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.filterTab {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #6c757d;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filterTab:hover {
+  color: #333;
+}
+
+.filterTab.active {
+  color: #0c4b3a;
+  border-bottom-color: #0c4b3a;
+  font-weight: 600;
+}
+
+.applicationsContainer {
+  display: flex;
+  flex-direction: column;
+}
+
+.applicationCard {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1.25rem;
+  transition: all 0.2s ease;
+  margin-bottom: 1rem;
+}
+
+.applicationCard:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.applicationHeader {
+  margin-bottom: 1rem;
+}
+
+.applicationTitle h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.4;
+}
+
+.applicationMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.applicationDate {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.statusBadge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.statusApproved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.statusRejected {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.statusPending {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.applicationDetails {
+  margin-bottom: 1rem;
+}
+
+.programDates {
+  margin-bottom: 0.5rem;
+}
+
+.dateRange {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.organizationInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.organizationName {
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+.organizationAcronym {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.applicationNotes,
+.applicationFeedback {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border-radius: 6px;
+  border-left: 3px solid #e5e7eb;
+}
+
+.applicationNotes p,
+.applicationFeedback p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.applicationActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.viewButton {
+  padding: 0.5rem 1rem;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.viewButton:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+.emptyIcon {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+  opacity: 0.5;
+}
+
+.emptyState p {
+  margin: 0 0 0.5rem 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.emptyState span {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+/* Loading and Spinner */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 1rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #0c4b3a;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .filterTabs {
+    flex-wrap: wrap;
+  }
+
+  .filterTab {
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+  }
+
+  .applicationMeta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .applicationActions {
+    justify-content: stretch;
+  }
+
+  .viewButton {
+    width: 100%;
+    text-align: center;
+  }
+}

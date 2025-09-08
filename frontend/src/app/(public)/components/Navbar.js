@@ -256,14 +256,23 @@ export default function Navbar() {
                   <div className={styles.notificationsDropdown}>
                     <div className={styles.notificationsHeader}>
                       <h3>Notifications</h3>
-                      {notifications.notifications.length > 0 && (
-                        <button 
-                          className={styles.markAllReadBtn}
-                          onClick={notifications.markAllAsRead}
+                      <div className={styles.notificationsHeaderActions}>
+                        {notifications.notifications.length > 0 && (
+                          <button 
+                            className={styles.markAllReadBtn}
+                            onClick={notifications.markAllAsRead}
+                          >
+                            Mark all read
+                          </button>
+                        )}
+                        <Link 
+                          href="/profile?tab=notifications" 
+                          className={styles.viewAllBtn}
+                          onClick={notificationsDropdown.close}
                         >
-                          Mark all read
-                        </button>
-                      )}
+                          View All
+                        </Link>
+                      </div>
                     </div>
                     <div className={styles.notificationsList}>
                       {notifications.isLoading ? (
@@ -357,7 +366,7 @@ export default function Navbar() {
                       <span>Manage Account</span>
                     </Link>
                     <Link 
-                      href="/my-applications" 
+                      href="/profile?tab=applications" 
                       className={styles.profileDropdownItem}
                       onClick={profileDropdown.close}
                     >
@@ -493,7 +502,7 @@ export default function Navbar() {
                     <span>Manage Account</span>
                   </Link>
                   <Link 
-                    href="/my-applications" 
+                    href="/profile?tab=applications" 
                     className={styles.mobileProfileLink}
                     onClick={toggleMenu}
                   >

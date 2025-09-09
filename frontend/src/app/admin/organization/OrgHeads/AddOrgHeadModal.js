@@ -112,8 +112,16 @@ export default function AddOrgHeadModal({
       formData.append('file', compressedFile)
       formData.append('uploadType', 'organization-head')
 
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        throw new Error('No admin token found. Please log in again.');
+      }
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/upload`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        },
         body: formData,
       })
 

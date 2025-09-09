@@ -1,49 +1,5 @@
-/* SectionSummaryModal Styles */
-
-/* Modal Overlay */
-.modalOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.4);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-/* Modal Container */
-.modalContainer {
-  background: #ffffff;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 800px;
-  max-height: 90vh;
-  overflow: hidden;
-  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
-  display: flex;
-  flex-direction: column;
-}
-
-/* Modal Header */
-.modalHeader {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 24px 24px 5px;
-  background: #ffffff;
-}
-
-.modalTitle {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #06100f;
-  font-family: var(--font-poppins), sans-serif;
-}
+/* SectionSummaryModal Specific Styles */
+/* Base modal styles are imported from modalBase.module.css */
 
 /* Modal Scroll Area */
 .modalScrollArea {

@@ -4,7 +4,8 @@
 import { useEffect } from 'react'
 import Image from 'next/image'
 import { AiOutlineExclamationCircle } from 'react-icons/ai'
-import styles from './SectionSummaryModal.module.css'
+import baseStyles from './styles/modalBase.module.css'
+import styles from './styles/SectionSummaryModal.module.css'
 
 export default function SectionSummaryModal({
   isOpen,
@@ -253,11 +254,11 @@ export default function SectionSummaryModal({
   }
 
   return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modalContainer}>
+    <div className={baseStyles.modalOverlay}>
+      <div className={baseStyles.modalContainer}>
         {/* Header (fixed) */}
-        <div className={styles.modalHeader}>
-          <h2 className={styles.modalTitle}>Review {getSectionTitle()} Changes</h2>
+        <div className={baseStyles.modalHeader}>
+          <h2 className={baseStyles.modalTitle}>Review {getSectionTitle()} Changes</h2>
         </div>
 
                  {/* Scrollable area */}

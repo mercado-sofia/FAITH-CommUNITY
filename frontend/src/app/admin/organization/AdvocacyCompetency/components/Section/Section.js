@@ -1,43 +1,50 @@
 'use client'
 
 import { FaEdit } from 'react-icons/fa'
-import styles from './SectionStyles.module.css'
+import { sectionConfigs } from '../../config'
+import styles from './Section.module.css'
 
-export default function CompetencySection({ 
-  competencyData, 
+export default function Section({ 
+  type, // 'advocacy' or 'competency'
+  data, 
   setIsEditing, 
   setShowEditModal, 
   setOriginalData, 
   setCurrentSection,
   setTempEditData 
 }) {
+  const config = sectionConfigs[type]
+
+  if (!config) {
+    console.error(`Invalid section type: ${type}`)
+    return null
+  }
+
   const handleEditClick = () => {
-    setOriginalData({ ...competencyData })
-    setTempEditData({ ...competencyData }) // Initialize temp data with current values
+    setOriginalData({ ...data })
+    setTempEditData({ ...data }) // Initialize temp data with current values
     setIsEditing(true)
-    setCurrentSection('competency')
+    setCurrentSection(type)
     setShowEditModal(true)
   }
 
   return (
     <div className={styles.section}>
       <div className={styles.header}>
-        <h2 className={styles.sectionTitle}>Competency</h2>
+        <h2 className={styles.sectionTitle}>{config.title}</h2>
         <button
           onClick={handleEditClick}
           className={styles.editIcon}
-          title="Edit Competency Information"
+          title={`Edit ${config.title} Information`}
         >
           <FaEdit />
         </button>
       </div>
 
-
-
       <div className={styles.contentLayout}>
         <div className={styles.detailsSection}>
           <div className={styles.textContent}>
-            {competencyData.competency || "No competency information specified"}
+            {data[config.field] || config.placeholder}
           </div>
         </div>
       </div>

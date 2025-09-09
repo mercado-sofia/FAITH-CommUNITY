@@ -1,1 +1,2 @@
-export { default as AutoResizeTextarea } from './AutoResizeTextarea';
+export { AutoResizeTextarea } from './AutoResizeTextarea'
+export { Section } from './Section'

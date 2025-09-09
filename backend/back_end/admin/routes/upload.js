@@ -22,8 +22,8 @@ const authenticateAdmin = (req, res, next) => {
   
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community-api",
-      audience: process.env.JWT_AUD || "faith-community-client",
+      issuer: process.env.JWT_ISS || "faith-community",
+      audience: process.env.JWT_AUD || "admin",
     });
     req.admin = decoded;
     next();

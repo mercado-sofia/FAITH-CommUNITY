@@ -12,8 +12,7 @@ import {
 } from '../../../rtk/admin/notificationsApi';
 import { FiX } from 'react-icons/fi';
 import { PiChecksBold } from 'react-icons/pi';
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
-import SkeletonLoader from '../components/SkeletonLoader';
+import { DeleteConfirmationModal, SkeletonLoader } from '../components';
 import InfiniteScrollNotifications from './components/InfiniteScrollNotifications';
 import styles from './notifications.module.css';
 

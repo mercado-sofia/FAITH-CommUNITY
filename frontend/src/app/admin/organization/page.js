@@ -4,13 +4,11 @@ import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { updateAdminOrg } from "../../../rtk/superadmin/adminSlice";
 import { useAdminOrganization, useAdminAdvocacies, useAdminCompetencies, useAdminHeads } from "../../../hooks/useAdminData";
-import { applyRoleHierarchyOrdering } from "./OrgHeads/utils/roleHierarchy";
+import { applyRoleHierarchyOrdering } from "./utils";
 import { EditModal, OrgInfoSection, SummaryModal } from "./OrgInfo";
 import { Section, SectionEditModal, SectionSummaryModal } from "./AdvocacyCompetency";
 import { OrgHeadsSection, AddOrgHeadModal, OrgHeadsEditModal } from "./OrgHeads";
-import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
-import SuccessModal from "../components/SuccessModal";
-import SkeletonLoader from '../components/SkeletonLoader';
+import { DeleteConfirmationModal, SuccessModal, SkeletonLoader } from "../components";
 import pageStyles from "./page.module.css";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";

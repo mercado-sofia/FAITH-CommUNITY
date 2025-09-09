@@ -3,13 +3,11 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSelector } from 'react-redux'
-import SearchAndFilterControls from './components/SearchAndFilterControls'
-import VolunteerTable from './components/VolunteerTable'
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
-import SuccessModal from '../components/SuccessModal'
+import { SearchAndFilterControls, VolunteerTable } from './components'
+import { DeleteConfirmationModal, SuccessModal } from '../components'
 import { useAdminVolunteers, useAdminPrograms } from '../../../hooks/useAdminData'
 import { selectCurrentAdmin, selectIsAuthenticated } from '../../../rtk/superadmin/adminSlice'
-import SkeletonLoader from '../components/SkeletonLoader'
+import { SkeletonLoader } from '../components'
 import styles from './volunteers.module.css'
 
 // Track if volunteers page has been visited

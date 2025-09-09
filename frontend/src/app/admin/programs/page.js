@@ -5,14 +5,10 @@ import { useSelector } from 'react-redux';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { selectCurrentAdmin } from '../../../rtk/superadmin/adminSlice';
 import { useAdminPrograms } from '../../../hooks/useAdminData';
-import ProgramCard from './components/ProgramCard';
-import AddProgramModal from './components/AddProgramModal';
-import EditProgramModal from './components/EditProgramModal';
-import ViewDetailsModal from './components/ViewDetailsModal';
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
-import SearchAndFilterControls from './components/SearchAndFilterControls';
-import SuccessModal from '../components/SuccessModal';
-import SkeletonLoader from '../components/SkeletonLoader';
+import { ProgramCard, AddProgramModal, EditProgramModal, ViewDetailsModal } from './components';
+import { DeleteConfirmationModal } from '../components';
+import { SearchAndFilterControls } from './components';
+import { SuccessModal, SkeletonLoader } from '../components';
 import styles from './programs.module.css';
 import { FaPlus } from 'react-icons/fa';
 

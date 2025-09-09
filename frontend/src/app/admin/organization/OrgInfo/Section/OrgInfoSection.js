@@ -38,8 +38,6 @@ export default function OrgInfoSection({
         )}
       </div>
 
-
-
       <div className={styles.contentLayout}>
         {/* Logo Section */}
         <div className={styles.logoSection}>

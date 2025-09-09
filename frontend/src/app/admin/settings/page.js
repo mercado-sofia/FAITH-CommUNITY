@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { FaLock } from 'react-icons/fa';
 import { useAdminProfile } from '../../../hooks/useAdminProfile';
 import { selectCurrentAdmin, updateAdminEmail } from '../../../rtk/superadmin/adminSlice';
-import SkeletonLoader from '../components/SkeletonLoader';
+import { SkeletonLoader } from '../components';
 import { PasswordChangeModal, OrgProfileSection } from './ProfileSection';
-import SuccessModal from '../components/SuccessModal';
+import { SuccessModal } from '../components';
 import styles from './adminSettings.module.css';
 
 // Utility function for password change time

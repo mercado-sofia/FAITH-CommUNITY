@@ -1,8 +1,8 @@
 'use client'
 
 import { FaEdit } from 'react-icons/fa'
-import { sectionConfigs } from '../../config'
-import styles from './Section.module.css'
+import { sectionConfigs } from '../config/sectionConfig'
+import styles from './AdvocacyCompetencySection.module.css'
 
 export default function Section({ 
   type, // 'advocacy' or 'competency'

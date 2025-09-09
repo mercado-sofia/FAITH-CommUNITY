@@ -4,22 +4,18 @@ import { useState, useRef, useEffect } from 'react'
 import { FaCamera, FaTimes, FaCheckCircle, FaExclamationTriangle, FaSpinner } from 'react-icons/fa'
 import { FiImage } from 'react-icons/fi'
 import { getOrganizationImageUrl } from '@/utils/uploadPaths'
-import styles from './AddOrgHeadModal.module.css'
-import { PhotoUtils } from './utils/photoUtils'
-import LazyImage from './LazyImage'
-import { applyRoleHierarchyOrdering } from './utils/roleHierarchy'
+import styles from './OrgHeadModal.module.css'
+import { PhotoUtils, applyRoleHierarchyOrdering } from '../../utils'
+import LazyImage from '../components/LazyImage/LazyImage'
 
-export default function OrgHeadsEditModal({
+export default function AddOrgHeadModal({
   isOpen,
-  orgHeadsData,
-  setOrgHeadsData,
-  handleSave,
-  handleCancel,
+  onSave,
+  onCancel,
   saving,
-  originalData,
-  isIndividualEdit = false
+  existingHeads = []
 }) {
-  const [editingHead, setEditingHead] = useState({
+  const [newHead, setNewHead] = useState({
     head_name: '',
     role: '',
     photo: '',
@@ -33,28 +29,27 @@ export default function OrgHeadsEditModal({
   
   const fileInputRef = useRef(null)
 
-  // Initialize form with existing data when modal opens
+  // Reset form when modal opens
   useEffect(() => {
-    if (isOpen && originalData && originalData.length > 0) {
-      const headData = originalData[0]; // For individual edit, take the first head
-      setEditingHead({
-        head_name: headData.head_name || '',
-        role: headData.role || '',
-        photo: headData.photo || '',
-        facebook: headData.facebook || '',
-        email: headData.email || ''
+    if (isOpen) {
+      setNewHead({
+        head_name: '',
+        role: '',
+        photo: '',
+        facebook: '',
+        email: ''
       })
       setValidationErrors({})
       setFieldErrors({})
       setUploadProgress(0)
       setUploading(false)
     }
-  }, [isOpen, originalData])
+  }, [isOpen])
 
   if (!isOpen) return null
 
   const handleInputChange = (field, value) => {
-    setEditingHead(prev => ({ ...prev, [field]: value }))
+    setNewHead(prev => ({ ...prev, [field]: value }))
     
     // Clear field error when user starts typing or uploading
     if (fieldErrors[field]) {
@@ -173,34 +168,34 @@ export default function OrgHeadsEditModal({
     let isValid = true
 
     // Validate name
-    if (!editingHead.head_name?.trim()) {
+    if (!newHead.head_name?.trim()) {
       newFieldErrors.head_name = 'Name is required'
       isValid = false
     }
     
     // Validate role
-    if (!editingHead.role?.trim()) {
+    if (!newHead.role?.trim()) {
       newFieldErrors.role = 'Role is required'
       isValid = false
     }
     
     // Validate email
-    if (!editingHead.email?.trim()) {
+    if (!newHead.email?.trim()) {
       newFieldErrors.email = 'Email is required'
       isValid = false
-    } else if (!/\S+@\S+\.\S+/.test(editingHead.email)) {
+    } else if (!/\S+@\S+\.\S+/.test(newHead.email)) {
       newFieldErrors.email = 'Please enter a valid email address'
       isValid = false
     }
     
     // Validate photo (now required)
-    if (!editingHead.photo?.trim()) {
+    if (!newHead.photo?.trim()) {
       newFieldErrors.photo = 'Profile photo is required'
       isValid = false
     }
     
     // Validate Facebook URL (optional field)
-    if (editingHead.facebook && !editingHead.facebook.includes('facebook.com')) {
+    if (newHead.facebook && !newHead.facebook.includes('facebook.com')) {
       newFieldErrors.facebook = 'Please enter a valid Facebook URL'
       isValid = false
     }
@@ -216,14 +211,24 @@ export default function OrgHeadsEditModal({
     
     if (validateForm()) {
       try {
-        // For editing, preserve the original display_order and ID
-        const updatedHead = {
-          ...editingHead,
-          id: originalData[0]?.id, // Preserve original ID
-          display_order: originalData[0]?.display_order || 1 // Preserve original display_order
+        // Create new head with temporary display_order
+        const newHeadWithTempOrder = {
+          ...newHead,
+          display_order: existingHeads.length + 1
         }
         
-        handleSave([updatedHead])
+        // Apply role hierarchy ordering to all heads (including the new one)
+        const allHeadsWithNewHead = [...existingHeads, newHeadWithTempOrder]
+        const reorderedHeads = applyRoleHierarchyOrdering(allHeadsWithNewHead)
+        
+        // Find the new head in the reordered list and get its final display_order
+        const finalNewHead = reorderedHeads.find(head => 
+          head.head_name === newHead.head_name && 
+          head.role === newHead.role && 
+          head.email === newHead.email
+        )
+        
+        onSave(finalNewHead)
       } catch (error) {
         // Handle error silently
       }
@@ -240,9 +245,9 @@ export default function OrgHeadsEditModal({
     }
   }
 
-  const handleCancelClick = () => {
+  const handleCancel = () => {
     // Reset form state
-    setEditingHead({
+    setNewHead({
       head_name: '',
       role: '',
       photo: '',
@@ -252,16 +257,16 @@ export default function OrgHeadsEditModal({
     setValidationErrors({})
     setFieldErrors({})
     setUploadProgress(0)
-    handleCancel()
+    onCancel()
   }
 
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
         <div className={styles.header}>
-          <h2 className={styles.title}>Edit Organization Head</h2>
+          <h2 className={styles.title}>Add Organization Head</h2>
           <button
-            onClick={handleCancelClick}
+            onClick={handleCancel}
             className={styles.closeButton}
             disabled={saving}
           >
@@ -277,9 +282,9 @@ export default function OrgHeadsEditModal({
                 <label className={styles.photoLabel}>Profile Photo *</label>
                 <div className={styles.headPhoto}>
                   <div className={styles.photoContainer}>
-                    {editingHead.photo ? (
+                    {newHead.photo ? (
                       <LazyImage
-                        src={getOrganizationImageUrl(editingHead.photo, 'head')}
+                        src={getOrganizationImageUrl(newHead.photo, 'head')}
                         alt="Profile photo preview"
                         className={styles.photo}
                         priority={true}
@@ -332,32 +337,32 @@ export default function OrgHeadsEditModal({
                     )}
                   </div>
                   
-                  {/* Validation Messages */}
-                  {validationErrors.errors && validationErrors.errors.length > 0 && (
-                    <div className={styles.validationMessages}>
-                      {validationErrors.errors.map((error, errorIndex) => (
-                        <div key={errorIndex} className={styles.errorMessage}>
-                          <FaExclamationTriangle className={styles.errorIcon} />
-                          {error}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {validationErrors.warnings && validationErrors.warnings.length > 0 && (
-                    <div className={styles.validationMessages}>
-                      {validationErrors.warnings.map((warning, warningIndex) => (
-                        <div key={warningIndex} className={styles.warningMessage}>
-                          <FaExclamationTriangle className={styles.warningIcon} />
-                          {warning}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {fieldErrors.photo && (
-                    <div className={styles.fieldError}>
-                      {fieldErrors.photo}
-                    </div>
-                  )}
+                                     {/* Validation Messages */}
+                   {validationErrors.errors && validationErrors.errors.length > 0 && (
+                     <div className={styles.validationMessages}>
+                       {validationErrors.errors.map((error, errorIndex) => (
+                         <div key={errorIndex} className={styles.errorMessage}>
+                           <FaExclamationTriangle className={styles.errorIcon} />
+                           {error}
+                         </div>
+                       ))}
+                     </div>
+                   )}
+                   {validationErrors.warnings && validationErrors.warnings.length > 0 && (
+                     <div className={styles.validationMessages}>
+                       {validationErrors.warnings.map((warning, warningIndex) => (
+                         <div key={warningIndex} className={styles.warningMessage}>
+                           <FaExclamationTriangle className={styles.warningIcon} />
+                           {warning}
+                         </div>
+                       ))}
+                     </div>
+                   )}
+                   {fieldErrors.photo && (
+                     <div className={styles.fieldError}>
+                       {fieldErrors.photo}
+                     </div>
+                   )}
                 </div>
               </div>
 
@@ -366,7 +371,7 @@ export default function OrgHeadsEditModal({
                   <label className={styles.label}>Name *</label>
                   <input
                     type="text"
-                    value={editingHead.head_name || ''}
+                    value={newHead.head_name || ''}
                     onChange={(e) => handleInputChange('head_name', e.target.value)}
                     className={`${styles.input} ${fieldErrors.head_name ? styles.inputError : ''}`}
                     placeholder="Enter full name"
@@ -384,7 +389,7 @@ export default function OrgHeadsEditModal({
                   <label className={styles.label}>Role *</label>
                   <input
                     type="text"
-                    value={editingHead.role || ''}
+                    value={newHead.role || ''}
                     onChange={(e) => handleInputChange('role', e.target.value)}
                     className={`${styles.input} ${fieldErrors.role ? styles.inputError : ''}`}
                     placeholder="Enter role (e.g., President, Secretary, PRO)"
@@ -406,7 +411,7 @@ export default function OrgHeadsEditModal({
                 <label className={styles.label}>Email *</label>
                 <input
                   type="email"
-                  value={editingHead.email || ''}
+                  value={newHead.email || ''}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   className={`${styles.input} ${fieldErrors.email ? styles.inputError : ''}`}
                   placeholder="Enter email address"
@@ -424,7 +429,7 @@ export default function OrgHeadsEditModal({
                 <label className={styles.label}>Facebook URL</label>
                 <input
                   type="url"
-                  value={editingHead.facebook || ''}
+                  value={newHead.facebook || ''}
                   onChange={(e) => handleInputChange('facebook', e.target.value)}
                   className={`${styles.input} ${fieldErrors.facebook ? styles.inputError : ''}`}
                   placeholder="https://facebook.com/username (optional)"
@@ -442,7 +447,7 @@ export default function OrgHeadsEditModal({
 
         <div className={styles.footer}>
           <button
-            onClick={handleCancelClick}
+            onClick={handleCancel}
             className={styles.cancelButton}
             disabled={saving}
           >
@@ -454,7 +459,7 @@ export default function OrgHeadsEditModal({
             disabled={saving}
           >
             {saving ? <FaSpinner className={styles.spinner} /> : null}
-            Save Changes
+            Add Head
           </button>
         </div>
       </div>

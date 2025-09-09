@@ -1,8 +1,7 @@
 'use client'
 
-
-import { useModalScrollLock, useFormChanges } from '../hooks'
-import { AutoResizeTextarea } from '../components'
+import { useModalScrollLock, useFormChanges } from '../../hooks'
+import AutoResizeTextarea from '../components/AutoResizeTextarea'
 import baseStyles from './styles/modalBase.module.css'
 import styles from './styles/SectionEditModal.module.css'
 

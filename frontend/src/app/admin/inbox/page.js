@@ -12,8 +12,7 @@ import {
 } from '../../../rtk/admin/inboxApi';
 import { FiMail, FiTrash2, FiEye, FiCheck, FiX } from 'react-icons/fi';
 import { FaSpinner } from 'react-icons/fa';
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
-import SkeletonLoader from '../components/SkeletonLoader';
+import { DeleteConfirmationModal, SkeletonLoader } from '../components';
 import styles from './inbox.module.css';
 
 export default function InboxPage() {

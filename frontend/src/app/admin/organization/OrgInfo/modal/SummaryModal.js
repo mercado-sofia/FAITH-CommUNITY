@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { AiOutlineExclamationCircle } from 'react-icons/ai';
 import { getOrganizationImageUrl } from "@/utils/uploadPaths";
-import styles from "./SummaryModal.module.css";
+import styles from "./styles/SummaryModal.module.css";
 
 export default function SummaryModal({
   originalData,

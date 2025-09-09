@@ -3,11 +3,10 @@
 import { useSelector } from 'react-redux';
 import { useMemo } from 'react';
 import styles from './dashboard/styles/dashboard.module.css';
-import StatCardSection from './dashboard/StatCardSection';
-import RecentApplicationsTable from './dashboard/RecentApplicationsTable';
+import { StatCardSection, RecentApplicationsTable } from './dashboard';
 import { useAdminVolunteers } from '../../hooks/useAdminData';
 import { selectCurrentAdmin, selectIsAuthenticated } from '../../rtk/superadmin/adminSlice';
-import SkeletonLoader from './components/SkeletonLoader';
+import { SkeletonLoader } from './components';
 
 export default function AdminIndexPage() {
   const currentAdmin = useSelector(selectCurrentAdmin);

@@ -1,4 +1,4 @@
 // OrgInfo folder exports
-export { default as EditModal } from './EditModal';
-export { default as OrgInfoSection } from './OrgInfoSection';
-export { default as SummaryModal } from './SummaryModal';
+export { default as OrgInfoSection } from './Section/OrgInfoSection';
+export { default as EditModal } from './modal/EditModal';
+export { default as SummaryModal } from './modal/SummaryModal';

@@ -52,6 +52,34 @@
   opacity: 0.8;
 }
 
+.errorState {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #dc2626;
+}
+
+.errorState p {
+  margin: 0 0 1rem 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.retryButton {
+  padding: 0.5rem 1rem;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.retryButton:hover {
+  background: #b91c1c;
+}
+
 .notificationsContainer {
   display: flex;
   flex-direction: column;
@@ -213,7 +241,7 @@
 
 .modalTitle {
   margin: 0;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   font-family: var(--font-inter);
   color: #000;

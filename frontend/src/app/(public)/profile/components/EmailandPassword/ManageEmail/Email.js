@@ -3,20 +3,26 @@
 import { useState } from 'react';
 import { FaEnvelope, FaEye, FaEyeSlash, FaTimes, FaCheck } from 'react-icons/fa';
 import { createPortal } from 'react-dom';
+import { useProfileApi } from '../../../hooks/useApiCall';
+import { useFormValidation } from '../../../hooks/useFormValidation';
+import { useToast } from '../../common/Toast';
+import LoadingSpinner from '../../common/LoadingSpinner';
 import styles from './Email.module.css';
 
 export default function Email({ userData, setUserData }) {
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showEmailPassword, setShowEmailPassword] = useState(false);
   
   // Email change states
   const [emailData, setEmailData] = useState({
     newEmail: '',
     currentPassword: ''
   });
-  const [emailError, setEmailError] = useState('');
-  const [emailSuccess, setEmailSuccess] = useState('');
-  const [isChangingEmail, setIsChangingEmail] = useState(false);
-  const [showEmailPassword, setShowEmailPassword] = useState(false);
+  
+  // Custom hooks
+  const { changeEmail, isLoading } = useProfileApi();
+  const { validateEmail, fieldErrors, setFieldError, clearAllErrors } = useFormValidation();
+  const { showSuccess, showError } = useToast();
 
   const handleEmailChange = (e) => {
     const { name, value } = e.target;
@@ -24,8 +30,11 @@ export default function Email({ userData, setUserData }) {
       ...prev,
       [name]: value
     }));
-    setEmailError('');
-    setEmailSuccess('');
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldError(name, '');
+    }
   };
 
   const togglePasswordVisibility = () => {
@@ -35,70 +44,68 @@ export default function Email({ userData, setUserData }) {
   const handleChangeEmail = async (e) => {
     e.preventDefault();
     
+    // Reset field errors
+    clearAllErrors();
+    
     // Validation
     if (!emailData.newEmail || !emailData.currentPassword) {
-      setEmailError('All fields are required');
+      if (!emailData.newEmail) setFieldError('newEmail', 'This field is required');
+      if (!emailData.currentPassword) setFieldError('currentPassword', 'This field is required');
       return;
     }
 
     if (emailData.newEmail === userData.email) {
-      setEmailError('New email must be different from current email');
+      setFieldError('newEmail', 'New email must be different from current email');
       return;
     }
 
     // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(emailData.newEmail)) {
-      setEmailError('Please enter a valid email address');
+    if (!validateEmail(emailData.newEmail)) {
+      setFieldError('newEmail', 'Please enter a valid email address');
       return;
     }
 
-    setIsChangingEmail(true);
-    setEmailError('');
-    setEmailSuccess('');
-
     try {
-      const token = localStorage.getItem('userToken');
-      const response = await fetch('http://localhost:8080/api/users/email', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          newEmail: emailData.newEmail,
-          currentPassword: emailData.currentPassword
-        })
+      await changeEmail({
+        newEmail: emailData.newEmail,
+        currentPassword: emailData.currentPassword
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setEmailSuccess('Email changed successfully!');
-        // Update user data in localStorage
-        const updatedUserData = {
-          ...userData,
-          email: emailData.newEmail
-        };
-        localStorage.setItem('userData', JSON.stringify(updatedUserData));
-        setUserData(updatedUserData);
-        
-        setEmailData({
-          newEmail: '',
-          currentPassword: ''
-        });
-        setTimeout(() => {
-          setShowEmailModal(false);
-          setEmailSuccess('');
-          document.body.classList.remove(styles.modalOpen);
-        }, 2000);
-      } else {
-        setEmailError(data.message || 'Failed to change email');
-      }
+      showSuccess('Email changed successfully!');
+      
+      // Update user data in localStorage
+      const updatedUserData = {
+        ...userData,
+        email: emailData.newEmail
+      };
+      localStorage.setItem('userData', JSON.stringify(updatedUserData));
+      setUserData(updatedUserData);
+      
+      setEmailData({
+        newEmail: '',
+        currentPassword: ''
+      });
+      
+      setTimeout(() => {
+        setShowEmailModal(false);
+        document.body.classList.remove(styles.modalOpen);
+      }, 2000);
+      
     } catch (error) {
-      setEmailError('An error occurred while changing email');
-    } finally {
-      setIsChangingEmail(false);
+      // Handle server error by showing field-specific error
+      let errorMessage = 'Failed to change email';
+      
+      if (error.message) {
+        if (error.message.toLowerCase().includes('password') && error.message.toLowerCase().includes('incorrect')) {
+          errorMessage = 'Wrong password';
+        } else if (error.message.toLowerCase().includes('unauthorized')) {
+          errorMessage = 'Wrong password';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setFieldError('currentPassword', errorMessage);
     }
   };
 
@@ -108,9 +115,8 @@ export default function Email({ userData, setUserData }) {
       newEmail: '',
       currentPassword: ''
     });
-    setEmailError('');
-    setEmailSuccess('');
     setShowEmailPassword(false);
+    clearAllErrors();
     document.body.classList.remove(styles.modalOpen);
   };
 
@@ -160,19 +166,16 @@ export default function Email({ userData, setUserData }) {
             </div>
             
             <form onSubmit={handleChangeEmail} className={styles.emailForm}>
-              {emailError && (
-                <div className={styles.emailError}>
-                  <FaTimes className={styles.errorIcon} />
-                  {emailError}
-                </div>
-              )}
-              
-              {emailSuccess && (
-                <div className={styles.emailSuccess}>
-                  <FaCheck className={styles.successIcon} />
-                  {emailSuccess}
-                </div>
-              )}
+
+              <div className={styles.passwordField}>
+                <label>Current Email</label>
+                <input
+                  type="email"
+                  value={userData.email}
+                  readOnly
+                  className={styles.currentEmailInput}
+                />
+              </div>
 
               <div className={styles.passwordField}>
                 <label>New Email Address</label>
@@ -182,9 +185,13 @@ export default function Email({ userData, setUserData }) {
                   value={emailData.newEmail}
                   onChange={handleEmailChange}
                   placeholder="Enter new email address"
-                  required
-                  className={styles.emailInput}
+                  className={`${styles.emailInput} ${fieldErrors.newEmail ? styles.error : ''}`}
                 />
+                {fieldErrors.newEmail && (
+                  <div className={styles.fieldErrorMessage}>
+                    {fieldErrors.newEmail}
+                  </div>
+                )}
               </div>
 
               <div className={styles.passwordField}>
@@ -196,16 +203,22 @@ export default function Email({ userData, setUserData }) {
                     value={emailData.currentPassword}
                     onChange={handleEmailChange}
                     placeholder="Enter current password"
-                    required
+                    className={fieldErrors.currentPassword ? styles.error : ''}
                   />
                   <button
                     type="button"
                     className={styles.passwordToggle}
                     onClick={togglePasswordVisibility}
+                    tabIndex={-1}
                   >
                     {showEmailPassword ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 </div>
+                {fieldErrors.currentPassword && (
+                  <div className={styles.fieldErrorMessage}>
+                    {fieldErrors.currentPassword}
+                  </div>
+                )}
               </div>
 
               <div className={styles.emailModalButtons}>
@@ -219,9 +232,16 @@ export default function Email({ userData, setUserData }) {
                 <button 
                   type="submit" 
                   className={styles.changeEmailButton}
-                  disabled={isChangingEmail}
+                  disabled={isLoading}
                 >
-                  {isChangingEmail ? 'Changing...' : 'Change Email'}
+                  {isLoading ? (
+                    <>
+                      <LoadingSpinner size="small" message="" />
+                      Changing...
+                    </>
+                  ) : (
+                    'Change Email'
+                  )}
                 </button>
               </div>
             </form>

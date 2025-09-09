@@ -3,7 +3,52 @@
 import { useState } from 'react';
 import { FaLock, FaEye, FaEyeSlash, FaTimes, FaCheck } from 'react-icons/fa';
 import { createPortal } from 'react-dom';
+import { getApiUrl, getAuthHeaders } from '../../../utils/api';
 import styles from './Password.module.css';
+
+// Password Requirements Component
+const PasswordRequirements = ({ password }) => {
+  const requirements = [
+    {
+      id: 'length',
+      text: 'Minimum of 8 characters',
+      met: password.length >= 8
+    },
+    {
+      id: 'lowercase',
+      text: 'At least one lowercase letter (a-z)',
+      met: /[a-z]/.test(password)
+    },
+    {
+      id: 'uppercase',
+      text: 'At least one uppercase letter (A-Z)',
+      met: /[A-Z]/.test(password)
+    },
+    {
+      id: 'number',
+      text: 'At least one number (0-9)',
+      met: /\d/.test(password)
+    }
+  ];
+
+  return (
+    <div className={styles.passwordRequirements}>
+      <h4 className={styles.passwordRequirementsTitle}>Password Requirements:</h4>
+      <ul className={styles.requirementsList}>
+        {requirements.map((requirement) => (
+          <li key={requirement.id} className={styles.requirementItem}>
+            <div className={`${styles.requirementIcon} ${requirement.met ? styles.met : styles.notMet}`}>
+              {requirement.met ? <FaCheck /> : <FaTimes />}
+            </div>
+            <span className={`${styles.requirementText} ${requirement.met ? styles.met : styles.notMet}`}>
+              {requirement.text}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
 
 export default function Password({ userData, setUserData }) {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -14,13 +59,17 @@ export default function Password({ userData, setUserData }) {
     newPassword: '',
     confirmPassword: ''
   });
-  const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [showPasswords, setShowPasswords] = useState({
     current: false,
     new: false,
     confirm: false
+  });
+  const [fieldErrors, setFieldErrors] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
   });
 
   const handlePasswordChange = (e) => {
@@ -29,8 +78,14 @@ export default function Password({ userData, setUserData }) {
       ...prev,
       [name]: value
     }));
-    setPasswordError('');
     setPasswordSuccess('');
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
   };
 
   const togglePasswordVisibility = (field) => {
@@ -43,34 +98,56 @@ export default function Password({ userData, setUserData }) {
   const handleChangePassword = async (e) => {
     e.preventDefault();
     
+    // Reset field errors
+    setFieldErrors({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    });
+    
     // Validation
     if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
-      setPasswordError('All fields are required');
+      setFieldErrors({
+        currentPassword: !passwordData.currentPassword ? 'This field is required' : '',
+        newPassword: !passwordData.newPassword ? 'This field is required' : '',
+        confirmPassword: !passwordData.confirmPassword ? 'This field is required' : ''
+      });
       return;
     }
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setPasswordError('New passwords do not match');
+      setFieldErrors(prev => ({
+        ...prev,
+        newPassword: 'Passwords do not match',
+        confirmPassword: 'Passwords do not match'
+      }));
       return;
     }
 
-    if (passwordData.newPassword.length < 6) {
-      setPasswordError('New password must be at least 6 characters long');
+    if (passwordData.newPassword.length < 8) {
+      setFieldErrors(prev => ({
+        ...prev,
+        newPassword: 'Password must be at least 8 characters long'
+      }));
+      return;
+    }
+
+    // Check password requirements
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(passwordData.newPassword)) {
+      setFieldErrors(prev => ({
+        ...prev,
+        newPassword: 'Password must contain at least one uppercase letter, one lowercase letter, and one number'
+      }));
       return;
     }
 
     setIsChangingPassword(true);
-    setPasswordError('');
     setPasswordSuccess('');
 
     try {
-      const token = localStorage.getItem('userToken');
-      const response = await fetch('http://localhost:8080/api/users/password', {
+      const response = await fetch(getApiUrl('/api/users/password'), {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           currentPassword: passwordData.currentPassword,
           newPassword: passwordData.newPassword
@@ -92,10 +169,34 @@ export default function Password({ userData, setUserData }) {
           document.body.classList.remove(styles.modalOpen);
         }, 2000);
       } else {
-        setPasswordError(data.message || 'Failed to change password');
+        // Handle server error by showing field-specific error
+        let errorMessage = 'Failed to change password';
+        
+        // Check for specific error cases
+        if (response.status === 401) {
+          errorMessage = 'Wrong password';
+        } else if (data.message) {
+          // Use server message if available, but make it more user-friendly
+          if (data.message.toLowerCase().includes('password') && data.message.toLowerCase().includes('incorrect')) {
+            errorMessage = 'Wrong password';
+          } else if (data.message.toLowerCase().includes('unauthorized')) {
+            errorMessage = 'Wrong password';
+          } else {
+            errorMessage = data.message;
+          }
+        }
+        
+        setFieldErrors(prev => ({
+          ...prev,
+          currentPassword: errorMessage
+        }));
       }
     } catch (error) {
-      setPasswordError('An error occurred while changing password');
+      // Handle network error by showing field-specific error
+      setFieldErrors(prev => ({
+        ...prev,
+        currentPassword: 'An error occurred while changing password'
+      }));
     } finally {
       setIsChangingPassword(false);
     }
@@ -108,12 +209,16 @@ export default function Password({ userData, setUserData }) {
       newPassword: '',
       confirmPassword: ''
     });
-    setPasswordError('');
     setPasswordSuccess('');
     setShowPasswords({
       current: false,
       new: false,
       confirm: false
+    });
+    setFieldErrors({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
     });
     document.body.classList.remove(styles.modalOpen);
   };
@@ -166,13 +271,6 @@ export default function Password({ userData, setUserData }) {
             </div>
             
             <form onSubmit={handleChangePassword} className={styles.passwordForm}>
-              {passwordError && (
-                <div className={styles.passwordError}>
-                  <FaTimes className={styles.errorIcon} />
-                  {passwordError}
-                </div>
-              )}
-              
               {passwordSuccess && (
                 <div className={styles.passwordSuccess}>
                   <FaCheck className={styles.successIcon} />
@@ -189,16 +287,22 @@ export default function Password({ userData, setUserData }) {
                     value={passwordData.currentPassword}
                     onChange={handlePasswordChange}
                     placeholder="Enter current password"
-                    required
+                    className={fieldErrors.currentPassword ? styles.error : ''}
                   />
                   <button
                     type="button"
                     className={styles.passwordToggle}
                     onClick={() => togglePasswordVisibility('current')}
+                    tabIndex={-1}
                   >
                     {showPasswords.current ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 </div>
+                {fieldErrors.currentPassword && (
+                  <div className={styles.fieldErrorMessage}>
+                    {fieldErrors.currentPassword}
+                  </div>
+                )}
               </div>
 
               <div className={styles.passwordField}>
@@ -210,16 +314,23 @@ export default function Password({ userData, setUserData }) {
                     value={passwordData.newPassword}
                     onChange={handlePasswordChange}
                     placeholder="Enter new password"
-                    required
+                    className={fieldErrors.newPassword ? styles.error : ''}
                   />
                   <button
                     type="button"
                     className={styles.passwordToggle}
                     onClick={() => togglePasswordVisibility('new')}
+                    tabIndex={-1}
                   >
                     {showPasswords.new ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 </div>
+                {fieldErrors.newPassword && (
+                  <div className={styles.fieldErrorMessage}>
+                    {fieldErrors.newPassword}
+                  </div>
+                )}
+                <PasswordRequirements password={passwordData.newPassword} />
               </div>
 
               <div className={styles.passwordField}>
@@ -231,16 +342,22 @@ export default function Password({ userData, setUserData }) {
                     value={passwordData.confirmPassword}
                     onChange={handlePasswordChange}
                     placeholder="Confirm new password"
-                    required
+                    className={fieldErrors.confirmPassword ? styles.error : ''}
                   />
                   <button
                     type="button"
                     className={styles.passwordToggle}
                     onClick={() => togglePasswordVisibility('confirm')}
+                    tabIndex={-1}
                   >
                     {showPasswords.confirm ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 </div>
+                {fieldErrors.confirmPassword && (
+                  <div className={styles.fieldErrorMessage}>
+                    {fieldErrors.confirmPassword}
+                  </div>
+                )}
               </div>
 
               <div className={styles.passwordModalButtons}>

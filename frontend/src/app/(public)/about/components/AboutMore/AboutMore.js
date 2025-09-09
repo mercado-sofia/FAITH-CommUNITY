@@ -1,4 +1,4 @@
-import styles from './styles/aboutMore.module.css';
+import styles from './aboutMore.module.css';
 import Image from "next/image";
 import { FaCheck } from 'react-icons/fa';
 

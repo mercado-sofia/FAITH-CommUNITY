@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { FaEye, FaEyeSlash, FaCheck, FaSpinner } from 'react-icons/fa';
 import { FiTrash2, FiX } from 'react-icons/fi';
 import { PiWarningOctagonBold } from 'react-icons/pi';
+import { getApiUrl, getAuthHeaders } from '../../../utils/api';
 import styles from './DeleteAccount.module.css';
 
 export default function DeleteAccount() {
@@ -40,13 +41,9 @@ export default function DeleteAccount() {
     setIsDeletingAccount(true);
 
     try {
-      const token = localStorage.getItem('userToken');
-      const response = await fetch('http://localhost:8080/api/users/delete-account', {
+      const response = await fetch(getApiUrl('/api/users/delete-account'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           password: deletePassword
         })

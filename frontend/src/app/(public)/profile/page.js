@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PersonalInfo, EmailandPassword, Notifications, MyApplications } from './components';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import LoadingSpinner from './components/common/LoadingSpinner';
+import { ToastContainer, useToast } from './components/common/Toast';
 import styles from './profile.module.css';
 
 export default function ProfilePage() {
@@ -11,6 +14,12 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState('personal-info');
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { toasts, removeToast, showError } = useToast();
+
+  // Memoize setUserData to prevent unnecessary re-renders
+  const handleSetUserData = useCallback((newUserData) => {
+    setUserData(newUserData);
+  }, []);
 
   const navigationItems = [
     {
@@ -51,7 +60,7 @@ export default function ProfilePage() {
     const storedUserData = localStorage.getItem('userData');
     
     if (!token || !storedUserData) {
-      window.location.href = '/login';
+      router.push('/login');
       return;
     }
 
@@ -59,21 +68,24 @@ export default function ProfilePage() {
       const user = JSON.parse(storedUserData);
       setUserData(user);
     } catch (error) {
-      window.location.href = '/login';
+      console.error('Error parsing user data:', error);
+      showError('Invalid user data. Please log in again.');
+      router.push('/login');
       return;
     }
 
     setIsLoading(false);
-  }, []);
+  }, [router, showError]);
 
 
   if (isLoading) {
     return (
       <div className={styles.container}>
-        <div className={styles.loading}>
-          <div className={styles.spinner}></div>
-          <p>Loading profile...</p>
-        </div>
+        <LoadingSpinner 
+          size="large" 
+          message="Loading profile..." 
+          fullScreen={false}
+        />
       </div>
     );
   }
@@ -94,38 +106,43 @@ export default function ProfilePage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.profileLayout}>
-        {/* Side Navigation */}
-        <div className={styles.sideNavigation}>
-          <div className={styles.navHeader}>
-            <h2>Manage Profile</h2>
+      <ErrorBoundary>
+        <div className={styles.profileLayout}>
+          {/* Side Navigation */}
+          <div className={styles.sideNavigation}>
+            <div className={styles.navHeader}>
+              <h2>Manage Profile</h2>
+            </div>
+            <nav className={styles.navMenu}>
+              {navigationItems.map((item) => {
+                return (
+                  <button
+                    key={item.id}
+                    className={`${styles.navItem} ${activeTab === item.id ? styles.active : ''}`}
+                    onClick={() => handleTabChange(item.id)}
+                  >
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+            
           </div>
-          <nav className={styles.navMenu}>
-            {navigationItems.map((item) => {
-              return (
-                <button
-                  key={item.id}
-                  className={`${styles.navItem} ${activeTab === item.id ? styles.active : ''}`}
-                  onClick={() => handleTabChange(item.id)}
-                >
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-          
-        </div>
 
-        {/* Main Content */}
-        <div className={styles.mainContent}>
-          {ActiveComponent && (
-            <ActiveComponent 
-              userData={userData} 
-              setUserData={setUserData}
-            />
-          )}
+          {/* Main Content */}
+          <div className={styles.mainContent}>
+            {ActiveComponent && (
+              <ActiveComponent 
+                userData={userData} 
+                setUserData={handleSetUserData}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      </ErrorBoundary>
+      
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </div>
   );
 }

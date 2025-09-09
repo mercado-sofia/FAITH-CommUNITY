@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  FaFileAlt
-} from 'react-icons/fa';
+import { FaFileAlt } from 'react-icons/fa';
+import { getApiUrl, getAuthHeaders } from '../../utils/api';
 import styles from './MyApplications.module.css';
 
 export default function MyApplications() {
@@ -23,15 +22,9 @@ export default function MyApplications() {
         setIsLoading(false);
         return;
       }
-
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const url = `${API_BASE_URL}/api/users/applications`;
       
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      const response = await fetch(getApiUrl('/api/users/applications'), {
+        headers: getAuthHeaders()
       });
 
       if (response.ok) {
@@ -186,7 +179,13 @@ export default function MyApplications() {
                 )}
 
                 <div className={styles.applicationActions}>
-                  <button className={styles.viewButton}>
+                  <button 
+                    className={styles.viewButton}
+                    onClick={() => {
+                      // TODO: Implement view details functionality
+                    }}
+                    aria-label={`View details for ${application.programName} application`}
+                  >
                     View Details
                   </button>
                 </div>

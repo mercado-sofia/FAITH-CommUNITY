@@ -1,272 +1,38 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import Image from 'next/image';
 import { FaEdit, FaSave, FaUndo } from 'react-icons/fa';
-import CustomSelect from '../CustomSelect/CustomSelect';
-import DeleteAccount from '../DeleteAccount/DeleteAccount';
+import CustomSelect from './CustomSelect/CustomSelect';
+import DeleteAccount from './DeleteAccount/DeleteAccount';
+import { useFormValidation } from '../../hooks/useFormValidation';
+import { useProfileApi } from '../../hooks/useApiCall';
+import { useToast } from '../common/Toast';
 import styles from './PersonalInfo.module.css';
 
-export default function PersonalInfo({ userData, setUserData }) {
+const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editData, setEditData] = useState({});
-  const [isSaving, setIsSaving] = useState(false);
-  const [editError, setEditError] = useState('');
-  const [editSuccess, setEditSuccess] = useState('');
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-  const [photoError, setPhotoError] = useState('');
-  const [birthDateError, setBirthDateError] = useState('');
-  const [requiredFieldErrors, setRequiredFieldErrors] = useState({});
   const [hasChanges, setHasChanges] = useState(false);
+  
+  // Photo states - moved to component state to prevent reset on re-render
   const [selectedPhotoFile, setSelectedPhotoFile] = useState(null);
   const [selectedPhotoPreview, setSelectedPhotoPreview] = useState(null);
   const [photoSelected, setPhotoSelected] = useState(false);
-  const [photoSelectedTimeout, setPhotoSelectedTimeout] = useState(null);
   const [photoToRemove, setPhotoToRemove] = useState(false);
-
-  // Cleanup timeout on component unmount
-  useEffect(() => {
-    return () => {
-      if (photoSelectedTimeout) {
-        clearTimeout(photoSelectedTimeout);
-      }
-    };
-  }, [photoSelectedTimeout]);
-
-  const resetPhotoStates = () => {
+  const [photoError, setPhotoError] = useState('');
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  
+  // Photo handling functions
+  const resetPhotoStates = useCallback(() => {
     setSelectedPhotoFile(null);
     setSelectedPhotoPreview(null);
     setPhotoError('');
     setPhotoSelected(false);
     setPhotoToRemove(false);
-    // Clear any existing timeout
-    if (photoSelectedTimeout) {
-      clearTimeout(photoSelectedTimeout);
-      setPhotoSelectedTimeout(null);
-    }
-  };
+  }, []);
 
-  const handleEditToggle = () => {
-    if (isEditMode) {
-      // Cancel edit mode
-      setIsEditMode(false);
-      setEditData({});
-      setEditError('');
-      setEditSuccess('');
-      setBirthDateError('');
-      setRequiredFieldErrors({});
-      setHasChanges(false);
-      resetPhotoStates();
-    } else {
-      // Enter edit mode
-      setIsEditMode(true);
-      setEditData({
-        firstName: userData.firstName || '',
-        lastName: userData.lastName || '',
-        contactNumber: userData.contactNumber || '',
-        address: userData.address || '',
-        birthDate: userData.birthDate || '',
-        gender: userData.gender || '',
-        occupation: userData.occupation || '',
-        citizenship: userData.citizenship || ''
-      });
-      setEditError('');
-      setEditSuccess('');
-      setBirthDateError('');
-      setRequiredFieldErrors({});
-      setHasChanges(false);
-      resetPhotoStates();
-    }
-  };
-
-  const handleEditChange = (e) => {
-    const { name, value } = e.target;
-    setEditData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    setEditError('');
-    
-    // Validate birth date
-    if (name === 'birthDate') {
-      validateBirthDate(value);
-    }
-    
-    // Validate required fields
-    validateRequiredField(name, value);
-    
-    // Change detection is handled by useEffect
-  };
-
-  const updateHasChanges = useCallback(() => {
-    // Check if any field has changed
-    const hasAnyChanges = Object.keys(editData).some(key => {
-      const original = userData[key] || '';
-      const current = editData[key] || '';
-      return original !== current;
-    });
-    
-    // Also check if photo has been selected or marked for removal
-    const hasPhotoChanges = selectedPhotoFile !== null || photoToRemove;
-    
-    setHasChanges(hasAnyChanges || hasPhotoChanges);
-  }, [editData, userData, selectedPhotoFile, photoToRemove]);
-
-  // Watch for photo state changes to update hasChanges
-  useEffect(() => {
-    updateHasChanges();
-  }, [updateHasChanges]);
-
-  const validateRequiredField = (fieldName, value) => {
-    const requiredFields = ['firstName', 'lastName', 'contactNumber', 'address'];
-    
-    if (requiredFields.includes(fieldName)) {
-      setRequiredFieldErrors(prev => ({
-        ...prev,
-        [fieldName]: value.trim() === '' ? 'This field is required' : ''
-      }));
-    }
-  };
-
-  const validateBirthDate = (dateValue) => {
-    if (!dateValue) {
-      setBirthDateError('');
-      return;
-    }
-
-    const selectedDate = new Date(dateValue);
-    const today = new Date();
-    
-    if (selectedDate > today) {
-      setBirthDateError('Please enter a valid birth date');
-    } else {
-      setBirthDateError('');
-    }
-  };
-
-  const handleSaveProfile = async (e) => {
-    e.preventDefault();
-    
-    // Validate all required fields
-    const requiredFields = ['firstName', 'lastName', 'contactNumber', 'address'];
-    const hasRequiredFieldErrors = requiredFields.some(field => {
-      const value = editData[field] || '';
-      return value.trim() === '';
-    });
-    
-    if (hasRequiredFieldErrors) {
-      setEditError('Please fill in all required fields');
-      return;
-    }
-    
-    // Check for birth date validation before saving
-    if (editData.birthDate && birthDateError) {
-      setEditError('Please fix the birth date error before saving');
-      return;
-    }
-    
-    setIsSaving(true);
-    setEditError('');
-    setEditSuccess('');
-    setPhotoError('');
-
-    try {
-      const token = localStorage.getItem('userToken');
-      let updatedUserData = { ...userData, ...editData };
-
-      // Handle photo operations
-      if (selectedPhotoFile) {
-        // Upload new photo
-        setIsUploadingPhoto(true);
-        const formData = new FormData();
-        formData.append('profilePhoto', selectedPhotoFile);
-
-        const photoResponse = await fetch('http://localhost:8080/api/users/profile/photo', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: formData
-        });
-
-        const photoData = await photoResponse.json();
-
-        if (photoResponse.ok) {
-          updatedUserData.profile_photo_url = photoData.profilePhotoUrl;
-        } else {
-          setPhotoError(photoData.error || 'Failed to upload photo');
-          setIsUploadingPhoto(false);
-          setIsSaving(false);
-          return;
-        }
-        setIsUploadingPhoto(false);
-      } else if (photoToRemove) {
-        // Remove existing photo
-        setIsUploadingPhoto(true);
-        const removeResponse = await fetch('http://localhost:8080/api/users/profile/photo', {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (removeResponse.ok) {
-          updatedUserData.profile_photo_url = null;
-        } else {
-          setPhotoError('Failed to remove photo');
-          setIsUploadingPhoto(false);
-          setIsSaving(false);
-          return;
-        }
-        setIsUploadingPhoto(false);
-      }
-
-      // Then update profile data
-      const response = await fetch('http://localhost:8080/api/users/profile', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(editData)
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Update user data in localStorage
-        localStorage.setItem('userData', JSON.stringify(updatedUserData));
-        setUserData(updatedUserData);
-        
-        setEditSuccess('Profile updated successfully!');
-        setIsEditMode(false);
-        setEditData({});
-        resetPhotoStates();
-        
-        setTimeout(() => {
-          setEditSuccess('');
-        }, 3000);
-      } else {
-        setEditError(data.message || 'Failed to update profile');
-      }
-    } catch (error) {
-      setEditError('An error occurred while updating profile');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Not provided';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const handlePhotoUpload = (event) => {
+  const handlePhotoUpload = useCallback((event) => {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -285,19 +51,7 @@ export default function PersonalInfo({ userData, setUserData }) {
     setPhotoError('');
     setSelectedPhotoFile(file);
     setPhotoSelected(true);
-    setPhotoToRemove(false); // Clear remove flag when new photo is selected
-
-    // Clear any existing timeout
-    if (photoSelectedTimeout) {
-      clearTimeout(photoSelectedTimeout);
-    }
-
-    // Set timeout to hide the message after 3 seconds
-    const timeout = setTimeout(() => {
-      setPhotoSelected(false);
-      setPhotoSelectedTimeout(null);
-    }, 3000);
-    setPhotoSelectedTimeout(timeout);
+    setPhotoToRemove(false);
 
     // Create preview URL
     const reader = new FileReader();
@@ -305,22 +59,207 @@ export default function PersonalInfo({ userData, setUserData }) {
       setSelectedPhotoPreview(e.target.result);
     };
     reader.readAsDataURL(file);
+  }, []);
 
-    // Change detection is handled by useEffect
-  };
-
-  const handleRemovePhoto = () => {
+  const handleRemovePhoto = useCallback(() => {
     setPhotoError('');
     setSelectedPhotoFile(null);
     setSelectedPhotoPreview(null);
     setPhotoSelected(false);
     setPhotoToRemove(true);
+  }, []);
+  
+  const {
+    fieldErrors,
+    requiredFieldErrors,
+    validateRequiredField,
+    validateBirthDate,
+    clearAllErrors,
+    setFieldError
+  } = useFormValidation();
+  
+  const {
+    updateProfile,
+    uploadProfilePhoto,
+    removeProfilePhoto,
+    isLoading: apiLoading
+  } = useProfileApi();
+  
+  const { showSuccess, showError } = useToast();
 
-    // Clear any existing timeout
-    if (photoSelectedTimeout) {
-      clearTimeout(photoSelectedTimeout);
-      setPhotoSelectedTimeout(null);
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      resetPhotoStates();
+    };
+  }, [resetPhotoStates]);
+
+  const handleEditToggle = () => {
+    if (isEditMode) {
+      // Cancel edit mode
+      setIsEditMode(false);
+      setEditData({});
+      clearAllErrors();
+      setHasChanges(false);
+      resetPhotoStates();
+    } else {
+      // Enter edit mode
+      setIsEditMode(true);
+      setEditData({
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        contactNumber: userData.contactNumber || '',
+        address: userData.address || '',
+        birthDate: userData.birthDate ? formatDateForInput(userData.birthDate) : '',
+        gender: userData.gender || '',
+        occupation: userData.occupation || '',
+        citizenship: userData.citizenship || ''
+      });
+      clearAllErrors();
+      setHasChanges(false);
+      // Reset photo states when entering edit mode to start fresh
+      resetPhotoStates();
     }
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Validate birth date
+    if (name === 'birthDate') {
+      const birthDateError = validateBirthDate(value);
+      if (birthDateError) {
+        setFieldError('birthDate', birthDateError);
+      } else {
+        setFieldError('birthDate', '');
+      }
+    }
+    
+    // Validate required fields
+    validateRequiredField(name, value);
+  };
+
+  const updateHasChanges = useCallback(() => {
+    // Check if any field has changed
+    const hasAnyChanges = Object.keys(editData).some(key => {
+      const original = userData[key] || '';
+      const current = editData[key] || '';
+      return original !== current;
+    });
+    
+    // Also check if photo has been selected or marked for removal
+    const hasPhotoChanges = selectedPhotoFile !== null || photoToRemove;
+    
+    setHasChanges(hasAnyChanges || hasPhotoChanges);
+  }, [editData, userData, selectedPhotoFile, photoToRemove]);
+
+  // Watch for changes to update hasChanges - but only when editData or photo states change
+  useEffect(() => {
+    if (isEditMode) {
+      // Check if any field has changed
+      const hasAnyChanges = Object.keys(editData).some(key => {
+        const original = userData[key] || '';
+        const current = editData[key] || '';
+        return original !== current;
+      });
+      
+      // Also check if photo has been selected or marked for removal
+      const hasPhotoChanges = selectedPhotoFile !== null || photoToRemove;
+      
+      setHasChanges(hasAnyChanges || hasPhotoChanges);
+    }
+  }, [editData, selectedPhotoFile, selectedPhotoPreview, photoToRemove, isEditMode, userData]);
+
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    
+    // Validate all required fields
+    const requiredFields = ['firstName', 'lastName', 'contactNumber', 'address'];
+    const hasRequiredFieldErrors = requiredFields.some(field => {
+      const value = editData[field] || '';
+      return value.trim() === '';
+    });
+    
+    if (hasRequiredFieldErrors) {
+      showError('Please fill in all required fields');
+      return;
+    }
+    
+    // Check for birth date validation before saving
+    if (editData.birthDate && fieldErrors.birthDate) {
+      showError('Please fix the birth date error before saving');
+      return;
+    }
+
+    try {
+      let updatedUserData = { ...userData, ...editData };
+
+      // Handle photo operations
+      if (selectedPhotoFile) {
+        setIsUploadingPhoto(true);
+        try {
+          const { data: photoData } = await uploadProfilePhoto(selectedPhotoFile);
+          updatedUserData.profile_photo_url = photoData.profilePhotoUrl;
+        } catch (error) {
+          setPhotoError('Failed to upload photo');
+          setIsUploadingPhoto(false);
+          return;
+        }
+        setIsUploadingPhoto(false);
+      } else if (photoToRemove) {
+        setIsUploadingPhoto(true);
+        try {
+          await removeProfilePhoto();
+          updatedUserData.profile_photo_url = null;
+        } catch (error) {
+          setPhotoError('Failed to remove photo');
+          setIsUploadingPhoto(false);
+          return;
+        }
+        setIsUploadingPhoto(false);
+      }
+
+      // Update profile data
+      await updateProfile(editData);
+
+      // Update user data in localStorage
+      localStorage.setItem('userData', JSON.stringify(updatedUserData));
+      setUserData(updatedUserData);
+      
+      showSuccess('Profile updated successfully!');
+      
+                  // Add a small delay to show the success message before closing edit mode
+                  setTimeout(() => {
+                    setIsEditMode(false);
+                    setEditData({});
+                    resetPhotoStates();
+                  }, 1000);
+      
+    } catch (error) {
+      showError(error.message || 'An error occurred while updating profile');
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Not provided';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  // Helper function to format date for input field (yyyy-MM-dd)
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toISOString().split('T')[0]; // Returns yyyy-MM-dd format
   };
 
   return (
@@ -341,15 +280,15 @@ export default function PersonalInfo({ userData, setUserData }) {
               <button 
                 onClick={handleSaveProfile} 
                 className={`${styles.actionButton} ${styles.saveButton}`}
-                disabled={isSaving || !hasChanges}
+                disabled={apiLoading || !hasChanges}
               >
                 <FaSave />
-                <span>{isSaving ? 'Saving...' : 'Save'}</span>
+                <span>Save</span>
               </button>
               <button 
                 onClick={handleEditToggle} 
                 className={`${styles.actionButton} ${styles.cancelButton}`}
-                disabled={isSaving}
+                disabled={apiLoading}
               >
                 <FaUndo />
                 <span>Cancel</span>
@@ -383,7 +322,7 @@ export default function PersonalInfo({ userData, setUserData }) {
                 />
               ) : userData?.profile_photo_url ? (
                 <Image
-                  src={`http://localhost:8080${userData.profile_photo_url}`}
+                  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${userData.profile_photo_url}`}
                   alt="Profile"
                   width={60}
                   height={60}
@@ -456,16 +395,6 @@ export default function PersonalInfo({ userData, setUserData }) {
         )}
       </div>
 
-      {editError && (
-        <div className={styles.editErrorMessage}>
-          {editError}
-        </div>
-      )}
-      {editSuccess && (
-        <div className={styles.editSuccessMessage}>
-          {editSuccess}
-        </div>
-      )}
 
       {/* Personal Information Form */}
       <div className={styles.personalInfoForm}>
@@ -549,13 +478,13 @@ export default function PersonalInfo({ userData, setUserData }) {
                 <input
                   type="date"
                   name="birthDate"
-                  value={editData.birthDate || ''}
+                  value={editData.birthDate ? formatDateForInput(editData.birthDate) : ''}
                   onChange={handleEditChange}
-                  className={`${styles.editInput} ${birthDateError ? styles.errorInput : ''}`}
+                  className={`${styles.editInput} ${fieldErrors.birthDate ? styles.errorInput : ''}`}
                 />
-                {birthDateError && (
+                {fieldErrors.birthDate && (
                   <div className={styles.fieldErrorMessage}>
-                    {birthDateError}
+                    {fieldErrors.birthDate}
                   </div>
                 )}
               </>
@@ -650,4 +579,6 @@ export default function PersonalInfo({ userData, setUserData }) {
       <DeleteAccount />
     </div>
   );
-}
+});
+
+export default PersonalInfo;

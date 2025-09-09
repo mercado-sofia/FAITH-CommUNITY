@@ -285,6 +285,69 @@ const initializeDatabase = async () => {
       console.log("✅ Date fields added to programs_projects table successfully!");
     }
 
+    // Check if programs_projects table has slug field, add it if missing
+    const [slugColumns] = await connection.query(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'programs_projects' 
+      AND COLUMN_NAME = 'slug'
+    `);
+    
+    if (slugColumns.length === 0) {
+      console.log("Adding slug field to programs_projects table...");
+      await connection.query(`
+        ALTER TABLE programs_projects 
+        ADD COLUMN slug VARCHAR(255) NULL UNIQUE
+      `);
+      console.log("✅ Slug field added to programs_projects table successfully!");
+      
+      // Generate slugs for existing programs
+      console.log("Generating slugs for existing programs...");
+      const [existingPrograms] = await connection.query(`
+        SELECT id, title FROM programs_projects WHERE slug IS NULL
+      `);
+      
+      for (const program of existingPrograms) {
+        const slug = program.title
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+          .replace(/\s+/g, '-') // Replace spaces with hyphens
+          .replace(/-+/g, '-') // Replace multiple hyphens with single
+          .trim('-'); // Remove leading/trailing hyphens
+        
+        // Ensure uniqueness by appending ID if needed
+        let finalSlug = slug;
+        let counter = 1;
+        while (true) {
+          const [existingSlug] = await connection.query(`
+            SELECT id FROM programs_projects WHERE slug = ? AND id != ?
+          `, [finalSlug, program.id]);
+          
+          if (existingSlug.length === 0) {
+            break;
+          }
+          finalSlug = `${slug}-${counter}`;
+          counter++;
+        }
+        
+        await connection.query(`
+          UPDATE programs_projects SET slug = ? WHERE id = ?
+        `, [finalSlug, program.id]);
+      }
+      
+      console.log("✅ Slugs generated for existing programs!");
+      
+      // Add index for better performance
+      try {
+        await connection.query('CREATE INDEX idx_programs_slug ON programs_projects(slug)');
+        console.log("✅ Added slug index to programs_projects table");
+      } catch (error) {
+        if (error.code !== 'ER_DUP_KEYNAME') {
+          console.log("Warning: Could not add slug index:", error.message);
+        }
+      }
+    }
+
     // Check if program_event_dates table exists
     const [eventDatesTables] = await connection.query('SHOW TABLES LIKE "program_event_dates"');
     

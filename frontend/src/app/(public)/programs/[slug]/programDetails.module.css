@@ -7,9 +7,9 @@
 }
 
 .mainContent {
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 3rem 3rem 3rem;
 }
 
 .pageHeader {
@@ -31,11 +31,29 @@
   font-weight: 400;
 }
 
-.contentGrid {
+/* Full-width grid layout */
+.pageGrid {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 2rem;
   align-items: start;
+  width: 100%;
+}
+
+.main {
+  min-height: 0; /* Allow grid item to shrink */
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  position: relative;
+}
+
+.stickyCard {
+  position: static;
+  align-self: start;
 }
 
 /* Left Panel - Program Content */
@@ -85,6 +103,10 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.metaItem:has(.statusBadge) {
+  width: fit-content;
 }
 
 .metaLabel {
@@ -158,6 +180,17 @@
   margin-bottom: 1rem;
 }
 
+.orgLink {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+.orgLink:hover {
+  transform: translateY(-1px);
+}
+
 .orgInfo {
   display: flex;
   align-items: center;
@@ -165,6 +198,19 @@
   padding: 1rem;
   background: #f8fafc;
   border-radius: 12px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.orgLink:hover .orgInfo {
+  background: #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.orgLink:hover .orgName::after {
+  content: " →";
+  color: #3b82f6;
+  font-weight: 600;
 }
 
 .orgLogo {
@@ -191,14 +237,12 @@
   color: #64748b;
 }
 
-/* Right Panel - Application Invitation */
+/* Application Panel */
 .applicationPanel {
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   padding: 2rem;
-  position: sticky;
-  top: 2rem;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -263,6 +307,11 @@
 
 .applyButton:active {
   transform: translateY(0);
+}
+
+.applyButton:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
 .applyButtonDisabled {
@@ -343,13 +392,12 @@
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .contentGrid {
+  .pageGrid {
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
   
-  .applicationPanel {
-    position: static;
+  .sidebar {
     order: -1;
   }
   
@@ -358,6 +406,7 @@
   }
 }
 
+
 @media (max-width: 768px) {
   .container {
     padding: 1rem 0;
@@ -365,7 +414,7 @@
   }
   
   .mainContent {
-    padding: 0 1rem;
+    padding: 0 1.5rem;
   }
   
   .pageTitle {
@@ -433,3 +482,4 @@
     font-size: 1.25rem;
   }
 }
+

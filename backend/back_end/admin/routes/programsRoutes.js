@@ -6,7 +6,8 @@ import {
   getApprovedProgramsByOrg,
   deleteProgramSubmission,
   updateProgram,
-  getProgramByTitle
+  getProgramBySlug,
+  getOtherProgramsByOrganization
 } from '../controllers/programsController.js';
 
 const router = express.Router();
@@ -19,6 +20,7 @@ router.delete('/admin/programs/:id', deleteProgramSubmission);
 // Public routes
 router.get('/programs', getApprovedPrograms);
 router.get('/programs/org/:orgId', getApprovedProgramsByOrg);
-router.get('/programs/title/:title', getProgramByTitle);
+router.get('/programs/slug/:slug', getProgramBySlug);
+router.get('/programs/org/:organizationId/other/:excludeProgramId', getOtherProgramsByOrganization);
 
 export default router;

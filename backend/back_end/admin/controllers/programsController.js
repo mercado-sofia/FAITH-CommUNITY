@@ -123,7 +123,8 @@ export const getProgramsByOrg = async (req, res) => {
         created_at: program.created_at,
         orgID: program.orgAcronym || organization.org,
         orgName: program.orgName || organization.orgName,
-        icon: logoUrl
+        icon: logoUrl,
+        slug: program.slug
       };
     });
 
@@ -214,7 +215,8 @@ export const getApprovedPrograms = async (req, res) => {
         orgID: program.orgAcronym,
         orgName: program.orgName,
         icon: logoUrl,
-        created_at: program.created_at
+        created_at: program.created_at,
+        slug: program.slug
       };
     });
 
@@ -334,7 +336,8 @@ export const getApprovedProgramsByOrg = async (req, res) => {
         orgID: program.orgAcronym,
         orgName: program.orgName,
         icon: logoUrl,
-        created_at: program.created_at
+        created_at: program.created_at,
+        slug: program.slug
       };
     });
 
@@ -601,13 +604,10 @@ export const updateProgram = async (req, res) => {
   }
 };
 
-// Get program by title/slug for public display
-export const getProgramByTitle = async (req, res) => {
+// Get program by slug for public display
+export const getProgramBySlug = async (req, res) => {
   try {
-    const { title } = req.params;
-    
-    // Convert URL-friendly slug back to title format
-    const decodedTitle = decodeURIComponent(title);
+    const { slug } = req.params;
     
     const query = `
       SELECT 
@@ -622,6 +622,7 @@ export const getProgramByTitle = async (req, res) => {
         pp.created_at,
         pp.updated_at,
         pp.organization_id,
+        pp.slug,
         a.orgName as organization_name,
         a.org as organization_acronym,
         o.logo as organization_logo,
@@ -629,10 +630,10 @@ export const getProgramByTitle = async (req, res) => {
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
       LEFT JOIN admins a ON a.organization_id = o.id
-      WHERE pp.title = ?
+      WHERE pp.slug = ?
     `;
     
-    const [results] = await db.execute(query, [decodedTitle]);
+    const [results] = await db.execute(query, [slug]);
     
     if (results.length === 0) {
       return res.status(404).json({
@@ -696,10 +697,71 @@ export const getProgramByTitle = async (req, res) => {
       data: programWithDates
     });
   } catch (error) {
-    console.error('Error fetching program by title:', error);
+    console.error('Error fetching program by slug:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch program',
+      error: error.message
+    });
+  }
+};
+
+// Get other programs from the same organization (excluding current program)
+export const getOtherProgramsByOrganization = async (req, res) => {
+  try {
+    const { organizationId, excludeProgramId } = req.params;
+    
+    const query = `
+      SELECT 
+        pp.id,
+        pp.title,
+        pp.description,
+        pp.category,
+        pp.status,
+        pp.image,
+        pp.slug,
+        pp.created_at,
+        a.orgName as organization_name,
+        a.org as organization_acronym,
+        o.logo as organization_logo
+      FROM programs_projects pp
+      LEFT JOIN organizations o ON pp.organization_id = o.id
+      LEFT JOIN admins a ON a.organization_id = o.id
+      WHERE pp.organization_id = ? AND pp.id != ?
+      ORDER BY pp.created_at DESC
+      LIMIT 6
+    `;
+    
+    const [results] = await db.execute(query, [organizationId, excludeProgramId]);
+    
+    const programs = results.map(program => {
+      let logoUrl;
+      if (program.organization_logo) {
+        if (program.organization_logo.includes('/')) {
+          const filename = program.organization_logo.split('/').pop();
+          logoUrl = `/uploads/organizations/logos/${filename}`;
+        } else {
+          logoUrl = `/uploads/organizations/logos/${program.organization_logo}`;
+        }
+      } else {
+        logoUrl = `/logo/faith_community_logo.png`;
+      }
+      
+      return {
+        ...program,
+        organization_logo: logoUrl
+      };
+    });
+    
+    res.json({
+      success: true,
+      data: programs
+    });
+  } catch (error) {
+    console.error('Error fetching other programs by organization:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch other programs',
       error: error.message
     });
   }

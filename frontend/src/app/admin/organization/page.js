@@ -6,7 +6,7 @@ import { updateAdminOrg } from "../../../rtk/superadmin/adminSlice";
 import { useAdminOrganization, useAdminAdvocacies, useAdminCompetencies, useAdminHeads } from "../../../hooks/useAdminData";
 import { applyRoleHierarchyOrdering } from "./OrgHeads/utils/roleHierarchy";
 import { EditModal, OrgInfoSection, SummaryModal } from "./OrgInfo";
-import { AdvocacySection, CompetencySection, SectionEditModal, SectionSummaryModal } from "./AdvocacyCompetency";
+import { Section, SectionEditModal, SectionSummaryModal } from "./AdvocacyCompetency";
 import { OrgHeadsSection, AddOrgHeadModal, OrgHeadsEditModal } from "./OrgHeads";
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import SuccessModal from "../components/SuccessModal";
@@ -941,8 +941,9 @@ export default function OrganizationPage() {
           {!sectionStates.advocacy ? (
             skeletonComponents.advocacy
           ) : (
-            <AdvocacySection
-              advocacyData={advocacyData}
+            <Section
+              type="advocacy"
+              data={advocacyData}
               setIsEditing={(value) => updateUiState({ isEditing: value })}
               setShowEditModal={(value) => updateUiState({ showSectionEditModal: value })}
               setOriginalData={setOriginalData}
@@ -957,8 +958,9 @@ export default function OrganizationPage() {
           {!sectionStates.competency ? (
             skeletonComponents.competency
           ) : (
-            <CompetencySection
-              competencyData={competencyData}
+            <Section
+              type="competency"
+              data={competencyData}
               setIsEditing={(value) => updateUiState({ isEditing: value })}
               setShowEditModal={(value) => updateUiState({ showSectionEditModal: value })}
               setOriginalData={setOriginalData}

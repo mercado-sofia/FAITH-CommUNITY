@@ -19,8 +19,16 @@ export const usePhotoUpload = () => {
 
       setUploadProgress(prev => ({ ...prev, [index]: 30 }));
 
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        throw new Error('No admin token found. Please log in again.');
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/upload`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        },
         body: formData
       });
 

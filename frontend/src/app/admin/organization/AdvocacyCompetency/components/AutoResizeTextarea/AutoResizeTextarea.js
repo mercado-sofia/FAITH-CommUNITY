@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import styles from '../SectionEditModal.module.css';
+import styles from './AutoResizeTextarea.module.css';
 
 export default function AutoResizeTextarea({
   name,

@@ -1,8 +1,8 @@
-import styles from './styles/aboutOrg.module.css';
+import styles from './aboutOrg.module.css';
 import Image from 'next/image';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { useState } from 'react';
-import { usePublicOrganizations } from '../../../../hooks/usePublicData';
+import { usePublicOrganizations } from '../../../../../hooks/usePublicData';
 
 export default function AboutOrg() {
   const cardWidth = 140;
@@ -61,15 +61,15 @@ export default function AboutOrg() {
             >
               {organizations.map((org, i) => (
                 <div className={styles.orgItem} key={org.id || i}>
-                                     <Image 
-                     src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${org.logo}`} 
-                     alt={org.name} 
-                     width={100} 
-                     height={100}
-                     onError={(e) => {
-                       e.target.src = '/logo/default_org_logo.png'; // Fallback image
-                     }}
-                   />
+                  <Image 
+                    src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${org.logo}`} 
+                    alt={org.name} 
+                    width={100} 
+                    height={100}
+                    onError={(e) => {
+                      e.target.src = '/default.png'; // Fallback image
+                    }}
+                  />
                   <p>{org.acronym}</p>
                 </div>
               ))}

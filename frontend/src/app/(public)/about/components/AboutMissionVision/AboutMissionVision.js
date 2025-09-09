@@ -1,4 +1,4 @@
-import styles from './styles/missionVision.module.css';
+import styles from './missionVision.module.css';
 import { FaRegHeart } from 'react-icons/fa';
 import { MdPersonOutline } from 'react-icons/md';
 

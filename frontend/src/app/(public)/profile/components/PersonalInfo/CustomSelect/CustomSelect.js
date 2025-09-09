@@ -52,6 +52,16 @@ export default function CustomSelect({
       <div 
         className={`${styles.selectTrigger} ${isOpen ? styles.open : ''}`}
         onClick={() => setIsOpen(!isOpen)}
+        role="button"
+        tabIndex={0}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsOpen(!isOpen);
+          }
+        }}
       >
         <span className={styles.selectValue}>
           {displayText}
@@ -60,7 +70,7 @@ export default function CustomSelect({
       </div>
       
       {isOpen && (
-        <div className={styles.selectOptions}>
+        <div className={styles.selectOptions} role="listbox">
           {options.map((option) => (
             <div
               key={option.value}
@@ -68,6 +78,15 @@ export default function CustomSelect({
                 selectedValue === option.value ? styles.selected : ''
               }`}
               onClick={() => handleSelect(option.value)}
+              role="option"
+              aria-selected={selectedValue === option.value}
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleSelect(option.value);
+                }
+              }}
             >
               {option.label}
             </div>

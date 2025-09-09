@@ -3,9 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Loader from '../../../components/Loader';
 import PageBanner from '../components/PageBanner';
-import AboutMissionVision from './components/AboutMissionVision';
-import AboutMore from './components/AboutMore';
-import AboutOrg from './components/AboutOrg';
+import { AboutMissionVision, AboutMore, AboutOrg } from './components';
 import OfficerSection from '../home/OfficerSection';
 
 let hasVisitedAbout = false;
@@ -68,5 +66,5 @@ export default function AboutPage() {
       <AboutOrg />
       <OfficerSection />
     </>
-  )
+  );
 }

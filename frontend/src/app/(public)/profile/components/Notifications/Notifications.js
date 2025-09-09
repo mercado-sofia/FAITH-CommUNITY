@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { FaBell, FaEnvelope, FaCheck } from 'react-icons/fa';
 import { FiTrash2 } from 'react-icons/fi';
 import { PiWarningOctagonBold } from 'react-icons/pi';
+import { getApiUrl, getAuthHeaders } from '../../utils/api';
 import styles from './Notifications.module.css';
 
 export default function Notifications() {
@@ -12,6 +13,7 @@ export default function Notifications() {
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [notificationToDelete, setNotificationToDelete] = useState(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetchNotifications();
@@ -19,19 +21,20 @@ export default function Notifications() {
 
   const fetchNotifications = async () => {
     try {
-      const token = localStorage.getItem('userToken');
-      const response = await fetch('http://localhost:8080/api/users/notifications', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      setError('');
+      const response = await fetch(getApiUrl('/api/users/notifications'), {
+        headers: getAuthHeaders()
       });
 
       if (response.ok) {
         const data = await response.json();
         setNotifications(data.notifications || []);
+      } else {
+        setError('Failed to load notifications');
       }
     } catch (error) {
-      // Handle error silently
+      console.error('Error fetching notifications:', error);
+      setError('Failed to load notifications');
     } finally {
       setIsLoading(false);
     }
@@ -39,12 +42,9 @@ export default function Notifications() {
 
   const markAsRead = async (notificationId) => {
     try {
-      const token = localStorage.getItem('userToken');
-      const response = await fetch(`http://localhost:8080/api/users/notifications/${notificationId}/read`, {
+      const response = await fetch(getApiUrl(`/api/users/notifications/${notificationId}/read`), {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: getAuthHeaders()
       });
 
       if (response.ok) {
@@ -77,12 +77,9 @@ export default function Notifications() {
     if (!notificationToDelete) return;
 
     try {
-      const token = localStorage.getItem('userToken');
-      const response = await fetch(`http://localhost:8080/api/users/notifications/${notificationToDelete.id}`, {
+      const response = await fetch(getApiUrl(`/api/users/notifications/${notificationToDelete.id}`), {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: getAuthHeaders()
       });
 
       if (response.ok) {
@@ -117,6 +114,22 @@ export default function Notifications() {
         <div className={styles.loading}>
           <div className={styles.spinner}></div>
           <p>Loading notifications...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.notificationsSection}>
+        <div className={styles.sectionHeader}>
+          <h2>Notifications</h2>
+        </div>
+        <div className={styles.errorState}>
+          <p>{error}</p>
+          <button onClick={fetchNotifications} className={styles.retryButton}>
+            Try Again
+          </button>
         </div>
       </div>
     );

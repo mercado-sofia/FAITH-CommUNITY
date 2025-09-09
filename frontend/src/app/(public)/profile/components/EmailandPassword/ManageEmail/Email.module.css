@@ -97,11 +97,13 @@
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
   padding: 1rem;
 }
 
@@ -117,11 +119,12 @@
 
 .modalHeader {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   padding: 1.5rem 1.5rem 0;
   border-bottom: 1px solid #e9ecef;
   margin-bottom: 1.5rem;
+  position: relative;
 }
 
 .modalHeader h2 {
@@ -132,14 +135,18 @@
 }
 
 .modalCloseButton {
+  position: absolute;
+  right: 1.5rem;
+  top: 1.5rem;
   background: none;
   border: none;
-  font-size: 1.25rem;
-  color: #6c757d;
+  font-size: 0.875rem;
+  color: #333;
   cursor: pointer;
   padding: 0.25rem;
   border-radius: 4px;
   transition: all 0.2s ease;
+  font-weight: 400;
 }
 
 .modalCloseButton:hover {
@@ -163,6 +170,17 @@
   margin-bottom: 0.5rem;
 }
 
+.currentEmailInput {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background-color: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
 .emailInput,
 .passwordInputWrapper input {
   width: 100%;
@@ -178,6 +196,28 @@
   outline: none;
   border-color: #000;
   box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+.emailInput.error,
+.passwordInputWrapper input.error {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+.emailInput.error:focus,
+.passwordInputWrapper input.error:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.2);
+}
+
+/* Field error message */
+.fieldErrorMessage {
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
 }
 
 .passwordInputWrapper {
@@ -253,6 +293,33 @@
   border-color: #000;
 }
 
+.cancelButton:focus {
+  outline: none;
+}
+
+.emailModalButtons .changeEmailButton {
+  padding: 0.75rem 1.5rem;
+  background: #000;
+  color: white;
+  border: 2px solid #000;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.emailModalButtons .changeEmailButton:hover {
+  background: #181818;
+  border-color: #181818;
+}
+
+.emailModalButtons .changeEmailButton:disabled {
+  background: #6c757d;
+  border-color: #6c757d;
+  cursor: not-allowed;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   
@@ -266,9 +333,6 @@
     justify-content: center;
   }
   
-  .emailContainer {
-    padding: 0.75rem 1rem;
-  }
   
   
   .infoItem {

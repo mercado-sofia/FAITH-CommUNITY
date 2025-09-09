@@ -49,7 +49,7 @@ export default function FeaturedProjects({ orgID }) {
       }
     } else {
       // Default behavior - navigate to program details
-      router.push(`/programs/${program.id}`);
+      router.push(`/programs/${program.slug || program.id}`);
     }
   };
 

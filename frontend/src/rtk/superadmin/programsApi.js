@@ -20,7 +20,7 @@ export const superadminProgramsApi = createApi({
   endpoints: (builder) => ({
     // Get all programs grouped by organization
     getAllProgramsByOrganization: builder.query({
-      query: () => `/projects/superadmin/all`,
+      query: () => `/program-projects/superadmin/all`,
       providesTags: ["SuperadminProgram"],
       transformResponse: (response) => {
         console.log('superadminProgramsApi - getAllProgramsByOrganization response:', response);
@@ -82,7 +82,7 @@ export const superadminProgramsApi = createApi({
 
     // Get programs statistics
     getProgramsStatistics: builder.query({
-      query: () => `/projects/superadmin/statistics`,
+      query: () => `/program-projects/superadmin/statistics`,
       providesTags: ["SuperadminProgram"],
       transformResponse: (response) => {
         console.log('superadminProgramsApi - getProgramsStatistics response:', response);
@@ -143,6 +143,89 @@ export const superadminProgramsApi = createApi({
         return response;
       }
     }),
+
+    // Get all featured programs (consolidated from featuredProjectsApi)
+    getAllFeaturedProjects: builder.query({
+      query: () => `/superadmin/featured-projects`,
+      providesTags: ["SuperadminProgram"],
+      keepUnusedDataFor: 60,
+      transformResponse: (response) => {
+        console.log('superadminProgramsApi - getAllFeaturedProjects response:', response);
+        if (response.success && Array.isArray(response.data)) {
+          return response.data.map(project => ({
+            id: project.id,
+            title: project.title,
+            description: project.description,
+            image: project.image,
+            status: project.status,
+            eventStartDate: project.event_start_date,
+            eventEndDate: project.event_end_date,
+            createdAt: project.created_at,
+            orgAcronym: project.orgAcronym,
+            orgName: project.orgName,
+            orgColor: project.orgColor,
+            category: project.category,
+            slug: project.slug
+          }))
+        }
+        return []
+      },
+      transformErrorResponse: (response) => {
+        console.error('superadminProgramsApi - getAllFeaturedProjects error:', response);
+        return response;
+      }
+    }),
+
+    // Add program to featured projects
+    addFeaturedProject: builder.mutation({
+      query: (programId) => ({
+        url: `/superadmin/programs/${programId}/featured`,
+        method: 'PUT',
+        body: { isFeatured: true }
+      }),
+      invalidatesTags: ["SuperadminProgram"],
+      transformResponse: (response) => {
+        console.log('superadminProgramsApi - addFeaturedProject response:', response);
+        return response;
+      },
+      transformErrorResponse: (response) => {
+        console.error('superadminProgramsApi - addFeaturedProject error:', response);
+        return response;
+      }
+    }),
+
+    // Remove program from featured projects
+    removeFeaturedProject: builder.mutation({
+      query: (programId) => ({
+        url: `/superadmin/programs/${programId}/featured`,
+        method: 'PUT',
+        body: { isFeatured: false }
+      }),
+      invalidatesTags: ["SuperadminProgram"],
+      transformResponse: (response) => {
+        console.log('superadminProgramsApi - removeFeaturedProject response:', response);
+        return response;
+      },
+      transformErrorResponse: (response) => {
+        console.error('superadminProgramsApi - removeFeaturedProject error:', response);
+        return response;
+      }
+    }),
+
+    // Check if program is featured
+    checkFeaturedStatus: builder.query({
+      query: (programId) => `/admin/programs/single/${programId}`,
+      transformResponse: (response) => {
+        console.log('superadminProgramsApi - checkFeaturedStatus response:', response);
+        return response.success ? response.data.is_featured : false;
+      },
+      transformErrorResponse: (response) => {
+        if (response && Object.keys(response).length > 0) {
+          console.error('superadminProgramsApi - checkFeaturedStatus error:', response);
+        }
+        return response;
+      }
+    }),
   }),
 })
 
@@ -150,4 +233,8 @@ export const {
   useGetAllProgramsByOrganizationQuery,
   useGetProgramsStatisticsQuery,
   useGetProgramByIdQuery,
+  useGetAllFeaturedProjectsQuery,
+  useAddFeaturedProjectMutation,
+  useRemoveFeaturedProjectMutation,
+  useCheckFeaturedStatusQuery,
 } = superadminProgramsApi

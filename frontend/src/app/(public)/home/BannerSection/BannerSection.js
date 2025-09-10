@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import styles from './styles/BannerSection.module.css';
+import styles from './BannerSection.module.css';
 
 export default function BannerSection() {
   const router = useRouter();

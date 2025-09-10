@@ -276,8 +276,6 @@ import advocaciesRoutes from "./back_end/admin/routes/advocacies.js"
 import competenciesRoutes from "./back_end/admin/routes/competencies.js"
 import headsRoutes from "./back_end/admin/routes/heads.js"
 import organizationRoutes from "./back_end/admin/routes/organization.js"
-import programProjectRoutes from "./back_end/admin/routes/programProjects.js"
-import projectRoutes from "./back_end/admin/routes/project.js"
 import programsRoutes from "./back_end/admin/routes/programsRoutes.js"
 import submissionRoutes from "./back_end/admin/routes/submission.js"
 import uploadRoutes from "./back_end/admin/routes/upload.js"
@@ -295,8 +293,6 @@ app.use("/api/advocacies", advocaciesRoutes)
 app.use("/api/competencies", competenciesRoutes)
 app.use("/api/heads", headsRoutes)
 app.use("/api/organization", organizationRoutes)
-app.use("/api/projects", programProjectRoutes)
-app.use("/api/admin/project", projectRoutes)
 app.use("/api", programsRoutes)
 app.use("/api/submissions", submissionRoutes)
 app.use("/api/upload", uploadRoutes)
@@ -321,7 +317,6 @@ import missionVisionRoutes from "./back_end/superadmin/routes/missionVision.js"
 import footerRoutes from "./back_end/superadmin/routes/footer.js"
 import subscriptionsRoutes from "./back_end/superadmin/routes/subscriptions.js"
 import superadminProgramsRoutes from "./back_end/superadmin/routes/programsRoutes.js"
-import featuredProjectsRoutes from "./back_end/superadmin/routes/featuredProjectsRoutes.js"
 import superadminAuthRoutes from "./back_end/superadmin/routes/superadminAuth.js"
 
 // Add rate limits around admin/superadmin auth endpoints
@@ -333,7 +328,6 @@ app.use("/api/mission-vision", missionVisionRoutes)
 app.use("/api/footer", footerRoutes)
 app.use("/api/subscriptions", subscriptionsRoutes)
 app.use("/api/projects/superadmin", superadminProgramsRoutes)
-app.use("/api/superadmin/featured-projects", featuredProjectsRoutes)
 app.use(["/api/superadmin/auth/login", "/api/superadmin/auth/forgot-password", "/api/superadmin/auth/reset-password"], authSpeedLimiter, authLimiter)
 app.use("/api/superadmin/auth", superadminAuthRoutes)
 

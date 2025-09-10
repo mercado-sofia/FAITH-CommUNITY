@@ -4,7 +4,6 @@ import { setupListeners } from "@reduxjs/toolkit/query/react"
 import { applyApi } from "./(public)/applyApi"
 import { programsApi } from "./(public)/programsApi"
 import { organizationsApi } from "./(public)/organizationsApi"
-import { publicFeaturedProjectsApi } from "./(public)/featuredProjectsApi"
 import { messagesApi } from "./(public)/messagesApi"
 import { userNotificationsApi } from "./(public)/userNotificationsApi"
 import { advocaciesApi } from "./admin/advocaciesApi"
@@ -18,7 +17,6 @@ import { adminProgramsApi } from "./admin/adminProgramsApi"
 import { inboxApi } from "./admin/inboxApi"
 import { manageProfilesApi } from "./superadmin/manageProfilesApi"
 import { faqApi } from "./superadmin/faqApi"
-import { featuredProjectsApi } from "./superadmin/featuredProjectsApi"
 import { superadminProgramsApi } from "./superadmin/programsApi"
 import { dashboardApi } from "./superadmin/dashboardApi"
 import { notificationsApi } from "./admin/notificationsApi"
@@ -30,7 +28,6 @@ export const store = configureStore({
     [applyApi.reducerPath]: applyApi.reducer,
     [programsApi.reducerPath]: programsApi.reducer,
     [organizationsApi.reducerPath]: organizationsApi.reducer,
-    [publicFeaturedProjectsApi.reducerPath]: publicFeaturedProjectsApi.reducer,
     [messagesApi.reducerPath]: messagesApi.reducer,
     [userNotificationsApi.reducerPath]: userNotificationsApi.reducer,
     [advocaciesApi.reducerPath]: advocaciesApi.reducer,
@@ -44,7 +41,6 @@ export const store = configureStore({
     [inboxApi.reducerPath]: inboxApi.reducer,
     [manageProfilesApi.reducerPath]: manageProfilesApi.reducer,
     [faqApi.reducerPath]: faqApi.reducer,
-    [featuredProjectsApi.reducerPath]: featuredProjectsApi.reducer,
     [superadminProgramsApi.reducerPath]: superadminProgramsApi.reducer,
     [dashboardApi.reducerPath]: dashboardApi.reducer,
     [notificationsApi.reducerPath]: notificationsApi.reducer,
@@ -54,7 +50,6 @@ export const store = configureStore({
       applyApi.middleware,
       programsApi.middleware,
       organizationsApi.middleware,
-      publicFeaturedProjectsApi.middleware,
       messagesApi.middleware,
       userNotificationsApi.middleware,
       advocaciesApi.middleware,
@@ -68,7 +63,6 @@ export const store = configureStore({
       inboxApi.middleware,
       manageProfilesApi.middleware,
       faqApi.middleware,
-      featuredProjectsApi.middleware,
       superadminProgramsApi.middleware,
       dashboardApi.middleware,
       notificationsApi.middleware,

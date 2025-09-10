@@ -2,14 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import styles from './styles/OrgAdviserSection.module.css';
-import {
-  FaChevronLeft,
-  FaChevronRight,
-  FaFacebookF,
-  FaEnvelope,
-  FaPlus,
-} from 'react-icons/fa';
+import styles from './OrgAdviserSection.module.css';
+import { FaChevronLeft, FaChevronRight, FaFacebookF, FaEnvelope, FaPlus } from 'react-icons/fa';
 
 const orgAdvisers = [
   { name: 'Jana Mae A. Cruz', role: 'Dean', image: '/id/id5.jpg', facebook: '#', email: 'org1@email.com' },

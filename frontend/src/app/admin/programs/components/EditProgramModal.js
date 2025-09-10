@@ -56,11 +56,18 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
         event_start_date: program.event_start_date || '',
         event_end_date: program.event_end_date || '',
         multiple_dates: program.multiple_dates || [],
-        schedule_type: program.schedule_type || 'single',
-        main_image: program.main_image || null,
-        additional_images: program.additional_images || []
+        image: null, // Will be handled separately for existing images
+        additionalImages: [] // Will be handled separately for existing images
       });
       setErrors({});
+      
+      // Load existing main image
+      if (program.image) {
+        const imageUrl = getProgramImageUrl(program.image, 'main');
+        setImagePreview(imageUrl);
+      } else {
+        setImagePreview(null);
+      }
       
       // Load additional images
       if (program.additional_images && Array.isArray(program.additional_images)) {
@@ -70,7 +77,7 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
           } else if (imagePath.startsWith('http')) {
             return imagePath; // Already a full URL
           } else {
-            return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${imagePath}`;
+            return getProgramImageUrl(imagePath, 'additional');
           }
         });
         
@@ -80,6 +87,8 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
           type: 'existing',
           file: null
         })));
+      } else {
+        setAdditionalImagePreviews([]);
       }
     }
   }, [program]);
@@ -87,25 +96,32 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
 
   // Check for changes
   useEffect(() => {
-    // Convert program additional images to URLs for comparison
+    if (!program) return;
+
+    // Check if main image has changed
+    const currentImageUrl = program.image ? getProgramImageUrl(program.image, 'main') : null;
+    const imageChanged = (formData.image !== null) || (imagePreview !== currentImageUrl);
+
+    // Check if additional images have changed
     const programAdditionalImageUrls = program?.additional_images?.map(imagePath => {
       return getProgramImageUrl(imagePath, 'additional');
     }) || [];
+    const additionalImagesChanged = formData.additionalImages.length > 0 || 
+      JSON.stringify(additionalImagePreviews.map(p => p.url)) !== JSON.stringify(programAdditionalImageUrls);
 
     const hasFormChanges = 
       formData.title !== (program?.title || '') ||
       formData.description !== (program?.description || '') ||
       formData.category !== (program?.category || '') ||
       formData.status !== (program?.status || '') ||
-      formData.image !== null ||
-      formData.additionalImages.length > 0 ||
-      JSON.stringify(additionalImagePreviews) !== JSON.stringify(programAdditionalImageUrls) ||
+      imageChanged ||
+      additionalImagesChanged ||
       formData.event_start_date !== (program?.event_start_date || null) ||
       formData.event_end_date !== (program?.event_end_date || null) ||
       JSON.stringify(formData.multiple_dates) !== JSON.stringify(program?.multiple_dates || null);
     
     setHasChanges(hasFormChanges);
-  }, [formData, program, additionalImagePreviews]);
+  }, [formData, program, additionalImagePreviews, imagePreview]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -338,14 +354,24 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
     setIsSubmitting(true);
     
     try {
-      // Convert images to base64 only if new images are uploaded
+      // Convert new images to base64 only if new images are uploaded
       const imageBase64 = formData.image ? await convertImageToBase64(formData.image) : null;
       const additionalImagesBase64 = await Promise.all(
         formData.additionalImages.map(img => convertImageToBase64(img))
       );
 
       // Handle image data - only send if there's a new image or if image was removed
-      const imageToSend = formData.image ? imageBase64 : (imagePreview === null ? null : undefined);
+      let imageToSend;
+      if (formData.image) {
+        // New image uploaded
+        imageToSend = imageBase64;
+      } else if (imagePreview === null && program.image) {
+        // Image was removed (user clicked remove button)
+        imageToSend = null;
+      } else {
+        // No change to image - don't send image field
+        imageToSend = undefined;
+      }
 
       // Create the program data object
       const programData = {
@@ -353,13 +379,21 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
         description: formData.description.trim(),
         category: formData.category,
         status: formData.status,
-        image: imageToSend,
-        additionalImages: additionalImagesBase64,
         event_start_date: formData.event_start_date,
         event_end_date: formData.event_end_date,
         multiple_dates: formData.multiple_dates
       };
 
+      // Only include image fields if they have changed
+      if (imageToSend !== undefined) {
+        programData.image = imageToSend;
+      }
+      
+      if (additionalImagesBase64.length > 0) {
+        programData.additionalImages = additionalImagesBase64;
+      }
+
+      console.log('Submitting program data:', programData);
       await onSubmit(programData);
     } catch (error) {
       console.error('Error updating program:', error);
@@ -544,6 +578,10 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
                   width={400}
                   height={200}
                   style={{ objectFit: 'cover' }}
+                  onError={(e) => {
+                    console.error('Image failed to load:', e.target.src);
+                    e.target.style.display = 'none';
+                  }}
                 />
                 <button
                   type="button"
@@ -592,40 +630,22 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
               <div className={styles.additionalImagesGrid}>
                 {additionalImagePreviews.map((preview, index) => {
                   return (
-                    <div key={index} className={styles.additionalImagePreview}>
-                      {preview.url.startsWith('data:') ? (
-                        // For base64 images (new uploads)
-                        <Image 
-                          src={preview.url} 
-                          alt={`Additional ${index + 1}`} 
-                          className={styles.additionalPreviewImage}
-                          width={100}
-                          height={100}
-                          style={{ objectFit: 'cover' }}
-                          onError={(e) => {
-                            // Image failed to load
-                          }}
-                          onLoad={() => {
-                            // Image loaded successfully
-                          }}
-                        />
-                      ) : (
-                        // For file path images (from database)
-                        <Image 
-                          src={preview.url} 
-                          alt={`Additional ${index + 1}`} 
-                          className={styles.additionalPreviewImage}
-                          width={100}
-                          height={100}
-                          style={{ objectFit: 'cover' }}
-                          onError={(e) => {
-                            // Image failed to load
-                          }}
-                          onLoad={() => {
-                            // Image loaded successfully
-                          }}
-                        />
-                      )}
+                    <div key={preview.id || index} className={styles.additionalImagePreview}>
+                      <Image 
+                        src={preview.url} 
+                        alt={`Additional ${index + 1}`} 
+                        className={styles.additionalPreviewImage}
+                        width={100}
+                        height={100}
+                        style={{ objectFit: 'cover' }}
+                        onError={(e) => {
+                          console.error('Additional image failed to load:', e.target.src);
+                          e.target.style.display = 'none';
+                        }}
+                        onLoad={() => {
+                          // Image loaded successfully
+                        }}
+                      />
                       <button
                         type="button"
                         onClick={() => removeAdditionalImage(index)}

@@ -40,6 +40,38 @@ export const programsApi = createApi({
       query: (orgId) => `/admin/programs/${orgId}`,
       providesTags: (result, error, orgId) => [{ type: "Program", id: orgId }],
     }),
+
+    // Get featured programs for public display (consolidated from featuredProjectsApi)
+    getPublicFeaturedProjects: builder.query({
+      query: () => '/programs/featured',
+      providesTags: ['Program'],
+      transformResponse: (response) => {
+        if (response.success && Array.isArray(response.data)) {
+          return response.data.map(project => ({
+            id: project.id,
+            title: project.title,
+            description: project.description,
+            image: project.image,
+            status: project.status,
+            eventStartDate: project.event_start_date,
+            eventEndDate: project.event_end_date,
+            orgAcronym: project.orgAcronym,
+            orgName: project.orgName,
+            orgColor: project.orgColor,
+            category: project.category,
+            created_at: project.created_at,
+            slug: project.slug
+          }))
+        }
+        return []
+      },
+      transformErrorResponse: (response) => {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('programsApi - getPublicFeaturedProjects error:', response);
+        }
+        return response;
+      }
+    }),
   }),
 })
 
@@ -47,4 +79,5 @@ export const {
   useGetApprovedUpcomingProgramsQuery,
   useGetAllProgramsQuery,
   useGetProgramsByOrganizationQuery,
+  useGetPublicFeaturedProjectsQuery,
 } = programsApi

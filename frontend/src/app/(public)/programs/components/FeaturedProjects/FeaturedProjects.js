@@ -57,16 +57,6 @@ export default function FeaturedProjects({ orgID }) {
     router.push('/programs');
   };
 
-  // Get year from program date
-  const getProgramYear = (program) => {
-    if (program.event_start_date) {
-      return new Date(program.event_start_date).getFullYear();
-    }
-    if (program.created_at) {
-      return new Date(program.created_at).getFullYear();
-    }
-    return new Date().getFullYear();
-  };
 
   // Get image URL for program
   const getProgramImage = (program) => {
@@ -118,7 +108,7 @@ export default function FeaturedProjects({ orgID }) {
         
         <div className={styles.programsGridContainer}>
           <div className={styles.programsGrid}>
-              {approvedPrograms.map((program) => {
+              {approvedPrograms.map((program, index) => {
                 const isUpcoming = program.status === 'Upcoming';
                 const isCompleted = program.status === 'Completed';
                 const isActive = program.status === 'Active';
@@ -143,7 +133,7 @@ export default function FeaturedProjects({ orgID }) {
                 return (
                   <div 
                     key={program.id} 
-                    className={styles.programCard}
+                    className={`${styles.programCard} ${index === 0 && approvedPrograms.length > 3 ? styles.featured : ''}`}
                   >
                     <div className={styles.programImageContainer}>
                       <Image

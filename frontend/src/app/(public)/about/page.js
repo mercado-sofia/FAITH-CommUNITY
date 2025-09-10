@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Loader from '../../../components/Loader';
 import PageBanner from '../components/PageBanner';
 import { AboutMissionVision, AboutMore, AboutOrg } from './components';
-import OfficerSection from '../home/OfficerSection';
+import OfficerSection from '../home/OfficerSection/OfficerSection';
 
 let hasVisitedAbout = false;
 let isFirstVisitAbout = true;

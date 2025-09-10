@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Image from 'next/image'
-import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/featuredProjectsApi'
+import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/programsApi'
 import { getFeaturedProjectImageUrl } from '@/utils/uploadPaths'
 import styles from './featured.module.css'
 

@@ -40,50 +40,29 @@ const initializeDatabase = async () => {
     const connection = await promisePool.getConnection();
     console.log("✅ Database connected successfully!");
 
-    // Check if featured_projects table exists
-    const [tables] = await connection.query('SHOW TABLES LIKE "featured_projects"');
+    // Note: featured_projects table has been consolidated into programs_projects.is_featured column
+    // The old featured_projects table is no longer needed and should be removed if it exists
+    console.log("ℹ️ Featured projects functionality now uses programs_projects.is_featured column");
     
-    if (tables.length === 0) {
-      console.log("Creating featured_projects table...");
-      await connection.query(`
-        CREATE TABLE featured_projects (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          program_id INT NOT NULL,
-          organization_id INT NOT NULL,
-          title VARCHAR(255) NOT NULL,
-          description TEXT,
-          image VARCHAR(255),
-          status ENUM('upcoming', 'active', 'completed', 'pending') DEFAULT 'active',
-          completed_date DATE,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE CASCADE,
-          FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
-        )
-      `);
-      console.log("✅ Featured_projects table created successfully!");
-    } else {
-      // Migration: Add 'upcoming' to existing featured_projects status ENUM
-      try {
-        console.log("🔧 Checking featured_projects status ENUM...");
-        await connection.query(`
-          ALTER TABLE featured_projects 
-          MODIFY COLUMN status ENUM('upcoming', 'active', 'completed', 'pending') DEFAULT 'active'
-        `);
-        console.log("✅ Featured_projects status ENUM updated to include 'upcoming'!");
-        
-        // Fix existing featured projects with incorrect status case
-        console.log("🔧 Fixing status case mismatch in existing featured projects...");
-        await connection.query(`
-          UPDATE featured_projects fp
-          JOIN programs_projects pp ON fp.program_id = pp.id
-          SET fp.status = LOWER(pp.status)
-          WHERE fp.status != LOWER(pp.status)
-        `);
-        console.log("✅ Fixed status case mismatch in featured projects!");
-        
-      } catch (error) {
-        if (error.code !== 'ER_DUP_FIELDNAME') {
-          console.error('Error updating featured_projects status ENUM:', error);
+    // Migration: Remove old featured_projects table if it exists (after data migration)
+    const [oldFeaturedTables] = await connection.query('SHOW TABLES LIKE "featured_projects"');
+    if (oldFeaturedTables.length > 0) {
+      console.log("🔧 Old featured_projects table found. Checking if it can be safely removed...");
+      
+      // Check if there are any records in the old table
+      const [oldRecords] = await connection.query('SELECT COUNT(*) as count FROM featured_projects');
+      
+      if (oldRecords[0].count > 0) {
+        console.log(`⚠️ Found ${oldRecords[0].count} records in old featured_projects table.`);
+        console.log("ℹ️ Please manually migrate any important data to programs_projects.is_featured before removing the table.");
+        console.log("ℹ️ You can run: UPDATE programs_projects SET is_featured = TRUE WHERE id IN (SELECT program_id FROM featured_projects)");
+      } else {
+        console.log("✅ Old featured_projects table is empty. Safe to remove.");
+        try {
+          await connection.query('DROP TABLE featured_projects');
+          console.log("✅ Old featured_projects table removed successfully!");
+        } catch (error) {
+          console.log("⚠️ Could not remove old featured_projects table:", error.message);
         }
       }
     }
@@ -384,22 +363,23 @@ const initializeDatabase = async () => {
       console.log("✅ Program_additional_images table created successfully!");
     }
 
-    // Check if featured_projects table has created_at field, add it if missing
-    const [featuredCreatedAtColumns] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'featured_projects' 
-      AND COLUMN_NAME = 'created_at'
-    `);
-    
-    if (featuredCreatedAtColumns.length === 0) {
-      console.log("Adding created_at field to featured_projects table...");
+    // Add featured column to programs_projects table if it doesn't exist
+    try {
+      console.log("🔧 Checking for featured column in programs_projects table...");
       await connection.query(`
-        ALTER TABLE featured_projects 
-        ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ALTER TABLE programs_projects 
+        ADD COLUMN is_featured BOOLEAN DEFAULT FALSE
       `);
-      console.log("✅ Created_at field added to featured_projects table successfully!");
+      console.log("✅ Added is_featured column to programs_projects table!");
+    } catch (error) {
+      if (error.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Error adding is_featured column:', error);
+      } else {
+        console.log("✅ is_featured column already exists in programs_projects table");
+      }
     }
+
+    // Note: featured_projects table migration code removed - now using programs_projects.is_featured
 
     // Check if faqs table exists
     const [faqsTables] = await connection.query('SHOW TABLES LIKE "faqs"');

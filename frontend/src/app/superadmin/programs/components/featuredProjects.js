@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Image from 'next/image'
-import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/featuredProjectsApi'
+import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/programsApi'
 import { getFeaturedProjectImageUrl } from '@/utils/uploadPaths'
 import styles from '../programs.module.css'
 
@@ -128,7 +128,8 @@ const FeaturedProjects = () => {
                   {project.status}
                 </span>
                 <span className={styles.cardDate}>
-                  {project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'N/A'}
+                  {project.eventStartDate ? new Date(project.eventStartDate).toLocaleDateString() : 
+                   project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'N/A'}
                 </span>
               </div>
             </div>

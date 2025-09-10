@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react'
 import Image from 'next/image'
-import { useGetAllProgramsByOrganizationQuery, useGetProgramsStatisticsQuery } from '@/rtk/superadmin/programsApi'
-import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/featuredProjectsApi'
+import { useGetAllProgramsByOrganizationQuery, useGetProgramsStatisticsQuery, useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/programsApi'
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths'
 import StarButton from './components/StarButton'
 import ProgramDetailsModal from './components/ProgramDetailsModal'

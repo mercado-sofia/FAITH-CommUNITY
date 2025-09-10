@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Loader from '../../components/Loader';
 import { HeroSection, AboutSection, ImpactSection, NewsSection, BannerSection, OfficerSection, OrgAdviserSection } from './home';
-import { publicFeaturedProjectsApi } from '../../rtk/(public)/featuredProjectsApi';
+import { useGetPublicFeaturedProjectsQuery, programsApi } from '../../rtk/(public)/programsApi';
 
 let hasVisitedHome = false;
 let isFirstVisitHome = true;
@@ -17,7 +17,7 @@ export default function PublicHomePage() {
   // Preload featured projects data
   useEffect(() => {
     // Prefetch the data when the page loads
-    publicFeaturedProjectsApi.util.prefetch('getPublicFeaturedProjects', undefined, { force: true });
+    programsApi.util.prefetch('getPublicFeaturedProjects', undefined, { force: true });
   }, []);
 
   useEffect(() => {

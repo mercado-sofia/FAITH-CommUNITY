@@ -169,8 +169,8 @@ export default function AdminProgramsPage() {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error('Failed to update program');
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: Failed to update program`);
       }
 
       const result = await response.json();
@@ -183,9 +183,10 @@ export default function AdminProgramsPage() {
       setEditingProgram(null);
       refreshPrograms();
     } catch (error) {
+      console.error('Update program error:', error);
       setSuccessModal({ 
         isVisible: true, 
-        message: 'Failed to update program. Please try again.', 
+        message: `Failed to update program: ${error.message}`, 
         type: 'error' 
       });
     }

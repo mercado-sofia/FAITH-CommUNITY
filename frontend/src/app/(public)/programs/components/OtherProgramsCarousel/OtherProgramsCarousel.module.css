@@ -208,13 +208,13 @@
 }
 
 .statusUpcoming {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: #dcfce7;
+  color: #15803d;
 }
 
 .statusActive {
-  background: #dcfce7;
-  color: #15803d;
+  background: rgb(251, 231, 217);
+  color: #e77b2d;
 }
 
 .statusCompleted {

@@ -1,6 +1,7 @@
 "use client"
 import { useEffect, useState } from "react"
-import styles from "../../login/login.module.css"
+import Image from "next/image"
+import styles from "../../(auth)/login/login.module.css"
 import QRCode from "qrcode"
 
 export default function SuperadminMfaPage() {
@@ -94,7 +95,7 @@ export default function SuperadminMfaPage() {
           </div>
           {qrDataUrl && (
             <div style={{ marginTop: 16 }}>
-              <img src={qrDataUrl} alt="MFA QR" style={{ width: 220, height: 220 }} />
+              <Image src={qrDataUrl} alt="MFA QR" width={220} height={220} />
               <p style={{ marginTop: 8, wordBreak: 'break-all' }}>{otpauth}</p>
               <div className={styles.inputGroup}>
                 <input value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} maxLength={6} placeholder="Enter 6-digit OTP" />

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
-import styles from './styles/HeroSection.module.css';
+import styles from './HeroSection.module.css';
 
 export default function HeroSection() {
   const router = useRouter();

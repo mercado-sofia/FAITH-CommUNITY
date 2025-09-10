@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useAddFeaturedProjectMutation, useRemoveFeaturedProjectMutation, useCheckFeaturedStatusQuery } from '@/rtk/superadmin/featuredProjectsApi'
+import { useAddFeaturedProjectMutation, useRemoveFeaturedProjectMutation, useCheckFeaturedStatusQuery } from '@/rtk/superadmin/programsApi'
 import styles from './styles/StarButton.module.css'
 
 const StarButton = ({ programId, programTitle }) => {

@@ -49,6 +49,8 @@ const nextConfig = {
     ],
     formats: ['image/webp', 'image/avif'],
     unoptimized: true, // Allow unoptimized images for local development
+    dangerouslyAllowSVG: true, // Allow SVG images
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;", // Security for SVG
   },
   
   // Compiler optimizations

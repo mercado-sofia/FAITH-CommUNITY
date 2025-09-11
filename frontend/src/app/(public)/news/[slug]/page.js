@@ -6,31 +6,17 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePublicNewsArticle } from "../../../../hooks/usePublicData";
 import Loader from "../../../../components/Loader";
+import { usePublicPageLoader } from "../../hooks/usePublicPageLoader";
 import styles from "../news.module.css";
-
-// Track if news page has been visited
-let hasVisitedNewsDetail = false;
 
 export default function NewsDetailPage({ params }) {
   const { slug } = use(params);
-  const [pageReady, setPageReady] = useState(false);
-  const [isFirstVisit, setIsFirstVisit] = useState(!hasVisitedNewsDetail);
   
-  const { article: news, isLoading: loading, error } = usePublicNewsArticle(slug);
+  // Use centralized page loader hook
+  const { loading: pageLoading, pageReady } = usePublicPageLoader(`news-${slug}`);
+  
+  const { article: news, isLoading: dataLoading, error } = usePublicNewsArticle(slug);
 
-  // Add extra delay only for first visits to the news detail page
-  useEffect(() => {
-    if (!loading) {
-      const extraDelay = isFirstVisit ? 1000 : 0;
-      const timer = setTimeout(() => {
-        setPageReady(true);
-        setIsFirstVisit(false);
-        hasVisitedNewsDetail = true; // Mark as visited
-      }, extraDelay);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [loading, isFirstVisit]);
 
   // Force 15px font size by removing inline styles after content loads
   useEffect(() => {
@@ -58,8 +44,8 @@ export default function NewsDetailPage({ params }) {
     }
   }, [news, pageReady]);
 
-  // Handle 404 case
-  if (!loading && !news) {
+  // Handle 404 case - only check after data loading is complete
+  if (!dataLoading && !news && !error) {
     notFound();
   }
 
@@ -77,7 +63,7 @@ export default function NewsDetailPage({ params }) {
   };
 
   // Only show loader if actually loading or if it's the first visit and needs extra time
-  if (loading || (isFirstVisit && !pageReady)) {
+  if (pageLoading || !pageReady || dataLoading) {
     return <Loader small centered />;
   }
 
@@ -105,8 +91,31 @@ export default function NewsDetailPage({ params }) {
     );
   }
 
+  // Additional safety check - this should not be reached due to earlier check
   if (!news) {
-    notFound();
+    return (
+      <main style={{ maxWidth: "800px", margin: "2rem auto", padding: "0 1rem" }}>
+        <div style={{ textAlign: 'center', padding: '2rem', color: '#dc3545' }}>
+          <p>Article not found</p>
+          <Link 
+            href="/news"
+            style={{
+              padding: '0.75rem 1.5rem',
+              background: '#167c59',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              marginTop: '1rem',
+              textDecoration: 'none',
+              display: 'inline-block'
+            }}
+          >
+            Back to News
+          </Link>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -169,7 +178,9 @@ export default function NewsDetailPage({ params }) {
                 className={styles.featuredImage}
                 priority
                 onError={(e) => {
-                  e.target.style.display = 'none';
+                  if (e.target) {
+                    e.target.style.display = 'none';
+                  }
                 }}
               />
             </div>
@@ -188,7 +199,9 @@ export default function NewsDetailPage({ params }) {
           {/* Main content with proper styling for rich text */}
           <div 
             className={`${styles.newsMainContent} ${styles.newsContent}`}
-            dangerouslySetInnerHTML={{ __html: news.content || news.description }} 
+            dangerouslySetInnerHTML={{ 
+              __html: news.content || news.description || '<p>No content available</p>' 
+            }} 
           />
         </div>
       </article>

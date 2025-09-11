@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { FiCheckCircle, FiX, FiInfo } from "react-icons/fi";
-import styles from "./volunteerForm.module.css";
 
 export default function SuccessModal({ isOpen, onClose, message = "Application submitted successfully!", type = "success" }) {
   const [mounted, setMounted] = useState(false);
@@ -72,20 +71,118 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
 
   if (!mounted || !isOpen) return null;
 
+  const overlayStyle = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999999,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '1rem'
+  };
+
+  const backdropStyle = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)'
+  };
+
+  const contentStyle = {
+    position: 'relative',
+    background: 'white',
+    borderRadius: '1rem',
+    padding: '1.5rem',
+    maxWidth: '400px',
+    width: '100%',
+    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+    border: `3px solid ${type === 'already_applied' ? '#3b82f6' : '#10b981'}`
+  };
+
+  const closeBtnStyle = {
+    position: 'absolute',
+    top: '1rem',
+    right: '1rem',
+    background: 'none',
+    border: 'none',
+    color: '#6b7280',
+    cursor: 'pointer',
+    padding: '0.5rem',
+    borderRadius: '0.5rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  };
+
+  const bodyStyle = {
+    textAlign: 'center',
+    padding: '1rem 0'
+  };
+
+  const successIconStyle = {
+    marginBottom: '1rem'
+  };
+
+  const titleStyle = {
+    fontSize: '1.25rem',
+    fontWeight: 700,
+    color: '#1f2937',
+    marginBottom: '0.75rem',
+    fontFamily: 'var(--font-roboto)',
+    color: config.titleColor
+  };
+
+  const messageStyle = {
+    fontSize: '0.875rem',
+    color: '#6b7280',
+    marginBottom: '1.5rem',
+    lineHeight: 1.5,
+    fontFamily: 'var(--font-roboto)'
+  };
+
+  const timerStyle = {
+    marginTop: '1.5rem',
+    paddingTop: '1rem',
+    borderTop: '1px solid #e5e7eb'
+  };
+
+  const progressBarStyle = {
+    width: '100%',
+    height: '4px',
+    backgroundColor: '#e5e7eb',
+    borderRadius: '2px',
+    overflow: 'hidden'
+  };
+
+  const progressFillStyle = {
+    height: '100%',
+    background: type === 'already_applied'
+      ? 'linear-gradient(90deg, #3B82F6, #2563EB)'
+      : 'linear-gradient(90deg, #10b981, #059669)',
+    borderRadius: '2px',
+    transition: 'width 0.3s ease',
+    width: `${((5 - timeLeft) / 5) * 100}%`
+  };
+
   return createPortal(
-    <div className={styles.successModalOverlay}>
-      <div className={styles.successModalBackdrop} onClick={onClose} />
-      <div className={`${styles.successModalContent} ${isAlreadyApplied ? styles.alreadyApplied : ''}`}>
+    <div style={overlayStyle}>
+      <div style={backdropStyle} onClick={onClose} />
+      <div style={contentStyle}>
         <button
-          className={styles.successModalClose}
+          style={closeBtnStyle}
           onClick={onClose}
           aria-label="Close modal"
         >
           <FiX size={24} />
         </button>
         
-        <div className={styles.successModalBody}>
-          <div className={styles.successIcon}>
+        <div style={bodyStyle}>
+          <div style={successIconStyle}>
             {type === "already_applied" ? (
               <FiInfo size={48} style={{ color: config.iconColor }} />
             ) : (
@@ -93,19 +190,16 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
             )}
           </div>
           
-          <h2 className={styles.successTitle} style={{ color: config.titleColor }}>
+          <h2 style={titleStyle}>
             {config.title}
           </h2>
           
-          <p className={styles.successMessage}>{message}</p>
+          <p style={messageStyle}>{message}</p>
           
-          <div className={styles.successTimer}>
+          <div style={timerStyle}>
             <p>This will close automatically in {timeLeft} seconds</p>
-            <div className={styles.progressBar}>
-              <div 
-                className={styles.progressFill} 
-                style={{ width: `${((5 - timeLeft) / 5) * 100}%` }}
-              />
+            <div style={progressBarStyle}>
+              <div style={progressFillStyle} />
             </div>
           </div>
         </div>

@@ -8,17 +8,18 @@ import styles from './programDetails.module.css';
 import Loader from '../../../../components/Loader';
 import { getProgramImageUrl } from '../../../../utils/uploadPaths';
 import OtherProgramsCarousel from '../components/OtherProgramsCarousel/OtherProgramsCarousel';
+import { usePublicPageLoader } from '../../hooks/usePublicPageLoader';
 
 export default function ProgramDetailsPage() {
   const { slug } = useParams();
   const router = useRouter();
-  const [pageReady, setPageReady] = useState(false);
-  const [isFirstVisit, setIsFirstVisit] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [program, setProgram] = useState(null);
   const [otherPrograms, setOtherPrograms] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Use centralized page loader hook
+  const { loading: pageLoading, pageReady } = usePublicPageLoader(`program-${slug}`);
 
   // Check user authentication status
   useEffect(() => {
@@ -40,7 +41,6 @@ export default function ProgramDetailsPage() {
   useEffect(() => {
     const fetchProgramData = async () => {
       try {
-        setLoading(true);
         
         // Check if slug is a number (ID) or string (slug)
         const isNumeric = !isNaN(slug) && !isNaN(parseFloat(slug));
@@ -87,7 +87,6 @@ export default function ProgramDetailsPage() {
       } catch (err) {
         setError(err.message);
       } finally {
-        setLoading(false);
       }
     };
 
@@ -96,18 +95,6 @@ export default function ProgramDetailsPage() {
     }
   }, [slug]);
 
-  // Add extra 1 second delay only for first visits
-  useEffect(() => {
-    if (!loading) {
-      const extraDelay = isFirstVisit ? 1000 : 0;
-      const timer = setTimeout(() => {
-        setPageReady(true);
-        setIsFirstVisit(false);
-      }, extraDelay);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [loading, isFirstVisit]);
 
   const handleApplyClick = () => {
     if (program && program.status === 'Upcoming') {
@@ -241,7 +228,7 @@ export default function ProgramDetailsPage() {
     }
   };
 
-  if (loading || !pageReady) {
+  if (pageLoading || !pageReady) {
     return <Loader small centered />;
   }
 

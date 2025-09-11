@@ -25,6 +25,21 @@ export default function Navbar() {
   const notificationsDropdown = useDropdown(false);
   const notifications = useNotifications(isAuthenticated);
 
+  // Ensure only one dropdown is open at a time
+  const handleProfileToggle = () => {
+    if (notificationsDropdown.isOpen) {
+      notificationsDropdown.close();
+    }
+    profileDropdown.toggle();
+  };
+
+  const handleNotificationsToggle = () => {
+    if (profileDropdown.isOpen) {
+      profileDropdown.close();
+    }
+    notificationsDropdown.toggle();
+  };
+
   // Apply guard
   const handleApplyClick = (e) => {
     if (!isAuthenticated) {
@@ -242,7 +257,7 @@ export default function Navbar() {
               <div className={styles.notificationWrapper} ref={notificationsDropdown.ref}>
                 <button 
                   className={styles.notificationBtn}
-                  onClick={notificationsDropdown.toggle}
+                  onClick={handleNotificationsToggle}
                 >
                   <FaBell />
                   {notifications.hasUnreadNotifications && (
@@ -309,10 +324,10 @@ export default function Navbar() {
               </div>
 
               {/* Profile Icon */}
-              <div className={styles.profileWrapper} ref={profileDropdown.ref}>
+              <div className={`${styles.profileWrapper} ${profileDropdown.isOpen ? styles.open : ''}`} ref={profileDropdown.ref}>
                 <button 
                   className={styles.profileBtn}
-                  onClick={profileDropdown.toggle}
+                  onClick={handleProfileToggle}
                 >
                   <div className={styles.profileIcon}>
                     {user?.profile_photo_url ? (

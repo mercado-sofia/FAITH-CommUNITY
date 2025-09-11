@@ -243,7 +243,7 @@ const initializeDatabase = async () => {
               // Found existing admins without organization records - sync endpoint available
       }
     } else {
-      console.log("✅ organization_id column already exists in admins table");
+      // organization_id column already exists in admins table
     }
 
     // Check if programs_projects table has date fields, add them if missing
@@ -365,7 +365,7 @@ const initializeDatabase = async () => {
 
     // Add featured column to programs_projects table if it doesn't exist
     try {
-      console.log("🔧 Checking for featured column in programs_projects table...");
+      // Checking for featured column in programs_projects table...
       await connection.query(`
         ALTER TABLE programs_projects 
         ADD COLUMN is_featured BOOLEAN DEFAULT FALSE
@@ -375,7 +375,7 @@ const initializeDatabase = async () => {
       if (error.code !== 'ER_DUP_FIELDNAME') {
         console.error('Error adding is_featured column:', error);
       } else {
-        console.log("✅ is_featured column already exists in programs_projects table");
+        // is_featured column already exists in programs_projects table
       }
     }
 
@@ -452,7 +452,7 @@ const initializeDatabase = async () => {
       `);
       console.log("Messages table created successfully");
     } else {
-      console.log("Messages table already exists");
+      // Messages table already exists
       
       // Check if user_id column exists, if not add it
       const [userIdColumn] = await connection.query(
@@ -495,13 +495,13 @@ const initializeDatabase = async () => {
       }
     }
 
-    // Check if notifications table exists
-    const [notificationsTables] = await connection.query('SHOW TABLES LIKE "notifications"');
+    // Check if admin_notifications table exists
+    const [adminNotificationsTables] = await connection.query('SHOW TABLES LIKE "admin_notifications"');
     
-    if (notificationsTables.length === 0) {
-      console.log("Creating notifications table...");
+    if (adminNotificationsTables.length === 0) {
+      console.log("Creating admin_notifications table...");
       await connection.query(`
-        CREATE TABLE notifications (
+        CREATE TABLE admin_notifications (
           id INT AUTO_INCREMENT PRIMARY KEY,
           admin_id INT NOT NULL,
           type ENUM('approval', 'decline', 'system', 'message') NOT NULL,
@@ -517,19 +517,19 @@ const initializeDatabase = async () => {
           INDEX idx_created_at (created_at)
         )
       `);
-      console.log("✅ Notifications table created successfully!");
+      console.log("✅ Admin notifications table created successfully!");
     } else {
       // Check if 'message' type exists in the ENUM
       const [columnInfo] = await connection.query(`
         SELECT COLUMN_TYPE 
         FROM INFORMATION_SCHEMA.COLUMNS 
-        WHERE TABLE_NAME = 'notifications' 
+        WHERE TABLE_NAME = 'admin_notifications' 
         AND COLUMN_NAME = 'type'
       `);
       
       if (columnInfo.length > 0 && !columnInfo[0].COLUMN_TYPE.includes("'message'")) {
         await connection.query(`
-          ALTER TABLE notifications 
+          ALTER TABLE admin_notifications 
           MODIFY COLUMN type ENUM('approval', 'decline', 'system', 'message') NOT NULL
         `);
       }
@@ -874,7 +874,7 @@ const initializeDatabase = async () => {
         console.log("✅ subscribers table created successfully!");
       } else {
         // Check and fix the is_verified column default value
-        console.log("Checking subscribers table structure...");
+        // Checking subscribers table structure...
         
         // First, check if verified_at column exists
         const [verifiedAtColumn] = await connection.query(`
@@ -926,13 +926,13 @@ const initializeDatabase = async () => {
         }
         
         // Force update the column default value to ensure it's 0
-        console.log("🔧 Ensuring is_verified column has correct default value...");
+        // Ensuring is_verified column has correct default value...
         try {
           await connection.query(`
             ALTER TABLE subscribers 
             MODIFY COLUMN is_verified TINYINT(1) DEFAULT 0 NOT NULL
           `);
-          console.log("✅ is_verified column default value enforced!");
+          // is_verified column default value enforced
         } catch (alterError) {
           console.log("ℹ️ Column modification not needed or failed (this is normal):", alterError.message);
         }

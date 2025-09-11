@@ -1,8 +1,8 @@
-import styles from './missionVision.module.css';
+import styles from './MissionAndVision.module.css';
 import { FaRegHeart } from 'react-icons/fa';
 import { MdPersonOutline } from 'react-icons/md';
 
-export default function AboutMissionVision() {
+export default function MissionAndVision() {
   return (
     <section className={styles.details}>
       <h3 className={styles.sectionTag}>FAITH CommUNITY’s</h3>

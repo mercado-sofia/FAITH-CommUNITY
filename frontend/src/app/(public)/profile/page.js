@@ -4,17 +4,20 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PersonalInfo, EmailandPassword, Notifications, MyApplications } from './components';
 import ErrorBoundary from './components/common/ErrorBoundary';
-import LoadingSpinner from './components/common/LoadingSpinner';
+import Loader from '../../../components/Loader';
 import { ToastContainer, useToast } from './components/common/Toast';
+import { usePublicPageLoader } from '../hooks/usePublicPageLoader';
 import styles from './profile.module.css';
 
 export default function ProfilePage() {
   const [userData, setUserData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('personal-info');
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toasts, removeToast, showError } = useToast();
+  
+  // Use centralized page loader hook
+  const { loading, pageReady } = usePublicPageLoader('profile');
 
   // Memoize setUserData to prevent unnecessary re-renders
   const handleSetUserData = useCallback((newUserData) => {
@@ -55,7 +58,11 @@ export default function ProfilePage() {
     }
   }, [searchParams]);
 
+
+  // Handle user authentication and data loading
   useEffect(() => {
+    if (!pageReady) return;
+
     const token = localStorage.getItem('userToken');
     const storedUserData = localStorage.getItem('userData');
     
@@ -73,21 +80,11 @@ export default function ProfilePage() {
       router.push('/login');
       return;
     }
-
-    setIsLoading(false);
-  }, [router, showError]);
+  }, [pageReady, router, showError]);
 
 
-  if (isLoading) {
-    return (
-      <div className={styles.container}>
-        <LoadingSpinner 
-          size="large" 
-          message="Loading profile..." 
-          fullScreen={false}
-        />
-      </div>
-    );
+  if (loading || !pageReady) {
+    return <Loader small centered />;
   }
 
   if (!userData) {

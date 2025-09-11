@@ -1,20 +1,22 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Loader from '../../../components/Loader';
 import PageBanner from '../components/PageBanner';
-import SimplifiedVolunteerForm from './components/VolunteerForm';
+import SimplifiedVolunteerForm from './VolunteerForm/VolunteerForm';
+import { usePublicPageLoader } from '../hooks/usePublicPageLoader';
 import styles from './apply.module.css';
 
 export default function ApplyPage() {
-  const [loading, setLoading] = useState(true);
   const [selectedProgramId, setSelectedProgramId] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userData, setUserData] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const timerRef = useRef(null);
   const searchParams = useSearchParams();
+  
+  // Use centralized page loader hook
+  const { loading: pageLoading, pageReady } = usePublicPageLoader('apply');
 
   useEffect(() => {
     // Get program ID from URL parameters
@@ -71,34 +73,11 @@ export default function ApplyPage() {
     }
   }, [showLoginModal]);
 
-  // Handle loading state
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Simple loading delay
-      timerRef.current = setTimeout(() => {
-        setLoading(false);
-      }, 1000);
-
-      // Fallback timeout to ensure loading never gets stuck
-      const fallbackTimeout = setTimeout(() => {
-        setLoading(false);
-      }, 3000);
-
-      // Cleanup function to clear both timeouts
-      return () => {
-        if (timerRef.current) {
-          clearTimeout(timerRef.current);
-        }
-        clearTimeout(fallbackTimeout);
-      };
-    }
-  }, []); // Only run once on mount
-
-  if (loading) {
+  if (pageLoading || !pageReady) {
     return <Loader small centered />;
   }
 
-  console.log('Render state:', { loading, isLoggedIn, showLoginModal, userData: !!userData });
+  console.log('Render state:', { pageLoading, pageReady, isLoggedIn, showLoginModal, userData: !!userData });
 
   return (
     <>

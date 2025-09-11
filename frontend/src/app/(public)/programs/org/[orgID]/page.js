@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Loader from '../../../../../components/Loader';
@@ -8,21 +8,15 @@ import BannerSection from '../../../components/PageBanner';
 import { OrgInfoCard, AdvocacyCompetency, FeaturedProjects, OrgHeadsCarousel, LatestPosts } from '../../components';
 import { usePublicOrganizationData } from '../../../../../hooks/usePublicData';
 import { useAuthState } from '../../../../../hooks/useAuthState';
+import { usePublicPageLoader } from '../../../hooks/usePublicPageLoader';
 import styles from '../org.module.css';
-
-// Track visited org pages globally
-const visitedOrgPages = new Set();
 
 export default function OrgPage() {
   const { orgID } = useParams();
   const [imageLoading, setImageLoading] = useState(true);
-  const [pageReady, setPageReady] = useState(false);
-  const timerRef = useRef(null);
-  const pageReadyTimerRef = useRef(null);
-
-  // Check if this specific org page has been visited before
-  const hasVisitedThisOrg = visitedOrgPages.has(orgID);
-  const isFirstVisitThisOrg = !hasVisitedThisOrg;
+  
+  // Use centralized page loader hook
+  const { loading: pageLoading, pageReady } = usePublicPageLoader(`org-${orgID}`);
 
   // Use SWR hook for data fetching with caching
   const { organizationData, isLoading, error, isEmpty } = usePublicOrganizationData(orgID);
@@ -51,13 +45,6 @@ export default function OrgPage() {
   useEffect(() => {
     if (!organizationData || isLoading) return;
     
-    // Only add timeout for first-time visitors to this org
-    const timeoutPromise = isFirstVisitThisOrg 
-      ? new Promise((resolve) => {
-          timerRef.current = setTimeout(resolve, 500);
-        })
-      : Promise.resolve();
-
     const imageLoadPromises = imageUrls.map((src) => {
       return new Promise((resolve) => {
         const img = new Image();
@@ -66,38 +53,13 @@ export default function OrgPage() {
       });
     });
 
-    Promise.all([timeoutPromise, ...imageLoadPromises]).then(() => {
+    Promise.all(imageLoadPromises).then(() => {
       setImageLoading(false);
     });
-
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, [organizationData, imageUrls, isLoading, isFirstVisitThisOrg]);
-
-  // Add extra 1 second delay only for first visits to this specific org
-  useEffect(() => {
-    if (!isLoading && !imageLoading) {
-      const extraDelay = isFirstVisitThisOrg ? 1000 : 0; // Extra delay only for first visit to this org
-      
-      pageReadyTimerRef.current = setTimeout(() => {
-        setPageReady(true);
-        // Mark this org page as visited
-        visitedOrgPages.add(orgID);
-      }, extraDelay);
-    }
-
-    return () => {
-      if (pageReadyTimerRef.current) {
-        clearTimeout(pageReadyTimerRef.current);
-      }
-    };
-  }, [isLoading, imageLoading, isFirstVisitThisOrg, orgID]);
+  }, [organizationData, imageUrls, isLoading]);
 
   // Show loading state
-  if (isLoading || imageLoading || !pageReady) return <Loader small centered />;
+  if (pageLoading || !pageReady || isLoading || imageLoading) return <Loader small centered />;
 
   // Show error state with fallback data
   if (error || isEmpty) {

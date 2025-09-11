@@ -1,4 +1,4 @@
-//db table: notifications
+//db table: admin_notifications
 
 import db from '../../database.js';
 
@@ -11,7 +11,7 @@ class NotificationController {
 
       // Get total count first
       const [countResult] = await db.execute(
-        'SELECT COUNT(*) as total FROM notifications WHERE admin_id = ?',
+        'SELECT COUNT(*) as total FROM admin_notifications WHERE admin_id = ?',
         [adminId]
       );
       const total = countResult[0].total;
@@ -19,7 +19,7 @@ class NotificationController {
       // Get notifications with pagination
       const query = `
         SELECT id, type, title, message, section, submission_id, is_read, created_at
-        FROM notifications 
+        FROM admin_notifications 
         WHERE admin_id = ? 
         ORDER BY created_at DESC 
         LIMIT ? OFFSET ?
@@ -54,7 +54,7 @@ class NotificationController {
       const { adminId } = req.body;
 
       const query = `
-        UPDATE notifications 
+        UPDATE admin_notifications 
         SET is_read = TRUE 
         WHERE id = ? AND admin_id = ?
       `;
@@ -87,7 +87,7 @@ class NotificationController {
       const { adminId } = req.params;
 
       const query = `
-        UPDATE notifications 
+        UPDATE admin_notifications 
         SET is_read = TRUE 
         WHERE admin_id = ? AND is_read = FALSE
       `;
@@ -114,7 +114,7 @@ class NotificationController {
 
       const query = `
         SELECT COUNT(*) as count 
-        FROM notifications 
+        FROM admin_notifications 
         WHERE admin_id = ? AND is_read = FALSE
       `;
 
@@ -140,7 +140,7 @@ class NotificationController {
       const { adminId } = req.body;
 
       const query = `
-        DELETE FROM notifications 
+        DELETE FROM admin_notifications 
         WHERE id = ? AND admin_id = ?
       `;
 
@@ -170,7 +170,7 @@ class NotificationController {
   static async createNotification(adminId, type, title, message, section = null, submissionId = null) {
     try {
       const query = `
-        INSERT INTO notifications (admin_id, type, title, message, section, submission_id)
+        INSERT INTO admin_notifications (admin_id, type, title, message, section, submission_id)
         VALUES (?, ?, ?, ?, ?, ?)
       `;
 

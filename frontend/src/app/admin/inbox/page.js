@@ -255,7 +255,7 @@ export default function InboxPage() {
               disabled={markingAllAsRead}
             >
               {markingAllAsRead ? <FaSpinner className={styles.spinner} /> : <FiCheck />}
-              Mark All Read
+              Mark All as Read
             </button>
           )}
         </div>

@@ -12,7 +12,7 @@ const ViewDetailsModal = ({
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [allImages, setAllImages] = useState([]);
-
+  
   if (!isOpen || !submissionData) return null;
 
   const formatDate = (dateString) => {
@@ -56,9 +56,11 @@ const ViewDetailsModal = ({
   const getProgramData = () => {
     if (submissionData.section !== 'programs') return null;
     try {
-      return typeof submissionData.proposed_data === 'string' 
-        ? JSON.parse(submissionData.proposed_data) 
-        : submissionData.proposed_data;
+      // Try different possible field names for the data
+      const dataField = submissionData.proposed_data || submissionData.data || submissionData.new_data;
+      return typeof dataField === 'string' 
+        ? JSON.parse(dataField) 
+        : dataField;
     } catch (error) {
       return null;
     }
@@ -136,7 +138,8 @@ const ViewDetailsModal = ({
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Submitted By:</span>
               <span className={styles.infoValue}>
-                {submissionData.orgName || 'Unknown Organization'} ({submissionData.org || `Org #${submissionData.organization_id}`})
+                {submissionData.orgName || submissionData.organization_acronym || submissionData.org || 'Unknown Organization'} 
+                {submissionData.organization_id && ` (Org #${submissionData.organization_id})`}
               </span>
             </div>
             <div className={styles.infoRow}>
@@ -260,6 +263,7 @@ const ViewDetailsModal = ({
                   })()}
                 </div>
               </div>
+
             </div>
           ) : (
             // For non-program submissions, show data comparison
@@ -271,13 +275,13 @@ const ViewDetailsModal = ({
                     <div className={styles.dataBlock}>
                       <h5>Previous Data:</h5>
                       <div className={styles.dataContent}>
-                        {submissionData.previous_data || "No previous data"}
+                        {submissionData.previous_data || submissionData.old_data || "No previous data"}
                       </div>
                     </div>
                     <div className={styles.dataBlock}>
                       <h5>Proposed Data:</h5>
                       <div className={styles.dataContent}>
-                        {submissionData.proposed_data || "No proposed data"}
+                        {submissionData.proposed_data || submissionData.data || submissionData.new_data || "No proposed data"}
                       </div>
                     </div>
                   </div>
@@ -286,13 +290,13 @@ const ViewDetailsModal = ({
                     <div className={styles.dataBlock}>
                       <h5>Previous Data:</h5>
                       <pre className={styles.jsonData}>
-                        {JSON.stringify(submissionData.previous_data, null, 2)}
+                        {JSON.stringify(submissionData.previous_data || submissionData.old_data, null, 2)}
                       </pre>
                     </div>
                     <div className={styles.dataBlock}>
                       <h5>Proposed Data:</h5>
                       <pre className={styles.jsonData}>
-                        {JSON.stringify(submissionData.proposed_data, null, 2)}
+                        {JSON.stringify(submissionData.proposed_data || submissionData.data || submissionData.new_data, null, 2)}
                       </pre>
                     </div>
                   </div>

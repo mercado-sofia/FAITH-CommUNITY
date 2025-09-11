@@ -1,18 +1,47 @@
 /* Main Area Layout - Modern pattern consistent with other superadmin pages */
 .mainArea {
-  padding: 2rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  min-height: 100vh;
+  padding: 2rem 3rem;
+  min-height: calc(100vh - 60px);
+  background: #F0F4F7;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Modern Header Layout */
+/* Header Section */
 .header {
+  margin-bottom: 0.75rem;
+  padding-top: 0;
+}
+
+/* Controls and Stats Section */
+.controlsAndStatsSection {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 2rem;
+  margin-bottom: 1.4rem;
+  margin-top: -1rem;
   gap: 2rem;
+}
+
+.cardContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.iconWrapper {
+  background-color: #e2f7f0;
+  padding: 0.6rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.icon {
+  font-size: 1.2rem;
+  color: #1d9782;
 }
 
 .headerLeft {
@@ -24,12 +53,13 @@
 }
 
 .pageTitle {
-  font-size: 2rem;
+  font-size: 1.4rem;
   font-weight: 700;
-  color: #111827;
-  margin: 0 0 0.5rem 0;
+  font-family: var(--font-poppins), sans-serif;
+  color: #06100f;
+  user-select: none;
+  margin: 0;
   line-height: 1.2;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .pageSubtitle {
@@ -41,121 +71,303 @@
 }
 
 .statsCard {
-  background: white;
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e5e7eb;
-  transition: box-shadow 0.2s ease;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  box-shadow: 
+    0 8px 20px rgba(83, 96, 97, 0.06),
+    0 4px 10px rgba(83, 96, 97, 0.04);
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  min-width: 160px;
+  min-width: 180px;
+  flex-shrink: 0;
+  justify-content: center;
+  height: 100px;
+  align-self: stretch;
+  position: relative;
+  overflow: hidden;
+}
+
+.statsCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #1d9782, #2ac4ad, #1de7c6);
 }
 
 .statsCard:hover {
-  box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 12px 25px rgba(83, 96, 97, 0.08),
+    0 6px 15px rgba(83, 96, 97, 0.06);
+  border-color: #cbd5e1;
 }
 
 .statNumber {
-  font-size: 1.875rem;
+  font-size: 32px;
   font-weight: 700;
-  color: #111827;
+  color: #1e293b;
+  margin: 0;
   line-height: 1;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .statLabel {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin-top: 0.25rem;
+  font-size: 14px;
+  margin: 0 0 0.5rem 0;
+  color: #64748b;
   font-weight: 500;
+  font-family: var(--font-inter), sans-serif;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-/* Controls Section */
-.controlsSection {
-  background: white;
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e5e7eb;
-  transition: box-shadow 0.2s ease;
-}
 
-.controlsSection:hover {
-  box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-.filterControls {
+.controlsLeft {
   display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-self: flex-end;
+}
+
+.inlineLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #0c1b1a;
+  margin-right: 2px;
+}
+
+.inlineLabelDropdown {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.filtersRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dropdownWrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.dropdown {
+  background: #fff;
+  padding: 0.45rem 0.9rem;
+  min-width: 60px;
+  min-height: 2.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  color: #06100f;
+  border: 2px solid #06100f;
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
+  transition: all 0.2s ease-in-out;
+  user-select: none;
 }
 
-.filterGroup {
+.dropdown:hover {
+  background: #f3f3f3;
+}
+
+.organizationDropdown {
+  background: #fff;
+  padding: 0.45rem 0.9rem;
+  min-width: 200px;
+  min-height: 2.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  color: #06100f;
+  border: 2px solid #06100f;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: space-between;
+  transition: all 0.2s ease-in-out;
+  user-select: none;
 }
 
-.filterLabel {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #111827;
-  white-space: nowrap;
+.organizationDropdown:hover {
+  background: #f3f3f3;
 }
 
-.filterSelect {
-  padding: 12px 16px !important;
-  border: 2px solid #000000 !important;
-  border-radius: 8px !important;
-  background: white !important;
-  font-size: 14px !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-  color: #000000 !important;
-  font-weight: 500 !important;
-  min-width: 220px !important;
-  cursor: pointer !important;
-  transition: all 0.2s ease !important;
-  appearance: none !important;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23000000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
-  background-position: right 12px center !important;
-  background-repeat: no-repeat !important;
-  background-size: 16px !important;
-  padding-right: 40px !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-  transform: translateY(0) !important;
+/* Wider dropdown specifically for programs filter - matching volunteer applications */
+.programDropdown {
+  background: #fff;
+  padding: 0.45rem 0.9rem;
+  min-width: 200px;
+  min-height: 2.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  color: #06100f;
+  border: 2px solid #06100f;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease-in-out;
+  user-select: none;
 }
 
-.filterSelect:hover {
-  border-color: #000000 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
-  transform: translateY(-1px) !important;
-  background: white !important;
+.programDropdown:hover {
+  background: #f3f3f3;
 }
 
-.filterSelect:focus {
-  outline: none !important;
-  border-color: #000000 !important;
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.2) !important;
-  transform: translateY(-1px) !important;
+.icon {
+  margin-left: 8px;
+  color: #06100f;
+  transition: transform 0.2s ease;
 }
 
-/* Table Section */
+.dropdown:hover .icon,
+.organizationDropdown:hover .icon,
+.programDropdown:hover .icon {
+  transform: rotate(180deg);
+}
+
+.options {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.options li {
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  font-size: 13px;
+  color: #374151;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.15s ease;
+}
+
+.options li:last-child {
+  border-bottom: none;
+}
+
+.options li:hover {
+  background-color: #f3f3f3;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Search input wrapper*/
+.searchWrapper {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  gap: 0.5rem;
+  align-self: flex-end;
+}
+
+/* Wrap input and icons together */
+.searchInputContainer {
+  position: relative;
+  width: 250px;
+  max-width: 100%;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.45rem 2.6rem 0.45rem 1rem;
+  border-radius: 8px;
+  border: 2px solid #06100f;
+  background: #fff;
+  font-size: 0.85rem;
+  color: #06100f;
+  outline: none;
+  transition: all 0.2s ease;
+  height: 100%;
+  min-height: 2.5rem;
+}
+
+.searchInput:hover {
+  background: #f3f3f3;
+}
+
+.searchInput:focus {
+  outline: none;
+  background: #f3f3f3;
+}
+
+.searchInput::placeholder {
+  color: #8a919c;
+  font-size: 12.5px;
+  font-family: var(--font-inter);
+  opacity: 1;
+}
+
+.searchIcon,
+.clearIcon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 16px;
+  user-select: none;
+}
+
+/* Table Section - Matching admin design */
 .tableSection {
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e5e7eb;
-  overflow: hidden;
-  transition: box-shadow 0.2s ease;
+  border-radius: 6px;
+  box-shadow:
+    0 8px 20px rgba(83, 96, 97, 0.06),
+    0 4px 10px rgba(83, 96, 97, 0.04);
+  border: none;
+  overflow: visible; /* Allow dropdowns to extend beyond container */
+  padding: 0;
+  font-family: var(--font-inter);
 }
 
-.tableSection:hover {
-  box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
 
 .tableSectionHeader {
   display: flex;
@@ -167,9 +379,9 @@
 }
 
 .tableSectionTitle {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #111827;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
@@ -186,46 +398,633 @@
   font-weight: 500;
 }
 
-/* Empty State */
-.emptyState {
+/* Bulk Actions Bar */
+.bulkActionsBar {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  background: #f3f4f6;
   border: 1px solid #e5e7eb;
-  text-align: center;
-  transition: box-shadow 0.2s ease;
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  animation: slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: top;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+  transform: translateY(0) scaleY(1);
 }
 
-.emptyState:hover {
-  box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+.bulkActionsBar.hiding {
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.bulkActionsBar.hiding .bulkActionBtn {
+  animation: buttonDisappear 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.bulkActionsBar.hiding .bulkActionBtn:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.bulkActionsBar.hiding .bulkActionBtn:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.bulkActionsBar.hiding .bulkActionBtn:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+@keyframes buttonDisappear {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.9);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-15px) scaleY(0.9);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scaleY(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+.bulkActionsLeft {
+  display: flex;
+  align-items: center;
+}
+
+.selectedCount {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(1);
+}
+
+.selectedCount:hover {
+  transform: scale(1.02);
+}
+
+.bulkActionsRight {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.bulkActionBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(0);
+  animation: buttonAppear 0.4s ease-out;
+}
+
+.bulkActionBtn:active {
+  transform: translateY(1px) scale(0.98);
+  transition: all 0.1s ease-out;
+}
+
+@keyframes buttonAppear {
+  from {
+    opacity: 0;
+    transform: translateY(5px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.bulkApproveBtn {
+  background: #10b981;
+  color: white;
+}
+
+.bulkApproveBtn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.bulkRejectBtn {
+  background: #ef4444;
+  color: white;
+}
+
+.bulkRejectBtn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.bulkDeleteBtn {
+  background: #6b7280;
+  color: white;
+}
+
+.bulkDeleteBtn:hover {
+  background: #4b5563;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+}
+
+.bulkActionBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.bulkActionBtn.loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.bulkActionBtn.loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Table Container and Table - Matching admin design */
+.tableContainer {
+  background-color: #fff;
+  border-radius: 6px;
+  box-shadow:
+    0 8px 20px rgba(83, 96, 97, 0.06),
+    0 4px 10px rgba(83, 96, 97, 0.04);
+  border: none;
+  overflow: visible;
+  padding: 4px 1rem;
+  font-family: var(--font-inter);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  font-family: var(--font-inter);
+}
+
+/* Table Header - Matching admin design */
+.table th {
+  text-align: left;
+  padding: 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0c1b1a;
+  background-color: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  text-transform: uppercase;
+  font-family: var(--font-inter);
+  cursor: default;
+}
+
+/* Table Body - Matching admin design */
+.table td {
+  font-size: 13px;
+  color: #2e3136;
+  padding: 12px 14px;
+  border-top: 1px solid #e5e7eb;
+  background-color: #fff;
+  font-weight: 400;
+  vertical-align: middle;
+  font-family: var(--font-inter);
+  text-align: left;
+}
+
+.table tr {
+  position: relative;
+}
+
+.table tbody tr:hover {
+  background-color: #f9fbfd;
+}
+
+/* Table Columns - Enhanced layout */
+.selectColumn {
+  width: 50px;
+  text-align: center;
+}
+
+.organizationColumn {
+  width: 25%;
+  min-width: 120px;
+  max-width: 200px;
+}
+
+.sectionColumn {
+  width: 20%;
+  min-width: 100px;
+  max-width: 150px;
+}
+
+.dateColumn {
+  width: 15%;
+  min-width: 100px;
+  max-width: 120px;
+}
+
+.statusColumn {
+  width: 12%;
+  min-width: 80px;
+  max-width: 100px;
+  text-align: center;
+}
+
+.actionsColumn {
+  width: 8%;
+  min-width: 60px;
+  max-width: 80px;
+  text-align: center;
+}
+
+/* Table Cells */
+.selectCell {
+  text-align: center;
+}
+
+.statusCell {
+  text-align: center;
+}
+
+/* Checkbox styling - matching dashboard table */
+.checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #3b82f6;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(1);
+}
+
+.checkbox:hover {
+  transform: scale(1.1);
+}
+
+.checkbox:active {
+  transform: scale(0.95);
+}
+
+.checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.orgAcronym {
+  font-weight: 400;
+  color: #414143;
+  font-size: 13px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.sectionCell {
+  text-transform: capitalize;
+  font-size: 13px;
+  color: #414143;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.dateCell {
+  color: #414143;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* Status Badge - Matching dashboard table */
+.statusBadge {
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  border: 1px solid transparent;
+  display: inline-block;
+  text-align: center;
+  white-space: nowrap;
+  user-select: none;
+  font-family: var(--font-inter);
+  line-height: 1.2;
+}
+
+.pending {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fbbf24;
+}
+
+.approved {
+  background: #d1fae5;
+  color: #047857;
+  border-color: #10b981;
+}
+
+.rejected {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #ef4444;
+}
+
+.actionsCell {
+  text-align: center;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+/* Action Dropdown - Updated to match volunteer applications */
+.actionDropdownWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.actionDropdownButtonWrapper {
+  position: relative;
+}
+
+.actionDropdown {
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.actionDropdown:hover {
+  background-color: #f3f4f6;
+}
+
+.actionDropdownIcon {
+  color: #0c1b1a;
+  font-size: 16px;
+}
+
+.actionDropdownOptions {
+  position: fixed;
+  z-index: 9999;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 0;
+  animation: fadeIn 0.2s ease-in-out;
+  min-width: 140px;
+  user-select: none;
+  border: 1px solid #e5e7eb;
+}
+
+.actionDropdownOptions li {
+  padding: 0.6rem 1.2rem;
+  color: #06100f;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 500;
+  transition: background 0.2s;
+  font-family: var(--font-inter);
+}
+
+.actionDropdownOptions li:hover {
+  background-color: #f3f3f3;
+}
+
+.actionDropdownOptions li.delete {
+  color: #dc3545;
+  border-top: 1px solid #eee;
+  margin-top: 4px;
+  padding-top: 8px;
+}
+
+/* Dropdown positioned above button for bottom rows */
+.actionDropdownOptions.above {
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Legacy action buttons - keeping for backward compatibility */
+.actionBtn {
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  border: 2px solid;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  min-width: 80px;
+}
+
+.acceptBtn {
+  background-color: #fff;
+  color: #10b981;
+  border-color: #10b981;
+  margin-right: 4px;
+}
+
+.acceptBtn:hover {
+  background-color: #edfff9;
+}
+
+.rejectBtn {
+  background-color: #fff;
+  color: #d50808;
+  border-color: #d50808;
+}
+
+.rejectBtn:hover {
+  background-color: #fff2f2;
+}
+
+/* Pagination - Matching admin design */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 1.5rem 1rem;
+  padding: 1rem;
+  background: #ffffff;
+  border-radius: 0.5rem;
+  border: none;
+  font-family: var(--font-inter);
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.paginationInfo {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.paginationControls {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.paginationButton {
+  padding: 0.25rem;
+  font-size: 12px;
+  border: 2px solid #06100f;
+  border-radius: 4px;
+  background-color: #ffffff;
+  color: #06100f;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  min-width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.paginationButton:hover:not(:disabled) {
+  background-color: #f0f2f4;
+}
+
+.paginationButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  color: #9ca3af;
+  border-color: #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.paginationButton:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.paginationButton.active {
+  background-color: #fff;
+  color: #06100f;
+  border-color: #06100f;
+  font-weight: 600;
+}
+
+.paginationButton.active:hover {
+  background-color: #06100f;
+  border-color: #06100f;
+  color: white;
+}
+
+/* Navigation buttons (arrows) - no borders or hover effects */
+.navButton {
+  padding: 0.25rem;
+  font-size: 12px;
+  border: none;
+  border-radius: 4px;
+  background-color: transparent;
+  color: #06100f;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  min-width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.navButton:hover:not(:disabled) {
+  background-color: transparent;
+}
+
+.navButton:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+  color: #9ca3af;
+  background-color: transparent;
+}
+
+.navButton:disabled:hover {
+  background-color: transparent;
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #6b7280;
 }
 
 .emptyStateIcon {
   font-size: 3rem;
   margin-bottom: 1rem;
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .emptyStateTitle {
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
-  margin: 0 0 0.5rem 0;
+  color: #374151;
+  margin-bottom: 0.5rem;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .emptyStateText {
   font-size: 0.875rem;
-  color: #6b7280;
   margin: 0;
   line-height: 1.5;
-  max-width: 400px;
-  font-weight: 400;
 }
 
 /* Notification Display - Enhanced Design */
@@ -315,13 +1114,6 @@
   transition: box-shadow 0.2s;
 }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1rem;
-  gap: 1rem;
-}
 
 .headerInfo {
   display: flex;
@@ -370,32 +1162,7 @@
   align-items: center;
 }
 
-.status {
-  font-size: 0.85rem;
-  font-weight: 600;
-  padding: 0.4rem 0.8rem;
-  border-radius: 6px;
-  display: inline-block;
-  margin-top: 0.5rem;
-}
 
-.status.pending {
-  background-color: #fff7e6;
-  color: #ff9800;
-  border: 1px solid #ffd699;
-}
-
-.status.approved {
-  background-color: #e6f7f1;
-  color: #2ac4ad;
-  border: 1px solid #91e0d4;
-}
-
-.status.rejected {
-  background-color: #ffe6e6;
-  color: #dc3545;
-  border: 1px solid #f5a4a4;
-}
 
 .actions {
   display: flex;
@@ -623,11 +1390,7 @@
   box-shadow: 0 0 0 2px rgba(27, 179, 156, 0.2);
 }
 
-/* Wrapper for each dropdown */
-.dropdownWrapper {
-  position: relative;
-  min-width: 160px;
-}
+/* Removed duplicate dropdownWrapper definition */
 
 /* Button to trigger dropdown */
 .dropdownTrigger {
@@ -872,10 +1635,6 @@
   border-top: 1px solid #e9ecef;
 }
 
-.statusBadge {
-  display: flex;
-  align-items: center;
-}
 
 .actionButtons {
   display: flex;
@@ -959,17 +1718,6 @@
   color: #888;
 }
 
-.status {
-  font-weight: 500;
-  padding: 0.2em 0.7em;
-  border-radius: 6px;
-  background: #f5f5f5;
-  margin-left: 0.5rem;
-}
-
-.status.Pending { background: #fffbe6; color: #ad8b00; }
-.status.Approved { background: #e6fffb; color: #08979c; }
-.status.Rejected { background: #fff1f0; color: #cf1322; }
 
 .actionCol {
   margin-left: auto;
@@ -1068,13 +1816,6 @@
     align-self: stretch;
   }
   
-  .statsCard {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    min-width: auto;
-    width: 100%;
-  }
   
   .controlsSection {
     padding: 1rem;
@@ -1243,13 +1984,6 @@
     align-self: stretch;
   }
   
-  .statsCard {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    min-width: auto;
-    width: 100%;
-  }
   
   .controlsSection {
     padding: 1rem;

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { 
   useGetOrganizationsCountQuery,
   useGetPendingApprovalsCountQuery,
-  useGetTotalVolunteersCountQuery,
+  useGetUpcomingProgramsCountQuery,
   useGetActiveProgramsCountQuery
 } from '../../../../rtk/superadmin/dashboardApi';
 
@@ -23,9 +23,9 @@ export default function StatCardSection() {
   } = useGetPendingApprovalsCountQuery();
 
   const { 
-    data: totalVolunteersCount = 0, 
-    isLoading: volunteersLoading 
-  } = useGetTotalVolunteersCountQuery();
+    data: upcomingProgramsCount = 0, 
+    isLoading: upcomingProgramsLoading 
+  } = useGetUpcomingProgramsCountQuery();
 
   const { 
     data: activeProgramsCount = 0, 
@@ -33,7 +33,7 @@ export default function StatCardSection() {
   } = useGetActiveProgramsCountQuery();
 
   // Show loading state if any data is still loading
-  const isLoading = organizationsLoading || pendingLoading || volunteersLoading || programsLoading;
+  const isLoading = organizationsLoading || pendingLoading || upcomingProgramsLoading || programsLoading;
 
   return (
     <div className={styles.cardContainer}>
@@ -55,10 +55,10 @@ export default function StatCardSection() {
       </Link>
       <div className={styles.card}>
         <StatCard
-          label="Total Volunteers"
-          count={isLoading ? "—" : totalVolunteersCount}
-          isLoading={volunteersLoading}
-          iconKey="volunteers"
+          label="Upcoming Programs"
+          count={isLoading ? "—" : upcomingProgramsCount}
+          isLoading={upcomingProgramsLoading}
+          iconKey="upcoming"
         />
       </div>
       <Link href="/superadmin/programs" className={styles.card}>

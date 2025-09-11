@@ -74,7 +74,7 @@
   margin: 0 0 0.3rem 0;
   color: #8b8e8d;
   font-weight: 400;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-poppins), sans-serif;
   line-height: 1.3;
 }
 
@@ -358,4 +358,83 @@
   .pendingApprovalsSection {
     padding: 1.25rem;
   }
+}
+
+/* Dropdown Styles */
+.dropdownWrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.organizationDropdown {
+  background: white;
+  padding: 0.45rem 0.9rem;
+  min-width: 200px;
+  border: 2px solid #06100f;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #06100f;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.organizationDropdown:hover {
+  background: #f3f3f3;
+}
+
+.organizationDropdown:focus {
+  outline: none;
+  background: #f3f3f3;
+}
+
+.organizationDropdown .icon {
+  margin-left: 0.5rem;
+  font-size: 16px;
+  color: #06100f;
+  transition: transform 0.2s ease;
+}
+
+.organizationDropdown:hover .icon {
+  color: #06100f;
+  transform: rotate(180deg);
+}
+
+.options {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 50;
+  max-height: 200px;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.options li {
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  font-size: 13px;
+  color: #374151;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.15s ease;
+}
+
+.options li:last-child {
+  border-bottom: none;
+}
+
+.options li:hover {
+  background-color: #f3f3f3;
 }

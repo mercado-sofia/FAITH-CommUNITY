@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react';
-import { FiEye } from 'react-icons/fi';
+import { FiEye, FiClipboard, FiChevronDown } from 'react-icons/fi';
 import styles from '../dashboard.module.css';
 import { useGetRecentPendingApprovalsQuery, useGetOrganizationsForFilterQuery } from '../../../../rtk/superadmin/dashboardApi';
 import { CgOptions } from "react-icons/cg";
@@ -11,6 +11,7 @@ export default function PendingApprovalsTable() {
   const [filter, setFilter] = useState('All');
   const [selectedOrganization, setSelectedOrganization] = useState('all');
   const [showOptions, setShowOptions] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(null);
   const dropdownRef = useRef(null);
 
   const { 
@@ -39,6 +40,7 @@ export default function PendingApprovalsTable() {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowOptions(false);
+        setShowDropdown(null);
       }
     }
 
@@ -95,18 +97,39 @@ export default function PendingApprovalsTable() {
       <div className={styles.pendingApprovalsSection}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>Pending Approvals</h2>
-          <div className={styles.filterControls}>
-            <select 
-              className={styles.filterSelect}
-              disabled
+        <div className={styles.filterControls}>
+          <div className={styles.dropdownWrapper}>
+            <div
+              className={styles.organizationDropdown}
+              onClick={() => setShowDropdown(showDropdown === "organization" ? null : "organization")}
             >
-              <option value="all">All Organizations</option>
-            </select>
-            <Link href="/superadmin/approvals" className={styles.viewAllButton}>
-              <FiEye />
-              View All
-            </Link>
+              {orgsLoading ? "Loading..." : selectedOrganization === "all" ? "All Organizations" : selectedOrganization}
+              <FiChevronDown className={styles.icon} />
+            </div>
+            {showDropdown === "organization" && (
+              <ul className={styles.options}>
+                <li key="all" onClick={() => {
+                  setSelectedOrganization("all");
+                  setShowDropdown(null);
+                }}>
+                  All Organizations
+                </li>
+                {organizations.map(org => (
+                  <li key={org.id} onClick={() => {
+                    setSelectedOrganization(org.acronym);
+                    setShowDropdown(null);
+                  }}>
+                    {org.acronym} - {org.name.length > 30 ? org.name.substring(0, 30) + "..." : org.name}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
+          <Link href="/superadmin/approvals" className={styles.viewAllButton}>
+            <FiEye />
+            View All
+          </Link>
+        </div>
         </div>
         <table className={styles.approvalsTable}>
           <thead>
@@ -146,7 +169,9 @@ export default function PendingApprovalsTable() {
           </div>
         </div>
         <div className={styles.emptyState}>
-          <div className={styles.emptyIcon}>📋</div>
+          <div className={styles.emptyIcon}>
+            <FiClipboard />
+          </div>
           <h3>No pending approvals</h3>
           <p>There are currently no pending approvals to review.</p>
         </div>
@@ -159,18 +184,33 @@ export default function PendingApprovalsTable() {
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>Pending Approvals</h2>
         <div className={styles.filterControls}>
-          <select 
-            value={selectedOrganization} 
-            onChange={(e) => setSelectedOrganization(e.target.value)}
-            className={styles.filterSelect}
-          >
-            <option value="all">All Organizations</option>
-            {organizations.map(org => (
-              <option key={org.id} value={org.acronym}>
-                {org.acronym} - {org.name}
-              </option>
-            ))}
-          </select>
+          <div className={styles.dropdownWrapper}>
+            <div
+              className={styles.organizationDropdown}
+              onClick={() => setShowDropdown(showDropdown === "organization" ? null : "organization")}
+            >
+              {orgsLoading ? "Loading..." : selectedOrganization === "all" ? "All Organizations" : selectedOrganization}
+              <FiChevronDown className={styles.icon} />
+            </div>
+            {showDropdown === "organization" && (
+              <ul className={styles.options}>
+                <li key="all" onClick={() => {
+                  setSelectedOrganization("all");
+                  setShowDropdown(null);
+                }}>
+                  All Organizations
+                </li>
+                {organizations.map(org => (
+                  <li key={org.id} onClick={() => {
+                    setSelectedOrganization(org.acronym);
+                    setShowDropdown(null);
+                  }}>
+                    {org.acronym} - {org.name.length > 30 ? org.name.substring(0, 30) + "..." : org.name}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           <Link href="/superadmin/approvals" className={styles.viewAllButton}>
             <FiEye />
             View All

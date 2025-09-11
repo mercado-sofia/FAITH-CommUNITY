@@ -16,7 +16,9 @@ export default function AboutSection() {
               width={700}
               height={500}
               className={styles.aboutImage}
-              priority
+              loading="lazy"
+              decoding="async"
+              sizes="(max-width: 1300px) 100vw, 700px"
             />
           </div>
 

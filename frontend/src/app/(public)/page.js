@@ -1,18 +1,14 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import Loader from '../../components/Loader';
 import { HeroSection, AboutSection, ImpactSection, NewsSection, BannerSection, OfficerSection, OrgAdviserSection } from './home';
 import { useGetPublicFeaturedProjectsQuery, programsApi } from '../../rtk/(public)/programsApi';
-
-let hasVisitedHome = false;
-let isFirstVisitHome = true;
+import { usePublicPageLoader } from './hooks/usePublicPageLoader';
 
 export default function PublicHomePage() {
-  const [loading, setLoading] = useState(!hasVisitedHome);
-  const [pageReady, setPageReady] = useState(false);
-  const timerRef = useRef(null);
-  const pageReadyTimerRef = useRef(null);
+  // Use centralized page loader hook
+  const { loading, pageReady } = usePublicPageLoader('home');
 
   // Preload featured projects data
   useEffect(() => {
@@ -20,36 +16,6 @@ export default function PublicHomePage() {
     programsApi.util.prefetch('getPublicFeaturedProjects', undefined, { force: true });
   }, []);
 
-  useEffect(() => {
-    if (!hasVisitedHome && typeof window !== 'undefined') {
-      hasVisitedHome = true;
-      timerRef.current = setTimeout(() => {
-        setLoading(false);
-      }, 500);
-    } else {
-      setLoading(false);
-    }
-
-    return () => clearTimeout(timerRef.current);
-  }, []);
-
-  // Add extra 1 second delay only for first visits after initial loading
-  useEffect(() => {
-    if (!loading) {
-      const extraDelay = isFirstVisitHome ? 1000 : 0;
-      
-      pageReadyTimerRef.current = setTimeout(() => {
-        setPageReady(true);
-        isFirstVisitHome = false;
-      }, extraDelay);
-    }
-
-    return () => {
-      if (pageReadyTimerRef.current) {
-        clearTimeout(pageReadyTimerRef.current);
-      }
-    };
-  }, [loading]);
 
   if (loading || !pageReady) {
     return <Loader small centered />;

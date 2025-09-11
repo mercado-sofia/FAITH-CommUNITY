@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import styles from './programs.module.css';
 import Loader from '../../../components/Loader';
@@ -8,11 +8,9 @@ import PageBanner from '../components/PageBanner';
 import { SearchAndFilterBar, OrgLinks, ProgramCard } from './components';
 import Pagination from '../components/Pagination';
 import { usePublicPrograms } from '../../../hooks/usePublicData';
+import { usePublicPageLoader } from '../hooks/usePublicPageLoader';
 
 const CARDS_PER_PAGE = 6;
-
-// Track if programs page has been visited
-let hasVisitedPrograms = false;
 
 export default function ProgramsPage() {
   const searchParams = useSearchParams();
@@ -28,44 +26,13 @@ export default function ProgramsPage() {
   const [sort, setSort] = useState(initialSort);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [isLoading, setIsLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(!hasVisitedPrograms);
-  const [pageReady, setPageReady] = useState(false);
-  const timerRef = useRef(null);
-  const pageReadyTimerRef = useRef(null);
+
+  // Use centralized page loader hook
+  const { loading: pageLoading, pageReady } = usePublicPageLoader('programs');
 
   // Use SWR hook for data fetching with caching
   const { programs, isLoading: dataLoading, error } = usePublicPrograms();
 
-  useEffect(() => {
-    if (!hasVisitedPrograms && typeof window !== 'undefined') {
-      hasVisitedPrograms = true;
-      timerRef.current = setTimeout(() => {
-        setInitialLoading(false);
-      }, 500); // Reduced timeout since data loads faster with caching
-    } else {
-      setInitialLoading(false);
-    }
-
-    return () => clearTimeout(timerRef.current);
-  }, []);
-
-  // Add extra 1 second delay only for first visits after data loads
-  useEffect(() => {
-    if (!dataLoading && !initialLoading) {
-      // Only add extra delay for first-time visitors
-      const extraDelay = !hasVisitedPrograms ? 1000 : 0;
-      
-      pageReadyTimerRef.current = setTimeout(() => {
-        setPageReady(true);
-      }, extraDelay);
-    }
-
-    return () => {
-      if (pageReadyTimerRef.current) {
-        clearTimeout(pageReadyTimerRef.current);
-      }
-    };
-  }, [dataLoading, initialLoading]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -139,7 +106,7 @@ export default function ProgramsPage() {
     currentPage * CARDS_PER_PAGE
   );
 
-  if (dataLoading) return <Loader small centered />;
+  if (pageLoading || !pageReady || dataLoading) return <Loader small centered />;
 
   return (
     <>

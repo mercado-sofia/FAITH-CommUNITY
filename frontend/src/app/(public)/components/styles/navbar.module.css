@@ -465,8 +465,8 @@
   transform: rotate(0deg);
 }
 
-.profileBtn:hover .chevronIcon,
-.profileWrapper:hover .chevronIcon {
+/* Only rotate when dropdown is open, not on hover */
+.profileWrapper.open .chevronIcon {
   transform: rotate(90deg);
 }
 
@@ -565,6 +565,16 @@
 
 .profileDropdownItem:first-child {
   border-bottom: 1px solid #e9ecef;
+}
+
+/* Gray color for icons in profile dropdown */
+.profileDropdownItem svg {
+  color: #6c757d;
+  transition: color 0.2s ease;
+}
+
+.profileDropdownItem:hover svg {
+  color: #0c4b3a;
 }
 
 /* Notification Styles */
@@ -782,6 +792,16 @@
 
 .mobileProfileLink:hover {
   border-color: #0c4b3a;
+  color: #0c4b3a;
+}
+
+/* Gray color for icons in mobile profile links */
+.mobileProfileLink svg {
+  color: #6c757d;
+  transition: color 0.2s ease;
+}
+
+.mobileProfileLink:hover svg {
   color: #0c4b3a;
 }
 

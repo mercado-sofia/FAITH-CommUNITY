@@ -8,9 +8,7 @@ import { usePublicOrganizations, usePublicNews } from "../../../hooks/usePublicD
 import styles from "./news.module.css";
 import Pagination from "../components/Pagination";
 import Loader from "../../../components/Loader";
-
-// Track if news page has been visited
-let hasVisitedNews = false;
+import { usePublicPageLoader } from "../hooks/usePublicPageLoader";
 
 export default function AllNewsPage() {
   const searchParams = useSearchParams();
@@ -19,8 +17,9 @@ export default function AllNewsPage() {
   const highlightNewsId = searchParams.get("highlight");
   const currentPage = parseInt(searchParams.get("page") || "1", 10);
   
-  const [pageReady, setPageReady] = useState(false);
-  const [isFirstVisit, setIsFirstVisit] = useState(!hasVisitedNews);
+  // Use centralized page loader hook
+  const { loading: pageLoading, pageReady } = usePublicPageLoader('news');
+  
   const [highlightedNewsId, setHighlightedNewsId] = useState(null);
   
   const NEWS_PER_PAGE = 10;
@@ -45,18 +44,6 @@ export default function AllNewsPage() {
     return filtered.sort((a, b) => new Date(b.published_at || b.date) - new Date(a.published_at || a.date));
   }, [news, orgFilter, organizations]);
 
-  useEffect(() => {
-    if (!orgLoading && !newsLoading) {
-      const extraDelay = isFirstVisit ? 1000 : 0;
-      const timer = setTimeout(() => {
-        setPageReady(true);
-        setIsFirstVisit(false);
-        hasVisitedNews = true; // Mark as visited
-      }, extraDelay);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [orgLoading, newsLoading, isFirstVisit]);
 
   useEffect(() => {
     if (highlightNewsId && pageReady) {
@@ -130,7 +117,7 @@ export default function AllNewsPage() {
     }
   };
 
-  if (orgLoading || newsLoading || !pageReady) {
+  if (pageLoading || !pageReady || orgLoading || newsLoading) {
     return <Loader small centered />;
   }
 

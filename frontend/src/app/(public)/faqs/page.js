@@ -5,17 +5,23 @@ import { FaChevronDown, FaChevronUp } from "react-icons/fa"
 import { usePublicFAQs } from "../../../hooks/usePublicData"
 import PageBanner from "../components/PageBanner"
 import Loader from "../../../components/Loader"
+import { usePublicPageLoader } from "../hooks/usePublicPageLoader"
 import styles from "./faqs.module.css"
 
 export default function FaqPage() {
   const [activeIndex, setActiveIndex] = useState(null)
-  const { faqs = [], error, isLoading } = usePublicFAQs()
+  
+  // Use centralized page loader hook
+  const { loading: pageLoading, pageReady } = usePublicPageLoader('faqs');
+  
+  // Use SWR hook for data fetching
+  const { faqs = [], error, isLoading: dataLoading } = usePublicFAQs()
 
   const toggleFaq = (index) => {
     setActiveIndex(index === activeIndex ? null : index)
   }
 
-  if (isLoading) return <Loader small centered />
+  if (pageLoading || !pageReady || dataLoading) return <Loader small centered />
 
   if (error) {
     return (

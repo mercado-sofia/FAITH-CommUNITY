@@ -2,12 +2,25 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import styles from "./volunteerForm.module.css";
-import SubmitStatus from "./SubmitStatus";
-import ProgramSelect from "./ProgramSelect";
-import SuccessModal from "./SuccessModal";
+import ProgramSelect from "../ProgramSelect/ProgramSelect";
+import SuccessModal from "../components/SuccessModal";
 import { usePublicApprovedPrograms } from "../../../../hooks/usePublicData";
-import FormErrorBoundary from "./FormErrorBoundary";
+import FormErrorBoundary from "../components/FormErrorBoundary";
 import logger from "../../../../utils/logger";
+
+function SubmitStatus({ status }) {
+  if (!status.submitted) return null;
+
+  return (
+    <div
+      className={`${styles.statusMessage} ${
+        status.success ? styles.success : styles.error
+      }`}
+    >
+      {status.message}
+    </div>
+  );
+}
 
 export default function SimplifiedVolunteerForm({ selectedProgramId }) {
   // Fetch approved upcoming programs from the API

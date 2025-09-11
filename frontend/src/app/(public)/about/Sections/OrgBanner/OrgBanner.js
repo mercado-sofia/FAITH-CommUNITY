@@ -1,10 +1,10 @@
-import styles from './aboutOrg.module.css';
+import styles from './OrgBanner.module.css';
 import Image from 'next/image';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { useState } from 'react';
 import { usePublicOrganizations } from '../../../../../hooks/usePublicData';
 
-export default function AboutOrg() {
+export default function OrgBanner() {
   const cardWidth = 140;
   const orgVisibleCount = 7;
   const [orgStart, setOrgStart] = useState(0);

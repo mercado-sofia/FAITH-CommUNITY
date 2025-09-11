@@ -192,10 +192,17 @@ export default function NotificationsPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1>Notifications</h1>
-      </div>
-      
-      <div className={styles.headerActions}>
+        <div className={styles.headerContent}>
+          <h1>Notifications</h1>
+          <p className={styles.subheader}>
+            {unreadCountData?.count > 0 
+              ? `${unreadCountData.count} unread notification${unreadCountData.count !== 1 ? 's' : ''}` 
+              : 'No unread notifications'
+            }
+          </p>
+        </div>
+        
+        <div className={styles.headerActions}>
         {selectedNotifications.length > 0 && (
           <>
             <button 
@@ -213,13 +220,16 @@ export default function NotificationsPage() {
             </button>
           </>
         )}
-        <button 
-          className={styles.markAllReadBtn}
-          onClick={handleMarkAllAsRead}
-        >
-          <PiChecksBold size={16} />
-          Mark All as Read
-        </button>
+        {unreadCountData?.count > 0 && (
+          <button 
+            className={styles.markAllReadBtn}
+            onClick={handleMarkAllAsRead}
+          >
+            <PiChecksBold size={16} />
+            Mark All as Read
+          </button>
+        )}
+        </div>
       </div>
       
       {/* Navigation Tabs */}

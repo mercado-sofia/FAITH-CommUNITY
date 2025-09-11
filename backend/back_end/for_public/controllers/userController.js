@@ -1,4 +1,4 @@
-//db table: users, notifications
+//db table: users, user_notifications
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import {

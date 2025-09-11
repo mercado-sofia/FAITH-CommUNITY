@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, forwardRef } from "react";
-import styles from "./volunteerForm.module.css";
+import styles from "./ProgramSelect.module.css";
 import { FaChevronDown } from "react-icons/fa";
 
 const ProgramSelect = forwardRef(function ProgramSelect(

@@ -3,6 +3,8 @@
   background: #fff;
   position: relative;
   overflow: visible;
+  content-visibility: auto;
+  contain-intrinsic-size: 800px 600px;
 }
 
 .aboutWrapper {
@@ -23,6 +25,7 @@
   height: auto;
   object-fit: cover;
   max-height: 460px;
+  will-change: transform;
 }
 
 .aboutContent {

@@ -34,16 +34,8 @@ export const loginAdmin = async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" })
     }
 
-    // Enforce TOTP if enabled
-    if (admin.mfa_enabled) {
-      if (!otp) {
-        return res.status(401).json({ error: "OTP required", requireMfa: true })
-      }
-      const ok = authenticator.check(String(otp), admin.mfa_secret || "")
-      if (!ok) {
-        return res.status(401).json({ error: "Invalid OTP", requireMfa: true })
-      }
-    }
+    // MFA removed for admin accounts - only superadmin accounts use MFA
+    // Admin accounts rely on strong passwords, CAPTCHA, and rate limiting for security
 
     // Generate JWT token (shorter expiry)
     const token = jwt.sign(
@@ -110,54 +102,10 @@ export const verifyAdminToken = (req, res, next) => {
   }
 }
 
-// -------------------- MFA (TOTP) for Admins --------------------
-export const setupMfaAdmin = async (req, res) => {
-  try {
-    const { id } = req.params
-    const [rows] = await db.execute('SELECT id, email FROM admins WHERE id = ? AND status = "ACTIVE"', [id])
-    if (rows.length === 0) return res.status(404).json({ error: 'Admin not found' })
-    const secret = authenticator.generateSecret()
-    const label = encodeURIComponent(`FAITH-CommUNITY:admin-${rows[0].email}`)
-    const issuer = encodeURIComponent(process.env.TOTP_ISSUER || 'FAITH-CommUNITY')
-    const otpauth = `otpauth://totp/${label}?secret=${secret}&issuer=${issuer}`
-    await db.execute('ALTER TABLE admins ADD COLUMN mfa_secret VARCHAR(255) NULL', []).catch(() => {})
-    await db.execute('ALTER TABLE admins ADD COLUMN mfa_enabled TINYINT(1) DEFAULT 0', []).catch(() => {})
-    await db.execute('UPDATE admins SET mfa_secret = ? WHERE id = ?', [secret, id])
-    res.json({ otpauth, secret })
-  } catch (e) {
-    console.error('Admin MFA setup error:', e)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-}
-
-export const verifyMfaAdmin = async (req, res) => {
-  try {
-    const { id } = req.params
-    const { otp } = req.body
-    const [rows] = await db.execute('SELECT id, mfa_secret FROM admins WHERE id = ?', [id])
-    if (rows.length === 0) return res.status(404).json({ error: 'Admin not found' })
-    const ok = authenticator.check(String(otp || ''), rows[0].mfa_secret || '')
-    if (!ok) return res.status(400).json({ error: 'Invalid OTP' })
-    await db.execute('UPDATE admins SET mfa_enabled = 1 WHERE id = ?', [id])
-    await logAdminAction(id, 'mfa_enable', 'Admin enabled MFA')
-    res.json({ message: 'MFA enabled' })
-  } catch (e) {
-    console.error('Admin MFA verify error:', e)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-}
-
-export const disableMfaAdmin = async (req, res) => {
-  try {
-    const { id } = req.params
-    await db.execute('UPDATE admins SET mfa_enabled = 0, mfa_secret = NULL WHERE id = ?', [id])
-    await logAdminAction(id, 'mfa_disable', 'Admin disabled MFA')
-    res.json({ message: 'MFA disabled' })
-  } catch (e) {
-    console.error('Admin MFA disable error:', e)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-}
+// -------------------- MFA Removed for Admins --------------------
+// MFA functionality has been removed for admin accounts.
+// Only superadmin accounts use MFA for enhanced security.
+// Admin accounts rely on strong passwords, CAPTCHA, and rate limiting.
 
 export const createAdmin = async (req, res) => {
   const { org, orgName, email, password, role } = req.body

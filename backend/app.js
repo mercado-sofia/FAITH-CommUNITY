@@ -281,7 +281,7 @@ import submissionRoutes from "./back_end/admin/routes/submission.js"
 import uploadRoutes from "./back_end/admin/routes/upload.js"
 import volunteersRoutes from "./back_end/admin/routes/volunteers.js"
 import profileRoutes from "./back_end/admin/routes/profile.js"
-import mfaRoutes from "./back_end/admin/routes/mfa.js"
+// MFA routes removed - only superadmin accounts use MFA
 
 import newsRoutes from "./back_end/admin/routes/newsRoutes.js"
 import notificationsRoutes from "./back_end/admin/routes/notifications.js"
@@ -298,7 +298,7 @@ app.use("/api/submissions", submissionRoutes)
 app.use("/api/upload", uploadRoutes)
 app.use("/api/volunteers", volunteersRoutes)
 app.use("/api/admin/profile", profileRoutes)
-app.use("/api/admin/mfa", mfaRoutes)
+// MFA routes removed - only superadmin accounts use MFA
 
 app.use("/api/news", newsRoutes)
 app.use("/api/notifications", notificationsRoutes)

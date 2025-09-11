@@ -956,7 +956,8 @@ const initializeDatabase = async () => {
       }
     }
 
-    // Ensure admins table has MFA columns
+    // MFA columns kept in admins table for future use, but MFA is currently disabled for admin accounts
+    // Only superadmin accounts use MFA for enhanced security
     try {
       await connection.query(`ALTER TABLE admins ADD COLUMN mfa_secret VARCHAR(255) NULL`)
     } catch (e) {}

@@ -211,7 +211,8 @@ export default function LoginPage() {
       }
 
       const data = result?.data
-      if (data && (data.requireMfa || /(otp|one-time)/i.test(data.error || ""))) {
+      // Only handle MFA for superadmin accounts
+      if (data && (data.requireMfa || /(otp|one-time)/i.test(data.error || "")) && lastAttemptedSystem === "superadmin") {
         setNeedsOtp(true)
         setErrorMessage("Enter the 6-digit OTP from your authenticator app.")
         setShowError(true)

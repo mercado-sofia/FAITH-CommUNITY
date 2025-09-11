@@ -125,9 +125,10 @@
 }
 
 .rejected {
-  background-color: #fdece8;
-  color: #cea077;
+  background-color: #fef2f2;
+  color: #dc2626;
 }
+
 .selectColumn {
   width: 40px;
   text-align: center;

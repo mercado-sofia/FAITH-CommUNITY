@@ -35,11 +35,11 @@ export const dashboardApi = createApi({
 
     // Get all organizations count
     getOrganizationsCount: builder.query({
-      query: () => "/admins",
+      query: () => "/organizations",
       providesTags: ["Dashboard"],
       transformResponse: (response) => {
-        const admins = response.success ? response.data : response;
-        return Array.isArray(admins) ? admins.length : 0;
+        const organizations = response.success ? response.data : response;
+        return Array.isArray(organizations) ? organizations.length : 0;
       },
     }),
 
@@ -53,13 +53,15 @@ export const dashboardApi = createApi({
       },
     }),
 
-    // Get total volunteers count
-    getTotalVolunteersCount: builder.query({
-      query: () => "/volunteers",
+    // Get upcoming programs count
+    getUpcomingProgramsCount: builder.query({
+      query: () => "/projects/superadmin/statistics",
       providesTags: ["Dashboard"],
       transformResponse: (response) => {
-        const volunteers = response.success ? response.data : response;
-        return Array.isArray(volunteers) ? volunteers.length : 0;
+        if (response.success && response.data) {
+          return response.data.upcoming_programs || 0;
+        }
+        return 0;
       },
     }),
 
@@ -110,29 +112,18 @@ export const dashboardApi = createApi({
 
     // Get organizations for dropdown filter
     getOrganizationsForFilter: builder.query({
-      query: () => "/admins",
+      query: () => "/organizations",
       providesTags: ["Dashboard"],
       transformResponse: (response) => {
-        const admins = response.success ? response.data : response;
-        if (!Array.isArray(admins)) return [];
+        const organizations = response.success ? response.data : response;
+        if (!Array.isArray(organizations)) return [];
         
-        // Extract unique organizations from admins data
-        const uniqueOrgs = [];
-        const seen = new Set();
-        
-        admins.forEach(admin => {
-          const orgKey = `${admin.org}-${admin.orgName}`;
-          if (!seen.has(orgKey) && admin.org && admin.orgName) {
-            seen.add(orgKey);
-            uniqueOrgs.push({
-              id: admin.organization_id || admin.id,
-              acronym: admin.org,
-              name: admin.orgName
-            });
-          }
-        });
-        
-        return uniqueOrgs;
+        // Return organizations directly as they're already formatted correctly
+        return organizations.map(org => ({
+          id: org.id,
+          acronym: org.acronym,
+          name: org.name
+        }));
       },
     }),
   }),
@@ -142,7 +133,7 @@ export const {
   useGetDashboardStatsQuery,
   useGetOrganizationsCountQuery,
   useGetPendingApprovalsCountQuery,
-  useGetTotalVolunteersCountQuery,
+  useGetUpcomingProgramsCountQuery,
   useGetTotalProgramsCountQuery,
   useGetActiveProgramsCountQuery,
   useGetRecentPendingApprovalsQuery,

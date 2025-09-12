@@ -1,7 +1,7 @@
 /* Main Layout */
 .mainArea {
   width: 100%;
-  padding: 2rem 3rem;
+  padding: 0 3rem 2rem 3rem;
 }
 
 /* Loading Container */
@@ -74,6 +74,7 @@
 /* Header */
 .header {
   margin-bottom: 2.5rem;
+  padding-top: 2rem;
 }
 
 .header h1 {

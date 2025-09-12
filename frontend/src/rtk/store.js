@@ -20,6 +20,7 @@ import { faqApi } from "./superadmin/faqApi"
 import { superadminProgramsApi } from "./superadmin/programsApi"
 import { dashboardApi } from "./superadmin/dashboardApi"
 import { notificationsApi } from "./admin/notificationsApi"
+import { superadminNotificationsApi } from "./superadmin/superadminNotificationsApi"
 import adminReducer from "./superadmin/adminSlice"
 
 export const store = configureStore({
@@ -44,6 +45,7 @@ export const store = configureStore({
     [superadminProgramsApi.reducerPath]: superadminProgramsApi.reducer,
     [dashboardApi.reducerPath]: dashboardApi.reducer,
     [notificationsApi.reducerPath]: notificationsApi.reducer,
+    [superadminNotificationsApi.reducerPath]: superadminNotificationsApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -66,6 +68,7 @@ export const store = configureStore({
       superadminProgramsApi.middleware,
       dashboardApi.middleware,
       notificationsApi.middleware,
+      superadminNotificationsApi.middleware,
     ),
 })
 

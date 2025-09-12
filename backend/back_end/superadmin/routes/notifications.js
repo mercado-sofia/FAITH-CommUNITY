@@ -1,0 +1,31 @@
+import express from 'express';
+import SuperAdminNotificationController from '../controllers/superadminNotificationController.js';
+import { migrateMissingNotifications } from '../controllers/notificationMigrationController.js';
+
+const router = express.Router();
+
+// Test endpoint
+router.get('/test/:superAdminId', SuperAdminNotificationController.testNotifications);
+
+// Create test notification
+router.post('/test/:superAdminId', SuperAdminNotificationController.createTestNotification);
+
+// Get all notifications for a superadmin
+router.get('/:superAdminId', SuperAdminNotificationController.getNotifications);
+
+// Get unread count
+router.get('/:superAdminId/unread-count', SuperAdminNotificationController.getUnreadCount);
+
+// Mark notification as read
+router.put('/:notificationId/read', SuperAdminNotificationController.markAsRead);
+
+// Mark all notifications as read
+router.put('/:superAdminId/mark-all-read', SuperAdminNotificationController.markAllAsRead);
+
+// Delete notification
+router.delete('/:notificationId', SuperAdminNotificationController.deleteNotification);
+
+// Migration endpoint
+router.post('/migrate-missing', migrateMissingNotifications);
+
+export default router;

@@ -17,7 +17,7 @@
   flex: 1;
   padding: 0;
   overflow-y: auto;
-  margin-top: 60px; /* Account for TopBar height */
+  margin-top: 55px; /* Account for TopBar height */
 }
 
 /* Responsive Design */

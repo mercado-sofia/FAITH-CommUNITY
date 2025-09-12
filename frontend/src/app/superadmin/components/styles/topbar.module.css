@@ -141,11 +141,10 @@
   flex-shrink: 0;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
-  background-color: #eff6ff;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .notificationContent {
@@ -219,4 +218,42 @@
   .breadcrumbText {
     font-size: 11px;
   }
+}
+
+/* Unread notification styles */
+.unreadNotification {
+  background-color: #f8fafc;
+  border-left: 3px solid #10c4a6;
+  position: relative;
+}
+
+.unreadDot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background-color: #10c4a6;
+  border-radius: 50%;
+}
+
+/* Organization logo styles */
+.organizationLogo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.fallbackIcon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: #f3f4f6;
+  border: 2px solid #e5e7eb;
 }

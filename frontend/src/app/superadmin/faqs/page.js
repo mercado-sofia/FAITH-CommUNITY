@@ -11,6 +11,7 @@ import {
 } from "../../../rtk/superadmin/faqApi";
 import FAQTable from './components/FAQTable';
 import CreateFAQModal from './components/CreateFAQModal';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import styles from './faqs.module.css';
 
 export default function ManageFaqs() {
@@ -30,6 +31,10 @@ export default function ManageFaqs() {
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingFaq, setEditingFaq] = useState(null);
+  
+  // Bulk delete modal state
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   
   // Dropdown state
   const [showDropdown, setShowDropdown] = useState(null);
@@ -139,6 +144,32 @@ export default function ManageFaqs() {
     }
   };
 
+  // Bulk delete modal handlers
+  const handleBulkDeleteClick = () => {
+    if (selectedItems.size === 0) return;
+    setShowBulkDeleteModal(true);
+  };
+
+  const handleBulkDeleteConfirm = async () => {
+    if (selectedItems.size === 0) return;
+    
+    setIsBulkDeleting(true);
+    try {
+      const selectedIds = Array.from(selectedItems);
+      await handleBulkDelete(selectedIds);
+      setShowBulkDeleteModal(false);
+      setSelectedItems(new Set());
+    } catch (error) {
+      console.error('Bulk delete failed:', error);
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
+  const handleBulkDeleteCancel = () => {
+    setShowBulkDeleteModal(false);
+  };
+
   // Selection handlers
   const handleSelectAll = (e) => {
     if (e.target.checked) {
@@ -191,10 +222,6 @@ export default function ManageFaqs() {
     setCurrentPage(page);
   };
 
-  const handleRefresh = () => {
-    refetch();
-    showNotification('Data refreshed!');
-  };
 
   // Loading and error states
   if (isFetching) {
@@ -211,9 +238,6 @@ export default function ManageFaqs() {
         <div className={styles.error}>
           <h2>Error loading FAQs</h2>
           <p>{fetchError?.data?.error || fetchError?.message || 'Failed to fetch data'}</p>
-          <button onClick={handleRefresh} className={styles.btnRefresh}>
-            Try Again
-          </button>
         </div>
       </div>
     );
@@ -249,7 +273,7 @@ export default function ManageFaqs() {
                 <label className={styles.filterLabel}>Sort by:</label>
                 <div className={styles.dropdownWrapper}>
                   <div
-                    className={styles.dropdown}
+                    className={`${styles.dropdown} ${showDropdown === "sort" ? styles.open : ""}`}
                     onClick={() => setShowDropdown(showDropdown === "sort" ? null : "sort")}
                   >
                     {sortBy === "latest" ? "Latest" : sortBy === "oldest" ? "Oldest" : "Question A-Z"}
@@ -284,7 +308,7 @@ export default function ManageFaqs() {
                 <label className={styles.filterLabel}>Show:</label>
                 <div className={styles.dropdownWrapper}>
                   <div
-                    className={`${styles.dropdown} ${styles.showDropdown}`}
+                    className={`${styles.dropdown} ${styles.showDropdown} ${showDropdown === "show" ? styles.open : ""}`}
                     onClick={() => setShowDropdown(showDropdown === "show" ? null : "show")}
                   >
                     {showEntries}
@@ -321,9 +345,6 @@ export default function ManageFaqs() {
                 </div>
           </div>
 
-          <button onClick={handleRefresh} className={styles.refreshButton}>
-                Refresh
-          </button>
         </div>
       </div>
             </div>
@@ -374,9 +395,9 @@ export default function ManageFaqs() {
               </span>
               <div className={styles.bulkActionsButtons}>
                 <button
-                  onClick={() => handleBulkDelete(Array.from(selectedItems))}
+                  onClick={handleBulkDeleteClick}
                   className={`${styles.bulkButton} ${styles.deleteButton}`}
-                  disabled={isBulkActionLoading}
+                  disabled={isBulkActionLoading || isBulkDeleting}
                 >
                   <FiTrash2 size={16} />
                   Delete Selected
@@ -481,6 +502,16 @@ export default function ManageFaqs() {
           initialData={editingFaq}
         />
       )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={showBulkDeleteModal}
+        itemName={`${selectedItems.size} FAQ${selectedItems.size > 1 ? 's' : ''}`}
+        itemType="FAQ"
+        onConfirm={handleBulkDeleteConfirm}
+        onCancel={handleBulkDeleteCancel}
+        isDeleting={isBulkDeleting}
+      />
     </div>
   );
 }

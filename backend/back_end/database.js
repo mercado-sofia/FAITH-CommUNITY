@@ -535,6 +535,31 @@ const initializeDatabase = async () => {
       }
     }
 
+    // Check if superadmin_notifications table exists
+    const [superadminNotificationsTables] = await connection.query('SHOW TABLES LIKE "superadmin_notifications"');
+    
+    if (superadminNotificationsTables.length === 0) {
+      console.log("Creating superadmin_notifications table...");
+      await connection.query(`
+        CREATE TABLE superadmin_notifications (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          superadmin_id INT NOT NULL,
+          type ENUM('approval_request', 'decline', 'system', 'message') NOT NULL,
+          title VARCHAR(255) NOT NULL,
+          message TEXT NOT NULL,
+          section VARCHAR(100),
+          submission_id INT,
+          organization_acronym VARCHAR(100),
+          is_read BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_superadmin_read (superadmin_id, is_read),
+          INDEX idx_created_at (created_at)
+        )
+      `);
+      console.log("✅ Superadmin notifications table created successfully!");
+    }
+
     // Check if password_reset_tokens table exists
     const [passwordResetTables] = await connection.query('SHOW TABLES LIKE "password_reset_tokens"');
     

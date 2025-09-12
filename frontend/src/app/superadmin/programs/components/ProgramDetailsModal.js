@@ -90,7 +90,7 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
   }
 
   return (
-    <div className={styles.modalOverlay} onClick={handleOverlayClick}>
+    <div className={styles.modalOverlay} onClick={handleOverlayClick} key={`modal-${program?.id}-${Date.now()}`}>
       <div className={styles.modalContent}>
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>Program Details</h2>

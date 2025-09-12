@@ -1,17 +1,20 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { FiClipboard, FiSearch, FiChevronDown, FiCheck, FiX, FiTrash2 } from 'react-icons/fi';
 import { HiOutlineDotsHorizontal } from 'react-icons/hi';
 import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowLeftDoubleFill, RiArrowRightDoubleFill } from "react-icons/ri";
 import ApprovalsTable from './components/ApprovalsTable';
 import ViewDetailsModal from './components/ViewDetailsModal';
 import BulkActionConfirmationModal from './components/BulkActionConfirmationModal';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import styles from '../styles/approvals.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export default function PendingApprovalsPage() {
+  const searchParams = useSearchParams();
   const [approvals, setApprovals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -45,6 +48,15 @@ export default function PendingApprovalsPage() {
   // Bulk action confirmation modal state
   const [showBulkConfirmation, setShowBulkConfirmation] = useState(false);
   const [pendingBulkAction, setPendingBulkAction] = useState(null);
+  
+  // Individual delete modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedItemForDelete, setSelectedItemForDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Bulk delete modal state
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   
   const [filteredApprovals, setFilteredApprovals] = useState([]);
 
@@ -127,6 +139,35 @@ export default function PendingApprovalsPage() {
     fetchApprovals();
     fetchOrganizations();
   }, []);
+
+  // Handle URL parameters for notification filtering
+  useEffect(() => {
+    const submissionId = searchParams.get('submissionId');
+    const section = searchParams.get('section');
+    const organization = searchParams.get('organization');
+    const searchTerm = searchParams.get('searchTerm');
+
+    if (submissionId || section || organization || searchTerm) {
+      // Set filters based on URL parameters
+      if (section && section !== 'all') {
+        setSelectedSection(section);
+      }
+      if (organization && organization !== 'all') {
+        setSelectedOrganization(organization);
+      }
+      if (submissionId) {
+        // Set search term to help identify the specific submission
+        setSearchTerm(submissionId);
+      } else if (searchTerm) {
+        // Use searchTerm if submissionId is not available
+        setSearchTerm(searchTerm);
+      } else {
+        // If we have section and organization but no specific ID, clear search term
+        // The combination of section + organization filters should be enough
+        setSearchTerm('');
+      }
+    }
+  }, [searchParams]);
 
   // Handle smooth bulk actions bar transition
   useEffect(() => {
@@ -211,7 +252,9 @@ export default function PendingApprovalsPage() {
       filtered = filtered.filter(approval => 
         approval.organization_acronym?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         approval.org?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        approval.section?.toLowerCase().includes(searchTerm.toLowerCase())
+        approval.section?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        approval.id?.toString().includes(searchTerm) ||
+        approval.submission_id?.toString().includes(searchTerm)
       );
     }
 
@@ -384,6 +427,79 @@ export default function PendingApprovalsPage() {
     }
   };
 
+  const handleDeleteClick = (approval) => {
+    setSelectedItemForDelete(approval);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedItemForDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/approvals/${selectedItemForDelete.id}/delete`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || 'Deletion failed');
+      }
+
+      setNotification({ 
+        type: 'success', 
+        text: 'Submission deleted successfully' 
+      });
+      fetchApprovals();
+      setShowDeleteModal(false);
+      setSelectedItemForDelete(null);
+      
+      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
+    } catch (err) {
+      console.error('❌ Delete error:', err);
+      setNotification({ 
+        type: 'error', 
+        text: 'Failed to delete submission: ' + err.message 
+      });
+      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setSelectedItemForDelete(null);
+  };
+
+  // Bulk delete handlers
+  const handleBulkDeleteClick = () => {
+    if (selectedItems.size === 0) return;
+    setShowBulkDeleteModal(true);
+  };
+
+  const handleBulkDeleteConfirm = async () => {
+    if (selectedItems.size === 0) return;
+    
+    setIsBulkDeleting(true);
+    try {
+      const selectedIds = Array.from(selectedItems);
+      await handleBulkDelete(selectedIds);
+      setShowBulkDeleteModal(false);
+      setSelectedItems(new Set());
+    } catch (error) {
+      console.error('Bulk delete failed:', error);
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
+  const handleBulkDeleteCancel = () => {
+    setShowBulkDeleteModal(false);
+  };
+
   // Pagination logic
   const totalPages = Math.ceil(filteredApprovals.length / showEntries);
   const startIndex = (currentPage - 1) * showEntries;
@@ -437,8 +553,7 @@ export default function PendingApprovalsPage() {
 
   const handleBulkDeleteSelected = useCallback(() => {
     if (selectedItems.size === 0 || isBulkActionLoading) return;
-    setPendingBulkAction('delete');
-    setShowBulkConfirmation(true);
+    handleBulkDeleteClick();
   }, [selectedItems.size, isBulkActionLoading]);
 
   // Confirmation modal handlers
@@ -463,9 +578,6 @@ export default function PendingApprovalsPage() {
         case 'reject':
           await handleBulkReject(selectedIds, rejectComment || 'Bulk rejection');
           break;
-        case 'delete':
-          await handleBulkDelete(selectedIds);
-          break;
         default:
           throw new Error('Invalid bulk action');
       }
@@ -478,7 +590,7 @@ export default function PendingApprovalsPage() {
       setIsBulkActionLoading(false);
       setPendingBulkAction(null);
     }
-  }, [pendingBulkAction, selectedItems, handleBulkApprove, handleBulkReject, handleBulkDelete]);
+  }, [pendingBulkAction, selectedItems, handleBulkApprove, handleBulkReject]);
 
   // Event handlers
   const handleOrganizationChange = (e) => {
@@ -542,7 +654,7 @@ export default function PendingApprovalsPage() {
           <span className={styles.inlineLabel}>Show</span>
           <div className={styles.dropdownWrapper}>
             <div
-              className={styles.dropdown}
+              className={`${styles.dropdown} ${showDropdown === "show" ? styles.open : ""}`}
               onClick={() => setShowDropdown(showDropdown === "show" ? null : "show")}
             >
               {showEntries}
@@ -564,7 +676,7 @@ export default function PendingApprovalsPage() {
 
           <div className={styles.dropdownWrapper}>
             <div
-              className={styles.organizationDropdown}
+              className={`${styles.organizationDropdown} ${showDropdown === "organization" ? styles.open : ""}`}
               onClick={() => setShowDropdown(showDropdown === "organization" ? null : "organization")}
             >
               {orgsLoading ? "Loading..." : selectedOrganization === "all" ? "All Organizations" : selectedOrganization}
@@ -592,7 +704,7 @@ export default function PendingApprovalsPage() {
 
           <div className={styles.dropdownWrapper}>
             <div
-              className={styles.dropdown}
+              className={`${styles.dropdown} ${showDropdown === "section" ? styles.open : ""}`}
               onClick={() => setShowDropdown(showDropdown === "section" ? null : "section")}
             >
               {selectedSection === "all" ? "All Section" : selectedSection.charAt(0).toUpperCase() + selectedSection.slice(1)}
@@ -637,7 +749,7 @@ export default function PendingApprovalsPage() {
 
           <div className={styles.dropdownWrapper}>
             <div
-              className={styles.dropdown}
+              className={`${styles.dropdown} ${showDropdown === "sort" ? styles.open : ""}`}
               onClick={() => setShowDropdown(showDropdown === "sort" ? null : "sort")}
             >
               Sort: {sortBy.charAt(0).toUpperCase() + sortBy.slice(1)}
@@ -822,6 +934,13 @@ export default function PendingApprovalsPage() {
                                   }}>
                                     Reject
                                   </li>
+                                  <li onClick={() => {
+                                    setShowDropdown(null);
+                                    setDropdownPosition({});
+                                    handleDeleteClick(approval);
+                                  }}>
+                                    Delete
+                                  </li>
                                 </ul>
                               )}
                             </div>
@@ -918,6 +1037,26 @@ export default function PendingApprovalsPage() {
         onConfirm={handleBulkConfirmationConfirm}
         onCancel={handleBulkConfirmationCancel}
         isProcessing={isBulkActionLoading}
+      />
+
+      {/* Individual Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        itemName={selectedItemForDelete?.organization_acronym || selectedItemForDelete?.org || 'Submission'}
+        itemType="submission"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        isDeleting={isDeleting}
+      />
+
+      {/* Bulk Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={showBulkDeleteModal}
+        itemName={`${selectedItems.size} submission${selectedItems.size > 1 ? 's' : ''}`}
+        itemType="submission"
+        onConfirm={handleBulkDeleteConfirm}
+        onCancel={handleBulkDeleteCancel}
+        isDeleting={isBulkDeleting}
       />
     </div>
   );

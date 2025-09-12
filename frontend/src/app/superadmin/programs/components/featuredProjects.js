@@ -1,12 +1,17 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import Image from 'next/image'
 import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/programsApi'
 import { getFeaturedProjectImageUrl } from '@/utils/uploadPaths'
+import StarButton from './StarButton'
+import ProgramDetailsModal from './ProgramDetailsModal'
 import styles from '../programs.module.css'
 
 const FeaturedProjects = () => {
+  const [selectedProgram, setSelectedProgram] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
   const { 
     data: featuredProjects = [], 
     isLoading, 
@@ -64,10 +69,19 @@ const FeaturedProjects = () => {
     )
   }
 
+  // Determine the appropriate grid class based on number of projects
+  const getGridClass = () => {
+    const count = featuredProjects.length;
+    if (count === 1) return styles.singleCard;
+    if (count === 2) return styles.twoCards;
+    if (count === 3) return styles.threeCards;
+    return ''; // Default grid for 4+ projects
+  };
+
   return (
     <div className={styles.featuredSection}>
       <h2 className={styles.sectionTitle}>Featured Projects</h2>
-      <div className={styles.featuredGrid}>
+      <div className={`${styles.featuredGrid} ${getGridClass()}`}>
         {featuredProjects.map((project) => {
           // Debug logging for image data
           console.log('SuperAdmin FeaturedProjects - Processing project:', {
@@ -112,6 +126,7 @@ const FeaturedProjects = () => {
               >
                 <span className={styles.orgAcronym}>{project.orgAcronym}</span>
               </div>
+              <StarButton programId={project.id} programTitle={project.title} />
             </div>
             
             <div className={styles.cardContent}>
@@ -132,11 +147,34 @@ const FeaturedProjects = () => {
                    project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'N/A'}
                 </span>
               </div>
+              
+              {/* View Details Button */}
+              <div className={styles.featuredCardFooter}>
+                <button 
+                  className={styles.viewDetailsButton}
+                  onClick={() => {
+                    setSelectedProgram(project)
+                    setIsModalOpen(true)
+                  }}
+                >
+                  View Details
+                </button>
+              </div>
             </div>
           </div>
           );
         })}
       </div>
+
+      {/* Program Details Modal */}
+      <ProgramDetailsModal 
+        program={selectedProgram}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false)
+          setSelectedProgram(null)
+        }}
+      />
     </div>
   )
 }

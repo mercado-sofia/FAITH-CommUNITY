@@ -141,6 +141,7 @@ export default adminSlice.reducer
 export const selectIsAuthenticated = (state) => state.admin.isAuthenticated
 export const selectAdminToken = (state) => state.admin.token
 export const selectCurrentAdmin = (state) => state.admin.admin
+export const selectCurrentSuperAdmin = (state) => state.admin.userType === 'superadmin' ? state.admin.admin : null
 export const selectAdminLoading = (state) => state.admin.loading
 export const selectAdminError = (state) => state.admin.error
 export const selectUserType = (state) => state.admin.userType

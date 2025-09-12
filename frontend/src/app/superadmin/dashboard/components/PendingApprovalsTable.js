@@ -100,7 +100,7 @@ export default function PendingApprovalsTable() {
         <div className={styles.filterControls}>
           <div className={styles.dropdownWrapper}>
             <div
-              className={styles.organizationDropdown}
+              className={`${styles.organizationDropdown} ${showDropdown === "organization" ? styles.open : ""}`}
               onClick={() => setShowDropdown(showDropdown === "organization" ? null : "organization")}
             >
               {orgsLoading ? "Loading..." : selectedOrganization === "all" ? "All Organizations" : selectedOrganization}
@@ -186,7 +186,7 @@ export default function PendingApprovalsTable() {
         <div className={styles.filterControls}>
           <div className={styles.dropdownWrapper}>
             <div
-              className={styles.organizationDropdown}
+              className={`${styles.organizationDropdown} ${showDropdown === "organization" ? styles.open : ""}`}
               onClick={() => setShowDropdown(showDropdown === "organization" ? null : "organization")}
             >
               {orgsLoading ? "Loading..." : selectedOrganization === "all" ? "All Organizations" : selectedOrganization}

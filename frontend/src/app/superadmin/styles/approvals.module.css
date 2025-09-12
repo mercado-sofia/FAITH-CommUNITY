@@ -1,7 +1,7 @@
 /* Main Area Layout - Modern pattern consistent with other superadmin pages */
 .mainArea {
-  padding: 2rem 3rem;
-  min-height: calc(100vh - 60px);
+  padding: 0 3rem 2rem 3rem;
+  min-height: calc(100vh - 55px);
   background: #F0F4F7;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
@@ -9,7 +9,7 @@
 /* Header Section */
 .header {
   margin-bottom: 0.75rem;
-  padding-top: 0;
+  padding-top: 2rem;
 }
 
 /* Controls and Stats Section */
@@ -92,15 +92,6 @@
   overflow: hidden;
 }
 
-.statsCard::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #1d9782, #2ac4ad, #1de7c6);
-}
 
 .statsCard:hover {
   transform: translateY(-2px);
@@ -111,24 +102,24 @@
 }
 
 .statNumber {
-  font-size: 32px;
-  font-weight: 700;
-  color: #1e293b;
+  font-size: 36px;
+  font-weight: 800;
+  color: #0f172a;
   margin: 0;
   line-height: 1;
   font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  letter-spacing: -0.025em;
 }
 
 .statLabel {
-  font-size: 14px;
-  margin: 0 0 0.5rem 0;
+  font-size: 13px;
+  margin: 0 0 0.75rem 0;
   color: #64748b;
-  font-weight: 500;
+  font-weight: 600;
   font-family: var(--font-inter), sans-serif;
   line-height: 1.4;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.1em;
 }
 
 
@@ -241,9 +232,9 @@
   transition: transform 0.2s ease;
 }
 
-.dropdown:hover .icon,
-.organizationDropdown:hover .icon,
-.programDropdown:hover .icon {
+.dropdown.open .icon,
+.organizationDropdown.open .icon,
+.programDropdown.open .icon {
   transform: rotate(180deg);
 }
 
@@ -317,7 +308,7 @@
   width: 100%;
   padding: 0.45rem 2.6rem 0.45rem 1rem;
   border-radius: 8px;
-  border: 2px solid #06100f;
+  border: 1px solid #d1d5db;
   background: #fff;
   font-size: 0.85rem;
   color: #06100f;
@@ -1009,7 +1000,7 @@
 
 .emptyStateIcon {
   font-size: 3rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.25rem;
   opacity: 0.5;
 }
 

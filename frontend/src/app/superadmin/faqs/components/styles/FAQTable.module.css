@@ -193,7 +193,7 @@
 
 .emptyIcon {
   font-size: 3rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.25rem;
   opacity: 0.5;
   color: #6b7280;
 }
@@ -213,135 +213,6 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Modal Styles */
-.modalOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  animation: fadeIn 0.2s ease-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.modalContent {
-  background: white;
-  border-radius: 16px;
-  padding: 2rem;
-  max-width: 500px;
-  width: 90%;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.modalTitle {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #111827;
-  margin-bottom: 1rem;
-  text-align: center;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.modalText {
-  color: #6b7280;
-  margin-bottom: 1rem;
-  text-align: center;
-  line-height: 1.6;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.modalDetails {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  padding: 1.5rem;
-  border-radius: 12px;
-  border-left: 4px solid #1d9782;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 1.5rem;
-}
-
-.modalDetails p {
-  margin: 0.5rem 0;
-  color: #374151;
-  text-align: left;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.modalDetails strong {
-  color: #111827;
-}
-
-.modalActions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-}
-
-.modalButton {
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  border: 2px solid transparent;
-}
-
-.cancelButton {
-  background: #f3f4f6;
-  color: #374151;
-  border-color: #d1d5db;
-}
-
-.cancelButton:hover:not(:disabled) {
-  background: #e5e7eb;
-  border-color: #9ca3af;
-  transform: translateY(-1px);
-}
-
-.confirmButton {
-  background: #dc2626;
-  color: white;
-  border-color: #dc2626;
-}
-
-.confirmButton:hover:not(:disabled) {
-  background: #b91c1c;
-  border-color: #b91c1c;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-}
-
-.confirmButton:disabled {
-  background: #f3f4f6;
-  color: #9ca3af;
-  border-color: #d1d5db;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
 
 /* Responsive Design */
 @media (max-width: 1024px) {
@@ -425,16 +296,23 @@
 }
 
 @media (max-width: 480px) {
-  .modalContent {
-    padding: 1.5rem;
-    margin: 1rem;
+  .faqTable th,
+  .faqTable td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.8rem;
   }
   
-  .modalActions {
-    flex-direction: column;
+  .questionText,
+  .answerText {
+    font-size: 0.8rem;
   }
   
-  .modalButton {
-    width: 100%;
+  .actionButtons {
+    gap: 0.5rem;
+  }
+  
+  .actionButton {
+    width: 32px;
+    height: 32px;
   }
 }

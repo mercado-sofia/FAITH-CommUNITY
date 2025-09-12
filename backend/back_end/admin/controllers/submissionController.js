@@ -1,5 +1,6 @@
 // db table: submissions
 import db from "../../database.js"
+import SuperAdminNotificationController from "../../superadmin/controllers/superadminNotificationController.js"
 
 // Validation helper for submission data
 const validateSubmissionItem = (item) => {
@@ -97,11 +98,11 @@ export const submitChanges = async (req, res) => {
       })
     }
 
-    // Insert submissions with converted numeric organization IDs
-    const insertPromises = submissions.map((item) => {
+    // Insert submissions with converted numeric organization IDs and collect their IDs
+    const insertPromises = submissions.map(async (item) => {
       const numericOrgId = orgIdMap.get(item.organization_id.toString())
       
-      return db.execute(
+      const [result] = await db.execute(
         `INSERT INTO submissions (organization_id, section, previous_data, proposed_data, submitted_by, status, submitted_at)
          VALUES (?, ?, ?, ?, ?, ?, NOW())`,
         [
@@ -113,9 +114,60 @@ export const submitChanges = async (req, res) => {
           "pending",
         ]
       )
+      
+      return {
+        submissionId: result.insertId,
+        item: item,
+        numericOrgId: numericOrgId
+      }
     })
 
-    await Promise.all(insertPromises)
+    const insertedSubmissions = await Promise.all(insertPromises)
+
+    // Get superadmin ID for notifications (assuming there's only one superadmin)
+    const [superadminRows] = await db.execute("SELECT id FROM superadmin LIMIT 1")
+    const superadminId = superadminRows.length > 0 ? superadminRows[0].id : null
+
+    // Create superadmin notifications for each submission
+    if (superadminId) {
+      for (const insertedSubmission of insertedSubmissions) {
+        const { submissionId, item, numericOrgId } = insertedSubmission
+        
+        // Get organization acronym for the notification
+        const [orgRows] = await db.execute(
+          "SELECT org FROM admins WHERE organization_id = ? LIMIT 1",
+          [numericOrgId]
+        )
+        const orgAcronym = orgRows.length > 0 ? orgRows[0].org : 'Unknown'
+
+        // Create notification based on section
+        let title = `New ${item.section.charAt(0).toUpperCase() + item.section.slice(1)} Submission`
+        let message = `${orgAcronym} has submitted a new ${item.section} for approval.`
+
+        // Special handling for programs
+        if (item.section === 'programs') {
+          try {
+            const proposedData = JSON.parse(item.proposed_data)
+            if (proposedData.title) {
+              message = `${orgAcronym} has submitted a new program "${proposedData.title}" for approval.`
+            }
+          } catch (parseError) {
+            console.warn('Failed to parse program data for notification:', parseError)
+          }
+        }
+
+        // Create the notification
+        await SuperAdminNotificationController.createNotification(
+          superadminId,
+          'approval_request',
+          title,
+          message,
+          item.section,
+          submissionId,
+          orgAcronym
+        )
+      }
+    }
 
     // Commit transaction
     await db.query("COMMIT")

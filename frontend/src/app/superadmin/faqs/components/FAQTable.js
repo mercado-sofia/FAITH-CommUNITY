@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { FiEdit2, FiTrash2, FiEye, FiClipboard } from 'react-icons/fi';
+import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import styles from './styles/FAQTable.module.css';
 
 export default function FAQTable({ 
@@ -180,61 +181,24 @@ export default function FAQTable({
       </div>
 
       {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <h3 className={styles.modalTitle}>Delete FAQ</h3>
-            <p className={styles.modalText}>
-              Are you sure you want to delete this FAQ? This action cannot be undone.
-            </p>
-            <div className={styles.modalDetails}>
-              <p><strong>Question:</strong> {selectedItemForDelete?.question}</p>
-            </div>
-            <div className={styles.modalActions}>
-              <button
-                onClick={handleDeleteCancel}
-                className={`${styles.modalButton} ${styles.cancelButton}`}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteConfirm}
-                className={`${styles.modalButton} ${styles.confirmButton}`}
-                disabled={isDeleting}
-              >
-                {isDeleting ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        itemName={selectedItemForDelete?.question}
+        itemType="FAQ"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        isDeleting={isDeleting}
+      />
 
       {/* Bulk Delete Confirmation Modal */}
-      {showBulkDeleteModal && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <h3 className={styles.modalTitle}>Delete Multiple FAQs</h3>
-            <p className={styles.modalText}>
-              Are you sure you want to delete {selectedItems.size} selected FAQ(s)? This action cannot be undone.
-            </p>
-            <div className={styles.modalActions}>
-              <button
-                onClick={handleBulkDeleteCancel}
-                className={`${styles.modalButton} ${styles.cancelButton}`}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleBulkDeleteConfirm}
-                className={`${styles.modalButton} ${styles.confirmButton}`}
-                disabled={isDeleting}
-              >
-                {isDeleting ? 'Deleting...' : `Delete ${selectedItems.size} FAQ(s)`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteConfirmationModal
+        isOpen={showBulkDeleteModal}
+        itemName={`${selectedItems.size} FAQ${selectedItems.size > 1 ? 's' : ''}`}
+        itemType="FAQ"
+        onConfirm={handleBulkDeleteConfirm}
+        onCancel={handleBulkDeleteCancel}
+        isDeleting={isDeleting}
+      />
     </>
   );
 }

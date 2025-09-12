@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
+import { FiChevronDown } from 'react-icons/fi'
 import { useGetAllProgramsByOrganizationQuery, useGetProgramsStatisticsQuery, useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/programsApi'
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths'
 import StarButton from './components/StarButton'
@@ -14,6 +15,59 @@ const SuperadminProgramsPage = () => {
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [selectedProgram, setSelectedProgram] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(null)
+
+  // Handle click outside for dropdowns
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      // Don't close if clicking on dropdown options or inside dropdown containers
+      if (e.target.closest(`.${styles.options}`)) {
+        return;
+      }
+      
+      if (!e.target.closest(`.${styles.dropdownWrapper}`)) {
+        setShowDropdown(null);
+      }
+    };
+
+    const handleResize = () => {
+      // Close dropdowns on window resize to prevent positioning issues
+      setShowDropdown(null);
+    };
+
+    const handleScroll = (e) => {
+      // Only close dropdowns if scrolling outside of dropdown containers
+      if (showDropdown) {
+        // Check if the target is a DOM element and has the closest method
+        if (e.target && typeof e.target.closest === 'function') {
+          if (!e.target.closest(`.${styles.dropdownWrapper}`)) {
+            setShowDropdown(null);
+          }
+        } else {
+          // For window scroll events, check if any dropdown wrapper is visible
+          const dropdownWrappers = document.querySelectorAll(`.${styles.dropdownWrapper}`);
+          const isAnyDropdownVisible = Array.from(dropdownWrappers).some(wrapper => 
+            wrapper.querySelector(`.${styles.options}`) && 
+            window.getComputedStyle(wrapper.querySelector(`.${styles.options}`)).display !== 'none'
+          );
+          
+          if (!isAnyDropdownVisible) {
+            setShowDropdown(null);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll, true);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [showDropdown]);
 
   const { 
     data: organizationPrograms = [], 
@@ -372,32 +426,64 @@ const SuperadminProgramsPage = () => {
         <div className={styles.filtersContainer}>
           <div className={styles.filterGroup}>
             <label className={styles.filterLabel}>Organization:</label>
-            <select 
-              value={selectedOrganization} 
-              onChange={(e) => setSelectedOrganization(e.target.value)}
-              className={styles.filterSelect}
-            >
-              <option value="all">All Organizations</option>
-              {organizationOptions.map(org => (
-                <option key={org.id} value={org.id}>
-                  {org.acronym} - {org.name}
-                </option>
-              ))}
-            </select>
+            <div className={styles.dropdownWrapper}>
+              <div
+                className={`${styles.organizationDropdown} ${showDropdown === "organization" ? styles.open : ""}`}
+                onClick={() => setShowDropdown(showDropdown === "organization" ? null : "organization")}
+              >
+                {selectedOrganization === "all" ? "All Organizations" : organizationOptions.find(org => org.id.toString() === selectedOrganization)?.acronym + " - " + organizationOptions.find(org => org.id.toString() === selectedOrganization)?.name}
+                <FiChevronDown className={styles.icon} />
+              </div>
+              {showDropdown === "organization" && (
+                <ul className={styles.options}>
+                  <li key="all" onClick={() => {
+                    setSelectedOrganization("all");
+                    setShowDropdown(null);
+                  }}>
+                    All Organizations
+                  </li>
+                  {organizationOptions.map(org => (
+                    <li key={org.id} onClick={() => {
+                      setSelectedOrganization(org.id.toString());
+                      setShowDropdown(null);
+                    }}>
+                      {org.acronym} - {org.name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
           
           <div className={styles.filterGroup}>
             <label className={styles.filterLabel}>Status:</label>
-            <select 
-              value={selectedStatus} 
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className={styles.filterSelect}
-            >
-              <option value="all">All Status</option>
-              <option value="Upcoming">Upcoming</option>
-              <option value="Active">Active</option>
-              <option value="Completed">Completed</option>
-            </select>
+            <div className={styles.dropdownWrapper}>
+              <div
+                className={`${styles.dropdown} ${showDropdown === "status" ? styles.open : ""}`}
+                onClick={() => setShowDropdown(showDropdown === "status" ? null : "status")}
+              >
+                {selectedStatus === "all" ? "All Status" : selectedStatus}
+                <FiChevronDown className={styles.icon} />
+              </div>
+              {showDropdown === "status" && (
+                <ul className={styles.options}>
+                  <li key="all" onClick={() => {
+                    setSelectedStatus("all");
+                    setShowDropdown(null);
+                  }}>
+                    All Status
+                  </li>
+                  {["Upcoming", "Active", "Completed"].map((status) => (
+                    <li key={status} onClick={() => {
+                      setSelectedStatus(status);
+                      setShowDropdown(null);
+                    }}>
+                      {status}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
 

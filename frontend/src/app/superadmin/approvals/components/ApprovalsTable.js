@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import styles from './styles/ApprovalsTable.module.css';
 import ViewDetailsModal from './ViewDetailsModal';
 
-export default function ApprovalsTable({ approvals, onApprove, onReject, onBulkApprove, onBulkReject, onBulkDelete }) {
+export default function ApprovalsTable({ approvals, onApprove, onReject, onBulkApprove, onBulkReject, onBulkDelete, onDelete }) {
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedItemForReject, setSelectedItemForReject] = useState(null);
@@ -13,7 +14,9 @@ export default function ApprovalsTable({ approvals, onApprove, onReject, onBulkA
   const [selectedItemForDetails, setSelectedItemForDetails] = useState(null);
   const [showBulkRejectModal, setShowBulkRejectModal] = useState(false);
   const [bulkRejectComment, setBulkRejectComment] = useState('');
-  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedItemForDelete, setSelectedItemForDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
@@ -113,21 +116,31 @@ export default function ApprovalsTable({ approvals, onApprove, onReject, onBulkA
     setBulkRejectComment('');
   };
 
-  const handleBulkDelete = () => {
-    if (selectedItems.size === 0) return;
-    setShowBulkDeleteModal(true);
+
+  // Individual delete handlers
+  const handleDeleteClick = (item) => {
+    setSelectedItemForDelete(item);
+    setShowDeleteModal(true);
   };
 
-  const handleBulkDeleteConfirm = () => {
-    if (selectedItems.size === 0) return;
-    const selectedIds = Array.from(selectedItems);
-    onBulkDelete(selectedIds);
-    setSelectedItems(new Set());
-    setShowBulkDeleteModal(false);
+  const handleDeleteConfirm = async () => {
+    if (selectedItemForDelete && onDelete) {
+      setIsDeleting(true);
+      try {
+        await onDelete(selectedItemForDelete.id);
+        setShowDeleteModal(false);
+        setSelectedItemForDelete(null);
+      } catch (error) {
+        console.error('Delete failed:', error);
+      } finally {
+        setIsDeleting(false);
+      }
+    }
   };
 
-  const handleBulkDeleteCancel = () => {
-    setShowBulkDeleteModal(false);
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setSelectedItemForDelete(null);
   };
 
   const formatDate = (date) => {
@@ -162,7 +175,12 @@ export default function ApprovalsTable({ approvals, onApprove, onReject, onBulkA
               Reject All
             </button>
             <button 
-              onClick={handleBulkDelete}
+              onClick={() => {
+                if (selectedItems.size === 0) return;
+                const selectedIds = Array.from(selectedItems);
+                onBulkDelete(selectedIds);
+                setSelectedItems(new Set());
+              }}
               className={`${styles.bulkActionBtn} ${styles.bulkDeleteBtn}`}
             >
               Delete All
@@ -237,6 +255,13 @@ export default function ApprovalsTable({ approvals, onApprove, onReject, onBulkA
                       className={`${styles.actionBtn} ${styles.rejectBtn}`}
                     >
                       Reject
+                    </button>
+                    <button
+                      onClick={() => handleDeleteClick(item)}
+                      className={`${styles.actionBtn} ${styles.deleteBtn}`}
+                      disabled={isDeleting}
+                    >
+                      Delete
                     </button>
                   </div>
                 </td>
@@ -332,41 +357,16 @@ export default function ApprovalsTable({ approvals, onApprove, onReject, onBulkA
         </div>
       )}
 
-      {/* Bulk Delete Confirmation Modal */}
-      {showBulkDeleteModal && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modal}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Delete Selected Submissions</h3>
-              <button 
-                onClick={handleBulkDeleteCancel}
-                className={styles.modalCloseBtn}
-              >
-                ×
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <p className={styles.modalDescription}>
-                Are you sure you want to delete {selectedItems.size} submission{selectedItems.size !== 1 ? 's' : ''}? This action cannot be undone.
-              </p>
-            </div>
-            <div className={styles.modalFooter}>
-              <button 
-                onClick={handleBulkDeleteCancel}
-                className={styles.modalCancelBtn}
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleBulkDeleteConfirm}
-                className={styles.modalDeleteBtn}
-              >
-                Delete All Submissions
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Individual Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        itemName={selectedItemForDelete?.org || selectedItemForDelete?.organization_acronym || 'Submission'}
+        itemType="submission"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        isDeleting={isDeleting}
+      />
+
 
       {/* View Details Modal */}
       <ViewDetailsModal 

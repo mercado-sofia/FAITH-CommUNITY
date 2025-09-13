@@ -9,6 +9,7 @@ import { getOrganizationImageUrl } from '@/utils/uploadPaths'
 import ProgramDetailsModal from './components/ProgramDetailsModal'
 import FeaturedProjects from './components/featuredProjects'
 import ProgramCard from './components/ProgramCard'
+import SearchBar from './components/SearchBar'
 import styles from './programs.module.css'
 
 const SuperadminProgramsPage = () => {
@@ -18,6 +19,7 @@ const SuperadminProgramsPage = () => {
   const [selectedProgram, setSelectedProgram] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [showDropdown, setShowDropdown] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState(() => {
     const tab = searchParams.get('tab')
     return tab || 'featured' // Default to 'featured' if no URL parameter
@@ -109,13 +111,38 @@ const SuperadminProgramsPage = () => {
     isLoading: statsLoading 
   } = useGetProgramsStatisticsQuery()
 
-  // Filter organizations based on selected filters
-  const filteredOrganizations = organizationPrograms.filter(org => {
+  // Search function to filter programs
+  const searchPrograms = (programs, query) => {
+    if (!query.trim()) return programs
+    
+    const searchTerm = query.toLowerCase()
+    return programs.filter(program => 
+      program.title?.toLowerCase().includes(searchTerm) ||
+      program.description?.toLowerCase().includes(searchTerm) ||
+      program.location?.toLowerCase().includes(searchTerm) ||
+      program.category?.toLowerCase().includes(searchTerm)
+    )
+  }
+
+  // Filter organizations based on selected filters and search
+  const filteredOrganizations = organizationPrograms.map(org => {
+    // First filter by organization
     if (selectedOrganization !== 'all' && org.organizationId !== parseInt(selectedOrganization)) {
-      return false
+      return null
     }
-    return true
-  })
+
+    // Then apply search filter to programs
+    const filteredPrograms = {
+      upcoming: searchPrograms(org.programs.upcoming, searchQuery),
+      active: searchPrograms(org.programs.active, searchQuery),
+      completed: searchPrograms(org.programs.completed, searchQuery)
+    }
+
+    return {
+      ...org,
+      programs: filteredPrograms
+    }
+  }).filter(org => org !== null)
 
   // Get all unique organizations for filter dropdown
   const organizationOptions = organizationPrograms.map(org => ({
@@ -123,6 +150,11 @@ const SuperadminProgramsPage = () => {
     name: org.organizationName,
     acronym: org.organizationAcronym
   }))
+
+  // Search handler
+  const handleSearchChange = (query) => {
+    setSearchQuery(query)
+  }
 
   const renderProgramCard = (program, organizationData) => {
     return (
@@ -172,7 +204,18 @@ const SuperadminProgramsPage = () => {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
-          <h1 className={styles.pageTitle}>Programs Management</h1>
+          <div className={styles.headerTop}>
+            <div className={styles.twoColumnLayout}>
+              <div className={styles.leftColumn}>
+                <h1 className={styles.pageTitle}>Programs Management</h1>
+              </div>
+              <div className={styles.rightColumn}>
+                <div className={styles.statsContainer}>
+                  {/* Empty stats during loading */}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <div className={styles.loadingContainer}>
           <div className={styles.spinner}></div>
@@ -186,7 +229,18 @@ const SuperadminProgramsPage = () => {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
-          <h1 className={styles.pageTitle}>Programs Management</h1>
+          <div className={styles.headerTop}>
+            <div className={styles.twoColumnLayout}>
+              <div className={styles.leftColumn}>
+                <h1 className={styles.pageTitle}>Programs Management</h1>
+              </div>
+              <div className={styles.rightColumn}>
+                <div className={styles.statsContainer}>
+                  {/* Empty stats during error */}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <div className={styles.errorContainer}>
           <p className={styles.errorMessage}>Failed to load programs</p>
@@ -202,68 +256,85 @@ const SuperadminProgramsPage = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <div className={styles.headerTop}>
-          <div className={styles.headerRow}>
-            <h1 className={styles.pageTitle}>Programs Management</h1>
-            <div className={styles.statsContainer}>
-              {!statsLoading && (
-                <>
-                  <div className={styles.statCard}>
-                    <span className={styles.statNumber}>{statistics.totalPrograms}</span>
-                    <span className={styles.statLabel}>Total Programs</span>
-                  </div>
-                  <div className={styles.statCard}>
-                    <span className={styles.statNumber}>{statistics.upcomingPrograms}</span>
-                    <span className={styles.statLabel}>Upcoming</span>
-                  </div>
-                  <div className={styles.statCard}>
-                    <span className={styles.statNumber}>{statistics.activePrograms}</span>
-                    <span className={styles.statLabel}>Active</span>
-                  </div>
-                  <div className={styles.statCard}>
-                    <span className={styles.statNumber}>{statistics.completedPrograms}</span>
-                    <span className={styles.statLabel}>Completed</span>
-                  </div>
-                </>
-              )}
+          <div className={styles.twoColumnLayout}>
+            {/* Left Column - 50% width */}
+            <div className={styles.leftColumn}>
+              <h1 className={styles.pageTitle}>Programs Management</h1>
+              <div className={styles.searchSection}>
+                <SearchBar
+                  searchQuery={searchQuery}
+                  onSearchChange={handleSearchChange}
+                />
+              </div>
             </div>
-          </div>
-          <div className={styles.navigationTabs}>
-            <button
-              className={`${styles.navTab} ${activeTab === 'featured' ? styles.activeTab : ''}`}
-              onClick={() => updateTabUrl('featured')}
-            >
-              Featured
-            </button>
-            <button
-              className={`${styles.navTab} ${activeTab === 'all' ? styles.activeTab : ''}`}
-              onClick={() => updateTabUrl('all')}
-            >
-              All
-            </button>
-            <button
-              className={`${styles.navTab} ${activeTab === 'upcoming' ? styles.activeTab : ''}`}
-              onClick={() => updateTabUrl('upcoming')}
-            >
-              Upcoming
-            </button>
-            <button
-              className={`${styles.navTab} ${activeTab === 'active' ? styles.activeTab : ''}`}
-              onClick={() => updateTabUrl('active')}
-            >
-              Active
-            </button>
-            <button
-              className={`${styles.navTab} ${activeTab === 'completed' ? styles.activeTab : ''}`}
-              onClick={() => updateTabUrl('completed')}
-            >
-              Completed
-            </button>
+
+            {/* Right Column - 50% width */}
+            <div className={styles.rightColumn}>
+              <div className={styles.statsContainer}>
+                {!statsLoading && (
+                  <>
+                    <div className={styles.statCard}>
+                      <span className={styles.statNumber}>{statistics.totalPrograms}</span>
+                      <span className={styles.statLabel}>Total Programs</span>
+                    </div>
+                    <div className={styles.statCard}>
+                      <span className={styles.statNumber}>{statistics.upcomingPrograms}</span>
+                      <span className={styles.statLabel}>Upcoming</span>
+                    </div>
+                    <div className={styles.statCard}>
+                      <span className={styles.statNumber}>{statistics.activePrograms}</span>
+                      <span className={styles.statLabel}>Active</span>
+                    </div>
+                    <div className={styles.statCard}>
+                      <span className={styles.statNumber}>{statistics.completedPrograms}</span>
+                      <span className={styles.statLabel}>Completed</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Navigation Tabs - Full width row */}
+      <div className={styles.navigationSection}>
+        <div className={styles.navigationTabs}>
+          <button
+            className={`${styles.navTab} ${activeTab === 'featured' ? styles.activeTab : ''}`}
+            onClick={() => updateTabUrl('featured')}
+          >
+            Featured
+          </button>
+          <button
+            className={`${styles.navTab} ${activeTab === 'all' ? styles.activeTab : ''}`}
+            onClick={() => updateTabUrl('all')}
+          >
+            All
+          </button>
+          <button
+            className={`${styles.navTab} ${activeTab === 'upcoming' ? styles.activeTab : ''}`}
+            onClick={() => updateTabUrl('upcoming')}
+          >
+            Upcoming
+          </button>
+          <button
+            className={`${styles.navTab} ${activeTab === 'active' ? styles.activeTab : ''}`}
+            onClick={() => updateTabUrl('active')}
+          >
+            Active
+          </button>
+          <button
+            className={`${styles.navTab} ${activeTab === 'completed' ? styles.activeTab : ''}`}
+            onClick={() => updateTabUrl('completed')}
+          >
+            Completed
+          </button>
+        </div>
+      </div>
+
       {/* Content based on active tab */}
-      {activeTab === 'featured' && <FeaturedProjects />}
+      {activeTab === 'featured' && <FeaturedProjects searchQuery={searchQuery} />}
 
       {/* Programs by Organization - show when 'All' or status tabs are active */}
       {(activeTab === 'all' || activeTab === 'upcoming' || activeTab === 'active' || activeTab === 'completed') && (

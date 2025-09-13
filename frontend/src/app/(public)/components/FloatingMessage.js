@@ -157,8 +157,8 @@ export default function FloatingMessage() {
     }
 
     // Validate message
-    if (!message.trim() || message.trim().length < 10) {
-      alert("Please enter a message (at least 10 characters)");
+    if (!message.trim()) {
+      alert("Please enter a message");
       return;
     }
 

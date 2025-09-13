@@ -4,10 +4,10 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getFeaturedProjectImageUrl } from '@/utils/uploadPaths';
+import { processProjectDates } from '@/utils/dateProcessing';
+import { debounce } from '@/utils/debounce';
 import styles from './ImpactSection.module.css';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { LuCalendarCheck2 } from "react-icons/lu";
-import { FiCalendar } from "react-icons/fi";
 import { useGetPublicFeaturedProjectsQuery } from '@/rtk/(public)/programsApi';
 
 // Component for truncated description
@@ -38,8 +38,12 @@ export default function ImpactSection() {
     error 
   } = useGetPublicFeaturedProjectsQuery();
 
-  // Carousel configuration
-  const getCarouselConfig = useCallback(() => {
+  // Carousel configuration - memoized to prevent recalculation
+  const carouselConfig = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return { cardWidth: 370, gap: 18 }; // Default for SSR
+    }
+    
     const width = window.innerWidth;
     
     if (width < 768) {
@@ -60,10 +64,11 @@ export default function ImpactSection() {
     }
   }, []);
 
-  // Reset index on resize
-  const handleResize = useCallback(() => {
-    setCurrentIndex(0);
-  }, []);
+  // Reset index on resize - debounced to prevent excessive calls
+  const debouncedResize = useMemo(() => 
+    debounce(() => setCurrentIndex(0), 150), 
+    []
+  );
 
   // Intersection Observer for better scroll performance
   useEffect(() => {
@@ -89,163 +94,12 @@ export default function ImpactSection() {
     };
   }, []);
 
-  useEffect(() => {
-    setIsClient(true);
-    window.addEventListener('resize', handleResize);
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [handleResize]);
 
   // Memoize data transformation to prevent unnecessary recalculations
   const dataToDisplay = useMemo(() => {
     return featuredProjects.map(project => {
-      // Determine the best date to display and program status
-      let displayDate = 'Coming Soon';
-      let status = 'upcoming';
-      let dateColor = '#15803d'; // Default upcoming color
-      let CalendarIcon = FiCalendar; // Default upcoming icon
-      
-      const now = new Date();
-      const startDate = project.eventStartDate ? new Date(project.eventStartDate) : null;
-      const endDate = project.eventEndDate ? new Date(project.eventEndDate) : null;
-      
-      // Check for multiple dates first
-      if (project.multiple_dates && Array.isArray(project.multiple_dates) && project.multiple_dates.length > 0) {
-        // For multiple dates, show the soonest upcoming date
-        const upcomingDates = project.multiple_dates
-          .map(date => new Date(date))
-          .filter(date => date >= now)
-          .sort((a, b) => a - b);
-        
-        if (upcomingDates.length > 0) {
-          status = 'upcoming';
-          displayDate = upcomingDates[0].toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric' 
-          });
-          dateColor = '#15803d';
-          CalendarIcon = FiCalendar;
-        } else {
-          // All dates are in the past
-          status = 'completed';
-          const lastDate = project.multiple_dates
-            .map(date => new Date(date))
-            .sort((a, b) => b - a)[0];
-          displayDate = lastDate.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric' 
-          });
-          dateColor = '#475569';
-          CalendarIcon = LuCalendarCheck2;
-        }
-      } else if (startDate && endDate) {
-        // Check if it's a single-day event
-        const isSingleDay = startDate.toDateString() === endDate.toDateString();
-        
-        if (isSingleDay) {
-          // Single-day event - show only one date
-          if (now > endDate) {
-            status = 'completed';
-            displayDate = startDate.toLocaleDateString('en-US', { 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric' 
-            });
-            dateColor = '#475569';
-            CalendarIcon = LuCalendarCheck2;
-          } else if (now >= startDate && now <= endDate) {
-            status = 'active';
-            displayDate = 'Currently Active';
-            dateColor = '#e77b2d';
-            CalendarIcon = FiCalendar;
-          } else {
-            status = 'upcoming';
-            displayDate = startDate.toLocaleDateString('en-US', { 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric' 
-            });
-            dateColor = '#15803d';
-            CalendarIcon = FiCalendar;
-          }
-        } else {
-          // Multi-day event - show date range
-          if (now > endDate) {
-            status = 'completed';
-            displayDate = `${startDate.toLocaleDateString('en-US', { 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric' 
-            })} - ${endDate.toLocaleDateString('en-US', { 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric' 
-            })}`;
-            dateColor = '#475569';
-            CalendarIcon = LuCalendarCheck2;
-          } else if (now >= startDate && now <= endDate) {
-            status = 'active';
-            displayDate = 'Currently Active';
-            dateColor = '#e77b2d';
-            CalendarIcon = FiCalendar;
-          } else {
-            status = 'upcoming';
-            displayDate = `${startDate.toLocaleDateString('en-US', { 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric' 
-            })} - ${endDate.toLocaleDateString('en-US', { 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric' 
-            })}`;
-            dateColor = '#15803d';
-            CalendarIcon = FiCalendar;
-          }
-        }
-      } else if (startDate) {
-        // Single start date
-        if (now >= startDate) {
-          status = 'active';
-          displayDate = 'Currently Active';
-          dateColor = '#e77b2d';
-          CalendarIcon = FiCalendar;
-        } else {
-          status = 'upcoming';
-          displayDate = startDate.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric' 
-          });
-          dateColor = '#15803d';
-          CalendarIcon = FiCalendar;
-        }
-      } else if (endDate) {
-        // Single end date
-        if (now > endDate) {
-          status = 'completed';
-          displayDate = endDate.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric' 
-          });
-          dateColor = '#475569';
-          CalendarIcon = LuCalendarCheck2;
-        } else {
-          status = 'upcoming';
-          displayDate = endDate.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric' 
-          });
-          dateColor = '#15803d';
-          CalendarIcon = FiCalendar;
-        }
-      }
+      // Use the optimized date processing utility
+      const { displayDate, status, dateColor, CalendarIcon } = processProjectDates(project);
 
       return {
         image: project.image ? 
@@ -270,7 +124,6 @@ export default function ImpactSection() {
   }, [dataToDisplay.length]);
 
   // Carousel calculations
-  const carouselConfig = getCarouselConfig();
   const slideSize = 3;
   const maxIndex = dataToDisplay.length <= slideSize ? 0 : dataToDisplay.length - slideSize;
 
@@ -292,14 +145,23 @@ export default function ImpactSection() {
     });
   }, [maxIndex]);
 
+  // Combined effect for better performance
   useEffect(() => {
+    setIsClient(true);
+    
     const handleKey = (e) => {
       if (e.key === 'ArrowRight') handleNext();
       else if (e.key === 'ArrowLeft') handlePrev();
     };
+    
+    window.addEventListener('resize', debouncedResize);
     window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [handleNext, handlePrev]);
+    
+    return () => {
+      window.removeEventListener('resize', debouncedResize);
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, [handleNext, handlePrev, debouncedResize]);
 
   // Calculate translateX for carousel sliding
   const translateX = useMemo(() => {

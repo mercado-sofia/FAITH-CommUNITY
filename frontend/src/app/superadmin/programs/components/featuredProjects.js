@@ -6,7 +6,7 @@ import ProgramDetailsModal from './ProgramDetailsModal'
 import ProgramCard from './ProgramCard'
 import styles from '../programs.module.css'
 
-const FeaturedProjects = () => {
+const FeaturedProjects = ({ searchQuery = '' }) => {
   const [selectedProgram, setSelectedProgram] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -16,6 +16,21 @@ const FeaturedProjects = () => {
     error,
     refetch 
   } = useGetAllFeaturedProjectsQuery()
+
+  // Search function to filter featured projects
+  const searchFeaturedProjects = (projects, query) => {
+    if (!query.trim()) return projects
+    
+    const searchTerm = query.toLowerCase()
+    return projects.filter(project => 
+      project.title?.toLowerCase().includes(searchTerm) ||
+      project.description?.toLowerCase().includes(searchTerm) ||
+      project.orgName?.toLowerCase().includes(searchTerm)
+    )
+  }
+
+  // Filter featured projects based on search query
+  const filteredFeaturedProjects = searchFeaturedProjects(featuredProjects, searchQuery)
 
 
   if (isLoading) {
@@ -58,20 +73,23 @@ const FeaturedProjects = () => {
     )
   }
 
-  // Determine the appropriate grid class based on number of projects
-  const getGridClass = () => {
-    const count = featuredProjects.length;
-    if (count === 1) return styles.singleCard;
-    if (count === 2) return styles.twoCards;
-    if (count === 3) return styles.threeCards;
-    return ''; // Default grid for 4+ projects
-  };
+  // Show search results message if searching
+  if (searchQuery && filteredFeaturedProjects.length === 0) {
+    return (
+      <div className={styles.featuredSection}>
+        <h2 className={styles.sectionTitle}>Featured Projects</h2>
+        <div className={styles.emptyState}>
+          <p>No featured projects found matching &quot;{searchQuery}&quot;.</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={styles.featuredSection}>
       <h2 className={styles.sectionTitle}>Featured Projects</h2>
-      <div className={`${styles.featuredGrid} ${getGridClass()}`}>
-        {featuredProjects.map((project) => {
+      <div className={styles.featuredGrid}>
+        {filteredFeaturedProjects.map((project) => {
           // Transform featured project data to match program structure
           const programData = {
             id: project.id,

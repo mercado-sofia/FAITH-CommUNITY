@@ -26,7 +26,7 @@
   margin-bottom: 10px;
 }
 
-/* Professional Carousel Container */
+/* Carousel Container */
 .carouselContainer {
   display: flex;
   align-items: center;
@@ -93,6 +93,8 @@
   transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   will-change: transform;
   padding-top: 12px;
+  width: 100%;
+  justify-content: flex-start;
 }
 
 /* Carousel Card */
@@ -146,11 +148,6 @@
   text-transform: uppercase;
   border-bottom-left-radius: 12px;
   border-top-right-radius: 12px;
-}
-
-/* White background badge - dark text */
-.cardBadgeWhite {
-  color: #333333 !important;
 }
 
 /* Transparent background badge - white text */
@@ -244,10 +241,6 @@
     height: 460px;
   }
   
-  .carouselTrack {
-    padding-top: 12px;
-  }
-  
   .navButton {
     width: 44px;
     height: 44px;
@@ -286,10 +279,6 @@
   
   .carouselWrapper {
     height: 420px;
-  }
-  
-  .carouselTrack {
-    padding-top: 12px;
   }
   
   .navButton {
@@ -339,10 +328,6 @@
   
   .carouselWrapper {
     height: 400px;
-  }
-  
-  .carouselTrack {
-    padding-top: 12px;
   }
   
   .navButton {

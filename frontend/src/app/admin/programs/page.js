@@ -14,14 +14,11 @@ import { FaPlus } from 'react-icons/fa';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-// Track if programs page has been visited
-let hasVisitedPrograms = false;
 
 export default function AdminProgramsPage() {
   const currentAdmin = useSelector(selectCurrentAdmin);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [pageReady, setPageReady] = useState(false);
   
   const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
   const [showAddModal, setShowAddModal] = useState(false);
@@ -35,7 +32,6 @@ export default function AdminProgramsPage() {
   
   // Filter and search states
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
-  const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || 'all');
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'Active');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
 
@@ -46,8 +42,6 @@ export default function AdminProgramsPage() {
   useEffect(() => {
     if (!isLoading && programs.length >= 0) {
       setHasInitiallyLoaded(true);
-      setPageReady(true);
-      hasVisitedPrograms = true;
     }
   }, [isLoading, programs.length]);
 
@@ -66,7 +60,6 @@ export default function AdminProgramsPage() {
   useEffect(() => {
     const urlStatus = searchParams.get('status');
     const urlSearch = searchParams.get('search');
-    const urlCategory = searchParams.get('category');
     const urlSort = searchParams.get('sort');
 
     if (urlStatus) {
@@ -74,9 +67,6 @@ export default function AdminProgramsPage() {
     }
     if (urlSearch !== null) {
       setSearchQuery(urlSearch);
-    }
-    if (urlCategory) {
-      setCategoryFilter(urlCategory);
     }
     if (urlSort) {
       setSortBy(urlSort);
@@ -196,6 +186,68 @@ export default function AdminProgramsPage() {
     setDeletingProgram(program);
   };
 
+  // Handle mark program as completed
+  const handleMarkCompleted = async (program) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/programs/${program.id}/mark-completed`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: Failed to mark program as completed`);
+      }
+
+      setSuccessModal({ 
+        isVisible: true, 
+        message: 'Program marked as completed successfully!', 
+        type: 'success' 
+      });
+      refreshPrograms();
+    } catch (error) {
+      console.error('Mark completed error:', error);
+      setSuccessModal({ 
+        isVisible: true, 
+        message: `Failed to mark program as completed: ${error.message}`, 
+        type: 'error' 
+      });
+    }
+  };
+
+  // Handle mark program as active
+  const handleMarkActive = async (program) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/programs/${program.id}/mark-active`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: Failed to mark program as active`);
+      }
+
+      setSuccessModal({ 
+        isVisible: true, 
+        message: 'Program marked as active successfully!', 
+        type: 'success' 
+      });
+      refreshPrograms();
+    } catch (error) {
+      console.error('Mark active error:', error);
+      setSuccessModal({ 
+        isVisible: true, 
+        message: `Failed to mark program as active: ${error.message}`, 
+        type: 'error' 
+      });
+    }
+  };
+
   // Confirm program deletion
   const confirmDeleteProgram = async () => {
     if (!deletingProgram) return;
@@ -254,10 +306,9 @@ export default function AdminProgramsPage() {
         (program.description && program.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (program.category && program.category.toLowerCase().includes(searchQuery.toLowerCase()));
       
-      const matchesCategory = categoryFilter === 'all' || program.category === categoryFilter;
       const matchesStatus = program.status?.toLowerCase() === statusFilter.toLowerCase();
 
-      return matchesSearch && matchesCategory && matchesStatus;
+      return matchesSearch && matchesStatus;
     });
 
     // Sort programs
@@ -279,7 +330,7 @@ export default function AdminProgramsPage() {
     });
 
     return filtered;
-  }, [programs, searchQuery, categoryFilter, statusFilter, sortBy]);
+  }, [programs, searchQuery, statusFilter, sortBy]);
 
   // Update URL parameters
   const updateURLParams = (params) => {
@@ -301,10 +352,6 @@ export default function AdminProgramsPage() {
 
   const handleFilterChange = (filterType, value) => {
     switch (filterType) {
-      case 'category':
-        setCategoryFilter(value);
-        updateURLParams({ category: value });
-        break;
       case 'status':
         setStatusFilter(value);
         updateURLParams({ status: value });
@@ -317,7 +364,7 @@ export default function AdminProgramsPage() {
   };
 
   // Show skeleton immediately on first load or when loading
-  if (!hasInitiallyLoaded || (isLoading && !pageReady)) {
+  if (!hasInitiallyLoaded || isLoading) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
@@ -386,6 +433,8 @@ export default function AdminProgramsPage() {
                 onViewDetails={() => handleViewProgram(program)}
                 onEdit={() => setEditingProgram(program)}
                 onDelete={() => handleDeleteProgram(program)}
+                onMarkCompleted={() => handleMarkCompleted(program)}
+                onMarkActive={() => handleMarkActive(program)}
               />
             ))}
           </div>

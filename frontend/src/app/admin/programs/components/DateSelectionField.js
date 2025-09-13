@@ -284,7 +284,6 @@ const DateSelectionField = ({
                   dateFormat="MMM dd, yyyy"
                   placeholderText="Select a date"
                   disabled={disabled}
-                  minDate={new Date()}
                   isClearable
                   popperPlacement="right"
                 />
@@ -304,7 +303,6 @@ const DateSelectionField = ({
                   dateFormat="MMM dd, yyyy"
                   placeholderText="Select start and end dates"
                   disabled={disabled}
-                  minDate={new Date()}
                   isClearable
                   popperPlacement="right"
                 />
@@ -322,7 +320,6 @@ const DateSelectionField = ({
                   format="MMM DD, YYYY"
                   placeholder="Select multiple dates"
                   disabled={disabled}
-                  minDate={new Date()}
                   sort
                   hideOnEscape={false}
                   hideOnClickOutside={false}

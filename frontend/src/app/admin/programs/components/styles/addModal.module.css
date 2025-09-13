@@ -252,6 +252,50 @@
   border-color: #081412;
 }
 
+/* Status Display Styles */
+.statusDisplay {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  width: fit-content;
+}
+
+.statusBadge.Upcoming {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.statusBadge.Active {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.statusBadge.Completed {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.statusHelpText {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+}
+
 .uploadArea {
   position: relative;
   border: 3px dashed #06100f;

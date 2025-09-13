@@ -12,17 +12,11 @@ import { useGetPublicFeaturedProjectsQuery } from '@/rtk/(public)/programsApi';
 
 // Component for truncated description
 const TruncatedDescription = ({ description, maxChars = 150 }) => {
-  const truncateText = (text, maxChars) => {
-    if (!text) return '';
-    
-    if (text.length <= maxChars) {
-      return text;
-    }
-    
-    return text.slice(0, maxChars) + '...';
-  };
-
-  const truncatedText = truncateText(description, maxChars);
+  if (!description) return null;
+  
+  const truncatedText = description.length <= maxChars 
+    ? description 
+    : description.slice(0, maxChars) + '...';
   
   return (
     <p className={styles.impactdesc}>
@@ -44,30 +38,24 @@ export default function ImpactSection() {
     error 
   } = useGetPublicFeaturedProjectsQuery();
 
-  // Professional carousel configuration
+  // Carousel configuration
   const getCarouselConfig = useCallback(() => {
     const width = window.innerWidth;
     
     if (width < 768) {
       return {
-        itemsPerView: 1,
         cardWidth: 250,
-        gap: 10,
-        containerPadding: 20
+        gap: 10
       };
     } else if (width < 1024) {
       return {
-        itemsPerView: 2,
         cardWidth: 290,
-        gap: 14,
-        containerPadding: 40
+        gap: 14
       };
     } else {
       return {
-        itemsPerView: 2,
         cardWidth: 370,
-        gap: 18,
-        containerPadding: 60
+        gap: 18
       };
     }
   }, []);
@@ -112,7 +100,6 @@ export default function ImpactSection() {
 
   // Memoize data transformation to prevent unnecessary recalculations
   const dataToDisplay = useMemo(() => {
-    console.log('Featured Projects Data:', featuredProjects);
     return featuredProjects.map(project => {
       // Determine the best date to display and program status
       let displayDate = 'Coming Soon';
@@ -260,8 +247,6 @@ export default function ImpactSection() {
         }
       }
 
-      console.log('Project orgColor:', project.orgColor, 'for organization:', project.orgAcronym);
-      
       return {
         image: project.image ? 
           getFeaturedProjectImageUrl(project.image)
@@ -279,18 +264,15 @@ export default function ImpactSection() {
     });
   }, [featuredProjects]);
 
-  // Reset currentIndex when data changes
+  // Reset carousel when data changes
   useEffect(() => {
     setCurrentIndex(0);
   }, [dataToDisplay.length]);
 
-  // Item-based carousel calculations
+  // Carousel calculations
   const carouselConfig = getCarouselConfig();
-  const originalDataLength = dataToDisplay.length;
-  
-  // Slide by 3 cards at a time, but show whatever is left at the end
   const slideSize = 3;
-  const maxIndex = Math.max(0, Math.ceil(originalDataLength / slideSize) - 1);
+  const maxIndex = dataToDisplay.length <= slideSize ? 0 : dataToDisplay.length - slideSize;
 
   const handlePrev = useCallback(() => {
     setCurrentIndex((prev) => {
@@ -319,16 +301,14 @@ export default function ImpactSection() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [handleNext, handlePrev]);
 
-  // Slide-based translateX calculation (3 cards per slide)
+  // Calculate translateX for carousel sliding
   const translateX = useMemo(() => {
     if (dataToDisplay.length <= slideSize) {
       return 0;
     }
     
     const itemWidth = carouselConfig.cardWidth + carouselConfig.gap;
-    
-    // Move by slideSize cards at a time
-    return currentIndex * slideSize * itemWidth;
+    return currentIndex * itemWidth;
   }, [currentIndex, carouselConfig, dataToDisplay.length, slideSize]);
 
   if (!isClient || isLoading) {

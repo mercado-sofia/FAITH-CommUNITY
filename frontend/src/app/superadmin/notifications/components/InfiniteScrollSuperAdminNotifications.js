@@ -48,11 +48,9 @@ export default function InfiniteScrollSuperAdminNotifications({
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const superAdminData = localStorage.getItem('superAdminData');
-      console.log('InfiniteScroll - SuperAdmin data from localStorage:', superAdminData);
       if (superAdminData) {
         try {
           const parsedData = JSON.parse(superAdminData);
-          console.log('InfiniteScroll - Parsed superadmin data:', parsedData);
           setSuperAdminId(parsedData.id);
         } catch (error) {
           console.error('Error parsing superadmin data:', error);
@@ -129,12 +127,10 @@ export default function InfiniteScrollSuperAdminNotifications({
   // Filter notifications based on current tab
   const filteredNotifications = allNotifications.filter(notification => {
     switch (currentTab) {
-      case 'submissions':
-        return notification.type === 'approval_request' || notification.type === 'decline';
-      case 'messages':
-        return notification.type === 'message';
+      case 'unread':
+        return !notification.is_read; // Show only unread notifications
       default:
-        return true;
+        return true; // Show all notifications
     }
   });
 
@@ -150,10 +146,9 @@ export default function InfiniteScrollSuperAdminNotifications({
       onMarkAsRead(notification.id);
     }
     
-    if (notification.type === 'message') {
-      router.push('/superadmin/inbox');
-    } else if (notification.type === 'approval_request') {
-      // Navigate to pending approvals with filtering parameters
+    // Navigate based on notification type
+    if (notification.type === 'approval_request') {
+      // Navigate to approvals with filtering parameters
       if (notification.section) {
         const params = new URLSearchParams({
           section: notification.section,
@@ -172,6 +167,7 @@ export default function InfiniteScrollSuperAdminNotifications({
         router.push('/superadmin/approvals');
       }
     }
+    // Add other notification type handlers here if needed in the future
   }, [router, onMarkAsRead]);
 
   // Show initial loading
@@ -200,8 +196,15 @@ export default function InfiniteScrollSuperAdminNotifications({
             <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </div>
-        <h3>No notifications yet</h3>
-        <p>You&apos;re all caught up! New notifications will appear here.</p>
+        <h3>
+          {currentTab === 'unread' ? 'No unread notifications' : 'No notifications yet'}
+        </h3>
+        <p>
+          {currentTab === 'unread' 
+            ? 'You\'re all caught up! All notifications have been read.' 
+            : 'You\'re all caught up! New notifications will appear here.'
+          }
+        </p>
       </div>
     );
   }
@@ -218,13 +221,6 @@ export default function InfiniteScrollSuperAdminNotifications({
         const isLast = index === filteredNotifications.length - 1;
         const ref = isLast ? lastNotificationCallback : null;
         
-        // Debug logging
-        console.log('Rendering notification:', {
-          id: notification.id,
-          organization_acronym: notification.organization_acronym,
-          organization_logo: notification.organization_logo,
-          constructed_url: notification.organization_logo ? getOrganizationImageUrl(notification.organization_logo, 'logo') : 'No logo'
-        });
 
         return (
           <div 
@@ -244,20 +240,19 @@ export default function InfiniteScrollSuperAdminNotifications({
             {/* Organization Logo */}
             <div className={styles.organizationLogoContainer}>
               {notification.organization_logo ? (
-                <img
+                <Image
                   src={getOrganizationImageUrl(notification.organization_logo, 'logo')}
                   alt={`${notification.organization_acronym} logo`}
                   width={40}
                   height={40}
                   className={styles.organizationLogo}
                   onError={(e) => {
-                    console.log('Logo load error for:', notification.organization_acronym, 'URL:', getOrganizationImageUrl(notification.organization_logo, 'logo'));
                     // Show organization acronym as fallback
                     e.target.style.display = 'none';
                     e.target.nextSibling.style.display = 'flex';
                   }}
                   onLoad={() => {
-                    console.log('Logo loaded successfully for:', notification.organization_acronym, 'URL:', getOrganizationImageUrl(notification.organization_logo, 'logo'));
+                    // Logo loaded successfully
                   }}
                 />
               ) : null}
@@ -289,7 +284,7 @@ export default function InfiniteScrollSuperAdminNotifications({
               </div>
               <p className={styles.notificationMessage}>{notification.message}</p>
               <div className={styles.notificationTags}>
-                {notification.section && (notification.type === 'approval_request' || notification.type === 'decline') && (
+                {notification.section && (
                   <span className={styles.notificationSection}>
                     {notification.section.charAt(0).toUpperCase() + notification.section.slice(1)}
                   </span>

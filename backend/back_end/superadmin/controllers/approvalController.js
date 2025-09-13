@@ -22,7 +22,6 @@ export const getPendingSubmissions = async (req, res) => {
           proposed_data: JSON.parse(submission.proposed_data || '{}')
         };
       } catch (parseError) {
-        console.error('JSON parse error for submission:', submission.id, parseError);
         return {
           ...submission,
           previous_data: {},
@@ -40,6 +39,47 @@ export const getPendingSubmissions = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch pending submissions',
+      error: error.message
+    });
+  }
+};
+
+export const getAllSubmissions = async (req, res) => {
+  try {
+    const [rows] = await db.execute(`
+      SELECT s.*, a.orgName, a.org, submitted_admin.orgName as submitted_by_name 
+      FROM submissions s 
+      LEFT JOIN admins a ON a.organization_id = s.organization_id 
+      LEFT JOIN admins submitted_admin ON s.submitted_by = submitted_admin.id 
+      ORDER BY s.submitted_at DESC
+    `);
+
+    // Parse JSON data for each submission
+    const submissions = rows.map(submission => {
+      try {
+        return {
+          ...submission,
+          previous_data: JSON.parse(submission.previous_data || '{}'),
+          proposed_data: JSON.parse(submission.proposed_data || '{}')
+        };
+      } catch (parseError) {
+        return {
+          ...submission,
+          previous_data: {},
+          proposed_data: {}
+        };
+      }
+    });
+
+    res.json({
+      success: true,
+      data: submissions
+    });
+  } catch (error) {
+    console.error('❌ Error fetching all submissions:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch submissions',
       error: error.message
     });
   }
@@ -178,7 +218,6 @@ export const approveSubmission = async (req, res) => {
         }
         
       } catch (insertError) {
-        console.error('[ERROR] Failed to insert program into programs_projects:', insertError);
         throw insertError;
       }
     }
@@ -198,7 +237,6 @@ export const approveSubmission = async (req, res) => {
           ]
         );
       } catch (insertError) {
-        console.error('[ERROR] Failed to insert news into news table:', insertError);
         throw insertError;
       }
     }
@@ -232,7 +270,6 @@ export const approveSubmission = async (req, res) => {
     );
 
     if (!notificationResult.success) {
-      console.error('Failed to create notification:', notificationResult.error);
     }
 
     res.json({ success: true, message: 'Submission approved and applied.' });
@@ -284,7 +321,6 @@ export const rejectSubmission = async (req, res) => {
         notificationMessage = `Your organization "${data.orgName}" has been declined by SuperAdmin`;
       }
     } catch (parseError) {
-      console.error('Error parsing submission data for notification:', parseError);
       // Keep the generic message if parsing fails
     }
 
@@ -299,7 +335,6 @@ export const rejectSubmission = async (req, res) => {
     );
 
     if (!notificationResult.success) {
-      console.error('Failed to create notification:', notificationResult.error);
     }
 
     res.json({ 
@@ -565,6 +600,34 @@ export const bulkRejectSubmissions = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to bulk reject submissions',
+      error: error.message
+    });
+  }
+};
+
+// Delete individual submission
+export const deleteSubmission = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [result] = await db.execute('DELETE FROM submissions WHERE id = ?', [id]);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Submission not found or already deleted'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Submission deleted successfully'
+    });
+  } catch (error) {
+    console.error('❌ Delete submission error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete submission',
       error: error.message
     });
   }

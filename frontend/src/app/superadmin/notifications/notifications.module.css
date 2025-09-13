@@ -336,11 +336,6 @@
 /* Remove unread-specific styling - all notifications look the same */
 
 /* Clickable message notifications */
-.notificationItem.clickableMessage {
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
 .notificationItem.clickableNotification {
   cursor: pointer;
 }

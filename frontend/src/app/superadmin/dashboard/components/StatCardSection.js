@@ -1,7 +1,7 @@
 'use client';
 
 import StatCard from './StatCard';
-import styles from '../dashboard.module.css';
+import styles from './styles/StatCard.module.css';
 import Link from 'next/link';
 import { 
   useGetOrganizationsCountQuery,
@@ -36,8 +36,8 @@ export default function StatCardSection() {
   const isLoading = organizationsLoading || pendingLoading || upcomingProgramsLoading || programsLoading;
 
   return (
-    <div className={styles.cardContainer}>
-      <Link href="/superadmin/manageProfiles" className={styles.card}>
+    <div className={styles.cardGrid}>
+      <Link href="/superadmin/manageProfiles" className={styles.cardWrapper}>
         <StatCard
           label="Total Organizations"
           count={isLoading ? "—" : organizationsCount}
@@ -45,7 +45,7 @@ export default function StatCardSection() {
           iconKey="organizations"
         />
       </Link>
-      <Link href="/superadmin/approvals" className={styles.card}>
+      <Link href="/superadmin/approvals?status=pending" className={styles.cardWrapper}>
         <StatCard
           label="Pending Approvals"
           count={isLoading ? "—" : pendingApprovalsCount}
@@ -53,17 +53,17 @@ export default function StatCardSection() {
           iconKey="pending"
         />
       </Link>
-      <div className={styles.card}>
+      <Link href="/superadmin/programs?tab=upcoming" className={styles.cardWrapper}>
         <StatCard
           label="Upcoming Programs"
           count={isLoading ? "—" : upcomingProgramsCount}
           isLoading={upcomingProgramsLoading}
           iconKey="upcoming"
         />
-      </div>
-      <Link href="/superadmin/programs" className={styles.card}>
+      </Link>
+      <Link href="/superadmin/programs?tab=active" className={styles.cardWrapper}>
         <StatCard
-          label="Active Programs & Services"
+          label="Active Programs"
           count={isLoading ? "—" : activeProgramsCount}
           isLoading={programsLoading}
           iconKey="programs"

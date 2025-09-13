@@ -187,9 +187,25 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
     const buttonElement = dropdownRefs.current[volunteerId]
     if (buttonElement) {
       const rect = buttonElement.getBoundingClientRect()
-      const top = rect.bottom + 4
-      const left = rect.right - 192
-      setDropdownPosition({ [volunteerId]: { top, left } })
+      const viewportHeight = window.innerHeight
+      const dropdownHeight = 120 // Approximate height of dropdown
+      
+      // Check if there's enough space below
+      const spaceBelow = viewportHeight - rect.bottom
+      const spaceAbove = rect.top
+      
+      let top, position
+      
+      // If not enough space below but enough above, show above
+      if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+        position = 'above'
+        top = -dropdownHeight - 4 // 4px gap above the button
+      } else {
+        position = 'below'
+        top = rect.height + 4 // 4px gap below the button
+      }
+      
+      setDropdownPosition({ [volunteerId]: { top, position } })
     }
 
     setShowDropdown(volunteerId)
@@ -339,7 +355,13 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
                         </div>
 
                         {showDropdown === volunteer.id && (
-                          <ul className={styles.options}>
+                          <ul 
+                            className={`${styles.options} ${dropdownPosition[volunteer.id]?.position === 'above' ? styles.above : ''}`}
+                            style={{
+                              top: `${dropdownPosition[volunteer.id]?.top || 0}px`,
+                              right: '0px'
+                            }}
+                          >
                             <li onClick={() => handleAction(volunteer, "view")}>View Details</li>
                             {volunteer.status !== "Approved" && (
                               <li onClick={() => handleAction(volunteer, "approve")}>

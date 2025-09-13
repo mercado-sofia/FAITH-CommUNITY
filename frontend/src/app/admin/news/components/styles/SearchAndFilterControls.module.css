@@ -73,6 +73,7 @@
   margin: 0;
   padding: 0.5rem 0;
   width: 100%;
+  min-width: 60px;
   animation: fadeIn 0.2s ease-in-out;
 }
 

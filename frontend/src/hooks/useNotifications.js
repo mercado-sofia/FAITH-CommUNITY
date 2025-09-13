@@ -2,8 +2,7 @@ import { useCallback } from 'react';
 import { 
   useGetUserNotificationsQuery, 
   useGetUnreadNotificationCountQuery,
-  useMarkNotificationAsReadMutation,
-  useMarkAllNotificationsAsReadMutation 
+  useMarkNotificationAsReadMutation
 } from '../rtk/(public)/userNotificationsApi';
 
 export const useNotifications = (isAuthenticated) => {
@@ -27,7 +26,6 @@ export const useNotifications = (isAuthenticated) => {
   );
   
   const [markAsRead] = useMarkNotificationAsReadMutation();
-  const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
   
   const hasUnreadNotifications = unreadCountData?.count > 0;
   const notifications = notificationsData?.notifications || [];
@@ -46,17 +44,6 @@ export const useNotifications = (isAuthenticated) => {
     }
   }, [markAsRead, refetchNotifications, refetchUnreadCount]);
 
-  // Handle mark all as read
-  const handleMarkAllAsRead = useCallback(async () => {
-    try {
-      await markAllAsRead();
-      // Refetch data to update UI
-      refetchNotifications();
-      refetchUnreadCount();
-    } catch (error) {
-      console.error('Error marking all notifications as read:', error);
-    }
-  }, [markAllAsRead, refetchNotifications, refetchUnreadCount]);
 
   // Format notification time
   const formatNotificationTime = useCallback((createdAt) => {
@@ -76,7 +63,6 @@ export const useNotifications = (isAuthenticated) => {
     hasUnreadNotifications,
     unreadCount: unreadCountData?.count || 0,
     handleNotificationClick,
-    handleMarkAllAsRead,
     formatNotificationTime,
     refetchNotifications,
     refetchUnreadCount

@@ -1,40 +1,27 @@
 'use client';
 
 import { useState } from 'react';
-import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
-import styles from './styles/ApprovalsTable.module.css';
+import { HiOutlineDotsHorizontal } from 'react-icons/hi';
 import ViewDetailsModal from './ViewDetailsModal';
+import styles from './styles/ApprovalsTable.module.css';
 
-export default function ApprovalsTable({ approvals, onApprove, onReject, onBulkApprove, onBulkReject, onBulkDelete, onDelete }) {
-  const [selectedItems, setSelectedItems] = useState(new Set());
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [selectedItemForReject, setSelectedItemForReject] = useState(null);
-  const [rejectComment, setRejectComment] = useState('');
+export default function ApprovalsTable({ 
+  approvals, 
+  onApprove, 
+  onRejectClick, 
+  onDeleteClick,
+  selectedItems,
+  onSelectAll,
+  onSelectItem,
+  showDropdown,
+  setShowDropdown,
+  dropdownPosition,
+  setDropdownPosition,
+  calculateDropdownPosition
+}) {
+  // Local modal state
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedItemForDetails, setSelectedItemForDetails] = useState(null);
-  const [showBulkRejectModal, setShowBulkRejectModal] = useState(false);
-  const [bulkRejectComment, setBulkRejectComment] = useState('');
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedItemForDelete, setSelectedItemForDelete] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const handleSelectAll = (e) => {
-    if (e.target.checked) {
-      setSelectedItems(new Set(approvals.map(item => item.id)));
-    } else {
-      setSelectedItems(new Set());
-    }
-  };
-
-  const handleSelectItem = (id) => {
-    const newSelected = new Set(selectedItems);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
-    }
-    setSelectedItems(newSelected);
-  };
 
   const getSectionDisplayName = (section) => {
     switch(section) {
@@ -60,23 +47,7 @@ export default function ApprovalsTable({ approvals, onApprove, onReject, onBulkA
   };
 
   const handleRejectClick = (item) => {
-    setSelectedItemForReject(item);
-    setShowRejectModal(true);
-  };
-
-  const handleRejectSubmit = () => {
-    if (selectedItemForReject) {
-      onReject(selectedItemForReject.id, rejectComment);
-      setShowRejectModal(false);
-      setRejectComment('');
-      setSelectedItemForReject(null);
-    }
-  };
-
-  const handleRejectCancel = () => {
-    setShowRejectModal(false);
-    setRejectComment('');
-    setSelectedItemForReject(null);
+    onRejectClick(item);
   };
 
   const handleViewDetails = (item) => {
@@ -84,63 +55,13 @@ export default function ApprovalsTable({ approvals, onApprove, onReject, onBulkA
     setShowDetailsModal(true);
   };
 
+  const handleDeleteClick = (item) => {
+    onDeleteClick(item);
+  };
+
   const handleDetailsClose = () => {
     setShowDetailsModal(false);
     setSelectedItemForDetails(null);
-  };
-
-  // Bulk action handlers
-  const handleBulkApprove = () => {
-    if (selectedItems.size === 0) return;
-    const selectedIds = Array.from(selectedItems);
-    onBulkApprove(selectedIds);
-    setSelectedItems(new Set());
-  };
-
-  const handleBulkRejectClick = () => {
-    if (selectedItems.size === 0) return;
-    setShowBulkRejectModal(true);
-  };
-
-  const handleBulkRejectSubmit = () => {
-    if (selectedItems.size === 0) return;
-    const selectedIds = Array.from(selectedItems);
-    onBulkReject(selectedIds, bulkRejectComment);
-    setSelectedItems(new Set());
-    setShowBulkRejectModal(false);
-    setBulkRejectComment('');
-  };
-
-  const handleBulkRejectCancel = () => {
-    setShowBulkRejectModal(false);
-    setBulkRejectComment('');
-  };
-
-
-  // Individual delete handlers
-  const handleDeleteClick = (item) => {
-    setSelectedItemForDelete(item);
-    setShowDeleteModal(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (selectedItemForDelete && onDelete) {
-      setIsDeleting(true);
-      try {
-        await onDelete(selectedItemForDelete.id);
-        setShowDeleteModal(false);
-        setSelectedItemForDelete(null);
-      } catch (error) {
-        console.error('Delete failed:', error);
-      } finally {
-        setIsDeleting(false);
-      }
-    }
-  };
-
-  const handleDeleteCancel = () => {
-    setShowDeleteModal(false);
-    setSelectedItemForDelete(null);
   };
 
   const formatDate = (date) => {
@@ -153,42 +74,6 @@ export default function ApprovalsTable({ approvals, onApprove, onReject, onBulkA
 
   return (
     <>
-      {/* Bulk Actions Bar */}
-      {selectedItems.size > 0 && (
-        <div className={styles.bulkActionsBar}>
-          <div className={styles.bulkActionsLeft}>
-            <span className={styles.selectedCount}>
-              {selectedItems.size} item{selectedItems.size !== 1 ? 's' : ''} selected
-            </span>
-          </div>
-          <div className={styles.bulkActionsRight}>
-            <button 
-              onClick={handleBulkApprove}
-              className={`${styles.bulkActionBtn} ${styles.bulkApproveBtn}`}
-            >
-              Accept All
-            </button>
-            <button 
-              onClick={handleBulkRejectClick}
-              className={`${styles.bulkActionBtn} ${styles.bulkRejectBtn}`}
-            >
-              Reject All
-            </button>
-            <button 
-              onClick={() => {
-                if (selectedItems.size === 0) return;
-                const selectedIds = Array.from(selectedItems);
-                onBulkDelete(selectedIds);
-                setSelectedItems(new Set());
-              }}
-              className={`${styles.bulkActionBtn} ${styles.bulkDeleteBtn}`}
-            >
-              Delete All
-            </button>
-          </div>
-        </div>
-      )}
-      
       <div className={styles.tableContainer}>
         <table className={styles.table}>
           <thead>
@@ -197,7 +82,7 @@ export default function ApprovalsTable({ approvals, onApprove, onReject, onBulkA
                 <input
                   type="checkbox"
                   checked={selectedItems.size === approvals.length && approvals.length > 0}
-                  onChange={handleSelectAll}
+                  onChange={onSelectAll}
                   className={styles.checkbox}
                 />
               </th>
@@ -205,8 +90,7 @@ export default function ApprovalsTable({ approvals, onApprove, onReject, onBulkA
               <th className={styles.sectionColumn}>Section</th>
               <th className={styles.dateColumn}>Date</th>
               <th className={styles.statusColumn}>Status</th>
-              <th className={styles.viewDetailsColumn}></th>
-              <th className={styles.actionsColumn}>Actions</th>
+              <th className={styles.actionsColumn}></th>
             </tr>
           </thead>
           <tbody>
@@ -216,53 +100,110 @@ export default function ApprovalsTable({ approvals, onApprove, onReject, onBulkA
                   <input
                     type="checkbox"
                     checked={selectedItems.has(item.id)}
-                    onChange={() => handleSelectItem(item.id)}
+                    onChange={() => onSelectItem(item.id)}
                     className={styles.checkbox}
                   />
                 </td>
                 <td className={styles.organizationCell}>
                   <span className={styles.orgAcronym}>
-                    {item.org || `ORG${item.organization_id}`}
+                    {item.organization_acronym || item.org || 'N/A'}
                   </span>
                 </td>
                 <td className={styles.sectionCell}>
-                  {getSectionDisplayName(item.section)}
+                  {item.section?.charAt(0).toUpperCase() + item.section?.slice(1) || 'N/A'}
                 </td>
                 <td className={styles.dateCell}>
                   {formatDate(item.submitted_at)}
                 </td>
                 <td className={styles.statusCell}>
-                  {getStatusBadge(item.status || 'pending')}
-                </td>
-                <td className={styles.viewDetailsCell}>
-                  <button 
-                    className={styles.viewDetailsBtn}
-                    onClick={() => handleViewDetails(item)}
-                  >
-                    View Details
-                  </button>
+                  {getStatusBadge(item.status)}
                 </td>
                 <td className={styles.actionsCell}>
-                  <div className={styles.actionButtons}>
-                    <button
-                      onClick={() => onApprove(item.id)}
-                      className={`${styles.actionBtn} ${styles.acceptBtn}`}
-                    >
-                      Accept
-                    </button>
-                    <button
-                      onClick={() => handleRejectClick(item)}
-                      className={`${styles.actionBtn} ${styles.rejectBtn}`}
-                    >
-                      Reject
-                    </button>
-                    <button
-                      onClick={() => handleDeleteClick(item)}
-                      className={`${styles.actionBtn} ${styles.deleteBtn}`}
-                      disabled={isDeleting}
-                    >
-                      Delete
-                    </button>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div className={styles.actionDropdownWrapper}>
+                      <div className={styles.actionDropdownButtonWrapper}>
+                        <div
+                          className={styles.actionDropdown}
+                          onClick={(e) => {
+                            const dropdownId = `action-${item.id}`;
+                            if (showDropdown === dropdownId) {
+                              setShowDropdown(null);
+                            } else {
+                              const position = calculateDropdownPosition(e.currentTarget);
+                              setDropdownPosition(prev => ({
+                                ...prev,
+                                [dropdownId]: position
+                              }));
+                              setShowDropdown(dropdownId);
+                            }
+                          }}
+                        >
+                          <HiOutlineDotsHorizontal className={styles.actionDropdownIcon} />
+                        </div>
+                        {showDropdown === `action-${item.id}` && (
+                          <ul 
+                            className={`${styles.actionDropdownOptions} ${dropdownPosition[`action-${item.id}`]?.position === 'above' ? styles.above : ''}`}
+                            style={{
+                              top: `${dropdownPosition[`action-${item.id}`]?.top || 0}px`,
+                              right: `${dropdownPosition[`action-${item.id}`]?.right || 0}px`
+                            }}
+                          >
+                            <li 
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleViewDetails(item);
+                                setShowDropdown(null);
+                                setDropdownPosition({});
+                              }}
+                              style={{ cursor: 'pointer' }}
+                            >
+                              View Details
+                            </li>
+                            {item.status === 'pending' && (
+                              <>
+                                <li 
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onApprove(item.id);
+                                    setShowDropdown(null);
+                                    setDropdownPosition({});
+                                  }}
+                                  style={{ cursor: 'pointer' }}
+                                >
+                                  Approve
+                                </li>
+                                <li 
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleRejectClick(item);
+                                    setShowDropdown(null);
+                                    setDropdownPosition({});
+                                  }}
+                                  style={{ cursor: 'pointer' }}
+                                >
+                                  Reject
+                                </li>
+                              </>
+                            )}
+                            <li 
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDeleteClick(item);
+                                setShowDropdown(null);
+                                setDropdownPosition({});
+                              }}
+                              style={{ cursor: 'pointer' }}
+                            >
+                              Delete
+                            </li>
+                          </ul>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -270,103 +211,6 @@ export default function ApprovalsTable({ approvals, onApprove, onReject, onBulkA
           </tbody>
         </table>
       </div>
-
-      {/* Reject Modal */}
-      {showRejectModal && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modal}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Reject Submission</h3>
-              <button 
-                onClick={handleRejectCancel}
-                className={styles.modalCloseBtn}
-              >
-                ×
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <p className={styles.modalDescription}>
-                Are you sure you want to reject this submission? You can optionally provide a reason below.
-              </p>
-              <textarea
-                value={rejectComment}
-                onChange={(e) => setRejectComment(e.target.value)}
-                placeholder="Enter rejection reason (optional)..."
-                className={styles.rejectTextarea}
-                rows={4}
-              />
-            </div>
-            <div className={styles.modalFooter}>
-              <button 
-                onClick={handleRejectCancel}
-                className={styles.modalCancelBtn}
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleRejectSubmit}
-                className={styles.modalRejectBtn}
-              >
-                Reject Submission
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk Reject Modal */}
-      {showBulkRejectModal && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modal}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Reject Selected Submissions</h3>
-              <button 
-                onClick={handleBulkRejectCancel}
-                className={styles.modalCloseBtn}
-              >
-                ×
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <p className={styles.modalDescription}>
-                Are you sure you want to reject {selectedItems.size} submission{selectedItems.size !== 1 ? 's' : ''}? You can optionally provide a reason below.
-              </p>
-              <textarea
-                value={bulkRejectComment}
-                onChange={(e) => setBulkRejectComment(e.target.value)}
-                placeholder="Enter rejection reason (optional)..."
-                className={styles.rejectTextarea}
-                rows={4}
-              />
-            </div>
-            <div className={styles.modalFooter}>
-              <button 
-                onClick={handleBulkRejectCancel}
-                className={styles.modalCancelBtn}
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleBulkRejectSubmit}
-                className={styles.modalRejectBtn}
-              >
-                Reject All Submissions
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Individual Delete Confirmation Modal */}
-      <DeleteConfirmationModal
-        isOpen={showDeleteModal}
-        itemName={selectedItemForDelete?.org || selectedItemForDelete?.organization_acronym || 'Submission'}
-        itemType="submission"
-        onConfirm={handleDeleteConfirm}
-        onCancel={handleDeleteCancel}
-        isDeleting={isDeleting}
-      />
-
 
       {/* View Details Modal */}
       <ViewDetailsModal 

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { FaLock, FaEye, FaEyeSlash, FaTimes, FaCheck } from 'react-icons/fa';
 import { createPortal } from 'react-dom';
-import { getApiUrl, getAuthHeaders } from '../../../utils/api';
+import { getApiUrl, getAuthHeaders } from '../../../utils/profileApi';
 import styles from './Password.module.css';
 
 // Password Requirements Component

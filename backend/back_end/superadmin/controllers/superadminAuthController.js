@@ -77,12 +77,7 @@ export const verifySuperadminToken = (req, res, next) => {
   const authHeader = req.headers.authorization
   const token = authHeader && authHeader.split(" ")[1] // Bearer TOKEN
 
-  console.log("=== Superadmin Token Verification Debug ===")
-  console.log("Auth Header:", authHeader)
-  console.log("Extracted Token:", token ? `${token.substring(0, 20)}...` : "No token")
-
   if (!token) {
-    console.log("ERROR: No token provided")
     return res.status(401).json({ error: "Access token required" })
   }
 
@@ -91,17 +86,9 @@ export const verifySuperadminToken = (req, res, next) => {
       issuer: process.env.JWT_ISS || "faith-community",
       audience: process.env.JWT_AUD || "admin",
     })
-    console.log("Token decoded successfully:", { 
-      id: decoded.id, 
-      username: decoded.username, 
-      role: decoded.role,
-      exp: new Date(decoded.exp * 1000).toISOString()
-    })
     req.superadmin = decoded
     next()
   } catch (error) {
-    console.log("ERROR: Token verification failed:", error.message)
-    console.log("JWT_SECRET being used:", JWT_SECRET)
     return res.status(403).json({ error: "Invalid or expired token" })
   }
 }

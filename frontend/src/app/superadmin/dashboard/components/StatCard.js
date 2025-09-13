@@ -1,6 +1,6 @@
 'use client';
 
-import styles from '../dashboard.module.css';
+import styles from './styles/StatCard.module.css';
 import { FiUsers, FiFileText, FiCheckCircle, FiCalendar, FiClock } from 'react-icons/fi';
 
 const icons = {
@@ -12,16 +12,24 @@ const icons = {
 
 export default function StatCard({ label, count, iconKey, isLoading = false }) {
   return (
-    <>
+    <div className={styles.statCard}>
       <div className={styles.cardContent}>
-        <h3>{label}</h3>
-        <p>
-          {isLoading ? "—" : count}
-        </p>
+        <div>
+          <h2 className={`${styles.count} ${isLoading ? styles.loadingCount : ''}`}>
+            {isLoading ? (
+              <span className={styles.skeletonCount}>—</span>
+            ) : (
+              count
+            )}
+          </h2>
+          <p className={`${styles.label} ${isLoading ? styles.loadingLabel : ''}`}>
+            {label}
+          </p>
+        </div>
+        <div className={`${styles.iconWrapper} ${isLoading ? styles.loadingIcon : ''}`}>
+          {icons[iconKey]}
+        </div>
       </div>
-      <div className={styles.iconWrapper}>
-        {icons[iconKey]}
-      </div>
-    </>
+    </div>
   );
 }

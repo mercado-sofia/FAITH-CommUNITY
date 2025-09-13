@@ -270,23 +270,6 @@ export default function Navbar() {
                   <div className={styles.notificationsDropdown}>
                     <div className={styles.notificationsHeader}>
                       <h3>Notifications</h3>
-                      <div className={styles.notificationsHeaderActions}>
-                        {notifications.notifications.length > 0 && (
-                          <button 
-                            className={styles.markAllReadBtn}
-                            onClick={notifications.markAllAsRead}
-                          >
-                            Mark all read
-                          </button>
-                        )}
-                        <Link 
-                          href="/profile?tab=notifications" 
-                          className={styles.viewAllBtn}
-                          onClick={notificationsDropdown.close}
-                        >
-                          View All
-                        </Link>
-                      </div>
                     </div>
                     <div className={styles.notificationsList}>
                       {notifications.isLoading ? (
@@ -306,7 +289,7 @@ export default function Navbar() {
                           <div 
                             key={notification.id} 
                             className={`${styles.notificationItem} ${!notification.is_read ? styles.unread : ''}`}
-                            onClick={() => notifications.markAsRead(notification.id)}
+                            onClick={() => notifications.handleNotificationClick(notification)}
                           >
                             <div className={styles.notificationContent}>
                               <p className={styles.notificationText}>{notification.title}</p>
@@ -318,6 +301,15 @@ export default function Navbar() {
                           </div>
                         ))
                       )}
+                    </div>
+                    <div className={styles.notificationsFooter}>
+                      <Link 
+                        href="/profile?tab=notifications" 
+                        className={styles.viewAllBtn}
+                        onClick={notificationsDropdown.close}
+                      >
+                        View All
+                      </Link>
                     </div>
                   </div>
                 )}

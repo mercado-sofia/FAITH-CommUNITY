@@ -15,17 +15,17 @@
 }
 
 .cardWrapper:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .cardWrapper:hover .statCard {
-  transform: translateY(-6px);
+  transform: translateY(-3px);
   cursor: pointer;
 }
 
 /* Individual Stat Card */
 .statCard {
-  height: 100%;
+  height: 115px;
   background-color: #fff;
   font-family: var(--font-inter), sans-serif;
   padding: 1.4rem 1.8rem;
@@ -44,7 +44,8 @@
 
 .cardContent {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
   width: 100%;
 }
 
@@ -62,6 +63,20 @@
   margin-top: 0.3rem;
 }
 
+.iconWrapper {
+  background-color: #e2f7f0;
+  padding: 0.85rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon {
+  font-size: 1.2rem;
+  color: #1d9782;
+}
+
 /* Loading states */
 .loadingCount {
   opacity: 0.6;
@@ -69,6 +84,11 @@
 
 .loadingLabel {
   opacity: 0.7;
+}
+
+.loadingIcon {
+  opacity: 0.5;
+  background-color: #f0f0f0;
 }
 
 .skeletonCount {

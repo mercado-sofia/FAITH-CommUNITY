@@ -117,7 +117,7 @@ export default function BulkActionConfirmationModal({
                 id="rejectComment"
                 value={rejectComment}
                 onChange={(e) => setRejectComment(e.target.value)}
-                placeholder="Please provide a reason for rejecting these submissions..."
+                placeholder="Please provide a reason for rejecting these approvals..."
                 className={styles.commentInput}
                 rows={3}
                 disabled={isProcessing}

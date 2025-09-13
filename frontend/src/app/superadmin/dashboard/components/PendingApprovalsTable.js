@@ -2,10 +2,9 @@
 
 import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react';
-import { FiEye, FiClipboard, FiChevronDown } from 'react-icons/fi';
+import { FiEye, FiChevronDown } from 'react-icons/fi';
 import styles from '../dashboard.module.css';
-import { useGetRecentPendingApprovalsQuery, useGetOrganizationsForFilterQuery } from '../../../../rtk/superadmin/dashboardApi';
-import { CgOptions } from "react-icons/cg";
+import { useGetRecentApprovalsQuery, useGetOrganizationsForFilterQuery } from '../../../../rtk/superadmin/dashboardApi';
 
 export default function PendingApprovalsTable() {
   const [filter, setFilter] = useState('All');
@@ -18,7 +17,7 @@ export default function PendingApprovalsTable() {
     data: approvals = [], 
     isLoading, 
     error 
-  } = useGetRecentPendingApprovalsQuery();
+  } = useGetRecentApprovalsQuery();
 
   const {
     data: organizations = [],
@@ -26,10 +25,6 @@ export default function PendingApprovalsTable() {
     error: orgsError
   } = useGetOrganizationsForFilterQuery();
 
-  console.log('Organizations data:', organizations);
-  console.log('Organizations loading:', orgsLoading);
-  console.log('Organizations length:', organizations?.length);
-  console.log('Organizations error:', orgsError);
 
   const handleFilterChange = (status) => {
     setFilter(status);
@@ -96,7 +91,7 @@ export default function PendingApprovalsTable() {
     return (
       <div className={styles.pendingApprovalsSection}>
         <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>Pending Approvals</h2>
+          <h2 className={styles.sectionTitle}>Recent Approvals</h2>
         <div className={styles.filterControls}>
           <div className={styles.dropdownWrapper}>
             <div
@@ -160,7 +155,7 @@ export default function PendingApprovalsTable() {
     return (
       <div className={styles.pendingApprovalsSection}>
         <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>Pending Approvals</h2>
+          <h2 className={styles.sectionTitle}>Recent Approvals</h2>
           <div className={styles.filterControls}>
             <Link href="/superadmin/approvals" className={styles.viewAllButton}>
               <FiEye />
@@ -169,11 +164,8 @@ export default function PendingApprovalsTable() {
           </div>
         </div>
         <div className={styles.emptyState}>
-          <div className={styles.emptyIcon}>
-            <FiClipboard />
-          </div>
-          <h3>No pending approvals</h3>
-          <p>There are currently no pending approvals to review.</p>
+          <h3>No recent approvals</h3>
+          <p>There are currently no recent approvals to display.</p>
         </div>
       </div>
     );
@@ -182,7 +174,7 @@ export default function PendingApprovalsTable() {
   return (
     <div className={styles.pendingApprovalsSection}>
       <div className={styles.sectionHeader}>
-        <h2 className={styles.sectionTitle}>Pending Approvals</h2>
+        <h2 className={styles.sectionTitle}>Recent Approvals</h2>
         <div className={styles.filterControls}>
           <div className={styles.dropdownWrapper}>
             <div
@@ -234,8 +226,14 @@ export default function PendingApprovalsTable() {
               <td>{getSectionName(approval.section)}</td>
               <td>{formatDate(approval.submitted_at)}</td>
               <td>
-                <span className={`${styles.statusBadge} ${styles.pending}`}>
-                  Pending
+                <span className={`${styles.statusBadge} ${
+                  approval.status === 'approved' ? styles.approved : 
+                  approval.status === 'rejected' ? styles.rejected : 
+                  styles.pending
+                }`}>
+                  {approval.status === 'approved' ? 'Approved' : 
+                   approval.status === 'rejected' ? 'Rejected' : 
+                   'Pending'}
                 </span>
               </td>
             </tr>

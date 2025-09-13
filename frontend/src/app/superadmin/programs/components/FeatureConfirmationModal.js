@@ -53,7 +53,7 @@ const FeatureConfirmationModal = ({
           </div>
           
           <p className={styles.confirmationText}>
-            Are you sure you want to add <strong>"{projectTitle}"</strong> to the Featured Projects section?
+            Are you sure you want to add <strong>&ldquo;{projectTitle}&rdquo;</strong> to the Featured Projects section?
           </p>
           
           <p className={styles.infoText}>

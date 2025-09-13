@@ -53,7 +53,7 @@ const UnfeatureConfirmationModal = ({
           </div>
           
           <p className={styles.confirmationText}>
-            Are you sure you want to remove <strong>"{projectTitle}"</strong> from the Featured Projects section?
+            Are you sure you want to remove <strong>&ldquo;{projectTitle}&rdquo;</strong> from the Featured Projects section?
           </p>
           
           <p className={styles.warningText}>

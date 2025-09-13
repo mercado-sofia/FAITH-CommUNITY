@@ -1029,16 +1029,17 @@ export const markAllNotificationsAsRead = async (req, res) => {
   try {
     const userId = req.user.id;
     
-    await db.query(
+    const [result] = await db.query(
       `UPDATE user_notifications 
        SET is_read = 1 
-       WHERE user_id = ?`,
+       WHERE user_id = ? AND is_read = 0`,
       [userId]
     );
 
     res.json({
       success: true,
-      message: 'All notifications marked as read'
+      message: 'All notifications marked as read',
+      affectedRows: result.affectedRows
     });
   } catch (error) {
     console.error('Error marking all notifications as read:', error);

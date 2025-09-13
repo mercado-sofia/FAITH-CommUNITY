@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { FiEdit2, FiTrash2, FiEye, FiClipboard } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiClipboard } from 'react-icons/fi';
+import { IoCloseOutline } from "react-icons/io5";
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import styles from './styles/FAQTable.module.css';
 
@@ -14,11 +15,10 @@ export default function FAQTable({
   onSelectAll,
   onSelectItem,
   isDeleting,
-  isUpdating 
+  isUpdating
 }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedItemForDelete, setSelectedItemForDelete] = useState(null);
-  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
 
   const handleDeleteClick = (faq) => {
     setSelectedItemForDelete(faq);
@@ -38,19 +38,20 @@ export default function FAQTable({
     setSelectedItemForDelete(null);
   };
 
-  const handleBulkDeleteClick = () => {
-    if (selectedItems.size === 0) return;
-    setShowBulkDeleteModal(true);
+  const handleBulkDelete = () => {
+    const selectedFaqIds = Array.from(selectedItems);
+    if (selectedFaqIds.length === 0) return;
+    // Pass selected FAQ IDs to parent for confirmation modal
+    if (onBulkDelete) {
+      onBulkDelete(selectedFaqIds);
+    }
   };
 
-  const handleBulkDeleteConfirm = () => {
-    const selectedIds = Array.from(selectedItems);
-    onBulkDelete(selectedIds);
-    setShowBulkDeleteModal(false);
-  };
-
-  const handleBulkDeleteCancel = () => {
-    setShowBulkDeleteModal(false);
+  const cancelSelection = () => {
+    // Notify parent to clear selections
+    if (onSelectAll) {
+      onSelectAll({ target: { checked: false } });
+    }
   };
 
   const formatDate = (dateString) => {
@@ -93,8 +94,38 @@ export default function FAQTable({
     return truncated + '...';
   };
 
+  const isAllSelected = faqs.length > 0 && selectedItems.size === faqs.length;
+
   return (
     <>
+      {/* Bulk Actions Bar */}
+      {selectedItems.size > 0 && (
+        <div className={styles.bulkActionsBar}>
+          <div className={styles.bulkActionsLeft}>
+            <span className={styles.selectedCount}>
+              {selectedItems.size} FAQ{selectedItems.size !== 1 ? 's' : ''} selected
+            </span>
+          </div>
+          <div className={styles.bulkActionsRight}>
+            <button 
+              className={`${styles.bulkButton} ${styles.deleteButton}`}
+              onClick={handleBulkDelete}
+              title="Delete selected FAQs"
+            >
+              <FiTrash2 size={16} />
+              Delete Selected
+            </button>
+            <button 
+              className={styles.cancelButton}
+              onClick={cancelSelection}
+              title="Cancel selection"
+            >
+              <IoCloseOutline />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className={styles.tableContainer}>
         <table className={styles.faqTable}>
           <thead>
@@ -102,7 +133,7 @@ export default function FAQTable({
               <th className={styles.checkboxColumn}>
                 <input
                   type="checkbox"
-                  checked={selectedItems.size === faqs.length && faqs.length > 0}
+                  checked={isAllSelected}
                   onChange={onSelectAll}
                   className={styles.checkbox}
                 />
@@ -187,16 +218,6 @@ export default function FAQTable({
         itemType="FAQ"
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
-        isDeleting={isDeleting}
-      />
-
-      {/* Bulk Delete Confirmation Modal */}
-      <DeleteConfirmationModal
-        isOpen={showBulkDeleteModal}
-        itemName={`${selectedItems.size} FAQ${selectedItems.size > 1 ? 's' : ''}`}
-        itemType="FAQ"
-        onConfirm={handleBulkDeleteConfirm}
-        onCancel={handleBulkDeleteCancel}
         isDeleting={isDeleting}
       />
     </>

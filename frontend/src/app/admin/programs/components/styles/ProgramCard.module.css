@@ -5,10 +5,11 @@
   border: 1px solid #e5e7eb;
   overflow: hidden;
   transition: all 0.3s ease;
-  height: 490px;
+  min-height: 490px;
   display: flex;
   flex-direction: column;
   position: relative;
+  margin-bottom: 20px;
 }
 
 .programCard:hover {
@@ -158,6 +159,12 @@
   margin: 0;
   line-height: 1.3;
   flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .programDescription {
@@ -315,7 +322,7 @@
 
 @media (max-width: 768px) {
   .programCard {
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     height: 450px; /* Slightly smaller height on mobile */
   }
 
@@ -404,6 +411,7 @@
 
 .modalHeader {
   padding: 20px 20px 0;
+  text-align: center;
 }
 
 .modalTitle {
@@ -415,6 +423,7 @@
 
 .modalBody {
   padding: 16px 20px;
+  text-align: center;
 }
 
 .modalBody p {

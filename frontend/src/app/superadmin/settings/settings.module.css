@@ -2,6 +2,9 @@
 .mainArea {
   width: 100%;
   padding: 0 3rem 2rem 3rem;
+  min-height: calc(100vh - 55px);
+  background: #F0F4F7;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Loading Container */
@@ -43,7 +46,7 @@
 
 /* Header */
 .header {
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
   padding-top: 2rem;
 }
 

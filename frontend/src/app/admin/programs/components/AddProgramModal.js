@@ -12,7 +12,7 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
     title: '',
     description: '',
     category: '',
-    status: '',
+    status: 'Upcoming', // Default status, will be calculated automatically
     image: null,
     additionalImages: [],
     event_start_date: null,
@@ -26,17 +26,56 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
   const fileInputRef = useRef(null);
   const additionalImagesRef = useRef(null);
 
-  const statusOptions = [
-    { value: 'Upcoming', label: 'Upcoming' },
-    { value: 'Active', label: 'Active' },
-    { value: 'Completed', label: 'Completed' },
-  ];
+  // Function to calculate status based on dates
+  const calculateStatus = (event_start_date, event_end_date, multiple_dates) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+
+    // Handle multiple dates
+    if (multiple_dates && Array.isArray(multiple_dates) && multiple_dates.length > 0) {
+      const dates = multiple_dates.map(dateStr => new Date(dateStr));
+      const sortedDates = dates.sort((a, b) => a - b);
+      const earliestDate = sortedDates[0];
+      const latestDate = sortedDates[sortedDates.length - 1];
+      
+      // If today is before the earliest date, it's upcoming
+      if (today < earliestDate) {
+        return 'Upcoming';
+      }
+      // If today is after the latest date, it's completed
+      if (today > latestDate) {
+        return 'Completed';
+      }
+      // If today is between or on any of the dates, it's active
+      return 'Active';
+    }
+
+    // Handle single date or date range
+    if (event_start_date && event_end_date) {
+      const startDate = new Date(event_start_date);
+      const endDate = new Date(event_end_date);
+      
+      // If today is before the start date, it's upcoming
+      if (today < startDate) {
+        return 'Upcoming';
+      }
+      // If today is after the end date, it's completed
+      if (today > endDate) {
+        return 'Completed';
+      }
+      // If today is between or on the dates, it's active
+      return 'Active';
+    }
+
+    // Default to upcoming if no dates are set
+    return 'Upcoming';
+  };
 
 
 
   const steps = [
     { id: 1, title: 'Basic Info' },
-    { id: 2, title: 'Status & Date' },
+    { id: 2, title: 'Event Date' },
     { id: 3, title: 'Images' }
   ];
 
@@ -57,9 +96,17 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
   };
 
   const handleDateChange = (dateData) => {
+    // Calculate status based on the new dates
+    const newStatus = calculateStatus(
+      dateData.event_start_date, 
+      dateData.event_end_date, 
+      dateData.multiple_dates
+    );
+    
     setFormData(prev => ({
       ...prev,
-      ...dateData
+      ...dateData,
+      status: newStatus
     }));
     
     // Clear date-related errors
@@ -73,12 +120,6 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
     }
   };
 
-  const handleStatusChange = (status) => {
-    setFormData(prev => ({
-      ...prev,
-      status: status
-    }));
-  };
 
 
 
@@ -218,11 +259,6 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
         break;
 
       case 2:
-        // Validate status
-        if (!formData.status) {
-          newErrors.status = 'Program status is required';
-        }
-
         // Validate dates
         const hasSingleOrRangeDates = formData.event_start_date && formData.event_end_date;
         const hasMultipleDates = formData.multiple_dates && Array.isArray(formData.multiple_dates) && formData.multiple_dates.length > 0;
@@ -381,28 +417,8 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
 
   const renderStep2 = () => (
     <div className={styles.stepContainer}>
-      <h3 className={styles.stepTitle}>Status & Event Date</h3>
+      <h3 className={styles.stepTitle}>Event Date</h3>
       
-      {/* Status Field */}
-      <div className={styles.formGroup}>
-        <div className={styles.statusField}>
-          <label className={styles.statusLabel}>Status <span className={styles.required}>*</span></label>
-          <div className={styles.statusButtons}>
-            {statusOptions.map(status => (
-              <button
-                key={status.value}
-                type="button"
-                onClick={() => handleStatusChange(status.value)}
-                className={`${styles.statusButton} ${formData.status === status.value ? styles.statusActive : ''}`}
-              >
-                {status.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        {errors.status && <span className={styles.errorText}>{errors.status}</span>}
-      </div>
-
       {/* Event Date Field */}
       <div className={styles.formGroup}>
         <DateSelectionField
@@ -414,7 +430,7 @@ const AddProgramModal = ({ onClose, onSubmit }) => {
           onChange={handleDateChange}
           error={errors.event_start_date || errors.event_end_date || errors.multiple_dates}
           disabled={isSubmitting}
-          label="Event Date(s)"
+          label="Select Date(s)"
           required={true}
         />
       </div>

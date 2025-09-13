@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { TbMail } from "react-icons/tb";
-import { MdNotificationsNone } from "react-icons/md";
+import { MdNotificationsNone, MdCancel } from "react-icons/md";
 import { useNavigation } from '../../../contexts/NavigationContext';
 import { useSelector } from 'react-redux';
 import { selectCurrentAdmin } from '../../../rtk/superadmin/adminSlice';
@@ -84,13 +84,16 @@ export default function TopBar() {
   };
 
   const toggleNotifications = async () => {
-    setShowNotifications(prev => {
-      if (!prev && hasUnreadNotifications) {
-        // Mark all notifications as read when opening
+    if (showNotifications) {
+      // If dropdown is open, close it
+      setShowNotifications(false);
+    } else {
+      // If dropdown is closed, open it and mark notifications as read
+      if (hasUnreadNotifications) {
         markAllAsRead(currentAdmin?.id);
       }
-      return !prev;
-    });
+      setShowNotifications(true);
+    }
   };
 
   // Handle clicking on message notifications to navigate to inbox
@@ -108,7 +111,8 @@ export default function TopBar() {
     const handleClickOutside = (e) => {
       if (
         notificationsRef.current &&
-        !notificationsRef.current.contains(e.target)
+        !notificationsRef.current.contains(e.target) &&
+        !e.target.closest('[data-notification-button]') // Don't close if clicking on notification button
       ) {
         setShowNotifications(false);
       }
@@ -161,7 +165,7 @@ export default function TopBar() {
           </Link>
 
           {/* Notifications Icon */}
-          <div className={styles.iconButton} onClick={toggleNotifications}>
+          <div className={styles.iconButton} onClick={toggleNotifications} data-notification-button>
             <div className={styles.notificationWrapper}>
               <MdNotificationsNone size={20} color="#06100f" />
               {hasUnreadNotifications && <div className={styles.notificationBadge}></div>}
@@ -204,10 +208,7 @@ export default function TopBar() {
                             <circle cx="12" cy="12" r="9" stroke="#10b981" strokeWidth="2" />
                           </svg>
                         ) : notification.type === 'decline' ? (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path d="M18 6L6 18M6 6L18 18" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <circle cx="12" cy="12" r="9" stroke="#ef4444" strokeWidth="2" />
-                          </svg>
+                          <MdCancel size={16} color="#ef4444" />
                         ) : notification.type === 'message' ? (
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                             <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

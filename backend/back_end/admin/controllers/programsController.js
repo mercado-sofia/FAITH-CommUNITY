@@ -1280,3 +1280,103 @@ export const getProgramsStatistics = async (req, res) => {
     });
   }
 };
+
+// Mark program as completed
+export const markProgramAsCompleted = async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "Program ID is required",
+    });
+  }
+
+  try {
+    // Check if program exists
+    const [programRows] = await db.execute(
+      "SELECT id, title, status FROM programs_projects WHERE id = ?",
+      [id]
+    );
+
+    if (programRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Program not found",
+      });
+    }
+
+    // Update program status to completed
+    await db.execute(
+      "UPDATE programs_projects SET status = 'Completed' WHERE id = ?",
+      [id]
+    );
+
+    res.json({
+      success: true,
+      message: "Program marked as completed successfully",
+      data: {
+        id: id,
+        title: programRows[0].title,
+        status: 'Completed'
+      }
+    });
+  } catch (error) {
+    console.error('Error marking program as completed:', error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to mark program as completed",
+      error: error.message
+    });
+  }
+};
+
+// Mark program as active
+export const markProgramAsActive = async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "Program ID is required",
+    });
+  }
+
+  try {
+    // Check if program exists
+    const [programRows] = await db.execute(
+      "SELECT id, title, status FROM programs_projects WHERE id = ?",
+      [id]
+    );
+
+    if (programRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Program not found",
+      });
+    }
+
+    // Update program status to active
+    await db.execute(
+      "UPDATE programs_projects SET status = 'Active' WHERE id = ?",
+      [id]
+    );
+
+    res.json({
+      success: true,
+      message: "Program marked as active successfully",
+      data: {
+        id: id,
+        title: programRows[0].title,
+        status: 'Active'
+      }
+    });
+  } catch (error) {
+    console.error('Error marking program as active:', error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to mark program as active",
+      error: error.message
+    });
+  }
+};

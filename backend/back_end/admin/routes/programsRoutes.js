@@ -14,6 +14,8 @@ import {
   getAllFeaturedPrograms,
   toggleFeaturedStatus,
   getProgramById,
+  markProgramAsCompleted,
+  markProgramAsActive,
   // Functions from programProjectsController
   addProgramProject,
   updateProgramProject,
@@ -41,6 +43,8 @@ const upload = multer({ storage });
 router.get('/admin/programs/:orgId', getProgramsByOrg);
 router.get('/admin/programs/single/:id', getProgramById);
 router.put('/admin/programs/:id', updateProgram);
+router.put('/admin/programs/:id/mark-completed', markProgramAsCompleted);
+router.put('/admin/programs/:id/mark-active', markProgramAsActive);
 router.delete('/admin/programs/:id', deleteProgramSubmission);
 
 // Superadmin routes

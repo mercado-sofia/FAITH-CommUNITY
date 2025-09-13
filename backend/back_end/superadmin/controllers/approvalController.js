@@ -511,6 +511,36 @@ export const bulkApproveSubmissions = async (req, res) => {
         // Update submission status
         await db.execute(`UPDATE submissions SET status = 'approved' WHERE id = ?`, [id]);
 
+        // Create individual notification for this submission
+        let notificationMessage = `Your submission for ${section} has been approved by SuperAdmin`;
+        
+        // Add specific details for programs
+        if (section === 'programs' && data.title) {
+          notificationMessage = `Your program "${data.title}" has been approved by SuperAdmin`;
+        }
+        // Add specific details for news
+        else if (section === 'news' && data.title) {
+          notificationMessage = `Your news "${data.title}" has been approved by SuperAdmin`;
+        }
+        // Add specific details for organization
+        else if (section === 'organization' && data.orgName) {
+          notificationMessage = `Your organization "${data.orgName}" has been approved by SuperAdmin`;
+        }
+        
+        // Create notification for the admin
+        const notificationResult = await NotificationController.createNotification(
+          submission.submitted_by,
+          'approval',
+          'Submission Approved',
+          notificationMessage,
+          section,
+          id
+        );
+
+        if (!notificationResult.success) {
+          console.error(`Failed to create notification for submission ${id}:`, notificationResult.error);
+        }
+
         successCount++;
       } catch (error) {
         console.error(`Error approving submission ${id}:`, error);
@@ -577,6 +607,44 @@ export const bulkRejectSubmissions = async (req, res) => {
           'UPDATE submissions SET status = ?, comment_reject = ? WHERE id = ?',
           ['rejected', rejection_comment || '', id]
         );
+
+        // Create individual notification for this submission
+        let notificationMessage = `Your submission for ${submission.section} has been declined by SuperAdmin`;
+        
+        // Parse the proposed data to get specific details
+        try {
+          const data = JSON.parse(submission.proposed_data);
+          
+          // Add specific details for programs
+          if (submission.section === 'programs' && data.title) {
+            notificationMessage = `Your program "${data.title}" has been declined by SuperAdmin`;
+          }
+          // Add specific details for news
+          else if (submission.section === 'news' && data.title) {
+            notificationMessage = `Your news "${data.title}" has been declined by SuperAdmin`;
+          }
+          // Add specific details for organization
+          else if (submission.section === 'organization' && data.orgName) {
+            notificationMessage = `Your organization "${data.orgName}" has been declined by SuperAdmin`;
+          }
+        } catch (parseError) {
+          // Keep the generic message if parsing fails
+          console.error(`Error parsing proposed data for submission ${id}:`, parseError);
+        }
+
+        // Create notification for the admin
+        const notificationResult = await NotificationController.createNotification(
+          submission.submitted_by,
+          'decline',
+          'Submission Declined',
+          notificationMessage,
+          submission.section,
+          id
+        );
+
+        if (!notificationResult.success) {
+          console.error(`Failed to create notification for submission ${id}:`, notificationResult.error);
+        }
 
         successCount++;
       } catch (error) {

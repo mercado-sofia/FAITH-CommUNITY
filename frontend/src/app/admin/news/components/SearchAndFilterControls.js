@@ -46,25 +46,27 @@ const SearchAndFilterControls = ({
         {/* Show count dropdown */}
         <div className={styles.dropdownWrapper}>
           <span className={styles.inlineLabel}>Show</span>
-          <div
-            className={styles.dropdown}
-            onClick={() => toggleDropdown("show")}
-          >
-            {showCount}
-            <FiChevronDown className={styles.icon} />
+          <div className={styles.dropdownButtonWrapper}>
+            <div
+              className={styles.dropdown}
+              onClick={() => toggleDropdown("show")}
+            >
+              {showCount}
+              <FiChevronDown className={styles.icon} />
+            </div>
+            {showDropdown === "show" && (
+              <ul className={styles.options}>
+                {showCountOptions.map((count) => (
+                  <li key={count} onClick={() => {
+                    onShowCountChange(count);
+                    setShowDropdown(null);
+                  }}>
+                    {count}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          {showDropdown === "show" && (
-            <ul className={styles.options}>
-              {showCountOptions.map((count) => (
-                <li key={count} onClick={() => {
-                  onShowCountChange(count);
-                  setShowDropdown(null);
-                }}>
-                  {count}
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
 
         {/* Search input */}

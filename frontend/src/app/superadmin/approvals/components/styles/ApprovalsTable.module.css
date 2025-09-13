@@ -1,501 +1,313 @@
-/* Table Container */
+/* ApprovalsTable.module.css */
+
+/* Table Container and Table - Matching admin design */
 .tableContainer {
-  background: transparent;
-  border-radius: 0;
-  box-shadow: none;
-  overflow: hidden;
+  background-color: #fff;
+  border-radius: 6px;
+  box-shadow:
+    0 8px 20px rgba(83, 96, 97, 0.06),
+    0 4px 10px rgba(83, 96, 97, 0.04);
+  overflow: visible;
+  border: 1px solid #e5e7eb;
 }
 
-/* Table Styles */
 .table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+  font-family: var(--font-inter);
 }
 
-.table th,
-.table td {
-  font-size: 0.875rem;
-  padding: 1rem 1.5rem;
-  font-weight: 400;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  text-align: left;
-  color: #374151;
-  border-bottom: 1px solid #f3f4f6;
-  vertical-align: middle;
-}
-
+/* Table Header - Matching admin design */
 .table th {
-  color: #111827;
+  padding: 14px;
+  font-size: 13px;
   font-weight: 600;
-  font-size: 0.875rem;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  cursor: default;
+  color: #0c1b1a;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
 }
 
-.table tbody tr {
-  transition: all 0.2s ease;
+/* Table Body - Matching admin design */
+.table td {
+  font-size: 13px;
+  color: #2e3136;
+  padding: 12px 14px;
+  border-top: 1px solid #e5e7eb;
+  background-color: #fff;
+  vertical-align: middle;
+  line-height: 1.4;
+}
+
+.table tr {
+  position: relative;
 }
 
 .table tbody tr:hover {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  background-color: #f9fbfd;
 }
 
-/* Column Widths */
-.selectColumn { width: 60px; }
-.organizationColumn { width: 180px; }
-.sectionColumn { width: 140px; }
-.dateColumn { width: 140px; }
-.statusColumn { width: 120px; }
-.viewDetailsColumn { width: 140px; }
-.actionsColumn { width: 180px; }
+/* Table Columns - Enhanced layout */
+.selectColumn {
+  width: 5%;
+  text-align: center !important;
+}
 
-/* Organization Acronym Badges - Remove color styling, keep as plain text */
-.orgAcronym {
-  display: inline-block;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
+.organizationColumn {
+  width: 20%;
+  text-align: left !important;
+}
+
+.sectionColumn {
+  width: 20%;
+  text-align: left !important;
+}
+
+.dateColumn {
+  width: 20%;
+  text-align: left !important;
+}
+
+.statusColumn {
+  width: 15%;
+  text-align: center !important;
+}
+
+.actionsColumn {
+  width: 4%;
+  text-align: center !important;
+  padding: 14px 0 !important;
+}
+
+/* Table Cells */
+.selectCell {
+  text-align: center;
+  padding: 12px 14px !important;
+}
+
+.organizationCell {
+  text-align: left !important;
+  padding: 12px 14px !important;
+}
+
+.sectionCell {
+  text-align: left !important;
+  padding: 12px 14px !important;
+  text-transform: capitalize;
+  font-size: 13px;
+  color: #414143;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 140px;
 }
 
-/* Status Badges */
-.statusBadge {
-  font-size: 0.75rem;
-  font-weight: 600;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  padding: 8px 16px;
-  border-radius: 20px;
-  display: inline-block;
-  text-align: center;
+.dateCell {
+  text-align: left !important;
+  padding: 12px 14px !important;
+  color: #414143;
+  font-size: 13px;
   white-space: nowrap;
-  user-select: none;
+}
+
+.statusCell {
+  text-align: center;
+  padding: 12px 14px !important;
+}
+
+.actionsCell {
+  text-align: center;
+  padding: 12px 0 !important;
+}
+
+/* Checkbox styling - matching dashboard table */
+.checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #3b82f6;
+  border-radius: 3px;
+  border: 1px solid #d1d5db;
+  transition: all 0.15s ease;
+}
+
+.checkbox:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.checkbox:checked {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.orgAcronym {
+  font-weight: 400;
+  color: #414143;
+  font-size: 13px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Status Badge - Matching dashboard table */
+.statusBadge {
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border: 1px solid transparent;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: inline-block;
+  min-width: 60px;
+  text-align: center;
 }
 
 .statusPending {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  background: #fef3c7;
   color: #92400e;
-  border-color: #f59e0b;
+  border-color: #fbbf24;
 }
 
 .statusApproved {
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  color: #047857;
+  background: #d1fae5;
+  color: #065f46;
   border-color: #10b981;
 }
 
 .statusRejected {
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  background: #fee2e2;
   color: #b91c1c;
   border-color: #ef4444;
 }
 
-/* Action Buttons */
+.pending {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fbbf24;
+}
+
+.rejected {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #ef4444;
+}
+
 .actionButtons {
   display: flex;
-  gap: 0.75rem;
-}
-
-.actionBtn {
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.acceptBtn {
-  background: white;
-  color: #000000;
-  border: 2px solid #000000;
-}
-
-.acceptBtn:hover {
-  background: #000000;
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.rejectBtn {
-  background: white;
-  color: #dc2626;
-  border: 2px solid #dc2626;
-}
-
-.rejectBtn:hover {
-  background: #dc2626;
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-}
-
-.deleteBtn {
-  background: white;
-  color: #dc2626;
-  border: 2px solid #dc2626;
-}
-
-.deleteBtn:hover:not(:disabled) {
-  background: #dc2626;
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-}
-
-.deleteBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.viewDetailsBtn {
-  background: white;
-  border: 2px solid #000000;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: #000000;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.viewDetailsBtn:hover {
-  background: #000000;
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-/* Bulk Actions Bar */
-.bulkActionsBar {
-  display: flex;
-  justify-content: space-between;
+  gap: 8px;
   align-items: center;
-  padding: 1.5rem 2rem;
-  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-  border-radius: 12px;
-  margin-bottom: 1.5rem;
-  border: 1px solid #cbd5e1;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-.selectedCount {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #111827;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.bulkActionsRight {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.bulkActionBtn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.bulkApproveBtn {
-  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
-  color: white;
-  border: 1px solid #10b981;
-}
-
-.bulkApproveBtn:hover {
-  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-
-.bulkRejectBtn {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-  border: 1px solid #ef4444;
-}
-
-.bulkRejectBtn:hover {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}
-
-.bulkDeleteBtn {
-  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-  color: white;
-  border: 1px solid #6b7280;
-}
-
-.bulkDeleteBtn:hover {
-  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
-}
-
-/* Modal Styles */
-.modalOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+/* Action Dropdown - Updated to match volunteer applications */
+.actionDropdownWrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.2s ease-out;
+  position: relative;
 }
 
+.actionDropdownButtonWrapper {
+  position: relative;
+}
+
+.actionDropdown {
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.actionDropdown:hover {
+  background-color: #f3f4f6;
+}
+
+.actionDropdownIcon {
+  color: #0c1b1a;
+  font-size: 16px;
+}
+
+.actionDropdownOptions {
+  position: absolute;
+  z-index: 10000;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 0;
+  min-width: 140px;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.actionDropdownOptions li {
+  padding: 0.6rem 1.2rem;
+  color: #06100f;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+  text-align: left;
+}
+
+.actionDropdownOptions li:hover {
+  background-color: #f3f3f3;
+}
+
+.actionDropdownOptions li.delete {
+  color: #dc3545;
+  border-top: 1px solid #eee;
+  margin-top: 4px;
+  padding-top: 8px;
+}
+
+/* Dropdown positioned above button for bottom rows */
+.actionDropdownOptions.above {
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Legacy action buttons - keeping for backward compatibility */
+.actionBtn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  font-size: 14px;
+}
+
+.actionBtn:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.actionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.actionBtn:disabled:hover {
+  background-color: transparent;
+  color: #6b7280;
+}
+
+/* Animation keyframes */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.modal {
-  background: white;
-  padding: 2rem;
-  border-radius: 16px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
-  max-width: 500px;
-  width: 90%;
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(-20px) scale(0.95);
+    transform: translateY(-4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.modalHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.modalTitle {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #111827;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  margin: 0;
-}
-
-.modalCloseBtn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  color: #6b7280;
-  cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.modalCloseBtn:hover {
-  color: #111827;
-  background: #f3f4f6;
-}
-
-.modalBody {
-  margin-bottom: 2rem;
-}
-
-.modalDescription {
-  color: #6b7280;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.6;
-  margin-bottom: 1.5rem;
-  font-size: 1rem;
-}
-
-.rejectTextarea {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 0.875rem;
-  resize: vertical;
-  min-height: 120px;
-  transition: all 0.2s ease;
-  color: #111827;
-}
-
-.rejectTextarea:focus {
-  outline: none;
-  border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
-}
-
-.modalFooter {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-}
-
-.modalCancelBtn {
-  padding: 12px 24px;
-  border: 2px solid #d1d5db;
-  border-radius: 8px;
-  background: #f3f4f6;
-  color: #374151;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.modalCancelBtn:hover {
-  background: #e5e7eb;
-  border-color: #9ca3af;
-  transform: translateY(-1px);
-}
-
-.modalRejectBtn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1);
-}
-
-.modalRejectBtn:hover {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}
-
-.modalDeleteBtn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-  color: white;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  box-shadow: 0 2px 4px rgba(107, 114, 128, 0.1);
-}
-
-.modalDeleteBtn:hover {
-  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
-}
-
-/* Checkbox Styling */
-.checkbox {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: #000000;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .table th,
-  .table td {
-    padding: 0.75rem 1rem;
-    font-size: 0.8rem;
-  }
-  
-  .bulkActionsBar {
-    padding: 1rem 1.5rem;
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-  }
-  
-  .bulkActionsRight {
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-  
-  .actionButtons {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .modal {
-    padding: 1.5rem;
-    margin: 1rem;
-  }
-  
-  .modalFooter {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .organizationColumn,
-  .sectionColumn,
-  .dateColumn {
-    width: auto;
-    min-width: 100px;
-  }
-  
-  .orgAcronym {
-    max-width: 80px;
-    font-size: 0.7rem;
-    padding: 4px 8px;
-  }
-  
-  .actionBtn,
-  .bulkActionBtn {
-    font-size: 0.7rem;
-    padding: 6px 12px;
+    transform: translateY(0);
   }
 }

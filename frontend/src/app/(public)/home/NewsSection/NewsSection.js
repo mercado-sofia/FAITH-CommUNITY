@@ -1,18 +1,13 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import styles from './NewsSection.module.css';
 import { usePublicOrganizations, usePublicNews } from '../../../../hooks/usePublicData';
 
 export default function NewsSection() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const orgNavRef = useRef(null);
-  const initialOrgSetRef = useRef(false);
   
   const [selectedOrg, setSelectedOrg] = useState(null);
   
@@ -26,7 +21,12 @@ export default function NewsSection() {
 
   // Process organizations with latest news dates
   const organizations = useMemo(() => {
-    if (!orgsData.length || !news.length) return orgsData;
+    if (!orgsData.length) return [];
+
+    // If no news data, return organizations as-is
+    if (!news.length) {
+      return orgsData;
+    }
 
     const orgsWithLatestNews = orgsData.map(org => {
       const orgNews = news.filter(item => {
@@ -60,38 +60,18 @@ export default function NewsSection() {
     return sortedOrgs;
   }, [orgsData, news]);
 
-  // Handle initial organization selection and URL parameters
+  // Handle initial organization selection - always reset to first organization
   useEffect(() => {
-    const urlOrg = searchParams.get('news_org');
-    
-    if (urlOrg && organizations.length > 0) {
-      // If URL has organization parameter, try to find by ID first, then by acronym
-      let org = organizations.find(o => o.id.toString() === urlOrg);
-      
-      // If not found by ID, try by acronym
-      if (!org) {
-        org = organizations.find(o => o.acronym === urlOrg);
-      }
-      
-      if (org) {
-        setSelectedOrg(org);
-        initialOrgSetRef.current = true;
-      } else {
-        const initialOrg = organizations[0];
-        setSelectedOrg(initialOrg);
-        initialOrgSetRef.current = true;
-      }
-    } else if (organizations.length > 0 && !initialOrgSetRef.current) {
-      // No URL parameter, select the most recent org
+    if (organizations.length > 0) {
+      // Always select the first organization (most recent news) on every render
       const initialOrg = organizations[0];
       setSelectedOrg(initialOrg);
-      initialOrgSetRef.current = true;
     }
-  }, [organizations, searchParams]);
+  }, [organizations]);
+
 
   const handleOrgClick = (orgObj, index) => {
     setSelectedOrg(orgObj);
-    router.push(`${pathname}?news_org=${orgObj.acronym || orgObj.id}`, { scroll: false });
   };
 
   // Filter news based on selected organization and sort by date (newest first)
@@ -219,6 +199,7 @@ export default function NewsSection() {
                   role="button"
                   tabIndex={0}
                   aria-pressed={isActive}
+                  data-org-id={orgObj.id}
                   onClick={() => handleOrgClick(orgObj, index)}
                   onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && handleOrgClick(orgObj, index)}
                   className={`${styles.orgItem} ${isActive ? styles.active : ""}`}
@@ -314,7 +295,7 @@ export default function NewsSection() {
 
         {filteredNews.length > maxDisplay && (
           <div className={styles.seeAllNewsContainer}>
-            <Link href={`/news?news_org=${selectedOrg?.id}`} className={styles.seeAllNewsBtn}>
+            <Link href="/news" className={styles.seeAllNewsBtn}>
               SEE ALL NEWS
             </Link>
           </div>

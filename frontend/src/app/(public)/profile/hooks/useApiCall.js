@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { getApiUrl, getAuthHeaders, getAuthHeadersWithFormData } from '../utils/api';
+import { getApiUrl, getAuthHeaders, getAuthHeadersWithFormData } from '../utils/profileApi';
 
 export const useApiCall = () => {
   const [isLoading, setIsLoading] = useState(false);

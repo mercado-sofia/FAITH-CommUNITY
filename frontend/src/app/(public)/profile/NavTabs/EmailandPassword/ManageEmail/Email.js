@@ -5,8 +5,8 @@ import { FaEnvelope, FaEye, FaEyeSlash, FaTimes, FaCheck } from 'react-icons/fa'
 import { createPortal } from 'react-dom';
 import { useProfileApi } from '../../../hooks/useApiCall';
 import { useFormValidation } from '../../../hooks/useFormValidation';
-import { useToast } from '../../common/Toast';
-import LoadingSpinner from '../../common/LoadingSpinner';
+import { useToast } from '../../../components/Toast';
+import LoadingSpinner from '../../../components/LoadingSpinner';
 import styles from './Email.module.css';
 
 export default function Email({ userData, setUserData }) {

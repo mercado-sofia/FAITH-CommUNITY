@@ -6,7 +6,7 @@ import { NavigationProvider } from "../../contexts/NavigationContext";
 import Sidebar from "./components/Sidebar"
 import TopBar from "./components/TopBar"
 import Loader from "../../components/Loader";
-import styles from "./layout.module.css"
+import styles from "./styles/layout.module.css"
 import { Poppins, Inter, Urbanist } from 'next/font/google';
 
 const poppins = Poppins({

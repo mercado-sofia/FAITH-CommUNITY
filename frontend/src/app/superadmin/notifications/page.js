@@ -38,11 +38,9 @@ export default function SuperAdminNotificationsPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const superAdminData = localStorage.getItem('superAdminData');
-      console.log('SuperAdmin data from localStorage:', superAdminData);
       if (superAdminData) {
         try {
           const parsedData = JSON.parse(superAdminData);
-          console.log('Parsed superadmin data:', parsedData);
           setSuperAdminId(parsedData.id);
         } catch (error) {
           console.error('Error parsing superadmin data:', error);
@@ -66,33 +64,20 @@ export default function SuperAdminNotificationsPage() {
     { skip: !superAdminId }
   );
 
-  // Debug logging
-  useEffect(() => {
-    console.log('SuperAdmin ID:', superAdminId);
-    console.log('Unread count data:', unreadCountData);
-    console.log('Unread count error:', unreadCountError);
-    console.log('Sample notifications data:', sampleNotificationsData);
-    console.log('Sample notifications error:', sampleError);
-  }, [superAdminId, unreadCountData, unreadCountError, sampleNotificationsData, sampleError]);
 
-  // Calculate unread counts for each tab
-  const getUnreadCount = (tabType) => {
+  // Calculate counts for each tab
+  const getTabCount = (tabType) => {
     if (!sampleNotificationsData?.notifications) return 0;
     
     const notifications = sampleNotificationsData.notifications;
     
     const filtered = notifications.filter(notification => {
-      const isUnread = !notification.is_read;
-      if (!isUnread) return false;
-      
       switch (tabType) {
-        case 'submissions':
-          return notification.type === 'approval_request' || notification.type === 'decline';
-        case 'messages':
-          return notification.type === 'message';
+        case 'unread':
+          return !notification.is_read; // Only unread notifications
         case 'all':
         default:
-          return true; // 'all' counts all unread
+          return true; // All notifications (read and unread)
       }
     });
     
@@ -172,7 +157,6 @@ export default function SuperAdminNotificationsPage() {
     }
   };
 
-  // Notification icon function removed
 
   // Loading state for when superadmin ID is not available
   if (!superAdminId) {
@@ -237,23 +221,16 @@ export default function SuperAdminNotificationsPage() {
           onClick={() => handleTabChange('all')}
         >
           <span>View all</span>
-          <span className={styles.tabCount}>{getUnreadCount('all')}</span>
+          <span className={styles.tabCount}>{getTabCount('all')}</span>
         </button>
         <button 
-          className={`${styles.navTab} ${currentTab === 'submissions' ? styles.active : ''}`}
-          onClick={() => handleTabChange('submissions')}
+          className={`${styles.navTab} ${currentTab === 'unread' ? styles.active : ''}`}
+          onClick={() => handleTabChange('unread')}
         >
-          <span>Submissions</span>
-          <span className={styles.tabCount}>{getUnreadCount('submissions')}</span>
+          <span>Unread</span>
+          <span className={styles.tabCount}>{getTabCount('unread')}</span>
         </button>
 
-        <button 
-          className={`${styles.navTab} ${currentTab === 'messages' ? styles.active : ''}`}
-          onClick={() => handleTabChange('messages')}
-        >
-          <span>Messages</span>
-          <span className={styles.tabCount}>{getUnreadCount('messages')}</span>
-        </button>
       </div>
 
       <div className={styles.content}>

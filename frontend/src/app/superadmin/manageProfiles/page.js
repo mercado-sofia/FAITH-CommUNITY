@@ -9,6 +9,7 @@ import {
   useDeleteAdminMutation,
 } from "../../../rtk/superadmin/manageProfilesApi"
 import { initializeAuth, selectCurrentAdmin, selectIsAuthenticated } from "../../../rtk/superadmin/adminSlice"
+import SuccessModal from "../components/SuccessModal"
 import styles from "./manageProfiles.module.css"
 
 const AdminCard = ({ admin, onUpdate, onRemove, isRemoving, isUpdating }) => {
@@ -323,7 +324,7 @@ const ManageProfiles = () => {
     confirmPassword: "",
     role: "admin",
   })
-  const [notification, setNotification] = useState({ message: "", type: "" })
+  const [successModal, setSuccessModal] = useState({ isVisible: false, message: "" })
   const [statusFilter, setStatusFilter] = useState("all") // 'all', 'active', 'inactive'
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -360,9 +361,12 @@ const ManageProfiles = () => {
     return { active, inactive, total: admins.length }
   }, [admins])
 
-  const showNotification = (message, type = "success") => {
-    setNotification({ message, type })
-    setTimeout(() => setNotification({ message: "", type: "" }), 5000)
+  const showSuccessModal = (message) => {
+    setSuccessModal({ isVisible: true, message })
+  }
+
+  const closeSuccessModal = () => {
+    setSuccessModal({ isVisible: false, message: "" })
   }
 
   const handleInputChange = (e) => {
@@ -374,7 +378,7 @@ const ManageProfiles = () => {
 
     // Validate password confirmation
     if (form.password !== form.confirmPassword) {
-      showNotification("Passwords do not match!", "error")
+      showSuccessModal("Passwords do not match!")
       return
     }
 
@@ -393,14 +397,14 @@ const ManageProfiles = () => {
         role: "admin",
       }
       await createAdmin(adminData).unwrap()
-      showNotification("Admin created successfully!")
+      showSuccessModal("Admin created successfully!")
       setForm({ org: "", orgName: "", email: "", password: "", confirmPassword: "", role: "admin" })
       setShowConfirmModal(false)
       setShowPassword(false)
       setShowConfirmPassword(false)
     } catch (error) {
       const errorMessage = error?.data?.error || error?.message || "An error occurred"
-      showNotification(errorMessage, "error")
+      showSuccessModal(errorMessage)
       console.error("Error:", error)
     }
   }
@@ -416,10 +420,10 @@ const ManageProfiles = () => {
       } else {
         await updateAdmin(dataWithAdminRole).unwrap()
       }
-      showNotification("Admin updated successfully!")
+      showSuccessModal("Admin updated successfully!")
     } catch (error) {
       const errorMessage = error?.data?.error || error?.message || "Failed to update admin"
-      showNotification(errorMessage, "error")
+      showSuccessModal(errorMessage)
       console.error("Update error:", error)
       throw error
     }
@@ -432,7 +436,7 @@ const ManageProfiles = () => {
       // Find the admin to get their current data
       const adminToRemove = admins.find((admin) => admin.id === id)
       if (!adminToRemove) {
-        showNotification("Admin not found", "error")
+        showSuccessModal("Admin not found")
         return
       }
 
@@ -447,17 +451,17 @@ const ManageProfiles = () => {
       }
 
       await updateAdmin(updateData).unwrap()
-      showNotification("Admin removed successfully! Account has been deactivated.")
+      showSuccessModal("Admin removed successfully! Account has been deactivated.")
     } catch (error) {
       const errorMessage = error?.data?.error || error?.message || "Failed to remove admin"
-      showNotification(errorMessage, "error")
+      showSuccessModal(errorMessage)
       console.error("Remove error:", error)
     }
   }
 
   const handleRefresh = () => {
     refetch()
-    showNotification("Data refreshed!")
+    showSuccessModal("Data refreshed!")
   }
 
   const handleStatusFilterChange = (e) => {
@@ -479,13 +483,13 @@ const ManageProfiles = () => {
       const result = await response.json()
       
       if (response.ok) {
-        showNotification(`Sync completed! ${result.message}`)
+        showSuccessModal(`Sync completed! ${result.message}`)
         refetch() // Refresh the admin list to show updated data
       } else {
-        showNotification(result.error || "Sync failed", "error")
+        showSuccessModal(result.error || "Sync failed")
       }
     } catch (error) {
-      showNotification("Failed to sync organizations", "error")
+      showSuccessModal("Failed to sync organizations")
       console.error("Sync error:", error)
     } finally {
       setIsSyncing(false)
@@ -547,9 +551,11 @@ const ManageProfiles = () => {
         </div>
       </div>
 
-      {notification.message && (
-        <div className={`${styles.notification} ${styles[notification.type]}`}>{notification.message}</div>
-      )}
+      <SuccessModal
+        message={successModal.message}
+        isVisible={successModal.isVisible}
+        onClose={closeSuccessModal}
+      />
 
       <div className={styles.controlsSection}>
         <div className={styles.filterControls}>

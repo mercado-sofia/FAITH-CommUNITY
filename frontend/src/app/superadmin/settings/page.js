@@ -5,6 +5,7 @@ import { FaEnvelope, FaLock } from 'react-icons/fa';
 import styles from './settings.module.css';
 import EmailChangeModal from './ProfileSection/EmailChangeModal';
 import PasswordChangeModal from './ProfileSection/PasswordChangeModal';
+import SuccessModal from '../components/SuccessModal';
 
 // Utility function for password change time
 const getPasswordChangeTime = (userData) => {
@@ -49,7 +50,7 @@ const getPasswordChangeTime = (userData) => {
 export default function SuperAdminSettings() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [notification, setNotification] = useState(null);
+  const [successModal, setSuccessModal] = useState({ isVisible: false, message: '' });
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
@@ -60,7 +61,7 @@ export default function SuperAdminSettings() {
         const token = localStorage.getItem('superAdminToken');
         const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
         if (!token) {
-          showNotification('Authentication required. Please log in again.', 'error');
+          showSuccessModal('Authentication required. Please log in again.');
           return;
         }
 
@@ -74,7 +75,7 @@ export default function SuperAdminSettings() {
         }
         
         if (!superadminId) {
-          showNotification('Unable to get superadmin ID. Please log in again.', 'error');
+          showSuccessModal('Unable to get superadmin ID. Please log in again.');
           return;
         }
 
@@ -90,10 +91,10 @@ export default function SuperAdminSettings() {
         if (response.ok) {
           setCurrentUser(data);
         } else {
-          showNotification(data.error || 'Failed to load user data', 'error');
+          showSuccessModal(data.error || 'Failed to load user data');
         }
       } catch (error) {
-        showNotification('Failed to load user data', 'error');
+        showSuccessModal('Failed to load user data');
       } finally {
         setLoading(false);
       }
@@ -102,10 +103,13 @@ export default function SuperAdminSettings() {
     loadUserData();
   }, []);
 
-  // Show notification
-  const showNotification = (message, type = 'success') => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 5000);
+  // Success modal handlers
+  const showSuccessModal = (message) => {
+    setSuccessModal({ isVisible: true, message });
+  };
+
+  const closeSuccessModal = () => {
+    setSuccessModal({ isVisible: false, message: '' });
   };
 
   // Handle successful updates
@@ -176,12 +180,12 @@ export default function SuperAdminSettings() {
 
   return (
     <div className={styles.mainArea}>
-      {/* Notification */}
-      {notification && (
-        <div className={`${styles.message} ${styles[notification.type]}`}>
-          {notification.message}
-        </div>
-      )}
+      {/* Success Modal */}
+      <SuccessModal
+        message={successModal.message}
+        isVisible={successModal.isVisible}
+        onClose={closeSuccessModal}
+      />
 
       {/* Header */}
       <div className={styles.header}>

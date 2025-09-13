@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FaFileAlt } from 'react-icons/fa';
-import { getApiUrl, getAuthHeaders } from '../../utils/api';
+import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
 import styles from './MyApplications.module.css';
 
 export default function MyApplications() {

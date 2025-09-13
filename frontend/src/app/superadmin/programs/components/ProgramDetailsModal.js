@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { FaTimes, FaTag, FaCalendar, FaEye } from 'react-icons/fa'
 import { getProgramImageUrl } from '@/utils/uploadPaths'
 import { useGetProgramByIdQuery } from '@/rtk/superadmin/programsApi'
-import styles from '../programs.module.css'
+import styles from './styles/ProgramDetailsModal.module.css'
 
 const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
   // Fetch complete program details when modal opens
@@ -22,10 +22,6 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
   // Use fetched data if available, otherwise fallback to passed program data
   const programData = fullProgramData || program
 
-  // Debug logging to check program data
-  console.log('🔍 ProgramDetailsModal - Program data:', programData);
-  console.log('🔍 Additional images:', programData.additional_images);
-  console.log('🔍 Additional images length:', programData.additional_images?.length);
 
   // Use the new upload path utility
   const imageSource = getProgramImageUrl(programData.image);

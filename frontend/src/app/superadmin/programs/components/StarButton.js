@@ -52,7 +52,6 @@ const StarButton = ({ programId, programTitle }) => {
       const result = await addFeaturedProject(programId).unwrap()
       if (result.success) {
         setIsStarred(true)
-        console.log(`Added "${programTitle}" to featured projects`)
       }
       
       // Refetch status to ensure consistency
@@ -73,7 +72,6 @@ const StarButton = ({ programId, programTitle }) => {
       const result = await removeFeaturedProject(programId).unwrap()
       if (result.success) {
         setIsStarred(false)
-        console.log(`Removed "${programTitle}" from featured projects`)
       }
       
       // Refetch status to ensure consistency

@@ -266,7 +266,7 @@ const ViewDetailsModal = ({
 
             </div>
           ) : (
-            // For non-program submissions, show data comparison
+            // For non-program approvals, show data comparison
             <div className={styles.contentSections}>
               <div className={styles.contentSection}>
                 <h4 className={styles.sectionTitle}>DATA CHANGES:</h4>

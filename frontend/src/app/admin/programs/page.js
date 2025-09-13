@@ -38,7 +38,6 @@ export default function AdminProgramsPage() {
   const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || 'all');
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'Active');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
-  const [showCount, setShowCount] = useState(parseInt(searchParams.get('show')) || 10);
 
   // Show skeleton immediately on first load, then show content when data is ready
   const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
@@ -69,7 +68,6 @@ export default function AdminProgramsPage() {
     const urlSearch = searchParams.get('search');
     const urlCategory = searchParams.get('category');
     const urlSort = searchParams.get('sort');
-    const urlShow = searchParams.get('show');
 
     if (urlStatus) {
       setStatusFilter(urlStatus);
@@ -82,9 +80,6 @@ export default function AdminProgramsPage() {
     }
     if (urlSort) {
       setSortBy(urlSort);
-    }
-    if (urlShow) {
-      setShowCount(parseInt(urlShow));
     }
   }, [searchParams]);
 
@@ -283,14 +278,14 @@ export default function AdminProgramsPage() {
       }
     });
 
-    return filtered.slice(0, showCount);
-  }, [programs, searchQuery, categoryFilter, statusFilter, sortBy, showCount]);
+    return filtered;
+  }, [programs, searchQuery, categoryFilter, statusFilter, sortBy]);
 
   // Update URL parameters
   const updateURLParams = (params) => {
     const newSearchParams = new URLSearchParams(searchParams);
     Object.entries(params).forEach(([key, value]) => {
-             if (value && value !== 'all' && value !== '' && !(key === 'sort' && value === 'newest') && !(key === 'status' && value === 'Active') && !(key === 'show' && value === 10)) {
+             if (value && value !== 'all' && value !== '' && !(key === 'sort' && value === 'newest') && !(key === 'status' && value === 'Active')) {
         newSearchParams.set(key, value);
       } else {
         newSearchParams.delete(key);
@@ -317,10 +312,6 @@ export default function AdminProgramsPage() {
       case 'sort':
         setSortBy(value);
         updateURLParams({ sort: value });
-        break;
-      case 'show':
-        setShowCount(parseInt(value));
-        updateURLParams({ show: value });
         break;
     }
   };
@@ -360,7 +351,6 @@ export default function AdminProgramsPage() {
       <SearchAndFilterControls
         searchQuery={searchQuery}
         sortBy={sortBy}
-        showCount={showCount}
         onSearchChange={handleSearchChange}
         onFilterChange={handleFilterChange}
         totalCount={programs?.length || 0}

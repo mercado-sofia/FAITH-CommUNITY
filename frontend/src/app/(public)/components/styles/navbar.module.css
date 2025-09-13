@@ -6,7 +6,7 @@
   top: 0;
   left: 0;
   right: 0;
-  z-index: 9999;
+  z-index: 999;
 }
 
 /* Navbar inner layout */
@@ -202,7 +202,7 @@
   padding: 6rem 2rem 2rem;
   transform: translateX(100%);
   transition: transform 0.3s ease;
-  z-index: 9999;
+  z-index: 999;
   box-shadow: -4px 0 12px rgba(0, 0, 0, 0.2);
   border-radius: 12px 0 0 12px;
 }
@@ -638,31 +638,11 @@
   background-color: #f8f9fa;
 }
 
-.notificationsHeaderActions {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
 .notificationsHeader h3 {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
   color: #333;
-}
-
-.markAllReadBtn {
-  background: none;
-  border: none;
-  color: #0c4b3a;
-  font-size: 0.8rem;
-  cursor: pointer;
-  text-decoration: underline;
-  transition: color 0.2s ease;
-}
-
-.markAllReadBtn:hover {
-  color: #145847;
 }
 
 .viewAllBtn {
@@ -687,6 +667,25 @@
   overflow-y: auto;
 }
 
+/* Custom scrollbar for notifications list */
+.notificationsList::-webkit-scrollbar {
+  width: 4px;
+}
+
+.notificationsList::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 2px;
+}
+
+.notificationsList::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 2px;
+}
+
+.notificationsList::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 .notificationItem {
   padding: 1rem;
   border-bottom: 1px solid #f1f5f9;
@@ -704,10 +703,22 @@
 
 .notificationItem.unread {
   background-color: #f0f8ff;
+  border-left: 3px solid #0c4b3a;
+  font-weight: 600;
 }
 
 .notificationItem.unread:hover {
   background-color: #e6f3ff;
+}
+
+.notificationItem.unread .notificationText {
+  font-weight: 700;
+  color: #0c4b3a;
+}
+
+.notificationItem.unread .notificationMessage {
+  font-weight: 500;
+  color: #374151;
 }
 
 .notificationContent {
@@ -733,6 +744,14 @@
 .notificationTime {
   font-size: 0.75rem;
   color: #9ca3af;
+}
+
+/* Notifications Footer */
+.notificationsFooter {
+  padding: 0.8rem 1rem;
+  border-top: 1px solid #e9ecef;
+  text-align: center;
+  background-color: #f8f9fa;
 }
 
 /* Mobile User Profile */

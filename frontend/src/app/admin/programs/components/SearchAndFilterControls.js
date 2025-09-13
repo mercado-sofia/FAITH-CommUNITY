@@ -7,7 +7,6 @@ import styles from './styles/SearchAndFilterControls.module.css';
 const SearchAndFilterControls = ({
   searchQuery,
   sortBy,
-  showCount,
   onSearchChange,
   onFilterChange,
   totalCount,
@@ -38,44 +37,10 @@ const SearchAndFilterControls = ({
     { value: 'oldest', label: 'Oldest' }
   ];
 
-  const showOptions = [
-    { value: 5, label: '5' },
-    { value: 10, label: '10' },
-    { value: 15, label: '15' },
-    { value: 20, label: '20' },
-    { value: 50, label: '50' }
-  ];
-
   return (
     <div className={styles.controlsRow}>
-      {/* Show, Category Filter, Search, and Sort on the left */}
+      {/* Search and Sort on the left */}
       <div className={styles.filtersRow}>
-        {/* Show Count Filter */}
-        <div className={styles.dropdownWrapper}>
-          <span className={styles.inlineLabel}>Show</span>
-          <div
-            className={styles.dropdown}
-            onClick={() => toggleDropdown("show")}
-          >
-            {showCount}
-            <FiChevronDown className={styles.icon} />
-          </div>
-          {showDropdown === "show" && (
-            <ul className={styles.options}>
-              {showOptions.map((option) => (
-                <li key={option.value} onClick={() => {
-                  onFilterChange('show', option.value);
-                  setShowDropdown(null);
-                }}>
-                  {option.label}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-
-
         {/* Search input */}
         <div className={styles.searchInputContainer}>
           <input
@@ -101,7 +66,7 @@ const SearchAndFilterControls = ({
         </div>
 
         {/* Sort Dropdown */}
-        <div className={styles.dropdownWrapper} style={{ marginLeft: '1rem' }}>
+        <div className={styles.dropdownWrapper}>
           <div
             className={styles.dropdown}
             onClick={() => toggleDropdown("sort")}

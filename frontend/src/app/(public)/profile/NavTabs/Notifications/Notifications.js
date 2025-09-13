@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { FaBell, FaEnvelope, FaCheck } from 'react-icons/fa';
 import { FiTrash2 } from 'react-icons/fi';
 import { PiWarningOctagonBold } from 'react-icons/pi';
-import { getApiUrl, getAuthHeaders } from '../../utils/api';
+import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
 import styles from './Notifications.module.css';
 
 export default function Notifications() {

@@ -78,7 +78,6 @@ class SuperAdminNotificationController {
       const { superAdminId } = req.params;
       const { limit = 10, offset = 0 } = req.query;
 
-      console.log('Getting notifications for superadmin ID:', superAdminId);
 
       // Get total count first
       const [countResult] = await db.execute(
@@ -86,7 +85,6 @@ class SuperAdminNotificationController {
         [superAdminId]
       );
       const total = countResult[0].total;
-      console.log('Total notifications found:', total);
 
       // Get notifications with pagination and organization logo
       const query = `
@@ -111,15 +109,9 @@ class SuperAdminNotificationController {
 
       const [notifications] = await db.execute(query, [superAdminId, parseInt(limit), parseInt(offset)]);
       
-      console.log('Raw notifications from database:', notifications);
 
       // Format the time ago and logo URL for each notification
       const formattedNotifications = notifications.map(notification => {
-        console.log('Processing notification:', {
-          id: notification.id,
-          organization_acronym: notification.organization_acronym,
-          organization_logo: notification.organization_logo
-        });
 
         // Construct proper logo URL
         let logoUrl = null;
@@ -137,7 +129,6 @@ class SuperAdminNotificationController {
           logoUrl = `/logo/${notification.organization_acronym.toLowerCase()}_logo.jpg`;
         }
 
-        console.log('Constructed logo URL:', logoUrl);
 
         return {
           ...notification,

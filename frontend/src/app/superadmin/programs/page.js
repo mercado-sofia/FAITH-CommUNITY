@@ -2,20 +2,48 @@
 
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { FiChevronDown } from 'react-icons/fi'
-import { useGetAllProgramsByOrganizationQuery, useGetProgramsStatisticsQuery, useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/programsApi'
-import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths'
-import StarButton from './components/StarButton'
+import { useGetAllProgramsByOrganizationQuery, useGetProgramsStatisticsQuery } from '@/rtk/superadmin/programsApi'
+import { getOrganizationImageUrl } from '@/utils/uploadPaths'
 import ProgramDetailsModal from './components/ProgramDetailsModal'
 import FeaturedProjects from './components/featuredProjects'
+import ProgramCard from './components/ProgramCard'
 import styles from './programs.module.css'
 
 const SuperadminProgramsPage = () => {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [selectedOrganization, setSelectedOrganization] = useState('all')
-  const [selectedStatus, setSelectedStatus] = useState('all')
   const [selectedProgram, setSelectedProgram] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [showDropdown, setShowDropdown] = useState(null)
+  const [activeTab, setActiveTab] = useState(() => {
+    const tab = searchParams.get('tab')
+    return tab || 'featured' // Default to 'featured' if no URL parameter
+  })
+
+  // Helper function to update URL parameter
+  const updateTabUrl = (tab) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (tab === 'featured') {
+      // Remove tab parameter for featured (default)
+      params.delete('tab')
+    } else {
+      params.set('tab', tab)
+    }
+    router.push(`?${params.toString()}`, { scroll: false })
+  }
+
+  // Sync URL parameter changes with activeTab state
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab)
+    } else if (!tab && activeTab !== 'featured') {
+      setActiveTab('featured')
+    }
+  }, [searchParams, activeTab])
 
   // Handle click outside for dropdowns
   useEffect(() => {
@@ -96,240 +124,29 @@ const SuperadminProgramsPage = () => {
     acronym: org.organizationAcronym
   }))
 
-  const renderProgramCard = (program) => {
-    // Use the new upload path utility
-    const imageSource = getProgramImageUrl(program.image);
-
-    const formatDate = (dateString) => {
-      if (!dateString) return 'Not specified';
-      try {
-        return new Date(dateString).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        });
-      } catch (error) {
-        return 'Invalid date';
-      }
-    };
-
-    const formatProgramDates = (program) => {
-      // Handle multiple dates array (from admin creation flow)
-      if (program.multiple_dates && Array.isArray(program.multiple_dates) && program.multiple_dates.length > 0) {
-        if (program.multiple_dates.length === 1) {
-          return formatDate(program.multiple_dates[0]);
-        } else if (program.multiple_dates.length === 2) {
-          return `${formatDate(program.multiple_dates[0])} & ${formatDate(program.multiple_dates[1])}`;
-        } else {
-          return `${formatDate(program.multiple_dates[0])} +${program.multiple_dates.length - 1} more dates`;
-        }
-      } 
-      // Handle single date range
-      else if (program.event_start_date && program.event_end_date) {
-        const startDate = new Date(program.event_start_date);
-        const endDate = new Date(program.event_end_date);
-        
-        if (startDate.getTime() === endDate.getTime()) {
-          return formatDate(program.event_start_date);
-        } else {
-          return `${formatDate(program.event_start_date)} - ${formatDate(program.event_end_date)}`;
-        }
-      }
-      // Handle single event date
-      else if (program.event_date) {
-        return formatDate(program.event_date);
-      }
-      return 'Not specified';
-    };
-
-    const getCategoryLabel = (category) => {
-      const categoryMap = {
-        outreach: 'Outreach',
-        education: 'Education',
-        health: 'Health',
-        environment: 'Environment',
-        community: 'Community Development',
-        youth: 'Youth Programs',
-        women: 'Women Empowerment',
-        elderly: 'Elderly Care',
-        disaster: 'Disaster Relief',
-        other: 'Other'
-      };
-      return categoryMap[category] || category || 'Uncategorized';
-    };
-
-    const getStatusColor = (status) => {
-      switch (status?.toLowerCase()) {
-        case 'upcoming': return '#1e40af';
-        case 'active': return '#065f46';
-        case 'completed': return '#374151';
-        default: return '#6b7280';
-      }
-    };
-
+  const renderProgramCard = (program, organizationData) => {
     return (
-      <div key={program.id} className={styles.programCard}>
-        {/* Enhanced Image Section */}
-        <div className={styles.programImageContainer}>
-          {imageSource ? (
-            <Image 
-              src={imageSource}
-              alt={program.title}
-              className={styles.programImage}
-              width={300}
-              height={200}
-              onError={(e) => {
-                e.target.style.display = 'none'
-                e.target.nextSibling.style.display = 'flex'
-              }}
-            />
-          ) : null}
-          <div className={styles.programImagePlaceholder} style={{ display: imageSource ? 'none' : 'flex' }}>
-            <span>No Image</span>
-          </div>
-          <StarButton programId={program.id} programTitle={program.title} />
-        </div>
-      
-        {/* Enhanced Content Section */}
-        <div className={styles.programContent}>
-          <div className={styles.programHeader}>
-            <h4 className={styles.programTitle}>{program.title}</h4>
-            {program.posted_date && (
-              <span className={styles.postedDate}>
-                Posted: {formatDate(program.posted_date)}
-              </span>
-            )}
-          </div>
-
-          {/* Program Details Grid - Enhanced */}
-          <div className={styles.programDetailsGrid}>
-            <div className={styles.programDetailItem}>
-              <span className={styles.programDetailLabel}>Category</span>
-              <span className={styles.programDetailValue}>
-                {getCategoryLabel(program.category)}
-              </span>
-            </div>
-
-            <div className={styles.programDetailItem}>
-              <span className={styles.programDetailLabel}>Event Date(s)</span>
-              <span className={styles.programDetailValue}>
-                {formatProgramDates(program)}
-              </span>
-            </div>
-
-            {/* Show multiple dates if available */}
-            {program.multiple_dates && program.multiple_dates.length > 1 && (
-              <div className={styles.programDetailItem}>
-                <span className={styles.programDetailLabel}>All Event Dates</span>
-                <div className={styles.multipleDatesContainer}>
-                  {program.multiple_dates.slice(0, 3).map((date, index) => (
-                    <span key={index} className={styles.dateChip}>
-                      {formatDate(date)}
-                    </span>
-                  ))}
-                  {program.multiple_dates.length > 3 && (
-                    <span className={styles.dateChip}>
-                      +{program.multiple_dates.length - 3} more
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {program.created_at && (
-              <div className={styles.programDetailItem}>
-                <span className={styles.programDetailLabel}>Created</span>
-                <span className={styles.programDetailValue}>
-                  {formatDate(program.created_at)}
-                </span>
-              </div>
-            )}
-
-            {/* Organization Info */}
-            {program.organization_name && (
-              <div className={styles.programDetailItem}>
-                <span className={styles.programDetailLabel}>Organization</span>
-                <span className={styles.programDetailValue}>
-                  {program.organization_name}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Enhanced Description */}
-          <div className={styles.programDescriptionSection}>
-            <h5 className={styles.descriptionTitle}>Description</h5>
-            <p className={styles.programDescription}>
-              {program.description?.length > 150 
-                ? `${program.description.substring(0, 150)}...` 
-                : program.description || 'No description provided'}
-            </p>
-          </div>
-
-          {/* Additional Images Preview - Enhanced */}
-          {program.additional_images && program.additional_images.length > 0 && (
-            <div className={styles.additionalImagesPreview}>
-              <h5 className={styles.additionalImagesTitle}>Additional Images</h5>
-              <div className={styles.additionalImagesThumbnails}>
-                {program.additional_images.slice(0, 4).map((imagePath, index) => (
-                  <div key={index} className={styles.additionalImageThumbnail}>
-                    <Image 
-                      src={getProgramImageUrl(imagePath, 'additional')}
-                      alt={`Additional ${index + 1}`}
-                      width={80}
-                      height={80}
-                      onError={(e) => e.target.style.display = 'none'}
-                    />
-                  </div>
-                ))}
-                {program.additional_images.length > 4 && (
-                  <div className={styles.additionalImageMore}>
-                    +{program.additional_images.length - 4}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Program Stats */}
-          <div className={styles.programStats}>
-            <div className={styles.statItem}>
-              <span className={styles.statLabel}>Status</span>
-              <span className={styles.statValue} style={{ color: getStatusColor(program.status) }}>
-                {program.status}
-              </span>
-            </div>
-            {program.participants_count && (
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>Participants</span>
-                <span className={styles.statValue}>{program.participants_count}</span>
-              </div>
-            )}
-          </div>
-        
-          {/* Enhanced Footer */}
-          <div className={styles.programFooter}>
-            <button 
-              className={styles.viewDetailsButton}
-              onClick={() => {
-                setSelectedProgram(program)
-                setIsModalOpen(true)
-              }}
-            >
-              View Full Details
-            </button>
-          </div>
-        </div>
-      </div>
+      <ProgramCard
+        key={program.id}
+        program={program}
+        onViewDetails={(program) => {
+          setSelectedProgram(program)
+          setIsModalOpen(true)
+        }}
+        showOrganizationBadge={false}
+        organizationData={organizationData}
+      />
     )
   }
 
-  const renderProgramSection = (programs, title, statusKey) => {
-    const filteredPrograms = selectedStatus === 'all' || selectedStatus.toLowerCase() === statusKey.toLowerCase() 
+  const renderProgramSection = (programs, title, statusKey, organizationData) => {
+    // If 'all' tab is selected, show all programs
+    // Otherwise, filter by the selected status tab
+    const filteredPrograms = activeTab === 'all' || activeTab.toLowerCase() === statusKey.toLowerCase() 
       ? programs 
       : []
 
-    if (filteredPrograms.length === 0 && selectedStatus !== 'all' && selectedStatus.toLowerCase() !== statusKey.toLowerCase()) {
+    if (filteredPrograms.length === 0 && activeTab !== 'all' && activeTab.toLowerCase() !== statusKey.toLowerCase()) {
       return null
     }
 
@@ -339,8 +156,8 @@ const SuperadminProgramsPage = () => {
           {title} ({filteredPrograms.length})
         </h4>
         {filteredPrograms.length > 0 ? (
-          <div className={styles.programGrid}>
-            {filteredPrograms.map(renderProgramCard)}
+          <div className={`${styles.featuredGrid} ${styles.programGrid}`}>
+            {filteredPrograms.map(program => renderProgramCard(program, organizationData))}
           </div>
         ) : (
           <div className={styles.emptyProgramSection}>
@@ -385,48 +202,79 @@ const SuperadminProgramsPage = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <div className={styles.headerTop}>
-          <h1 className={styles.pageTitle}>Programs Management</h1>
-        </div>
-        <div className={styles.statsContainer}>
-          {!statsLoading && (
-            <>
-              <div className={styles.statCard}>
-                <span className={styles.statNumber}>{statistics.totalPrograms}</span>
-                <span className={styles.statLabel}>Total Programs</span>
-              </div>
-              <div className={styles.statCard}>
-                <span className={styles.statNumber}>{statistics.upcomingPrograms}</span>
-                <span className={styles.statLabel}>Upcoming</span>
-              </div>
-              <div className={styles.statCard}>
-                <span className={styles.statNumber}>{statistics.activePrograms}</span>
-                <span className={styles.statLabel}>Active</span>
-              </div>
-              <div className={styles.statCard}>
-                <span className={styles.statNumber}>{statistics.completedPrograms}</span>
-                <span className={styles.statLabel}>Completed</span>
-              </div>
-              <div className={styles.statCard}>
-                <span className={styles.statNumber}>{statistics.totalOrganizations}</span>
-                <span className={styles.statLabel}>Organizations</span>
-              </div>
-            </>
-          )}
+          <div className={styles.headerRow}>
+            <h1 className={styles.pageTitle}>Programs Management</h1>
+            <div className={styles.statsContainer}>
+              {!statsLoading && (
+                <>
+                  <div className={styles.statCard}>
+                    <span className={styles.statNumber}>{statistics.totalPrograms}</span>
+                    <span className={styles.statLabel}>Total Programs</span>
+                  </div>
+                  <div className={styles.statCard}>
+                    <span className={styles.statNumber}>{statistics.upcomingPrograms}</span>
+                    <span className={styles.statLabel}>Upcoming</span>
+                  </div>
+                  <div className={styles.statCard}>
+                    <span className={styles.statNumber}>{statistics.activePrograms}</span>
+                    <span className={styles.statLabel}>Active</span>
+                  </div>
+                  <div className={styles.statCard}>
+                    <span className={styles.statNumber}>{statistics.completedPrograms}</span>
+                    <span className={styles.statLabel}>Completed</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+          <div className={styles.navigationTabs}>
+            <button
+              className={`${styles.navTab} ${activeTab === 'featured' ? styles.activeTab : ''}`}
+              onClick={() => updateTabUrl('featured')}
+            >
+              Featured
+            </button>
+            <button
+              className={`${styles.navTab} ${activeTab === 'all' ? styles.activeTab : ''}`}
+              onClick={() => updateTabUrl('all')}
+            >
+              All
+            </button>
+            <button
+              className={`${styles.navTab} ${activeTab === 'upcoming' ? styles.activeTab : ''}`}
+              onClick={() => updateTabUrl('upcoming')}
+            >
+              Upcoming
+            </button>
+            <button
+              className={`${styles.navTab} ${activeTab === 'active' ? styles.activeTab : ''}`}
+              onClick={() => updateTabUrl('active')}
+            >
+              Active
+            </button>
+            <button
+              className={`${styles.navTab} ${activeTab === 'completed' ? styles.activeTab : ''}`}
+              onClick={() => updateTabUrl('completed')}
+            >
+              Completed
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Featured Projects Section */}
-      <FeaturedProjects />
+      {/* Content based on active tab */}
+      {activeTab === 'featured' && <FeaturedProjects />}
 
-      {/* Programs by Organization */}
-      <div className={styles.programsSection}>
-        <h2 className={styles.sectionTitle}>Programs by Organization</h2>
-        
-        {/* Filters */}
-        <div className={styles.filtersContainer}>
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>Organization:</label>
-            <div className={styles.dropdownWrapper}>
+      {/* Programs by Organization - show when 'All' or status tabs are active */}
+      {(activeTab === 'all' || activeTab === 'upcoming' || activeTab === 'active' || activeTab === 'completed') && (
+        <div className={styles.programsSection}>
+        {/* Header with title and filter */}
+        <div className={styles.programsHeader}>
+          <h2 className={styles.sectionTitle}>Programs by Organization</h2>
+          <div className={styles.filtersContainer}>
+            <div className={styles.filterGroup}>
+              <label className={styles.filterLabel}>Organization:</label>
+              <div className={styles.dropdownWrapper}>
               <div
                 className={`${styles.organizationDropdown} ${showDropdown === "organization" ? styles.open : ""}`}
                 onClick={() => setShowDropdown(showDropdown === "organization" ? null : "organization")}
@@ -454,37 +302,7 @@ const SuperadminProgramsPage = () => {
               )}
             </div>
           </div>
-          
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>Status:</label>
-            <div className={styles.dropdownWrapper}>
-              <div
-                className={`${styles.dropdown} ${showDropdown === "status" ? styles.open : ""}`}
-                onClick={() => setShowDropdown(showDropdown === "status" ? null : "status")}
-              >
-                {selectedStatus === "all" ? "All Status" : selectedStatus}
-                <FiChevronDown className={styles.icon} />
-              </div>
-              {showDropdown === "status" && (
-                <ul className={styles.options}>
-                  <li key="all" onClick={() => {
-                    setSelectedStatus("all");
-                    setShowDropdown(null);
-                  }}>
-                    All Status
-                  </li>
-                  {["Upcoming", "Active", "Completed"].map((status) => (
-                    <li key={status} onClick={() => {
-                      setSelectedStatus(status);
-                      setShowDropdown(null);
-                    }}>
-                      {status}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
+        </div>
         </div>
 
         {filteredOrganizations.length === 0 ? (
@@ -493,14 +311,6 @@ const SuperadminProgramsPage = () => {
           </div>
         ) : (
           filteredOrganizations.map(org => {
-            console.log('Organization data:', {
-              id: org.organizationId,
-              name: org.organizationName,
-              acronym: org.organizationAcronym,
-              color: org.organizationColor,
-              hasColor: !!org.organizationColor,
-              fullOrgData: org
-            });
             
             return (
               <div key={org.organizationId} className={styles.organizationSection}>
@@ -521,7 +331,38 @@ const SuperadminProgramsPage = () => {
                         <span 
                           className={styles.organizationAcronym}
                           style={{ 
-                            backgroundColor: org.organizationColor || '#667eea'
+                            backgroundColor: org.organizationColor || '#f3f4f6',
+                            color: (() => {
+                              if (!org.organizationColor) return '#374151';
+                              
+                              const color = org.organizationColor.toLowerCase();
+                              
+                              // Check for white colors
+                              if (color === '#ffffff' || color === '#fff' || color === 'white') {
+                                return '#374151';
+                              }
+                              
+                              // Check for light gray colors
+                              if (color === '#f3f4f6' || color === '#f9fafb' || color === '#e5e7eb' || 
+                                  color === '#d1d5db' || color === '#9ca3af' || color === '#6b7280') {
+                                return '#374151';
+                              }
+                              
+                              // Check if it's a light color by hex value
+                              if (color.startsWith('#')) {
+                                const hex = color.replace('#', '');
+                                const r = parseInt(hex.substr(0, 2), 16);
+                                const g = parseInt(hex.substr(2, 2), 16);
+                                const b = parseInt(hex.substr(4, 2), 16);
+                                const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                                
+                                // If brightness is high (light color), use dark text
+                                return brightness > 128 ? '#374151' : 'white';
+                              }
+                              
+                              // Default to white for other colors
+                              return 'white';
+                            })()
                           }}
                         >
                           {org.organizationAcronym}
@@ -539,15 +380,28 @@ const SuperadminProgramsPage = () => {
                 </div>
 
                 <div className={styles.organizationPrograms}>
-                  {renderProgramSection(org.programs.upcoming, 'Upcoming Programs', 'upcoming')}
-                  {renderProgramSection(org.programs.active, 'Active Programs', 'active')}
-                  {renderProgramSection(org.programs.completed, 'Completed Programs', 'completed')}
+                  {renderProgramSection(org.programs.upcoming, 'Upcoming Programs', 'upcoming', {
+                    name: org.organizationName,
+                    acronym: org.organizationAcronym,
+                    color: org.organizationColor || '#444444'
+                  })}
+                  {renderProgramSection(org.programs.active, 'Active Programs', 'active', {
+                    name: org.organizationName,
+                    acronym: org.organizationAcronym,
+                    color: org.organizationColor || '#444444'
+                  })}
+                  {renderProgramSection(org.programs.completed, 'Completed Programs', 'completed', {
+                    name: org.organizationName,
+                    acronym: org.organizationAcronym,
+                    color: org.organizationColor || '#444444'
+                  })}
                 </div>
               </div>
             )
           })
         )}
-      </div>
+        </div>
+      )}
 
       {/* Program Details Modal */}
       <ProgramDetailsModal 

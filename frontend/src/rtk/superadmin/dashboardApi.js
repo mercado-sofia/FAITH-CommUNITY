@@ -110,6 +110,33 @@ export const dashboardApi = createApi({
       },
     }),
 
+    // Get recent approvals (all statuses) for table
+    getRecentApprovals: builder.query({
+      query: () => "/approvals",
+      providesTags: ["Dashboard"],
+      transformResponse: (response) => {
+        const approvals = response.success ? response.data : response;
+        if (!Array.isArray(approvals)) return [];
+        
+        // Sort by submission date and take first 5
+        // Convert dates to strings to avoid serialization issues
+        return approvals
+          .map(approval => ({
+            ...approval,
+            submitted_at: approval.submitted_at ? new Date(approval.submitted_at).toISOString() : null,
+            // Map backend fields to frontend expected fields
+            organization_acronym: approval.org || approval.organization_acronym || 'N/A',
+            organization_name: approval.orgName || approval.organization_name || 'Unknown Organization'
+          }))
+          .sort((a, b) => {
+            const dateA = new Date(a.submitted_at || 0);
+            const dateB = new Date(b.submitted_at || 0);
+            return dateB - dateA;
+          })
+          .slice(0, 5);
+      },
+    }),
+
     // Get organizations for dropdown filter
     getOrganizationsForFilter: builder.query({
       query: () => "/organizations",
@@ -137,5 +164,6 @@ export const {
   useGetTotalProgramsCountQuery,
   useGetActiveProgramsCountQuery,
   useGetRecentPendingApprovalsQuery,
+  useGetRecentApprovalsQuery,
   useGetOrganizationsForFilterQuery,
 } = dashboardApi

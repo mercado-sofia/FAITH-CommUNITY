@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import Image from 'next/image';
 import { TbMail } from "react-icons/tb";
 import { MdNotificationsNone } from "react-icons/md";
 import { useGetSuperAdminNotificationsQuery, useGetSuperAdminUnreadCountQuery, useMarkSuperAdminAsReadMutation } from '../../../rtk/superadmin/superadminNotificationsApi';
@@ -166,7 +167,7 @@ export default function TopBar() {
       }
     }
     
-    // Navigate to pending approvals with filtering parameters
+    // Navigate to approvals with filtering parameters
     if (notification.section) {
       const params = new URLSearchParams({
         section: notification.section,
@@ -199,7 +200,7 @@ export default function TopBar() {
 
     switch (superAdminSection) {
       case 'dashboard': return { category: 'General', section: 'Dashboard' };
-      case 'approvals': return { category: 'Management', section: 'Pending Approvals' };
+      case 'approvals': return { category: 'Management', section: 'Approvals' };
       case 'programs': return { category: 'Management', section: 'Programs' };
       case 'faqs': return { category: 'Management', section: 'FAQs' };
       case 'manageProfiles': return { category: 'Management', section: 'Manage Profiles' };
@@ -294,9 +295,11 @@ export default function TopBar() {
                     >
                       <div className={styles.notificationIcon}>
                         {notification.organization_logo ? (
-                          <img
+                          <Image
                             src={getOrganizationImageUrl(notification.organization_logo, 'logo')}
                             alt={`${notification.organization_acronym} logo`}
+                            width={24}
+                            height={24}
                             className={styles.organizationLogo}
                             onError={(e) => {
                               // Fallback to generic icon if logo fails to load
@@ -332,7 +335,10 @@ export default function TopBar() {
               <div className={styles.notificationsFooter}>
                 <button 
                   className={styles.viewAllBtn}
-                  onClick={() => router.push('/superadmin/notifications')}
+                  onClick={() => {
+                    setShowNotifications(false);
+                    router.push('/superadmin/notifications');
+                  }}
                 >
                   View All Notifications
                 </button>

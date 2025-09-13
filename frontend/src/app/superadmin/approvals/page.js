@@ -1,30 +1,32 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { FiClipboard, FiSearch, FiChevronDown, FiCheck, FiX, FiTrash2 } from 'react-icons/fi';
-import { HiOutlineDotsHorizontal } from 'react-icons/hi';
 import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowLeftDoubleFill, RiArrowRightDoubleFill } from "react-icons/ri";
-import ApprovalsTable from './components/ApprovalsTable';
-import ViewDetailsModal from './components/ViewDetailsModal';
 import BulkActionConfirmationModal from './components/BulkActionConfirmationModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
-import styles from '../styles/approvals.module.css';
+import SuccessModal from '../components/SuccessModal';
+import ApprovalsTable from './components/ApprovalsTable';
+import styles from './approvals.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export default function PendingApprovalsPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [approvals, setApprovals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [notification, setNotification] = useState({ type: '', text: '' });
+  const [successModal, setSuccessModal] = useState({ isVisible: false, message: '' });
   const [organizations, setOrganizations] = useState([]);
   const [orgsLoading, setOrgsLoading] = useState(false);
   
   // Filter and search states
   const [selectedOrganization, setSelectedOrganization] = useState('all');
   const [selectedSection, setSelectedSection] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('latest');
   const [showEntries, setShowEntries] = useState(10);
@@ -41,17 +43,20 @@ export default function PendingApprovalsPage() {
   const [showDropdown, setShowDropdown] = useState(null);
   const [dropdownPosition, setDropdownPosition] = useState({});
   
-  // View details modal state
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [selectedItemForDetails, setSelectedItemForDetails] = useState(null);
   
   // Bulk action confirmation modal state
   const [showBulkConfirmation, setShowBulkConfirmation] = useState(false);
   const [pendingBulkAction, setPendingBulkAction] = useState(null);
   
-  // Individual delete modal state
+  
+  // Individual approve/reject/delete modal state
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedItemForAction, setSelectedItemForAction] = useState(null);
   const [selectedItemForDelete, setSelectedItemForDelete] = useState(null);
+  const [rejectComment, setRejectComment] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
   // Bulk delete modal state
@@ -66,12 +71,11 @@ export default function PendingApprovalsPage() {
     
     const rect = buttonElement.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
     const dropdownHeight = 120; // Approximate height of dropdown with 3 items
-    const dropdownWidth = 140; // min-width from CSS
     
     // Calculate horizontal position (right-aligned to button)
-    const right = viewportWidth - rect.right;
+    // For absolute positioning, we need to position relative to the button
+    const right = 0; // Align to the right edge of the button
     
     // Check if there's enough space below
     const spaceBelow = viewportHeight - rect.bottom;
@@ -82,19 +86,19 @@ export default function PendingApprovalsPage() {
     // If not enough space below but enough above, show above
     if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
       position = 'above';
-      top = rect.top - dropdownHeight - 4; // 4px gap
+      top = -dropdownHeight - 4; // 4px gap above the button
     } else {
       position = 'below';
-      top = rect.bottom + 4; // 4px gap
+      top = rect.height + 4; // 4px gap below the button
     }
     
     return { position, top, right };
   };
 
-  const fetchApprovals = async () => {
+  const fetchApprovals = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await fetch(`${API_BASE_URL}/api/approvals/pending`);
+      const res = await fetch(`${API_BASE_URL}/api/approvals`);
       const result = await res.json();
 
       if (!res.ok || !result.success) {
@@ -115,7 +119,7 @@ export default function PendingApprovalsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   const fetchOrganizations = async () => {
     try {
@@ -135,37 +139,81 @@ export default function PendingApprovalsPage() {
     }
   };
 
+  // Success modal handlers
+  const showSuccessModal = useCallback((message) => {
+    setSuccessModal({ isVisible: true, message });
+  }, []);
+
+  const closeSuccessModal = () => {
+    setSuccessModal({ isVisible: false, message: '' });
+  };
+
   useEffect(() => {
     fetchApprovals();
     fetchOrganizations();
-  }, []);
+  }, [fetchApprovals]);
 
-  // Handle URL parameters for notification filtering
-  useEffect(() => {
-    const submissionId = searchParams.get('submissionId');
-    const section = searchParams.get('section');
-    const organization = searchParams.get('organization');
-    const searchTerm = searchParams.get('searchTerm');
-
-    if (submissionId || section || organization || searchTerm) {
-      // Set filters based on URL parameters
-      if (section && section !== 'all') {
-        setSelectedSection(section);
-      }
-      if (organization && organization !== 'all') {
-        setSelectedOrganization(organization);
-      }
-      if (submissionId) {
-        // Set search term to help identify the specific submission
-        setSearchTerm(submissionId);
-      } else if (searchTerm) {
-        // Use searchTerm if submissionId is not available
-        setSearchTerm(searchTerm);
+  // Function to update URL parameters
+  const updateURLParams = useCallback((newParams) => {
+    const params = new URLSearchParams(searchParams);
+    
+    Object.entries(newParams).forEach(([key, value]) => {
+      // Define default values for each parameter
+      const defaults = {
+        organization: 'all',
+        section: 'all', 
+        status: 'all',
+        search: '',
+        sort: 'latest',
+        show: 10,
+        page: 1
+      };
+      
+      // Only add to URL if value is not default and not empty
+      if (value && value !== defaults[key] && value !== '') {
+        params.set(key, value);
       } else {
-        // If we have section and organization but no specific ID, clear search term
-        // The combination of section + organization filters should be enough
-        setSearchTerm('');
+        params.delete(key);
       }
+    });
+    
+    const newURL = `${pathname}?${params.toString()}`;
+    router.replace(newURL, { scroll: false });
+  }, [searchParams, pathname, router]);
+
+  // Handle URL parameters for all filters
+  useEffect(() => {
+    const urlParams = {
+      organization: searchParams.get('organization'),
+      section: searchParams.get('section'),
+      status: searchParams.get('status'),
+      search: searchParams.get('search'),
+      sort: searchParams.get('sort'),
+      show: searchParams.get('show'),
+      page: searchParams.get('page')
+    };
+
+    // Set filters based on URL parameters
+    if (urlParams.organization) {
+      setSelectedOrganization(urlParams.organization);
+    }
+    if (urlParams.section) {
+      setSelectedSection(urlParams.section);
+    }
+    if (urlParams.status) {
+      setSelectedStatus(urlParams.status);
+    }
+    if (urlParams.search) {
+      setSearchTerm(urlParams.search);
+    }
+    if (urlParams.sort) {
+      setSortBy(urlParams.sort);
+    }
+    if (urlParams.show) {
+      setShowEntries(parseInt(urlParams.show));
+    }
+    if (urlParams.page) {
+      setCurrentPage(parseInt(urlParams.page));
     }
   }, [searchParams]);
 
@@ -189,6 +237,11 @@ export default function PendingApprovalsPage() {
   // Handle click outside for dropdowns
   useEffect(() => {
     const handleClickOutside = (e) => {
+      // Check if target is a valid element with closest method
+      if (!e.target || !e.target.closest) {
+        return;
+      }
+      
       // Don't close if clicking on dropdown options or inside dropdown containers
       if (e.target.closest(`.${styles.actionDropdownOptions}`) ||
           e.target.closest(`.${styles.options}`)) {
@@ -210,8 +263,14 @@ export default function PendingApprovalsPage() {
 
     const handleScroll = (e) => {
       // Only close dropdowns if scrolling outside of dropdown containers
-      if (showDropdown && !e.target.closest(`.${styles.dropdownWrapper}`) && 
-          !e.target.closest(`.${styles.actionDropdownWrapper}`)) {
+      if (showDropdown && e.target && e.target.closest) {
+        if (!e.target.closest(`.${styles.dropdownWrapper}`) && 
+            !e.target.closest(`.${styles.actionDropdownWrapper}`)) {
+          setShowDropdown(null);
+          setDropdownPosition({});
+        }
+      } else if (showDropdown) {
+        // If we can't determine the target, close dropdowns to be safe
         setShowDropdown(null);
         setDropdownPosition({});
       }
@@ -226,7 +285,7 @@ export default function PendingApprovalsPage() {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('scroll', handleScroll, true);
     };
-  }, []);
+  }, [showDropdown]);
 
   // Filter and search logic
   useEffect(() => {
@@ -244,6 +303,13 @@ export default function PendingApprovalsPage() {
     if (selectedSection !== 'all') {
       filtered = filtered.filter(approval => 
         approval.section === selectedSection
+      );
+    }
+
+    // Filter by status
+    if (selectedStatus !== 'all') {
+      filtered = filtered.filter(approval => 
+        approval.status === selectedStatus
       );
     }
 
@@ -270,9 +336,9 @@ export default function PendingApprovalsPage() {
 
       setFilteredApprovals(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [approvals, selectedOrganization, selectedSection, searchTerm, sortBy]);
+  }, [approvals, selectedOrganization, selectedSection, selectedStatus, searchTerm, sortBy]);
 
-  const handleApprove = async (id) => {
+  const handleApprove = useCallback(async (id) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/approvals/${id}/approve`, {
         method: 'PUT',
@@ -285,24 +351,15 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Approval failed');
       }
 
-      setNotification({ 
-        type: 'success', 
-        text: 'Changes have been approved and applied.' 
-      });
+      showSuccessModal('Changes have been approved and applied.');
       fetchApprovals(); // Refresh the list
-      
-      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
     } catch (err) {
       console.error('❌ Approve error:', err);
-      setNotification({ 
-        type: 'error', 
-        text: 'Failed to approve changes: ' + err.message 
-      });
-      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
+      showSuccessModal('Failed to approve changes: ' + err.message);
     }
-  };
+  }, [showSuccessModal, fetchApprovals]);
 
-  const handleReject = async (id, rejectComment = '') => {
+  const handleReject = useCallback(async (id, rejectComment = '') => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/approvals/${id}/reject`, {
         method: 'PUT',
@@ -316,25 +373,16 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Rejection failed');
       }
 
-      setNotification({ 
-        type: 'success', 
-        text: 'Submission has been rejected.' 
-      });
+      showSuccessModal('Submission has been rejected.');
       fetchApprovals();
-      
-      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
     } catch (err) {
       console.error('❌ Reject error:', err);
-      setNotification({ 
-        type: 'error', 
-        text: 'Failed to reject submission: ' + err.message 
-      });
-      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
+      showSuccessModal('Failed to reject submission: ' + err.message);
     }
-  };
+  }, [showSuccessModal, fetchApprovals]);
 
   // Bulk action handlers
-  const handleBulkApprove = async (ids) => {
+  const handleBulkApprove = useCallback(async (ids) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/approvals/bulk/approve`, {
         method: 'POST',
@@ -348,24 +396,15 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Bulk approval failed');
       }
 
-      setNotification({ 
-        type: 'success', 
-        text: `Bulk approval completed: ${result.details.successCount} approved, ${result.details.errorCount} failed` 
-      });
+      showSuccessModal(`Bulk approval completed: ${result.details.successCount} approved`);
       fetchApprovals();
-      
-      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
     } catch (err) {
       console.error('❌ Bulk approve error:', err);
-      setNotification({ 
-        type: 'error', 
-        text: 'Failed to bulk approve submissions: ' + err.message 
-      });
-      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
+      showSuccessModal('Failed to bulk approve approvals: ' + err.message);
     }
-  };
+  }, [showSuccessModal, fetchApprovals]);
 
-  const handleBulkReject = async (ids, rejectComment = '') => {
+  const handleBulkReject = useCallback(async (ids, rejectComment = '') => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/approvals/bulk/reject`, {
         method: 'POST',
@@ -379,24 +418,15 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Bulk rejection failed');
       }
 
-      setNotification({ 
-        type: 'success', 
-        text: `Bulk rejection completed: ${result.details.successCount} rejected, ${result.details.errorCount} failed` 
-      });
+      showSuccessModal(`Bulk rejection completed: ${result.details.successCount} rejected`);
       fetchApprovals();
-      
-      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
     } catch (err) {
       console.error('❌ Bulk reject error:', err);
-      setNotification({ 
-        type: 'error', 
-        text: 'Failed to bulk reject submissions: ' + err.message 
-      });
-      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
+      showSuccessModal('Failed to bulk reject approvals: ' + err.message);
     }
-  };
+  }, [showSuccessModal, fetchApprovals]);
 
-  const handleBulkDelete = async (ids) => {
+  const handleBulkDelete = useCallback(async (ids) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/approvals/bulk/delete`, {
         method: 'POST',
@@ -410,29 +440,76 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Bulk deletion failed');
       }
 
-      setNotification({ 
-        type: 'success', 
-        text: `Bulk deletion completed: ${result.details.successCount} deleted, ${result.details.errorCount} failed` 
-      });
+      showSuccessModal(`Bulk deletion completed: ${result.details.successCount} deleted`);
       fetchApprovals();
-      
-      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
     } catch (err) {
       console.error('❌ Bulk delete error:', err);
-      setNotification({ 
-        type: 'error', 
-        text: 'Failed to bulk delete submissions: ' + err.message 
-      });
-      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
+      showSuccessModal('Failed to bulk delete approvals: ' + err.message);
+    }
+  }, [showSuccessModal, fetchApprovals]);
+
+
+  // Individual approve/reject modal handlers
+  const handleApproveClick = useCallback((approval) => {
+    setSelectedItemForAction(approval);
+    setShowApproveModal(true);
+  }, []);
+
+  const handleRejectClick = useCallback((approval) => {
+    setSelectedItemForAction(approval);
+    setRejectComment('');
+    setShowRejectModal(true);
+  }, []);
+
+  const handleApproveConfirm = async () => {
+    if (!selectedItemForAction) return;
+    
+    setIsProcessing(true);
+    try {
+      await handleApprove(selectedItemForAction.id);
+      setShowApproveModal(false);
+      setSelectedItemForAction(null);
+    } catch (error) {
+      console.error('Approve failed:', error);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const handleDeleteClick = (approval) => {
-    setSelectedItemForDelete(approval);
-    setShowDeleteModal(true);
+  const handleRejectConfirm = async () => {
+    if (!selectedItemForAction) return;
+    
+    setIsProcessing(true);
+    try {
+      await handleReject(selectedItemForAction.id, rejectComment);
+      setShowRejectModal(false);
+      setSelectedItemForAction(null);
+      setRejectComment('');
+    } catch (error) {
+      console.error('Reject failed:', error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const handleDeleteConfirm = async () => {
+  const handleApproveCancel = () => {
+    setShowApproveModal(false);
+    setSelectedItemForAction(null);
+  };
+
+  const handleRejectCancel = () => {
+    setShowRejectModal(false);
+    setSelectedItemForAction(null);
+    setRejectComment('');
+  };
+
+  // Individual delete handlers
+  const handleDeleteClick = useCallback((item) => {
+    setSelectedItemForDelete(item);
+    setShowDeleteModal(true);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
     if (!selectedItemForDelete) return;
     
     setIsDeleting(true);
@@ -448,37 +525,29 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Deletion failed');
       }
 
-      setNotification({ 
-        type: 'success', 
-        text: 'Submission deleted successfully' 
-      });
+      showSuccessModal('Submission deleted successfully');
       fetchApprovals();
       setShowDeleteModal(false);
       setSelectedItemForDelete(null);
-      
-      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
     } catch (err) {
       console.error('❌ Delete error:', err);
-      setNotification({ 
-        type: 'error', 
-        text: 'Failed to delete submission: ' + err.message 
-      });
-      setTimeout(() => setNotification({ type: '', text: '' }), 5000);
+      showSuccessModal('Failed to delete submission: ' + err.message);
     } finally {
       setIsDeleting(false);
     }
-  };
+  }, [selectedItemForDelete, showSuccessModal, fetchApprovals]);
 
-  const handleDeleteCancel = () => {
+  const handleDeleteCancel = useCallback(() => {
     setShowDeleteModal(false);
     setSelectedItemForDelete(null);
-  };
+  }, []);
+
 
   // Bulk delete handlers
-  const handleBulkDeleteClick = () => {
+  const handleBulkDeleteClick = useCallback(() => {
     if (selectedItems.size === 0) return;
     setShowBulkDeleteModal(true);
-  };
+  }, [selectedItems.size]);
 
   const handleBulkDeleteConfirm = async () => {
     if (selectedItems.size === 0) return;
@@ -515,6 +584,10 @@ export default function PendingApprovalsPage() {
     }
   }, [currentApprovals]);
 
+  // Get pending items from current approvals for bulk actions
+  const pendingApprovals = currentApprovals.filter(approval => approval.status === 'pending');
+  const hasPendingItems = pendingApprovals.length > 0;
+
   const handleSelectItem = useCallback((id) => {
     setSelectedItems(prev => {
       const newSelected = new Set(prev);
@@ -527,17 +600,6 @@ export default function PendingApprovalsPage() {
     });
   }, []);
 
-  // View details modal handlers
-  const handleViewDetails = (approval) => {
-    setSelectedItemForDetails(approval);
-    setShowDetailsModal(true);
-    setShowDropdown(null); // Close any open dropdowns
-  };
-
-  const handleDetailsClose = () => {
-    setShowDetailsModal(false);
-    setSelectedItemForDetails(null);
-  };
 
   const handleBulkApproveSelected = useCallback(() => {
     if (selectedItems.size === 0 || isBulkActionLoading) return;
@@ -554,7 +616,7 @@ export default function PendingApprovalsPage() {
   const handleBulkDeleteSelected = useCallback(() => {
     if (selectedItems.size === 0 || isBulkActionLoading) return;
     handleBulkDeleteClick();
-  }, [selectedItems.size, isBulkActionLoading]);
+  }, [selectedItems.size, isBulkActionLoading, handleBulkDeleteClick]);
 
   // Confirmation modal handlers
   const handleBulkConfirmationCancel = useCallback(() => {
@@ -593,35 +655,52 @@ export default function PendingApprovalsPage() {
   }, [pendingBulkAction, selectedItems, handleBulkApprove, handleBulkReject]);
 
   // Event handlers
-  const handleOrganizationChange = (e) => {
-    setSelectedOrganization(e.target.value);
-  };
+  const handleOrganizationChange = useCallback((e) => {
+    const value = e.target.value;
+    setSelectedOrganization(value);
+    updateURLParams({ organization: value });
+  }, [updateURLParams]);
 
-  const handleSectionChange = (e) => {
-    setSelectedSection(e.target.value);
-  };
+  const handleSectionChange = useCallback((e) => {
+    const value = e.target.value;
+    setSelectedSection(value);
+    updateURLParams({ section: value });
+  }, [updateURLParams]);
 
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
-  };
+  const handleStatusChange = useCallback((e) => {
+    const value = e.target.value;
+    setSelectedStatus(value);
+    updateURLParams({ status: value });
+  }, [updateURLParams]);
 
-  const handleSortChange = (e) => {
-    setSortBy(e.target.value);
-  };
+  const handleSearchChange = useCallback((e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    updateURLParams({ search: value });
+  }, [updateURLParams]);
 
-  const handleShowEntriesChange = (e) => {
-    setShowEntries(parseInt(e.target.value));
+  const handleSortChange = useCallback((e) => {
+    const value = e.target.value;
+    setSortBy(value);
+    updateURLParams({ sort: value });
+  }, [updateURLParams]);
+
+  const handleShowEntriesChange = useCallback((e) => {
+    const value = parseInt(e.target.value);
+    setShowEntries(value);
     setCurrentPage(1);
-  };
+    updateURLParams({ show: value, page: 1 });
+  }, [updateURLParams]);
 
-  const handlePageChange = (page) => {
+  const handlePageChange = useCallback((page) => {
     setCurrentPage(page);
-  };
+    updateURLParams({ page });
+  }, [updateURLParams]);
 
   if (isLoading) {
     return (
       <div className={styles.container}>
-        <div className={styles.loading}>Loading pending submissions...</div>
+        <div className={styles.loading}>Loading approvals...</div>
       </div>
     );
   }
@@ -636,16 +715,16 @@ export default function PendingApprovalsPage() {
 
   return (
     <div className={styles.mainArea}>
-      {/* Notification Display */}
-      {notification.text && (
-        <div className={`${styles.notification} ${styles[notification.type]}`}>
-          {notification.text}
-        </div>
-      )}
+      {/* Success Modal */}
+      <SuccessModal
+        message={successModal.message}
+        isVisible={successModal.isVisible}
+        onClose={closeSuccessModal}
+      />
 
       {/* Header Section */}
       <div className={styles.header}>
-          <h1 className={styles.pageTitle}>Pending Submissions</h1>
+          <h1 className={styles.pageTitle}>Approvals</h1>
         </div>
 
       {/* Controls and Stats Section */}
@@ -665,6 +744,8 @@ export default function PendingApprovalsPage() {
                 {[10, 25, 50, 100].map((count) => (
                   <li key={count} onClick={() => {
                     setShowEntries(count);
+                    setCurrentPage(1);
+                    updateURLParams({ show: count, page: 1 });
                     setShowDropdown(null);
                   }}>
                     {count}
@@ -686,6 +767,7 @@ export default function PendingApprovalsPage() {
               <ul className={styles.options}>
                 <li key="all" onClick={() => {
                   setSelectedOrganization("all");
+                  updateURLParams({ organization: "all" });
                   setShowDropdown(null);
                 }}>
                   All Organizations
@@ -693,6 +775,7 @@ export default function PendingApprovalsPage() {
                 {organizations.map(org => (
                   <li key={org.id} onClick={() => {
                     setSelectedOrganization(org.acronym);
+                    updateURLParams({ organization: org.acronym });
                     setShowDropdown(null);
                   }}>
                     {org.acronym} - {org.name.length > 30 ? org.name.substring(0, 30) + "..." : org.name}
@@ -714,6 +797,7 @@ export default function PendingApprovalsPage() {
               <ul className={styles.options}>
                 <li key="all" onClick={() => {
                   setSelectedSection("all");
+                  updateURLParams({ section: "all" });
                   setShowDropdown(null);
                 }}>
                   All Section
@@ -721,6 +805,7 @@ export default function PendingApprovalsPage() {
                 {["programs", "competency", "advocacy"].map((section) => (
                   <li key={section} onClick={() => {
                     setSelectedSection(section);
+                    updateURLParams({ section });
                     setShowDropdown(null);
                   }}>
                     {section.charAt(0).toUpperCase() + section.slice(1)}
@@ -728,8 +813,38 @@ export default function PendingApprovalsPage() {
                 ))}
               </ul>
             )}
+          </div>
+
+          <div className={styles.dropdownWrapper}>
+            <div
+              className={`${styles.dropdown} ${showDropdown === "status" ? styles.open : ""}`}
+              onClick={() => setShowDropdown(showDropdown === "status" ? null : "status")}
+            >
+              {selectedStatus === "all" ? "All Status" : selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)}
+              <FiChevronDown className={styles.icon} />
+            </div>
+            {showDropdown === "status" && (
+              <ul className={styles.options}>
+                <li key="all" onClick={() => {
+                  setSelectedStatus("all");
+                  updateURLParams({ status: "all" });
+                  setShowDropdown(null);
+                }}>
+                  All Status
+                </li>
+                {["pending", "approved", "rejected"].map((status) => (
+                  <li key={status} onClick={() => {
+                    setSelectedStatus(status);
+                    updateURLParams({ status });
+                    setShowDropdown(null);
+                  }}>
+                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
-      </div>
 
         <div className={styles.searchWrapper}>
           <div className={styles.searchInputContainer}>
@@ -741,7 +856,10 @@ export default function PendingApprovalsPage() {
               className={styles.searchInput}
             />
             {searchTerm ? (
-              <FiX className={styles.clearIcon} onClick={() => setSearchTerm('')} />
+              <FiX className={styles.clearIcon} onClick={() => {
+                setSearchTerm('');
+                updateURLParams({ search: '' });
+              }} />
             ) : (
               <FiSearch className={styles.searchIcon} />
             )}
@@ -760,6 +878,7 @@ export default function PendingApprovalsPage() {
                 {["latest", "oldest"].map((option) => (
                   <li key={option} onClick={() => {
                     setSortBy(option);
+                    updateURLParams({ sort: option });
                     setShowDropdown(null);
                   }}>
                     {option.charAt(0).toUpperCase() + option.slice(1)}
@@ -767,13 +886,6 @@ export default function PendingApprovalsPage() {
                 ))}
               </ul>
             )}
-          </div>
-
-          <div className={styles.statsCard}>
-            <div className={styles.cardContent}>
-              <h3 className={styles.statLabel}>Total Submissions</h3>
-              <p className={styles.statNumber}>{approvals.length}</p>
-            </div>
           </div>
         </div>
       </div>
@@ -788,22 +900,26 @@ export default function PendingApprovalsPage() {
             </span>
           </div>
           <div className={styles.bulkActionsRight}>
-            <button 
-              onClick={handleBulkApproveSelected}
-              disabled={isBulkActionLoading}
-              className={`${styles.bulkActionBtn} ${styles.bulkApproveBtn} ${isBulkActionLoading ? styles.loading : ''}`}
-            >
-              <FiCheck />
-              {isBulkActionLoading ? 'Processing...' : 'Approve All'}
-            </button>
-            <button 
-              onClick={handleBulkRejectSelected}
-              disabled={isBulkActionLoading}
-              className={`${styles.bulkActionBtn} ${styles.bulkRejectBtn} ${isBulkActionLoading ? styles.loading : ''}`}
-            >
-              <FiX />
-              {isBulkActionLoading ? 'Processing...' : 'Reject All'}
-            </button>
+            {hasPendingItems && (
+              <>
+                <button 
+                  onClick={handleBulkApproveSelected}
+                  disabled={isBulkActionLoading}
+                  className={`${styles.bulkActionBtn} ${styles.bulkApproveBtn} ${isBulkActionLoading ? styles.loading : ''}`}
+                >
+                  <FiCheck />
+                  {isBulkActionLoading ? 'Processing...' : 'Approve All'}
+                </button>
+                <button 
+                  onClick={handleBulkRejectSelected}
+                  disabled={isBulkActionLoading}
+                  className={`${styles.bulkActionBtn} ${styles.bulkRejectBtn} ${isBulkActionLoading ? styles.loading : ''}`}
+                >
+                  <FiX />
+                  {isBulkActionLoading ? 'Processing...' : 'Reject All'}
+                </button>
+              </>
+            )}
             <button 
               onClick={handleBulkDeleteSelected}
               disabled={isBulkActionLoading}
@@ -823,135 +939,34 @@ export default function PendingApprovalsPage() {
             <div className={styles.emptyStateIcon}>
               <FiClipboard />
             </div>
-          <h3 className={styles.emptyStateTitle}>No pending submissions</h3>
+          <h3 className={styles.emptyStateTitle}>No submissions found</h3>
           <p className={styles.emptyStateText}>
-            All submissions have been reviewed. New submissions will appear here when administrators submit updates.
+            {selectedStatus === 'pending' 
+              ? 'No pending submissions found. New submissions will appear here when administrators submit updates.'
+              : selectedStatus === 'approved'
+              ? 'No approved submissions found.'
+              : selectedStatus === 'rejected'
+              ? 'No rejected submissions found.'
+              : 'No submissions found matching your current filters. New submissions will appear here when administrators submit updates.'
+            }
           </p>
         </div>
       ) : (
           <>
-            <div className={styles.tableContainer}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th className={styles.selectColumn}>
-                      <input
-                        type="checkbox"
-                        checked={selectedItems.size === currentApprovals.length && currentApprovals.length > 0}
-                        onChange={handleSelectAll}
-                        className={styles.checkbox}
-                      />
-                    </th>
-                    <th className={styles.organizationColumn}>Organization</th>
-                    <th className={styles.sectionColumn}>Section</th>
-                    <th className={styles.dateColumn}>Date</th>
-                    <th className={styles.statusColumn}>Status</th>
-                    <th className={styles.actionsColumn}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentApprovals.map((approval) => (
-                    <tr key={approval.id} className={styles.tableRow}>
-                      <td className={styles.selectCell}>
-                        <input
-                          type="checkbox"
-                          checked={selectedItems.has(approval.id)}
-                          onChange={() => handleSelectItem(approval.id)}
-                          className={styles.checkbox}
-                        />
-                      </td>
-                      <td className={styles.organizationCell}>
-                        <span className={styles.orgAcronym}>
-                          {approval.organization_acronym || approval.org || 'N/A'}
-                        </span>
-                      </td>
-                      <td className={styles.sectionCell}>
-                        {approval.section?.charAt(0).toUpperCase() + approval.section?.slice(1) || 'N/A'}
-                      </td>
-                      <td className={styles.dateCell}>
-                        {new Date(approval.submitted_at).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </td>
-                      <td className={styles.statusCell}>
-                        <span className={`${styles.statusBadge} ${styles.pending}`}>
-                          Pending
-              </span>
-                      </td>
-                      <td className={styles.actionsCell}>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          
-                          <div className={styles.actionDropdownWrapper}>
-                            <div className={styles.actionDropdownButtonWrapper}>
-                              <div
-                                className={styles.actionDropdown}
-                                onClick={(e) => {
-                                  const dropdownId = `action-${approval.id}`;
-                                  if (showDropdown === dropdownId) {
-                                    setShowDropdown(null);
-                                  } else {
-                                    const position = calculateDropdownPosition(e.currentTarget);
-                                    setDropdownPosition(prev => ({
-                                      ...prev,
-                                      [dropdownId]: position
-                                    }));
-                                    setShowDropdown(dropdownId);
-                                  }
-                                }}
-                              >
-                                <HiOutlineDotsHorizontal className={styles.actionDropdownIcon} />
-                              </div>
-                              {showDropdown === `action-${approval.id}` && (
-                                <ul 
-                                  className={`${styles.actionDropdownOptions} ${dropdownPosition[`action-${approval.id}`]?.position === 'above' ? styles.above : ''}`}
-                                  style={{
-                                    top: `${dropdownPosition[`action-${approval.id}`]?.top || 0}px`,
-                                    right: `${dropdownPosition[`action-${approval.id}`]?.right || 0}px`
-                                  }}
-                                >
-                                  <li onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setShowDropdown(null);
-                                    setDropdownPosition({});
-                                    handleViewDetails(approval);
-                                  }}>
-                                    View Details
-                                  </li>
-                                  <li onClick={() => {
-                                    setShowDropdown(null);
-                                    setDropdownPosition({});
-                                    handleApprove(approval.id);
-                                  }}>
-                                    Approve
-                                  </li>
-                                  <li onClick={() => {
-                                    setShowDropdown(null);
-                                    setDropdownPosition({});
-                                    handleReject(approval.id, '');
-                                  }}>
-                                    Reject
-                                  </li>
-                                  <li onClick={() => {
-                                    setShowDropdown(null);
-                                    setDropdownPosition({});
-                                    handleDeleteClick(approval);
-                                  }}>
-                                    Delete
-                                  </li>
-                                </ul>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ApprovalsTable
+              approvals={currentApprovals}
+              onApprove={handleApprove}
+              onRejectClick={handleRejectClick}
+              onDeleteClick={handleDeleteClick}
+              selectedItems={selectedItems}
+              onSelectAll={handleSelectAll}
+              onSelectItem={handleSelectItem}
+              showDropdown={showDropdown}
+              setShowDropdown={setShowDropdown}
+              dropdownPosition={dropdownPosition}
+              setDropdownPosition={setDropdownPosition}
+              calculateDropdownPosition={calculateDropdownPosition}
+            />
 
             {/* Pagination */}
             <div className={styles.pagination}>
@@ -1021,14 +1036,6 @@ export default function PendingApprovalsPage() {
         )}
       </div>
 
-
-      {/* View Details Modal */}
-      <ViewDetailsModal 
-        isOpen={showDetailsModal}
-        onClose={handleDetailsClose}
-        submissionData={selectedItemForDetails}
-      />
-
       {/* Bulk Action Confirmation Modal */}
       <BulkActionConfirmationModal
         isOpen={showBulkConfirmation}
@@ -1039,15 +1046,6 @@ export default function PendingApprovalsPage() {
         isProcessing={isBulkActionLoading}
       />
 
-      {/* Individual Delete Confirmation Modal */}
-      <DeleteConfirmationModal
-        isOpen={showDeleteModal}
-        itemName={selectedItemForDelete?.organization_acronym || selectedItemForDelete?.org || 'Submission'}
-        itemType="submission"
-        onConfirm={handleDeleteConfirm}
-        onCancel={handleDeleteCancel}
-        isDeleting={isDeleting}
-      />
 
       {/* Bulk Delete Confirmation Modal */}
       <DeleteConfirmationModal
@@ -1057,6 +1055,118 @@ export default function PendingApprovalsPage() {
         onConfirm={handleBulkDeleteConfirm}
         onCancel={handleBulkDeleteCancel}
         isDeleting={isBulkDeleting}
+      />
+
+      {/* Individual Approve Confirmation Modal */}
+      {showApproveModal && selectedItemForAction && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.confirmModal}>
+            <button 
+              className={styles.modalCloseBtn}
+              onClick={handleApproveCancel}
+            >
+              <FiX />
+            </button>
+            
+            <div className={styles.modalContent}>
+              <h2>
+                <span 
+                  className={styles.approveHeading}
+                  style={{ color: '#10b981' }}
+                >
+                  Approve
+                </span> Submission
+              </h2>
+              <p>
+                Are you sure you want to approve <strong>
+                  {selectedItemForAction.organization_acronym || selectedItemForAction.org || 'this submission'}
+                </strong>&apos;s submission?
+              </p>
+            </div>
+
+            <div className={styles.modalActions}>
+              <button 
+                className={styles.modalCancelBtn}
+                onClick={handleApproveCancel}
+                disabled={isProcessing}
+              >
+                Cancel
+              </button>
+              <button 
+                className={styles.modalApproveBtn}
+                onClick={handleApproveConfirm}
+                disabled={isProcessing}
+              >
+                {isProcessing ? 'Processing...' : 'Approve'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Individual Reject Confirmation Modal */}
+      {showRejectModal && selectedItemForAction && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.confirmModal}>
+            <button 
+              className={styles.modalCloseBtn}
+              onClick={handleRejectCancel}
+            >
+              <FiX />
+            </button>
+            
+            <div className={styles.modalContent}>
+              <h2>
+                <span 
+                  className={styles.declineHeading}
+                  style={{ color: '#d50808' }}
+                >
+                  Reject
+                </span> Submission
+              </h2>
+              <p>
+                Are you sure you want to reject <strong>
+                  {selectedItemForAction.organization_acronym || selectedItemForAction.org || 'this submission'}
+                </strong>&apos;s submission? You can optionally provide a reason below.
+              </p>
+              <textarea
+                value={rejectComment}
+                onChange={(e) => setRejectComment(e.target.value)}
+                placeholder="Enter rejection reason (optional)..."
+                className={styles.rejectTextarea}
+                rows={4}
+                disabled={isProcessing}
+              />
+            </div>
+
+            <div className={styles.modalActions}>
+              <button 
+                className={styles.modalCancelBtn}
+                onClick={handleRejectCancel}
+                disabled={isProcessing}
+              >
+                Cancel
+              </button>
+              <button 
+                className={styles.modalDeclineBtn}
+                onClick={handleRejectConfirm}
+                disabled={isProcessing}
+              >
+                {isProcessing ? 'Processing...' : 'Reject'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Individual Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        itemName={selectedItemForDelete?.organization_acronym || selectedItemForDelete?.org || 'Submission'}
+        itemType="submission"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        isDeleting={isDeleting}
       />
     </div>
   );

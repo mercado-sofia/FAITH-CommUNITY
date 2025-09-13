@@ -3,7 +3,6 @@ import { createMissingNotifications } from '../../utils/createMissingNotificatio
 
 export const migrateMissingNotifications = async (req, res) => {
   try {
-    console.log('🔄 Starting notification migration...');
     await createMissingNotifications();
     
     res.json({

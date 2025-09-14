@@ -246,6 +246,74 @@ const initializeDatabase = async () => {
       // organization_id column already exists in admins table
     }
 
+    // Migration: Move org and orgName from admins to organizations table
+    const [orgColumns] = await connection.query(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'organizations' 
+      AND COLUMN_NAME IN ('org', 'orgName')
+    `);
+    
+    if (orgColumns.length < 2) {
+      console.log("Adding org and orgName columns to organizations table...");
+      await connection.query(`
+        ALTER TABLE organizations 
+        ADD COLUMN org VARCHAR(50) NULL UNIQUE,
+        ADD COLUMN orgName VARCHAR(255) NULL
+      `);
+      console.log("✅ org and orgName columns added to organizations table!");
+      
+      // Migrate existing data from admins to organizations
+      console.log("Migrating org and orgName data from admins to organizations...");
+      await connection.query(`
+        UPDATE organizations o
+        INNER JOIN admins a ON o.id = a.organization_id
+        SET o.org = a.org, o.orgName = a.orgName
+        WHERE a.org IS NOT NULL AND a.orgName IS NOT NULL
+      `);
+      console.log("✅ Data migration from admins to organizations completed!");
+      
+      // Remove org and orgName columns from admins table after migration
+      console.log("Removing org and orgName columns from admins table...");
+      try {
+        await connection.query(`
+          ALTER TABLE admins 
+          DROP COLUMN org,
+          DROP COLUMN orgName
+        `);
+        console.log("✅ org and orgName columns removed from admins table!");
+      } catch (error) {
+        if (error.code === 'ER_CANT_DROP_FIELD_OR_KEY') {
+          console.log("ℹ️ org and orgName columns not found in admins table (already removed)");
+        } else {
+          console.log("⚠️ Could not remove org and orgName columns from admins table:", error.message);
+        }
+      }
+    }
+
+    // Create admin_invitations table for invitation system
+    const [invitationTables] = await connection.query('SHOW TABLES LIKE "admin_invitations"');
+    
+    if (invitationTables.length === 0) {
+      console.log("Creating admin_invitations table...");
+      await connection.query(`
+        CREATE TABLE admin_invitations (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          email VARCHAR(255) NOT NULL,
+          token VARCHAR(255) NOT NULL UNIQUE,
+          status ENUM('pending', 'accepted', 'expired') DEFAULT 'pending',
+          expires_at TIMESTAMP NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          accepted_at TIMESTAMP NULL,
+          INDEX idx_email (email),
+          INDEX idx_token (token),
+          INDEX idx_status (status),
+          INDEX idx_expires_at (expires_at)
+        )
+      `);
+      console.log("✅ admin_invitations table created successfully!");
+    }
+
     // Check if programs_projects table has date fields, add them if missing
     const [dateColumns] = await connection.query(`
       SELECT COLUMN_NAME 

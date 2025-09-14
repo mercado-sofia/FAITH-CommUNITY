@@ -79,19 +79,11 @@ export default function Sidebar() {
           </Link>
 
           <Link
-            href="/superadmin/faqs"
-            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith('/superadmin/faqs') ? styles.active : ''}`}
-          >
-            <FaRegQuestionCircle className={styles.icon} />
-            <span>FAQs</span>
-          </Link>
-
-          <Link
-            href="/superadmin/manageProfiles"
-            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith('/superadmin/manageProfiles') ? styles.active : ''}`}
+            href="/superadmin/invites"
+            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith('/superadmin/invites') ? styles.active : ''}`}
           >
             <FaAddressCard className={styles.icon} />
-            <span>Manage Profiles</span>
+            <span>Invitations</span>
           </Link>
 
           <Link
@@ -100,6 +92,14 @@ export default function Sidebar() {
           >
             <RiTreeFill className={styles.icon} />
             <span>FAITHree</span>
+          </Link>
+
+          <Link
+            href="/superadmin/faqs"
+            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith('/superadmin/faqs') ? styles.active : ''}`}
+          >
+            <FaRegQuestionCircle className={styles.icon} />
+            <span>FAQs</span>
           </Link>
         </nav>
 

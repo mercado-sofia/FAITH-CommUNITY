@@ -208,10 +208,9 @@ export const getNewsByOrg = async (req, res) => {
     // Found organization
 
     const [newsRows] = await db.execute(
-      `SELECT n.*, a.org as orgAcronym, a.orgName, o.logo as orgLogo
+      `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
        FROM news n
        LEFT JOIN organizations o ON n.organization_id = o.id
-       LEFT JOIN admins a ON a.organization_id = o.id
        WHERE n.organization_id = ? AND n.is_deleted = FALSE
        ORDER BY n.created_at DESC`,
       [organization.id]
@@ -261,10 +260,9 @@ export const getNewsByOrg = async (req, res) => {
 export const getApprovedNews = async (req, res) => {
   try {
     const [rows] = await db.execute(
-      `SELECT n.*, a.org as orgAcronym, a.orgName, o.logo as orgLogo
+      `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
        FROM news n
        LEFT JOIN organizations o ON n.organization_id = o.id
-       LEFT JOIN admins a ON a.organization_id = o.id
        WHERE n.is_deleted = FALSE
        ORDER BY n.created_at DESC`
     );
@@ -342,10 +340,9 @@ export const getApprovedNewsByOrg = async (req, res) => {
     const organization = orgRows[0];
 
     const [rows] = await db.execute(
-      `SELECT n.*, a.org as orgAcronym, a.orgName, o.logo as orgLogo
+      `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
        FROM news n
        LEFT JOIN organizations o ON n.organization_id = o.id
-       LEFT JOIN admins a ON a.organization_id = o.id
        WHERE n.organization_id = ? AND n.is_deleted = FALSE
        ORDER BY n.created_at DESC`,
       [organization.id]
@@ -398,10 +395,9 @@ export const getNewsById = async (req, res) => {
 
   try {
     const [rows] = await db.execute(
-      `SELECT n.*, a.org as orgAcronym, a.orgName, o.logo as orgLogo
+      `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
        FROM news n
        LEFT JOIN organizations o ON n.organization_id = o.id
-       LEFT JOIN admins a ON a.organization_id = o.id
        WHERE n.id = ? AND n.is_deleted = FALSE`,
       [id]
     );
@@ -457,10 +453,9 @@ export const getNewsBySlug = async (req, res) => {
 
   try {
     const [rows] = await db.execute(
-      `SELECT n.*, a.org as orgAcronym, a.orgName, o.logo as orgLogo
+      `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
        FROM news n
        LEFT JOIN organizations o ON n.organization_id = o.id
-       LEFT JOIN admins a ON a.organization_id = o.id
        WHERE n.slug = ? AND n.is_deleted = FALSE`,
       [slug]
     );
@@ -615,10 +610,9 @@ export const getRecentlyDeletedNews = async (req, res) => {
     const organization = orgRows[0];
 
     const [newsRows] = await db.execute(
-      `SELECT n.*, a.org as orgAcronym, a.orgName, o.logo as orgLogo
+      `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
        FROM news n
        LEFT JOIN organizations o ON n.organization_id = o.id
-       LEFT JOIN admins a ON a.organization_id = o.id
        WHERE n.organization_id = ? AND n.is_deleted = TRUE
        ORDER BY n.deleted_at DESC`,
       [organization.id]

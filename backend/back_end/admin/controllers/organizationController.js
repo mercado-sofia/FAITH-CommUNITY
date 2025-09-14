@@ -6,26 +6,17 @@ export const getOrganizationByName = async (req, res) => {
   const { org_name } = req.params
 
   try {
-    // Get organization details from admins table since org/orgName are no longer in organizations table
-    const [adminRows] = await db.execute(
-      'SELECT org, orgName, email FROM admins WHERE org = ? AND status = "ACTIVE" LIMIT 1',
-      [org_name]
-    )
-
-    if (adminRows.length === 0) {
-      return res.status(404).json({ success: false, message: "Organization not found" })
-    }
-
-    const adminData = adminRows[0]
-    
-    // Get organization details from organizations table using organization_id
+    // Get organization details with org/orgName from organizations table
     const [orgRows] = await db.execute(
-      'SELECT * FROM organizations WHERE id = (SELECT organization_id FROM admins WHERE org = ? AND status = "ACTIVE" LIMIT 1)',
+      `SELECT o.*, a.email 
+       FROM organizations o
+       LEFT JOIN admins a ON a.organization_id = o.id AND a.status = "ACTIVE"
+       WHERE o.org = ? LIMIT 1`,
       [org_name]
     )
 
     if (orgRows.length === 0) {
-      return res.status(404).json({ success: false, message: "Organization details not found" })
+      return res.status(404).json({ success: false, message: "Organization not found" })
     }
 
     const org = orgRows[0]
@@ -75,17 +66,17 @@ export const getOrganizationByName = async (req, res) => {
       }
     } else {
       // Fallback to expected logo path
-      logoUrl = `/logo/${adminData.org.toLowerCase()}_logo.jpg`;
+      logoUrl = `/logo/${org.org.toLowerCase()}_logo.jpg`;
     }
 
     res.json({
       success: true,
       data: {
         ...org,
-        org: adminData.org, // From admins table
-        orgName: adminData.orgName, // From admins table
+        org: org.org, // From organizations table
+        orgName: org.orgName, // From organizations table
         logo: logoUrl, // Use the constructed logo URL
-        email: adminData.email, // Email from admins table
+        email: org.email, // Email from admins table
         // Fix: Return single strings instead of arrays
         advocacies: advocacies.length > 0 ? advocacies[0].advocacy : "",
         competencies: competencies.length > 0 ? competencies[0].competency : "",
@@ -119,24 +110,24 @@ export const createOrganization = async (req, res) => {
   const finalOrgColor = orgColor || "#444444"
 
   try {
-    // Check if organization with this acronym already exists in admins table
-    const [existingAdmin] = await db.execute(
-      'SELECT id FROM admins WHERE org = ?',
+    // Check if organization with this acronym already exists in organizations table
+    const [existingOrg] = await db.execute(
+      'SELECT id FROM organizations WHERE org = ?',
       [org]
     )
 
-    if (existingAdmin.length > 0) {
+    if (existingOrg.length > 0) {
       return res.status(409).json({ 
         success: false, 
         message: "Organization with this acronym already exists" 
       })
     }
 
-    // Insert new organization (without org/orgName fields)
+    // Insert new organization with org/orgName fields
     const [result] = await db.execute(
-      `INSERT INTO organizations (logo, facebook, description, status, org_color)
-       VALUES (?, ?, ?, ?, ?)`,
-      [finalLogo, finalFacebook, finalDescription, finalStatus, finalOrgColor]
+      `INSERT INTO organizations (org, orgName, logo, facebook, description, status, org_color)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [org, orgName, finalLogo, finalFacebook, finalDescription, finalStatus, finalOrgColor]
     )
 
     // Organization created successfully
@@ -166,6 +157,8 @@ export const updateOrganizationInfo = async (req, res) => {
   const finalOrgColor = orgColor || "#444444"
 
   console.log("Backend: Final processed values:", { 
+    org,
+    orgName,
     finalLogo, 
     finalFacebook, 
     finalDescription, 
@@ -174,10 +167,7 @@ export const updateOrganizationInfo = async (req, res) => {
   })
 
   // Values prepared for database update
-
-  // Note: org and orgName are now managed in the admins table via admin settings
-  // These fields are no longer required for organization updates
-  // The organization update only handles: logo, facebook, description, status, org_color
+  // Now updating org and orgName in organizations table
 
   // Get a connection for transaction
   const connection = await db.getConnection()
@@ -203,15 +193,26 @@ export const updateOrganizationInfo = async (req, res) => {
       return res.status(404).json({ success: false, message: "Organization not found" })
     }
 
-    // Note: org and orgName are now managed in the admins table via admin settings
-    // No need to fetch or update admin data in this endpoint
+    // Check if org acronym is being changed and if it conflicts with existing orgs
+    if (org) {
+      const [existingOrg] = await connection.execute(
+        'SELECT id FROM organizations WHERE org = ? AND id != ?',
+        [org, id]
+      )
 
-    // Update the organizations table (without org/orgName fields)
+      if (existingOrg.length > 0) {
+        await connection.rollback()
+        connection.release()
+        return res.status(409).json({ success: false, message: "Organization acronym already exists" })
+      }
+    }
+
+    // Update the organizations table with all fields including org/orgName
     const [orgResult] = await connection.execute(
       `UPDATE organizations
-       SET logo = ?, facebook = ?, description = ?, status = ?, org_color = ?
+       SET org = ?, orgName = ?, logo = ?, facebook = ?, description = ?, status = ?, org_color = ?
        WHERE id = ?`,
-      [finalLogo, finalFacebook, finalDescription, finalStatus, finalOrgColor, id],
+      [org, orgName, finalLogo, finalFacebook, finalDescription, finalStatus, finalOrgColor, id],
     )
 
     if (orgResult.affectedRows === 0) {
@@ -220,8 +221,7 @@ export const updateOrganizationInfo = async (req, res) => {
       return res.status(404).json({ success: false, message: "Organization not found" })
     }
 
-    // Note: org and orgName are now managed in the admins table via admin settings
-    // No need to update admin data in this endpoint
+    // Organization data updated successfully
 
     // Commit the transaction
     await connection.commit()

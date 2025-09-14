@@ -1,9 +1,9 @@
-//adminSettings.js in the admin and also manageProfiles folder in the superadmin
+// Admin management API for superadmin
 
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 
-export const manageProfilesApi = createApi({
-  reducerPath: "manageProfilesApi",
+export const adminApi = createApi({
+  reducerPath: "adminApi",
   baseQuery: fetchBaseQuery({
     baseUrl: "http://localhost:8080/api/admins",
     prepareHeaders: (headers, { getState }) => {
@@ -35,16 +35,6 @@ export const manageProfilesApi = createApi({
     getAdminById: builder.query({
       query: (id) => `/${id}`,
       providesTags: (result, error, id) => [{ type: "Admin", id }],
-    }),
-
-    // Create new admin
-    createAdmin: builder.mutation({
-      query: (adminData) => ({
-        url: "/",
-        method: "POST",
-        body: adminData,
-      }),
-      invalidatesTags: ["Admin"],
     }),
 
     // Update admin
@@ -98,10 +88,9 @@ export const manageProfilesApi = createApi({
 export const {
   useGetAllAdminsQuery,
   useGetAdminByIdQuery,
-  useCreateAdminMutation,
   useUpdateAdminMutation,
   useDeleteAdminMutation,
   useLoginAdminMutation,
   useVerifyPasswordForEmailChangeMutation,
   useVerifyPasswordForPasswordChangeMutation,
-} = manageProfilesApi
+} = adminApi

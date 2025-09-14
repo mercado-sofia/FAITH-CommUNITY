@@ -203,7 +203,7 @@ export default function TopBar() {
       case 'approvals': return { category: 'Management', section: 'Approvals' };
       case 'programs': return { category: 'Management', section: 'Programs' };
       case 'faqs': return { category: 'Management', section: 'FAQs' };
-      case 'manageProfiles': return { category: 'Management', section: 'Manage Profiles' };
+      case 'invites': return { category: 'Management', section: 'Invites' };
       case 'settings': return { category: 'Account', section: 'Settings' };
       default: return { category: 'General', section: 'Dashboard' };
     }

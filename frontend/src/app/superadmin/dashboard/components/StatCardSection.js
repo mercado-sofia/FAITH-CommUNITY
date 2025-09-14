@@ -37,7 +37,7 @@ export default function StatCardSection() {
 
   return (
     <div className={styles.cardGrid}>
-      <Link href="/superadmin/manageProfiles" className={styles.cardWrapper}>
+      <Link href="/superadmin/invites" className={styles.cardWrapper}>
         <StatCard
           label="Total Organizations"
           count={isLoading ? "—" : organizationsCount}

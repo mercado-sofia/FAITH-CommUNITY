@@ -294,7 +294,6 @@ export default function PendingApprovalsPage() {
     // Filter by organization
     if (selectedOrganization !== 'all') {
       filtered = filtered.filter(approval => 
-        approval.organization_acronym === selectedOrganization ||
         approval.org === selectedOrganization
       );
     }
@@ -316,8 +315,8 @@ export default function PendingApprovalsPage() {
     // Search filter
     if (searchTerm) {
       filtered = filtered.filter(approval => 
-        approval.organization_acronym?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         approval.org?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        approval.orgName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         approval.section?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         approval.id?.toString().includes(searchTerm) ||
         approval.submission_id?.toString().includes(searchTerm)
@@ -1079,7 +1078,7 @@ export default function PendingApprovalsPage() {
               </h2>
               <p>
                 Are you sure you want to approve <strong>
-                  {selectedItemForAction.organization_acronym || selectedItemForAction.org || 'this submission'}
+                  {selectedItemForAction.org || 'this submission'}
                 </strong>&apos;s submission?
               </p>
             </div>
@@ -1126,7 +1125,7 @@ export default function PendingApprovalsPage() {
               </h2>
               <p>
                 Are you sure you want to reject <strong>
-                  {selectedItemForAction.organization_acronym || selectedItemForAction.org || 'this submission'}
+                  {selectedItemForAction.org || 'this submission'}
                 </strong>&apos;s submission? You can optionally provide a reason below.
               </p>
               <textarea
@@ -1162,7 +1161,7 @@ export default function PendingApprovalsPage() {
       {/* Individual Delete Confirmation Modal */}
       <DeleteConfirmationModal
         isOpen={showDeleteModal}
-        itemName={selectedItemForDelete?.organization_acronym || selectedItemForDelete?.org || 'Submission'}
+        itemName={selectedItemForDelete?.org || 'Submission'}
         itemType="submission"
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}

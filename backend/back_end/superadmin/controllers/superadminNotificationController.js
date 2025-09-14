@@ -100,8 +100,7 @@ class SuperAdminNotificationController {
           sn.created_at,
           o.logo as organization_logo
         FROM superadmin_notifications sn
-        LEFT JOIN admins a ON sn.organization_acronym = a.org
-        LEFT JOIN organizations o ON a.organization_id = o.id
+        LEFT JOIN organizations o ON sn.organization_acronym = o.org
         WHERE sn.superadmin_id = ? 
         ORDER BY sn.created_at DESC 
         LIMIT ? OFFSET ?

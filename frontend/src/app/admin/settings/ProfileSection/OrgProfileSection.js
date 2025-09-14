@@ -39,8 +39,8 @@ export default function OrgProfileSection({
           <FaBuilding />
         </div>
         <div className={styles.panelTitle}>
-          <h2>Organization Profile</h2>
-          <p>Your organization&apos;s basic information, identity, and email address</p>
+          <h2>Email Address</h2>
+          <p>Your email address for this account. Organization details are managed in the Organization page.</p>
         </div>
         <button
           className={styles.editButton}
@@ -53,26 +53,6 @@ export default function OrgProfileSection({
       <div className={styles.panelContent}>
         <div className={styles.displayContent}>
           <div className={styles.orgProfileFieldGroup}>
-            <label className={styles.orgProfileLabel}>Organization</label>
-            <div className={styles.orgProfileDisplayValue}>
-              {orgData?.org ? (
-                <div className={styles.orgAcronym}>
-                  {orgData.org}
-                </div>
-              ) : (
-                'Not specified'
-              )}
-            </div>
-          </div>
-
-          <div className={styles.orgProfileFieldGroup}>
-            <label className={styles.orgProfileLabel}>Organization Name</label>
-            <div className={styles.orgProfileDisplayValue}>
-              {orgData?.orgName || 'Not specified'}
-            </div>
-          </div>
-
-          <div className={styles.orgProfileFieldGroup}>
             <label className={styles.orgProfileLabel}>Email Address</label>
             <div className={styles.orgProfileDisplayValue}>
               {orgData?.email ? (
@@ -82,6 +62,15 @@ export default function OrgProfileSection({
               ) : (
                 'Not specified'
               )}
+            </div>
+          </div>
+          
+          <div className={styles.orgProfileFieldGroup}>
+            <label className={styles.orgProfileLabel}>Organization Details</label>
+            <div className={styles.orgProfileDisplayValue}>
+              <div className={styles.infoText}>
+                Organization name and acronym are managed in the <strong>Organization</strong> page.
+              </div>
             </div>
           </div>
         </div>

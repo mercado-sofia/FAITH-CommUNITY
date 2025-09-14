@@ -1351,11 +1351,11 @@ export const getUserApplications = async (req, res) => {
         p.event_start_date as programStartDate,
         p.event_end_date as programEndDate,
         p.organization_id,
-        a.orgName as organizationName,
-        a.org as organizationAcronym
+        o.orgName as organizationName,
+        o.org as organizationAcronym
       FROM volunteers v
       LEFT JOIN programs_projects p ON v.program_id = p.id
-      LEFT JOIN admins a ON p.organization_id = a.organization_id
+      LEFT JOIN organizations o ON p.organization_id = o.id
       WHERE v.user_id = ?
       ORDER BY v.created_at DESC`,
       [userId]

@@ -8,9 +8,11 @@ export const getAdminProfile = async (req, res) => {
     const adminId = req.admin.id
 
     const [rows] = await db.execute(
-      `SELECT id, org, orgName, email, role, status, organization_id, 
-              created_at
-       FROM admins WHERE id = ?`,
+      `SELECT a.id, a.email, a.role, a.status, a.organization_id, a.created_at,
+              o.org, o.orgName
+       FROM admins a
+       LEFT JOIN organizations o ON a.organization_id = o.id
+       WHERE a.id = ?`,
       [adminId]
     )
 
@@ -33,19 +35,19 @@ export const getAdminProfile = async (req, res) => {
   }
 }
 
-// Update admin's organization profile and email
+// Update admin's email only (org/orgName are now managed through organization controller)
 export const updateAdminProfile = async (req, res) => {
   try {
     const adminId = req.admin.id
-    const { org, orgName, email, password } = req.body
+    const { email, password } = req.body
 
-    if (!org || !orgName || !email) {
-      return res.status(400).json({ error: "Organization acronym, name, and email are required" })
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" })
     }
 
     // Get current admin data to check if there are actual changes
     const [currentAdminRows] = await db.execute(
-      "SELECT org, orgName, email FROM admins WHERE id = ?",
+      "SELECT email FROM admins WHERE id = ?",
       [adminId]
     )
 
@@ -54,9 +56,7 @@ export const updateAdminProfile = async (req, res) => {
     }
 
     const currentAdmin = currentAdminRows[0]
-    const hasChanges = currentAdmin.org !== org || 
-                      currentAdmin.orgName !== orgName || 
-                      currentAdmin.email !== email
+    const hasChanges = currentAdmin.email !== email
 
     // If there are changes, password is required
     if (hasChanges && !password) {
@@ -90,16 +90,16 @@ export const updateAdminProfile = async (req, res) => {
       return res.status(409).json({ error: "Email is already taken" })
     }
 
-    // Update admin profile
+    // Update admin email only
     await db.execute(
-      "UPDATE admins SET org = ?, orgName = ?, email = ? WHERE id = ?",
-      [org, orgName, email, adminId]
+      "UPDATE admins SET email = ? WHERE id = ?",
+      [email, adminId]
     )
 
     res.json({
       success: true,
-      message: hasChanges ? "Profile updated successfully" : "Profile saved (no changes detected)",
-      data: { org, orgName, email }
+      message: hasChanges ? "Email updated successfully" : "Email saved (no changes detected)",
+      data: { email }
     })
   } catch (err) {
     console.error("Error updating admin profile:", err)

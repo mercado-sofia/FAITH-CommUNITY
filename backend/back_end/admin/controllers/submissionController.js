@@ -135,7 +135,7 @@ export const submitChanges = async (req, res) => {
         
         // Get organization acronym for the notification
         const [orgRows] = await db.execute(
-          "SELECT org FROM admins WHERE organization_id = ? LIMIT 1",
+          "SELECT org FROM organizations WHERE id = ? LIMIT 1",
           [numericOrgId]
         )
         const orgAcronym = orgRows.length > 0 ? orgRows[0].org : 'Unknown'
@@ -213,9 +213,10 @@ export const getSubmissionsByOrg = async (req, res) => {
 
     // Get submissions with additional info
     const [rows] = await db.execute(
-      `SELECT s.*, a.orgName as submitted_by_name 
+      `SELECT s.*, o.orgName as submitted_by_name 
        FROM submissions s 
        LEFT JOIN admins a ON s.submitted_by = a.id 
+       LEFT JOIN organizations o ON a.organization_id = o.id
        WHERE s.organization_id = ? 
        ORDER BY s.submitted_at DESC`,
       [adminOrg.organization_id],
@@ -466,9 +467,9 @@ export const getSubmissionById = async (req, res) => {
 
   try {
     const [rows] = await db.execute(
-      `SELECT s.*, a.orgName, a.org 
+      `SELECT s.*, o.orgName, o.org 
        FROM submissions s
-       LEFT JOIN admins a ON a.organization_id = s.organization_id
+       LEFT JOIN organizations o ON o.id = s.organization_id
        WHERE s.id = ?`,
       [id]
     )

@@ -63,18 +63,11 @@ export const createNews = async (req, res) => {
     );
 
     if (orgRows.length === 0) {
-      // Try to find by org acronym from admins table
-      const [adminRows] = await db.execute(
-        "SELECT organization_id FROM admins WHERE org = ? LIMIT 1",
+      // Try to find by org acronym from organizations table
+      [orgRows] = await db.execute(
+        "SELECT id FROM organizations WHERE org = ?",
         [orgId]
       );
-      if (adminRows.length > 0) {
-        // Use the organization_id from admins table
-        [orgRows] = await db.execute(
-          "SELECT id FROM organizations WHERE id = ?",
-          [adminRows[0].organization_id]
-        );
-      }
     }
 
     if (orgRows.length === 0) {
@@ -94,8 +87,8 @@ export const createNews = async (req, res) => {
 
     // 3) Insert news with new fields
     const [result] = await db.execute(
-      `INSERT INTO news (organization_id, title, slug, content, excerpt, featured_image, published_at, date)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO news (organization_id, title, slug, content, excerpt, featured_image, published_at, date, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
       [organization.id, title, slug, content, excerpt, featured_image, published_at, published_at]
     );
 
@@ -182,21 +175,12 @@ export const getNewsByOrg = async (req, res) => {
     );
 
     if (orgRows.length === 0) {
-      // Organization not found directly, trying admins table
-      // Try to find by org acronym from admins table
-      const [adminRows] = await db.execute(
-        "SELECT organization_id FROM admins WHERE org = ? LIMIT 1",
+      // Organization not found directly, trying organizations table by acronym
+      // Try to find by org acronym from organizations table
+      [orgRows] = await db.execute(
+        "SELECT id FROM organizations WHERE org = ?",
         [orgId]
       );
-      
-      if (adminRows.length > 0) {
-        // Found organization_id from admins table
-        // Use the organization_id from admins table
-        [orgRows] = await db.execute(
-          "SELECT id FROM organizations WHERE id = ?",
-          [adminRows[0].organization_id]
-        );
-      }
     }
 
     if (orgRows.length === 0) {
@@ -319,18 +303,11 @@ export const getApprovedNewsByOrg = async (req, res) => {
     );
 
     if (orgRows.length === 0) {
-      // Try to find by org acronym from admins table
-      const [adminRows] = await db.execute(
-        "SELECT organization_id FROM admins WHERE org = ? LIMIT 1",
+      // Try to find by org acronym from organizations table
+      [orgRows] = await db.execute(
+        "SELECT id FROM organizations WHERE org = ?",
         [orgId]
       );
-      if (adminRows.length > 0) {
-        // Use the organization_id from admins table
-        [orgRows] = await db.execute(
-          "SELECT id FROM organizations WHERE id = ?",
-          [adminRows[0].organization_id]
-        );
-      }
     }
 
     if (orgRows.length === 0) {
@@ -503,7 +480,7 @@ export const getNewsBySlug = async (req, res) => {
 };
 
 /* -------------------------- Soft Delete flows ------------------------- */
-// Delete news submission (for admin) - Now implements soft delete
+// Delete news (for admin) - Implements soft delete
 export const deleteNewsSubmission = async (req, res) => {
   const { id } = req.params;
 
@@ -530,23 +507,12 @@ export const deleteNewsSubmission = async (req, res) => {
   }
 
   try {
-    if (id.startsWith("submission_")) {
-      const submissionId = id.replace("submission_", "");
-      const [result] = await db.execute(
-        "DELETE FROM submissions WHERE id = ? AND section = 'news'",
-        [submissionId]
-      );
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ success: false, message: "News submission not found" });
-      }
-    } else {
-      const [result] = await db.execute(
-        "UPDATE news SET is_deleted = TRUE, deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND is_deleted = FALSE",
-        [id]
-      );
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ success: false, message: "News not found or already deleted" });
-      }
+    const [result] = await db.execute(
+      "UPDATE news SET is_deleted = TRUE, deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND is_deleted = FALSE",
+      [id]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: "News not found or already deleted" });
     }
 
     return res.json({ success: true, message: "News moved to recently deleted" });
@@ -589,18 +555,11 @@ export const getRecentlyDeletedNews = async (req, res) => {
     );
 
     if (orgRows.length === 0) {
-      // Try to find by org acronym from admins table
-      const [adminRows] = await db.execute(
-        "SELECT organization_id FROM admins WHERE org = ? LIMIT 1",
+      // Try to find by org acronym from organizations table
+      [orgRows] = await db.execute(
+        "SELECT id FROM organizations WHERE org = ?",
         [orgId]
       );
-      if (adminRows.length > 0) {
-        // Use the organization_id from admins table
-        [orgRows] = await db.execute(
-          "SELECT id FROM organizations WHERE id = ?",
-          [adminRows[0].organization_id]
-        );
-      }
     }
 
     if (orgRows.length === 0) {
@@ -788,7 +747,7 @@ export const updateNews = async (req, res) => {
       return res.status(400).json({ success: false, message: "Slug already exists" });
     }
 
-    let query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?`;
+    let query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?, updated_at = CURRENT_TIMESTAMP`;
     let params = [title, slug, content, excerpt, published_at, published_at];
     
     if (featured_image) {

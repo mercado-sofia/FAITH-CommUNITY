@@ -7,10 +7,7 @@ import OrgProfileEditModal from './OrgProfileEditModal';
 
 export default function OrgProfileSection({ 
   orgData, 
-  onEdit, 
-  isEditing, 
   onSave, 
-  onCancel,
   editData,
   setEditData,
   errors,
@@ -26,9 +23,9 @@ export default function OrgProfileSection({
     setShowEditModal(false);
   };
 
-  const handleEditSave = async (editData) => {
+  const handleEditSave = async (emailData) => {
     // Call the onSave function directly - the modal will handle password confirmation internally
-    await onSave(editData);
+    await onSave(emailData);
     setShowEditModal(false);
   };
 
@@ -40,7 +37,7 @@ export default function OrgProfileSection({
         </div>
         <div className={styles.panelTitle}>
           <h2>Email Address</h2>
-          <p>Your email address for this account. Organization details are managed in the Organization page.</p>
+          <p>Your email address for this account.</p>
         </div>
         <button
           className={styles.editButton}
@@ -62,15 +59,6 @@ export default function OrgProfileSection({
               ) : (
                 'Not specified'
               )}
-            </div>
-          </div>
-          
-          <div className={styles.orgProfileFieldGroup}>
-            <label className={styles.orgProfileLabel}>Organization Details</label>
-            <div className={styles.orgProfileDisplayValue}>
-              <div className={styles.infoText}>
-                Organization name and acronym are managed in the <strong>Organization</strong> page.
-              </div>
             </div>
           </div>
         </div>

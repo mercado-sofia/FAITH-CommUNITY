@@ -28,7 +28,7 @@ const validateSubmissionItem = (item) => {
   }
 
   // Validate section types
-  const validSections = ["organization", "advocacy", "competency", "org_heads", "programs", "news"]
+  const validSections = ["organization", "advocacy", "competency", "org_heads", "programs"]
   if (item.section && !validSections.includes(item.section)) {
     errors.push(`Invalid section. Must be one of: ${validSections.join(", ")}`)
   }
@@ -71,19 +71,19 @@ export const submitChanges = async (req, res) => {
     // Get unique organization identifiers from submissions
     const orgIdentifiers = [...new Set(submissions.map((item) => item.organization_id))]
     
-    // Query admins table to get numeric IDs for both numeric IDs and acronyms
+    // Query organizations table to get numeric IDs for both numeric IDs and acronyms
     const placeholders = orgIdentifiers.map(() => "?").join(",")
     
-    const [adminCheck] = await db.execute(
-      `SELECT organization_id, org FROM admins WHERE organization_id IN (${placeholders}) OR org IN (${placeholders})`,
+    const [orgCheck] = await db.execute(
+      `SELECT id, org FROM organizations WHERE id IN (${placeholders}) OR org IN (${placeholders})`,
       [...orgIdentifiers, ...orgIdentifiers]
     )
     
     // Create mapping from identifier to numeric ID
     const orgIdMap = new Map()
-    adminCheck.forEach(admin => {
-      orgIdMap.set(admin.organization_id.toString(), admin.organization_id)
-      orgIdMap.set(admin.org, admin.organization_id)
+    orgCheck.forEach(org => {
+      orgIdMap.set(org.id.toString(), org.id)
+      orgIdMap.set(org.org, org.id)
     })
     
     // Check if all identifiers were found
@@ -133,9 +133,9 @@ export const submitChanges = async (req, res) => {
       for (const insertedSubmission of insertedSubmissions) {
         const { submissionId, item, numericOrgId } = insertedSubmission
         
-        // Get organization acronym for the notification
+        // Get organization data for the notification
         const [orgRows] = await db.execute(
-          "SELECT org FROM organizations WHERE id = ? LIMIT 1",
+          "SELECT org, orgName FROM organizations WHERE id = ? LIMIT 1",
           [numericOrgId]
         )
         const orgAcronym = orgRows.length > 0 ? orgRows[0].org : 'Unknown'
@@ -156,7 +156,7 @@ export const submitChanges = async (req, res) => {
           }
         }
 
-        // Create the notification
+        // Create the notification with organization_id
         await SuperAdminNotificationController.createNotification(
           superadminId,
           'approval_request',
@@ -164,7 +164,7 @@ export const submitChanges = async (req, res) => {
           message,
           item.section,
           submissionId,
-          orgAcronym
+          numericOrgId  // Pass organization_id instead of acronym
         )
       }
     }
@@ -199,17 +199,17 @@ export const getSubmissionsByOrg = async (req, res) => {
   }
 
   try {
-    // Get organization ID from admins table
-    const [adminRows] = await db.execute("SELECT organization_id, orgName FROM admins WHERE org = ? LIMIT 1", [orgAcronym])
+    // Get organization ID from organizations table
+    const [orgRows] = await db.execute("SELECT id, orgName FROM organizations WHERE org = ? LIMIT 1", [orgAcronym])
 
-    if (adminRows.length === 0) {
+    if (orgRows.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Organization not found",
       })
     }
 
-    const adminOrg = adminRows[0]
+    const organization = orgRows[0]
 
     // Get submissions with additional info
     const [rows] = await db.execute(
@@ -219,7 +219,7 @@ export const getSubmissionsByOrg = async (req, res) => {
        LEFT JOIN organizations o ON a.organization_id = o.id
        WHERE s.organization_id = ? 
        ORDER BY s.submitted_at DESC`,
-      [adminOrg.organization_id],
+      [organization.id],
     )
 
     // Parse JSON data and add metadata
@@ -248,7 +248,7 @@ export const getSubmissionsByOrg = async (req, res) => {
         ...row,
         previous_data: previous_data_parsed,
         proposed_data: proposed_data_parsed,
-        organization_name: adminOrg.orgName,
+        organization_name: organization.orgName,
         can_edit: row.status === "pending",
         can_cancel: row.status === "pending",
         parse_error: parse_error, // Indicate if any parsing error occurred for this row
@@ -260,8 +260,8 @@ export const getSubmissionsByOrg = async (req, res) => {
       success: true,
       data: parsedRows,
       organization: {
-        id: adminOrg.organization_id,
-        name: adminOrg.orgName,
+        id: organization.id,
+        name: organization.orgName,
         acronym: orgAcronym,
       },
       count: parsedRows.length,

@@ -67,10 +67,10 @@ export default function SettingsPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   
-  // Organization profile state
-  const [orgEditData, setOrgEditData] = useState(null);
-  const [orgErrors, setOrgErrors] = useState({});
-  const [orgSaving, setOrgSaving] = useState(false);
+  // Email profile state
+  const [emailEditData, setEmailEditData] = useState(null);
+  const [emailErrors, setEmailErrors] = useState({});
+  const [emailSaving, setEmailSaving] = useState(false);
 
   const handlePasswordSuccess = () => {
     setSuccessMessage('Password changed successfully!');
@@ -78,35 +78,29 @@ export default function SettingsPage() {
     refreshAdmin();
   };
 
-  const handleOrgProfileSave = async (orgData) => {
-    setOrgSaving(true);
-    setOrgErrors({});
+  const handleEmailSave = async (emailData) => {
+    setEmailSaving(true);
+    setEmailErrors({});
     
     try {
       // Validate required fields
       const errors = {};
-      if (!orgData.org?.trim()) {
-        errors.org = 'Organization acronym is required';
-      }
-      if (!orgData.orgName?.trim()) {
-        errors.orgName = 'Organization name is required';
-      }
-      if (!orgData.email?.trim()) {
+      if (!emailData.email?.trim()) {
         errors.email = 'Email is required';
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(orgData.email)) {
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailData.email)) {
         errors.email = 'Please enter a valid email address';
       }
       
       if (Object.keys(errors).length > 0) {
-        setOrgErrors(errors);
-        setOrgSaving(false);
+        setEmailErrors(errors);
+        setEmailSaving(false);
         return;
       }
 
       // Check if email has changed to update Redux
-      const emailChanged = orgData.email !== effectiveAdminData?.email;
+      const emailChanged = emailData.email !== effectiveAdminData?.email;
       
-      // Call API to update organization profile and email
+      // Call API to update email
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admin/profile`, {
         method: 'PUT',
         headers: {
@@ -114,31 +108,29 @@ export default function SettingsPage() {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         },
         body: JSON.stringify({
-          org: orgData.org.trim(),
-          orgName: orgData.orgName.trim(),
-          email: orgData.email.trim(),
-          password: orgData.password || null
+          email: emailData.email.trim(),
+          password: emailData.password || null
         })
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to update organization profile');
+        throw new Error(errorData.message || 'Failed to update email address');
       }
 
       // Update Redux if email changed
       if (emailChanged) {
-        dispatch(updateAdminEmail({ email: orgData.email.trim() }));
+        dispatch(updateAdminEmail({ email: emailData.email.trim() }));
       }
 
-      setSuccessMessage('Organization profile updated successfully!');
+      setSuccessMessage('Email address updated successfully!');
       setShowSuccessModal(true);
       refreshAdmin();
     } catch (error) {
-      console.error('Error updating organization profile:', error);
-      setOrgErrors({ general: error.message || 'Failed to update organization profile. Please try again.' });
+      console.error('Error updating email address:', error);
+      setEmailErrors({ general: error.message || 'Failed to update email address. Please try again.' });
     } finally {
-      setOrgSaving(false);
+      setEmailSaving(false);
     }
   };
 
@@ -165,14 +157,14 @@ export default function SettingsPage() {
       )}
 
       <div className={styles.settingsGrid}>
-        {/* Organization Profile Panel */}
+        {/* Email Profile Panel */}
         <OrgProfileSection
           orgData={effectiveAdminData}
-          onSave={handleOrgProfileSave}
-          editData={orgEditData}
-          setEditData={setOrgEditData}
-          errors={orgErrors}
-          saving={orgSaving}
+          onSave={handleEmailSave}
+          editData={emailEditData}
+          setEditData={setEmailEditData}
+          errors={emailErrors}
+          saving={emailSaving}
         />
 
         {/* Password Settings Panel */}

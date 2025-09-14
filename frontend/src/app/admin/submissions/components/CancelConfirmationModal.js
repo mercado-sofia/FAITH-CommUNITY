@@ -7,6 +7,11 @@ export default function CancelConfirmation({ isOpen, itemName, itemType = 'submi
 
   // Capitalize first letter of itemType for display
   const capitalizedItemType = itemType.charAt(0).toUpperCase() + itemType.slice(1);
+  
+  // Determine if we're dealing with multiple items
+  const isMultiple = itemName && itemName.includes('s') && !itemName.includes('1 ');
+  const pronoun = isMultiple ? 'these' : 'this';
+  const itemTypePlural = isMultiple ? `${itemType}s` : itemType;
 
   return (
     <div className={styles.overlay}>
@@ -29,7 +34,7 @@ export default function CancelConfirmation({ isOpen, itemName, itemType = 'submi
         <div className={styles.content}>
           <h3>Cancel {capitalizedItemType}{itemName ? `: ${itemName}` : ''}</h3>
           
-          <p>Are you sure you want to cancel this {itemType}? This will withdraw the {itemType} from superadmin review.</p>
+          <p>Are you sure you want to cancel {pronoun} {itemTypePlural}? This will withdraw {pronoun} {itemTypePlural} from superadmin review.</p>
         </div>
 
         <div className={styles.actions}>

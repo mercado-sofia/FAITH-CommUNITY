@@ -22,8 +22,9 @@ export default function Sidebar() {
   const { handleNavigation } = useNavigation()
   
   // Use SWR hook for organization data
-  const { organization } = useAdminOrganization(currentAdmin?.org)
-  const orgLogo = organization?.logo
+  const { organization } = useAdminOrganization(currentAdmin?.organization_id)
+  // Use SWR data first, fallback to Redux store, then default
+  const orgLogo = organization?.logo || currentAdmin?.logo
 
   return (
     <aside className={styles.sidebar}>

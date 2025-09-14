@@ -94,13 +94,15 @@ export default function OrgPage() {
           </div>
         )}
 
-        <OrgInfoCard data={fallbackData} />
+      <OrgInfoCard data={fallbackData} />
+      {(fallbackData.advocacies?.length > 0 || fallbackData.competencies?.length > 0) && (
         <AdvocacyCompetency
           acronym={fallbackData.acronym}
           advocacies={fallbackData.advocacies}
           competencies={fallbackData.competencies}
         />
-        <FeaturedProjects orgID={orgID} />
+      )}
+      <FeaturedProjects orgID={orgID} />
 
         <LatestPosts orgID={orgID} />
 
@@ -135,11 +137,13 @@ export default function OrgPage() {
       />
 
       <OrgInfoCard data={organizationData} />
-      <AdvocacyCompetency
-        acronym={organizationData.acronym}
-        advocacies={organizationData.advocacies}
-        competencies={organizationData.competencies}
-      />
+      {(organizationData.advocacies?.length > 0 || organizationData.competencies?.length > 0) && (
+        <AdvocacyCompetency
+          acronym={organizationData.acronym}
+          advocacies={organizationData.advocacies}
+          competencies={organizationData.competencies}
+        />
+      )}
       <FeaturedProjects orgID={orgID} />
 
       <LatestPosts orgID={orgID} />

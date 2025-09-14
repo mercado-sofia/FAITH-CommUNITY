@@ -17,14 +17,13 @@ export const getAllProgramsByOrganization = async (req, res) => {
         pp.created_at,
         pp.updated_at,
         pp.organization_id,
-        a.orgName as organization_name,
-        a.org as organization_acronym,
+        o.orgName as organization_name,
+        o.org as organization_acronym,
         o.logo as organization_logo,
         o.org_color as organization_color
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
-      LEFT JOIN admins a ON pp.organization_id = a.organization_id
-      ORDER BY a.orgName ASC, pp.created_at DESC
+      ORDER BY o.orgName ASC, pp.created_at DESC
     `;
     
     const [results] = await db.execute(query);
@@ -140,13 +139,12 @@ export const getProgramById = async (req, res) => {
         pp.created_at,
         pp.updated_at,
         pp.organization_id,
-        a.orgName as organization_name,
-        a.org as organization_acronym,
+        o.orgName as organization_name,
+        o.org as organization_acronym,
         o.logo as organization_logo,
         o.org_color as organization_color
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
-      LEFT JOIN admins a ON pp.organization_id = a.organization_id
       WHERE pp.id = ?
     `;
     
@@ -241,13 +239,12 @@ export const getProgramsByOrganizationId = async (req, res) => {
         pp.created_at,
         pp.updated_at,
         pp.organization_id,
-        a.orgName as organization_name,
-        a.org as organization_acronym,
+        o.orgName as organization_name,
+        o.org as organization_acronym,
         o.logo as organization_logo,
         o.org_color as organization_color
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
-      LEFT JOIN admins a ON pp.organization_id = a.organization_id
       WHERE pp.organization_id = ?
       ORDER BY pp.created_at DESC
     `;

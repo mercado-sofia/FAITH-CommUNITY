@@ -14,6 +14,8 @@ export const useFormChanges = () => {
     
     return (
       originalData.logo !== currentData.logo ||
+      originalData.org !== currentData.org ||
+      originalData.orgName !== currentData.orgName ||
       originalData.facebook !== currentData.facebook ||
       originalData.description !== currentData.description ||
       originalData.orgColor !== currentData.orgColor

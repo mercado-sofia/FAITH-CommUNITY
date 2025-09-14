@@ -31,20 +31,12 @@ export const getProgramsByOrg = async (req, res) => {
       [orgId]
     );
 
-    // If not found by ID, try to find by org acronym from admins table
+    // If not found by ID, try to find by org acronym from organizations table
     if (orgRows.length === 0) {
-      const [adminRows] = await db.execute(
-        "SELECT organization_id FROM admins WHERE org = ? LIMIT 1",
+      [orgRows] = await db.execute(
+        "SELECT id FROM organizations WHERE org = ?",
         [orgId]
       );
-      
-      if (adminRows.length > 0) {
-        // Use the organization_id from admins table
-        [orgRows] = await db.execute(
-          "SELECT id FROM organizations WHERE id = ?",
-          [adminRows[0].organization_id]
-        );
-      }
     }
 
     if (orgRows.length === 0) {
@@ -255,20 +247,29 @@ export const getApprovedProgramsByOrg = async (req, res) => {
   }
 
   try {
-    // Get organization info from admins table
-    const [adminRows] = await db.execute(
-      "SELECT organization_id, orgName, org FROM admins WHERE org = ? LIMIT 1",
+    // First try to get organization by ID (numeric) from organizations table
+    let [orgRows] = await db.execute(
+      "SELECT id, org, orgName, logo FROM organizations WHERE id = ?",
       [orgId]
     );
 
-    if (adminRows.length === 0) {
+    // If not found by ID, try to find by org acronym from organizations table
+    if (orgRows.length === 0) {
+      [orgRows] = await db.execute(
+        "SELECT id, org, orgName, logo FROM organizations WHERE org = ?",
+        [orgId]
+      );
+    }
+
+    if (orgRows.length === 0) {
+      console.error(`[ERROR] Organization not found for ID/acronym: ${orgId}`);
       return res.status(404).json({
         success: false,
-        message: "Organization not found",
+        message: `Organization not found: ${orgId}`,
       });
     }
 
-    const adminOrg = adminRows[0];
+    const organization = orgRows[0];
 
     // Get approved programs for this organization
     const [rows] = await db.execute(`
@@ -277,7 +278,7 @@ export const getApprovedProgramsByOrg = async (req, res) => {
       LEFT JOIN organizations o ON p.organization_id = o.id
        WHERE p.organization_id = ?
        ORDER BY p.created_at DESC
-    `, [adminOrg.organization_id]);
+    `, [organization.id]);
 
     // Get multiple dates and additional images for each program
     const programsWithDates = await Promise.all(rows.map(async (program) => {
@@ -353,9 +354,9 @@ export const getApprovedProgramsByOrg = async (req, res) => {
       success: true,
       data: programs,
       organization: {
-        id: adminOrg.organization_id,
-        name: adminOrg.orgName,
-        acronym: adminOrg.org
+        id: organization.id,
+        name: organization.orgName,
+        acronym: organization.org
       }
     });
   } catch (error) {

@@ -201,4 +201,89 @@ router.use((error, req, res, next) => {
   next();
 });
 
+// Public upload route for organization logos (no authentication required)
+// Create a separate multer instance for public uploads
+const publicUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      const targetDir = path.join(uploadsDir, 'organizations', 'logos');
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+      cb(null, targetDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const extension = path.extname(file.originalname);
+      const baseName = path.basename(file.originalname, extension);
+      const sanitizedBaseName = baseName.replace(/[^a-zA-Z0-9]/g, "_");
+      cb(null, `org_logo_${sanitizedBaseName}-${uniqueSuffix}${extension}`);
+    }
+  }),
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
+
+router.post('/public/organization-logo', publicUpload.single('logo'), (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No file uploaded' 
+      });
+    }
+    
+    // File is already in the correct location due to multer configuration
+    const fileUrl = `/uploads/organizations/logos/${req.file.filename}`;
+    
+    res.json({
+      success: true,
+      filename: req.file.filename,
+      logoPath: req.file.filename, // Return just the filename for database storage
+      url: fileUrl
+    });
+  } catch (error) {
+    console.error('Public upload error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Upload failed: ' + error.message 
+    });
+  }
+});
+
+// Error handling middleware for public upload multer errors
+router.use('/public', (error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    console.error('Public upload Multer error:', error);
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'File too large. Maximum size is 5MB.' 
+      });
+    }
+    return res.status(400).json({ 
+      success: false, 
+      error: 'File upload error: ' + error.message 
+    });
+  }
+  
+  if (error) {
+    console.error('Public upload route error:', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Upload failed: ' + error.message 
+    });
+  }
+  
+  next();
+});
+
 export default router; 

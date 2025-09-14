@@ -91,7 +91,7 @@
 
 .invitationsTable th {
   background: #f9fafb;
-  padding: 1.25rem 1.5rem;
+  padding: 0.875rem 1.5rem;
   text-align: center;
   font-weight: 600;
   color: #374151;
@@ -102,15 +102,12 @@
   height: 60px;
 }
 
-.invitationsTable th.emailColumn,
-.invitationsTable th.sentColumn,
-.invitationsTable th.expiresColumn,
-.invitationsTable th.statusColumn {
+.invitationsTable th.emailColumn {
   text-align: left;
 }
 
 .invitationsTable td {
-  padding: 1.25rem 1.5rem;
+  padding: 0.875rem 1.5rem;
   border-bottom: 1px solid #f3f4f6;
   color: #374151;
   font-size: 0.875rem;
@@ -139,19 +136,19 @@
 
 .statusColumn {
   width: 120px;
-  text-align: left;
+  text-align: center;
   vertical-align: middle;
 }
 
 .sentColumn {
   width: 140px;
-  text-align: left;
+  text-align: center;
   vertical-align: middle;
 }
 
 .expiresColumn {
   width: 140px;
-  text-align: left;
+  text-align: center;
   vertical-align: middle;
 }
 
@@ -162,7 +159,7 @@
 }
 
 .actionsColumn {
-  width: 100px;
+  width: 140px;
   text-align: center;
   vertical-align: middle;
 }
@@ -210,7 +207,7 @@
 .statusBadge {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 0.5rem;
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
@@ -218,7 +215,7 @@
   font-weight: 600;
   text-transform: capitalize;
   width: fit-content;
-  margin: 0;
+  margin: 0 auto;
 }
 
 .statusIcon {
@@ -285,6 +282,29 @@
 }
 
 .cancelButton:hover:not(:disabled) {
+  background: #dc2626;
+  color: white;
+  border-color: #dc2626;
+}
+
+.viewButton {
+  color: #1d9782;
+  border-color: #1d9782;
+}
+
+.viewButton:hover:not(:disabled) {
+  background: #1d9782;
+  color: white;
+  border-color: #1d9782;
+}
+
+
+.deleteButton {
+  color: #dc2626;
+  border-color: #dc2626;
+}
+
+.deleteButton:hover:not(:disabled) {
   background: #dc2626;
   color: white;
   border-color: #dc2626;
@@ -359,7 +379,7 @@
   }
   
   .actionsColumn {
-    width: 100px;
+    width: 120px;
   }
   
   .dateText {
@@ -404,7 +424,7 @@
   }
   
   .actionsColumn {
-    width: 80px;
+    width: 100px;
   }
   
   .dateText {

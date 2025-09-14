@@ -30,24 +30,24 @@ const ProgramCard = ({
 
   const formatProgramDates = (program) => {
     // Handle multiple dates array (from admin creation flow)
-    if (program.multiple_dates && Array.isArray(program.multiple_dates) && program.multiple_dates.length > 0) {
-      if (program.multiple_dates.length === 1) {
-        return formatDate(program.multiple_dates[0])
-      } else if (program.multiple_dates.length === 2) {
-        return `${formatDate(program.multiple_dates[0])} & ${formatDate(program.multiple_dates[1])}`
+    if (program.multipleDates && Array.isArray(program.multipleDates) && program.multipleDates.length > 0) {
+      if (program.multipleDates.length === 1) {
+        return formatDate(program.multipleDates[0])
+      } else if (program.multipleDates.length === 2) {
+        return `${formatDate(program.multipleDates[0])} & ${formatDate(program.multipleDates[1])}`
       } else {
-        return `${formatDate(program.multiple_dates[0])} +${program.multiple_dates.length - 1} more dates`
+        return `${formatDate(program.multipleDates[0])} +${program.multipleDates.length - 1} more dates`
       }
     } 
     // Handle single date range
-    else if (program.event_start_date && program.event_end_date) {
-      const startDate = new Date(program.event_start_date)
-      const endDate = new Date(program.event_end_date)
+    else if (program.eventStartDate && program.eventEndDate) {
+      const startDate = new Date(program.eventStartDate)
+      const endDate = new Date(program.eventEndDate)
       
       if (startDate.getTime() === endDate.getTime()) {
-        return formatDate(program.event_start_date)
+        return formatDate(program.eventStartDate)
       } else {
-        return `${formatDate(program.event_start_date)} - ${formatDate(program.event_end_date)}`
+        return `${formatDate(program.eventStartDate)} - ${formatDate(program.eventEndDate)}`
       }
     }
     // Handle single event date

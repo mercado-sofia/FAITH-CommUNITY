@@ -11,12 +11,19 @@ export function middleware(request) {
       path: pathname,
       role: role,
       timestamp: new Date().toISOString(),
+      isInvitationPath: pathname.startsWith("/admin/invitation/accept"),
     })
   }
 
   // Allow login page for everyone
   if (pathname === "/login") {
     // Login page - allowing access
+    return NextResponse.next()
+  }
+
+  // Allow admin invitation acceptance page for everyone (no authentication required)
+  if (pathname.startsWith("/admin/invitation/accept")) {
+    console.log("✅ Invitation acceptance page - allowing access")
     return NextResponse.next()
   }
 
@@ -46,5 +53,8 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/superadmin/:path*"],
+  matcher: [
+    "/admin/:path*",
+    "/superadmin/:path*"
+  ],
 }

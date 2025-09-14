@@ -192,6 +192,11 @@ export default function FloatingMessage() {
       setMessage("");
       setOrg("");
       setEmailError("");
+      
+      // Clear email field for non-logged-in users
+      if (!isLoggedIn) {
+        setEmail("");
+      }
     } catch (error) {
       console.error("Error submitting message:", error);
       

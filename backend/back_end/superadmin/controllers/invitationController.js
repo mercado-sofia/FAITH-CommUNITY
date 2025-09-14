@@ -5,11 +5,16 @@ import nodemailer from "nodemailer"
 
 // Email configuration
 const createTransporter = () => {
-  return nodemailer.createTransporter({
-    service: 'gmail',
+  return nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // true for 465, false for other ports
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
+    },
+    tls: {
+      rejectUnauthorized: false
     }
   })
 }
@@ -21,11 +26,23 @@ const generateInvitationToken = () => {
 
 // Send invitation email
 const sendInvitationEmail = async (email, token) => {
-  const transporter = createTransporter()
-  const invitationLink = `${process.env.FRONTEND_URL}/admin/invitation/accept?token=${token}`
+  try {
+    // Validate environment variables
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.error('SMTP credentials not configured')
+      return false
+    }
+    
+    if (!process.env.FRONTEND_URL) {
+      console.error('FRONTEND_URL not configured')
+      return false
+    }
+
+    const transporter = createTransporter()
+    const invitationLink = `${process.env.FRONTEND_URL}/admin/invitation/accept?token=${token}`
   
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: process.env.SMTP_USER,
     to: email,
     subject: 'Admin Invitation - FAITH-CommUNITY',
     html: `
@@ -50,7 +67,6 @@ const sendInvitationEmail = async (email, token) => {
     `
   }
 
-  try {
     await transporter.sendMail(mailOptions)
     return true
   } catch (error) {
@@ -145,8 +161,8 @@ export const validateInvitationToken = async (req, res) => {
 export const acceptInvitation = async (req, res) => {
   const { token, org, orgName, logo, password } = req.body
 
-  if (!token || !org || !orgName || !password) {
-    return res.status(400).json({ error: "All fields are required" })
+  if (!token || !org || !orgName || !logo || !password) {
+    return res.status(400).json({ error: "All fields are required including logo" })
   }
 
   if (password.length < 6) {
@@ -193,7 +209,7 @@ export const acceptInvitation = async (req, res) => {
     const [orgResult] = await connection.execute(
       `INSERT INTO organizations (org, orgName, logo, status, org_color) 
        VALUES (?, ?, ?, 'ACTIVE', '#444444')`,
-      [org, orgName, logo || null]
+      [org, orgName, logo]
     )
 
     const organizationId = orgResult.insertId
@@ -213,14 +229,47 @@ export const acceptInvitation = async (req, res) => {
 
     await connection.commit()
 
+    // Fetch the complete admin data with organization info
+    const [adminWithOrg] = await connection.execute(
+      `SELECT a.id, a.email, a.role, a.status, a.organization_id, o.org, o.orgName
+       FROM admins a
+       LEFT JOIN organizations o ON a.organization_id = o.id
+       WHERE a.id = ?`,
+      [adminResult.insertId]
+    )
+
+    // Create notification for superadmin about new admin account
+    try {
+      const [superadminRows] = await connection.execute("SELECT id FROM superadmin LIMIT 1")
+      if (superadminRows.length > 0) {
+        const superadminId = superadminRows[0].id
+        const { SuperAdminNotificationController } = await import('../superadminNotificationController.js')
+        
+        await SuperAdminNotificationController.createNotification(
+          superadminId,
+          'system',
+          'New Admin Account Created',
+          `A new admin account has been created for ${orgName} (${org}) by ${invitation.email}`,
+          'admin_management',
+          null,
+          organizationId  // Pass organization_id instead of acronym
+        )
+      }
+    } catch (notificationError) {
+      console.warn('Failed to create superadmin notification for new admin:', notificationError.message)
+      // Don't fail the main operation if notification fails
+    }
+
     res.status(201).json({
       message: "Admin account created successfully",
       admin: {
-        id: adminResult.insertId,
-        email: invitation.email,
-        role: "admin",
-        status: "ACTIVE",
-        organization_id: organizationId
+        id: adminWithOrg[0].id,
+        email: adminWithOrg[0].email,
+        role: adminWithOrg[0].role,
+        status: adminWithOrg[0].status,
+        organization_id: adminWithOrg[0].organization_id,
+        org: adminWithOrg[0].org,
+        orgName: adminWithOrg[0].orgName
       }
     })
   } catch (err) {

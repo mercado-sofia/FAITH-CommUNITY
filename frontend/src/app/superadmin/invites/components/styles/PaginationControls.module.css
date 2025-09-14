@@ -1,0 +1,132 @@
+.paginationContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  padding: 16px 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.infoText {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.paginationControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pageNumbers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pageButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.pageButton:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #111827;
+}
+
+.pageButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f9fafb;
+}
+
+.numberButton {
+  padding: 0 12px;
+}
+
+.numberButton.active {
+  background: #1d9782;
+  color: white;
+  border-color: #1d9782;
+}
+
+.numberButton.active:hover {
+  background: #0f766e;
+  border-color: #0f766e;
+}
+
+.navButton {
+  padding: 0 8px;
+  font-size: 0;
+}
+
+.navButton:hover:not(:disabled) {
+  background: #1d9782;
+  color: white;
+  border-color: #1d9782;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .paginationContainer {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .infoText {
+    text-align: center;
+  }
+
+  .paginationControls {
+    justify-content: center;
+  }
+
+  .pageButton {
+    min-width: 36px;
+    height: 36px;
+    font-size: 0.8rem;
+  }
+
+  .numberButton {
+    padding: 0 8px;
+  }
+
+  .navButton {
+    padding: 0 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pageNumbers {
+    gap: 2px;
+  }
+
+  .pageButton {
+    min-width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
+  }
+
+  .numberButton {
+    padding: 0 6px;
+  }
+
+  .navButton {
+    padding: 0 4px;
+  }
+}

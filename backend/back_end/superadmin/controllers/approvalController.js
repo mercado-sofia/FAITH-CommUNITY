@@ -5,10 +5,14 @@ import NotificationController from '../../admin/controllers/notificationControll
 export const getPendingSubmissions = async (req, res) => {
   try {
     const [rows] = await db.execute(`
-      SELECT s.*, a.orgName, a.org, submitted_admin.orgName as submitted_by_name 
+      SELECT s.*, 
+             o.orgName, o.org, 
+             submitted_admin.email as submitted_by_email,
+             submitted_org.orgName as submitted_by_name 
       FROM submissions s 
-      LEFT JOIN admins a ON a.organization_id = s.organization_id 
+      LEFT JOIN organizations o ON o.id = s.organization_id 
       LEFT JOIN admins submitted_admin ON s.submitted_by = submitted_admin.id 
+      LEFT JOIN organizations submitted_org ON submitted_admin.organization_id = submitted_org.id
       WHERE s.status = 'pending' 
       ORDER BY s.submitted_at DESC
     `);
@@ -47,10 +51,14 @@ export const getPendingSubmissions = async (req, res) => {
 export const getAllSubmissions = async (req, res) => {
   try {
     const [rows] = await db.execute(`
-      SELECT s.*, a.orgName, a.org, submitted_admin.orgName as submitted_by_name 
+      SELECT s.*, 
+             o.orgName, o.org, 
+             submitted_admin.email as submitted_by_email,
+             submitted_org.orgName as submitted_by_name 
       FROM submissions s 
-      LEFT JOIN admins a ON a.organization_id = s.organization_id 
+      LEFT JOIN organizations o ON o.id = s.organization_id 
       LEFT JOIN admins submitted_admin ON s.submitted_by = submitted_admin.id 
+      LEFT JOIN organizations submitted_org ON submitted_admin.organization_id = submitted_org.id
       ORDER BY s.submitted_at DESC
     `);
 
@@ -99,16 +107,10 @@ export const approveSubmission = async (req, res) => {
 
     // Apply changes based on section
     if (section === 'organization') {
-      // Update organizations table (without org/orgName fields)
+      // Update organizations table with all organization data including org/orgName
       await db.execute(
-        `UPDATE organizations SET logo = ?, facebook = ?, description = ? WHERE id = ?`,
-        [data.logo, data.facebook, data.description, orgId]
-      );
-      
-      // Update admins table with org/orgName changes
-      await db.execute(
-        `UPDATE admins SET org = ?, orgName = ? WHERE organization_id = ?`,
-        [data.org, data.orgName, orgId]
+        `UPDATE organizations SET org = ?, orgName = ?, logo = ?, facebook = ?, description = ? WHERE id = ?`,
+        [data.org, data.orgName, data.logo, data.facebook, data.description, orgId]
       );
     }
 
@@ -391,16 +393,10 @@ export const bulkApproveSubmissions = async (req, res) => {
 
         // Apply changes based on section - same logic as individual approveSubmission
         if (section === 'organization') {
-          // Update organizations table (without org/orgName fields)
+          // Update organizations table with all organization data including org/orgName
           await db.execute(
-            `UPDATE organizations SET logo = ?, facebook = ?, description = ? WHERE id = ?`,
-            [data.logo, data.facebook, data.description, orgId]
-          );
-          
-          // Update admins table with org/orgName changes
-          await db.execute(
-            `UPDATE admins SET org = ?, orgName = ? WHERE organization_id = ?`,
-            [data.org, data.orgName, orgId]
+            `UPDATE organizations SET org = ?, orgName = ?, logo = ?, facebook = ?, description = ? WHERE id = ?`,
+            [data.org, data.orgName, data.logo, data.facebook, data.description, orgId]
           );
         }
 

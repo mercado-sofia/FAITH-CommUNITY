@@ -351,9 +351,9 @@ export default function ProgramDetailsPage() {
                           />
                         )}
                         <div className={styles.orgDetails}>
-                          <div className={styles.orgName}>{program.organization_name || program.organization_acronym}</div>
-                          {program.organization_acronym && program.organization_name && (
-                            <div className={styles.orgId}>{program.organization_acronym}</div>
+                          <div className={styles.orgName}>{program.orgName || program.orgID || program.organization_name || program.organization_acronym}</div>
+                          {(program.orgID || program.organization_acronym) && (program.orgName || program.organization_name) && (
+                            <div className={styles.orgId}>{program.orgID || program.organization_acronym}</div>
                           )}
                         </div>
                       </div>

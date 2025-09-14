@@ -14,8 +14,6 @@ export default function OrgProfileEditModal({
   saving = false
 }) {
   const [editData, setEditData] = useState({
-    org: orgData?.org || '',
-    orgName: orgData?.orgName || '',
     email: orgData?.email || ''
   });
   const [modalMode, setModalMode] = useState('profile'); // 'profile' or 'password'
@@ -29,8 +27,6 @@ export default function OrgProfileEditModal({
   useEffect(() => {
     if (isOpen) {
       setEditData({
-        org: orgData?.org || '',
-        orgName: orgData?.orgName || '',
         email: orgData?.email || ''
       });
       setModalMode('profile');
@@ -57,12 +53,6 @@ export default function OrgProfileEditModal({
     
     // Validate form
     const newErrors = {};
-    if (!editData.org?.trim()) {
-      newErrors.org = 'Organization acronym is required';
-    }
-    if (!editData.orgName?.trim()) {
-      newErrors.orgName = 'Organization name is required';
-    }
     if (!editData.email?.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editData.email)) {
@@ -75,9 +65,7 @@ export default function OrgProfileEditModal({
     }
 
     // Check if there are actual changes
-    const hasChanges = editData.org !== orgData?.org || 
-                      editData.orgName !== orgData?.orgName || 
-                      editData.email !== orgData?.email;
+    const hasChanges = editData.email !== orgData?.email;
 
     if (hasChanges) {
       // Switch to password confirmation mode
@@ -179,8 +167,8 @@ export default function OrgProfileEditModal({
               {modalMode === 'profile' ? <FaBuilding /> : <FaLock />}
             </div>
             <div className={styles.headerText}>
-              <h2>{modalMode === 'profile' ? 'Edit Organization Profile' : 'Confirm Password'}</h2>
-              <p>{modalMode === 'profile' ? 'Update your organization\'s basic information and email' : 'Enter your current password to confirm the changes'}</p>
+              <h2>{modalMode === 'profile' ? 'Edit Email Address' : 'Confirm Password'}</h2>
+              <p>{modalMode === 'profile' ? 'Update your email address' : 'Enter your current password to confirm the changes'}</p>
             </div>
           </div>
           <button 
@@ -201,38 +189,6 @@ export default function OrgProfileEditModal({
                 </div>
               )}
 
-              <div className={styles.fieldGroup}>
-                <label className={styles.label}>
-                  Organization Acronym <span className={styles.required}>*</span>
-                </label>
-                <input
-                  type="text"
-                  name="org"
-                  value={editData.org}
-                  onChange={handleInputChange}
-                  className={`${styles.input} ${errors?.org ? styles.inputError : ''}`}
-                  placeholder="e.g., FAITH"
-                  disabled={saving}
-                  autoFocus
-                />
-                {errors?.org && <span className={styles.errorText}>{errors.org}</span>}
-              </div>
-
-              <div className={styles.fieldGroup}>
-                <label className={styles.label}>
-                  Organization Name <span className={styles.required}>*</span>
-                </label>
-                <input
-                  type="text"
-                  name="orgName"
-                  value={editData.orgName}
-                  onChange={handleInputChange}
-                  className={`${styles.input} ${errors?.orgName ? styles.inputError : ''}`}
-                  placeholder="e.g., FAITH Community Organization"
-                  disabled={saving}
-                />
-                {errors?.orgName && <span className={styles.errorText}>{errors.orgName}</span>}
-              </div>
 
               <div className={styles.fieldGroup}>
                 <label className={styles.label}>

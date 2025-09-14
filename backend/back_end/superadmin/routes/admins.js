@@ -1,6 +1,5 @@
 import express from "express"
 import {
-  createAdmin,
   getAllAdmins,
   getAdminById,
   updateAdmin,
@@ -28,7 +27,6 @@ router.post("/check-email", checkEmailAdmin)
 router.use(verifySuperadminToken)
 
 router.get("/", getAllAdmins)
-router.post("/", createAdmin)
 router.get("/:id", getAdminById)
 router.put("/:id", updateAdmin)
 router.delete("/:id", deleteAdmin)

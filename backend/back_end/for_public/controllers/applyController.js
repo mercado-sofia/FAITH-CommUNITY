@@ -100,11 +100,11 @@ export const getAllVolunteers = async (req, res) => {
         u.profile_photo_url,
         p.title as program_name,
         p.title as program_title,
-        a.orgName as organization_name
+        o.orgName as organization_name
       FROM volunteers v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN programs_projects p ON v.program_id = p.id
-      LEFT JOIN admins a ON a.organization_id = p.organization_id
+      LEFT JOIN organizations o ON o.id = p.organization_id
       WHERE u.is_active = 1
       ORDER BY v.created_at DESC
     `);
@@ -156,13 +156,13 @@ export const getVolunteersByOrganization = async (req, res) => {
         u.profile_photo_url,
         p.title as program_name,
         p.title as program_title,
-        a.orgName as organization_name,
-        a.organization_id as organization_id
+        o.orgName as organization_name,
+        o.id as organization_id
       FROM volunteers v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN programs_projects p ON v.program_id = p.id
-      LEFT JOIN admins a ON a.organization_id = p.organization_id
-      WHERE a.organization_id = ? AND u.is_active = 1
+      LEFT JOIN organizations o ON o.id = p.organization_id
+      WHERE o.id = ? AND u.is_active = 1
       ORDER BY v.created_at DESC
     `, [orgId]);
 
@@ -195,7 +195,9 @@ export const getVolunteersByAdminOrg = async (req, res) => {
     
     // First get the admin's organization
     const [adminRows] = await db.execute(`
-      SELECT org FROM admins WHERE id = ?
+      SELECT o.org FROM admins a
+      LEFT JOIN organizations o ON a.organization_id = o.id
+      WHERE a.id = ?
     `, [adminId]);
     
     if (adminRows.length === 0) {
@@ -229,13 +231,13 @@ export const getVolunteersByAdminOrg = async (req, res) => {
         u.profile_photo_url,
         p.title as program_name,
         p.title as program_title,
-        a.orgName as organization_name,
-        a.organization_id as organization_id
+        o.orgName as organization_name,
+        o.id as organization_id
       FROM volunteers v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN programs_projects p ON v.program_id = p.id
-      LEFT JOIN admins a ON a.organization_id = p.organization_id
-      WHERE a.org = ? AND u.is_active = 1
+      LEFT JOIN organizations o ON o.id = p.organization_id
+      WHERE o.org = ? AND u.is_active = 1
       ORDER BY v.created_at DESC
     `, [adminOrg]);
 
@@ -287,12 +289,12 @@ export const getVolunteerById = async (req, res) => {
         u.profile_photo_url,
         p.title as program_name,
         p.title as program_title,
-        a.orgName as organization_name,
-        a.organization_id as organization_id
+        o.orgName as organization_name,
+        o.id as organization_id
       FROM volunteers v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN programs_projects p ON v.program_id = p.id
-      LEFT JOIN admins a ON a.organization_id = p.organization_id
+      LEFT JOIN organizations o ON o.id = p.organization_id
       WHERE v.id = ? AND u.is_active = 1
     `, [id]);
     
@@ -441,10 +443,9 @@ export const testAuth = (req, res) => {
 export const getApprovedUpcomingPrograms = async (req, res) => {
   try {
     const [rows] = await db.execute(`
-      SELECT p.*, a.orgName, a.org as orgAcronym, o.logo as orgLogo
+      SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
-      LEFT JOIN admins a ON a.organization_id = o.id
       WHERE p.status = 'Upcoming'
       ORDER BY p.created_at DESC
     `);

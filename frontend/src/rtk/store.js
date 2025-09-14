@@ -15,7 +15,8 @@ import { submissionApi } from "./admin/submissionApi"
 import { volunteersApi } from "./admin/volunteersApi"
 import { adminProgramsApi } from "./admin/adminProgramsApi"
 import { inboxApi } from "./admin/inboxApi"
-import { manageProfilesApi } from "./superadmin/manageProfilesApi"
+import { adminApi } from "./superadmin/adminApi"
+import { invitationsApi } from "./superadmin/invitationsApi"
 import { faqApi } from "./superadmin/faqApi"
 import { superadminProgramsApi } from "./superadmin/programsApi"
 import { dashboardApi } from "./superadmin/dashboardApi"
@@ -40,7 +41,8 @@ export const store = configureStore({
     [volunteersApi.reducerPath]: volunteersApi.reducer,
     [adminProgramsApi.reducerPath]: adminProgramsApi.reducer,
     [inboxApi.reducerPath]: inboxApi.reducer,
-    [manageProfilesApi.reducerPath]: manageProfilesApi.reducer,
+    [adminApi.reducerPath]: adminApi.reducer,
+    [invitationsApi.reducerPath]: invitationsApi.reducer,
     [faqApi.reducerPath]: faqApi.reducer,
     [superadminProgramsApi.reducerPath]: superadminProgramsApi.reducer,
     [dashboardApi.reducerPath]: dashboardApi.reducer,
@@ -63,7 +65,8 @@ export const store = configureStore({
       volunteersApi.middleware,
       adminProgramsApi.middleware,
       inboxApi.middleware,
-      manageProfilesApi.middleware,
+      adminApi.middleware,
+      invitationsApi.middleware,
       faqApi.middleware,
       superadminProgramsApi.middleware,
       dashboardApi.middleware,

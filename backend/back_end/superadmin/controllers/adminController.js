@@ -372,7 +372,7 @@ export const forgotPassword = async (req, res) => {
   try {
     // Check if admin exists with this email
     const [adminRows] = await db.execute(
-      'SELECT id, email, orgName FROM admins WHERE email = ? AND status = "ACTIVE"',
+      'SELECT id, email, organization_id FROM admins WHERE email = ? AND status = "ACTIVE"',
       [email]
     )
 

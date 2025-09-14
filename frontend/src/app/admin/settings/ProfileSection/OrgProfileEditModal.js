@@ -125,8 +125,6 @@ export default function OrgProfileEditModal({
   const handleClose = () => {
     // Reset form data to original values
     setEditData({
-      org: orgData?.org || '',
-      orgName: orgData?.orgName || '',
       email: orgData?.email || ''
     });
     setModalMode('profile');
@@ -287,7 +285,7 @@ export default function OrgProfileEditModal({
       
       {/* Success Modal - Always rendered, shown when needed */}
       <SuccessModal
-        message="Organization profile updated successfully!"
+        message="Email address updated successfully!"
         isVisible={showSuccessModal}
         onClose={() => setShowSuccessModal(false)}
         type="success"

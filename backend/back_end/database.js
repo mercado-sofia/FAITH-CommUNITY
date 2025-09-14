@@ -82,7 +82,7 @@ const initializeDatabase = async () => {
           is_deleted BOOLEAN DEFAULT FALSE,
           deleted_at TIMESTAMP NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
         )
       `);
@@ -213,6 +213,33 @@ const initializeDatabase = async () => {
         }
 
         console.log("✅ Enhanced news columns and data migration completed!");
+      }
+
+      // Check if updated_at column needs to be fixed (set to NULL by default instead of CURRENT_TIMESTAMP)
+      const [updatedAtColumn] = await connection.query(`
+        SELECT COLUMN_DEFAULT, IS_NULLABLE
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'news' 
+        AND COLUMN_NAME = 'updated_at'
+      `);
+      
+      if (updatedAtColumn.length > 0 && updatedAtColumn[0].COLUMN_DEFAULT === 'CURRENT_TIMESTAMP') {
+        console.log("Fixing updated_at column to allow NULL by default...");
+        
+        // First, set all existing updated_at values to NULL where they equal created_at
+        await connection.query(`
+          UPDATE news 
+          SET updated_at = NULL 
+          WHERE updated_at = created_at
+        `);
+        
+        // Then modify the column definition
+        await connection.query(`
+          ALTER TABLE news 
+          MODIFY COLUMN updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+        `);
+        
+        console.log("✅ Fixed updated_at column to allow NULL by default!");
       }
     }
 
@@ -617,15 +644,132 @@ const initializeDatabase = async () => {
           message TEXT NOT NULL,
           section VARCHAR(100),
           submission_id INT,
-          organization_acronym VARCHAR(100),
+          organization_id INT,
           is_read BOOLEAN DEFAULT FALSE,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           INDEX idx_superadmin_read (superadmin_id, is_read),
-          INDEX idx_created_at (created_at)
+          INDEX idx_created_at (created_at),
+          INDEX idx_organization (organization_id),
+          FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL
         )
       `);
       console.log("✅ Superadmin notifications table created successfully!");
+    } else {
+      // Check if organization_id column exists, if not add it and migrate data
+      const [columnExists] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'superadmin_notifications' 
+        AND COLUMN_NAME = 'organization_id'
+      `);
+      
+      if (columnExists.length === 0) {
+        console.log("Adding organization_id column to superadmin_notifications table...");
+        
+        // Add organization_id column
+        await connection.query(`
+          ALTER TABLE superadmin_notifications 
+          ADD COLUMN organization_id INT AFTER submission_id
+        `);
+        
+        // Add foreign key constraint
+        await connection.query(`
+          ALTER TABLE superadmin_notifications 
+          ADD CONSTRAINT fk_notifications_organization 
+          FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL
+        `);
+        
+        // Add index
+        await connection.query(`
+          ALTER TABLE superadmin_notifications 
+          ADD INDEX idx_organization (organization_id)
+        `);
+        
+        // Migrate existing data: populate organization_id from organization_acronym
+        console.log("Migrating existing notification data...");
+        await connection.query(`
+          UPDATE superadmin_notifications sn
+          LEFT JOIN organizations o ON LOWER(TRIM(sn.organization_acronym)) = LOWER(TRIM(o.org))
+          SET sn.organization_id = o.id
+          WHERE sn.organization_acronym IS NOT NULL
+        `);
+        
+        // Drop old columns after successful migration
+        console.log("Cleaning up old columns...");
+        try {
+          await connection.query(`
+            ALTER TABLE superadmin_notifications 
+            DROP COLUMN organization_acronym
+          `);
+          console.log("✅ Dropped organization_acronym column");
+        } catch (dropError) {
+          console.log("ℹ️ organization_acronym column may not exist:", dropError.message);
+        }
+        
+        try {
+          await connection.query(`
+            ALTER TABLE superadmin_notifications 
+            DROP COLUMN organization_logo
+          `);
+          console.log("✅ Dropped organization_logo column");
+        } catch (dropError) {
+          console.log("ℹ️ organization_logo column may not exist:", dropError.message);
+        }
+        
+        console.log("✅ Organization ID column added, data migrated, and old columns cleaned up!");
+      } else {
+        // organization_id column already exists, check if old columns need cleanup
+        const [oldColumns] = await connection.query(`
+          SELECT COLUMN_NAME 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_NAME = 'superadmin_notifications' 
+          AND COLUMN_NAME IN ('organization_acronym', 'organization_logo')
+        `);
+        
+        if (oldColumns.length > 0) {
+          console.log("Cleaning up old columns from existing table...");
+          for (const column of oldColumns) {
+            try {
+              await connection.query(`
+                ALTER TABLE superadmin_notifications 
+                DROP COLUMN ${column.COLUMN_NAME}
+              `);
+              console.log(`✅ Dropped ${column.COLUMN_NAME} column`);
+            } catch (dropError) {
+              console.log(`ℹ️ ${column.COLUMN_NAME} column may not exist:`, dropError.message);
+            }
+          }
+        }
+      }
+      
+      // Check if message_template column exists, add it if missing
+      const [messageTemplateColumn] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'superadmin_notifications' 
+        AND COLUMN_NAME = 'message_template'
+      `);
+      
+      if (messageTemplateColumn.length === 0) {
+        console.log("Adding message_template column for dynamic message generation...");
+        
+        // Add message_template column
+        await connection.query(`
+          ALTER TABLE superadmin_notifications 
+          ADD COLUMN message_template TEXT AFTER message
+        `);
+        
+        // Migrate existing messages to templates
+        console.log("Migrating existing messages to templates...");
+        await connection.query(`
+          UPDATE superadmin_notifications 
+          SET message_template = message
+          WHERE message_template IS NULL
+        `);
+        
+        console.log("✅ Message template column added and data migrated!");
+      }
     }
 
     // Check if password_reset_tokens table exists

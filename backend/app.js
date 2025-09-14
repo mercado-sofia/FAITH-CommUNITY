@@ -155,7 +155,7 @@ const globalLimiter = rateLimit({
 const globalSpeedLimiter = slowDown({
   windowMs: 15 * 60 * 1000,
   delayAfter: Number(process.env.SLOWDOWN_GLOBAL_AFTER || 200), // Increased from 100 to 200
-  delayMs: 250,
+  delayMs: () => 250,
 })
 app.use(globalSpeedLimiter)
 app.use(globalLimiter)
@@ -244,7 +244,7 @@ const authLimiter = rateLimit({
 const authSpeedLimiter = slowDown({
   windowMs: 15 * 60 * 1000,
   delayAfter: Number(process.env.SLOWDOWN_AUTH_AFTER || 5),
-  delayMs: 500,
+  delayMs: () => 500,
 })
 
 // Public endpoints rate limiting (more lenient)

@@ -21,7 +21,7 @@ class SuperAdminNotificationController {
       
       // Check admins table
       const [admins] = await db.execute(
-        'SELECT id, org, organization_id FROM admins LIMIT 5'
+        'SELECT id, organization_id FROM admins LIMIT 5'
       );
       
       res.json({
@@ -54,7 +54,7 @@ class SuperAdminNotificationController {
         'This is a test notification to verify the system is working.',
         'competency',
         null,
-        'TEST'
+        null  // No organization_id for test notification
       );
       
       res.json({
@@ -86,21 +86,25 @@ class SuperAdminNotificationController {
       );
       const total = countResult[0].total;
 
-      // Get notifications with pagination and organization logo
+      // Get notifications with pagination and current organization data
       const query = `
         SELECT 
           sn.id, 
           sn.type, 
           sn.title, 
           sn.message, 
+          sn.message_template,
           sn.section, 
           sn.submission_id, 
-          sn.organization_acronym, 
+          sn.organization_id,
           sn.is_read, 
           sn.created_at,
-          o.logo as organization_logo
+          o.org as organization_acronym,
+          o.orgName as organization_name,
+          o.logo as organization_logo,
+          o.org_color as organization_color
         FROM superadmin_notifications sn
-        LEFT JOIN organizations o ON sn.organization_acronym = o.org
+        LEFT JOIN organizations o ON sn.organization_id = o.id
         WHERE sn.superadmin_id = ? 
         ORDER BY sn.created_at DESC 
         LIMIT ? OFFSET ?
@@ -109,10 +113,20 @@ class SuperAdminNotificationController {
       const [notifications] = await db.execute(query, [superAdminId, parseInt(limit), parseInt(offset)]);
       
 
-      // Format the time ago and logo URL for each notification
+      // Format the time ago, logo URL, and generate dynamic messages for each notification
       const formattedNotifications = notifications.map(notification => {
+        // Generate dynamic message using current organization acronym
+        let dynamicMessage = notification.message; // fallback to original message
+        
+        if (notification.message_template && notification.organization_acronym) {
+          // Replace {ORG_ACRONYM} placeholder with current organization acronym
+          dynamicMessage = notification.message_template.replace('{ORG_ACRONYM}', notification.organization_acronym);
+        } else if (notification.message_template && !notification.organization_acronym) {
+          // If no organization data, use template as-is (for system notifications)
+          dynamicMessage = notification.message_template;
+        }
 
-        // Construct proper logo URL
+        // Construct proper logo URL from stored logo
         let logoUrl = null;
         if (notification.organization_logo) {
           if (notification.organization_logo.includes('/')) {
@@ -128,9 +142,9 @@ class SuperAdminNotificationController {
           logoUrl = `/logo/${notification.organization_acronym.toLowerCase()}_logo.jpg`;
         }
 
-
         return {
           ...notification,
+          message: dynamicMessage, // Use the dynamically generated message
           timeAgo: SuperAdminNotificationController.getTimeAgo(notification.created_at),
           organization_logo: logoUrl
         };
@@ -267,14 +281,35 @@ class SuperAdminNotificationController {
   }
 
   // Static method to create notification (used by other controllers)
-  static async createNotification(superAdminId, type, title, message, section = null, submissionId = null, organizationAcronym = null) {
+  static async createNotification(superAdminId, type, title, message, section = null, submissionId = null, organizationId = null) {
     try {
+      // Create message template by removing organization name from the message
+      let messageTemplate = message;
+      
+      // If organizationId is provided, try to extract the current org name and create a template
+      if (organizationId) {
+        try {
+          const [orgResult] = await db.execute(
+            'SELECT org FROM organizations WHERE id = ?',
+            [organizationId]
+          );
+          
+          if (orgResult.length > 0) {
+            const currentOrgName = orgResult[0].org;
+            // Replace the current org name with a placeholder
+            messageTemplate = message.replace(currentOrgName, '{ORG_ACRONYM}');
+          }
+        } catch (orgError) {
+          // Could not extract org name for template, using original message
+        }
+      }
+
       const query = `
-        INSERT INTO superadmin_notifications (superadmin_id, type, title, message, section, submission_id, organization_acronym)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO superadmin_notifications (superadmin_id, type, title, message, message_template, section, submission_id, organization_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
-      const [result] = await db.execute(query, [superAdminId, type, title, message, section, submissionId, organizationAcronym]);
+      const [result] = await db.execute(query, [superAdminId, type, title, message, messageTemplate, section, submissionId, organizationId]);
 
       return {
         success: true,
@@ -288,6 +323,7 @@ class SuperAdminNotificationController {
       };
     }
   }
+
 
   // Helper method to format time ago
   static getTimeAgo(createdAt) {

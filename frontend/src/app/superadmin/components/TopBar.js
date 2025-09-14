@@ -302,17 +302,23 @@ export default function TopBar() {
                             height={24}
                             className={styles.organizationLogo}
                             onError={(e) => {
-                              // Fallback to generic icon if logo fails to load
+                              // Fallback to organization acronym if logo fails to load
                               e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'block';
+                              e.target.nextSibling.style.display = 'flex';
                             }}
                           />
                         ) : null}
                         <div 
                           className={styles.fallbackIcon}
-                          style={{ display: notification.organization_logo ? 'none' : 'block' }}
+                          style={{ display: notification.organization_logo ? 'none' : 'flex' }}
                         >
-                          {getNotificationIcon(notification.type, notification.section)}
+                          {notification.organization_acronym ? (
+                            <span className={styles.organizationAcronymFallback}>
+                              {notification.organization_acronym.charAt(0).toUpperCase()}
+                            </span>
+                          ) : (
+                            getNotificationIcon(notification.type, notification.section)
+                          )}
                         </div>
                       </div>
                       <div className={styles.notificationContent}>

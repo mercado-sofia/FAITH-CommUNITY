@@ -19,12 +19,12 @@ export const superadminNotificationsApi = createApi({
     // Get notifications for a superadmin
     getSuperAdminNotifications: builder.query({
       query: ({ superAdminId, limit = 10, offset = 0 }) => ({
-        url: `/${superAdminId}?limit=${limit}&offset=${offset}`,
+        url: `/${superAdminId}?limit=${limit}&offset=${offset}&_t=${Date.now()}`,
         method: 'GET',
       }),
       providesTags: ['SuperAdminNotifications'],
-      // Optimize for skeleton loading - keep data for 30 seconds
-      keepUnusedDataFor: 30,
+      // Force fresh data - don't cache for long
+      keepUnusedDataFor: 0,
     }),
 
     // Get unread notification count

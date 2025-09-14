@@ -34,8 +34,8 @@
 }
 
 .orgSliderWrapper {
-  width: calc((140px + 2px) * 7 - 2px);
   overflow: hidden;
+  display: flex;
 }
 
 .orgSliderTrack {

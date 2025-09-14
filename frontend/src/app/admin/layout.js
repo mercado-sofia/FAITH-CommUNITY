@@ -11,6 +11,7 @@ import ErrorBoundary from "../../components/ErrorBoundary";
 import Loader from "../../components/Loader";
 import styles from "./dashboard/styles/dashboard.module.css";
 import { Poppins, Inter, Urbanist } from 'next/font/google';
+import logger from '../../utils/logger.js';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -46,6 +47,12 @@ function AdminLayoutContent({ children }) {
         return;
       }
 
+      // Check if this is the invitation acceptance page - skip authentication
+      if (window.location.pathname.startsWith('/admin/invitation/accept')) {
+        setIsInitialLoading(false);
+        return;
+      }
+
       try {
         const token = localStorage.getItem('adminToken');
         const adminData = localStorage.getItem('adminData');
@@ -65,7 +72,7 @@ function AdminLayoutContent({ children }) {
         adminInitialized = true;
         setIsInitialLoading(false);
       } catch (error) {
-        console.error('Error initializing admin:', error);
+        logger.error('Error initializing admin', error, { context: 'admin_initialization' });
         localStorage.removeItem('adminToken');
         localStorage.removeItem('adminData');
         document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
@@ -79,6 +86,17 @@ function AdminLayoutContent({ children }) {
   // Show full-screen loader only on initial page load/reload
   if (isInitialLoading) {
     return <Loader />;
+  }
+
+  // For invitation acceptance page, render without admin layout components
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin/invitation/accept')) {
+    return (
+      <div className={`${poppins.variable} ${inter.variable} ${urbanist.variable}`}>
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
+      </div>
+    );
   }
 
   return (

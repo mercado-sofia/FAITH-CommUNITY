@@ -114,6 +114,38 @@ export default function EditModal({
              {/* Form Fields */}
              <div className={styles.formSection}>
                <div className={styles.formGroup}>
+                 <label className={styles.label}>
+                   Organization Acronym <span className={styles.required}>*</span>
+                 </label>
+                 <input
+                   type="text"
+                   name="org"
+                   value={orgData.org}
+                   onChange={handleInputChange}
+                   className={`${styles.input} ${errors.org ? styles.inputError : ""}`}
+                   placeholder="e.g., TEST"
+                   required
+                 />
+                 {errors.org && <span className={styles.errorText}>{errors.org}</span>}
+               </div>
+
+               <div className={styles.formGroup}>
+                 <label className={styles.label}>
+                   Organization Name <span className={styles.required}>*</span>
+                 </label>
+                 <input
+                   type="text"
+                   name="orgName"
+                   value={orgData.orgName}
+                   onChange={handleInputChange}
+                   className={`${styles.input} ${errors.orgName ? styles.inputError : ""}`}
+                   placeholder="e.g., Test Organization"
+                   required
+                 />
+                 {errors.orgName && <span className={styles.errorText}>{errors.orgName}</span>}
+               </div>
+
+               <div className={styles.formGroup}>
                  <label className={styles.label}>Facebook Link:</label>
                  <input
                    type="url"

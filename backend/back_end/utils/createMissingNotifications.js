@@ -17,9 +17,9 @@ export const createMissingNotifications = async () => {
 
     // Get all pending program submissions
     const [programSubmissions] = await db.execute(`
-      SELECT s.*, a.org as orgAcronym
+      SELECT s.*, o.org as orgAcronym, o.id as organizationId
       FROM submissions s
-      LEFT JOIN admins a ON s.organization_id = a.organization_id
+      LEFT JOIN organizations o ON s.organization_id = o.id
       WHERE s.section = 'programs' AND s.status = 'pending'
       ORDER BY s.submitted_at DESC
     `);
@@ -61,7 +61,7 @@ export const createMissingNotifications = async () => {
             message,
             'programs',
             submission.id,
-            submission.orgAcronym || 'Unknown'
+            submission.organizationId  // Pass organization_id instead of acronym
           );
 
           createdCount++;

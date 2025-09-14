@@ -59,8 +59,11 @@ const adminFetcher = async (url) => {
 
 // Custom hook for admin submissions data
 export const useAdminSubmissions = (orgAcronym) => {
+  // Guard clause: only make API call if orgAcronym is valid
+  const shouldFetch = orgAcronym && typeof orgAcronym === 'string' && orgAcronym.trim() !== '';
+  
   const { data, error, isLoading, mutate } = useSWR(
-    orgAcronym ? `${API_BASE_URL}/api/submissions/${orgAcronym}` : null,
+    shouldFetch ? `${API_BASE_URL}/api/submissions/${orgAcronym}` : null,
     adminFetcher,
     {
       revalidateOnFocus: false,
@@ -73,7 +76,9 @@ export const useAdminSubmissions = (orgAcronym) => {
         return error.status !== 401 && error.status !== 404;
       },
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/submissions/${orgAcronym}`, error, { orgAcronym });
+        if (orgAcronym) {
+          logger.swrError(`${API_BASE_URL}/api/submissions/${orgAcronym}`, error, { orgAcronym });
+        }
       }
     }
   );
@@ -92,8 +97,12 @@ export const useAdminSubmissions = (orgAcronym) => {
 
 // Custom hook for admin volunteers data
 export const useAdminVolunteers = (adminId) => {
+  // Guard clause: only make API call if adminId is valid (convert to string if needed)
+  const adminIdStr = adminId ? String(adminId) : null;
+  const shouldFetch = adminIdStr && adminIdStr.trim() !== '';
+  
   const { data, error, isLoading, mutate } = useSWR(
-    adminId ? `${API_BASE_URL}/api/volunteers/admin/${adminId}` : null,
+    shouldFetch ? `${API_BASE_URL}/api/volunteers/admin/${adminIdStr}` : null,
     adminFetcher,
     {
       revalidateOnFocus: false,
@@ -107,7 +116,9 @@ export const useAdminVolunteers = (adminId) => {
         return error.status !== 401 && error.status !== 404;
       },
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/volunteers/admin/${adminId}`, error, { adminId });
+        if (adminIdStr) {
+          logger.swrError(`${API_BASE_URL}/api/volunteers/admin/${adminIdStr}`, error, { adminId: adminIdStr });
+        }
       }
     }
   );
@@ -180,10 +191,13 @@ const organizationFetcher = async (url) => {
   }
 };
 
-// Custom hook for admin organization data
-export const useAdminOrganization = (orgAcronym) => {
+// Custom hook for admin organization data by organization ID
+export const useAdminOrganization = (organizationId) => {
+  // Guard clause: only make API call if organizationId is valid
+  const shouldFetch = organizationId && (typeof organizationId === 'number' || (typeof organizationId === 'string' && !isNaN(organizationId)));
+  
   const { data, error, isLoading, mutate } = useSWR(
-    orgAcronym ? `${API_BASE_URL}/api/organization/org/${orgAcronym}` : null,
+    shouldFetch ? `${API_BASE_URL}/api/organization/${organizationId}` : null,
     organizationFetcher,
     {
       revalidateOnFocus: false,
@@ -196,7 +210,9 @@ export const useAdminOrganization = (orgAcronym) => {
         return error.status !== 401 && error.status !== 404;
       },
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/organization/org/${orgAcronym}`, error, { orgAcronym });
+        if (organizationId) {
+          logger.swrError(`${API_BASE_URL}/api/organization/${organizationId}`, error, { organizationId });
+        }
       }
     }
   );
@@ -231,8 +247,11 @@ export const useAdminOrganization = (orgAcronym) => {
 
 // Custom hook for admin programs data
 export const useAdminPrograms = (orgAcronym) => {
+  // Guard clause: only make API call if orgAcronym is valid
+  const shouldFetch = orgAcronym && typeof orgAcronym === 'string' && orgAcronym.trim() !== '';
+  
   const { data, error, isLoading, mutate } = useSWR(
-    orgAcronym ? `${API_BASE_URL}/api/programs/org/${orgAcronym}` : null,
+    shouldFetch ? `${API_BASE_URL}/api/programs/org/${orgAcronym}` : null,
     adminFetcher,
     {
       revalidateOnFocus: false,
@@ -245,7 +264,9 @@ export const useAdminPrograms = (orgAcronym) => {
         return error.status !== 401 && error.status !== 404;
       },
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/programs/org/${orgAcronym}`, error, { orgAcronym });
+        if (orgAcronym) {
+          logger.swrError(`${API_BASE_URL}/api/programs/org/${orgAcronym}`, error, { orgAcronym });
+        }
       }
     }
   );
@@ -264,8 +285,11 @@ export const useAdminPrograms = (orgAcronym) => {
 
 // Custom hook for admin news data
 export const useAdminNews = (orgAcronym) => {
+  // Guard clause: only make API call if orgAcronym is valid
+  const shouldFetch = orgAcronym && typeof orgAcronym === 'string' && orgAcronym.trim() !== '';
+  
   const { data, error, isLoading, mutate } = useSWR(
-    orgAcronym ? `${API_BASE_URL}/api/news/org/${orgAcronym}` : null,
+    shouldFetch ? `${API_BASE_URL}/api/news/org/${orgAcronym}` : null,
     adminFetcher,
     {
       revalidateOnFocus: false,
@@ -330,7 +354,9 @@ export const useAdminAdvocacies = (orgId) => {
         return error.status !== 401 && error.status !== 404;
       },
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/advocacies/${orgId}`, error, { orgId });
+        if (orgId) {
+          logger.swrError(`${API_BASE_URL}/api/advocacies/${orgId}`, error, { orgId });
+        }
       }
     }
   );
@@ -363,7 +389,9 @@ export const useAdminCompetencies = (orgId) => {
         return error.status !== 401 && error.status !== 404;
       },
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/competencies/${orgId}`, error, { orgId });
+        if (orgId) {
+          logger.swrError(`${API_BASE_URL}/api/competencies/${orgId}`, error, { orgId });
+        }
       }
     }
   );
@@ -396,7 +424,9 @@ export const useAdminHeads = (orgId) => {
         return error.status !== 401 && error.status !== 404;
       },
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/heads/${orgId}`, error, { orgId });
+        if (orgId) {
+          logger.swrError(`${API_BASE_URL}/api/heads/${orgId}`, error, { orgId });
+        }
       }
     }
   );
@@ -429,7 +459,9 @@ export const useAdminById = (adminId) => {
         return error.status !== 401 && error.status !== 404;
       },
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/admins/${adminId}`, error, { adminId });
+        if (adminId) {
+          logger.swrError(`${API_BASE_URL}/api/admins/${adminId}`, error, { adminId });
+        }
       }
     }
   );

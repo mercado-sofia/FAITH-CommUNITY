@@ -257,3 +257,10 @@
   background-color: #f3f4f6;
   border: 2px solid #e5e7eb;
 }
+
+.organizationAcronymFallback {
+  font-weight: 600;
+  font-size: 12px;
+  color: #3b82f6;
+  text-transform: uppercase;
+}

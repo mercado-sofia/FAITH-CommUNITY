@@ -224,24 +224,6 @@ export const approveSubmission = async (req, res) => {
       }
     }
 
-    if (section === 'news') {
-      
-      // Insert new news into news table
-      try {
-        await db.execute(
-          `INSERT INTO news (organization_id, title, description, date)
-           VALUES (?, ?, ?, ?)`,
-          [
-            orgId,
-            data.title,
-            data.description,
-            data.date || new Date().toISOString().split('T')[0]
-          ]
-        );
-      } catch (insertError) {
-        throw insertError;
-      }
-    }
 
     await db.execute(`UPDATE submissions SET status = 'approved' WHERE id = ?`, [id]);
     
@@ -313,10 +295,6 @@ export const rejectSubmission = async (req, res) => {
       // Add specific details for programs
       if (submission.section === 'programs' && data.title) {
         notificationMessage = `Your program "${data.title}" has been declined by SuperAdmin`;
-      }
-      // Add specific details for news
-      else if (submission.section === 'news' && data.title) {
-        notificationMessage = `Your news "${data.title}" has been declined by SuperAdmin`;
       }
       // Add specific details for organization
       else if (submission.section === 'organization' && data.orgName) {
@@ -491,18 +469,6 @@ export const bulkApproveSubmissions = async (req, res) => {
           }
         }
 
-        if (section === 'news') {
-          await db.execute(
-            `INSERT INTO news (organization_id, title, description, date)
-             VALUES (?, ?, ?, ?)`,
-            [
-              orgId,
-              data.title,
-              data.description,
-              data.date || new Date().toISOString().split('T')[0]
-            ]
-          );
-        }
 
         // Update submission status
         await db.execute(`UPDATE submissions SET status = 'approved' WHERE id = ?`, [id]);
@@ -614,10 +580,6 @@ export const bulkRejectSubmissions = async (req, res) => {
           // Add specific details for programs
           if (submission.section === 'programs' && data.title) {
             notificationMessage = `Your program "${data.title}" has been declined by SuperAdmin`;
-          }
-          // Add specific details for news
-          else if (submission.section === 'news' && data.title) {
-            notificationMessage = `Your news "${data.title}" has been declined by SuperAdmin`;
           }
           // Add specific details for organization
           else if (submission.section === 'organization' && data.orgName) {

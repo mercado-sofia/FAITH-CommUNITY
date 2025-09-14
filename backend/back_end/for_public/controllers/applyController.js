@@ -62,11 +62,51 @@ export const submitVolunteer = async (req, res) => {
     const values = [user_id, program_id, reason];
 
     const [result] = await db.execute(sql, values);
+    const volunteerId = result.insertId;
+
+    // Get program and organization info for notifications
+    const [programInfo] = await db.execute(`
+      SELECT p.title as program_title, p.organization_id, o.orgName, o.org
+      FROM programs_projects p
+      LEFT JOIN organizations o ON p.organization_id = o.id
+      WHERE p.id = ?
+    `, [program_id]);
+
+    if (programInfo.length > 0) {
+      const program = programInfo[0];
+      
+      // Find all admins of this organization
+      const [adminRows] = await db.execute(
+        "SELECT id FROM admins WHERE organization_id = ?",
+        [program.organization_id]
+      );
+
+      // Create notifications for all admins of this organization
+      if (adminRows.length > 0) {
+        const { createUserNotification } = await import('./userController.js');
+        
+        const notificationPromises = adminRows.map(admin => {
+          const notificationTitle = "New Volunteer Application";
+          const notificationMessage = `A new volunteer application has been submitted for "${program.program_title}" program.`;
+          
+          return createUserNotification(
+            admin.id,
+            'volunteer_application',
+            notificationTitle,
+            notificationMessage,
+            'volunteers',
+            volunteerId
+          );
+        });
+
+        await Promise.all(notificationPromises);
+      }
+    }
 
     res.status(200).json({
       success: true,
       message: "Application submitted successfully",
-      id: result.insertId,
+      id: volunteerId,
     });
   } catch (err) {
     console.error("Database error:", err);
@@ -195,7 +235,7 @@ export const getVolunteersByAdminOrg = async (req, res) => {
     
     // First get the admin's organization
     const [adminRows] = await db.execute(`
-      SELECT o.org FROM admins a
+      SELECT o.org, o.id as org_id FROM admins a
       LEFT JOIN organizations o ON a.organization_id = o.id
       WHERE a.id = ?
     `, [adminId]);
@@ -208,6 +248,7 @@ export const getVolunteersByAdminOrg = async (req, res) => {
     }
     
     const adminOrg = adminRows[0].org;
+    const orgId = adminRows[0].org_id;
     
     // Now get volunteers for programs from that organization
     const [results] = await db.execute(`

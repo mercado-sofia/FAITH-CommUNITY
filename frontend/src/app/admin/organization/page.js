@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { updateAdminOrg } from "../../../rtk/superadmin/adminSlice";
+import { updateAdminOrg, updateAdminLogo } from "../../../rtk/superadmin/adminSlice";
 import { useAdminOrganization, useAdminAdvocacies, useAdminCompetencies, useAdminHeads } from "../../../hooks/useAdminData";
 import { applyRoleHierarchyOrdering } from "./utils";
 import { EditModal, OrgInfoSection, SummaryModal } from "./OrgInfo";
@@ -23,7 +23,7 @@ export default function OrganizationPage() {
   const [isFirstVisit, setIsFirstVisit] = useState(!hasVisitedOrganization);
   
   // Use SWR hooks for data fetching
-  const { organization, isLoading: orgLoading, error: orgError, mutate: refreshOrganization } = useAdminOrganization(admin?.org);
+  const { organization, isLoading: orgLoading, error: orgError, mutate: refreshOrganization } = useAdminOrganization(admin?.organization_id);
   
   // Separate state for edit modal preview (doesn't affect main display)
   const [editPreviewData, setEditPreviewData] = useState(null);
@@ -67,8 +67,8 @@ export default function OrganizationPage() {
       return {
         id: organization.id,
         logo: organization.logo || "",
-        org: admin?.org || "",
-        orgName: admin?.orgName || "",
+        org: organization.org || "",
+        orgName: organization.orgName || "",
         email: organization.email || admin?.email || "",
         facebook: organization.facebook || "",
         description: organization.description || "",
@@ -79,8 +79,8 @@ export default function OrganizationPage() {
     return {
       id: null,
       logo: "",
-      org: admin?.org || "",
-      orgName: admin?.orgName || "",
+      org: "",
+      orgName: "",
       email: admin?.email || "",
       facebook: "",
       description: "",
@@ -151,7 +151,7 @@ export default function OrganizationPage() {
   }), []);
 
   // Combined loading state
-  const loading = orgLoading || advocaciesLoading || competenciesLoading || headsLoading || !admin?.org;
+  const loading = orgLoading || advocaciesLoading || competenciesLoading || headsLoading || !admin?.organization_id;
 
   // Consolidated progressive loading logic - single useEffect instead of 4 separate ones
   useEffect(() => {
@@ -195,8 +195,8 @@ export default function OrganizationPage() {
       const syncedData = {
         id: organization.id,
         logo: organization.logo || "",
-        org: organization.org || admin?.org || "",
-        orgName: organization.orgName || admin?.orgName || "",
+        org: organization.org || "",
+        orgName: organization.orgName || "",
         email: organization.email || admin?.email || "",
         facebook: organization.facebook || "",
         description: organization.description || "",
@@ -212,8 +212,8 @@ export default function OrganizationPage() {
       const initialData = {
         id: organization.id,
         logo: organization.logo || "",
-        org: organization.org || admin?.org || "",
-        orgName: organization.orgName || admin?.orgName || "",
+        org: organization.org || "",
+        orgName: organization.orgName || "",
         email: organization.email || admin?.email || "",
         facebook: organization.facebook || "",
         description: organization.description || "",
@@ -240,6 +240,16 @@ export default function OrganizationPage() {
     const newErrors = {};
     const dataToValidate = editPreviewData || orgData;
     
+    // Validate required fields
+    if (!dataToValidate.org || dataToValidate.org.trim() === "") {
+      newErrors.org = "Organization acronym is required";
+    }
+    
+    if (!dataToValidate.orgName || dataToValidate.orgName.trim() === "") {
+      newErrors.orgName = "Organization name is required";
+    }
+    
+    // Validate Facebook URL format
     if (dataToValidate.facebook && !dataToValidate.facebook.includes("facebook.com")) {
       newErrors.facebook = "Please enter a valid Facebook URL";
     }
@@ -250,7 +260,7 @@ export default function OrganizationPage() {
 
   // Handle error display
   useEffect(() => {
-    if (orgError && admin?.org) {
+    if (orgError && admin?.organization_id) {
       console.error("Error fetching organization data:", orgError);
       showMessage("Failed to load organization data", "error");
     }
@@ -263,7 +273,7 @@ export default function OrganizationPage() {
     if (headsError) {
       console.error("Error fetching heads data:", headsError);
     }
-  }, [orgError, advocaciesError, competenciesError, headsError, admin?.org]);
+  }, [orgError, advocaciesError, competenciesError, headsError, admin?.organization_id]);
 
   // Handle re-edit from submissions page
   useEffect(() => {
@@ -380,8 +390,6 @@ export default function OrganizationPage() {
       const hasChanges = originalData && Object.keys(currentOrgData).some((key) => 
         key !== "id" && 
         key !== "email" && 
-        key !== "org" && 
-        key !== "orgName" && 
         currentOrgData[key] !== originalData[key]
       );
 
@@ -435,6 +443,8 @@ export default function OrganizationPage() {
 
       const requestBody = {
         logo: pendingChanges.logo || "",
+        org: pendingChanges.org || organization?.org || "",
+        orgName: pendingChanges.orgName || organization?.orgName || "",
         facebook: pendingChanges.facebook || "",
         description: pendingChanges.description || "",
         orgColor: pendingChanges.orgColor || "#444444",
@@ -464,30 +474,35 @@ export default function OrganizationPage() {
           ...pendingChanges,
           ...result.data,
           id: result.data?.id || organization?.id || pendingChanges.id,
-          logo: pendingChanges.logo || organization?.logo || result.data?.logo || "",
-          org: result.data?.org || pendingChanges.org || organization?.org || admin?.org || "",
-          orgName: result.data?.orgName || pendingChanges.orgName || organization?.orgName || admin?.orgName || "",
+          logo: result.data?.logo || pendingChanges.logo || organization?.logo || "",
+          org: result.data?.org || pendingChanges.org || organization?.org || "",
+          orgName: result.data?.orgName || pendingChanges.orgName || organization?.orgName || "",
           email: result.data?.email || pendingChanges.email || organization?.email || admin?.email || "",
           facebook: result.data?.facebook || pendingChanges.facebook || organization?.facebook || "",
           description: result.data?.description || pendingChanges.description || organization?.description || "",
           org_color: result.data?.orgColor || pendingChanges.orgColor || organization?.org_color || "#444444"
         };
         
-        if (pendingChanges.org && pendingChanges.org !== admin?.org) {
-          const cacheUpdateData = {
-            ...updatedOrganization,
-            logo: updatedOrganization.logo || organization?.logo || ""
-          };
-          refreshOrganization(cacheUpdateData, false);
-        }
+        // Always update the SWR cache with the updated organization data
+        refreshOrganization({ success: true, data: updatedOrganization }, false);
         
         setEditPreviewData(updatedOrganization);
         
-        if (pendingChanges.org && pendingChanges.org !== admin?.org) {
+        // Update Redux store if org, orgName, or logo changed
+        if ((pendingChanges.org && pendingChanges.org !== organization?.org) || 
+            (pendingChanges.orgName && pendingChanges.orgName !== organization?.orgName) ||
+            (pendingChanges.logo && pendingChanges.logo !== organization?.logo)) {
           dispatch(updateAdminOrg({
-            org: pendingChanges.org,
-            orgName: pendingChanges.orgName
+            org: pendingChanges.org || organization?.org,
+            orgName: pendingChanges.orgName || organization?.orgName
           }));
+          
+          // Update logo separately
+          if (pendingChanges.logo && pendingChanges.logo !== organization?.logo) {
+            dispatch(updateAdminLogo({
+              logo: pendingChanges.logo
+            }));
+          }
         }
 
         updateUiState({ isEditing: false });

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { FiTrash2, FiMail, FiClock, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { FiTrash2, FiMail, FiClock, FiCheckCircle, FiXCircle, FiEye } from 'react-icons/fi';
 import { IoCloseOutline } from "react-icons/io5";
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
+import AdminDetailsModal from './AdminDetailsModal';
 import styles from './styles/InvitationsTable.module.css';
 
 export default function InvitationsTable({ 
@@ -17,6 +18,8 @@ export default function InvitationsTable({
 }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedItemForDelete, setSelectedItemForDelete] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedItemForDetails, setSelectedItemForDetails] = useState(null);
 
   const handleCancelClick = (invitation) => {
     setSelectedItemForDelete(invitation);
@@ -34,6 +37,26 @@ export default function InvitationsTable({
   const handleCancelCancel = () => {
     setShowDeleteModal(false);
     setSelectedItemForDelete(null);
+  };
+
+  const handleViewClick = (invitation) => {
+    setSelectedItemForDetails(invitation);
+    setShowDetailsModal(true);
+  };
+
+
+  const handleDeleteClick = (invitation) => {
+    setSelectedItemForDelete(invitation);
+    setShowDeleteModal(true);
+  };
+
+  const handleDetailsClose = () => {
+    setShowDetailsModal(false);
+    setSelectedItemForDetails(null);
+  };
+
+  const handleDetailsDelete = (adminId) => {
+    onCancel(adminId);
   };
 
   const handleBulkCancel = () => {
@@ -187,14 +210,22 @@ export default function InvitationsTable({
                   </td>
                   <td className={styles.actionsColumn}>
                     <div className={styles.actionButtons}>
+                      <button
+                        onClick={() => handleViewClick(invitation)}
+                        className={`${styles.actionButton} ${styles.viewButton}`}
+                        title="View details"
+                      >
+                        <FiEye size={16} />
+                      </button>
+                      
                       {invitation.status === 'pending' && (
                         <button
-                          onClick={() => handleCancelClick(invitation)}
-                          className={`${styles.actionButton} ${styles.cancelButton}`}
+                          onClick={() => handleDeleteClick(invitation)}
+                          className={`${styles.actionButton} ${styles.deleteButton}`}
                           disabled={isCancelling}
                           title="Cancel invitation"
                         >
-                          <FiXCircle size={16} />
+                          <FiTrash2 size={16} />
                         </button>
                       )}
                     </div>
@@ -213,6 +244,15 @@ export default function InvitationsTable({
         itemType="invitation"
         onConfirm={handleCancelConfirm}
         onCancel={handleCancelCancel}
+        isDeleting={isCancelling}
+      />
+
+      {/* Admin Details Modal */}
+      <AdminDetailsModal
+        isOpen={showDetailsModal}
+        onClose={handleDetailsClose}
+        adminData={selectedItemForDetails}
+        onDelete={handleDetailsDelete}
         isDeleting={isCancelling}
       />
     </>

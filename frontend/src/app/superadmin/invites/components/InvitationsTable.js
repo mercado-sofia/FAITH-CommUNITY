@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { FiTrash2, FiMail, FiClock, FiCheckCircle, FiXCircle, FiEye } from 'react-icons/fi';
+import { useState, useRef, useEffect } from 'react';
+import { FiTrash2, FiMail, FiClock, FiCheckCircle, FiXCircle, FiMoreHorizontal, FiUserX, FiX } from 'react-icons/fi';
+import { TbListDetails } from 'react-icons/tb';
 import { IoCloseOutline } from "react-icons/io5";
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import AdminDetailsModal from './AdminDetailsModal';
@@ -10,20 +11,76 @@ import styles from './styles/InvitationsTable.module.css';
 export default function InvitationsTable({ 
   invitations, 
   onCancel,
+  onDeactivate,
+  onDelete,
   onBulkCancel,
+  onBulkDelete,
   selectedItems,
   onSelectAll,
   onSelectItem,
-  isCancelling
+  isCancelling,
+  isDeleting,
+  isDeactivating
 }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedItemForDelete, setSelectedItemForDelete] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedItemForDetails, setSelectedItemForDetails] = useState(null);
+  const [activeDropdown, setActiveDropdown] = useState(null);
+  const dropdownRefs = useRef({});
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if the click is on a dropdown container
+      if (event.target.closest(`.${styles.dropdownContainer}`)) {
+        return;
+      }
+      
+      setActiveDropdown(null);
+    };
+
+    // Use mousedown instead of click to avoid conflicts
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleDropdownToggle = (invitationId) => {
+    setActiveDropdown(activeDropdown === invitationId ? null : invitationId);
+  };
+
+  const handleViewClick = (invitation) => {
+    setSelectedItemForDetails(invitation);
+    setShowDetailsModal(true);
+    setActiveDropdown(null);
+  };
+
+  const handleDeactivateClick = (invitation) => {
+    setSelectedItemForDelete({ ...invitation, action: 'deactivate' });
+    setShowDeleteModal(true);
+    setActiveDropdown(null);
+  };
 
   const handleCancelClick = (invitation) => {
-    setSelectedItemForDelete(invitation);
+    setSelectedItemForDelete({ ...invitation, action: 'cancel' });
     setShowDeleteModal(true);
+    setActiveDropdown(null);
+  };
+
+  const handleDeleteClick = (invitation) => {
+    setSelectedItemForDelete({ ...invitation, action: 'delete' });
+    setShowDeleteModal(true);
+    setActiveDropdown(null);
+  };
+
+  const handleDeactivateConfirm = () => {
+    if (selectedItemForDelete) {
+      onDeactivate(selectedItemForDelete.id);
+      setShowDeleteModal(false);
+      setSelectedItemForDelete(null);
+    }
   };
 
   const handleCancelConfirm = () => {
@@ -34,20 +91,17 @@ export default function InvitationsTable({
     }
   };
 
+  const handleDeleteConfirm = () => {
+    if (selectedItemForDelete) {
+      onDelete(selectedItemForDelete.id);
+      setShowDeleteModal(false);
+      setSelectedItemForDelete(null);
+    }
+  };
+
   const handleCancelCancel = () => {
     setShowDeleteModal(false);
     setSelectedItemForDelete(null);
-  };
-
-  const handleViewClick = (invitation) => {
-    setSelectedItemForDetails(invitation);
-    setShowDetailsModal(true);
-  };
-
-
-  const handleDeleteClick = (invitation) => {
-    setSelectedItemForDelete(invitation);
-    setShowDeleteModal(true);
   };
 
   const handleDetailsClose = () => {
@@ -66,6 +120,19 @@ export default function InvitationsTable({
       onBulkCancel(selectedInvitationIds);
     }
   };
+
+  const handleBulkDelete = () => {
+    const selectedInvitationIds = Array.from(selectedItems);
+    if (selectedInvitationIds.length === 0) return;
+    if (onBulkDelete) {
+      onBulkDelete(selectedInvitationIds);
+    }
+  };
+
+  // Check if all selected items are accepted
+  const selectedInvitations = invitations.filter(inv => selectedItems.has(inv.id));
+  const allSelectedAccepted = selectedInvitations.length > 0 && selectedInvitations.every(inv => inv.status === 'accepted');
+  const hasPendingSelected = selectedInvitations.some(inv => inv.status === 'pending');
 
   const cancelSelection = () => {
     if (onSelectAll) {
@@ -88,8 +155,13 @@ export default function InvitationsTable({
     return { datePart, timePart };
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
+  const getStatusIcon = (invitation) => {
+    // If invitation is accepted but admin is inactive, show inactive icon
+    if (invitation.status === 'accepted' && invitation.admin_is_active === false) {
+      return <FiUserX className={styles.statusIcon} />;
+    }
+    
+    switch (invitation.status) {
       case 'pending':
         return <FiClock className={styles.statusIcon} />;
       case 'accepted':
@@ -101,8 +173,13 @@ export default function InvitationsTable({
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
+  const getStatusColor = (invitation) => {
+    // If invitation is accepted but admin is inactive, show as inactive
+    if (invitation.status === 'accepted' && invitation.admin_is_active === false) {
+      return styles.inactive;
+    }
+    
+    switch (invitation.status) {
       case 'pending':
         return styles.pending;
       case 'accepted':
@@ -112,6 +189,15 @@ export default function InvitationsTable({
       default:
         return styles.pending;
     }
+  };
+
+  const getStatusText = (invitation) => {
+    // If invitation is accepted but admin is inactive, show as inactive
+    if (invitation.status === 'accepted' && invitation.admin_is_active === false) {
+      return 'Inactive';
+    }
+    
+    return invitation.status.charAt(0).toUpperCase() + invitation.status.slice(1);
   };
 
   const isAllSelected = invitations.length > 0 && selectedItems.size === invitations.length;
@@ -127,13 +213,23 @@ export default function InvitationsTable({
             </span>
           </div>
           <div className={styles.bulkActionsRight}>
+            {hasPendingSelected && (
+              <button 
+                className={`${styles.bulkButton} ${styles.cancelButton}`}
+                onClick={handleBulkCancel}
+                title="Cancel selected pending invitations"
+              >
+                <FiXCircle size={16} />
+                Cancel Selected
+              </button>
+            )}
             <button 
-              className={`${styles.bulkButton} ${styles.cancelButton}`}
-              onClick={handleBulkCancel}
-              title="Cancel selected invitations"
+              className={`${styles.bulkButton} ${styles.deleteButton}`}
+              onClick={handleBulkDelete}
+              title="Delete selected invitations and admin accounts"
             >
-              <FiXCircle size={16} />
-              Cancel Selected
+              <FiTrash2 size={16} />
+              Delete Selected
             </button>
             <button 
               className={styles.cancelSelectionButton}
@@ -203,31 +299,80 @@ export default function InvitationsTable({
                     </div>
                   </td>
                   <td className={styles.statusColumn}>
-                    <div className={`${styles.statusBadge} ${getStatusColor(invitation.status)}`}>
-                      {getStatusIcon(invitation.status)}
-                      <span>{invitation.status.charAt(0).toUpperCase() + invitation.status.slice(1)}</span>
+                    <div className={`${styles.statusBadge} ${getStatusColor(invitation)}`}>
+                      {getStatusIcon(invitation)}
+                      <span>{getStatusText(invitation)}</span>
                     </div>
                   </td>
                   <td className={styles.actionsColumn}>
                     <div className={styles.actionButtons}>
-                      <button
-                        onClick={() => handleViewClick(invitation)}
-                        className={`${styles.actionButton} ${styles.viewButton}`}
-                        title="View details"
-                      >
-                        <FiEye size={16} />
-                      </button>
-                      
-                      {invitation.status === 'pending' && (
+                      <div className={styles.dropdownContainer} ref={el => dropdownRefs.current[invitation.id] = el}>
                         <button
-                          onClick={() => handleDeleteClick(invitation)}
-                          className={`${styles.actionButton} ${styles.deleteButton}`}
-                          disabled={isCancelling}
-                          title="Cancel invitation"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDropdownToggle(invitation.id);
+                          }}
+                          className={`${styles.actionButton} ${styles.moreButton}`}
+                          title="More actions"
                         >
-                          <FiTrash2 size={16} />
+                          <FiMoreHorizontal size={16} />
                         </button>
-                      )}
+                        
+                        {activeDropdown === invitation.id && (
+                          <div className={styles.dropdownMenu}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewClick(invitation);
+                              }}
+                              className={styles.dropdownItem}
+                            >
+                              <TbListDetails size={16} />
+                              View Details
+                            </button>
+                            
+                            {invitation.status === 'accepted' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeactivateClick(invitation);
+                                }}
+                                className={styles.dropdownItem}
+                                disabled={isDeactivating}
+                              >
+                                <FiUserX size={16} />
+                                {invitation.admin_is_active === false ? 'Reactivate' : 'Deactivate'}
+                              </button>
+                            )}
+                            
+                            {invitation.status === 'pending' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCancelClick(invitation);
+                                }}
+                                className={styles.dropdownItem}
+                                disabled={isCancelling}
+                              >
+                                <FiX size={16} />
+                                Cancel
+                              </button>
+                            )}
+                            
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(invitation);
+                              }}
+                              className={`${styles.dropdownItem} ${styles.deleteItem}`}
+                              disabled={isDeleting}
+                            >
+                              <FiTrash2 size={16} />
+                              {invitation.admin_id ? 'Delete Admin Account' : 'Delete Invitation'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -237,14 +382,27 @@ export default function InvitationsTable({
         </table>
       </div>
 
-      {/* Cancel Confirmation Modal */}
+      {/* Action Confirmation Modal */}
       <DeleteConfirmationModal
         isOpen={showDeleteModal}
         itemName={selectedItemForDelete?.email}
-        itemType="invitation"
-        onConfirm={handleCancelConfirm}
+        itemType={selectedItemForDelete?.admin_id ? "admin account" : "invitation"}
+        actionType={selectedItemForDelete?.action || 'delete'}
+        onConfirm={
+          selectedItemForDelete?.action === 'delete' 
+            ? handleDeleteConfirm 
+            : selectedItemForDelete?.action === 'deactivate'
+            ? handleDeactivateConfirm
+            : handleCancelConfirm
+        }
         onCancel={handleCancelCancel}
-        isDeleting={isCancelling}
+        isDeleting={
+          selectedItemForDelete?.action === 'delete' 
+            ? isDeleting 
+            : selectedItemForDelete?.action === 'deactivate'
+            ? isDeactivating
+            : isCancelling
+        }
       />
 
       {/* Admin Details Modal */}

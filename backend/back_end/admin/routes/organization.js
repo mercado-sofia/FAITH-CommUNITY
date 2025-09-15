@@ -2,7 +2,7 @@
 
 import express from "express"
 const router = express.Router()
-import { createOrganization, updateOrganizationInfo, getOrganizationByName, getOrganizationById } from "../controllers/organizationController.js"
+import { createOrganization, updateOrganizationInfo, getOrganizationByName, getOrganizationById, checkAcronymExists, checkNameExists } from "../controllers/organizationController.js"
 
 // GET organization by org name/acronym
 router.get("/org/:org_name", getOrganizationByName)
@@ -15,5 +15,11 @@ router.post("/", createOrganization)
 
 // PUT update organization by ID
 router.put("/:id", updateOrganizationInfo)
+
+// GET check if organization acronym exists
+router.get("/check-acronym/:acronym", checkAcronymExists)
+
+// GET check if organization name exists
+router.get("/check-name/:name", checkNameExists)
 
 export default router

@@ -8,7 +8,7 @@ export const getAdminProfile = async (req, res) => {
     const adminId = req.admin.id
 
     const [rows] = await db.execute(
-      `SELECT a.id, a.email, a.role, a.status, a.organization_id, a.created_at,
+      `SELECT a.id, a.email, a.role, a.is_active, a.organization_id, a.created_at,
               o.org, o.orgName
        FROM admins a
        LEFT JOIN organizations o ON a.organization_id = o.id

@@ -66,8 +66,8 @@ function AdminLayoutContent({ children }) {
           return;
         }
 
-        const parsedAdminData = JSON.parse(adminData);
-        dispatch(initializeAuth({ token, adminData: parsedAdminData }));
+        // Initialize auth from localStorage (no parameters needed)
+        dispatch(initializeAuth());
         
         adminInitialized = true;
         setIsInitialLoading(false);

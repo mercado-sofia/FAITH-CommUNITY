@@ -10,7 +10,7 @@ export const getOrganizationByName = async (req, res) => {
     const [orgRows] = await db.execute(
       `SELECT o.*, a.email 
        FROM organizations o
-       LEFT JOIN admins a ON a.organization_id = o.id AND a.status = "ACTIVE"
+       LEFT JOIN admins a ON a.organization_id = o.id AND a.is_active = TRUE
        WHERE o.org = ? LIMIT 1`,
       [org_name]
     )
@@ -283,7 +283,7 @@ export const getOrganizationById = async (req, res) => {
     const [orgRows] = await db.execute(
       `SELECT o.*, a.email 
        FROM organizations o
-       LEFT JOIN admins a ON a.organization_id = o.id AND a.status = "ACTIVE"
+       LEFT JOIN admins a ON a.organization_id = o.id AND a.is_active = TRUE
        WHERE o.id = ? LIMIT 1`,
       [id]
     )
@@ -360,6 +360,60 @@ export const getOrganizationById = async (req, res) => {
     })
   } catch (err) {
     console.error("❌ Backend: Get organization by ID error:", err)
+    res.status(500).json({ success: false, error: err.message })
+  }
+}
+
+// Check if organization acronym exists
+export const checkAcronymExists = async (req, res) => {
+  const { acronym } = req.params
+
+  if (!acronym || acronym.trim().length < 2) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Acronym must be at least 2 characters long" 
+    })
+  }
+
+  try {
+    const [existingOrg] = await db.execute(
+      'SELECT id FROM organizations WHERE org = ?',
+      [acronym.trim()]
+    )
+
+    res.json({
+      success: true,
+      exists: existingOrg.length > 0
+    })
+  } catch (err) {
+    console.error("❌ Backend: Check acronym exists error:", err)
+    res.status(500).json({ success: false, error: err.message })
+  }
+}
+
+// Check if organization name exists
+export const checkNameExists = async (req, res) => {
+  const { name } = req.params
+
+  if (!name || name.trim().length < 3) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Organization name must be at least 3 characters long" 
+    })
+  }
+
+  try {
+    const [existingOrg] = await db.execute(
+      'SELECT id FROM organizations WHERE orgName = ?',
+      [name.trim()]
+    )
+
+    res.json({
+      success: true,
+      exists: existingOrg.length > 0
+    })
+  } catch (err) {
+    console.error("❌ Backend: Check name exists error:", err)
     res.status(500).json({ success: false, error: err.message })
   }
 }

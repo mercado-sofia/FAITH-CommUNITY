@@ -40,8 +40,8 @@ export const createNews = async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community-api",
-      audience: process.env.JWT_AUD || "faith-community-client",
+      issuer: process.env.JWT_ISS || "faith-community",
+      audience: process.env.JWT_AUD || "admin",
     });
     req.admin = decoded;
   } catch (err) {
@@ -494,8 +494,8 @@ export const deleteNewsSubmission = async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community-api",
-      audience: process.env.JWT_AUD || "faith-community-client",
+      issuer: process.env.JWT_ISS || "faith-community",
+      audience: process.env.JWT_AUD || "admin",
     });
     req.admin = decoded;
   } catch (err) {
@@ -536,8 +536,8 @@ export const getRecentlyDeletedNews = async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community-api",
-      audience: process.env.JWT_AUD || "faith-community-client",
+      issuer: process.env.JWT_ISS || "faith-community",
+      audience: process.env.JWT_AUD || "admin",
     });
     req.admin = decoded;
   } catch (err) {
@@ -635,8 +635,8 @@ export const restoreNews = async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community-api",
-      audience: process.env.JWT_AUD || "faith-community-client",
+      issuer: process.env.JWT_ISS || "faith-community",
+      audience: process.env.JWT_AUD || "admin",
     });
     req.admin = decoded;
   } catch (err) {
@@ -676,8 +676,8 @@ export const permanentlyDeleteNews = async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community-api",
-      audience: process.env.JWT_AUD || "faith-community-client",
+      issuer: process.env.JWT_ISS || "faith-community",
+      audience: process.env.JWT_AUD || "admin",
     });
     req.admin = decoded;
   } catch (err) {
@@ -720,8 +720,8 @@ export const updateNews = async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community-api",
-      audience: process.env.JWT_AUD || "faith-community-client",
+      issuer: process.env.JWT_ISS || "faith-community",
+      audience: process.env.JWT_AUD || "admin",
     });
     req.admin = decoded;
   } catch (err) {

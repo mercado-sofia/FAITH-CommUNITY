@@ -53,6 +53,24 @@ export const invitationsApi = createApi({
       invalidatesTags: ["Invitation"],
     }),
 
+    // Delete invitation
+    deleteInvitation: builder.mutation({
+      query: (id) => ({
+        url: `/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Invitation"],
+    }),
+
+    // Deactivate admin from invitation
+    deactivateAdminFromInvitation: builder.mutation({
+      query: (id) => ({
+        url: `/deactivate/${id}`,
+        method: "PUT",
+      }),
+      invalidatesTags: ["Invitation"],
+    }),
+
     // Validate invitation token (public endpoint)
     validateInvitationToken: builder.query({
       query: (token) => `/validate/${token}`,
@@ -73,6 +91,8 @@ export const {
   useSendInvitationMutation,
   useGetAllInvitationsQuery,
   useCancelInvitationMutation,
+  useDeleteInvitationMutation,
+  useDeactivateAdminFromInvitationMutation,
   useValidateInvitationTokenQuery,
   useAcceptInvitationMutation,
 } = invitationsApi

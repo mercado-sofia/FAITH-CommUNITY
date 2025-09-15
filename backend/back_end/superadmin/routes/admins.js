@@ -3,6 +3,7 @@ import {
   getAllAdmins,
   getAdminById,
   updateAdmin,
+  deactivateAdmin,
   deleteAdmin,
   loginAdmin,
   verifyPasswordForEmailChange,
@@ -29,6 +30,7 @@ router.use(verifySuperadminToken)
 router.get("/", getAllAdmins)
 router.get("/:id", getAdminById)
 router.put("/:id", updateAdmin)
+router.put("/:id/deactivate", deactivateAdmin)
 router.delete("/:id", deleteAdmin)
 router.post("/:id/verify-password", verifyPasswordForEmailChange)
 router.post("/:id/verify-password-change", verifyPasswordForPasswordChange)

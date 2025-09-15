@@ -30,6 +30,8 @@ import {
   deleteAccount,
   refreshAccessToken,
   getUserApplications,
+  getApplicationDetails,
+  cancelApplication,
 } from '../controllers/userController.js';
 
 const router = express.Router();
@@ -94,5 +96,7 @@ router.delete('/notifications/:notificationId', verifyToken, deleteNotification)
 
 // User applications routes (authentication required)
 router.get('/applications', verifyToken, getUserApplications);
+router.get('/applications/:id', verifyToken, getApplicationDetails);
+router.put('/applications/:id/cancel', verifyToken, cancelApplication);
 
 export default router;

@@ -1400,3 +1400,151 @@ export const getUserApplications = async (req, res) => {
     });
   }
 };
+
+// Get individual application details by ID
+export const getApplicationDetails = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Application ID is required'
+      });
+    }
+
+    const [results] = await db.query(
+      `SELECT 
+        v.id,
+        v.program_id,
+        v.reason,
+        v.status,
+        v.created_at as appliedAt,
+        v.updated_at as updatedAt,
+        p.title as programName,
+        p.description as programDescription,
+        p.category as programCategory,
+        p.event_start_date as programStartDate,
+        p.event_end_date as programEndDate,
+        p.image as programImage,
+        p.organization_id,
+        o.orgName as organizationName,
+        o.org as organizationAcronym,
+        o.logo as organizationLogo,
+        o.org_color as organizationColor
+      FROM volunteers v
+      LEFT JOIN programs_projects p ON v.program_id = p.id
+      LEFT JOIN organizations o ON p.organization_id = o.id
+      WHERE v.id = ? AND v.user_id = ?`,
+      [id, userId]
+    );
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found or access denied'
+      });
+    }
+
+    const application = results[0];
+    
+    // Transform the data to match frontend expectations
+    const transformedApplication = {
+      id: application.id,
+      programId: application.program_id,
+      programName: application.programName,
+      programDescription: application.programDescription,
+      programCategory: application.programCategory,
+      programImage: application.programImage,
+      programStartDate: application.programStartDate,
+      programEndDate: application.programEndDate,
+      organizationId: application.organization_id,
+      organizationName: application.organizationName,
+      organizationAcronym: application.organizationAcronym,
+      organizationLogo: application.organizationLogo,
+      organizationColor: application.organizationColor,
+      reason: application.reason,
+      status: application.status === 'Declined' ? 'rejected' : application.status.toLowerCase(),
+      appliedAt: application.appliedAt,
+      updatedAt: application.updatedAt,
+      notes: application.reason,
+      feedback: null // This could be added later if feedback system is implemented
+    };
+
+    res.json({
+      success: true,
+      application: transformedApplication
+    });
+  } catch (error) {
+    console.error('Error fetching application details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch application details',
+      error: error.message
+    });
+  }
+};
+
+// Cancel user application
+export const cancelApplication = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Application ID is required'
+      });
+    }
+
+    // First, verify the application belongs to the user
+    const [existingApp] = await db.query(
+      'SELECT id, status FROM volunteers WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
+
+    if (existingApp.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found or access denied'
+      });
+    }
+
+    const application = existingApp[0];
+
+    // Check if application can be cancelled (not already cancelled or rejected)
+    if (application.status === 'Cancelled') {
+      return res.status(400).json({
+        success: false,
+        message: 'Application is already cancelled'
+      });
+    }
+
+    if (application.status === 'Declined') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot cancel a rejected application'
+      });
+    }
+
+    // Update the application status to 'Cancelled'
+    await db.query(
+      'UPDATE volunteers SET status = ?, updated_at = NOW() WHERE id = ? AND user_id = ?',
+      ['Cancelled', id, userId]
+    );
+
+    res.json({
+      success: true,
+      message: 'Application cancelled successfully'
+    });
+  } catch (error) {
+    console.error('Error cancelling application:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel application',
+      error: error.message
+    });
+  }
+};

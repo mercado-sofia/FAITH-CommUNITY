@@ -1,14 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FaFileAlt } from 'react-icons/fa';
+import { FaFileAlt, FaCalendarAlt } from 'react-icons/fa';
 import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
+import ApplicationDetailsModal from './ApplicationDetailsModal';
+import CancelConfirmationModal from './CancelConfirmationModal';
 import styles from './MyApplications.module.css';
 
 export default function MyApplications() {
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, pending, approved, rejected
+  const [selectedApplicationId, setSelectedApplicationId] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [applicationToCancel, setApplicationToCancel] = useState(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState(null);
+  const [isViewingDetails, setIsViewingDetails] = useState(false);
 
   useEffect(() => {
     fetchApplications();
@@ -48,25 +57,147 @@ export default function MyApplications() {
         return 'Approved';
       case 'rejected':
         return 'Rejected';
+      case 'cancelled':
+        return 'Cancelled';
       case 'pending':
       default:
         return 'Pending Review';
     }
   };
 
+  const canCancelApplication = (status) => {
+    const lowerStatus = status.toLowerCase();
+    return lowerStatus === 'pending' || lowerStatus === 'approved';
+  };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
-      month: 'long',
+      month: 'short',
       day: 'numeric'
     });
+  };
+
+  const formatProgramDate = (startDate, endDate) => {
+    if (!startDate) return null;
+    
+    const start = new Date(startDate);
+    const end = endDate ? new Date(endDate) : null;
+    
+    // If no end date or same day - Single day format
+    if (!end || start.toDateString() === end.toDateString()) {
+      return formatDate(startDate);
+    }
+    
+    // Check if dates are consecutive (within 1 day difference)
+    const timeDiff = end.getTime() - start.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    
+    if (daysDiff <= 1) {
+      // Consecutive days - Range date format (continuous)
+      return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+    } else {
+      // Multiple separate dates - show all dates with bullet separator
+      return `${formatDate(startDate)} • ${formatDate(endDate)}`;
+    }
   };
 
   const filteredApplications = applications.filter(app => {
     if (filter === 'all') return true;
     return app.status.toLowerCase() === filter;
   });
+
+  const handleViewDetails = (applicationId) => {
+    if (isViewingDetails) return; // Prevent multiple clicks
+    
+    try {
+      console.log('Opening details for application ID:', applicationId);
+      setIsViewingDetails(true);
+      setSelectedApplicationId(applicationId);
+      setIsModalOpen(true);
+    } catch (error) {
+      console.error('Error opening application details:', error);
+      setFeedbackMessage({
+        type: 'error',
+        text: 'Failed to open application details'
+      });
+      setIsViewingDetails(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedApplicationId(null);
+    setIsViewingDetails(false);
+  };
+
+  const handleCancelApplication = (application) => {
+    setApplicationToCancel(application);
+    setCancelModalOpen(true);
+  };
+
+  const handleCloseCancelModal = () => {
+    setCancelModalOpen(false);
+    setApplicationToCancel(null);
+    setIsCancelling(false);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!applicationToCancel) return;
+
+    setIsCancelling(true);
+    setFeedbackMessage(null);
+
+    try {
+      const response = await fetch(getApiUrl(`/api/users/applications/${applicationToCancel.id}/cancel`), {
+        method: 'PUT',
+        headers: getAuthHeaders()
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Update the application status in the local state
+        setApplications(prevApplications => 
+          prevApplications.map(app => 
+            app.id === applicationToCancel.id 
+              ? { ...app, status: 'cancelled' }
+              : app
+          )
+        );
+        
+        setFeedbackMessage({
+          type: 'success',
+          text: 'Application cancelled successfully'
+        });
+        
+        handleCloseCancelModal();
+      } else {
+        setFeedbackMessage({
+          type: 'error',
+          text: data.message || 'Failed to cancel application'
+        });
+      }
+    } catch (error) {
+      setFeedbackMessage({
+        type: 'error',
+        text: 'Network error. Please try again.'
+      });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  // Clear feedback message after 5 seconds
+  useEffect(() => {
+    if (feedbackMessage) {
+      const timer = setTimeout(() => {
+        setFeedbackMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [feedbackMessage]);
 
   if (isLoading) {
     return (
@@ -116,6 +247,19 @@ export default function MyApplications() {
         </button>
       </div>
 
+      {/* Feedback Message */}
+      {feedbackMessage && (
+        <div className={`${styles.feedbackMessage} ${styles[feedbackMessage.type]}`}>
+          <span>{feedbackMessage.text}</span>
+          <button 
+            className={styles.closeFeedback}
+            onClick={() => setFeedbackMessage(null)}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Applications List */}
       <div className={styles.applicationsList}>
         {filteredApplications.length === 0 ? (
@@ -132,39 +276,61 @@ export default function MyApplications() {
         ) : (
           <div className={styles.applicationsContainer}>
             {filteredApplications.map((application) => (
-              <div key={application.id} className={styles.applicationCard}>
-                <div className={styles.applicationHeader}>
-                  <div className={styles.applicationTitle}>
-                    <h3>{application.programName}</h3>
-                    <div className={styles.applicationMeta}>
-                      <span className={styles.applicationDate}>
-                        Applied on {formatDate(application.appliedAt)}
-                      </span>
-                      <span className={`${styles.statusBadge} ${styles[`status${application.status.charAt(0).toUpperCase() + application.status.slice(1)}`]}`}>
-                        {getStatusText(application.status)}
-                      </span>
-                    </div>
+              <div key={application.id} className={`${styles.applicationCard} ${application.status.toLowerCase() === 'pending' ? styles.pendingCard : ''}`}>
+                <div className={styles.applicationContent}>
+                  {/* Program Image Thumbnail */}
+                  <div className={styles.programImageThumbnail}>
+                    {application.programImage ? (
+                      <img 
+                        src={application.programImage} 
+                        alt={application.programName}
+                        className={styles.thumbnailImage}
+                      />
+                    ) : (
+                      <div className={styles.placeholderImage}>
+                        <FaFileAlt className={styles.placeholderIcon} />
+                      </div>
+                    )}
                   </div>
-                </div>
 
-                <div className={styles.applicationDetails}>
-                  {application.programStartDate && application.programEndDate && (
-                    <div className={styles.programDates}>
-                      <span className={styles.dateRange}>
-                        {formatDate(application.programStartDate)} - {formatDate(application.programEndDate)}
-                      </span>
+                  <div className={styles.applicationInfo}>
+                    <div className={styles.applicationHeader}>
+                      {/* Program Date with Calendar Icon */}
+                      {application.programStartDate && (
+                        <div className={styles.programDateRow}>
+                          <FaCalendarAlt className={styles.calendarIcon} />
+                          <span className={styles.programDateText}>
+                            {formatProgramDate(application.programStartDate, application.programEndDate)}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {/* Program Title */}
+                      <div className={styles.applicationTitle}>
+                        <h3>{application.programName}</h3>
+                      </div>
+                      
+                      {/* Application Meta */}
+                      <div className={styles.applicationMeta}>
+                        <span className={styles.applicationDate}>
+                          Date Applied: {formatDate(application.appliedAt)}
+                        </span>
+                        <span className={`${styles.statusBadge} ${styles[`status${application.status.charAt(0).toUpperCase() + application.status.slice(1)}`]}`}>
+                          {getStatusText(application.status)}
+                        </span>
+                      </div>
                     </div>
-                  )}
-                  
-                  {application.organizationName && (
+
+                {application.organizationName && (
+                  <div className={styles.applicationDetails}>
                     <div className={styles.organizationInfo}>
                       <span className={styles.organizationName}>{application.organizationName}</span>
                       {application.organizationAcronym && (
                         <span className={styles.organizationAcronym}>({application.organizationAcronym})</span>
                       )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 {application.notes && (
                   <div className={styles.applicationNotes}>
@@ -178,22 +344,48 @@ export default function MyApplications() {
                   </div>
                 )}
 
-                <div className={styles.applicationActions}>
-                  <button 
-                    className={styles.viewButton}
-                    onClick={() => {
-                      // TODO: Implement view details functionality
-                    }}
-                    aria-label={`View details for ${application.programName} application`}
-                  >
-                    View Details
-                  </button>
+                    <div className={styles.applicationActions}>
+                      <button 
+                        className={styles.viewButton}
+                        onClick={() => handleViewDetails(application.id)}
+                        disabled={isViewingDetails}
+                        aria-label={`View details for ${application.programName} application`}
+                      >
+                        {isViewingDetails ? 'Loading...' : 'View Details'}
+                      </button>
+                      {canCancelApplication(application.status) && (
+                        <button 
+                          className={styles.cancelButton}
+                          onClick={() => handleCancelApplication(application)}
+                          aria-label={`Cancel ${application.programName} application`}
+                        >
+                          Cancel Application
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Application Details Modal */}
+      <ApplicationDetailsModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        applicationId={selectedApplicationId}
+      />
+
+      {/* Cancel Confirmation Modal */}
+      <CancelConfirmationModal
+        isOpen={cancelModalOpen}
+        onClose={handleCloseCancelModal}
+        onConfirm={handleConfirmCancel}
+        applicationName={applicationToCancel?.programName}
+        isLoading={isCancelling}
+      />
     </div>
   );
 }

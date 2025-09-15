@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { FaEnvelope, FaLock } from 'react-icons/fa';
 import styles from './settings.module.css';
 import EmailChangeModal from './ProfileSection/EmailChangeModal';
+import SecureEmailChangeModal from './ProfileSection/SecureEmailChangeModal';
 import PasswordChangeModal from './ProfileSection/PasswordChangeModal';
 import SuccessModal from '../components/SuccessModal';
 
@@ -52,6 +53,7 @@ export default function SuperAdminSettings() {
   const [loading, setLoading] = useState(true);
   const [successModal, setSuccessModal] = useState({ isVisible: false, message: '' });
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showSecureEmailModal, setShowSecureEmailModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   // Load current user data
@@ -206,7 +208,7 @@ export default function SuperAdminSettings() {
             </div>
             <button 
               className={styles.editButton}
-              onClick={() => setShowEmailModal(true)}
+              onClick={() => setShowSecureEmailModal(true)}
             >
               Edit
             </button>
@@ -264,6 +266,14 @@ export default function SuperAdminSettings() {
       <EmailChangeModal
         isOpen={showEmailModal}
         onClose={() => setShowEmailModal(false)}
+        onSuccess={handleEmailSuccess}
+        currentUser={currentUser}
+      />
+
+      {/* Secure Email Change Modal */}
+      <SecureEmailChangeModal
+        isOpen={showSecureEmailModal}
+        onClose={() => setShowSecureEmailModal(false)}
         onSuccess={handleEmailSuccess}
         currentUser={currentUser}
       />

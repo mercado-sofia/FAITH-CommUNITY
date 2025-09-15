@@ -5,6 +5,8 @@ import {
   getAdminProfile,
   updateAdminProfile,
   updateAdminEmail,
+  requestAdminEmailChange,
+  verifyAdminEmailChangeOTP,
   updateAdminPassword,
   verifyPasswordForEmailChange,
   verifyPasswordForPasswordChange
@@ -22,8 +24,10 @@ router.get("/", getAdminProfile)
 // Update admin's organization profile and email
 router.put("/", updateAdminProfile)
 
-// Update admin's email
-router.put("/email", updateAdminEmail)
+// Email change routes (secure flow)
+router.post("/email/request-change", requestAdminEmailChange)
+router.post("/email/verify-otp", verifyAdminEmailChangeOTP)
+router.put("/email", updateAdminEmail) // Legacy endpoint
 
 // Update admin's password
 router.put("/password", updateAdminPassword)

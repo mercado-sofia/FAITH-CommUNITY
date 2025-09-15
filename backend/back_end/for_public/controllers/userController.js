@@ -498,9 +498,12 @@ export const removeProfilePhoto = async (req, res) => {
   }
 };
 
-// Change email
-export const changeEmail = async (req, res) => {
+// Change email - Step 1: Request email change with password verification
+export const requestEmailChange = async (req, res) => {
   try {
+    // console.log('Request Email Change - Body:', req.body);
+    // console.log('Request Email Change - User:', req.user);
+    
     const userId = req.user.id;
     const { newEmail, currentPassword } = req.body;
 
@@ -516,7 +519,7 @@ export const changeEmail = async (req, res) => {
 
     // Get current user data
     const [users] = await db.query(
-      'SELECT email, password_hash FROM users WHERE id = ?',
+      'SELECT email, password_hash, first_name, last_name FROM users WHERE id = ?',
       [userId]
     );
 
@@ -547,18 +550,78 @@ export const changeEmail = async (req, res) => {
       return res.status(400).json({ error: 'Email is already taken by another user' });
     }
 
-    // Update email
-    await db.query(
-      'UPDATE users SET email = ?, updated_at = NOW() WHERE id = ?',
-      [newEmail, userId]
+    // Create OTP and send verification email
+    const { EmailChangeOTP } = await import('../../utils/emailChangeOTP.js');
+    const userName = `${user.first_name} ${user.last_name}`.trim();
+    
+    const result = await EmailChangeOTP.createEmailChangeOTP(
+      userId, 
+      'user', 
+      newEmail, 
+      user.email, 
+      userName
     );
 
-    res.json({ message: 'Email changed successfully' });
+    res.json({
+      message: 'OTP sent to new email address. Please check your email and enter the verification code.',
+      token: result.token,
+      expiresAt: result.expiresAt
+    });
 
   } catch (error) {
-    console.error('Change email error:', error);
+    console.error('Request email change error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
+};
+
+// Change email - Step 2: Verify OTP and complete email change
+export const verifyEmailChangeOTP = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { token, otp } = req.body;
+
+    if (!token || !otp) {
+      return res.status(400).json({ error: 'Token and OTP are required' });
+    }
+
+    // Verify OTP
+    const { EmailChangeOTP } = await import('../../utils/emailChangeOTP.js');
+    const verificationResult = await EmailChangeOTP.verifyOTP(token, otp, userId, 'user');
+
+    if (!verificationResult.success) {
+      return res.status(400).json({ error: verificationResult.error });
+    }
+
+    // Update email in database
+    await db.query(
+      'UPDATE users SET email = ?, updated_at = NOW() WHERE id = ?',
+      [verificationResult.newEmail, userId]
+    );
+
+    // Clean up expired OTPs
+    await EmailChangeOTP.cleanupExpiredOTPs();
+
+    console.log('Email change verification successful:', {
+      userId,
+      newEmail: verificationResult.newEmail,
+      message: 'Email changed successfully'
+    });
+    
+    res.json({ 
+      message: 'Email changed successfully',
+      newEmail: verificationResult.newEmail
+    });
+
+  } catch (error) {
+    console.error('Verify email change OTP error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Legacy change email function (kept for backward compatibility)
+export const changeEmail = async (req, res) => {
+  // Redirect to new secure flow
+  return requestEmailChange(req, res);
 };
 
 // Change password
@@ -567,9 +630,9 @@ export const changePassword = async (req, res) => {
     const userId = req.user.id;
     const { currentPassword, newPassword } = req.body;
 
-    // Get current password hash
+    // Get current password hash and user details
     const [users] = await db.query(
-      'SELECT password_hash FROM users WHERE id = ?',
+      'SELECT password_hash, email, first_name, last_name FROM users WHERE id = ?',
       [userId]
     );
 
@@ -581,6 +644,17 @@ export const changePassword = async (req, res) => {
     const isCurrentPasswordValid = await bcrypt.compare(currentPassword, users[0].password_hash);
     if (!isCurrentPasswordValid) {
       return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+
+    // Enhanced password complexity validation
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+    }
+
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
+      return res.status(400).json({ 
+        error: 'Password must contain at least one uppercase letter, one lowercase letter, and one number' 
+      });
     }
 
     // Hash new password
@@ -599,6 +673,21 @@ export const changePassword = async (req, res) => {
     } catch {}
     if (res.clearCookie) {
       res.clearCookie('refresh_token', { path: '/' })
+    }
+
+    // Send password change notification
+    try {
+      const { PasswordChangeNotification } = await import('../../utils/passwordChangeNotification.js');
+      const userName = users[0].first_name && users[0].last_name ? 
+        `${users[0].first_name} ${users[0].last_name}` : null;
+      await PasswordChangeNotification.sendPasswordChangeNotification(
+        users[0].email, 
+        userName, 
+        'user'
+      );
+    } catch (notificationError) {
+      console.warn('Failed to send password change notification:', notificationError.message);
+      // Continue with success response even if notification fails
     }
 
     res.json({ message: 'Password changed successfully' });
@@ -909,12 +998,16 @@ export const resendVerificationEmail = async (req, res) => {
 // Verify JWT token middleware
 export const verifyToken = async (req, res, next) => {
   try {
+    // console.log('VerifyToken - Headers:', req.headers.authorization);
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
+      // console.log('VerifyToken - No token found');
       return res.status(401).json({ error: 'Access token required' });
     }
 
+    // console.log('VerifyToken - Token found, verifying...');
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    // console.log('VerifyToken - Decoded user:', decoded);
     req.user = decoded;
     next();
 

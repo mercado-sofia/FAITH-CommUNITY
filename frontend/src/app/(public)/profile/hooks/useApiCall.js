@@ -28,7 +28,14 @@ export const useApiCall = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        console.error('API Error Details:', {
+          status: response.status,
+          statusText: response.statusText,
+          data: data,
+          endpoint: endpoint,
+          options: options
+        });
+        throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`);
       }
 
       return { data, response };
@@ -98,6 +105,23 @@ export const useProfileApi = () => {
     });
   }, [makeApiCall]);
 
+  const requestEmailChange = useCallback(async (emailData) => {
+    return makeApiCall('/api/users/email/request-change', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(emailData)
+    });
+  }, [makeApiCall]);
+
+  const verifyEmailChangeOTP = useCallback(async (otpData) => {
+    return makeApiCall('/api/users/email/verify-otp', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(otpData)
+    });
+  }, [makeApiCall]);
+
+  // Legacy function for backward compatibility
   const changeEmail = useCallback(async (emailData) => {
     return makeApiCall('/api/users/email', {
       method: 'PUT',
@@ -122,11 +146,14 @@ export const useProfileApi = () => {
     });
   }, [makeApiCall]);
 
+
   return {
     updateProfile,
     uploadProfilePhoto,
     removeProfilePhoto,
-    changeEmail,
+    requestEmailChange,
+    verifyEmailChangeOTP,
+    changeEmail, // Legacy function
     changePassword,
     deleteAccount,
     isLoading,

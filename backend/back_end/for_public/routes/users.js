@@ -11,6 +11,8 @@ import {
   uploadProfilePhoto, 
   removeProfilePhoto,
   changeEmail,
+  requestEmailChange,
+  verifyEmailChangeOTP,
   changePassword,
   subscribeToNewsletter,
   unsubscribeFromNewsletter,
@@ -75,10 +77,16 @@ router.post('/refresh', doubleCsrfProtection, refreshAccessToken);
 // Protected routes (authentication required)
 router.post('/logout', verifyToken, logoutUser);
 router.get('/profile', verifyToken, getUserProfile);
+
 router.put('/profile', verifyToken, updateUserProfile);
 router.post('/profile/photo', verifyToken, upload.single('profilePhoto'), uploadProfilePhoto);
 router.delete('/profile/photo', verifyToken, removeProfilePhoto);
-router.put('/email', verifyToken, changeEmail);
+
+// Email change routes (secure flow)
+router.post('/email/request-change', verifyToken, requestEmailChange);
+router.post('/email/verify-otp', verifyToken, verifyEmailChangeOTP);
+router.put('/email', verifyToken, changeEmail); // Legacy endpoint
+
 router.put('/password', verifyToken, changePassword);
 router.post('/delete-account', verifyToken, deleteAccount);
 

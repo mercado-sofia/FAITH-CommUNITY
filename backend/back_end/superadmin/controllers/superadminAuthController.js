@@ -178,11 +178,143 @@ export const verifySuperadminPassword = async (req, res) => {
   }
 }
 
+// -------------------- Email Change --------------------
+
+// Request superadmin email change - Step 1: Password verification and OTP generation
+export const requestSuperadminEmailChange = async (req, res) => {
+  const { id } = req.params
+  const { newEmail, currentPassword, otp } = req.body
+
+  if (!id || isNaN(id)) {
+    return res.status(400).json({ error: "Invalid superadmin ID" })
+  }
+
+  if (!newEmail || !currentPassword) {
+    return res.status(400).json({ error: "New email and current password are required" })
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(newEmail)) {
+    return res.status(400).json({ error: "Invalid email format" });
+  }
+
+  try {
+    const [superadminRows] = await db.execute(
+      "SELECT id, username, password, mfa_enabled, mfa_secret FROM superadmin WHERE id = ?",
+      [id]
+    )
+
+    if (superadminRows.length === 0) {
+      return res.status(404).json({ error: "Superadmin not found" })
+    }
+
+    const superadmin = superadminRows[0]
+
+    // Check if new email is different from current email
+    if (newEmail === superadmin.username) {
+      return res.status(400).json({ error: "New email must be different from current email" });
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, superadmin.password)
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: "Invalid password" })
+    }
+
+    // Check if 2FA is enabled and verify OTP
+    if (superadmin.mfa_enabled) {
+      if (!otp) {
+        return res.status(401).json({ error: "OTP required for 2FA-enabled account", requireMfa: true })
+      }
+      const isValidOtp = authenticator.check(String(otp), superadmin.mfa_secret || "")
+      if (!isValidOtp) {
+        return res.status(401).json({ error: "Invalid OTP", requireMfa: true })
+      }
+    }
+
+    // Check if email is already taken by another superadmin
+    const [existingSuperadmin] = await db.execute(
+      "SELECT id FROM superadmin WHERE username = ? AND id != ?",
+      [newEmail, id]
+    )
+
+    if (existingSuperadmin.length > 0) {
+      return res.status(409).json({ error: "Email is already taken" })
+    }
+
+    // Create OTP and send verification email
+    const { EmailChangeOTP } = await import('../../utils/emailChangeOTP.js');
+    
+    const result = await EmailChangeOTP.createEmailChangeOTP(
+      id, 
+      'superadmin', 
+      newEmail, 
+      superadmin.username, 
+      'Superadmin'
+    );
+
+    res.json({
+      success: true,
+      message: "OTP sent to new email address. Please check your email and enter the verification code.",
+      token: result.token,
+      expiresAt: result.expiresAt
+    });
+
+  } catch (err) {
+    console.error("Error requesting superadmin email change:", err)
+    res.status(500).json({ error: "Internal server error" })
+  }
+}
+
+// Verify superadmin email change OTP - Step 2: Complete email change
+export const verifySuperadminEmailChangeOTP = async (req, res) => {
+  const { id } = req.params
+  const { token, otp } = req.body
+
+  if (!id || isNaN(id)) {
+    return res.status(400).json({ error: "Invalid superadmin ID" })
+  }
+
+  if (!token || !otp) {
+    return res.status(400).json({ error: "Token and OTP are required" })
+  }
+
+  try {
+    // Verify OTP
+    const { EmailChangeOTP } = await import('../../utils/emailChangeOTP.js');
+    const verificationResult = await EmailChangeOTP.verifyOTP(token, otp, id, 'superadmin');
+
+    if (!verificationResult.success) {
+      return res.status(400).json({ error: verificationResult.error });
+    }
+
+    // Update email in database
+    await db.execute(
+      "UPDATE superadmin SET username = ?, updated_at = NOW() WHERE id = ?",
+      [verificationResult.newEmail, id]
+    );
+
+    // Clean up expired OTPs
+    await EmailChangeOTP.cleanupExpiredOTPs();
+
+    res.json({
+      success: true,
+      message: "Email changed successfully",
+      data: { email: verificationResult.newEmail }
+    });
+
+  } catch (err) {
+    console.error("Error verifying superadmin email change OTP:", err)
+    res.status(500).json({ error: "Internal server error" })
+  }
+}
+
 // -------------------- Update Password --------------------
 
 export const updateSuperadminPassword = async (req, res) => {
   const { id } = req.params
-  const { currentPassword, newPassword } = req.body
+  const { currentPassword, newPassword, otp } = req.body
 
   if (!id || isNaN(id)) {
     return res.status(400).json({ error: "Invalid superadmin ID" })
@@ -192,13 +324,20 @@ export const updateSuperadminPassword = async (req, res) => {
     return res.status(400).json({ error: "Current password and new password are required" })
   }
 
-  if (newPassword.length < 6) {
-    return res.status(400).json({ error: "Password must be at least 6 characters long" })
+  // Enhanced password complexity validation
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: "Password must be at least 8 characters long" })
+  }
+
+  if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
+    return res.status(400).json({ 
+      error: "Password must contain at least one uppercase letter, one lowercase letter, and one number" 
+    })
   }
 
   try {
     const [superadminRows] = await db.execute(
-      "SELECT id, password FROM superadmin WHERE id = ?",
+      "SELECT id, password, username, mfa_enabled, mfa_secret FROM superadmin WHERE id = ?",
       [id],
     )
 
@@ -213,13 +352,37 @@ export const updateSuperadminPassword = async (req, res) => {
       return res.status(401).json({ error: "Current password is incorrect" })
     }
 
-    const saltRounds = 10
+    // Check if 2FA is enabled and verify OTP
+    if (superadmin.mfa_enabled) {
+      if (!otp) {
+        return res.status(401).json({ error: "OTP required for 2FA-enabled account", requireMfa: true })
+      }
+      const isValidOtp = authenticator.check(String(otp), superadmin.mfa_secret || "")
+      if (!isValidOtp) {
+        return res.status(401).json({ error: "Invalid OTP", requireMfa: true })
+      }
+    }
+
+    const saltRounds = 12
     const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds)
 
     await db.execute("UPDATE superadmin SET password = ?, password_changed_at = NOW(), updated_at = NOW() WHERE id = ?", [
       hashedNewPassword,
       id,
     ])
+
+    // Send password change notification
+    try {
+      const { PasswordChangeNotification } = await import('../../utils/passwordChangeNotification.js');
+      await PasswordChangeNotification.sendPasswordChangeNotification(
+        superadmin.username, 
+        null, 
+        'superadmin'
+      );
+    } catch (notificationError) {
+      console.warn('Failed to send password change notification:', notificationError.message);
+      // Continue with success response even if notification fails
+    }
 
     res.json({ 
       message: "Password updated successfully",

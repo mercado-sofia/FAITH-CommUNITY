@@ -19,11 +19,11 @@ export const loginAdmin = async (req, res) => {
 
   try {
     const [adminRows] = await db.execute(
-      `SELECT a.id, a.email, a.password, a.role, a.status, a.mfa_enabled, a.mfa_secret, a.organization_id,
-              o.org, o.orgName
+      `SELECT a.id, a.email, a.password, a.role, a.is_active, a.mfa_enabled, a.mfa_secret, a.organization_id,
+              o.org, o.orgName, o.logo
        FROM admins a
        LEFT JOIN organizations o ON a.organization_id = o.id
-       WHERE a.email = ? AND a.status = "ACTIVE"`,
+       WHERE a.email = ? AND a.is_active = TRUE`,
       [email],
     )
 
@@ -76,9 +76,10 @@ export const loginAdmin = async (req, res) => {
         organization_id: admin.organization_id,
         org: admin.org,
         orgName: admin.orgName,
+        logo: admin.logo,
         email: admin.email,
         role: admin.role,
-        status: admin.status,
+        status: admin.is_active ? "ACTIVE" : "INACTIVE",
       },
     })
   } catch (err) {
@@ -98,8 +99,8 @@ export const verifyAdminToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community-api",
-      audience: process.env.JWT_AUD || "faith-community-client",
+      issuer: process.env.JWT_ISS || "faith-community",
+      audience: process.env.JWT_AUD || "admin",
     })
     req.admin = decoded
     next()
@@ -117,7 +118,7 @@ export const verifyAdminToken = (req, res, next) => {
 export const getAllAdmins = async (req, res) => {
   try {
     const [rows] = await db.execute(
-      `SELECT a.id, a.email, a.role, a.status, a.organization_id, a.created_at,
+      `SELECT a.id, a.email, a.role, a.is_active, a.organization_id, a.created_at,
               o.org, o.orgName, o.logo
        FROM admins a
        LEFT JOIN organizations o ON a.organization_id = o.id
@@ -139,8 +140,8 @@ export const getAdminById = async (req, res) => {
 
   try {
     const [rows] = await db.execute(
-      `SELECT a.id, a.email, a.role, a.status, a.organization_id, a.created_at,
-              o.org, o.orgName
+      `SELECT a.id, a.email, a.role, a.is_active, a.organization_id, a.created_at,
+              o.org, o.orgName, o.logo
        FROM admins a
        LEFT JOIN organizations o ON a.organization_id = o.id
        WHERE a.id = ?`,
@@ -160,7 +161,7 @@ export const getAdminById = async (req, res) => {
 
 export const updateAdmin = async (req, res) => {
   const { id } = req.params
-  const { email, password, role, status } = req.body
+  const { email, password, role, is_active } = req.body
 
   if (!id || isNaN(id)) {
     return res.status(400).json({ error: "Invalid admin ID" })
@@ -174,7 +175,7 @@ export const updateAdmin = async (req, res) => {
     await connection.beginTransaction()
 
     // Check if admin exists
-    const [existingAdmin] = await connection.execute("SELECT id, email, organization_id FROM admins WHERE id = ?", [id])
+    const [existingAdmin] = await connection.execute("SELECT id, email, organization_id, is_active FROM admins WHERE id = ?", [id])
 
     if (existingAdmin.length === 0) {
       await connection.rollback()
@@ -203,7 +204,7 @@ export const updateAdmin = async (req, res) => {
     const updateData = {
       email: email || currentAdmin.email,
       role: role || 'admin',
-      status: status || 'ACTIVE',
+      is_active: is_active !== undefined ? is_active : true,
     }
 
     // Update admin table
@@ -218,19 +219,29 @@ export const updateAdmin = async (req, res) => {
       const saltRounds = 10
       const hashedPassword = await bcrypt.hash(password, saltRounds)
       
-      adminQuery = "UPDATE admins SET email = ?, password = ?, role = ?, status = ? WHERE id = ?"
-      adminParams = [updateData.email, hashedPassword, updateData.role, updateData.status, id]
+      adminQuery = "UPDATE admins SET email = ?, password = ?, role = ?, is_active = ? WHERE id = ?"
+      adminParams = [updateData.email, hashedPassword, updateData.role, updateData.is_active, id]
     } else {
-      adminQuery = "UPDATE admins SET email = ?, role = ?, status = ? WHERE id = ?"
-      adminParams = [updateData.email, updateData.role, updateData.status, id]
+      adminQuery = "UPDATE admins SET email = ?, role = ?, is_active = ? WHERE id = ?"
+      adminParams = [updateData.email, updateData.role, updateData.is_active, id]
     }
 
     await connection.execute(adminQuery, adminParams)
+
+    // If is_active status is being changed, also update organization status
+    if (is_active !== undefined && is_active !== currentAdmin.is_active && currentAdmin.organization_id) {
+      const newOrgStatus = is_active ? 'ACTIVE' : 'INACTIVE'
+      await connection.execute(
+        `UPDATE organizations SET status = ? WHERE id = ?`, 
+        [newOrgStatus, currentAdmin.organization_id]
+      )
+    }
+
     await connection.commit()
 
     // Get updated admin data with organization info
     const [updatedAdmin] = await db.execute(
-      `SELECT a.id, a.email, a.role, a.status, a.organization_id, a.created_at,
+      `SELECT a.id, a.email, a.role, a.is_active, a.organization_id, a.created_at,
               o.org, o.orgName
        FROM admins a
        LEFT JOIN organizations o ON a.organization_id = o.id
@@ -251,6 +262,67 @@ export const updateAdmin = async (req, res) => {
   }
 }
 
+export const deactivateAdmin = async (req, res) => {
+  const { id } = req.params
+
+  if (!id || isNaN(id)) {
+    return res.status(400).json({ error: "Invalid admin ID" })
+  }
+
+  const connection = await db.getConnection()
+  
+  try {
+    await connection.beginTransaction()
+
+    const [existingAdmin] = await connection.execute(
+      "SELECT id, is_active, organization_id FROM admins WHERE id = ?", 
+      [id]
+    )
+
+    if (existingAdmin.length === 0) {
+      await connection.rollback()
+      return res.status(404).json({ error: "Admin not found" })
+    }
+
+    const currentStatus = existingAdmin[0].is_active
+    const newStatus = !currentStatus
+    const action = newStatus ? 'reactivated' : 'deactivated'
+    const organizationId = existingAdmin[0].organization_id
+
+    // Toggle is_active between TRUE and FALSE
+    await connection.execute(`UPDATE admins SET is_active = ? WHERE id = ?`, [newStatus, id])
+
+    // If deactivating admin, also deactivate their organization
+    if (!newStatus && organizationId) {
+      await connection.execute(
+        `UPDATE organizations SET status = 'INACTIVE' WHERE id = ?`, 
+        [organizationId]
+      )
+    }
+    // If reactivating admin, also reactivate their organization
+    else if (newStatus && organizationId) {
+      await connection.execute(
+        `UPDATE organizations SET status = 'ACTIVE' WHERE id = ?`, 
+        [organizationId]
+      )
+    }
+
+    await connection.commit()
+
+    res.json({ 
+      message: `Admin ${action} successfully`,
+      is_active: newStatus,
+      organization_updated: organizationId ? true : false
+    })
+  } catch (err) {
+    await connection.rollback()
+    console.error("Toggle admin status error:", err)
+    res.status(500).json({ error: "Internal server error while updating admin status" })
+  } finally {
+    connection.release()
+  }
+}
+
 export const deleteAdmin = async (req, res) => {
   const { id } = req.params
 
@@ -258,20 +330,60 @@ export const deleteAdmin = async (req, res) => {
     return res.status(400).json({ error: "Invalid admin ID" })
   }
 
+  const connection = await db.getConnection()
+  
   try {
-    const [existingAdmin] = await db.execute("SELECT id FROM admins WHERE id = ?", [id])
+    await connection.beginTransaction()
+
+    // Get admin details including organization_id
+    const [existingAdmin] = await connection.execute(
+      "SELECT id, organization_id FROM admins WHERE id = ?", 
+      [id]
+    )
 
     if (existingAdmin.length === 0) {
+      await connection.rollback()
       return res.status(404).json({ error: "Admin not found" })
     }
 
-    // Soft delete: set status to INACTIVE
-    await db.execute('UPDATE admins SET status = "INACTIVE" WHERE id = ?', [id])
+    const admin = existingAdmin[0]
+    const organizationId = admin.organization_id
 
-    res.json({ message: "Admin deactivated successfully (soft deleted)" })
+    // Hard delete: permanently remove admin from database
+    await connection.execute('DELETE FROM admins WHERE id = ?', [id])
+
+    // Handle organization cleanup
+    if (organizationId) {
+      // Check if there are other active admins for this organization
+      const [otherAdmins] = await connection.execute(
+        "SELECT COUNT(*) as count FROM admins WHERE organization_id = ? AND is_active = TRUE",
+        [organizationId]
+      )
+
+      const hasOtherActiveAdmins = otherAdmins[0].count > 0
+
+      if (!hasOtherActiveAdmins) {
+        // No other active admins - set organization to INACTIVE
+        await connection.execute(
+          "UPDATE organizations SET status = 'INACTIVE' WHERE id = ?",
+          [organizationId]
+        )
+      }
+      // If there are other active admins, leave organization as-is
+    }
+
+    await connection.commit()
+
+    res.json({ 
+      message: "Admin deleted successfully",
+      organization_updated: organizationId ? true : false
+    })
   } catch (err) {
+    await connection.rollback()
     console.error("Delete admin error:", err)
-    res.status(500).json({ error: "Internal server error while deactivating admin" })
+    res.status(500).json({ error: "Internal server error while deleting admin" })
+  } finally {
+    connection.release()
   }
 }
 
@@ -291,7 +403,7 @@ export const verifyPasswordForEmailChange = async (req, res) => {
   try {
     // Get admin data including hashed password
     const [adminRows] = await db.execute(
-      'SELECT id, password, status FROM admins WHERE id = ? AND status = "ACTIVE"',
+      'SELECT id, password, is_active FROM admins WHERE id = ? AND is_active = TRUE',
       [id]
     )
 
@@ -334,7 +446,7 @@ export const verifyPasswordForPasswordChange = async (req, res) => {
   try {
     // Get admin data including hashed password
     const [adminRows] = await db.execute(
-      'SELECT id, password, status FROM admins WHERE id = ? AND status = "ACTIVE"',
+      'SELECT id, password, is_active FROM admins WHERE id = ? AND is_active = TRUE',
       [id]
     )
 
@@ -372,7 +484,7 @@ export const forgotPassword = async (req, res) => {
   try {
     // Check if admin exists with this email
     const [adminRows] = await db.execute(
-      'SELECT id, email, organization_id FROM admins WHERE email = ? AND status = "ACTIVE"',
+      'SELECT id, email, organization_id FROM admins WHERE email = ? AND is_active = TRUE',
       [email]
     )
 
@@ -457,7 +569,7 @@ export const resetPassword = async (req, res) => {
 
     // Update admin password
     await db.execute(
-      'UPDATE admins SET password = ? WHERE email = ? AND status = "ACTIVE"',
+      'UPDATE admins SET password = ? WHERE email = ? AND is_active = TRUE',
       [hashedPassword, tokenData.email]
     )
 
@@ -541,7 +653,7 @@ export const checkEmailAdmin = async (req, res) => {
 
   try {
     const [adminRows] = await db.execute(
-      'SELECT id FROM admins WHERE email = ? AND status = "ACTIVE"',
+      'SELECT id FROM admins WHERE email = ? AND is_active = TRUE',
       [email]
     )
 

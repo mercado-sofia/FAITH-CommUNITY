@@ -119,7 +119,9 @@ export default function OrgPage() {
           </div>
         </section>
 
-        <OrgHeadsCarousel heads={fallbackData.heads} />
+        {fallbackData.heads && fallbackData.heads.length > 0 && (
+          <OrgHeadsCarousel heads={fallbackData.heads} />
+        )}
       </>
     );
   }
@@ -161,7 +163,9 @@ export default function OrgPage() {
         </div>
       </section>
 
-      <OrgHeadsCarousel heads={organizationData.heads} />
+      {organizationData.heads && organizationData.heads.length > 0 && (
+        <OrgHeadsCarousel heads={organizationData.heads} />
+      )}
     </>
   );
 }

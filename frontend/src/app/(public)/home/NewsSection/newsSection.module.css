@@ -110,8 +110,8 @@
 }
 
 .orgItem.active::after {
-  background: #1A685B;
-  width: 70%;
+  background: transparent;
+  width: 0;
   left: 15%;
 }
 

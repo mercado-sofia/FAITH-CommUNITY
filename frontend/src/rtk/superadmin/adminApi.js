@@ -47,6 +47,15 @@ export const adminApi = createApi({
       invalidatesTags: (result, error, { id }) => [{ type: "Admin", id }, "Admin"],
     }),
 
+    // Deactivate admin
+    deactivateAdmin: builder.mutation({
+      query: (id) => ({
+        url: `/${id}/deactivate`,
+        method: "PUT",
+      }),
+      invalidatesTags: ["Admin"],
+    }),
+
     // Delete admin
     deleteAdmin: builder.mutation({
       query: (id) => ({
@@ -89,6 +98,7 @@ export const {
   useGetAllAdminsQuery,
   useGetAdminByIdQuery,
   useUpdateAdminMutation,
+  useDeactivateAdminMutation,
   useDeleteAdminMutation,
   useLoginAdminMutation,
   useVerifyPasswordForEmailChangeMutation,

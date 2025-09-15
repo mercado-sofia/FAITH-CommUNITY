@@ -337,7 +337,7 @@ export const resetPasswordSuperadmin = async (req, res) => {
 
     // Also update admins (if applicable)
     await db.execute(
-      'UPDATE admins SET password = ? WHERE email = ? AND status = "ACTIVE"',
+      'UPDATE admins SET password = ? WHERE email = ? AND is_active = TRUE',
       [hashedPassword, email],
     )
 

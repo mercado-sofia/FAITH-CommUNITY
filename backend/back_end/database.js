@@ -1193,6 +1193,56 @@ const initializeDatabase = async () => {
       }
     }
 
+    // Migration: Update admins table - replace status column with is_active boolean
+    console.log("Checking admins table structure for status/is_active migration...");
+    
+    // Check if status column exists and is_active doesn't exist
+    const [statusColumn] = await connection.query(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'admins' 
+      AND COLUMN_NAME = 'status'
+    `);
+    
+    const [isActiveColumn] = await connection.query(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'admins' 
+      AND COLUMN_NAME = 'is_active'
+    `);
+    
+    if (statusColumn.length > 0 && isActiveColumn.length === 0) {
+      console.log("Migrating admins table: replacing status column with is_active boolean...");
+      
+      // Add is_active column first
+      await connection.query(`
+        ALTER TABLE admins 
+        ADD COLUMN is_active BOOLEAN DEFAULT TRUE
+      `);
+      
+      // Migrate data: ACTIVE -> TRUE, INACTIVE -> FALSE
+      await connection.query(`
+        UPDATE admins 
+        SET is_active = CASE 
+          WHEN status = 'ACTIVE' THEN TRUE 
+          WHEN status = 'INACTIVE' THEN FALSE 
+          ELSE TRUE 
+        END
+      `);
+      
+      // Remove the old status column
+      await connection.query(`
+        ALTER TABLE admins 
+        DROP COLUMN status
+      `);
+      
+      console.log("✅ Admins table migration completed: status column replaced with is_active boolean!");
+    } else if (isActiveColumn.length > 0) {
+      console.log("✅ Admins table already has is_active column");
+    } else {
+      console.log("ℹ️ Admins table structure check completed");
+    }
+
     // MFA columns kept in admins table for future use, but MFA is currently disabled for admin accounts
     // Only superadmin accounts use MFA for enhanced security
     try {

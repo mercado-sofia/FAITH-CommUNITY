@@ -216,8 +216,8 @@ export const acceptInvitation = async (req, res) => {
 
     // Create admin record
     const [adminResult] = await connection.execute(
-      `INSERT INTO admins (email, password, role, status, organization_id, created_at) 
-       VALUES (?, ?, 'admin', 'ACTIVE', ?, NOW())`,
+      `INSERT INTO admins (email, password, role, is_active, organization_id, created_at) 
+       VALUES (?, ?, 'admin', TRUE, ?, NOW())`,
       [invitation.email, hashedPassword, organizationId]
     )
 
@@ -231,7 +231,7 @@ export const acceptInvitation = async (req, res) => {
 
     // Fetch the complete admin data with organization info
     const [adminWithOrg] = await connection.execute(
-      `SELECT a.id, a.email, a.role, a.status, a.organization_id, o.org, o.orgName
+      `SELECT a.id, a.email, a.role, a.is_active, a.organization_id, o.org, o.orgName
        FROM admins a
        LEFT JOIN organizations o ON a.organization_id = o.id
        WHERE a.id = ?`,
@@ -285,9 +285,21 @@ export const acceptInvitation = async (req, res) => {
 export const getAllInvitations = async (req, res) => {
   try {
     const [invitations] = await db.execute(
-      `SELECT id, email, status, created_at, accepted_at, expires_at 
-       FROM admin_invitations 
-       ORDER BY created_at DESC`
+      `SELECT 
+         ai.id, 
+         ai.email, 
+         ai.status, 
+         ai.created_at, 
+         ai.accepted_at, 
+         ai.expires_at,
+         a.id as admin_id,
+         a.is_active as admin_is_active,
+         o.org,
+         o.orgName
+       FROM admin_invitations ai
+       LEFT JOIN admins a ON ai.email = a.email AND ai.status = 'accepted'
+       LEFT JOIN organizations o ON a.organization_id = o.id
+       ORDER BY ai.created_at DESC`
     )
     res.json(invitations)
   } catch (err) {
@@ -314,5 +326,154 @@ export const cancelInvitation = async (req, res) => {
   } catch (err) {
     console.error("Cancel invitation error:", err)
     res.status(500).json({ error: "Internal server error while cancelling invitation" })
+  }
+}
+
+// Delete invitation and associated admin account (permanent deletion)
+export const deleteInvitation = async (req, res) => {
+  const { id } = req.params
+
+  try {
+    // First, get the invitation details to check if there's an associated admin
+    const [invitationRows] = await db.execute(
+      `SELECT ai.email, a.id as admin_id, a.is_active 
+       FROM admin_invitations ai
+       LEFT JOIN admins a ON ai.email = a.email
+       WHERE ai.id = ?`,
+      [id]
+    )
+
+    if (invitationRows.length === 0) {
+      return res.status(404).json({ error: "Invitation not found" })
+    }
+
+    const invitation = invitationRows[0]
+    const connection = await db.getConnection()
+
+    try {
+      await connection.beginTransaction()
+
+      // Delete from admin_invitations table
+      await connection.execute(
+        "DELETE FROM admin_invitations WHERE id = ?",
+        [id]
+      )
+
+      // If there's an associated admin account, delete it too (regardless of active status)
+      // This is admin management - when superadmin deletes from invites page, 
+      // they're removing the admin account entirely
+      if (invitation.admin_id) {
+        // Get admin details to check organization
+        const [adminDetails] = await connection.execute(
+          "SELECT organization_id FROM admins WHERE id = ?",
+          [invitation.admin_id]
+        )
+
+        if (adminDetails.length > 0) {
+          const organizationId = adminDetails[0].organization_id
+
+          // Delete the admin account
+          await connection.execute(
+            "DELETE FROM admins WHERE id = ?",
+            [invitation.admin_id]
+          )
+
+          // Handle organization cleanup if needed
+          if (organizationId) {
+            // Check if there are other active admins for this organization
+            const [otherAdmins] = await connection.execute(
+              "SELECT COUNT(*) as count FROM admins WHERE organization_id = ? AND is_active = TRUE",
+              [organizationId]
+            )
+
+            const hasOtherActiveAdmins = otherAdmins[0].count > 0
+
+            if (!hasOtherActiveAdmins) {
+              // No other active admins - set organization to INACTIVE
+              await connection.execute(
+                "UPDATE organizations SET status = 'INACTIVE' WHERE id = ?",
+                [organizationId]
+              )
+            }
+          }
+        }
+      }
+
+      await connection.commit()
+
+      const message = invitation.admin_id 
+        ? "Admin account and invitation deleted successfully"
+        : "Invitation deleted successfully"
+
+      res.json({ message })
+    } catch (transactionError) {
+      await connection.rollback()
+      throw transactionError
+    } finally {
+      connection.release()
+    }
+  } catch (err) {
+    console.error("Delete invitation error:", err)
+    res.status(500).json({ error: "Internal server error while deleting invitation" })
+  }
+}
+
+// Deactivate admin associated with invitation
+export const deactivateAdminFromInvitation = async (req, res) => {
+  const { id } = req.params
+
+  const connection = await db.getConnection()
+  
+  try {
+    await connection.beginTransaction()
+
+    // Get the invitation and associated admin details
+    const [invitationRows] = await connection.execute(
+      `SELECT ai.email, a.id as admin_id, a.is_active, a.organization_id 
+       FROM admin_invitations ai
+       LEFT JOIN admins a ON ai.email = a.email
+       WHERE ai.id = ?`,
+      [id]
+    )
+
+    if (invitationRows.length === 0) {
+      await connection.rollback()
+      return res.status(404).json({ error: "Invitation not found" })
+    }
+
+    const invitation = invitationRows[0]
+
+    if (!invitation.admin_id) {
+      await connection.rollback()
+      return res.status(404).json({ error: "No admin account found for this invitation" })
+    }
+
+    // Deactivate the admin account
+    await connection.execute(
+      "UPDATE admins SET is_active = FALSE WHERE id = ?",
+      [invitation.admin_id]
+    )
+
+    // Also deactivate their organization
+    if (invitation.organization_id) {
+      await connection.execute(
+        "UPDATE organizations SET status = 'INACTIVE' WHERE id = ?",
+        [invitation.organization_id]
+      )
+    }
+
+    await connection.commit()
+
+    res.json({ 
+      message: "Admin account deactivated successfully",
+      is_active: false,
+      organization_updated: invitation.organization_id ? true : false
+    })
+  } catch (err) {
+    await connection.rollback()
+    console.error("Deactivate admin from invitation error:", err)
+    res.status(500).json({ error: "Internal server error while deactivating admin" })
+  } finally {
+    connection.release()
   }
 }

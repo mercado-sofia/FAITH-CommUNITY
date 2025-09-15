@@ -120,6 +120,12 @@
   border: 1px solid #f87171;
 }
 
+.inactive {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
 /* Info Sections */
 .infoSection {
   margin-bottom: 2rem;
@@ -197,7 +203,6 @@
 }
 
 /* Buttons */
-.editButton,
 .deleteButton,
 .cancelButton {
   padding: 0.5rem 1rem;
@@ -211,17 +216,6 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.editButton {
-  background-color: #1d9782;
-  color: white;
-  border-color: #1d9782;
-}
-
-.editButton:hover:not(:disabled) {
-  background-color: #166f5e;
-  border-color: #166f5e;
 }
 
 .deleteButton {
@@ -246,7 +240,6 @@
   border-color: #4b5563;
 }
 
-.editButton:disabled,
 .deleteButton:disabled,
 .cancelButton:disabled {
   opacity: 0.5;
@@ -356,7 +349,6 @@
     flex-direction: column;
   }
 
-  .editButton,
   .deleteButton,
   .cancelButton {
     width: 100%;

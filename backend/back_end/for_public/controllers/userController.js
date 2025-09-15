@@ -1191,7 +1191,7 @@ export const resetPasswordUser = async (req, res) => {
 
     // Also update admin password if email exists there
     await db.query(
-      'UPDATE admins SET password = ? WHERE email = ? AND status = "ACTIVE"',
+      'UPDATE admins SET password = ? WHERE email = ? AND is_active = TRUE',
       [hashedPassword, tokenData.email]
     )
 

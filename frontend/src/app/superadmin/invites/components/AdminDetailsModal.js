@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FiX, FiMail, FiHome, FiUser, FiCalendar, FiCheckCircle, FiClock, FiXCircle } from 'react-icons/fi';
+import { FiX, FiMail, FiHome, FiUser, FiCalendar, FiCheckCircle, FiClock, FiXCircle, FiUserX } from 'react-icons/fi';
 import styles from './styles/AdminDetailsModal.module.css';
 
 const AdminDetailsModal = ({ 
@@ -30,8 +30,13 @@ const AdminDetailsModal = ({
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
+  const getStatusIcon = (adminData) => {
+    // If invitation is accepted but admin is inactive, show inactive icon
+    if (adminData.status === 'accepted' && adminData.admin_is_active === false) {
+      return <FiUserX className={styles.statusIcon} />;
+    }
+    
+    switch (adminData.status) {
       case 'pending':
         return <FiClock className={styles.statusIcon} />;
       case 'accepted':
@@ -43,8 +48,13 @@ const AdminDetailsModal = ({
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
+  const getStatusColor = (adminData) => {
+    // If invitation is accepted but admin is inactive, show as inactive
+    if (adminData.status === 'accepted' && adminData.admin_is_active === false) {
+      return styles.inactive;
+    }
+    
+    switch (adminData.status) {
       case 'pending':
         return styles.pending;
       case 'accepted':
@@ -54,6 +64,15 @@ const AdminDetailsModal = ({
       default:
         return styles.pending;
     }
+  };
+
+  const getStatusText = (adminData) => {
+    // If invitation is accepted but admin is inactive, show as inactive
+    if (adminData.status === 'accepted' && adminData.admin_is_active === false) {
+      return 'Inactive';
+    }
+    
+    return adminData.status.charAt(0).toUpperCase() + adminData.status.slice(1);
   };
 
   const handleDeleteClick = () => {
@@ -90,9 +109,9 @@ const AdminDetailsModal = ({
           <div className={styles.modalBody}>
             {/* Status Badge */}
             <div className={styles.statusSection}>
-              <div className={`${styles.statusBadge} ${getStatusColor(adminData.status)}`}>
-                {getStatusIcon(adminData.status)}
-                <span>{adminData.status.charAt(0).toUpperCase() + adminData.status.slice(1)}</span>
+              <div className={`${styles.statusBadge} ${getStatusColor(adminData)}`}>
+                {getStatusIcon(adminData)}
+                <span>{getStatusText(adminData)}</span>
               </div>
             </div>
 

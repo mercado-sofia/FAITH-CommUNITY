@@ -73,3 +73,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     display: none;
   }
 }
+
+/* Modal Open Body Class - Global utility class */
+.modalOpen {
+  overflow: hidden;
+}

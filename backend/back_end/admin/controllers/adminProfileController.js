@@ -107,19 +107,25 @@ export const updateAdminProfile = async (req, res) => {
   }
 }
 
-// Update admin's email
-export const updateAdminEmail = async (req, res) => {
+// Request admin email change - Step 1: Password verification and OTP generation
+export const requestAdminEmailChange = async (req, res) => {
   try {
     const adminId = req.admin.id
-    const { email, password } = req.body
+    const { newEmail, currentPassword } = req.body
 
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" })
+    if (!newEmail || !currentPassword) {
+      return res.status(400).json({ error: "New email and current password are required" })
     }
 
-    // Verify current password first
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+
+    // Get current admin data
     const [adminRows] = await db.execute(
-      "SELECT password FROM admins WHERE id = ?",
+      "SELECT email, password FROM admins WHERE id = ?",
       [adminId]
     )
 
@@ -127,7 +133,15 @@ export const updateAdminEmail = async (req, res) => {
       return res.status(404).json({ error: "Admin not found" })
     }
 
-    const isPasswordValid = await bcrypt.compare(password, adminRows[0].password)
+    const admin = adminRows[0];
+
+    // Check if new email is different from current email
+    if (newEmail === admin.email) {
+      return res.status(400).json({ error: "New email must be different from current email" });
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, admin.password)
     if (!isPasswordValid) {
       return res.status(401).json({ error: "Invalid password" })
     }
@@ -135,28 +149,80 @@ export const updateAdminEmail = async (req, res) => {
     // Check if email is already taken by another admin
     const [existingAdmin] = await db.execute(
       "SELECT id FROM admins WHERE email = ? AND id != ?",
-      [email, adminId]
+      [newEmail, adminId]
     )
 
     if (existingAdmin.length > 0) {
       return res.status(409).json({ error: "Email is already taken" })
     }
 
-    // Update email
-    await db.execute(
-      "UPDATE admins SET email = ? WHERE id = ?",
-      [email, adminId]
-    )
+    // Create OTP and send verification email
+    const { EmailChangeOTP } = await import('../../utils/emailChangeOTP.js');
+    
+    const result = await EmailChangeOTP.createEmailChangeOTP(
+      adminId, 
+      'admin', 
+      newEmail, 
+      admin.email, 
+      'Admin'
+    );
 
     res.json({
       success: true,
-      message: "Email updated successfully",
-      data: { email }
-    })
+      message: "OTP sent to new email address. Please check your email and enter the verification code.",
+      token: result.token,
+      expiresAt: result.expiresAt
+    });
+
   } catch (err) {
-    console.error("Error updating admin email:", err)
+    console.error("Error requesting admin email change:", err)
     res.status(500).json({ error: "Internal server error" })
   }
+}
+
+// Verify admin email change OTP - Step 2: Complete email change
+export const verifyAdminEmailChangeOTP = async (req, res) => {
+  try {
+    const adminId = req.admin.id
+    const { token, otp } = req.body
+
+    if (!token || !otp) {
+      return res.status(400).json({ error: "Token and OTP are required" })
+    }
+
+    // Verify OTP
+    const { EmailChangeOTP } = await import('../../utils/emailChangeOTP.js');
+    const verificationResult = await EmailChangeOTP.verifyOTP(token, otp, adminId, 'admin');
+
+    if (!verificationResult.success) {
+      return res.status(400).json({ error: verificationResult.error });
+    }
+
+    // Update email in database
+    await db.execute(
+      "UPDATE admins SET email = ? WHERE id = ?",
+      [verificationResult.newEmail, adminId]
+    );
+
+    // Clean up expired OTPs
+    await EmailChangeOTP.cleanupExpiredOTPs();
+
+    res.json({
+      success: true,
+      message: "Email changed successfully",
+      data: { email: verificationResult.newEmail }
+    });
+
+  } catch (err) {
+    console.error("Error verifying admin email change OTP:", err)
+    res.status(500).json({ error: "Internal server error" })
+  }
+}
+
+// Legacy update admin email function (kept for backward compatibility)
+export const updateAdminEmail = async (req, res) => {
+  // Redirect to new secure flow
+  return requestAdminEmailChange(req, res);
 }
 
 // Update admin's password
@@ -169,13 +235,20 @@ export const updateAdminPassword = async (req, res) => {
       return res.status(400).json({ error: "Current and new password are required" })
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: "New password must be at least 6 characters long" })
+    // Enhanced password complexity validation
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: "Password must be at least 8 characters long" })
     }
 
-    // Verify current password
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
+      return res.status(400).json({ 
+        error: "Password must contain at least one uppercase letter, one lowercase letter, and one number" 
+      })
+    }
+
+    // Verify current password and get admin details
     const [adminRows] = await db.execute(
-      "SELECT password FROM admins WHERE id = ?",
+      "SELECT password, email, first_name, last_name FROM admins WHERE id = ?",
       [adminId]
     )
 
@@ -189,14 +262,29 @@ export const updateAdminPassword = async (req, res) => {
     }
 
     // Hash new password
-    const saltRounds = 10
+    const saltRounds = 12
     const hashedPassword = await bcrypt.hash(newPassword, saltRounds)
 
     // Update password
     await db.execute(
-      "UPDATE admins SET password = ? WHERE id = ?",
+      "UPDATE admins SET password = ?, updated_at = NOW() WHERE id = ?",
       [hashedPassword, adminId]
     )
+
+    // Send password change notification
+    try {
+      const { PasswordChangeNotification } = await import('../../utils/passwordChangeNotification.js');
+      const userName = adminRows[0].first_name && adminRows[0].last_name ? 
+        `${adminRows[0].first_name} ${adminRows[0].last_name}` : null;
+      await PasswordChangeNotification.sendPasswordChangeNotification(
+        adminRows[0].email, 
+        userName, 
+        'admin'
+      );
+    } catch (notificationError) {
+      console.warn('Failed to send password change notification:', notificationError.message);
+      // Continue with success response even if notification fails
+    }
 
     res.json({
       success: true,

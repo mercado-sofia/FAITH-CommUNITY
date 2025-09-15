@@ -11,6 +11,8 @@ import {
   uploadProfilePhoto, 
   removeProfilePhoto,
   changeEmail,
+  requestEmailChange,
+  verifyEmailChangeOTP,
   changePassword,
   subscribeToNewsletter,
   unsubscribeFromNewsletter,
@@ -30,6 +32,8 @@ import {
   deleteAccount,
   refreshAccessToken,
   getUserApplications,
+  getApplicationDetails,
+  cancelApplication,
 } from '../controllers/userController.js';
 
 const router = express.Router();
@@ -73,10 +77,16 @@ router.post('/refresh', doubleCsrfProtection, refreshAccessToken);
 // Protected routes (authentication required)
 router.post('/logout', verifyToken, logoutUser);
 router.get('/profile', verifyToken, getUserProfile);
+
 router.put('/profile', verifyToken, updateUserProfile);
 router.post('/profile/photo', verifyToken, upload.single('profilePhoto'), uploadProfilePhoto);
 router.delete('/profile/photo', verifyToken, removeProfilePhoto);
-router.put('/email', verifyToken, changeEmail);
+
+// Email change routes (secure flow)
+router.post('/email/request-change', verifyToken, requestEmailChange);
+router.post('/email/verify-otp', verifyToken, verifyEmailChangeOTP);
+router.put('/email', verifyToken, changeEmail); // Legacy endpoint
+
 router.put('/password', verifyToken, changePassword);
 router.post('/delete-account', verifyToken, deleteAccount);
 
@@ -94,5 +104,7 @@ router.delete('/notifications/:notificationId', verifyToken, deleteNotification)
 
 // User applications routes (authentication required)
 router.get('/applications', verifyToken, getUserApplications);
+router.get('/applications/:id', verifyToken, getApplicationDetails);
+router.put('/applications/:id/cancel', verifyToken, cancelApplication);
 
 export default router;

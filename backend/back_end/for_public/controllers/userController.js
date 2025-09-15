@@ -498,9 +498,12 @@ export const removeProfilePhoto = async (req, res) => {
   }
 };
 
-// Change email
-export const changeEmail = async (req, res) => {
+// Change email - Step 1: Request email change with password verification
+export const requestEmailChange = async (req, res) => {
   try {
+    // console.log('Request Email Change - Body:', req.body);
+    // console.log('Request Email Change - User:', req.user);
+    
     const userId = req.user.id;
     const { newEmail, currentPassword } = req.body;
 
@@ -516,7 +519,7 @@ export const changeEmail = async (req, res) => {
 
     // Get current user data
     const [users] = await db.query(
-      'SELECT email, password_hash FROM users WHERE id = ?',
+      'SELECT email, password_hash, first_name, last_name FROM users WHERE id = ?',
       [userId]
     );
 
@@ -547,18 +550,78 @@ export const changeEmail = async (req, res) => {
       return res.status(400).json({ error: 'Email is already taken by another user' });
     }
 
-    // Update email
-    await db.query(
-      'UPDATE users SET email = ?, updated_at = NOW() WHERE id = ?',
-      [newEmail, userId]
+    // Create OTP and send verification email
+    const { EmailChangeOTP } = await import('../../utils/emailChangeOTP.js');
+    const userName = `${user.first_name} ${user.last_name}`.trim();
+    
+    const result = await EmailChangeOTP.createEmailChangeOTP(
+      userId, 
+      'user', 
+      newEmail, 
+      user.email, 
+      userName
     );
 
-    res.json({ message: 'Email changed successfully' });
+    res.json({
+      message: 'OTP sent to new email address. Please check your email and enter the verification code.',
+      token: result.token,
+      expiresAt: result.expiresAt
+    });
 
   } catch (error) {
-    console.error('Change email error:', error);
+    console.error('Request email change error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
+};
+
+// Change email - Step 2: Verify OTP and complete email change
+export const verifyEmailChangeOTP = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { token, otp } = req.body;
+
+    if (!token || !otp) {
+      return res.status(400).json({ error: 'Token and OTP are required' });
+    }
+
+    // Verify OTP
+    const { EmailChangeOTP } = await import('../../utils/emailChangeOTP.js');
+    const verificationResult = await EmailChangeOTP.verifyOTP(token, otp, userId, 'user');
+
+    if (!verificationResult.success) {
+      return res.status(400).json({ error: verificationResult.error });
+    }
+
+    // Update email in database
+    await db.query(
+      'UPDATE users SET email = ?, updated_at = NOW() WHERE id = ?',
+      [verificationResult.newEmail, userId]
+    );
+
+    // Clean up expired OTPs
+    await EmailChangeOTP.cleanupExpiredOTPs();
+
+    console.log('Email change verification successful:', {
+      userId,
+      newEmail: verificationResult.newEmail,
+      message: 'Email changed successfully'
+    });
+    
+    res.json({ 
+      message: 'Email changed successfully',
+      newEmail: verificationResult.newEmail
+    });
+
+  } catch (error) {
+    console.error('Verify email change OTP error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Legacy change email function (kept for backward compatibility)
+export const changeEmail = async (req, res) => {
+  // Redirect to new secure flow
+  return requestEmailChange(req, res);
 };
 
 // Change password
@@ -567,9 +630,9 @@ export const changePassword = async (req, res) => {
     const userId = req.user.id;
     const { currentPassword, newPassword } = req.body;
 
-    // Get current password hash
+    // Get current password hash and user details
     const [users] = await db.query(
-      'SELECT password_hash FROM users WHERE id = ?',
+      'SELECT password_hash, email, first_name, last_name FROM users WHERE id = ?',
       [userId]
     );
 
@@ -581,6 +644,17 @@ export const changePassword = async (req, res) => {
     const isCurrentPasswordValid = await bcrypt.compare(currentPassword, users[0].password_hash);
     if (!isCurrentPasswordValid) {
       return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+
+    // Enhanced password complexity validation
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+    }
+
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
+      return res.status(400).json({ 
+        error: 'Password must contain at least one uppercase letter, one lowercase letter, and one number' 
+      });
     }
 
     // Hash new password
@@ -599,6 +673,21 @@ export const changePassword = async (req, res) => {
     } catch {}
     if (res.clearCookie) {
       res.clearCookie('refresh_token', { path: '/' })
+    }
+
+    // Send password change notification
+    try {
+      const { PasswordChangeNotification } = await import('../../utils/passwordChangeNotification.js');
+      const userName = users[0].first_name && users[0].last_name ? 
+        `${users[0].first_name} ${users[0].last_name}` : null;
+      await PasswordChangeNotification.sendPasswordChangeNotification(
+        users[0].email, 
+        userName, 
+        'user'
+      );
+    } catch (notificationError) {
+      console.warn('Failed to send password change notification:', notificationError.message);
+      // Continue with success response even if notification fails
     }
 
     res.json({ message: 'Password changed successfully' });
@@ -909,12 +998,16 @@ export const resendVerificationEmail = async (req, res) => {
 // Verify JWT token middleware
 export const verifyToken = async (req, res, next) => {
   try {
+    // console.log('VerifyToken - Headers:', req.headers.authorization);
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
+      // console.log('VerifyToken - No token found');
       return res.status(401).json({ error: 'Access token required' });
     }
 
+    // console.log('VerifyToken - Token found, verifying...');
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    // console.log('VerifyToken - Decoded user:', decoded);
     req.user = decoded;
     next();
 
@@ -1396,6 +1489,154 @@ export const getUserApplications = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch applications',
+      error: error.message
+    });
+  }
+};
+
+// Get individual application details by ID
+export const getApplicationDetails = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Application ID is required'
+      });
+    }
+
+    const [results] = await db.query(
+      `SELECT 
+        v.id,
+        v.program_id,
+        v.reason,
+        v.status,
+        v.created_at as appliedAt,
+        v.updated_at as updatedAt,
+        p.title as programName,
+        p.description as programDescription,
+        p.category as programCategory,
+        p.event_start_date as programStartDate,
+        p.event_end_date as programEndDate,
+        p.image as programImage,
+        p.organization_id,
+        o.orgName as organizationName,
+        o.org as organizationAcronym,
+        o.logo as organizationLogo,
+        o.org_color as organizationColor
+      FROM volunteers v
+      LEFT JOIN programs_projects p ON v.program_id = p.id
+      LEFT JOIN organizations o ON p.organization_id = o.id
+      WHERE v.id = ? AND v.user_id = ?`,
+      [id, userId]
+    );
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found or access denied'
+      });
+    }
+
+    const application = results[0];
+    
+    // Transform the data to match frontend expectations
+    const transformedApplication = {
+      id: application.id,
+      programId: application.program_id,
+      programName: application.programName,
+      programDescription: application.programDescription,
+      programCategory: application.programCategory,
+      programImage: application.programImage,
+      programStartDate: application.programStartDate,
+      programEndDate: application.programEndDate,
+      organizationId: application.organization_id,
+      organizationName: application.organizationName,
+      organizationAcronym: application.organizationAcronym,
+      organizationLogo: application.organizationLogo,
+      organizationColor: application.organizationColor,
+      reason: application.reason,
+      status: application.status === 'Declined' ? 'rejected' : application.status.toLowerCase(),
+      appliedAt: application.appliedAt,
+      updatedAt: application.updatedAt,
+      notes: application.reason,
+      feedback: null // This could be added later if feedback system is implemented
+    };
+
+    res.json({
+      success: true,
+      application: transformedApplication
+    });
+  } catch (error) {
+    console.error('Error fetching application details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch application details',
+      error: error.message
+    });
+  }
+};
+
+// Cancel user application
+export const cancelApplication = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Application ID is required'
+      });
+    }
+
+    // First, verify the application belongs to the user
+    const [existingApp] = await db.query(
+      'SELECT id, status FROM volunteers WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
+
+    if (existingApp.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found or access denied'
+      });
+    }
+
+    const application = existingApp[0];
+
+    // Check if application can be cancelled (not already cancelled or rejected)
+    if (application.status === 'Cancelled') {
+      return res.status(400).json({
+        success: false,
+        message: 'Application is already cancelled'
+      });
+    }
+
+    if (application.status === 'Declined') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot cancel a rejected application'
+      });
+    }
+
+    // Update the application status to 'Cancelled'
+    await db.query(
+      'UPDATE volunteers SET status = ?, updated_at = NOW() WHERE id = ? AND user_id = ?',
+      ['Cancelled', id, userId]
+    );
+
+    res.json({
+      success: true,
+      message: 'Application cancelled successfully'
+    });
+  } catch (error) {
+    console.error('Error cancelling application:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel application',
       error: error.message
     });
   }

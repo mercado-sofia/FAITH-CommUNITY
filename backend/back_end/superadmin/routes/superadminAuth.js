@@ -12,6 +12,8 @@ import {
   validateResetToken,
   // main branch
   updateSuperadminEmail,
+  requestSuperadminEmailChange,
+  verifySuperadminEmailChangeOTP,
   setupMfaSuperadmin,
   verifyMfaSuperadmin,
   disableMfaSuperadmin,
@@ -29,7 +31,12 @@ router.post("/check-email",   checkEmailSuperadmin)
 // ---------- Protected endpoints ----------
 router.get("/profile/:id",   verifySuperadminToken, getSuperadminProfile)
 router.post("/verify-password/:id", verifySuperadminToken, verifySuperadminPassword)
-router.put("/email/:id",     verifySuperadminToken, updateSuperadminEmail)
+
+// Email change routes (secure flow with 2FA support)
+router.post("/email/request-change/:id", verifySuperadminToken, requestSuperadminEmailChange)
+router.post("/email/verify-otp/:id", verifySuperadminToken, verifySuperadminEmailChangeOTP)
+router.put("/email/:id",     verifySuperadminToken, updateSuperadminEmail) // Legacy endpoint
+
 router.put("/password/:id",  verifySuperadminToken, updateSuperadminPassword)
 router.post("/mfa/setup/:id", verifySuperadminToken, setupMfaSuperadmin)
 router.post("/mfa/verify/:id", verifySuperadminToken, verifyMfaSuperadmin)

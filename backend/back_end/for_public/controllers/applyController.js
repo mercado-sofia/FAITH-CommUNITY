@@ -1,6 +1,7 @@
 // db table: volunteers
 import db from "../../database.js";
 import { createUserNotification } from './userController.js';
+import { calculateAge } from '../../utils/dateUtils.js';
 
 export const submitVolunteer = async (req, res) => {
   try {
@@ -149,11 +150,9 @@ export const getAllVolunteers = async (req, res) => {
       ORDER BY v.created_at DESC
     `);
 
-    // Calculate age from birth_date
+    // Calculate age from birth_date using centralized utility
     const volunteersWithAge = results.map(volunteer => {
-      const age = volunteer.birth_date ? 
-        Math.floor((new Date() - new Date(volunteer.birth_date)) / (365.25 * 24 * 60 * 60 * 1000)) : 
-        null;
+      const age = calculateAge(volunteer.birth_date);
       
       return {
         ...volunteer,
@@ -206,11 +205,9 @@ export const getVolunteersByOrganization = async (req, res) => {
       ORDER BY v.created_at DESC
     `, [orgId]);
 
-    // Calculate age from birth_date
+    // Calculate age from birth_date using centralized utility
     const volunteersWithAge = results.map(volunteer => {
-      const age = volunteer.birth_date ? 
-        Math.floor((new Date() - new Date(volunteer.birth_date)) / (365.25 * 24 * 60 * 60 * 1000)) : 
-        null;
+      const age = calculateAge(volunteer.birth_date);
       
       return {
         ...volunteer,
@@ -282,11 +279,9 @@ export const getVolunteersByAdminOrg = async (req, res) => {
       ORDER BY v.created_at DESC
     `, [adminOrg]);
 
-    // Calculate age from birth_date
+    // Calculate age from birth_date using centralized utility
     const volunteersWithAge = results.map(volunteer => {
-      const age = volunteer.birth_date ? 
-        Math.floor((new Date() - new Date(volunteer.birth_date)) / (365.25 * 24 * 60 * 60 * 1000)) : 
-        null;
+      const age = calculateAge(volunteer.birth_date);
       
       return {
         ...volunteer,
@@ -348,11 +343,8 @@ export const getVolunteerById = async (req, res) => {
 
     const volunteer = results[0];
     
-    // Calculate age from birth_date
-    const age = volunteer.birth_date ? 
-      Math.floor((new Date() - new Date(volunteer.birth_date)) / (365.25 * 24 * 60 * 60 * 1000)) : 
-      null;
-    
+    // Calculate age from birth_date using centralized utility
+    const age = calculateAge(volunteer.birth_date);
     volunteer.age = age;
     
     res.status(200).json({

@@ -404,7 +404,7 @@ export default function SecureEmailChange({ userData, setUserData }) {
               <form onSubmit={handleStep2Submit} className={styles.emailForm}>
                 <div className={styles.stepHeader}>
                   <h3>Step 2: Enter Verification Code</h3>
-                  <p>We've sent a 6-digit code to <strong>{emailData.newEmail}</strong></p>
+                  <p>We&apos;ve sent a 6-digit code to <strong>{emailData.newEmail}</strong></p>
                   {expiresAt && (
                     <div className={styles.timer}>
                       <FaClock />
@@ -433,7 +433,7 @@ export default function SecureEmailChange({ userData, setUserData }) {
 
                 <div className={styles.securityNote}>
                   <FaShieldAlt />
-                  <p>This code was sent to your new email address to verify ownership. Check your spam folder if you don't see it.</p>
+                  <p>This code was sent to your new email address to verify ownership. Check your spam folder if you don&apos;t see it.</p>
                 </div>
 
                 <div className={styles.emailModalButtons}>

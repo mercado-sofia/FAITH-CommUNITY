@@ -3,6 +3,7 @@
 import React from 'react'
 import Image from 'next/image'
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths'
+import { formatProgramDates } from '@/utils/dateUtils.js'
 import StarButton from './StarButton'
 import styles from './styles/ProgramCard.module.css'
 
@@ -15,47 +16,7 @@ const ProgramCard = ({
   // Use the new upload path utility
   const imageSource = getProgramImageUrl(program.image)
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Not specified'
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })
-    } catch (error) {
-      return 'Invalid date'
-    }
-  }
-
-  const formatProgramDates = (program) => {
-    // Handle multiple dates array (from admin creation flow)
-    if (program.multipleDates && Array.isArray(program.multipleDates) && program.multipleDates.length > 0) {
-      if (program.multipleDates.length === 1) {
-        return formatDate(program.multipleDates[0])
-      } else if (program.multipleDates.length === 2) {
-        return `${formatDate(program.multipleDates[0])} & ${formatDate(program.multipleDates[1])}`
-      } else {
-        return `${formatDate(program.multipleDates[0])} +${program.multipleDates.length - 1} more dates`
-      }
-    } 
-    // Handle single date range
-    else if (program.eventStartDate && program.eventEndDate) {
-      const startDate = new Date(program.eventStartDate)
-      const endDate = new Date(program.eventEndDate)
-      
-      if (startDate.getTime() === endDate.getTime()) {
-        return formatDate(program.eventStartDate)
-      } else {
-        return `${formatDate(program.eventStartDate)} - ${formatDate(program.eventEndDate)}`
-      }
-    }
-    // Handle single event date
-    else if (program.event_date) {
-      return formatDate(program.event_date)
-    }
-    return 'Not specified'
-  }
+  // Using centralized date utilities - formatProgramDates is now imported
 
   const getCategoryLabel = (category) => {
     const categoryMap = {

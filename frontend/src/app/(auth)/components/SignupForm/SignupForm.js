@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import styles from "./SignupForm.module.css"
 import { FaUser, FaLock, FaEye, FaEyeSlash, FaPhone, FaMapMarkerAlt, FaVenusMars, FaSpinner } from "react-icons/fa"
 import CustomDropdown from "./CustomDropdown"
+import { formatDateForAPI } from "../../../../utils/dateUtils.js"
 
 export default function SignupForm({ onRegistrationSuccess }) {
   const [currentStep, setCurrentStep] = useState(1)
@@ -339,10 +340,11 @@ export default function SignupForm({ onRegistrationSuccess }) {
     setShowError(false)
     
     try {
-      // Format birth date for backend with proper leading zeros
+      // Format birth date for backend using centralized utility (ISO format: YYYY-MM-DD)
       const formattedMonth = formData.birthMonth.padStart(2, '0')
       const formattedDay = formData.birthDay.padStart(2, '0')
-      const birthDate = `${formattedMonth}/${formattedDay}/${formData.birthYear}`
+      const birthDateString = `${formData.birthYear}-${formattedMonth}-${formattedDay}`
+      const birthDate = formatDateForAPI(birthDateString)
       
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
       const response = await fetch(`${API_BASE_URL}/api/users/register`, {

@@ -152,15 +152,40 @@ export default function LoginPage() {
     clearAllSessionData()
 
     try {
+      // Only try one system at a time to avoid multiple failed attempts
       const systems = needsOtp && lastAttemptedSystem ? [lastAttemptedSystem] : ["admin", "superadmin", "user"]
       let result
       let successfulSystem = null
       
-      for (const s of systems) {
-        result = await attempt(s)
-        if (result.ok) {
-          successfulSystem = s
-          break
+      // Try only the first system initially to avoid multiple failed attempts
+      const systemToTry = systems[0]
+      result = await attempt(systemToTry)
+      
+      if (result.ok) {
+        successfulSystem = systemToTry
+      } else if (result.status === 429) {
+        // Rate limit hit - don't try other systems
+        setErrorMessage("Too many failed login attempts. Please wait 5 minutes before trying again.")
+        setShowError(true)
+        setFieldErrors({ email: "Rate limit exceeded", password: "Rate limit exceeded" })
+        setIsLoading(false)
+        return
+      } else if (result.data && result.data.error && result.data.error.includes("Invalid credentials")) {
+        // Only try other systems if the first one fails with invalid credentials
+        // and we haven't hit rate limits
+        for (let i = 1; i < systems.length; i++) {
+          result = await attempt(systems[i])
+          if (result.ok) {
+            successfulSystem = systems[i]
+            break
+          } else if (result.status === 429) {
+            // Rate limit hit during fallback attempts
+            setErrorMessage("Too many failed login attempts. Please wait 5 minutes before trying again.")
+            setShowError(true)
+            setFieldErrors({ email: "Rate limit exceeded", password: "Rate limit exceeded" })
+            setIsLoading(false)
+            return
+          }
         }
       }
 
@@ -195,8 +220,9 @@ export default function LoginPage() {
         return
       }
 
+      // Handle rate limiting (this should now be caught earlier in the logic above)
       if (result && result.status === 429) {
-        setErrorMessage("Too many login attempts. Please wait a few minutes before trying again.")
+        setErrorMessage("Too many failed login attempts. Please wait 5 minutes before trying again.")
         setShowError(true)
         setFieldErrors({ email: "Rate limit exceeded", password: "Rate limit exceeded" })
         setIsLoading(false)

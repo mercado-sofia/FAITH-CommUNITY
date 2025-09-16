@@ -9,6 +9,7 @@ export default function BulkActionConfirmationModal({
   isOpen,
   actionType, // 'approve', 'reject', 'delete'
   selectedCount,
+  selectedItem, // For individual actions
   onConfirm,
   onCancel,
   isProcessing = false
@@ -37,23 +38,33 @@ export default function BulkActionConfirmationModal({
 
   const getActionConfig = () => {
     const isMultiple = selectedCount > 1;
+    const isIndividual = selectedItem && selectedCount === 1;
     const itemText = isMultiple ? 'Items' : 'Item';
     const actionText = isMultiple ? 'All' : '';
+    const itemName = isIndividual ? (selectedItem.org || 'this submission') : '';
     
     switch (actionType) {
       case 'approve':
         return {
           title: `Approve ${actionText} Selected ${itemText}`,
-          message: `Are you sure you want to approve ${selectedCount} selected submission${selectedCount !== 1 ? 's' : ''}?`,
-          details: 'This will approve all selected submissions and they will be processed immediately.',
+          message: isIndividual 
+            ? `Are you sure you want to approve ${itemName}'s submission?`
+            : `Are you sure you want to approve ${selectedCount} selected submission${selectedCount !== 1 ? 's' : ''}?`,
+          details: isIndividual 
+            ? 'This will approve the submission and it will be processed immediately.'
+            : 'This will approve all selected submissions and they will be processed immediately.',
           buttonText: isMultiple ? 'Approve All' : 'Approve',
           buttonClass: styles.approveBtn
         };
       case 'reject':
         return {
           title: `Reject ${actionText} Selected ${itemText}`,
-          message: `Are you sure you want to reject ${selectedCount} selected submission${selectedCount !== 1 ? 's' : ''}?`,
-          details: 'This will reject all selected submissions and they will be returned to the organization.',
+          message: isIndividual 
+            ? `Are you sure you want to reject ${itemName}'s submission?`
+            : `Are you sure you want to reject ${selectedCount} selected submission${selectedCount !== 1 ? 's' : ''}?`,
+          details: isIndividual 
+            ? 'This will reject the submission and it will be returned to the organization.'
+            : 'This will reject all selected submissions and they will be returned to the organization.',
           buttonText: isMultiple ? 'Reject All' : 'Reject',
           buttonClass: styles.rejectBtn,
           showComment: true
@@ -61,8 +72,12 @@ export default function BulkActionConfirmationModal({
       case 'delete':
         return {
           title: `Delete ${actionText} Selected ${itemText}`,
-          message: `Are you sure you want to permanently delete ${selectedCount} selected submission${selectedCount !== 1 ? 's' : ''}?`,
-          details: 'This action cannot be undone. All selected submissions will be permanently removed from the system.',
+          message: isIndividual 
+            ? `Are you sure you want to permanently delete ${itemName}'s submission?`
+            : `Are you sure you want to permanently delete ${selectedCount} selected submission${selectedCount !== 1 ? 's' : ''}?`,
+          details: isIndividual 
+            ? 'This action cannot be undone. The submission will be permanently removed from the system.'
+            : 'This action cannot be undone. All selected submissions will be permanently removed from the system.',
           buttonText: isMultiple ? 'Delete All' : 'Delete',
           buttonClass: styles.deleteBtn,
           isDestructive: true

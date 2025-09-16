@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { TbMail } from "react-icons/tb";
-import { MdNotificationsNone, MdCancel } from "react-icons/md";
+import { MdNotificationsNone } from "react-icons/md";
+import { FiXCircle } from "react-icons/fi";
 import { useNavigation } from '../../../contexts/NavigationContext';
 import { useSelector } from 'react-redux';
 import { selectCurrentAdmin } from '../../../rtk/superadmin/adminSlice';
@@ -208,7 +209,7 @@ export default function TopBar() {
                             <circle cx="12" cy="12" r="9" stroke="#10b981" strokeWidth="2" />
                           </svg>
                         ) : notification.type === 'decline' ? (
-                          <MdCancel size={16} color="#ef4444" />
+                          <FiXCircle size={16} color="#ef4444" />
                         ) : notification.type === 'message' ? (
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                             <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

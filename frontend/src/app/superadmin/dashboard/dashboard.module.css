@@ -96,39 +96,6 @@
   color: #1d9782;
 }
 
-/* Approvals Section */
-.pendingApprovalsSection {
-  background: white;
-  border-radius: 20px;
-  padding: 1.5rem;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
-  transition: transform 0.3s ease;
-}
-
-.pendingApprovalsSection:hover {
-  transform: translateY(-2px);
-}
-
-.sectionHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.sectionTitle {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #000;
-  margin: 0;
-  font-family: var(--font-poppins), sans-serif;
-}
-
-.filterControls {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
 
 .filterSelect {
   display: flex;
@@ -164,111 +131,6 @@
   background: #f3f3f3;
 }
 
-.viewAllButton {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  text-decoration: none;
-  background: white;
-  border: 2px solid #06100f;
-  padding: 0.45rem 0.9rem;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  font-family: var(--font-inter);
-  color: #050809;
-  cursor: pointer;
-  transition: background 0.2s ease;
-  user-select: none;
-}
-
-.viewAllButton:hover {
-  background: #f3f3f3;
-}
-
-/* Table Styles */
-.approvalsTable {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.approvalsTable th {
-  background: #f9fafb;
-  padding: 0.75rem 1rem;
-  text-align: left;
-  font-weight: 600;
-  color: #374151;
-  font-size: 0.875rem;
-  border-bottom: 1px solid #e5e7eb;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.approvalsTable td {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #f3f4f6;
-  color: #374151;
-  font-size: 0.875rem;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.approvalsTable tr:hover {
-  background: #f9fafb;
-}
-
-.statusBadge {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-  border: 1px solid transparent;
-}
-
-.statusBadge.pending {
-  background: #fef3c7;
-  color: #92400e;
-  border-color: #fbbf24;
-}
-
-.statusBadge.approved {
-  background: #d1fae5;
-  color: #047857;
-  border-color: #10b981;
-}
-
-.statusBadge.rejected {
-  background: #fee2e2;
-  color: #b91c1c;
-  border-color: #ef4444;
-}
-
-/* Empty State */
-.emptyState {
-  text-align: center;
-  padding: 3rem 2rem;
-  color: #6b7280;
-}
-
-.emptyIcon {
-  font-size: 3rem;
-  margin-bottom: 0.25rem;
-  opacity: 0.5;
-}
-
-.emptyState h3 {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 0.5rem;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.emptyState p {
-  font-size: 0.875rem;
-  margin: 0;
-  line-height: 1.5;
-}
 
 /* Section Heading */
 .section h2 {
@@ -290,15 +152,6 @@
     gap: 1rem;
   }
   
-  .sectionHeader {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-  }
-  
-  .filterControls {
-    justify-content: space-between;
-  }
 }
 
 @media (max-width: 768px) {
@@ -311,23 +164,6 @@
     gap: 1rem;
   }
   
-  .filterControls {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-  
-  .filterSelect {
-    min-width: auto !important;
-  }
-  
-  .approvalsTable {
-    font-size: 0.75rem;
-  }
-  
-  .approvalsTable th,
-  .approvalsTable td {
-    padding: 0.5rem;
-  }
 }
 
 @media (max-width: 480px) {
@@ -347,86 +183,4 @@
     font-size: 1.75rem;
   }
   
-  .pendingApprovalsSection {
-    padding: 1.25rem;
-  }
-}
-
-/* Dropdown Styles */
-.dropdownWrapper {
-  display: flex;
-  align-items: center;
-  position: relative;
-}
-
-.organizationDropdown {
-  background: white;
-  padding: 0.45rem 0.9rem;
-  min-width: 200px;
-  border: 2px solid #06100f;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #06100f;
-  transition: all 0.2s ease;
-  user-select: none;
-}
-
-.organizationDropdown:hover {
-  background: #f3f3f3;
-}
-
-.organizationDropdown:focus {
-  outline: none;
-  background: #f3f3f3;
-}
-
-.organizationDropdown .icon {
-  margin-left: 0.5rem;
-  font-size: 16px;
-  color: #06100f;
-  transition: transform 0.2s ease;
-}
-
-.organizationDropdown.open .icon {
-  color: #06100f;
-  transform: rotate(180deg);
-}
-
-.options {
-  position: absolute;
-  top: calc(100% + 0.3rem);
-  left: 0;
-  right: 0;
-  background: #fff;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  z-index: 50;
-  max-height: 200px;
-  overflow-y: auto;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.options li {
-  padding: 0.6rem 1rem;
-  cursor: pointer;
-  font-size: 14px;
-  color: #374151;
-  border-bottom: 1px solid #f3f4f6;
-  transition: background-color 0.15s ease;
-}
-
-.options li:last-child {
-  border-bottom: none;
-}
-
-.options li:hover {
-  background-color: #f3f3f3;
 }

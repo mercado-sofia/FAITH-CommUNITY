@@ -10,7 +10,7 @@ import {
   useMarkAllAsReadMutation,
   useDeleteNotificationMutation 
 } from '../../../rtk/admin/notificationsApi';
-import { FiX } from 'react-icons/fi';
+import { FiX, FiXCircle } from 'react-icons/fi';
 import { PiChecksBold } from 'react-icons/pi';
 import { MdCancel } from 'react-icons/md';
 import { DeleteConfirmationModal, SkeletonLoader } from '../components';
@@ -155,11 +155,7 @@ export default function NotificationsPage() {
           </svg>
         );
       case 'decline':
-        return (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M18 6L6 18M6 6L18 18" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        );
+        return <FiXCircle size={16} color="#ef4444" />;
       case 'message':
         return (
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">

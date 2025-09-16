@@ -62,16 +62,22 @@ export default function OrgHeadsCarousel({ heads }) {
                 heads.map((head, i) => (
                   <div key={i} className={styles.orgheadsWrapperItem}>
                     <div className={styles.imageContainer}>
-                      <Image
-                        src={head.photo ? `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${head.photo}` : '/logo/faith_community_logo.png'}
-                        alt={head.head_name || head.name || 'Organization Head'}
-                        width={240}
-                        height={280}
-                        className={styles.headImage}
-                        onError={(e) => {
-                          e.target.src = '/logo/faith_community_logo.png';
-                        }}
-                      />
+                      {head.photo ? (
+                        <Image
+                          src={`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${head.photo}`}
+                          alt={head.head_name || head.name || 'Organization Head'}
+                          width={240}
+                          height={280}
+                          className={styles.headImage}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div className={styles.noImageFallback}>
+                        <span>No Image</span>
+                      </div>
                       <div className={styles.iconBar}>
                         {head.facebook && (
                           <a href={head.facebook} target="_blank" rel="noreferrer" className={styles.iconBtn}>

@@ -50,29 +50,29 @@ export const useURLParams = (defaultParams = {}) => {
       page: searchParams.get('page')
     }
 
-    const newParams = { ...params }
-    let hasChanges = false
+    setParams(prevParams => {
+      const newParams = { ...prevParams }
+      let hasChanges = false
 
-    if (urlParams.search !== null) {
-      newParams.search = urlParams.search
-      hasChanges = true
-    }
-    if (urlParams.sort !== null) {
-      newParams.sort = urlParams.sort
-      hasChanges = true
-    }
-    if (urlParams.show !== null) {
-      newParams.show = parseInt(urlParams.show) || 10
-      hasChanges = true
-    }
-    if (urlParams.page !== null) {
-      newParams.page = parseInt(urlParams.page) || 1
-      hasChanges = true
-    }
+      if (urlParams.search !== null) {
+        newParams.search = urlParams.search
+        hasChanges = true
+      }
+      if (urlParams.sort !== null) {
+        newParams.sort = urlParams.sort
+        hasChanges = true
+      }
+      if (urlParams.show !== null) {
+        newParams.show = parseInt(urlParams.show) || 10
+        hasChanges = true
+      }
+      if (urlParams.page !== null) {
+        newParams.page = parseInt(urlParams.page) || 1
+        hasChanges = true
+      }
 
-    if (hasChanges) {
-      setParams(newParams)
-    }
+      return hasChanges ? newParams : prevParams
+    })
   }, [searchParams])
 
   // Update individual parameter

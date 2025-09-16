@@ -206,45 +206,41 @@
 
 /* Status Badge */
 .statusBadge {
-  display: flex;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  border: 1px solid transparent;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: capitalize;
-  width: fit-content;
-  margin: 0 auto;
-}
-
-.statusIcon {
-  font-size: 14px;
 }
 
 .pending {
-  background-color: #fef3c7;
-  color: #d97706;
-  border: 1px solid #fbbf24;
+  background: #fdf2e2;
+  color: #e8901c;
 }
 
 .accepted {
-  background-color: #d1fae5;
-  color: #059669;
-  border: 1px solid #34d399;
+  background: #deffee;
+  color: #058964;
+}
+
+.active {
+  background: #deffee;
+  color: #058964;
 }
 
 .expired {
-  background-color: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #f87171;
+  background: #ffebeb;
+  color: #c00d0d;
 }
 
 .inactive {
-  background-color: #f3f4f6;
+  background-color: #f9fafb;
   color: #6b7280;
-  border: 1px solid #d1d5db;
+  border: 1px solid #e5e7eb;
 }
 
 /* Action Buttons */

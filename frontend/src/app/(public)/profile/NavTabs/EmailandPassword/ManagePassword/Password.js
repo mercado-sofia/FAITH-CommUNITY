@@ -166,7 +166,7 @@ export default function Password({ userData, setUserData }) {
         setTimeout(() => {
           setShowPasswordModal(false);
           setPasswordSuccess('');
-          document.body.classList.remove(styles.modalOpen);
+          document.body.classList.remove('modalOpen');
         }, 2000);
       } else {
         // Handle server error by showing field-specific error
@@ -220,13 +220,13 @@ export default function Password({ userData, setUserData }) {
       newPassword: '',
       confirmPassword: ''
     });
-    document.body.classList.remove(styles.modalOpen);
+    document.body.classList.remove('modalOpen');
   };
 
   return (
     <div className={styles.passwordSection}>
       <div className={styles.sectionHeader}>
-        <h2>Password & Security</h2>
+        <h2>Password</h2>
       </div>
 
       <div className={styles.passwordContent}>
@@ -234,9 +234,7 @@ export default function Password({ userData, setUserData }) {
         <div className={styles.infoItem}>
           <div className={styles.infoContent}>
             <label>Password Status</label>
-            <div className={styles.statusInfo}>
-              <p>For security, we recommend changing your password regularly.</p>
-            </div>
+            <p>For security, we recommend changing your password regularly.</p>
           </div>
         </div>
 
@@ -245,7 +243,7 @@ export default function Password({ userData, setUserData }) {
           <button 
             onClick={() => {
               setShowPasswordModal(true);
-              document.body.classList.add(styles.modalOpen);
+              document.body.classList.add('modalOpen');
             }} 
             className={styles.changePasswordButton}
           >

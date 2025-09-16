@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { FiClipboard, FiSearch, FiChevronDown, FiCheck, FiX, FiTrash2 } from 'react-icons/fi';
+import { FiCheck, FiX, FiTrash2 } from 'react-icons/fi';
+import { IoCloseOutline } from 'react-icons/io5';
 import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowLeftDoubleFill, RiArrowRightDoubleFill } from "react-icons/ri";
 import BulkActionConfirmationModal from './components/BulkActionConfirmationModal';
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
+import ConfirmationModal from '../components/ConfirmationModal';
 import SuccessModal from '../components/SuccessModal';
 import ApprovalsTable from './components/ApprovalsTable';
+import SearchAndFilterControls from './components/SearchAndFilterControls';
 import styles from './approvals.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -34,10 +36,8 @@ export default function PendingApprovalsPage() {
   
   // Bulk actions
   const [selectedItems, setSelectedItems] = useState(new Set());
-  const [showBulkActions, setShowBulkActions] = useState(false);
   const [isBulkActionsVisible, setIsBulkActionsVisible] = useState(false);
   const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
-  const [isBulkActionsHiding, setIsBulkActionsHiding] = useState(false);
   
   // Dropdown state
   const [showDropdown, setShowDropdown] = useState(null);
@@ -49,15 +49,15 @@ export default function PendingApprovalsPage() {
   const [pendingBulkAction, setPendingBulkAction] = useState(null);
   
   
-  // Individual approve/reject/delete modal state
-  const [showApproveModal, setShowApproveModal] = useState(false);
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  // Individual action modal state
+  const [showIndividualModal, setShowIndividualModal] = useState(false);
   const [selectedItemForAction, setSelectedItemForAction] = useState(null);
-  const [selectedItemForDelete, setSelectedItemForDelete] = useState(null);
-  const [rejectComment, setRejectComment] = useState('');
+  const [pendingIndividualAction, setPendingIndividualAction] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Individual delete modal state
+  const [showIndividualDeleteModal, setShowIndividualDeleteModal] = useState(false);
+  const [isIndividualDeleting, setIsIndividualDeleting] = useState(false);
   
   // Bulk delete modal state
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
@@ -71,11 +71,8 @@ export default function PendingApprovalsPage() {
     
     const rect = buttonElement.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
-    const dropdownHeight = 120; // Approximate height of dropdown with 3 items
-    
-    // Calculate horizontal position (right-aligned to button)
-    // For absolute positioning, we need to position relative to the button
-    const right = 0; // Align to the right edge of the button
+    const dropdownHeight = 120;
+    const right = 0;
     
     // Check if there's enough space below
     const spaceBelow = viewportHeight - rect.bottom;
@@ -217,28 +214,21 @@ export default function PendingApprovalsPage() {
     }
   }, [searchParams]);
 
-  // Handle smooth bulk actions bar transition
+  // Handle bulk actions bar visibility - no delay, instant show/hide
   useEffect(() => {
-    if (selectedItems.size > 0) {
-      setIsBulkActionsHiding(false);
-      setIsBulkActionsVisible(true);
-    } else {
-      // Start hiding animation
-      setIsBulkActionsHiding(true);
-      // Hide after animation completes
-      const timer = setTimeout(() => {
-        setIsBulkActionsVisible(false);
-        setIsBulkActionsHiding(false);
-      }, 400); // Match animation duration
-      return () => clearTimeout(timer);
-    }
+    setIsBulkActionsVisible(selectedItems.size > 0);
   }, [selectedItems.size]);
 
-  // Handle click outside for dropdowns
+  // Handle click outside for dropdowns (excluding SearchAndFilterControls)
   useEffect(() => {
     const handleClickOutside = (e) => {
       // Check if target is a valid element with closest method
       if (!e.target || !e.target.closest) {
+        return;
+      }
+      
+      // Don't close if clicking on SearchAndFilterControls dropdowns
+      if (e.target.closest('[data-search-filter-controls]')) {
         return;
       }
       
@@ -448,99 +438,57 @@ export default function PendingApprovalsPage() {
   }, [showSuccessModal, fetchApprovals]);
 
 
-  // Individual approve/reject modal handlers
+  // Individual action handlers
   const handleApproveClick = useCallback((approval) => {
     setSelectedItemForAction(approval);
-    setShowApproveModal(true);
+    setPendingIndividualAction('approve');
+    setShowIndividualModal(true);
   }, []);
 
   const handleRejectClick = useCallback((approval) => {
     setSelectedItemForAction(approval);
-    setRejectComment('');
-    setShowRejectModal(true);
+    setPendingIndividualAction('reject');
+    setShowIndividualModal(true);
   }, []);
 
-  const handleApproveConfirm = async () => {
-    if (!selectedItemForAction) return;
+  const handleIndividualActionConfirm = useCallback(async (rejectComment) => {
+    if (!selectedItemForAction || !pendingIndividualAction) return;
     
     setIsProcessing(true);
+    setShowIndividualModal(false);
+    
     try {
-      await handleApprove(selectedItemForAction.id);
-      setShowApproveModal(false);
+      switch (pendingIndividualAction) {
+        case 'approve':
+          await handleApprove(selectedItemForAction.id);
+          break;
+        case 'reject':
+          await handleReject(selectedItemForAction.id, rejectComment || '');
+          break;
+        default:
+          throw new Error('Invalid individual action');
+      }
+      
       setSelectedItemForAction(null);
+      setPendingIndividualAction(null);
     } catch (error) {
-      console.error('Approve failed:', error);
+      console.error('Individual action failed:', error);
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [selectedItemForAction, pendingIndividualAction, handleApprove, handleReject]);
 
-  const handleRejectConfirm = async () => {
-    if (!selectedItemForAction) return;
-    
-    setIsProcessing(true);
-    try {
-      await handleReject(selectedItemForAction.id, rejectComment);
-      setShowRejectModal(false);
-      setSelectedItemForAction(null);
-      setRejectComment('');
-    } catch (error) {
-      console.error('Reject failed:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleApproveCancel = () => {
-    setShowApproveModal(false);
+  const handleIndividualActionCancel = useCallback(() => {
+    setShowIndividualModal(false);
     setSelectedItemForAction(null);
-  };
-
-  const handleRejectCancel = () => {
-    setShowRejectModal(false);
-    setSelectedItemForAction(null);
-    setRejectComment('');
-  };
+    setPendingIndividualAction(null);
+  }, []);
 
   // Individual delete handlers
   const handleDeleteClick = useCallback((item) => {
-    setSelectedItemForDelete(item);
-    setShowDeleteModal(true);
+    setSelectedItemForAction(item);
+    setShowIndividualDeleteModal(true);
   }, []);
-
-  const handleDeleteConfirm = useCallback(async () => {
-    if (!selectedItemForDelete) return;
-    
-    setIsDeleting(true);
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/approvals/${selectedItemForDelete.id}/delete`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      const result = await res.json();
-
-      if (!res.ok || !result.success) {
-        throw new Error(result.message || 'Deletion failed');
-      }
-
-      showSuccessModal('Submission deleted successfully');
-      fetchApprovals();
-      setShowDeleteModal(false);
-      setSelectedItemForDelete(null);
-    } catch (err) {
-      console.error('❌ Delete error:', err);
-      showSuccessModal('Failed to delete submission: ' + err.message);
-    } finally {
-      setIsDeleting(false);
-    }
-  }, [selectedItemForDelete, showSuccessModal, fetchApprovals]);
-
-  const handleDeleteCancel = useCallback(() => {
-    setShowDeleteModal(false);
-    setSelectedItemForDelete(null);
-  }, []);
-
 
   // Bulk delete handlers
   const handleBulkDeleteClick = useCallback(() => {
@@ -567,6 +515,41 @@ export default function PendingApprovalsPage() {
   const handleBulkDeleteCancel = () => {
     setShowBulkDeleteModal(false);
   };
+
+  // Individual delete confirmation handlers
+  const handleIndividualDeleteConfirm = async () => {
+    if (!selectedItemForAction) return;
+    
+    setIsIndividualDeleting(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/approvals/${selectedItemForAction.id}/delete`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || 'Deletion failed');
+      }
+
+      showSuccessModal('Submission deleted successfully');
+      fetchApprovals();
+      setShowIndividualDeleteModal(false);
+      setSelectedItemForAction(null);
+    } catch (error) {
+      console.error('Individual delete failed:', error);
+      showSuccessModal('Failed to delete submission: ' + error.message);
+    } finally {
+      setIsIndividualDeleting(false);
+    }
+  };
+
+  const handleIndividualDeleteCancel = () => {
+    setShowIndividualDeleteModal(false);
+    setSelectedItemForAction(null);
+  };
+
 
   // Pagination logic
   const totalPages = Math.ceil(filteredApprovals.length / showEntries);
@@ -616,6 +599,10 @@ export default function PendingApprovalsPage() {
     if (selectedItems.size === 0 || isBulkActionLoading) return;
     handleBulkDeleteClick();
   }, [selectedItems.size, isBulkActionLoading, handleBulkDeleteClick]);
+
+  const cancelSelection = useCallback(() => {
+    setSelectedItems(new Set());
+  }, []);
 
   // Confirmation modal handlers
   const handleBulkConfirmationCancel = useCallback(() => {
@@ -672,8 +659,7 @@ export default function PendingApprovalsPage() {
     updateURLParams({ status: value });
   }, [updateURLParams]);
 
-  const handleSearchChange = useCallback((e) => {
-    const value = e.target.value;
+  const handleSearchChange = useCallback((value) => {
     setSearchTerm(value);
     updateURLParams({ search: value });
   }, [updateURLParams]);
@@ -684,8 +670,7 @@ export default function PendingApprovalsPage() {
     updateURLParams({ sort: value });
   }, [updateURLParams]);
 
-  const handleShowEntriesChange = useCallback((e) => {
-    const value = parseInt(e.target.value);
+  const handleShowEntriesChange = useCallback((value) => {
     setShowEntries(value);
     setCurrentPage(1);
     updateURLParams({ show: value, page: 1 });
@@ -726,173 +711,31 @@ export default function PendingApprovalsPage() {
           <h1 className={styles.pageTitle}>Approvals</h1>
         </div>
 
-      {/* Controls and Stats Section */}
-      <div className={styles.controlsAndStatsSection}>
-        <div className={styles.controlsLeft}>
-          <span className={styles.inlineLabel}>Show</span>
-          <div className={styles.dropdownWrapper}>
-            <div
-              className={`${styles.dropdown} ${showDropdown === "show" ? styles.open : ""}`}
-              onClick={() => setShowDropdown(showDropdown === "show" ? null : "show")}
-            >
-              {showEntries}
-              <FiChevronDown className={styles.icon} />
-            </div>
-            {showDropdown === "show" && (
-              <ul className={styles.options}>
-                {[10, 25, 50, 100].map((count) => (
-                  <li key={count} onClick={() => {
-                    setShowEntries(count);
-                    setCurrentPage(1);
-                    updateURLParams({ show: count, page: 1 });
-                    setShowDropdown(null);
-                  }}>
-                    {count}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <div className={styles.dropdownWrapper}>
-            <div
-              className={`${styles.organizationDropdown} ${showDropdown === "organization" ? styles.open : ""}`}
-              onClick={() => setShowDropdown(showDropdown === "organization" ? null : "organization")}
-            >
-              {orgsLoading ? "Loading..." : selectedOrganization === "all" ? "All Organizations" : selectedOrganization}
-              <FiChevronDown className={styles.icon} />
-            </div>
-            {showDropdown === "organization" && (
-              <ul className={styles.options}>
-                <li key="all" onClick={() => {
-                  setSelectedOrganization("all");
-                  updateURLParams({ organization: "all" });
-                  setShowDropdown(null);
-                }}>
-                  All Organizations
-                </li>
-                {organizations.map(org => (
-                  <li key={org.id} onClick={() => {
-                    setSelectedOrganization(org.acronym);
-                    updateURLParams({ organization: org.acronym });
-                    setShowDropdown(null);
-                  }}>
-                    {org.acronym} - {org.name.length > 30 ? org.name.substring(0, 30) + "..." : org.name}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <div className={styles.dropdownWrapper}>
-            <div
-              className={`${styles.dropdown} ${showDropdown === "section" ? styles.open : ""}`}
-              onClick={() => setShowDropdown(showDropdown === "section" ? null : "section")}
-            >
-              {selectedSection === "all" ? "All Section" : selectedSection.charAt(0).toUpperCase() + selectedSection.slice(1)}
-              <FiChevronDown className={styles.icon} />
-          </div>
-            {showDropdown === "section" && (
-              <ul className={styles.options}>
-                <li key="all" onClick={() => {
-                  setSelectedSection("all");
-                  updateURLParams({ section: "all" });
-                  setShowDropdown(null);
-                }}>
-                  All Section
-                </li>
-                {["programs", "competency", "advocacy"].map((section) => (
-                  <li key={section} onClick={() => {
-                    setSelectedSection(section);
-                    updateURLParams({ section });
-                    setShowDropdown(null);
-                  }}>
-                    {section.charAt(0).toUpperCase() + section.slice(1)}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <div className={styles.dropdownWrapper}>
-            <div
-              className={`${styles.dropdown} ${showDropdown === "status" ? styles.open : ""}`}
-              onClick={() => setShowDropdown(showDropdown === "status" ? null : "status")}
-            >
-              {selectedStatus === "all" ? "All Status" : selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)}
-              <FiChevronDown className={styles.icon} />
-            </div>
-            {showDropdown === "status" && (
-              <ul className={styles.options}>
-                <li key="all" onClick={() => {
-                  setSelectedStatus("all");
-                  updateURLParams({ status: "all" });
-                  setShowDropdown(null);
-                }}>
-                  All Status
-                </li>
-                {["pending", "approved", "rejected"].map((status) => (
-                  <li key={status} onClick={() => {
-                    setSelectedStatus(status);
-                    updateURLParams({ status });
-                    setShowDropdown(null);
-                  }}>
-                    {status.charAt(0).toUpperCase() + status.slice(1)}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-
-        <div className={styles.searchWrapper}>
-          <div className={styles.searchInputContainer}>
-            <input
-              type="text"
-              placeholder="Search"
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className={styles.searchInput}
-            />
-            {searchTerm ? (
-              <FiX className={styles.clearIcon} onClick={() => {
-                setSearchTerm('');
-                updateURLParams({ search: '' });
-              }} />
-            ) : (
-              <FiSearch className={styles.searchIcon} />
-            )}
-          </div>
-
-          <div className={styles.dropdownWrapper}>
-            <div
-              className={`${styles.dropdown} ${showDropdown === "sort" ? styles.open : ""}`}
-              onClick={() => setShowDropdown(showDropdown === "sort" ? null : "sort")}
-            >
-              Sort: {sortBy.charAt(0).toUpperCase() + sortBy.slice(1)}
-              <FiChevronDown className={styles.icon} />
-            </div>
-            {showDropdown === "sort" && (
-              <ul className={styles.options}>
-                {["latest", "oldest"].map((option) => (
-                  <li key={option} onClick={() => {
-                    setSortBy(option);
-                    updateURLParams({ sort: option });
-                    setShowDropdown(null);
-                  }}>
-                    {option.charAt(0).toUpperCase() + option.slice(1)}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Search and Filter Controls */}
+      <SearchAndFilterControls
+        selectedOrganization={selectedOrganization}
+        selectedSection={selectedSection}
+        selectedStatus={selectedStatus}
+        searchTerm={searchTerm}
+        sortBy={sortBy}
+        showEntries={showEntries}
+        organizations={organizations}
+        orgsLoading={orgsLoading}
+        showDropdown={showDropdown}
+        setShowDropdown={setShowDropdown}
+        onOrganizationChange={handleOrganizationChange}
+        onSectionChange={handleSectionChange}
+        onStatusChange={handleStatusChange}
+        onSearchChange={handleSearchChange}
+        onSortChange={handleSortChange}
+        onShowEntriesChange={handleShowEntriesChange}
+        onUpdateURLParams={updateURLParams}
+      />
       
 
       {/* Bulk Actions Bar */}
       {isBulkActionsVisible && (
-        <div className={`${styles.bulkActionsBar} ${isBulkActionsHiding ? styles.hiding : ''}`}>
+        <div className={styles.bulkActionsBar}>
           <div className={styles.bulkActionsLeft}>
             <span className={styles.selectedCount}>
               {selectedItems.size} item{selectedItems.size !== 1 ? 's' : ''} selected
@@ -927,111 +770,99 @@ export default function PendingApprovalsPage() {
               <FiTrash2 />
               {isBulkActionLoading ? 'Processing...' : 'Delete All'}
             </button>
+            <button 
+              className={styles.cancelButton}
+              onClick={cancelSelection}
+              title="Cancel selection"
+            >
+              <IoCloseOutline />
+            </button>
           </div>
         </div>
       )}
 
       {/* Table Section */}
       <div className={styles.tableSection}>
-      {filteredApprovals.length === 0 ? (
-        <div className={styles.emptyState}>
-            <div className={styles.emptyStateIcon}>
-              <FiClipboard />
-            </div>
-          <h3 className={styles.emptyStateTitle}>No submissions found</h3>
-          <p className={styles.emptyStateText}>
-            {selectedStatus === 'pending' 
-              ? 'No pending submissions found. New submissions will appear here when administrators submit updates.'
-              : selectedStatus === 'approved'
-              ? 'No approved submissions found.'
-              : selectedStatus === 'rejected'
-              ? 'No rejected submissions found.'
-              : 'No submissions found matching your current filters. New submissions will appear here when administrators submit updates.'
-            }
-          </p>
-        </div>
-      ) : (
-          <>
-            <ApprovalsTable
-              approvals={currentApprovals}
-              onApprove={handleApprove}
-              onRejectClick={handleRejectClick}
-              onDeleteClick={handleDeleteClick}
-              selectedItems={selectedItems}
-              onSelectAll={handleSelectAll}
-              onSelectItem={handleSelectItem}
-              showDropdown={showDropdown}
-              setShowDropdown={setShowDropdown}
-              dropdownPosition={dropdownPosition}
-              setDropdownPosition={setDropdownPosition}
-              calculateDropdownPosition={calculateDropdownPosition}
-            />
+        <ApprovalsTable
+          approvals={currentApprovals}
+          onApprove={handleApprove}
+          onRejectClick={handleRejectClick}
+          onDeleteClick={handleDeleteClick}
+          selectedItems={selectedItems}
+          onSelectAll={handleSelectAll}
+          onSelectItem={handleSelectItem}
+          showDropdown={showDropdown}
+          setShowDropdown={setShowDropdown}
+          dropdownPosition={dropdownPosition}
+          setDropdownPosition={setDropdownPosition}
+          calculateDropdownPosition={calculateDropdownPosition}
+        />
 
-            {/* Pagination */}
-            <div className={styles.pagination}>
-              <div className={styles.paginationInfo}>
-                Showing {startIndex + 1} to {Math.min(endIndex, filteredApprovals.length)} of {filteredApprovals.length} entries
-              </div>
-              <div className={styles.paginationControls}>
-                {/* First Page Button */}
-                <button
-                  onClick={() => handlePageChange(1)}
-                  disabled={currentPage === 1}
-                  className={styles.navButton}
-                  aria-label="Go to first page"
-                  title="First page"
-                >
-                  <RiArrowLeftDoubleFill size={16}/>
-                </button>
-                
-                {/* Previous Page Button */}
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className={styles.navButton}
-                  aria-label="Go to previous page"
-                  title="Previous page"
-                >
-                  <RiArrowLeftSLine size={16}/>
-                </button>
-                
-                {/* Page Numbers */}
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                  <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    className={`${styles.paginationButton} ${currentPage === page ? 'active' : ''}`}
-                    aria-label={`Go to page ${page}`}
-                    aria-current={currentPage === page ? 'page' : undefined}
-                  >
-                    {page}
-                  </button>
-                ))}
-                
-                {/* Next Page Button */}
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className={styles.navButton}
-                  aria-label="Go to next page"
-                  title="Next page"
-                >
-                  <RiArrowRightSLine size={16}/>
-                </button>
-                
-                {/* Last Page Button */}
-                <button
-                  onClick={() => handlePageChange(totalPages)}
-                  disabled={currentPage === totalPages}
-                  className={styles.navButton}
-                  aria-label="Go to last page"
-                  title="Last page"
-                >
-                  <RiArrowRightDoubleFill size={16}/>
-                </button>
+        {/* Pagination - Only show if there are items */}
+        {filteredApprovals.length > 0 && (
+          <div className={styles.pagination}>
+            <div className={styles.paginationInfo}>
+              Showing {startIndex + 1} to {Math.min(endIndex, filteredApprovals.length)} of {filteredApprovals.length} entries
             </div>
+            <div className={styles.paginationControls}>
+              {/* First Page Button */}
+              <button
+                onClick={() => handlePageChange(1)}
+                disabled={currentPage === 1}
+                className={styles.navButton}
+                aria-label="Go to first page"
+                title="First page"
+              >
+                <RiArrowLeftDoubleFill size={16}/>
+              </button>
+              
+              {/* Previous Page Button */}
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={styles.navButton}
+                aria-label="Go to previous page"
+                title="Previous page"
+              >
+                <RiArrowLeftSLine size={16}/>
+              </button>
+              
+              {/* Page Numbers */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => handlePageChange(page)}
+                  className={`${styles.paginationButton} ${currentPage === page ? 'active' : ''}`}
+                  aria-label={`Go to page ${page}`}
+                  aria-current={currentPage === page ? 'page' : undefined}
+                >
+                  {page}
+                </button>
+              ))}
+              
+              {/* Next Page Button */}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={styles.navButton}
+                aria-label="Go to next page"
+                title="Next page"
+              >
+                <RiArrowRightSLine size={16}/>
+              </button>
+              
+              {/* Last Page Button */}
+              <button
+                onClick={() => handlePageChange(totalPages)}
+                disabled={currentPage === totalPages}
+                className={styles.navButton}
+                aria-label="Go to last page"
+                title="Last page"
+              >
+                <RiArrowRightDoubleFill size={16}/>
+              </button>
           </div>
-          </>
+        </div>
         )}
       </div>
 
@@ -1045,9 +876,8 @@ export default function PendingApprovalsPage() {
         isProcessing={isBulkActionLoading}
       />
 
-
       {/* Bulk Delete Confirmation Modal */}
-      <DeleteConfirmationModal
+      <ConfirmationModal
         isOpen={showBulkDeleteModal}
         itemName={`${selectedItems.size} submission${selectedItems.size > 1 ? 's' : ''}`}
         itemType="submission"
@@ -1056,116 +886,25 @@ export default function PendingApprovalsPage() {
         isDeleting={isBulkDeleting}
       />
 
-      {/* Individual Approve Confirmation Modal */}
-      {showApproveModal && selectedItemForAction && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.confirmModal}>
-            <button 
-              className={styles.modalCloseBtn}
-              onClick={handleApproveCancel}
-            >
-              <FiX />
-            </button>
-            
-            <div className={styles.modalContent}>
-              <h2>
-                <span 
-                  className={styles.approveHeading}
-                  style={{ color: '#10b981' }}
-                >
-                  Approve
-                </span> Submission
-              </h2>
-              <p>
-                Are you sure you want to approve <strong>
-                  {selectedItemForAction.org || 'this submission'}
-                </strong>&apos;s submission?
-              </p>
-            </div>
-
-            <div className={styles.modalActions}>
-              <button 
-                className={styles.modalCancelBtn}
-                onClick={handleApproveCancel}
-                disabled={isProcessing}
-              >
-                Cancel
-              </button>
-              <button 
-                className={styles.modalApproveBtn}
-                onClick={handleApproveConfirm}
-                disabled={isProcessing}
-              >
-                {isProcessing ? 'Processing...' : 'Approve'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Individual Reject Confirmation Modal */}
-      {showRejectModal && selectedItemForAction && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.confirmModal}>
-            <button 
-              className={styles.modalCloseBtn}
-              onClick={handleRejectCancel}
-            >
-              <FiX />
-            </button>
-            
-            <div className={styles.modalContent}>
-              <h2>
-                <span 
-                  className={styles.declineHeading}
-                  style={{ color: '#d50808' }}
-                >
-                  Reject
-                </span> Submission
-              </h2>
-              <p>
-                Are you sure you want to reject <strong>
-                  {selectedItemForAction.org || 'this submission'}
-                </strong>&apos;s submission? You can optionally provide a reason below.
-              </p>
-              <textarea
-                value={rejectComment}
-                onChange={(e) => setRejectComment(e.target.value)}
-                placeholder="Enter rejection reason (optional)..."
-                className={styles.rejectTextarea}
-                rows={4}
-                disabled={isProcessing}
-              />
-            </div>
-
-            <div className={styles.modalActions}>
-              <button 
-                className={styles.modalCancelBtn}
-                onClick={handleRejectCancel}
-                disabled={isProcessing}
-              >
-                Cancel
-              </button>
-              <button 
-                className={styles.modalDeclineBtn}
-                onClick={handleRejectConfirm}
-                disabled={isProcessing}
-              >
-                {isProcessing ? 'Processing...' : 'Reject'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Individual Action Confirmation Modal */}
+      <BulkActionConfirmationModal
+        isOpen={showIndividualModal}
+        actionType={pendingIndividualAction}
+        selectedCount={1}
+        selectedItem={selectedItemForAction}
+        onConfirm={handleIndividualActionConfirm}
+        onCancel={handleIndividualActionCancel}
+        isProcessing={isProcessing}
+      />
 
       {/* Individual Delete Confirmation Modal */}
-      <DeleteConfirmationModal
-        isOpen={showDeleteModal}
-        itemName={selectedItemForDelete?.org || 'Submission'}
+      <ConfirmationModal
+        isOpen={showIndividualDeleteModal}
+        itemName={selectedItemForAction?.org || selectedItemForAction?.organization_acronym || 'this submission'}
         itemType="submission"
-        onConfirm={handleDeleteConfirm}
-        onCancel={handleDeleteCancel}
-        isDeleting={isDeleting}
+        onConfirm={handleIndividualDeleteConfirm}
+        onCancel={handleIndividualDeleteCancel}
+        isDeleting={isIndividualDeleting}
       />
     </div>
   );

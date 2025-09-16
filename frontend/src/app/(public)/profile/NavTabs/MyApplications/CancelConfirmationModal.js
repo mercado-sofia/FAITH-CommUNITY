@@ -55,7 +55,7 @@ export default function CancelConfirmationModal({
               Are you sure you want to cancel your application for:
             </p>
             <p className={styles.applicationName}>
-              "{applicationName}"
+              &quot;{applicationName}&quot;
             </p>
             <p className={styles.warningText}>
               This action cannot be undone. You will need to submit a new application if you want to apply again.

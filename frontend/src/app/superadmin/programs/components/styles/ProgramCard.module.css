@@ -119,13 +119,15 @@
 }
 
 .statusBadge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 11px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-family: var(--font-inter);
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .statusBadge.upcoming {
@@ -135,7 +137,7 @@
 
 .statusBadge.active {
   background: #d1fae5;
-  color: #065f46;
+  color: #058964;
 }
 
 .statusBadge.completed {

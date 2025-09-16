@@ -8,6 +8,7 @@ import { LuSquareCheckBig } from 'react-icons/lu';
 import { MdOutlineRadioButtonChecked } from 'react-icons/md';
 import { FiTrash2 } from 'react-icons/fi';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
+import { formatProgramDates, formatDateShort } from '@/utils/dateUtils.js';
 import styles from './styles/ProgramCard.module.css';
 
 const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted, onMarkActive }) => {
@@ -84,40 +85,7 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
     setShowMarkActiveModal(false);
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Not specified';
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    } catch (error) {
-      return 'Invalid date';
-    }
-  };
-
-  const formatProgramDates = (program) => {
-    if (program.multiple_dates && Array.isArray(program.multiple_dates) && program.multiple_dates.length > 0) {
-      if (program.multiple_dates.length === 1) {
-        return formatDate(program.multiple_dates[0]);
-      } else if (program.multiple_dates.length === 2) {
-        return `${formatDate(program.multiple_dates[0])} & ${formatDate(program.multiple_dates[1])}`;
-      } else {
-        return `${formatDate(program.multiple_dates[0])} +${program.multiple_dates.length - 1} more`;
-      }
-    } else if (program.event_start_date && program.event_end_date) {
-      const startDate = new Date(program.event_start_date);
-      const endDate = new Date(program.event_end_date);
-      
-      if (startDate.getTime() === endDate.getTime()) {
-        return formatDate(program.event_start_date);
-      } else {
-        return `${formatDate(program.event_start_date)} - ${formatDate(program.event_end_date)}`;
-      }
-    }
-    return 'Not specified';
-  };
+  // Using centralized date utilities - formatProgramDates is now imported
 
   const getCategoryLabel = (category) => {
     const categoryMap = {
@@ -294,7 +262,7 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
             <div className={styles.metaItem}>
               <FaCalendar className={styles.metaIcon} />
               <span className={styles.metaText}>
-                Created: {formatDate(program.created_at)}
+                Created: {formatDateShort(program.created_at)}
               </span>
             </div>
           )}

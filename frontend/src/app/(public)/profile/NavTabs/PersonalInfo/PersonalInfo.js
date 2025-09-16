@@ -8,6 +8,7 @@ import DeleteAccount from './DeleteAccount/DeleteAccount';
 import { useFormValidation } from '../../hooks/useFormValidation';
 import { useProfileApi } from '../../hooks/useApiCall';
 import { useToast } from '../../components/Toast';
+import { formatBirthDate, formatDateForInput } from '../../../../../utils/dateUtils.js';
 import styles from './PersonalInfo.module.css';
 
 const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
@@ -245,22 +246,7 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Not provided';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  // Helper function to format date for input field (yyyy-MM-dd)
-  const formatDateForInput = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toISOString().split('T')[0]; // Returns yyyy-MM-dd format
-  };
+  // Date formatting functions are now imported from centralized utilities
 
   return (
     <div className={styles.personalInfoSection}>
@@ -489,7 +475,7 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
                 )}
               </>
             ) : (
-              <p>{formatDate(userData.birthDate)}</p>
+              <p>{formatBirthDate(userData.birthDate)}</p>
             )}
           </div>
         </div>

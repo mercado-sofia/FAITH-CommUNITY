@@ -122,8 +122,8 @@ class SuperAdminNotificationController {
           // Replace {ORG_ACRONYM} placeholder with current organization acronym
           dynamicMessage = notification.message_template.replace('{ORG_ACRONYM}', notification.organization_acronym);
         } else if (notification.message_template && !notification.organization_acronym) {
-          // If no organization data, use template as-is (for system notifications)
-          dynamicMessage = notification.message_template;
+          // If no organization data (deleted organization), replace with fallback
+          dynamicMessage = notification.message_template.replace('{ORG_ACRONYM}', 'Unknown Organization');
         }
 
         // Construct proper logo URL from stored logo

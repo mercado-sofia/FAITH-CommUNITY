@@ -1,5 +1,5 @@
 //db table: users, user_notifications
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import {
   signAccessToken,
@@ -12,7 +12,7 @@ import {
 } from '../../utils/jwt.js';
 import crypto from 'crypto';
 import db from '../../database.js';
-import { CaptchaService, LoginAttemptTracker } from '../../utils/captcha.js';
+import { LoginAttemptTracker } from '../../utils/loginAttemptTracker.js';
 import { SecurityMonitoring } from '../../utils/securityMonitoring.js';
 
 // User registration
@@ -68,21 +68,37 @@ export const registerUser = async (req, res) => {
     // Convert birth date from MM/DD/YYYY to YYYY-MM-DD format for MySQL
     let formattedBirthDate = null;
     if (birthDate && birthDate.trim()) {
-      const dateParts = birthDate.split('/');
-      if (dateParts.length === 3) {
-        const [month, day, year] = dateParts;
-        // Validate date components
+      // Check if it's already in ISO format (YYYY-MM-DD)
+      if (birthDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Validate the date components
+        const [year, month, day] = birthDate.split('-');
+        const yearNum = parseInt(year, 10);
         const monthNum = parseInt(month, 10);
         const dayNum = parseInt(day, 10);
-        const yearNum = parseInt(year, 10);
         
         if (monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31 && yearNum >= 1900 && yearNum <= new Date().getFullYear()) {
-          formattedBirthDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+          formattedBirthDate = birthDate; // Already in correct format
         } else {
           return res.status(400).json({ error: 'Invalid birth date' });
         }
       } else {
-        return res.status(400).json({ error: 'Invalid birth date format' });
+        // Handle legacy MM/DD/YYYY format for backward compatibility
+        const dateParts = birthDate.split('/');
+        if (dateParts.length === 3) {
+          const [month, day, year] = dateParts;
+          // Validate date components
+          const monthNum = parseInt(month, 10);
+          const dayNum = parseInt(day, 10);
+          const yearNum = parseInt(year, 10);
+          
+          if (monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31 && yearNum >= 1900 && yearNum <= new Date().getFullYear()) {
+            formattedBirthDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+          } else {
+            return res.status(400).json({ error: 'Invalid birth date' });
+          }
+        } else {
+          return res.status(400).json({ error: 'Invalid birth date format' });
+        }
       }
     } else {
       return res.status(400).json({ error: 'Birth date is required' });
@@ -186,28 +202,18 @@ export const registerUser = async (req, res) => {
 // User login
 export const loginUser = async (req, res) => {
   try {
-    const { email, password, captchaToken, captchaAnswer } = req.body;
+    const { email, password } = req.body;
     const ipAddress = req.ip || req.connection.remoteAddress;
 
     // Check failed login attempts
     const failedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress);
     
-    // Require CAPTCHA after 3 failed attempts
-    if (failedAttempts >= 3) {
-      if (!captchaToken || !captchaAnswer) {
-        return res.status(429).json({ 
-          error: 'CAPTCHA required due to multiple failed attempts',
-          requiresCaptcha: true 
-        });
-      }
-      
-      const isCaptchaValid = await CaptchaService.verifyCaptcha(captchaToken, captchaAnswer);
-      if (!isCaptchaValid) {
-        return res.status(400).json({ 
-          error: 'Invalid CAPTCHA. Please try again.',
-          requiresCaptcha: true 
-        });
-      }
+    // Block for 5 minutes after 5 failed attempts
+    if (failedAttempts >= 5) {
+      return res.status(429).json({ 
+        error: 'Too many failed login attempts. Please wait 5 minutes before trying again.',
+        retryAfter: '5 minutes'
+      });
     }
 
     // Find user by email

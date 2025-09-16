@@ -35,7 +35,7 @@
 
 .infoContent label {
   display: block;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #6b7280;
   margin-bottom: 4px;
@@ -43,7 +43,7 @@
 
 .infoContent p {
   margin: 0;
-  font-size: 16px;
+  font-size: 14px;
   color: #1f2937;
   font-weight: 500;
 }
@@ -69,26 +69,23 @@
 }
 
 .changeEmailButton:hover {
-  transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(26, 104, 91, 0.3);
-}
-
-.changeEmailButton:active {
-  transform: translateY(0);
 }
 
 /* Modal Styles */
 .modalOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
   padding: 20px;
 }
 
@@ -107,7 +104,6 @@
   align-items: center;
   justify-content: space-between;
   padding: 24px 24px 0 24px;
-  border-bottom: 1px solid #e5e7eb;
   margin-bottom: 24px;
 }
 
@@ -156,7 +152,7 @@
 
 .step {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   gap: 8px;
   opacity: 0.5;
@@ -168,8 +164,8 @@
 }
 
 .stepNumber {
-  width: 32px;
-  height: 32px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: #e5e7eb;
   color: #6b7280;
@@ -177,7 +173,7 @@
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 12px;
   transition: all 0.3s ease;
 }
 
@@ -190,7 +186,6 @@
   font-size: 12px;
   font-weight: 500;
   color: #6b7280;
-  text-align: center;
 }
 
 .step.active .stepLabel {
@@ -400,13 +395,7 @@
 
 .continueButton:hover,
 .verifyButton:hover {
-  transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(26, 104, 91, 0.3);
-}
-
-.continueButton:active,
-.verifyButton:active {
-  transform: translateY(0);
 }
 
 .continueButton:disabled,
@@ -438,6 +427,12 @@
   }
   
   .stepLabel {
+    font-size: 11px;
+  }
+  
+  .stepNumber {
+    width: 18px;
+    height: 18px;
     font-size: 11px;
   }
   

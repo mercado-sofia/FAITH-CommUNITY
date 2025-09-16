@@ -3,6 +3,11 @@
   margin: 1rem 0 6rem;
 }
 
+.newsSection.noNews .newsList {
+  min-height: auto;
+  gap: 0;
+}
+
 .newsContainer {
   max-width: 1200px;
   margin: 0 auto;
@@ -76,7 +81,9 @@
   min-width: 170px;
   justify-content: center;
   user-select: none;
-  outline: none;
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
   transition: color 0.2s ease, font-weight 0.2s ease;
   flex-shrink: 0;
   padding: 0.5rem 1rem;
@@ -84,8 +91,43 @@
 }
 
 .orgItem:focus {
-  outline: 2px solid #1A685B;
-  outline-offset: 2px;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.orgItem:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.orgItem:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Additional rules to ensure no outline appears */
+.orgItem[role="button"] {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.orgItem[role="button"]:focus {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.orgItem[role="button"]:active {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.orgItem[role="button"]:focus-visible {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .orgItem:hover {
@@ -110,8 +152,8 @@
 }
 
 .orgItem.active::after {
-  background: transparent;
-  width: 0;
+  background: #1A685B;
+  width: 70%;
   left: 15%;
 }
 

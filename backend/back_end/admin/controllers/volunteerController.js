@@ -1,5 +1,6 @@
 //db table: volunteers
 import db from '../../database.js';
+import { calculateAge } from '../../utils/dateUtils.js';
 
 // Submit volunteer application
 export const applyVolunteer = async (req, res) => {
@@ -88,11 +89,9 @@ export const getAllVolunteers = async (req, res) => {
        ORDER BY v.created_at DESC`
     );
 
-    // Calculate age from birth_date
+    // Calculate age from birth_date using centralized utility
     const volunteersWithAge = rows.map(row => {
-      const age = row.birth_date ? 
-        Math.floor((new Date() - new Date(row.birth_date)) / (365.25 * 24 * 60 * 60 * 1000)) : 
-        null;
+      const age = calculateAge(row.birth_date);
       
       return {
         ...row,
@@ -167,11 +166,8 @@ export const getVolunteerById = async (req, res) => {
 
     const volunteer = rows[0];
     
-    // Calculate age from birth_date
-    const age = volunteer.birth_date ? 
-      Math.floor((new Date() - new Date(volunteer.birth_date)) / (365.25 * 24 * 60 * 60 * 1000)) : 
-      null;
-    
+    // Calculate age from birth_date using centralized utility
+    const age = calculateAge(volunteer.birth_date);
     volunteer.age = age;
 
     res.json(volunteer);

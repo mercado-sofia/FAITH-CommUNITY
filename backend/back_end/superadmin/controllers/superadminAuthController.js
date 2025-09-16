@@ -4,6 +4,7 @@ import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import crypto from "crypto"
 import { authenticator } from "otplib"
+import { LoginAttemptTracker } from "../../utils/loginAttemptTracker.js"
 
 // JWT secret via env
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
@@ -13,24 +14,37 @@ const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
 // Superadmin login endpoint
 export const loginSuperadmin = async (req, res) => {
   const { email, password, otp } = req.body
+  const ipAddress = req.ip || req.connection.remoteAddress
 
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required" })
   }
 
   try {
+    // Check failed login attempts
+    const failedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress);
+    
+    // Block for 5 minutes after 5 failed attempts
+    if (failedAttempts >= 5) {
+      return res.status(429).json({ 
+        error: 'Too many failed login attempts. Please wait 5 minutes before trying again.',
+        retryAfter: '5 minutes'
+      });
+    }
     const [superadminRows] = await db.execute(
       "SELECT id, username, password, mfa_enabled, mfa_secret, created_at, updated_at FROM superadmin WHERE username = ?",
       [email],
     )
 
     if (superadminRows.length === 0) {
+      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress);
       return res.status(401).json({ error: "Invalid credentials" })
     }
 
     const superadmin = superadminRows[0]
     const isPasswordValid = await bcrypt.compare(password, superadmin.password)
     if (!isPasswordValid) {
+      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress);
       return res.status(401).json({ error: "Invalid credentials" })
     }
 
@@ -55,6 +69,9 @@ export const loginSuperadmin = async (req, res) => {
       },
     )
 
+    // Clear failed login attempts on successful login
+    await LoginAttemptTracker.clearFailedAttempts(email, ipAddress);
+    
     res.json({
       message: "Login successful",
       token,

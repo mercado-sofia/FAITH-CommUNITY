@@ -4,43 +4,11 @@ import React from 'react';
 import Image from 'next/image';
 import { FaTimes, FaTag, FaCalendar, FaEye } from 'react-icons/fa';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
+import { formatProgramDates } from '@/utils/dateUtils.js';
 import styles from './styles/ViewDetailsModal.module.css';
 
 const ViewDetailsModal = ({ program, onClose }) => {
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Not specified';
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    } catch (error) {
-      return 'Invalid date';
-    }
-  };
-
-  const formatProgramDates = (program) => {
-    if (program.multiple_dates && Array.isArray(program.multiple_dates) && program.multiple_dates.length > 0) {
-      if (program.multiple_dates.length === 1) {
-        return formatDate(program.multiple_dates[0]);
-      } else if (program.multiple_dates.length === 2) {
-        return `${formatDate(program.multiple_dates[0])} & ${formatDate(program.multiple_dates[1])}`;
-      } else {
-        return `${formatDate(program.multiple_dates[0])} +${program.multiple_dates.length - 1} more`;
-      }
-    } else if (program.event_start_date && program.event_end_date) {
-      const startDate = new Date(program.event_start_date);
-      const endDate = new Date(program.event_end_date);
-      
-      if (startDate.getTime() === endDate.getTime()) {
-        return formatDate(program.event_start_date);
-      } else {
-        return `${formatDate(program.event_start_date)} - ${formatDate(program.event_end_date)}`;
-      }
-    }
-    return 'Not specified';
-  };
+  // Using centralized date utilities - formatProgramDates is now imported
 
   const getCategoryLabel = (category) => {
     const categoryMap = {

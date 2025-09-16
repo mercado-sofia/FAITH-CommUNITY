@@ -6,6 +6,7 @@ import Image from 'next/image';
 import ContentEditor from './ContentEditor';
 import DatePickerPopover from './DatePickerPopover';
 import DOMPurify from 'dompurify';
+import { formatDateForInput } from '../../../../utils/dateUtils.js';
 import styles from './styles/CreatePostForm.module.css';
 
 const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData = null, isEditMode = false }) => {
@@ -34,23 +35,13 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
   // Initialize form data when in edit mode
   useEffect(() => {
     if (isEditMode && initialData) {
-      // Format the published_at date for datetime-local input
-      const formatDateForInput = (dateString) => {
-        if (!dateString) return getCurrentLocalDate();
-        const date = new Date(dateString);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      };
-
       setFormData({
         title: initialData.title || '',
         slug: initialData.slug || '',
         content: initialData.content || '',
         excerpt: initialData.excerpt || '',
         featuredImage: null, // Don't pre-populate file input
-        publishedAt: formatDateForInput(initialData.published_at || initialData.date),
+        publishedAt: formatDateForInput(initialData.published_at || initialData.date) || getCurrentLocalDate(),
       });
 
       // Set image preview if there's an existing featured image

@@ -1,4 +1,4 @@
-/* Main Area Layout - Modern pattern consistent with other superadmin pages */
+/* Main Area Layout */
 .mainArea {
   padding: 0 3rem 2rem 3rem;
   min-height: calc(100vh - 55px);
@@ -6,42 +6,11 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+
 /* Header Section */
 .header {
   margin-bottom: 2rem;
   padding-top: 2rem;
-}
-
-/* Controls and Stats Section */
-.controlsAndStatsSection {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1.4rem;
-  gap: 2rem;
-}
-
-.iconWrapper {
-  background-color: #e2f7f0;
-  padding: 0.6rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.5rem;
-}
-
-.icon {
-  font-size: 1.2rem;
-  color: #1d9782;
-}
-
-.headerLeft {
-  flex: 1;
-}
-
-.headerRight {
-  flex-shrink: 0;
 }
 
 .pageTitle {
@@ -54,237 +23,15 @@
   line-height: 1.2;
 }
 
-.pageSubtitle {
-  color: #6b7280;
-  font-size: 1rem;
-  margin: 0 0 1rem 0;
-  font-weight: 500;
-  line-height: 1.5;
-}
-
-
-
-
-
-.controlsLeft {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  align-self: flex-end;
-}
-
-.inlineLabel {
-  font-size: 12px;
-  font-weight: 500;
-  color: #0c1b1a;
-  margin-right: 2px;
-}
-
-.dropdownWrapper {
-  display: flex;
-  align-items: center;
+/* Action dropdown classes for JavaScript references */
+.actionDropdownOptions {
+  /* This class is referenced in JavaScript but styled in component CSS files */
   position: relative;
 }
 
-.dropdown {
-  background: #fff;
-  padding: 0.45rem 0.9rem;
-  min-width: 60px;
-  min-height: 2.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 500;
-  font-family: var(--font-inter);
-  color: #06100f;
-  border: 2px solid #06100f;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: all 0.2s ease-in-out;
-  user-select: none;
-}
-
-.dropdown:hover {
-  background: #f3f3f3;
-}
-
-.organizationDropdown {
-  background: #fff;
-  padding: 0.45rem 0.9rem;
-  min-width: 200px;
-  min-height: 2.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 500;
-  font-family: var(--font-inter);
-  color: #06100f;
-  border: 2px solid #06100f;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: all 0.2s ease-in-out;
-  user-select: none;
-}
-
-.organizationDropdown:hover {
-  background: #f3f3f3;
-}
-
-
-.icon {
-  margin-left: 8px;
-  color: #06100f;
-  transition: transform 0.2s ease;
-}
-
-.dropdown.open .icon,
-.organizationDropdown.open .icon {
-  transform: rotate(180deg);
-}
-
-.options {
-  position: absolute;
-  top: calc(100% + 0.3rem);
-  left: 0;
-  right: 0;
-  z-index: 50;
-  background: #fff;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  max-height: 200px;
-  overflow-y: auto;
-  animation: fadeIn 0.2s ease-in-out;
-}
-
-.options li {
-  padding: 0.6rem 1rem;
-  cursor: pointer;
-  font-size: 14px;
-  color: #374151;
-  border-bottom: 1px solid #f3f4f6;
-  transition: background-color 0.15s ease;
-}
-
-.options li:last-child {
-  border-bottom: none;
-}
-
-.options li:hover {
-  background-color: #f3f3f3;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* Search input wrapper*/
-.searchWrapper {
-  flex-shrink: 0;
-  display: flex;
-  justify-content: flex-end;
-  align-items: flex-end;
-  gap: 0.5rem;
-  align-self: flex-end;
-}
-
-/* Wrap input and icons together */
-.searchInputContainer {
+.actionDropdownWrapper {
+  /* This class is referenced in JavaScript but styled in component CSS files */
   position: relative;
-  width: 250px;
-  max-width: 100%;
-  height: 2.5rem;
-  display: flex;
-  align-items: center;
-}
-
-.searchInput {
-  width: 100%;
-  padding: 0.45rem 2.6rem 0.45rem 1rem;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  background: #fff;
-  font-size: 0.85rem;
-  color: #06100f;
-  outline: none;
-  transition: all 0.2s ease;
-  height: 100%;
-  min-height: 2.5rem;
-}
-
-.searchInput::placeholder {
-  color: #8a919c;
-  font-size: 12.5px;
-  font-family: var(--font-inter);
-  opacity: 1;
-}
-
-.searchIcon,
-.clearIcon {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #9ca3af;
-  cursor: pointer;
-  font-size: 16px;
-  user-select: none;
-}
-
-/* Table Section - Matching admin design */
-.tableSection {
-  background: white;
-  border-radius: 6px;
-  box-shadow:
-    0 8px 20px rgba(83, 96, 97, 0.06),
-    0 4px 10px rgba(83, 96, 97, 0.04);
-  border: none;
-  overflow: visible; /* Allow dropdowns to extend beyond container */
-  padding: 0;
-  font-family: var(--font-inter);
-}
-
-
-.tableSectionHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 2rem 2rem 1rem 2rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.tableSectionTitle {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.tableSectionActions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.showingText {
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-weight: 500;
 }
 
 /* Bulk Actions Bar */
@@ -292,69 +39,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 1rem 1.5rem;
-  margin-bottom: 1.5rem;
-  animation: slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-origin: top;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  opacity: 1;
-  transform: translateY(0) scaleY(1);
-}
-
-.bulkActionsBar.hiding {
-  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-.bulkActionsBar.hiding .bulkActionBtn {
-  animation: buttonDisappear 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-.bulkActionsBar.hiding .bulkActionBtn:nth-child(1) {
-  animation-delay: 0s;
-}
-
-.bulkActionsBar.hiding .bulkActionBtn:nth-child(2) {
-  animation-delay: 0.1s;
-}
-
-.bulkActionsBar.hiding .bulkActionBtn:nth-child(3) {
-  animation-delay: 0.2s;
-}
-
-@keyframes buttonDisappear {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-5px) scale(0.9);
-  }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 1;
-    transform: translateY(0) scaleY(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-15px) scaleY(0.9);
-  }
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px) scaleY(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scaleY(1);
-  }
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 14px 18px 14px 28px;
+  margin-bottom: 16px;
+  font-family: var(--font-inter);
 }
 
 .bulkActionsLeft {
@@ -363,122 +53,17 @@
 }
 
 .selectedCount {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  transform: scale(1);
-}
-
-.selectedCount:hover {
-  transform: scale(1.02);
+  font-size: 14px;
+  font-weight: 700;
+  color: #06100f;
 }
 
 .bulkActionsRight {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  gap: 8px;
 }
 
 .bulkActionBtn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  transform: translateY(0);
-  animation: buttonAppear 0.4s ease-out;
-}
-
-.bulkActionBtn:active {
-  transform: translateY(1px) scale(0.98);
-  transition: all 0.1s ease-out;
-}
-
-@keyframes buttonAppear {
-  from {
-    opacity: 0;
-    transform: translateY(5px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.bulkApproveBtn {
-  background: #10b981;
-  color: white;
-}
-
-.bulkApproveBtn:hover {
-  background: #059669;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-
-.bulkRejectBtn {
-  background: #ef4444;
-  color: white;
-}
-
-.bulkRejectBtn:hover {
-  background: #dc2626;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}
-
-.bulkDeleteBtn {
-  background: #6b7280;
-  color: white;
-}
-
-.bulkDeleteBtn:hover {
-  background: #4b5563;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
-}
-
-.bulkActionBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-.bulkActionBtn.loading {
-  position: relative;
-  overflow: hidden;
-}
-
-.bulkActionBtn.loading::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  animation: loading 1.5s infinite;
-}
-
-@keyframes loading {
-  0% {
-    left: -100%;
-  }
-  100% {
-    left: 100%;
-  }
-}
-
-
-/* Legacy action buttons - keeping for backward compatibility */
-.actionBtn {
   padding: 8px 10px;
   border-radius: 6px;
   font-size: 13px;
@@ -488,31 +73,94 @@
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
-  min-width: 80px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.acceptBtn {
+.bulkApproveBtn {
   background-color: #fff;
   color: #10b981;
   border-color: #10b981;
   margin-right: 4px;
 }
 
-.acceptBtn:hover {
+.bulkApproveBtn:hover {
   background-color: #edfff9;
 }
 
-.rejectBtn {
+.bulkRejectBtn {
   background-color: #fff;
   color: #d50808;
   border-color: #d50808;
 }
 
-.rejectBtn:hover {
+.bulkRejectBtn:hover {
   background-color: #fff2f2;
 }
 
-/* Pagination - Matching admin design */
+.bulkDeleteBtn {
+  background-color: #fff;
+  color: #dc2626;
+  border-color: #dc2626;
+}
+
+.bulkDeleteBtn:hover {
+  background-color: #fef2f2;
+}
+
+.bulkActionBtn:disabled {
+  background-color: #f3f4f6 !important;
+  color: #9ca3af !important;
+  border-color: #d1d5db !important;
+  cursor: not-allowed !important;
+  pointer-events: auto;
+}
+
+.bulkActionBtn:disabled:hover {
+  background-color: #f3f4f6 !important;
+  color: #9ca3af !important;
+  border-color: #d1d5db !important;
+  cursor: not-allowed !important;
+}
+
+.bulkActionBtn.loading {
+  opacity: 0.7;
+}
+
+.cancelButton {
+  padding: 8px;
+  border-radius: 6px;
+  color: #92959d;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  user-select: none;
+}
+
+.cancelButton:hover {
+  color: #374151;
+}
+
+/* Table Section */
+.tableSection {
+  background: white;
+  border-radius: 6px;
+  box-shadow:
+    0 8px 20px rgba(83, 96, 97, 0.06),
+    0 4px 10px rgba(83, 96, 97, 0.04);
+  border: none;
+  overflow: visible;
+  padding: 0;
+  font-family: var(--font-inter);
+}
+
+/* Pagination */
 .pagination {
   display: flex;
   justify-content: space-between;
@@ -586,7 +234,6 @@
   color: white;
 }
 
-/* Navigation buttons (arrows) - no borders or hover effects */
 .navButton {
   padding: 0.25rem;
   font-size: 12px;
@@ -620,45 +267,6 @@
   background-color: transparent;
 }
 
-/* Empty State */
-.emptyState {
-  text-align: center;
-  padding: 3rem 2rem;
-  color: #6b7280;
-}
-
-.emptyStateIcon {
-  font-size: 3rem;
-  margin-bottom: 0.25rem;
-  opacity: 0.5;
-}
-
-.emptyStateTitle {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 0.5rem;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.emptyStateText {
-  font-size: 0.875rem;
-  margin: 0;
-  line-height: 1.5;
-}
-
-
-@keyframes notificationSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 
 /* Loading and Error States */
 .loading {
@@ -689,208 +297,7 @@
   font-weight: 500;
 }
 
-/* Modal Styles */
-.modalOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  padding: 20px;
-  animation: fadeIn 0.2s ease-out;
-}
-
-.confirmModal {
-  background: white;
-  border-radius: 16px;
-  padding: 0;
-  width: 100%;
-  max-width: 420px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-  animation: slideUp 0.2s ease-out;
-  font-family: var(--font-inter);
-  text-align: left;
-  overflow: hidden;
-  position: relative;
-}
-
-.modalCloseBtn {
-  position: absolute;
-  top: 1.4rem;
-  right: 1.5rem;
-  background: none;
-  border: none;
-  color: #6b7280;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.15s ease;
-  font-size: 1.25rem;
-  line-height: 1;
-  z-index: 10;
-}
-
-.modalCloseBtn:hover {
-  color: #39404d;
-}
-
-.modalContent {
-  padding: 3rem 2rem 2rem 2rem;
-}
-
-.modalContent h2 {
-  margin: 0 0 0.5rem 0;
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-.modalContent h2.approveHeading {
-  color: #10b981 !important;
-}
-
-.modalContent h2.declineHeading {
-  color: #d50808 !important;
-}
-
-.modalContent p {
-  margin: 0 0 1rem 0;
-  color: #535862;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.rejectTextarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: var(--font-inter);
-  resize: vertical;
-  min-height: 80px;
-  margin-top: 0.5rem;
-}
-
-.rejectTextarea:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.rejectTextarea:disabled {
-  background-color: #f9fafb;
-  color: #6b7280;
-  cursor: not-allowed;
-}
-
-.modalActions {
-  padding: 0 2rem 2rem 2rem;
-  display: flex;
-  gap: 0.75rem;
-}
-
-.modalCancelBtn {
-  flex: 1;
-  background-color: white;
-  color: #212121;
-  border: 1px solid #D5D7DA;
-  box-shadow: 0 1px 2px 0 rgba(10, 13, 18, 0.05);
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: var(--font-inter);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  user-select: none;
-}
-
-.modalCancelBtn:hover:not(:disabled) {
-  background-color: #f9fafb;
-  border-color: #9ca3af;
-}
-
-.modalCancelBtn:disabled {
-  background-color: #f3f4f6;
-  color: #9ca3af;
-  cursor: not-allowed;
-}
-
-.modalApproveBtn {
-  flex: 1;
-  background-color: #10b981;
-  color: white;
-  border: 1px solid #10b981;
-  box-shadow: 0 1px 2px 0 rgba(10, 13, 18, 0.05);
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: var(--font-inter);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  user-select: none;
-}
-
-.modalApproveBtn:hover:not(:disabled) {
-  background-color: #0d9f6e;
-  border-color: #0d9f6e;
-}
-
-.modalApproveBtn:disabled {
-  background-color: #9ca3af;
-  border-color: #9ca3af;
-  cursor: not-allowed;
-}
-
-.modalDeclineBtn {
-  flex: 1;
-  background-color: #d50808;
-  color: white;
-  border: 1px solid #d50808;
-  box-shadow: 0 1px 2px 0 rgba(10, 13, 18, 0.05);
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: var(--font-inter);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  user-select: none;
-}
-
-.modalDeclineBtn:hover:not(:disabled) {
-  background-color: #b30707;
-  border-color: #b30707;
-}
-
-.modalDeclineBtn:disabled {
-  background-color: #9ca3af;
-  border-color: #9ca3af;
-  cursor: not-allowed;
-}
-
-/* Modal Animations */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+/* Modal animations moved to BulkActionConfirmationModal.module.css */
 
 /* Responsive design */
 @media (max-width: 768px) {
@@ -902,10 +309,6 @@
     flex-direction: column;
     gap: 1rem;
   }
-  
-  .headerRight {
-    align-self: stretch;
-  }
 }
 
 @media (max-width: 480px) {
@@ -915,9 +318,5 @@
   
   .pageTitle {
     font-size: 1.2rem;
-  }
-  
-  .pageSubtitle {
-    font-size: 12px;
   }
 }

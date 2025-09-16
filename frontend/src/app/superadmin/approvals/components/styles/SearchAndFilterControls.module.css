@@ -1,0 +1,232 @@
+/* Controls and Stats Section */
+.controlsAndStatsSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.4rem;
+  gap: 2rem;
+}
+
+.controlsLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-self: flex-end;
+}
+
+.inlineLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #0c1b1a;
+  margin-right: 2px;
+}
+
+.dropdownWrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.dropdown {
+  background: #fff;
+  padding: 0.45rem 0.9rem;
+  min-width: 60px;
+  min-height: 2.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  color: #06100f;
+  border: 2px solid #06100f;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease-in-out;
+  user-select: none;
+}
+
+.dropdown:hover {
+  background: #f3f3f3;
+}
+
+.organizationDropdown {
+  background: #fff;
+  padding: 0.45rem 0.9rem;
+  min-width: 200px;
+  min-height: 2.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  color: #06100f;
+  border: 2px solid #06100f;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease-in-out;
+  user-select: none;
+}
+
+.organizationDropdown:hover {
+  background: #f3f3f3;
+}
+
+.icon {
+  margin-left: 8px;
+  color: #06100f;
+  transition: transform 0.2s ease;
+}
+
+.dropdown.open .icon,
+.organizationDropdown.open .icon {
+  transform: rotate(180deg);
+}
+
+.options {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.options li {
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.15s ease;
+}
+
+.options li:last-child {
+  border-bottom: none;
+}
+
+.options li:hover {
+  background-color: #f3f3f3;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Search input wrapper */
+.searchWrapper {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  gap: 0.5rem;
+  align-self: flex-end;
+}
+
+.searchInputContainer {
+  position: relative;
+  width: 250px;
+  max-width: 100%;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.45rem 2.6rem 0.45rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  font-size: 0.85rem;
+  color: #06100f;
+  outline: none;
+  transition: all 0.2s ease;
+  height: 100%;
+  min-height: 2.5rem;
+}
+
+.searchInput::placeholder {
+  color: #8a919c;
+  font-size: 12.5px;
+  font-family: var(--font-inter);
+  opacity: 1;
+}
+
+.searchIcon,
+.clearIcon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 16px;
+  user-select: none;
+}
+
+.clearIcon:hover {
+  color: #6b7280;
+}
+
+.searchInput:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .controlsAndStatsSection {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .controlsLeft {
+    align-self: stretch;
+    justify-content: flex-start;
+  }
+  
+  .searchWrapper {
+    align-self: stretch;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  .controlsLeft {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  
+  .searchInputContainer {
+    width: 100%;
+  }
+  
+  .organizationDropdown {
+    min-width: 100%;
+  }
+  
+  .dropdown {
+    min-width: 100%;
+  }
+}

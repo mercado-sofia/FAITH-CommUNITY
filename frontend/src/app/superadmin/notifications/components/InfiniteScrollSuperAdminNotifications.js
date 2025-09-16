@@ -242,7 +242,7 @@ export default function InfiniteScrollSuperAdminNotifications({
               {notification.organization_logo ? (
                 <Image
                   src={getOrganizationImageUrl(notification.organization_logo, 'logo')}
-                  alt={`${notification.organization_acronym} logo`}
+                  alt={`${notification.organization_acronym || 'Unknown Organization'} logo`}
                   width={40}
                   height={40}
                   className={styles.organizationLogo}
@@ -265,7 +265,9 @@ export default function InfiniteScrollSuperAdminNotifications({
                     {notification.organization_acronym.charAt(0).toUpperCase()}
                   </span>
                 ) : (
-                  <FiUser size={20} />
+                  <span className={styles.organizationAcronymFallback}>
+                    ?
+                  </span>
                 )}
               </div>
             </div>
@@ -289,11 +291,9 @@ export default function InfiniteScrollSuperAdminNotifications({
                     {notification.section.charAt(0).toUpperCase() + notification.section.slice(1)}
                   </span>
                 )}
-                {notification.organization_acronym && (
-                  <span className={styles.organizationAcronym}>
-                    {notification.organization_acronym}
-                  </span>
-                )}
+                <span className={styles.organizationAcronym}>
+                  {notification.organization_acronym || 'Unknown Organization'}
+                </span>
                 <span className={`${styles.statusBadge} ${notification.is_read ? styles.readStatus : styles.unreadStatus}`}>
                   {notification.is_read ? 'Read' : 'New'}
                 </span>

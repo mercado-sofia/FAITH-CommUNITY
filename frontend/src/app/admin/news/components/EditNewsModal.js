@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FaTimes, FaCalendar } from 'react-icons/fa';
+import { formatDateForInput } from '../../../../utils/dateUtils.js';
 import styles from './styles/EditNewsModal.module.css';
 
 const EditNewsModal = ({ news, onClose, onSubmit }) => {
@@ -16,24 +17,6 @@ const EditNewsModal = ({ news, onClose, onSubmit }) => {
 
   useEffect(() => {
     if (news) {
-      // Helper function to format date properly without timezone issues
-      const formatDateForInput = (dateString) => {
-        if (!dateString) return new Date().toISOString().split('T')[0];
-        
-        // If the date is already in YYYY-MM-DD format, use it directly
-        if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-          return dateString;
-        }
-        
-        // Parse the date string and extract components to avoid timezone issues
-        const date = new Date(dateString);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        
-        return `${year}-${month}-${day}`;
-      };
-
       setFormData({
         id: news.id || '',
         title: news.title || '',

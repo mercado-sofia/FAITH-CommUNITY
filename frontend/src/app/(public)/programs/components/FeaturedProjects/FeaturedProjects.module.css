@@ -28,8 +28,10 @@
 .programsShowcaseLoading,
 .programsShowcaseEmpty {
   padding: 2rem;
-  font-size: 1.1rem;
+  font-size: 15px;
+  margin-bottom: 1rem;
   color: #666;
+  font-style: italic;
 }
 
 /* GRID CONTAINER */

@@ -1,6 +1,9 @@
 /* Volunteer Banner Section - Used by main organization page */
 .volunteerBanner {
-  background: #0f3d35;
+  background-image: url('/volunteerBanner.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   padding: 2rem 1.5rem;
   text-align: center;
   color: white;
@@ -11,9 +14,9 @@
   margin: 0 auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 2rem;
 }
 
 .bannerContent p {

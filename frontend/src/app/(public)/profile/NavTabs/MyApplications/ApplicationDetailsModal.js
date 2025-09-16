@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import Image from 'next/image';
 import { FaTimes, FaCalendarAlt, FaBuilding, FaFileAlt, FaUser, FaClock, FaCheckCircle, FaTimesCircle, FaExclamationCircle } from 'react-icons/fa';
 import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
 import styles from './ApplicationDetailsModal.module.css';
@@ -11,30 +12,7 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (isOpen && applicationId) {
-      fetchApplicationDetails();
-    } else if (!isOpen) {
-      // Reset state when modal is closed
-      setApplication(null);
-      setError(null);
-      setIsLoading(false);
-    }
-  }, [isOpen, applicationId]);
-
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'auto';
-    }
-
-    return () => {
-      document.body.style.overflow = 'auto';
-    };
-  }, [isOpen]);
-
-  const fetchApplicationDetails = async () => {
+  const fetchApplicationDetails = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     
@@ -61,7 +39,30 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [applicationId]);
+
+  useEffect(() => {
+    if (isOpen && applicationId) {
+      fetchApplicationDetails();
+    } else if (!isOpen) {
+      // Reset state when modal is closed
+      setApplication(null);
+      setError(null);
+      setIsLoading(false);
+    }
+  }, [isOpen, applicationId, fetchApplicationDetails]);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [isOpen]);
 
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) {
@@ -135,10 +136,13 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
               {/* Program Image */}
               {application.programImage && (
                 <div className={styles.programImageContainer}>
-                  <img 
+                  <Image 
                     src={application.programImage} 
                     alt={application.programName}
                     className={styles.programImage}
+                    width={400}
+                    height={300}
+                    style={{ objectFit: 'cover' }}
                   />
                 </div>
               )}
@@ -209,10 +213,13 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
                   </h4>
                   <div className={styles.organizationInfo}>
                     {application.organizationLogo && (
-                      <img 
+                      <Image 
                         src={application.organizationLogo} 
                         alt={application.organizationName}
                         className={styles.organizationLogo}
+                        width={60}
+                        height={60}
+                        style={{ objectFit: 'contain' }}
                       />
                     )}
                     <div className={styles.organizationDetails}>

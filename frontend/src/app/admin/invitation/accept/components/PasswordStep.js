@@ -1,7 +1,94 @@
-import { FaSpinner } from "react-icons/fa"
-import PasswordRequirements from "./PasswordRequirements"
-import PasswordInput from "./PasswordInput"
+import { FaSpinner, FaEye, FaEyeSlash, FaRegCircle, FaRegCheckCircle } from "react-icons/fa"
 import styles from "../accept.module.css"
+
+// Internal PasswordRequirements component
+const PasswordRequirements = ({ passwordRequirements }) => {
+  return (
+    <div className={styles.passwordRequirements}>
+      <h4 className={styles.passwordRequirementsTitle}>Password Requirements:</h4>
+      <ul className={styles.requirementsList}>
+        <li className={styles.requirementItem}>
+          <div className={`${styles.checkIcon} ${passwordRequirements.length ? styles.valid : ''}`}>
+            {passwordRequirements.length ? <FaRegCheckCircle /> : <FaRegCircle />}
+          </div>
+          <span className={`${styles.requirementText} ${passwordRequirements.length ? styles.validText : ''}`}>
+            Minimum of 8 characters
+          </span>
+        </li>
+        <li className={styles.requirementItem}>
+          <div className={`${styles.checkIcon} ${passwordRequirements.lowercase ? styles.valid : ''}`}>
+            {passwordRequirements.lowercase ? <FaRegCheckCircle /> : <FaRegCircle />}
+          </div>
+          <span className={`${styles.requirementText} ${passwordRequirements.lowercase ? styles.validText : ''}`}>
+            At least one lowercase letter (a-z)
+          </span>
+        </li>
+        <li className={styles.requirementItem}>
+          <div className={`${styles.checkIcon} ${passwordRequirements.uppercase ? styles.valid : ''}`}>
+            {passwordRequirements.uppercase ? <FaRegCheckCircle /> : <FaRegCircle />}
+          </div>
+          <span className={`${styles.requirementText} ${passwordRequirements.uppercase ? styles.validText : ''}`}>
+            At least one uppercase letter (A-Z)
+          </span>
+        </li>
+        <li className={styles.requirementItem}>
+          <div className={`${styles.checkIcon} ${passwordRequirements.number ? styles.valid : ''}`}>
+            {passwordRequirements.number ? <FaRegCheckCircle /> : <FaRegCircle />}
+          </div>
+          <span className={`${styles.requirementText} ${passwordRequirements.number ? styles.validText : ''}`}>
+            At least one number (0-9)
+          </span>
+        </li>
+      </ul>
+    </div>
+  )
+}
+
+// Internal PasswordInput component
+const PasswordInput = ({
+  label,
+  id,
+  name,
+  placeholder,
+  value,
+  onChange,
+  required = false,
+  disabled = false,
+  fieldErrors,
+  showPassword,
+  setShowPassword
+}) => {
+  return (
+    <div className={styles.formField}>
+      <label htmlFor={id}>{label}</label>
+      <div className={styles.passwordInputWrapper}>
+        <input
+          type={showPassword ? "text" : "password"}
+          id={id}
+          name={name}
+          placeholder={placeholder}
+          value={value}
+          onChange={onChange}
+          required={required}
+          disabled={disabled}
+          className={`${styles.formInput} ${fieldErrors[name] ? styles.inputError : ''}`}
+        />
+        {value && (
+          <button
+            type="button"
+            className={styles.passwordToggle}
+            onClick={() => setShowPassword(!showPassword)}
+            disabled={disabled}
+            tabIndex={-1}
+          >
+            {showPassword ? <FaEyeSlash /> : <FaEye />}
+          </button>
+        )}
+      </div>
+      {fieldErrors[name] && <span className={styles.fieldError}>{fieldErrors[name]}</span>}
+    </div>
+  )
+}
 
 const PasswordStep = ({
   form,

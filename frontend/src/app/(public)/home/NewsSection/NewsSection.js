@@ -154,6 +154,7 @@ export default function NewsSection() {
   };
 
   if ((orgLoading || newsLoading) && organizations.length === 0) {
+    // During loading, we don't know if there will be news, so use default spacing
     return (
       <section className={styles.newsSection}>
         <div className={styles.newsContainer}>
@@ -170,8 +171,12 @@ export default function NewsSection() {
     );
   }
 
+  // Check if there are any news items to determine spacing
+  const hasNews = news && news.length > 0;
+  const sectionClassName = hasNews ? styles.newsSection : `${styles.newsSection} ${styles.noNews}`;
+
   return (
-    <section className={styles.newsSection}>
+    <section className={sectionClassName}>
       <div className={styles.newsContainer}>
         <div className={styles.headingContainer}>
           <h2 className={styles.heading}>Latest News & Announcements</h2>

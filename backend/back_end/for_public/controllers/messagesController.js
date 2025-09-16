@@ -23,11 +23,11 @@ export const submitMessage = async (req, res) => {
     });
   }
 
-  // Message length validation
-  if (message.trim().length < 10) {
+  // Message validation - only check for non-blank messages
+  if (!message.trim()) {
     return res.status(400).json({
       success: false,
-      message: "Message must be at least 10 characters long"
+      message: "Message cannot be empty"
     });
   }
 

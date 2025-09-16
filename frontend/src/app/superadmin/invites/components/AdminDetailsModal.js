@@ -32,7 +32,7 @@ const AdminDetailsModal = ({
 
   const getStatusIcon = (adminData) => {
     // If invitation is accepted but admin is inactive, show inactive icon
-    if (adminData.status === 'accepted' && adminData.admin_is_active === false) {
+    if (adminData.status === 'accepted' && (adminData.admin_is_active === false || adminData.admin_is_active === 0)) {
       return <FiUserX className={styles.statusIcon} />;
     }
     
@@ -50,7 +50,7 @@ const AdminDetailsModal = ({
 
   const getStatusColor = (adminData) => {
     // If invitation is accepted but admin is inactive, show as inactive
-    if (adminData.status === 'accepted' && adminData.admin_is_active === false) {
+    if (adminData.status === 'accepted' && (adminData.admin_is_active === false || adminData.admin_is_active === 0)) {
       return styles.inactive;
     }
     
@@ -58,7 +58,7 @@ const AdminDetailsModal = ({
       case 'pending':
         return styles.pending;
       case 'accepted':
-        return styles.accepted;
+        return styles.active;
       case 'expired':
         return styles.expired;
       default:
@@ -68,11 +68,20 @@ const AdminDetailsModal = ({
 
   const getStatusText = (adminData) => {
     // If invitation is accepted but admin is inactive, show as inactive
-    if (adminData.status === 'accepted' && adminData.admin_is_active === false) {
+    if (adminData.status === 'accepted' && (adminData.admin_is_active === false || adminData.admin_is_active === 0)) {
       return 'Inactive';
     }
     
-    return adminData.status.charAt(0).toUpperCase() + adminData.status.slice(1);
+    switch (adminData.status) {
+      case 'pending':
+        return 'Pending';
+      case 'accepted':
+        return 'Active';
+      case 'expired':
+        return 'Expired';
+      default:
+        return 'Pending';
+    }
   };
 
   const handleDeleteClick = () => {
@@ -136,7 +145,7 @@ const AdminDetailsModal = ({
                     <div className={styles.infoItem}>
                       <FiHome className={styles.infoIcon} />
                       <div className={styles.infoContent}>
-                        <label>Organization Acronym</label>
+                        <label>Organization</label>
                         <span className={styles.infoValue}>{adminData.org || 'Not specified'}</span>
                       </div>
                     </div>

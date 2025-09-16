@@ -10,8 +10,8 @@ import { useBulkActions } from "../../../hooks/useBulkActions"
 import SearchAndFilterControls from "./components/SearchAndFilterControls"
 import InvitationsTable from "./components/InvitationsTable"
 import InviteModal from "./components/InviteModal"
-import PaginationControls from "./components/PaginationControls"
-import DeleteConfirmationModal from "../components/DeleteConfirmationModal"
+import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowLeftDoubleFill, RiArrowRightDoubleFill } from "react-icons/ri";
+import ConfirmationModal from "../components/ConfirmationModal"
 import SuccessModal from "../components/SuccessModal"
 import styles from "./invites.module.css"
 
@@ -158,14 +158,69 @@ const ManageProfiles = () => {
       />
 
       {/* Pagination */}
-      <PaginationControls
-        currentPage={params.page}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
-        startIndex={startIndex}
-        endIndex={endIndex}
-        totalCount={filteredCount}
-      />
+      <div className={styles.pagination}>
+        <div className={styles.paginationInfo}>
+          Showing {startIndex + 1} to {Math.min(endIndex, filteredCount)} of {filteredCount} invitations
+        </div>
+        <div className={styles.paginationControls}>
+          {/* First Page Button */}
+          <button
+            onClick={() => handlePageChange(1)}
+            disabled={params.page === 1}
+            className={styles.navButton}
+            aria-label="Go to first page"
+            title="First page"
+          >
+            <RiArrowLeftDoubleFill size={16}/>
+          </button>
+          
+          {/* Previous Page Button */}
+          <button
+            onClick={() => handlePageChange(params.page - 1)}
+            disabled={params.page === 1}
+            className={styles.navButton}
+            aria-label="Go to previous page"
+            title="Previous page"
+          >
+            <RiArrowLeftSLine size={16}/>
+          </button>
+          
+          {/* Page Numbers */}
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+            <button
+              key={page}
+              onClick={() => handlePageChange(page)}
+              className={`${styles.paginationButton} ${params.page === page ? 'active' : ''}`}
+              aria-label={`Go to page ${page}`}
+              aria-current={params.page === page ? 'page' : undefined}
+            >
+              {page}
+            </button>
+          ))}
+          
+          {/* Next Page Button */}
+          <button
+            onClick={() => handlePageChange(params.page + 1)}
+            disabled={params.page === totalPages}
+            className={styles.navButton}
+            aria-label="Go to next page"
+            title="Next page"
+          >
+            <RiArrowRightSLine size={16}/>
+          </button>
+          
+          {/* Last Page Button */}
+          <button
+            onClick={() => handlePageChange(totalPages)}
+            disabled={params.page === totalPages}
+            className={styles.navButton}
+            aria-label="Go to last page"
+            title="Last page"
+          >
+            <RiArrowRightDoubleFill size={16}/>
+          </button>
+        </div>
+      </div>
 
       {/* Success Modal */}
       <SuccessModal
@@ -183,20 +238,21 @@ const ManageProfiles = () => {
       />
 
       {/* Bulk Cancel Confirmation Modal */}
-      <DeleteConfirmationModal
+      <ConfirmationModal
         isOpen={showBulkCancelModal}
         itemName={`${selectedItems.size} invitation${selectedItems.size > 1 ? 's' : ''}`}
         itemType="invitation"
+        actionType="cancel"
         onConfirm={handleBulkCancelConfirmWrapped}
         onCancel={handleBulkCancelCancel}
         isDeleting={isBulkCancelling}
       />
 
       {/* Bulk Delete Confirmation Modal */}
-      <DeleteConfirmationModal
+      <ConfirmationModal
         isOpen={showBulkDeleteModal}
         itemName={`${selectedItems.size} item${selectedItems.size > 1 ? 's' : ''}`}
-        itemType="admin account and invitation"
+        itemType="admin account and invitation data"
         actionType="delete"
         onConfirm={handleBulkDeleteConfirmWrapped}
         onCancel={handleBulkDeleteCancel}

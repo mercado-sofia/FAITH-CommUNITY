@@ -10,14 +10,14 @@ export default function OrgInfoCard({ data }) {
       <div className={styles.orgCard}>
         <div className={styles.logoWrapper}>
           <Image
-            src={logo ? `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${logo}` : '/logo/faith_community_logo.png'}
+            src={logo ? `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${logo}` : '/default.png'}
             alt={`${name} Logo`}
             width={220}
             height={220}
             className={styles.orgLogo}
             priority
             onError={(e) => {
-              e.target.src = '/logo/faith_community_logo.png';
+              e.target.src = '/default.png';
             }}
           />
         </div>

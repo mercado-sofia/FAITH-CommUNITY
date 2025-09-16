@@ -18,7 +18,7 @@
   background: white;
   border-radius: 12px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  max-width: 900px;
+  max-width: 680px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
@@ -38,7 +38,7 @@
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
-  color: #111827;
+  color: #000;
   font-family: var(--font-inter);
 }
 
@@ -87,15 +87,16 @@
 }
 
 .statusBadge {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.875rem;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
   font-weight: 600;
-  text-transform: capitalize;
-  width: fit-content;
+  font-family: var(--font-inter);
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .statusIcon {
@@ -103,21 +104,23 @@
 }
 
 .pending {
-  background-color: #fef3c7;
-  color: #d97706;
-  border: 1px solid #fbbf24;
+  background: #fdf2e2;
+  color: #e8901c;
 }
 
 .accepted {
-  background-color: #d1fae5;
-  color: #059669;
-  border: 1px solid #34d399;
+  background: #d1fae5;
+  color: #058964;
+}
+
+.active {
+  background: #d1fae5;
+  color: #058964;
 }
 
 .expired {
-  background-color: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #f87171;
+  background: #fee2e2;
+  color: #b61212;
 }
 
 .inactive {
@@ -138,7 +141,7 @@
 .sectionTitle {
   font-size: 1rem;
   font-weight: 600;
-  color: #374151;
+  color: #000;
   margin: 0 0 1rem 0;
   font-family: var(--font-inter);
 }
@@ -181,7 +184,7 @@
 
 .infoValue {
   font-size: 0.875rem;
-  color: #111827;
+  color: #000;
   font-weight: 500;
   word-break: break-word;
   font-family: var(--font-inter);
@@ -189,8 +192,7 @@
 
 /* Modal Footer */
 .modalFooter {
-  padding: 1.5rem 2rem;
-  border-top: 1px solid #e5e7eb;
+  padding: 1rem 2rem 1.5rem;
   background-color: #f9fafb;
   border-radius: 0 0 12px 12px;
 }
@@ -230,14 +232,14 @@
 }
 
 .cancelButton {
-  background-color: #6b7280;
+  background-color: #06100f;
   color: white;
-  border-color: #6b7280;
+  border-color: #06100f;
 }
 
 .cancelButton:hover:not(:disabled) {
-  background-color: #4b5563;
-  border-color: #4b5563;
+  background-color: #0a1a18;
+  border-color: #0a1a18;
 }
 
 .deleteButton:disabled,
@@ -264,7 +266,7 @@
   margin: 0;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
+  color: #000;
   font-family: var(--font-inter);
 }
 

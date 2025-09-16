@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react';
 import { FiEye, FiChevronDown } from 'react-icons/fi';
-import styles from '../dashboard.module.css';
+import styles from './styles/PendingApprovalsTable.module.css';
 import { useGetRecentApprovalsQuery, useGetOrganizationsForFilterQuery } from '../../../../rtk/superadmin/dashboardApi';
 
 export default function PendingApprovalsTable() {

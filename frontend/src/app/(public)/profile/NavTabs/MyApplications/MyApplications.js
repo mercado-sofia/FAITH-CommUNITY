@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { FaFileAlt, FaCalendarAlt } from 'react-icons/fa';
+import Image from 'next/image';
 import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
+import { formatDateShort, formatProgramDate } from '../../../../../utils/dateUtils.js';
 import ApplicationDetailsModal from './ApplicationDetailsModal';
 import CancelConfirmationModal from './CancelConfirmationModal';
 import styles from './MyApplications.module.css';
@@ -70,38 +72,7 @@ export default function MyApplications() {
     return lowerStatus === 'pending' || lowerStatus === 'approved';
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const formatProgramDate = (startDate, endDate) => {
-    if (!startDate) return null;
-    
-    const start = new Date(startDate);
-    const end = endDate ? new Date(endDate) : null;
-    
-    // If no end date or same day - Single day format
-    if (!end || start.toDateString() === end.toDateString()) {
-      return formatDate(startDate);
-    }
-    
-    // Check if dates are consecutive (within 1 day difference)
-    const timeDiff = end.getTime() - start.getTime();
-    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-    
-    if (daysDiff <= 1) {
-      // Consecutive days - Range date format (continuous)
-      return `${formatDate(startDate)} - ${formatDate(endDate)}`;
-    } else {
-      // Multiple separate dates - show all dates with bullet separator
-      return `${formatDate(startDate)} • ${formatDate(endDate)}`;
-    }
-  };
+  // Using centralized date utilities - formatDate and formatProgramDate are now imported
 
   const filteredApplications = applications.filter(app => {
     if (filter === 'all') return true;
@@ -281,10 +252,13 @@ export default function MyApplications() {
                   {/* Program Image Thumbnail */}
                   <div className={styles.programImageThumbnail}>
                     {application.programImage ? (
-                      <img 
+                      <Image 
                         src={application.programImage} 
                         alt={application.programName}
+                        width={120}
+                        height={90}
                         className={styles.thumbnailImage}
+                        style={{ objectFit: 'cover' }}
                       />
                     ) : (
                       <div className={styles.placeholderImage}>
@@ -313,7 +287,7 @@ export default function MyApplications() {
                       {/* Application Meta */}
                       <div className={styles.applicationMeta}>
                         <span className={styles.applicationDate}>
-                          Date Applied: {formatDate(application.appliedAt)}
+                          Date Applied: {formatDateShort(application.appliedAt)}
                         </span>
                         <span className={`${styles.statusBadge} ${styles[`status${application.status.charAt(0).toUpperCase() + application.status.slice(1)}`]}`}>
                           {getStatusText(application.status)}

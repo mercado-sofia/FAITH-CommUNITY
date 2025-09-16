@@ -12,7 +12,7 @@ import {
 } from '../../../rtk/superadmin/superadminNotificationsApi';
 import { FiX, FiTrash2 } from 'react-icons/fi';
 import { PiChecksBold } from 'react-icons/pi';
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
+import ConfirmationModal from '../components/ConfirmationModal';
 import SkeletonLoader from '../../admin/components/SkeletonLoader';
 import InfiniteScrollSuperAdminNotifications from './components/InfiniteScrollSuperAdminNotifications';
 import styles from './notifications.module.css';
@@ -244,7 +244,7 @@ export default function SuperAdminNotificationsPage() {
       </div>
 
       {/* Bulk Delete Confirmation Modal */}
-      <DeleteConfirmationModal
+      <ConfirmationModal
         isOpen={showDeleteModal}
         itemName={`${selectedNotifications.length} notification${selectedNotifications.length > 1 ? 's' : ''}`}
         itemType="notification"
@@ -254,7 +254,7 @@ export default function SuperAdminNotificationsPage() {
       />
 
       {/* Individual Delete Confirmation Modal */}
-      <DeleteConfirmationModal
+      <ConfirmationModal
         isOpen={showIndividualDeleteModal}
         itemName={notificationToDelete?.title || 'this notification'}
         itemType="notification"

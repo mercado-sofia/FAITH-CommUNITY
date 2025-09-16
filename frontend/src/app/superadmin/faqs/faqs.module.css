@@ -66,3 +66,111 @@
     padding: 12px;
   }
 }
+
+/* Pagination - Matching approvals design */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 1.5rem 1rem;
+  padding: 1rem;
+  background: #ffffff;
+  border-radius: 0.5rem;
+  border: none;
+  font-family: var(--font-inter);
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.paginationInfo {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.paginationControls {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.paginationButton {
+  padding: 0.25rem;
+  font-size: 12px;
+  border: 2px solid #06100f;
+  border-radius: 4px;
+  background-color: #ffffff;
+  color: #06100f;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  min-width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.paginationButton:hover:not(:disabled) {
+  background-color: #f0f2f4;
+}
+
+.paginationButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  color: #9ca3af;
+  border-color: #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.paginationButton:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.paginationButton.active {
+  background-color: #fff;
+  color: #06100f;
+  border-color: #06100f;
+  font-weight: 600;
+}
+
+.paginationButton.active:hover {
+  background-color: #06100f;
+  border-color: #06100f;
+  color: white;
+}
+
+/* Navigation buttons (arrows) - no borders or hover effects */
+.navButton {
+  padding: 0.25rem;
+  font-size: 12px;
+  border: none;
+  border-radius: 4px;
+  background-color: transparent;
+  color: #06100f;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  min-width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.navButton:hover:not(:disabled) {
+  background-color: transparent;
+}
+
+.navButton:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+  color: #9ca3af;
+  background-color: transparent;
+}
+
+.navButton:disabled:hover {
+  background-color: transparent;
+}

@@ -9,7 +9,7 @@ import styles from "./accept.module.css"
 import { useInvitationValidation, useOrganizationValidation, useFormState, useInvitationSubmission } from "./hooks"
 
 // Components
-import { LoadingState, ErrorState, SuccessState, StepIndicator, OrganizationStep, PasswordStep } from "./components"
+import { LoadingState, InvitationState, StepIndicator, OrganizationStep, PasswordStep } from "./components"
 
 const AcceptInvitation = () => {
   // API base URL with environment variable support
@@ -129,11 +129,14 @@ const AcceptInvitation = () => {
   }
 
   if (validationError) {
-    return <ErrorState error={validationError} />
+    if (validationError === "ALREADY_ACCEPTED") {
+      return <InvitationState type="alreadyAccepted" />
+    }
+    return <InvitationState type="error" />
   }
 
   if (submissionSuccess && submissionSuccess.includes("Account created successfully")) {
-    return <SuccessState success={submissionSuccess} />
+    return <InvitationState type="success" success={submissionSuccess} />
   }
 
   return (

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { FiEdit2, FiTrash2, FiClipboard } from 'react-icons/fi';
 import { IoCloseOutline } from "react-icons/io5";
-import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import styles from './styles/FAQTable.module.css';
 
 export default function FAQTable({ 
@@ -212,7 +212,7 @@ export default function FAQTable({
       </div>
 
       {/* Delete Confirmation Modal */}
-      <DeleteConfirmationModal
+      <ConfirmationModal
         isOpen={showDeleteModal}
         itemName={selectedItemForDelete?.question}
         itemType="FAQ"

@@ -16,6 +16,10 @@ export const useInvitationValidation = (API_BASE_URL) => {
       if (response.ok) {
         logger.info('Token validation successful')
         setSuccess("Please complete your account setup.")
+      } else if (response.status === 410) {
+        // Special case for already accepted invitations
+        logger.info('Invitation already accepted')
+        setError("ALREADY_ACCEPTED")
       } else {
         logger.apiError(`${API_BASE_URL}/api/invitations/validate/${token}`, new Error(data.error), { 
           status: response.status 

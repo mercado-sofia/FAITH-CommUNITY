@@ -492,14 +492,15 @@
 }
 
 .statusBadge {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  border: 1px solid transparent;
   display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.75rem;
-  border-radius: 1rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
+  justify-content: center;
 }
 
 .readStatus {
@@ -509,9 +510,9 @@
 }
 
 .unreadStatus {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  color: #92400e;
-  border: 1px solid #fde68a;
+  background-color: #fbecd5;
+  color: #e8901c;
+  border: 1px solid #f4c430;
   font-weight: 600;
 }
 

@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { FiTrash2, FiMail, FiClock, FiCheckCircle, FiXCircle, FiMoreHorizontal, FiUserX, FiX } from 'react-icons/fi';
+import { FiTrash2, FiMoreHorizontal, FiUserX, FiX, FiUserCheck, FiXCircle } from 'react-icons/fi';
 import { TbListDetails } from 'react-icons/tb';
 import { IoCloseOutline } from "react-icons/io5";
-import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import AdminDetailsModal from './AdminDetailsModal';
 import styles from './styles/InvitationsTable.module.css';
 
@@ -116,8 +116,20 @@ export default function InvitationsTable({
   const handleBulkCancel = () => {
     const selectedInvitationIds = Array.from(selectedItems);
     if (selectedInvitationIds.length === 0) return;
+    
+    // Filter to only include pending invitations for cancel action
+    const pendingInvitationIds = selectedInvitationIds.filter(id => {
+      const invitation = invitations.find(inv => inv.id === id);
+      return invitation && invitation.status === 'pending';
+    });
+    
+    if (pendingInvitationIds.length === 0) {
+      // No pending invitations selected, don't proceed
+      return;
+    }
+    
     if (onBulkCancel) {
-      onBulkCancel(selectedInvitationIds);
+      onBulkCancel(pendingInvitationIds);
     }
   };
 
@@ -133,6 +145,11 @@ export default function InvitationsTable({
   const selectedInvitations = invitations.filter(inv => selectedItems.has(inv.id));
   const allSelectedAccepted = selectedInvitations.length > 0 && selectedInvitations.every(inv => inv.status === 'accepted');
   const hasPendingSelected = selectedInvitations.some(inv => inv.status === 'pending');
+  const hasActiveSelected = selectedInvitations.some(inv => inv.status === 'accepted' && inv.admin_is_active !== false && inv.admin_is_active !== 0);
+  const hasInactiveSelected = selectedInvitations.some(inv => inv.status === 'accepted' && (inv.admin_is_active === false || inv.admin_is_active === 0));
+  
+  // Count pending invitations for cancel action
+  const pendingInvitationsCount = selectedInvitations.filter(inv => inv.status === 'pending').length;
 
   const cancelSelection = () => {
     if (onSelectAll) {
@@ -155,27 +172,20 @@ export default function InvitationsTable({
     return { datePart, timePart };
   };
 
-  const getStatusIcon = (invitation) => {
-    // If invitation is accepted but admin is inactive, show inactive icon
-    if (invitation.status === 'accepted' && invitation.admin_is_active === false) {
-      return <FiUserX className={styles.statusIcon} />;
-    }
-    
-    switch (invitation.status) {
-      case 'pending':
-        return <FiClock className={styles.statusIcon} />;
-      case 'accepted':
-        return <FiCheckCircle className={styles.statusIcon} />;
-      case 'expired':
-        return <FiXCircle className={styles.statusIcon} />;
-      default:
-        return <FiClock className={styles.statusIcon} />;
-    }
-  };
 
   const getStatusColor = (invitation) => {
+    // Debug: Log the invitation data to see what we're working with
+    console.log('Invitation data:', {
+      id: invitation.id,
+      email: invitation.email,
+      status: invitation.status,
+      admin_is_active: invitation.admin_is_active,
+      admin_is_active_type: typeof invitation.admin_is_active
+    });
+    
     // If invitation is accepted but admin is inactive, show as inactive
-    if (invitation.status === 'accepted' && invitation.admin_is_active === false) {
+    // Check for both boolean false and numeric 0 (MySQL returns booleans as 0/1)
+    if (invitation.status === 'accepted' && (invitation.admin_is_active === false || invitation.admin_is_active === 0)) {
       return styles.inactive;
     }
     
@@ -183,7 +193,7 @@ export default function InvitationsTable({
       case 'pending':
         return styles.pending;
       case 'accepted':
-        return styles.accepted;
+        return styles.active;
       case 'expired':
         return styles.expired;
       default:
@@ -193,11 +203,21 @@ export default function InvitationsTable({
 
   const getStatusText = (invitation) => {
     // If invitation is accepted but admin is inactive, show as inactive
-    if (invitation.status === 'accepted' && invitation.admin_is_active === false) {
+    // Check for both boolean false and numeric 0 (MySQL returns booleans as 0/1)
+    if (invitation.status === 'accepted' && (invitation.admin_is_active === false || invitation.admin_is_active === 0)) {
       return 'Inactive';
     }
     
-    return invitation.status.charAt(0).toUpperCase() + invitation.status.slice(1);
+    switch (invitation.status) {
+      case 'pending':
+        return 'Pending';
+      case 'accepted':
+        return 'Active';
+      case 'expired':
+        return 'Expired';
+      default:
+        return 'Pending';
+    }
   };
 
   const isAllSelected = invitations.length > 0 && selectedItems.size === invitations.length;
@@ -217,10 +237,10 @@ export default function InvitationsTable({
               <button 
                 className={`${styles.bulkButton} ${styles.cancelButton}`}
                 onClick={handleBulkCancel}
-                title="Cancel selected pending invitations"
+                title={`Cancel ${pendingInvitationsCount} pending invitation${pendingInvitationsCount !== 1 ? 's' : ''}`}
               >
                 <FiXCircle size={16} />
-                Cancel Selected
+                Cancel Selected ({pendingInvitationsCount})
               </button>
             )}
             <button 
@@ -300,7 +320,6 @@ export default function InvitationsTable({
                   </td>
                   <td className={styles.statusColumn}>
                     <div className={`${styles.statusBadge} ${getStatusColor(invitation)}`}>
-                      {getStatusIcon(invitation)}
                       <span>{getStatusText(invitation)}</span>
                     </div>
                   </td>
@@ -340,8 +359,12 @@ export default function InvitationsTable({
                                 className={styles.dropdownItem}
                                 disabled={isDeactivating}
                               >
-                                <FiUserX size={16} />
-                                {invitation.admin_is_active === false ? 'Reactivate' : 'Deactivate'}
+                                {(invitation.admin_is_active === false || invitation.admin_is_active === 0) ? (
+                                  <FiUserCheck size={16} />
+                                ) : (
+                                  <FiUserX size={16} />
+                                )}
+                                {(invitation.admin_is_active === false || invitation.admin_is_active === 0) ? 'Activate Account' : 'Deactivate Account'}
                               </button>
                             )}
                             
@@ -383,11 +406,17 @@ export default function InvitationsTable({
       </div>
 
       {/* Action Confirmation Modal */}
-      <DeleteConfirmationModal
+      <ConfirmationModal
         isOpen={showDeleteModal}
         itemName={selectedItemForDelete?.email}
         itemType={selectedItemForDelete?.admin_id ? "admin account" : "invitation"}
-        actionType={selectedItemForDelete?.action || 'delete'}
+        actionType={
+          selectedItemForDelete?.action === 'deactivate' 
+            ? (selectedItemForDelete?.admin_is_active === false || selectedItemForDelete?.admin_is_active === 0) 
+              ? 'activate' 
+              : 'deactivate'
+            : selectedItemForDelete?.action || 'delete'
+        }
         onConfirm={
           selectedItemForDelete?.action === 'delete' 
             ? handleDeleteConfirm 

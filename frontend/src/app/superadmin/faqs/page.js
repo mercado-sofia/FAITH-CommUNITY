@@ -11,8 +11,8 @@ import {
 import FAQTable from './components/FAQTable';
 import CreateFAQModal from './components/CreateFAQModal';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
-import PaginationControls from './components/PaginationControls';
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
+import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowLeftDoubleFill, RiArrowRightDoubleFill } from "react-icons/ri";
+import ConfirmationModal from '../components/ConfirmationModal';
 import SuccessModal from '../components/SuccessModal';
 import styles from './faqs.module.css';
 
@@ -311,14 +311,69 @@ export default function ManageFaqs() {
       />
 
       {/* Pagination */}
-      <PaginationControls
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
-        startIndex={startIndex}
-        endIndex={endIndex}
-        totalCount={filteredFaqs.length}
-      />
+      <div className={styles.pagination}>
+        <div className={styles.paginationInfo}>
+          Showing {startIndex + 1} to {Math.min(endIndex, filteredFaqs.length)} of {filteredFaqs.length} FAQs
+        </div>
+        <div className={styles.paginationControls}>
+          {/* First Page Button */}
+          <button
+            onClick={() => handlePageChange(1)}
+            disabled={currentPage === 1}
+            className={styles.navButton}
+            aria-label="Go to first page"
+            title="First page"
+          >
+            <RiArrowLeftDoubleFill size={16}/>
+          </button>
+          
+          {/* Previous Page Button */}
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className={styles.navButton}
+            aria-label="Go to previous page"
+            title="Previous page"
+          >
+            <RiArrowLeftSLine size={16}/>
+          </button>
+          
+          {/* Page Numbers */}
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+            <button
+              key={page}
+              onClick={() => handlePageChange(page)}
+              className={`${styles.paginationButton} ${currentPage === page ? 'active' : ''}`}
+              aria-label={`Go to page ${page}`}
+              aria-current={currentPage === page ? 'page' : undefined}
+            >
+              {page}
+            </button>
+          ))}
+          
+          {/* Next Page Button */}
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className={styles.navButton}
+            aria-label="Go to next page"
+            title="Next page"
+          >
+            <RiArrowRightSLine size={16}/>
+          </button>
+          
+          {/* Last Page Button */}
+          <button
+            onClick={() => handlePageChange(totalPages)}
+            disabled={currentPage === totalPages}
+            className={styles.navButton}
+            aria-label="Go to last page"
+            title="Last page"
+          >
+            <RiArrowRightDoubleFill size={16}/>
+          </button>
+        </div>
+      </div>
 
       {/* Success Modal */}
       <SuccessModal
@@ -346,7 +401,7 @@ export default function ManageFaqs() {
       )}
 
       {/* Bulk Delete Confirmation Modal */}
-      <DeleteConfirmationModal
+      <ConfirmationModal
         isOpen={showBulkDeleteModal}
         itemName={`${selectedItems.size} FAQ${selectedItems.size > 1 ? 's' : ''}`}
         itemType="FAQ"

@@ -38,6 +38,7 @@ export const useBulkActions = () => {
 
   // Bulk action request handlers
   const handleBulkCancelRequest = useCallback((selectedInvitationIds) => {
+    // selectedInvitationIds should already be filtered to only pending invitations
     setSelectedItems(new Set(selectedInvitationIds))
     setShowBulkCancelModal(true)
   }, [])

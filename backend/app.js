@@ -232,14 +232,18 @@ import organizationsRoutes from "./back_end/for_public/routes/organizations.js"
 import messagesRoutes from "./back_end/for_public/routes/messages.js"
 import usersRoutes from "./back_end/for_public/routes/users.js"
 import subscriptionRoutes from "./back_end/for_public/routes/subscription.js"
-import captchaRoutes from "./back_end/for_public/routes/captcha.js"
 
 // Auth endpoint specific rate limits
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: Number(process.env.RATE_LIMIT_AUTH_MAX || 10),
+  max: Number(process.env.RATE_LIMIT_AUTH_MAX || 10), // Increased to 10 to allow custom 3-attempt logic to work
   standardHeaders: true,
   legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many failed attempts. Please wait 15 minutes before trying again.',
+    retryAfter: '15 minutes'
+  }
 })
 const authSpeedLimiter = slowDown({
   windowMs: 15 * 60 * 1000,
@@ -267,7 +271,6 @@ app.use("/api", organizationsRoutes)
 app.use("/api/subscription", subscriptionRoutes)
 app.use("/api", applyRoutes)
 app.use("/api", messagesRoutes)
-app.use("/api", captchaRoutes)
 app.use(["/api/users/login", "/api/users/forgot-password", "/api/users/reset-password", "/api/users/verify-email"], authSpeedLimiter, authLimiter)
 app.use("/api/users", usersRoutes)
 

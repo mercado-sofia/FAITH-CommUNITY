@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken"
 import { authenticator } from "otplib"
 import { logAdminAction } from "../../utils/audit.js"
 import { SessionSecurity } from "../../utils/sessionSecurity.js"
+import { LoginAttemptTracker } from "../../utils/loginAttemptTracker.js"
 
 // JWT secret via env
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
@@ -12,12 +13,23 @@ const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
 // Admin login endpoint
 export const loginAdmin = async (req, res) => {
   const { email, password, otp } = req.body
+  const ipAddress = req.ip || req.connection.remoteAddress
 
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required" })
   }
 
   try {
+    // Check failed login attempts
+    const failedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress);
+    
+    // Block for 5 minutes after 5 failed attempts
+    if (failedAttempts >= 5) {
+      return res.status(429).json({ 
+        error: 'Too many failed login attempts. Please wait 5 minutes before trying again.',
+        retryAfter: '5 minutes'
+      });
+    }
     const [adminRows] = await db.execute(
       `SELECT a.id, a.email, a.password, a.role, a.is_active, a.mfa_enabled, a.mfa_secret, a.organization_id,
               o.org, o.orgName, o.logo
@@ -28,6 +40,7 @@ export const loginAdmin = async (req, res) => {
     )
 
     if (adminRows.length === 0) {
+      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress);
       return res.status(401).json({ error: "Invalid credentials or account inactive" })
     }
 
@@ -35,11 +48,12 @@ export const loginAdmin = async (req, res) => {
     const isPasswordValid = await bcrypt.compare(password, admin.password)
 
     if (!isPasswordValid) {
+      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress);
       return res.status(401).json({ error: "Invalid credentials" })
     }
 
     // MFA removed for admin accounts - only superadmin accounts use MFA
-    // Admin accounts rely on strong passwords, CAPTCHA, and rate limiting for security
+    // Admin accounts rely on strong passwords and rate limiting for security
 
     // Generate JWT token (shorter expiry)
     const token = jwt.sign(
@@ -67,6 +81,9 @@ export const loginAdmin = async (req, res) => {
       token
     )
 
+    // Clear failed login attempts on successful login
+    await LoginAttemptTracker.clearFailedAttempts(email, ipAddress);
+    
     await logAdminAction(admin.id, 'login', 'Admin logged in', req)
     res.json({
       message: "Login successful",
@@ -112,7 +129,7 @@ export const verifyAdminToken = (req, res, next) => {
 // -------------------- MFA Removed for Admins --------------------
 // MFA functionality has been removed for admin accounts.
 // Only superadmin accounts use MFA for enhanced security.
-// Admin accounts rely on strong passwords, CAPTCHA, and rate limiting.
+// Admin accounts rely on strong passwords and rate limiting.
 
 
 export const getAllAdmins = async (req, res) => {

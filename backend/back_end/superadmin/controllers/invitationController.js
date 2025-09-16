@@ -138,19 +138,43 @@ export const validateInvitationToken = async (req, res) => {
   const { token } = req.params
 
   try {
-    const [invitations] = await db.execute(
-      "SELECT * FROM admin_invitations WHERE token = ? AND status = 'pending' AND expires_at > NOW()",
+    // First check if token exists at all
+    const [allInvitations] = await db.execute(
+      "SELECT * FROM admin_invitations WHERE token = ?",
       [token]
     )
 
-    if (invitations.length === 0) {
-      return res.status(404).json({ error: "Invalid or expired invitation token" })
+    if (allInvitations.length === 0) {
+      return res.status(404).json({ error: "Invalid invitation token" })
     }
 
-    res.json({
-      valid: true,
-      email: invitations[0].email
-    })
+    const invitation = allInvitations[0]
+
+    // Check if admin with this email already exists (regardless of invitation status)
+    const [existingAdmin] = await db.execute("SELECT id FROM admins WHERE email = ?", [invitation.email])
+    if (existingAdmin.length > 0) {
+      return res.status(410).json({ error: "Invitation has already been accepted" })
+    }
+
+    // Check if invitation has already been accepted
+    if (invitation.status === 'accepted') {
+      return res.status(410).json({ error: "Invitation has already been accepted" })
+    }
+
+    // Check if invitation is expired
+    if (invitation.status === 'expired' || new Date() > new Date(invitation.expires_at)) {
+      return res.status(404).json({ error: "Invitation has expired" })
+    }
+
+    // Check if invitation is still pending and valid
+    if (invitation.status === 'pending' && new Date() <= new Date(invitation.expires_at)) {
+      res.json({
+        valid: true,
+        email: invitation.email
+      })
+    } else {
+      return res.status(404).json({ error: "Invalid invitation token" })
+    }
   } catch (err) {
     console.error("Validate invitation token error:", err)
     res.status(500).json({ error: "Internal server error while validating token" })

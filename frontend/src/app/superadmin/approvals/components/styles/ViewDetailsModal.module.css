@@ -134,32 +134,30 @@
 
 /* Status Badges */
 .statusBadge {
-  display: inline-block;
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
   font-weight: 600;
-  text-transform: capitalize;
-  letter-spacing: 0.5px;
+  font-family: var(--font-inter);
   border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .statusPending {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  color: #92400e;
-  border-color: #f59e0b;
+  background: #fdf2e2;
+  color: #e8901c;
 }
 
 .statusApproved {
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  color: #047857;
-  border-color: #10b981;
+  background: #d1fae5;
+  color: #058964;
 }
 
 .statusRejected {
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  color: #b91c1c;
-  border-color: #ef4444;
+  background: #fee2e2;
+  color: #b61212;
 }
 
 /* Content Sections */

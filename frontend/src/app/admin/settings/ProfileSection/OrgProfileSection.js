@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { FaBuilding } from 'react-icons/fa';
 import styles from '../adminSettings.module.css';
-import OrgProfileEditModal from './OrgProfileEditModal';
 import SecureEmailChangeModal from './SecureEmailChangeModal';
 
 export default function OrgProfileSection({ 
@@ -14,7 +13,6 @@ export default function OrgProfileSection({
   errors,
   saving
 }) {
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showSecureEmailModal, setShowSecureEmailModal] = useState(false);
 
   const handleEditClick = () => {
@@ -22,14 +20,12 @@ export default function OrgProfileSection({
   };
 
   const handleEditClose = () => {
-    setShowEditModal(false);
     setShowSecureEmailModal(false);
   };
 
   const handleEditSave = async (emailData) => {
     // Call the onSave function directly - the modal will handle password confirmation internally
     await onSave(emailData);
-    setShowEditModal(false);
   };
 
   const handleSecureEmailSuccess = (newEmail) => {
@@ -72,16 +68,6 @@ export default function OrgProfileSection({
           </div>
         </div>
       </div>
-
-      {/* Organization Profile Edit Modal */}
-      <OrgProfileEditModal
-        isOpen={showEditModal}
-        onClose={handleEditClose}
-        onSave={handleEditSave}
-        orgData={orgData}
-        errors={errors}
-        saving={saving}
-      />
 
       {/* Secure Email Change Modal */}
       <SecureEmailChangeModal

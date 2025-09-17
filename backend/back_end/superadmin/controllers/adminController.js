@@ -31,7 +31,7 @@ export const loginAdmin = async (req, res) => {
       });
     }
     const [adminRows] = await db.execute(
-      `SELECT a.id, a.email, a.password, a.role, a.is_active, a.mfa_enabled, a.mfa_secret, a.organization_id,
+      `SELECT a.id, a.email, a.password, a.role, a.is_active, a.organization_id,
               o.org, o.orgName, o.logo
        FROM admins a
        LEFT JOIN organizations o ON a.organization_id = o.id

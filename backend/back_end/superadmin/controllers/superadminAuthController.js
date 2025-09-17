@@ -3,8 +3,8 @@ import db from "../../database.js"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import crypto from "crypto"
-import { authenticator } from "otplib"
 import { LoginAttemptTracker } from "../../utils/loginAttemptTracker.js"
+import { generateTwoFASecret, verifyTwoFAToken, generateTwoFAQRCode, generateSimpleQRCode, validateTwoFATokenFormat } from "../../utils/twoFA.js"
 
 // JWT secret via env
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
@@ -32,7 +32,7 @@ export const loginSuperadmin = async (req, res) => {
       });
     }
     const [superadminRows] = await db.execute(
-      "SELECT id, username, password, mfa_enabled, mfa_secret, created_at, updated_at FROM superadmin WHERE username = ?",
+      "SELECT id, username, password, twofa_enabled, twofa_secret, created_at, updated_at FROM superadmin WHERE username = ?",
       [email],
     )
 
@@ -48,16 +48,22 @@ export const loginSuperadmin = async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" })
     }
 
-    // Enforce TOTP if enabled
-    if (superadmin.mfa_enabled) {
+    // Check if 2FA is enabled and verify token
+    if (superadmin.twofa_enabled) {
       if (!otp) {
-        return res.status(401).json({ error: "OTP required", requireMfa: true })
+        return res.status(401).json({ error: "2FA token required", requireTwoFA: true })
       }
-      const isValidOtp = authenticator.check(String(otp), superadmin.mfa_secret || "")
-      if (!isValidOtp) {
-        return res.status(401).json({ error: "Invalid OTP", requireMfa: true })
+      
+      if (!validateTwoFATokenFormat(otp)) {
+        return res.status(401).json({ error: "Invalid 2FA token format", requireTwoFA: true })
+      }
+      
+      const isValidToken = verifyTwoFAToken(otp, superadmin.twofa_secret || "")
+      if (!isValidToken) {
+        return res.status(401).json({ error: "Invalid 2FA token", requireTwoFA: true })
       }
     }
+
 
     const token = jwt.sign(
       { id: superadmin.id, username: superadmin.username, role: "superadmin" },
@@ -122,8 +128,6 @@ export const getSuperadminProfile = async (req, res) => {
   try {
     // Ensure password_changed_at column exists
     try { await db.execute(`ALTER TABLE superadmin ADD COLUMN password_changed_at TIMESTAMP NULL DEFAULT NULL`) } catch {}
-    try { await db.execute(`ALTER TABLE superadmin ADD COLUMN mfa_secret VARCHAR(255) NULL`) } catch {}
-    try { await db.execute(`ALTER TABLE superadmin ADD COLUMN mfa_enabled TINYINT(1) DEFAULT 0`) } catch {}
 
     const [rows] = await db.execute(
       "SELECT id, username, created_at, updated_at, password_changed_at FROM superadmin WHERE id = ?",
@@ -218,7 +222,7 @@ export const requestSuperadminEmailChange = async (req, res) => {
 
   try {
     const [superadminRows] = await db.execute(
-      "SELECT id, username, password, mfa_enabled, mfa_secret FROM superadmin WHERE id = ?",
+      "SELECT id, username, password FROM superadmin WHERE id = ?",
       [id]
     )
 
@@ -239,16 +243,6 @@ export const requestSuperadminEmailChange = async (req, res) => {
       return res.status(401).json({ error: "Invalid password" })
     }
 
-    // Check if 2FA is enabled and verify OTP
-    if (superadmin.mfa_enabled) {
-      if (!otp) {
-        return res.status(401).json({ error: "OTP required for 2FA-enabled account", requireMfa: true })
-      }
-      const isValidOtp = authenticator.check(String(otp), superadmin.mfa_secret || "")
-      if (!isValidOtp) {
-        return res.status(401).json({ error: "Invalid OTP", requireMfa: true })
-      }
-    }
 
     // Check if email is already taken by another superadmin
     const [existingSuperadmin] = await db.execute(
@@ -354,7 +348,7 @@ export const updateSuperadminPassword = async (req, res) => {
 
   try {
     const [superadminRows] = await db.execute(
-      "SELECT id, password, username, mfa_enabled, mfa_secret FROM superadmin WHERE id = ?",
+      "SELECT id, password, username FROM superadmin WHERE id = ?",
       [id],
     )
 
@@ -369,16 +363,6 @@ export const updateSuperadminPassword = async (req, res) => {
       return res.status(401).json({ error: "Current password is incorrect" })
     }
 
-    // Check if 2FA is enabled and verify OTP
-    if (superadmin.mfa_enabled) {
-      if (!otp) {
-        return res.status(401).json({ error: "OTP required for 2FA-enabled account", requireMfa: true })
-      }
-      const isValidOtp = authenticator.check(String(otp), superadmin.mfa_secret || "")
-      if (!isValidOtp) {
-        return res.status(401).json({ error: "Invalid OTP", requireMfa: true })
-      }
-    }
 
     const saltRounds = 12
     const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds)
@@ -612,56 +596,6 @@ export const checkEmailSuperadmin = async (req, res) => {
   }
 }
 
-// -------------------- MFA (TOTP) Setup/Verify/Disable --------------------
-
-export const setupMfaSuperadmin = async (req, res) => {
-  try {
-    const { id } = req.params
-    const [rows] = await db.execute('SELECT id, username FROM superadmin WHERE id = ?', [id])
-    if (rows.length === 0) return res.status(404).json({ error: 'Superadmin not found' })
-
-    const secret = authenticator.generateSecret()
-    const label = encodeURIComponent(`FAITH-CommUNITY:superadmin-${rows[0].username}`)
-    const issuer = encodeURIComponent(process.env.TOTP_ISSUER || 'FAITH-CommUNITY')
-    const otpauth = `otpauth://totp/${label}?secret=${secret}&issuer=${issuer}`
-
-    // Temporarily store secret until verified
-    await db.execute('UPDATE superadmin SET mfa_secret = ? WHERE id = ?', [secret, id])
-    res.json({ otpauth, secret })
-  } catch (e) {
-    console.error('MFA setup error:', e)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-}
-
-export const verifyMfaSuperadmin = async (req, res) => {
-  try {
-    const { id } = req.params
-    const { otp } = req.body
-    const [rows] = await db.execute('SELECT id, mfa_secret FROM superadmin WHERE id = ?', [id])
-    if (rows.length === 0) return res.status(404).json({ error: 'Superadmin not found' })
-    const secret = rows[0].mfa_secret || ''
-    if (!secret) return res.status(400).json({ error: 'MFA not in setup' })
-    const ok = authenticator.check(String(otp || ''), secret)
-    if (!ok) return res.status(400).json({ error: 'Invalid OTP' })
-    await db.execute('UPDATE superadmin SET mfa_enabled = 1 WHERE id = ?', [id])
-    res.json({ message: 'MFA enabled' })
-  } catch (e) {
-    console.error('MFA verify error:', e)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-}
-
-export const disableMfaSuperadmin = async (req, res) => {
-  try {
-    const { id } = req.params
-    await db.execute('UPDATE superadmin SET mfa_enabled = 0, mfa_secret = NULL WHERE id = ?', [id])
-    res.json({ message: 'MFA disabled' })
-  } catch (e) {
-    console.error('MFA disable error:', e)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-}
 
 // -------------------- Update Email (Username) --------------------
 
@@ -710,3 +644,122 @@ export const updateSuperadminEmail = async (req, res) => {
     res.status(500).json({ error: "Internal server error while updating email" })
   }
 }
+
+// -------------------- 2FA (Two-Factor Authentication) Functions --------------------
+
+/**
+ * Setup 2FA for superadmin
+ * Generates a secret and QR code for authenticator app setup
+ */
+export const setupTwoFA = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if superadmin exists
+    const [rows] = await db.execute('SELECT id, username FROM superadmin WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Superadmin not found' });
+    }
+
+    const superadmin = rows[0];
+    
+    // Generate 2FA secret and otpauth URL
+    const { secret, otpauth } = generateTwoFASecret(superadmin.username);
+    
+    // Generate QR code (optional - may fail without breaking the flow)
+    // Option 1: Use full QR code generation (requires qrcode library)
+    const qrCodeDataUrl = await generateTwoFAQRCode(otpauth);
+    
+    // Option 2: Use simple method (no QR code) - uncomment the line below and comment the line above
+    // const qrCodeDataUrl = generateSimpleQRCode(otpauth);
+    
+    // Store secret temporarily (will be enabled after verification)
+    await db.execute('UPDATE superadmin SET twofa_secret = ? WHERE id = ?', [secret, id]);
+    
+    res.json({
+      success: true,
+      secret,
+      otpauth,
+      qrCode: qrCodeDataUrl, // May be null if QR generation failed
+      message: qrCodeDataUrl 
+        ? 'Add the account to your authenticator app using the secret key or QR code, then enter the 6-digit code to verify'
+        : 'Add the account to your authenticator app using the secret key, then enter the 6-digit code to verify'
+    });
+  } catch (error) {
+    console.error('2FA setup error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * Verify 2FA setup
+ * Verifies the 6-digit code and enables 2FA
+ */
+export const verifyTwoFA = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({ error: '2FA token is required' });
+    }
+    
+    if (!validateTwoFATokenFormat(token)) {
+      return res.status(400).json({ error: 'Invalid token format. Please enter a 6-digit number' });
+    }
+    
+    // Get superadmin and secret
+    const [rows] = await db.execute('SELECT id, twofa_secret FROM superadmin WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Superadmin not found' });
+    }
+    
+    const superadmin = rows[0];
+    if (!superadmin.twofa_secret) {
+      return res.status(400).json({ error: '2FA setup not initiated. Please setup 2FA first' });
+    }
+    
+    // Verify the token
+    const isValidToken = verifyTwoFAToken(token, superadmin.twofa_secret);
+    if (!isValidToken) {
+      return res.status(400).json({ error: 'Invalid 2FA token. Please try again' });
+    }
+    
+    // Enable 2FA
+    await db.execute('UPDATE superadmin SET twofa_enabled = 1 WHERE id = ?', [id]);
+    
+    res.json({
+      success: true,
+      message: '2FA has been successfully enabled for your account'
+    });
+  } catch (error) {
+    console.error('2FA verification error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * Disable 2FA for superadmin
+ */
+export const disableTwoFA = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if superadmin exists
+    const [rows] = await db.execute('SELECT id FROM superadmin WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Superadmin not found' });
+    }
+    
+    // Disable 2FA and clear secret
+    await db.execute('UPDATE superadmin SET twofa_enabled = 0, twofa_secret = NULL WHERE id = ?', [id]);
+    
+    res.json({
+      success: true,
+      message: '2FA has been successfully disabled for your account'
+    });
+  } catch (error) {
+    console.error('2FA disable error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

@@ -1243,13 +1243,13 @@ const initializeDatabase = async () => {
       console.log("ℹ️ Admins table structure check completed");
     }
 
-    // MFA columns kept in admins table for future use, but MFA is currently disabled for admin accounts
-    // Only superadmin accounts use MFA for enhanced security
+
+    // Add 2FA columns to superadmin table for TOTP implementation
     try {
-      await connection.query(`ALTER TABLE admins ADD COLUMN mfa_secret VARCHAR(255) NULL`)
+      await connection.query(`ALTER TABLE superadmin ADD COLUMN twofa_enabled TINYINT(1) DEFAULT 0`)
     } catch (e) {}
     try {
-      await connection.query(`ALTER TABLE admins ADD COLUMN mfa_enabled TINYINT(1) DEFAULT 0`)
+      await connection.query(`ALTER TABLE superadmin ADD COLUMN twofa_secret VARCHAR(255) NULL`)
     } catch (e) {}
 
     connection.release();

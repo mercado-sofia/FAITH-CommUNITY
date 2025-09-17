@@ -64,11 +64,27 @@
   display: flex;
   gap: 2rem;
   max-width: 1200px;
+  align-items: stretch; /* Ensure all children stretch to the same height */
 }
 
 .settingsGrid > * {
   flex: 1;
   min-width: 0;
+  display: flex; /* Make each panel a flex container */
+  flex-direction: column; /* Stack content vertically */
+}
+
+/* Two-Factor Authentication Container */
+.twoFAContainer {
+  display: flex;
+  justify-content: flex-start;
+  max-width: 1200px;
+}
+
+.twoFAContainer .settingsPanel {
+  width: 574px;
+  max-width: 574px;
+  flex: none;
 }
 
 /* Settings Panel */
@@ -76,13 +92,12 @@
   background: white;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  margin-bottom: 2rem;
-  border: 1px solid #e2e8f0;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   overflow: hidden;
-  height: fit-content;
+  margin-bottom: 2rem;
+  flex: 1; /* Take up available space in flex container */
+  display: flex; /* Make panel a flex container */
+  flex-direction: column; /* Stack header and content vertically */
 }
 
 /* Panel Header */
@@ -132,6 +147,9 @@
 /* Panel Content */
 .panelContent {
   padding: 1.5rem;
+  flex: 1; /* Take up remaining space in the panel */
+  display: flex; /* Make content area a flex container */
+  flex-direction: column; /* Stack content vertically */
 }
 
 /* Display Content */
@@ -247,6 +265,11 @@
   .settingsGrid {
     flex-direction: column;
     gap: 1.5rem;
+  }
+  
+  .twoFAContainer .settingsPanel {
+    width: 100%;
+    max-width: 100%;
   }
 }
 

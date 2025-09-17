@@ -127,7 +127,7 @@ export default function LoginPage() {
       case "superadmin":
         return await postJson('/api/superadmin/auth/login', { email, password, otp: needsOtp ? otp : undefined })
       case "admin":
-        return await postJson('/api/admins/login', { email, password, otp: needsOtp ? otp : undefined })
+        return await postJson('/api/admins/login', { email, password })
       case "user":
         return await postJson('/api/users/login', { email, password })
       default:
@@ -237,10 +237,10 @@ export default function LoginPage() {
       }
 
       const data = result?.data
-      // Only handle MFA for superadmin accounts
-      if (data && (data.requireMfa || /(otp|one-time)/i.test(data.error || "")) && lastAttemptedSystem === "superadmin") {
+      // Handle 2FA requirement for superadmin accounts
+      if (data && (data.requireTwoFA || /(2fa|two.?factor)/i.test(data.error || "")) && lastAttemptedSystem === "superadmin") {
         setNeedsOtp(true)
-        setErrorMessage("Enter the 6-digit OTP from your authenticator app.")
+        setErrorMessage("Enter the 6-digit code from your authenticator app.")
         setShowError(true)
         setIsLoading(false)
         return

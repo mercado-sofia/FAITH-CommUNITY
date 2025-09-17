@@ -349,6 +349,15 @@ export default function OrganizationPage() {
       formData.append("uploadType", "organization-logo");
       
       const adminToken = localStorage.getItem("adminToken");
+      if (!adminToken) {
+        // Clear invalid data and redirect to login
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminData');
+        document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        window.location.href = '/login';
+        return;
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/upload`, {
         method: "POST",
         headers: {
@@ -366,6 +375,14 @@ export default function OrganizationPage() {
         }));
         setModalMessage({ text: "Logo uploaded successfully", type: "success" });
       } else {
+        if (response.status === 401) {
+          // Token expired or invalid - redirect to login
+          localStorage.removeItem('adminToken');
+          localStorage.removeItem('adminData');
+          document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          window.location.href = '/login';
+          return;
+        }
         const errorText = await response.text();
         throw new Error(`Upload failed: ${response.status} - ${errorText}`);
       }

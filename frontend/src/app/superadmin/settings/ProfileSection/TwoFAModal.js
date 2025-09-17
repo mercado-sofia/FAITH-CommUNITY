@@ -29,8 +29,12 @@ export default function TwoFAModal({
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (response.ok) {
-        const data = await response.json();
-        setTwofaEnabled(data.twofa_enabled || false);
+        // Check if response is JSON before parsing
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          setTwofaEnabled(data.twofa_enabled || false);
+        }
       }
     } catch (error) {
       console.error('Error checking 2FA status:', error);
@@ -82,6 +86,13 @@ export default function TwoFAModal({
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
       });
+      
+      // Check if response is JSON before parsing
+      const contentType = resp.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Server returned an invalid response. Please try again.');
+      }
+      
       const data = await resp.json();
       if (!resp.ok) throw new Error(data?.error || 'Setup failed');
       
@@ -115,6 +126,13 @@ export default function TwoFAModal({
         },
         body: JSON.stringify({ token })
       });
+      
+      // Check if response is JSON before parsing
+      const contentType = resp.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Server returned an invalid response. Please try again.');
+      }
+      
       const data = await resp.json();
       if (!resp.ok) throw new Error(data?.error || 'Verification failed');
       
@@ -137,6 +155,13 @@ export default function TwoFAModal({
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
       });
+      
+      // Check if response is JSON before parsing
+      const contentType = resp.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Server returned an invalid response. Please try again.');
+      }
+      
       const data = await resp.json();
       if (!resp.ok) throw new Error(data?.error || 'Disable failed');
       

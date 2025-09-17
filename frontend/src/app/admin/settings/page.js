@@ -8,6 +8,7 @@ import { selectCurrentAdmin, updateAdminEmail } from '../../../rtk/superadmin/ad
 import { SkeletonLoader } from '../components';
 import { PasswordChangeModal, OrgProfileSection } from './ProfileSection';
 import { SuccessModal } from '../components';
+import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError } from '../../../utils/adminAuth';
 import styles from './adminSettings.module.css';
 
 // Utility function for password change time
@@ -78,6 +79,12 @@ export default function SettingsPage() {
     refreshAdmin();
   };
 
+  const handleSecureEmailSuccess = (newEmail) => {
+    setSuccessMessage('Email has been successfully changed.');
+    setShowSuccessModal(true);
+    refreshAdmin();
+  };
+
   const handleEmailSave = async (emailData) => {
     setEmailSaving(true);
     setEmailErrors({});
@@ -100,22 +107,28 @@ export default function SettingsPage() {
       // Check if email has changed to update Redux
       const emailChanged = emailData.email !== effectiveAdminData?.email;
       
-      // Call API to update email
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admin/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+      // Use authenticated request utility
+      const response = await makeAuthenticatedRequest(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admin/profile`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({
+            email: emailData.email.trim(),
+            password: emailData.password || null
+          })
         },
-        body: JSON.stringify({
-          email: emailData.email.trim(),
-          password: emailData.password || null
-        })
-      });
+        'admin'
+      );
+
+      if (!response) {
+        // Authentication utility handled redirect
+        return;
+      }
+
+      const data = await response.json();
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to update email address');
+        throw new Error(data.message || 'Failed to update email address');
       }
 
       // Update Redux if email changed
@@ -128,7 +141,17 @@ export default function SettingsPage() {
       refreshAdmin();
     } catch (error) {
       console.error('Error updating email address:', error);
-      setEmailErrors({ general: error.message || 'Failed to update email address. Please try again.' });
+      
+      // Show user-friendly error message
+      if (error.message.includes('session has expired') || error.message.includes('token')) {
+        showAuthError('Your session has expired. Please log in again.');
+        clearAuthAndRedirect('admin');
+        return;
+      }
+      
+      setEmailErrors({ 
+        general: error.message || 'Failed to update email address. Please try again.' 
+      });
     } finally {
       setEmailSaving(false);
     }
@@ -165,6 +188,7 @@ export default function SettingsPage() {
           setEditData={setEmailEditData}
           errors={emailErrors}
           saving={emailSaving}
+          onSecureEmailSuccess={handleSecureEmailSuccess}
         />
 
         {/* Password Settings Panel */}
@@ -216,7 +240,6 @@ export default function SettingsPage() {
         isVisible={showSuccessModal}
         onClose={() => setShowSuccessModal(false)}
         type="success"
-        autoHideDuration={3000}
       />
     </div>
   );

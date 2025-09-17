@@ -8,7 +8,7 @@ export default function SuccessModal({
   isVisible, 
   onClose, 
   type = 'success',
-  autoHideDuration = 3000 
+  autoHideDuration = 0 
 }) {
   useEffect(() => {
     if (isVisible && autoHideDuration > 0) {

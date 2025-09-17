@@ -7,15 +7,18 @@ import { useProfileApi } from '../../../hooks/useApiCall';
 import { useFormValidation } from '../../../hooks/useFormValidation';
 import { useToast } from '../../../components/Toast';
 import LoadingSpinner from '../../../components/LoadingSpinner';
+import EmailChangeSuccessModal from './EmailChangeSuccessModal';
 import styles from './SecureEmailChange.module.css';
 
 export default function SecureEmailChange({ userData, setUserData }) {
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1); // 1: Password verification, 2: OTP verification
   const [otpToken, setOtpToken] = useState(null);
   const [expiresAt, setExpiresAt] = useState(null);
   const [forceUpdate, setForceUpdate] = useState(0);
+  const [emailChangeData, setEmailChangeData] = useState({ oldEmail: '', newEmail: '' });
   
   // Email change states
   const [emailData, setEmailData] = useState({
@@ -28,6 +31,13 @@ export default function SecureEmailChange({ userData, setUserData }) {
   const { requestEmailChange, verifyEmailChangeOTP, isLoading } = useProfileApi();
   const { validateEmail, fieldErrors, setFieldError, clearAllErrors } = useFormValidation();
   const { showSuccess, showError } = useToast();
+
+  // Handle success modal close
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    // Show toast notification after modal is closed
+    showSuccess('Your email has been successfully changed.');
+  };
 
   // Debug userData changes
   useEffect(() => {
@@ -160,7 +170,11 @@ export default function SecureEmailChange({ userData, setUserData }) {
       console.log('Email change verification successful:', response);
       console.log('New email from response:', response.data?.newEmail);
 
-      showSuccess('Email changed successfully!');
+      // Store email change data for the success modal
+      setEmailChangeData({
+        oldEmail: userData.email,
+        newEmail: response.data.newEmail
+      });
       
       // Update user data in localStorage
       const updatedUserData = {
@@ -184,7 +198,7 @@ export default function SecureEmailChange({ userData, setUserData }) {
       console.log('UserData before update:', userData);
       console.log('Updated userData being set:', updatedUserData);
       
-      // Reset form and close modal
+      // Reset form and close email change modal
       setEmailData({
         newEmail: '',
         currentPassword: '',
@@ -193,11 +207,11 @@ export default function SecureEmailChange({ userData, setUserData }) {
       setCurrentStep(1);
       setOtpToken(null);
       setExpiresAt(null);
+      setShowEmailModal(false);
+      document.body.classList.remove('modalOpen');
       
-      setTimeout(() => {
-        setShowEmailModal(false);
-        document.body.classList.remove('modalOpen');
-      }, 2000);
+      // Show success modal
+      setShowSuccessModal(true);
       
     } catch (error) {
       let errorMessage = 'Failed to verify code';
@@ -467,6 +481,16 @@ export default function SecureEmailChange({ userData, setUserData }) {
           </div>
         </div>,
         document.body
+      )}
+
+      {/* Success Confirmation Modal */}
+      {showSuccessModal && emailChangeData.newEmail && emailChangeData.oldEmail && (
+        <EmailChangeSuccessModal
+          isOpen={showSuccessModal}
+          onClose={handleSuccessModalClose}
+          newEmail={emailChangeData.newEmail}
+          oldEmail={emailChangeData.oldEmail}
+        />
       )}
     </div>
   );

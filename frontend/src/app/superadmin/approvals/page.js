@@ -14,6 +14,49 @@ import styles from './approvals.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
+// Helper function to make authenticated API calls
+const makeAuthenticatedRequest = async (url, options = {}) => {
+  const token = localStorage.getItem('superAdminToken');
+  if (!token) {
+    // Clear invalid data and redirect to login
+    localStorage.removeItem('superAdminToken');
+    localStorage.removeItem('superAdminData');
+    localStorage.removeItem('token');
+    localStorage.removeItem('userRole');
+    document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    window.location.href = '/login';
+    return null;
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      ...options.headers
+    }
+  });
+
+  // Check if response is JSON before parsing
+  const contentType = response.headers.get('content-type');
+  if (!contentType || !contentType.includes('application/json')) {
+    throw new Error('Server returned an invalid response. Please try again.');
+  }
+
+  if (response.status === 401) {
+    // Token expired or invalid - redirect to login
+    localStorage.removeItem('superAdminToken');
+    localStorage.removeItem('superAdminData');
+    localStorage.removeItem('token');
+    localStorage.removeItem('userRole');
+    document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    window.location.href = '/login';
+    return null;
+  }
+
+  return response;
+};
+
 export default function PendingApprovalsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -95,7 +138,10 @@ export default function PendingApprovalsPage() {
   const fetchApprovals = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await fetch(`${API_BASE_URL}/api/approvals`);
+      
+      const res = await makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals`);
+      if (!res) return; // Helper function handled redirect
+      
       const result = await res.json();
 
       if (!res.ok || !result.success) {
@@ -121,7 +167,10 @@ export default function PendingApprovalsPage() {
   const fetchOrganizations = async () => {
     try {
       setOrgsLoading(true);
-      const res = await fetch(`${API_BASE_URL}/api/organizations`);
+      
+      const res = await makeAuthenticatedRequest(`${API_BASE_URL}/api/organizations`);
+      if (!res) return; // Helper function handled redirect
+      
       const result = await res.json();
 
       if (!res.ok || !result.success) {

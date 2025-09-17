@@ -268,8 +268,15 @@ export default function PasswordChangeModal({
         });
 
         if (!updateResponse.ok) {
-          const errorData = await updateResponse.json().catch(() => ({}));
+          // Check if response is JSON before parsing
+          const contentType = updateResponse.headers.get('content-type');
+          let errorData = {};
           
+          if (contentType && contentType.includes('application/json')) {
+            errorData = await updateResponse.json().catch(() => ({}));
+          } else {
+            errorData = { message: 'Server returned an invalid response. Please try again.' };
+          }
           
           const errorInfo = handleApiError({ status: updateResponse.status, message: errorData.message }, 'password_update');
           

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError } from '../../../utils/adminAuth';
 
 export const useAdminEmailChange = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,19 +12,19 @@ export const useAdminEmailChange = () => {
     setError(null);
 
     try {
-      const token = localStorage.getItem('adminToken');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      const response = await fetch('/api/admin/profile/email/request-change', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const response = await makeAuthenticatedRequest(
+        '/api/admin/profile/email/request-change',
+        {
+          method: 'POST',
+          body: JSON.stringify(emailData)
         },
-        body: JSON.stringify(emailData)
-      });
+        'admin'
+      );
+
+      if (!response) {
+        // Authentication utility handled redirect
+        return;
+      }
 
       const data = await response.json();
 
@@ -33,8 +34,18 @@ export const useAdminEmailChange = () => {
 
       return data;
     } catch (err) {
-      setError(err.message);
-      throw err;
+      const errorMessage = err.message === 'No authentication token found' 
+        ? 'Your session has expired. Please log in again.' 
+        : err.message;
+      
+      if (errorMessage.includes('session has expired') || errorMessage.includes('token')) {
+        showAuthError('Your session has expired. Please log in again.');
+        clearAuthAndRedirect('admin');
+        return;
+      }
+      
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -45,19 +56,19 @@ export const useAdminEmailChange = () => {
     setError(null);
 
     try {
-      const token = localStorage.getItem('adminToken');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      const response = await fetch('/api/admin/profile/email/verify-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const response = await makeAuthenticatedRequest(
+        '/api/admin/profile/email/verify-otp',
+        {
+          method: 'POST',
+          body: JSON.stringify(otpData)
         },
-        body: JSON.stringify(otpData)
-      });
+        'admin'
+      );
+
+      if (!response) {
+        // Authentication utility handled redirect
+        return;
+      }
 
       const data = await response.json();
 
@@ -67,8 +78,18 @@ export const useAdminEmailChange = () => {
 
       return data;
     } catch (err) {
-      setError(err.message);
-      throw err;
+      const errorMessage = err.message === 'No authentication token found' 
+        ? 'Your session has expired. Please log in again.' 
+        : err.message;
+      
+      if (errorMessage.includes('session has expired') || errorMessage.includes('token')) {
+        showAuthError('Your session has expired. Please log in again.');
+        clearAuthAndRedirect('admin');
+        return;
+      }
+      
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
     }

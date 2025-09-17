@@ -11,7 +11,8 @@ export default function OrgProfileSection({
   editData,
   setEditData,
   errors,
-  saving
+  saving,
+  onSecureEmailSuccess
 }) {
   const [showSecureEmailModal, setShowSecureEmailModal] = useState(false);
 
@@ -29,9 +30,12 @@ export default function OrgProfileSection({
   };
 
   const handleSecureEmailSuccess = (newEmail) => {
-    // Update the orgData with new email
     setEditData({ email: newEmail });
     setShowSecureEmailModal(false);
+    // Call parent success handler if provided
+    if (onSecureEmailSuccess) {
+      onSecureEmailSuccess(newEmail);
+    }
   };
 
   return (

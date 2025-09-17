@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FaEnvelope, FaEye, FaEyeSlash, FaTimes, FaCheck, FaShieldAlt, FaClock, FaMobile } from 'react-icons/fa';
+import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError } from '../../../../utils/adminAuth';
 import styles from './styles/SecureEmailChangeModal.module.css';
 
 export default function SecureEmailChangeModal({ 
@@ -127,19 +128,20 @@ export default function SecureEmailChangeModal({
       };
 
 
-      const token = localStorage.getItem('superadminToken');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      const response = await fetch(`/api/superadmin/auth/email/request-change/${currentUser.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const response = await makeAuthenticatedRequest(
+        `${baseUrl}/api/superadmin/auth/email/request-change/${currentUser.id}`,
+        {
+          method: 'POST',
+          body: JSON.stringify(requestData)
         },
-        body: JSON.stringify(requestData)
-      });
+        'superadmin'
+      );
+
+      if (!response) {
+        // Authentication utility handled redirect
+        return;
+      }
 
       const data = await response.json();
 
@@ -161,6 +163,10 @@ export default function SecureEmailChangeModal({
           errorMessage = 'Wrong password';
         } else if (error.message.toLowerCase().includes('unauthorized')) {
           errorMessage = 'Wrong password';
+        } else if (error.message.includes('session has expired') || error.message.includes('token')) {
+          showAuthError('Your session has expired. Please log in again.');
+          clearAuthAndRedirect('superadmin');
+          return;
         } else {
           errorMessage = error.message;
         }
@@ -192,22 +198,23 @@ export default function SecureEmailChangeModal({
     setIsLoading(true);
 
     try {
-      const token = localStorage.getItem('superadminToken');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      const response = await fetch(`/api/superadmin/auth/email/verify-otp/${currentUser.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const response = await makeAuthenticatedRequest(
+        `${baseUrl}/api/superadmin/auth/email/verify-otp/${currentUser.id}`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            token: otpToken,
+            otp: emailData.otp
+          })
         },
-        body: JSON.stringify({
-          token: otpToken,
-          otp: emailData.otp
-        })
-      });
+        'superadmin'
+      );
+
+      if (!response) {
+        // Authentication utility handled redirect
+        return;
+      }
 
       const data = await response.json();
 
@@ -223,7 +230,13 @@ export default function SecureEmailChangeModal({
       let errorMessage = 'Failed to verify code';
       
       if (error.message) {
-        errorMessage = error.message;
+        if (error.message.includes('session has expired') || error.message.includes('token')) {
+          showAuthError('Your session has expired. Please log in again.');
+          clearAuthAndRedirect('superadmin');
+          return;
+        } else {
+          errorMessage = error.message;
+        }
       }
       
       setFieldErrors({ otp: errorMessage });

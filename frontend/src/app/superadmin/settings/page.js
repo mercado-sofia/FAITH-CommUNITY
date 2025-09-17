@@ -7,6 +7,7 @@ import SecureEmailChangeModal from './ProfileSection/SecureEmailChangeModal';
 import PasswordChangeModal from './ProfileSection/PasswordChangeModal';
 import TwoFAModal from './ProfileSection/TwoFAModal';
 import SuccessModal from '../components/SuccessModal';
+import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError, checkAuthStatus } from '../../../utils/adminAuth';
 
 // Utility function for password change time
 const getPasswordChangeTime = (userData) => {
@@ -61,14 +62,11 @@ export default function SuperAdminSettings() {
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        const token = localStorage.getItem('superAdminToken');
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-        if (!token) {
-          showSuccessModal('Authentication required. Please log in again.');
+        // Check authentication status first
+        if (!checkAuthStatus('superadmin')) {
           return;
         }
 
-        // Get superadmin ID from token or localStorage
         const superAdminData = localStorage.getItem('superAdminData');
         let superadminId = null;
         
@@ -78,16 +76,21 @@ export default function SuperAdminSettings() {
         }
         
         if (!superadminId) {
-          showSuccessModal('Unable to get superadmin ID. Please log in again.');
+          clearAuthAndRedirect('superadmin');
           return;
         }
 
-        const response = await fetch(`${baseUrl}/api/superadmin/auth/profile/${superadminId}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const response = await makeAuthenticatedRequest(
+          `${baseUrl}/api/superadmin/auth/profile/${superadminId}`,
+          { method: 'GET' },
+          'superadmin'
+        );
+
+        if (!response) {
+          // Authentication utility handled redirect
+          return;
+        }
 
         const data = await response.json();
 
@@ -98,7 +101,8 @@ export default function SuperAdminSettings() {
           showSuccessModal(data.error || 'Failed to load user data');
         }
       } catch (error) {
-        showSuccessModal('Failed to load user data');
+        console.error('Error loading user data:', error);
+        showAuthError('Failed to load user data. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -121,9 +125,6 @@ export default function SuperAdminSettings() {
     // Reload user data after successful update
     const loadUserData = async () => {
       try {
-        const token = localStorage.getItem('superAdminToken');
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-        
         const superAdminData = localStorage.getItem('superAdminData');
         let superadminId = null;
         
@@ -132,12 +133,22 @@ export default function SuperAdminSettings() {
           superadminId = parsedData.id;
         }
 
-        const response = await fetch(`${baseUrl}/api/superadmin/auth/profile/${superadminId}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        if (!superadminId) {
+          clearAuthAndRedirect('superadmin');
+          return;
+        }
+
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const response = await makeAuthenticatedRequest(
+          `${baseUrl}/api/superadmin/auth/profile/${superadminId}`,
+          { method: 'GET' },
+          'superadmin'
+        );
+
+        if (!response) {
+          // Authentication utility handled redirect
+          return;
+        }
 
         const data = await response.json();
 
@@ -147,6 +158,7 @@ export default function SuperAdminSettings() {
         }
       } catch (error) {
         console.error('Failed to reload user data:', error);
+        showAuthError('Failed to reload user data. Please refresh the page.');
       }
     };
 
@@ -154,6 +166,7 @@ export default function SuperAdminSettings() {
   };
 
   const handleEmailSuccess = () => {
+    showSuccessModal('Email has been successfully changed.');
     handleUpdateSuccess();
   };
 
@@ -194,6 +207,7 @@ export default function SuperAdminSettings() {
         message={successModal.message}
         isVisible={successModal.isVisible}
         onClose={closeSuccessModal}
+        type="success"
       />
 
       {/* Header */}

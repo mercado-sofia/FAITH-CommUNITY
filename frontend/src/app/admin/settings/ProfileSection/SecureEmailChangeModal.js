@@ -45,6 +45,27 @@ export default function SecureEmailChangeModal({
     }
   }, [isOpen]);
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isOpen]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setEmailData(prev => ({
@@ -191,17 +212,23 @@ export default function SecureEmailChangeModal({
   if (!isOpen) return null;
 
   return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modal}>
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <div className={styles.headerContent}>
-            <FaShieldAlt className={styles.securityIcon} />
-            <h2>Secure Email Change</h2>
+            <div className={styles.securityIcon}>
+              <FaShieldAlt />
+            </div>
+            <div className={styles.headerText}>
+              <h2>Secure Email Change</h2>
+              <p>Update your email address with enhanced security verification</p>
+            </div>
           </div>
           <button 
             className={styles.modalCloseButton}
             onClick={onClose}
             type="button"
+            disabled={isLoading}
           >
             <FaTimes />
           </button>
@@ -211,7 +238,7 @@ export default function SecureEmailChangeModal({
         <div className={styles.progressIndicator}>
           <div className={`${styles.step} ${currentStep >= 1 ? styles.active : ''}`}>
             <div className={styles.stepNumber}>1</div>
-            <div className={styles.stepLabel}>Verify Password</div>
+            <div className={styles.stepLabel}>Enter New Email & Verify Identity</div>
           </div>
           <div className={`${styles.step} ${currentStep >= 2 ? styles.active : ''}`}>
             <div className={styles.stepNumber}>2</div>
@@ -223,8 +250,8 @@ export default function SecureEmailChangeModal({
         {currentStep === 1 && (
           <form onSubmit={handleStep1Submit} className={styles.emailForm}>
             <div className={styles.stepHeader}>
-              <h3>Step 1: Verify Your Identity</h3>
-              <p>Enter your new email and current password to continue</p>
+              <h3>Step 1: Enter New Email & Verify Your Identity</h3>
+              <p>Enter your new email address and current password to continue</p>
             </div>
 
             <div className={styles.passwordField}>
@@ -286,6 +313,7 @@ export default function SecureEmailChangeModal({
                 type="button" 
                 className={styles.cancelButton}
                 onClick={onClose}
+                disabled={isLoading}
               >
                 Cancel
               </button>
@@ -342,6 +370,7 @@ export default function SecureEmailChangeModal({
                 type="button" 
                 className={styles.backButton}
                 onClick={goBackToStep1}
+                disabled={isLoading}
               >
                 Back
               </button>

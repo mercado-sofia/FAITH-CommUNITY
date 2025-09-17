@@ -54,13 +54,25 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
 
   useEffect(() => {
     if (isOpen) {
+      // Prevent body scroll and ensure modal covers entire screen
       document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
     } else {
+      // Restore body styles
       document.body.style.overflow = 'auto';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
     }
 
     return () => {
+      // Cleanup: always restore body styles
       document.body.style.overflow = 'auto';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
     };
   }, [isOpen]);
 
@@ -283,5 +295,11 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
     </div>
   );
 
-  return createPortal(modalContent, document.body);
+  // Ensure document.body exists before creating portal
+  if (typeof document !== 'undefined' && document.body) {
+    return createPortal(modalContent, document.body);
+  }
+  
+  // Fallback for SSR or if document.body doesn't exist
+  return null;
 }

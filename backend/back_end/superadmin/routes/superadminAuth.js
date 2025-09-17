@@ -14,9 +14,9 @@ import {
   updateSuperadminEmail,
   requestSuperadminEmailChange,
   verifySuperadminEmailChangeOTP,
-  setupMfaSuperadmin,
-  verifyMfaSuperadmin,
-  disableMfaSuperadmin,
+  setupTwoFA,
+  verifyTwoFA,
+  disableTwoFA,
 } from "../controllers/superadminAuthController.js"
 
 const router = express.Router()
@@ -38,8 +38,10 @@ router.post("/email/verify-otp/:id", verifySuperadminToken, verifySuperadminEmai
 router.put("/email/:id",     verifySuperadminToken, updateSuperadminEmail) // Legacy endpoint
 
 router.put("/password/:id",  verifySuperadminToken, updateSuperadminPassword)
-router.post("/mfa/setup/:id", verifySuperadminToken, setupMfaSuperadmin)
-router.post("/mfa/verify/:id", verifySuperadminToken, verifyMfaSuperadmin)
-router.post("/mfa/disable/:id", verifySuperadminToken, disableMfaSuperadmin)
+
+// 2FA routes
+router.post("/2fa/setup/:id", verifySuperadminToken, setupTwoFA)
+router.post("/2fa/verify/:id", verifySuperadminToken, verifyTwoFA)
+router.post("/2fa/disable/:id", verifySuperadminToken, disableTwoFA)
 
 export default router

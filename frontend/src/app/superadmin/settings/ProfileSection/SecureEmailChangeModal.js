@@ -12,16 +12,13 @@ export default function SecureEmailChangeModal({
 }) {
   const [currentStep, setCurrentStep] = useState(1); // 1: Password verification, 2: OTP verification
   const [showPassword, setShowPassword] = useState(false);
-  const [showMfaOtp, setShowMfaOtp] = useState(false);
   const [otpToken, setOtpToken] = useState(null);
   const [expiresAt, setExpiresAt] = useState(null);
-  const [requiresMfa, setRequiresMfa] = useState(false);
   
   // Email change states
   const [emailData, setEmailData] = useState({
     newEmail: '',
     currentPassword: '',
-    mfaOtp: '',
     otp: ''
   });
   
@@ -38,15 +35,12 @@ export default function SecureEmailChangeModal({
       setEmailData({
         newEmail: '',
         currentPassword: '',
-        mfaOtp: '',
         otp: ''
       });
       setFieldErrors({});
       setOtpToken(null);
       setExpiresAt(null);
       setShowPassword(false);
-      setShowMfaOtp(false);
-      setRequiresMfa(false);
     }
   }, [isOpen]);
 
@@ -91,9 +85,6 @@ export default function SecureEmailChangeModal({
     setShowPassword(!showPassword);
   };
 
-  const toggleMfaOtpVisibility = () => {
-    setShowMfaOtp(!showMfaOtp);
-  };
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -126,12 +117,6 @@ export default function SecureEmailChangeModal({
       return;
     }
 
-    // Check if MFA is required
-    if (currentUser?.mfa_enabled && !emailData.mfaOtp) {
-      setRequiresMfa(true);
-      setFieldErrors({ mfaOtp: 'MFA OTP is required for 2FA-enabled accounts' });
-      return;
-    }
 
     setIsLoading(true);
 
@@ -141,10 +126,6 @@ export default function SecureEmailChangeModal({
         currentPassword: emailData.currentPassword
       };
 
-      // Add MFA OTP if required
-      if (currentUser?.mfa_enabled && emailData.mfaOtp) {
-        requestData.otp = emailData.mfaOtp;
-      }
 
       const token = localStorage.getItem('superadminToken');
       if (!token) {
@@ -163,11 +144,6 @@ export default function SecureEmailChangeModal({
       const data = await response.json();
 
       if (!response.ok) {
-        if (data.requireMfa) {
-          setRequiresMfa(true);
-          setFieldErrors({ mfaOtp: 'MFA OTP is required' });
-          return;
-        }
         throw new Error(data.error || 'Failed to request email change');
       }
 
@@ -185,18 +161,12 @@ export default function SecureEmailChangeModal({
           errorMessage = 'Wrong password';
         } else if (error.message.toLowerCase().includes('unauthorized')) {
           errorMessage = 'Wrong password';
-        } else if (error.message.toLowerCase().includes('otp')) {
-          errorMessage = 'Invalid MFA OTP';
         } else {
           errorMessage = error.message;
         }
       }
       
-      if (error.message?.toLowerCase().includes('otp')) {
-        setFieldErrors({ mfaOtp: errorMessage });
-      } else {
-        setFieldErrors({ currentPassword: errorMessage });
-      }
+      setFieldErrors({ currentPassword: errorMessage });
     } finally {
       setIsLoading(false);
     }
@@ -294,8 +264,13 @@ export default function SecureEmailChangeModal({
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <div className={styles.headerContent}>
-            <FaShieldAlt className={styles.securityIcon} />
-            <h2>Secure Email Change</h2>
+            <div className={styles.securityIcon}>
+              <FaShieldAlt />
+            </div>
+            <div className={styles.headerText}>
+              <h2>Secure Email Change</h2>
+              <p>Update your email address with enhanced security verification</p>
+            </div>
           </div>
           <button 
             className={styles.modalCloseButton}
@@ -311,7 +286,7 @@ export default function SecureEmailChangeModal({
         <div className={styles.progressIndicator}>
           <div className={`${styles.step} ${currentStep >= 1 ? styles.active : ''}`}>
             <div className={styles.stepNumber}>1</div>
-            <div className={styles.stepLabel}>Verify Identity</div>
+            <div className={styles.stepLabel}>Enter New Email & Verify Identity</div>
           </div>
           <div className={`${styles.step} ${currentStep >= 2 ? styles.active : ''}`}>
             <div className={styles.stepNumber}>2</div>
@@ -323,14 +298,8 @@ export default function SecureEmailChangeModal({
         {currentStep === 1 && (
           <form onSubmit={handleStep1Submit} className={styles.emailForm}>
             <div className={styles.stepHeader}>
-              <h3>Step 1: Verify Your Identity</h3>
-              <p>Enter your new email and current password to continue</p>
-              {currentUser?.mfa_enabled && (
-                <div className={styles.mfaNotice}>
-                  <FaMobile />
-                  <span>2FA is enabled - MFA OTP required</span>
-                </div>
-              )}
+              <h3>Step 1: Enter New Email & Verify Your Identity</h3>
+              <p>Enter your new email address and current password to continue</p>
             </div>
 
             <div className={styles.passwordField}>
@@ -387,36 +356,6 @@ export default function SecureEmailChangeModal({
               )}
             </div>
 
-            {/* MFA OTP Field - Only show if 2FA is enabled */}
-            {currentUser?.mfa_enabled && (
-              <div className={styles.passwordField}>
-                <label>MFA OTP (2FA Code)</label>
-                <div className={styles.passwordInputWrapper}>
-                  <input
-                    type={showMfaOtp ? 'text' : 'password'}
-                    name="mfaOtp"
-                    value={emailData.mfaOtp}
-                    onChange={handleInputChange}
-                    placeholder="Enter 6-digit MFA code"
-                    maxLength="6"
-                    className={fieldErrors.mfaOtp ? styles.error : ''}
-                  />
-                  <button
-                    type="button"
-                    className={styles.passwordToggle}
-                    onClick={toggleMfaOtpVisibility}
-                    tabIndex={-1}
-                  >
-                    {showMfaOtp ? <FaEyeSlash /> : <FaEye />}
-                  </button>
-                </div>
-                {fieldErrors.mfaOtp && (
-                  <div className={styles.fieldErrorMessage}>
-                    {fieldErrors.mfaOtp}
-                  </div>
-                )}
-              </div>
-            )}
 
             <div className={styles.emailModalButtons}>
               <button 

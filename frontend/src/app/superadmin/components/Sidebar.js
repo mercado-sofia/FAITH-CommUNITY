@@ -3,17 +3,32 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import styles from './styles/sidebar.module.css';
 import LogoutModalTrigger from '../logout/page.js';
 
 import { TbChecklist } from "react-icons/tb";
 import { RiTreeFill } from "react-icons/ri";
 import { HiViewGrid } from 'react-icons/hi';
-import { FaUserCheck, FaClipboardCheck, FaRegQuestionCircle, FaRegAddressBook, FaAddressCard } from 'react-icons/fa';
+import { FaClipboardCheck, FaRegQuestionCircle, FaAddressCard } from 'react-icons/fa';
 import { MdSettings } from 'react-icons/md';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [adminData, setAdminData] = useState(null);
+
+  useEffect(() => {
+    // Get superadmin data from localStorage
+    try {
+      const superAdminData = localStorage.getItem('superAdminData');
+      if (superAdminData) {
+        const parsedData = JSON.parse(superAdminData);
+        setAdminData(parsedData);
+      }
+    } catch (error) {
+      console.error('Error parsing superadmin data:', error);
+    }
+  }, []);
 
   return (
     <aside className={styles.sidebar}>
@@ -40,9 +55,13 @@ export default function Sidebar() {
       <div className={styles.adminInfo}>
         <div className={styles.heading}>
           <span className={styles.helloText}>Hello, </span>
-          <span className={styles.adminText}>SuperAdmin</span>
+          <span className={styles.adminText}>
+            Superadmin
+          </span>
         </div>
-        <div className={styles.emailText}>superadmin@faith.com</div>
+        <div className={styles.emailText}>
+          {adminData?.email || adminData?.username || 'superadmin@faith.com'}
+        </div>
       </div>
 
       {/* Menu Wrapper */}

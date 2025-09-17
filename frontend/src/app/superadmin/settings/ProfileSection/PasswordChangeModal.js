@@ -133,21 +133,18 @@ export default function PasswordChangeModal({
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
-    confirmPassword: '',
-    otp: ''
+    confirmPassword: ''
   });
   
   const [passwordVisibility, setPasswordVisibility] = useState({
     currentPassword: false,
     newPassword: false,
-    confirmPassword: false,
-    otp: false
+    confirmPassword: false
   });
   
   const [errors, setErrors] = useState({});
   const [errorMessage, setErrorMessage] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [requiresMfa, setRequiresMfa] = useState(false);
 
   const rateLimiter = new RateLimiter(5, 15 * 60 * 1000);
 
@@ -157,19 +154,16 @@ export default function PasswordChangeModal({
       setPasswordData({
         currentPassword: '',
         newPassword: '',
-        confirmPassword: '',
-        otp: ''
+        confirmPassword: ''
       });
       setPasswordVisibility({
         currentPassword: false,
         newPassword: false,
-        confirmPassword: false,
-        otp: false
+        confirmPassword: false
       });
       setErrors({});
       setErrorMessage('');
       setShowSuccessModal(false); // Reset success modal state
-      setRequiresMfa(false);
     }
   }, [isOpen]);
 
@@ -234,10 +228,6 @@ export default function PasswordChangeModal({
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
-
-    if (requiresMfa && !passwordData.otp.trim()) {
-      newErrors.otp = 'OTP is required for 2FA-enabled account';
-    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -273,29 +263,18 @@ export default function PasswordChangeModal({
           },
           body: JSON.stringify({
             currentPassword: passwordData.currentPassword,
-            newPassword: passwordData.newPassword,
-            otp: passwordData.otp || undefined
+            newPassword: passwordData.newPassword
           })
         });
 
         if (!updateResponse.ok) {
           const errorData = await updateResponse.json().catch(() => ({}));
           
-          // Handle 2FA requirement
-          if (errorData.requireMfa) {
-            setRequiresMfa(true);
-            setErrorMessage('2FA is enabled for this account. Please enter your OTP code.');
-            setTimeout(() => setErrorMessage(''), 5000);
-            return;
-          }
           
           const errorInfo = handleApiError({ status: updateResponse.status, message: errorData.message }, 'password_update');
           
           if (errorInfo.type === 'password_error') {
             setErrors(prev => ({ ...prev, currentPassword: errorInfo.message }));
-            setErrorMessage('');
-          } else if (errorData.message && errorData.message.includes('OTP')) {
-            setErrors(prev => ({ ...prev, otp: errorData.message }));
             setErrorMessage('');
           } else {
             setErrorMessage(errorInfo.message);
@@ -327,18 +306,15 @@ export default function PasswordChangeModal({
     setPasswordData({
       currentPassword: '',
       newPassword: '',
-      confirmPassword: '',
-      otp: ''
+      confirmPassword: ''
     });
     setPasswordVisibility({
       currentPassword: false,
       newPassword: false,
-      confirmPassword: false,
-      otp: false
+      confirmPassword: false
     });
     setErrors({});
     setErrorMessage('');
-    setRequiresMfa(false);
     onClose();
   };
 
@@ -450,39 +426,6 @@ export default function PasswordChangeModal({
                   {errors.confirmPassword && <span className={styles.errorText}>{errors.confirmPassword}</span>}
                 </div>
 
-                {/* 2FA OTP Field - Only show if 2FA is required */}
-                {requiresMfa && (
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.label}>
-                      2FA Code <span className={styles.required}>*</span>
-                    </label>
-                    <div className={styles.passwordInputContainer}>
-                      <input
-                        type={passwordVisibility.otp ? "text" : "password"}
-                        name="otp"
-                        value={passwordData.otp}
-                        onChange={handlePasswordInputChange}
-                        className={`${styles.input} ${styles.passwordInput} ${errors.otp ? styles.inputError : ''}`}
-                        placeholder="Enter your 6-digit OTP code"
-                        disabled={isUpdating || isVerifyingPassword}
-                        maxLength={6}
-                      />
-                      <button
-                        type="button"
-                        className={styles.passwordToggle}
-                        onClick={() => togglePasswordVisibility('otp')}
-                        disabled={isUpdating || isVerifyingPassword}
-                        tabIndex={-1}
-                      >
-                        {passwordVisibility.otp ? <FaEyeSlash /> : <FaEye />}
-                      </button>
-                    </div>
-                    {errors.otp && <span className={styles.errorText}>{errors.otp}</span>}
-                    <div className={styles.helpText}>
-                      Enter the 6-digit code from your authenticator app
-                    </div>
-                  </div>
-                )}
 
                 <div className={styles.actionButtons}>
                   <button 

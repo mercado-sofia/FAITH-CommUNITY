@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FaEnvelope, FaLock } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaShieldAlt } from 'react-icons/fa';
 import styles from './settings.module.css';
-import EmailChangeModal from './ProfileSection/EmailChangeModal';
 import SecureEmailChangeModal from './ProfileSection/SecureEmailChangeModal';
 import PasswordChangeModal from './ProfileSection/PasswordChangeModal';
+import TwoFAModal from './ProfileSection/TwoFAModal';
 import SuccessModal from '../components/SuccessModal';
 
 // Utility function for password change time
@@ -52,9 +52,10 @@ export default function SuperAdminSettings() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [successModal, setSuccessModal] = useState({ isVisible: false, message: '' });
-  const [showEmailModal, setShowEmailModal] = useState(false);
   const [showSecureEmailModal, setShowSecureEmailModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showTwoFAModal, setShowTwoFAModal] = useState(false);
+  const [twofaEnabled, setTwofaEnabled] = useState(false);
 
   // Load current user data
   useEffect(() => {
@@ -92,6 +93,7 @@ export default function SuperAdminSettings() {
 
         if (response.ok) {
           setCurrentUser(data);
+          setTwofaEnabled(data.twofa_enabled || false);
         } else {
           showSuccessModal(data.error || 'Failed to load user data');
         }
@@ -141,6 +143,7 @@ export default function SuperAdminSettings() {
 
         if (response.ok) {
           setCurrentUser(data);
+          setTwofaEnabled(data.twofa_enabled || false);
         }
       } catch (error) {
         console.error('Failed to reload user data:', error);
@@ -155,6 +158,10 @@ export default function SuperAdminSettings() {
   };
 
   const handlePasswordSuccess = () => {
+    handleUpdateSuccess();
+  };
+
+  const handleTwoFASuccess = () => {
     handleUpdateSuccess();
   };
 
@@ -262,13 +269,45 @@ export default function SuperAdminSettings() {
         </div>
       </div>
 
-      {/* Email Change Modal */}
-      <EmailChangeModal
-        isOpen={showEmailModal}
-        onClose={() => setShowEmailModal(false)}
-        onSuccess={handleEmailSuccess}
-        currentUser={currentUser}
-      />
+      {/* Two-Factor Authentication Panel - Separate Row */}
+      <div className={styles.twoFAContainer}>
+        <div className={styles.settingsPanel}>
+          <div className={styles.panelHeader}>
+            <div className={styles.panelIcon}>
+              <FaShieldAlt />
+            </div>
+            <div className={styles.panelTitle}>
+              <h2>Two-Factor Authentication</h2>
+              <p>Add an extra layer of security to your account</p>
+            </div>
+            <button 
+              className={styles.editButton}
+              onClick={() => setShowTwoFAModal(true)}
+            >
+              {twofaEnabled ? 'Manage' : 'Setup'}
+            </button>
+          </div>
+
+          <div className={styles.panelContent}>
+            <div className={styles.displayContent}>
+              <div className={styles.fieldGroup}>
+                <label className={styles.label}>2FA Status</label>
+                <div className={styles.passwordInfo}>
+                  <p className={styles.infoText}>
+                    Status: <strong>{twofaEnabled ? 'Enabled' : 'Disabled'}</strong>
+                  </p>
+                  <p className={styles.infoText}>
+                    {twofaEnabled 
+                      ? 'Your account is protected with two-factor authentication.'
+                      : 'Add an authenticator app for enhanced security.'
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Secure Email Change Modal */}
       <SecureEmailChangeModal
@@ -283,6 +322,14 @@ export default function SuperAdminSettings() {
         isOpen={showPasswordModal}
         onClose={() => setShowPasswordModal(false)}
         onSuccess={handlePasswordSuccess}
+        currentUser={currentUser}
+      />
+
+      {/* Two-Factor Authentication Modal */}
+      <TwoFAModal
+        isOpen={showTwoFAModal}
+        onClose={() => setShowTwoFAModal(false)}
+        onSuccess={handleTwoFASuccess}
         currentUser={currentUser}
       />
     </div>

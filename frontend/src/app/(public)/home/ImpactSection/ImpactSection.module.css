@@ -97,6 +97,19 @@
   justify-content: flex-start;
 }
 
+/* Centered container for fewer than 3 projects */
+.centeredContainer {
+  justify-content: center;
+  padding: 12px 2rem 0 2rem;
+}
+
+/* Centered track for fewer than 3 projects */
+.centeredTrack {
+  justify-content: center;
+  width: auto;
+  max-width: none;
+}
+
 /* Carousel Card */
 .carouselCard {
   background: #fff;
@@ -237,6 +250,10 @@
     padding: 12px 1.5rem 0 1.5rem;
   }
   
+  .centeredContainer {
+    padding: 12px 1.5rem 0 1.5rem;
+  }
+  
   .carouselWrapper {
     height: 460px;
   }
@@ -274,6 +291,10 @@
 
 @media (max-width: 768px) {
   .carouselContainer {
+    padding: 12px 1rem 0 1rem;
+  }
+  
+  .centeredContainer {
     padding: 12px 1rem 0 1rem;
   }
   
@@ -323,6 +344,10 @@
 
 @media (max-width: 480px) {
   .carouselContainer {
+    padding: 12px 0.5rem 0 0.5rem;
+  }
+  
+  .centeredContainer {
     padding: 12px 0.5rem 0 0.5rem;
   }
   

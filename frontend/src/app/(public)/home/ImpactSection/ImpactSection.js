@@ -126,6 +126,7 @@ export default function ImpactSection() {
   // Carousel calculations
   const slideSize = 3;
   const maxIndex = dataToDisplay.length <= slideSize ? 0 : dataToDisplay.length - slideSize;
+  const shouldCenter = dataToDisplay.length < 3;
 
   const handlePrev = useCallback(() => {
     setCurrentIndex((prev) => {
@@ -173,6 +174,15 @@ export default function ImpactSection() {
     return currentIndex * itemWidth;
   }, [currentIndex, carouselConfig, dataToDisplay.length, slideSize]);
 
+  // Calculate centering offset for fewer than 3 projects
+  const centeringOffset = useMemo(() => {
+    if (!shouldCenter) return 0;
+    
+    const totalWidth = dataToDisplay.length * (carouselConfig.cardWidth + carouselConfig.gap) - carouselConfig.gap;
+    const containerWidth = typeof window !== 'undefined' ? Math.min(window.innerWidth - 80, 1210) : 1210; // Reduced padding for better centering
+    return Math.max(0, (containerWidth - totalWidth) / 2);
+  }, [shouldCenter, dataToDisplay.length, carouselConfig]);
+
   if (!isClient || isLoading) {
     return (
       <section ref={sectionRef} className={styles.impactSection}>
@@ -197,19 +207,21 @@ export default function ImpactSection() {
         </h2>
       </div>
 
-      <div className={styles.carouselContainer}>
-        <button
-          className={`${styles.navButton} ${styles.navButtonPrev}`}
-          onClick={handlePrev}
-          disabled={currentIndex === 0}
-          aria-label="Previous item"
-        >
-          <FaChevronLeft />
-        </button>
+      <div className={`${styles.carouselContainer} ${shouldCenter ? styles.centeredContainer : ''}`}>
+        {!shouldCenter && (
+          <button
+            className={`${styles.navButton} ${styles.navButtonPrev}`}
+            onClick={handlePrev}
+            disabled={currentIndex === 0}
+            aria-label="Previous item"
+          >
+            <FaChevronLeft />
+          </button>
+        )}
 
         <div className={styles.carouselWrapper}>
           <div 
-            className={styles.carouselTrack}
+            className={`${styles.carouselTrack} ${shouldCenter ? styles.centeredTrack : ''}`}
             style={{ 
               transform: `translateX(-${translateX}px)`,
               gap: `${carouselConfig.gap}px`
@@ -272,14 +284,16 @@ export default function ImpactSection() {
           </div>
         </div>
 
-        <button
-          className={`${styles.navButton} ${styles.navButtonNext}`}
-          onClick={handleNext}
-          disabled={currentIndex >= maxIndex}
-          aria-label="Next item"
-        >
-          <FaChevronRight />
-        </button>
+        {!shouldCenter && (
+          <button
+            className={`${styles.navButton} ${styles.navButtonNext}`}
+            onClick={handleNext}
+            disabled={currentIndex >= maxIndex}
+            aria-label="Next item"
+          >
+            <FaChevronRight />
+          </button>
+        )}
       </div>
     </section>
   );

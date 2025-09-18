@@ -50,11 +50,11 @@ export const superadminProgramsApi = createApi({
               category: program.category,
               status: program.status,
               image: program.image,
-              eventStartDate: program.event_start_date,
-              eventEndDate: program.event_end_date,
-              multipleDates: program.multiple_dates || [],
-              createdAt: program.created_at,
-              updatedAt: program.updated_at
+              event_start_date: program.event_start_date,
+              event_end_date: program.event_end_date,
+              multiple_dates: program.multiple_dates || [],
+              created_at: program.created_at,
+              updated_at: program.updated_at
             };
 
             // Categorize by status
@@ -158,9 +158,9 @@ export const superadminProgramsApi = createApi({
             description: project.description,
             image: project.image,
             status: project.status,
-            eventStartDate: project.event_start_date,
-            eventEndDate: project.event_end_date,
-            createdAt: project.created_at,
+            event_start_date: project.event_start_date,
+            event_end_date: project.event_end_date,
+            created_at: project.created_at,
             orgAcronym: project.orgAcronym,
             orgName: project.orgName,
             orgColor: project.orgColor,

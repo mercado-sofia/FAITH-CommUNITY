@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { FaTimes, FaTag, FaCalendar, FaEye } from 'react-icons/fa'
 import { getProgramImageUrl } from '@/utils/uploadPaths'
 import { useGetProgramByIdQuery } from '@/rtk/superadmin/programsApi'
-import { formatProgramDates } from '@/utils/dateUtils.js'
+import { formatProgramDates, formatDateShort } from '@/utils/dateUtils.js'
 import styles from './styles/ProgramDetailsModal.module.css'
 
 const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
@@ -130,7 +130,7 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
                         <div className={styles.detailContent}>
                           <span className={styles.detailLabel}>Created</span>
                           <span className={styles.detailValue}>
-                            {formatDate(programData.created_at)}
+                            {formatDateShort(programData.created_at)}
                           </span>
                         </div>
                       </div>

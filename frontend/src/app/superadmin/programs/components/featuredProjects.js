@@ -100,8 +100,9 @@ const FeaturedProjects = ({ searchQuery = '' }) => {
             organization_name: project.orgName,
             organization_acronym: project.orgAcronym,
             organization_color: project.orgColor,
-            event_date: project.eventStartDate,
-            created_at: project.createdAt
+            event_start_date: project.event_start_date,
+            event_end_date: project.event_end_date,
+            created_at: project.created_at
           }
 
           return (

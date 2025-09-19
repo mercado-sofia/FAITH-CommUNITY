@@ -1,6 +1,6 @@
 "use client"
 
-import styles from "./Loader.module.css"
+import styles from "./styles/Loader.module.css"
 
 export default function Loader({ small = false, centered = false }) {
   let className = styles.loaderContainer;

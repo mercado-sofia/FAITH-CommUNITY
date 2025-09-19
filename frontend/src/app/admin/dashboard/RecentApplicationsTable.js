@@ -7,7 +7,25 @@ import { FiEye } from 'react-icons/fi';
 import { CgOptions } from "react-icons/cg";
 import { FaUser } from "react-icons/fa";
 import Image from "next/image";
+import { formatDateForAPI } from '../../../utils/dateUtils';
 import styles from './styles/RecentTables.module.css';
+
+// Helper function to safely parse dates for sorting
+const parseDateForSorting = (dateString) => {
+  if (!dateString) return new Date(0); // Fallback to epoch for invalid dates
+  
+  try {
+    // Use centralized date utility to ensure consistent parsing
+    const isoDate = formatDateForAPI(dateString);
+    const parsedDate = new Date(isoDate);
+    
+    // Return epoch if date is invalid
+    return isNaN(parsedDate.getTime()) ? new Date(0) : parsedDate;
+  } catch (error) {
+    console.warn('Failed to parse date for sorting:', dateString, error);
+    return new Date(0); // Fallback to epoch
+  }
+};
 
 // Avatar component for volunteers
 const VolunteerAvatar = ({ volunteer, size = 32 }) => {
@@ -107,7 +125,7 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
       : volunteers.filter((volunteer) => volunteer.status === filter);
 
   const sortedList = [...filteredList].sort(
-    (a, b) => new Date(b.date) - new Date(a.date)
+    (a, b) => parseDateForSorting(b.date) - parseDateForSorting(a.date)
   );
 
   const displayList = sortedList.slice(0, 5);

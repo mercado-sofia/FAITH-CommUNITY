@@ -854,22 +854,14 @@
     padding: 0.4rem 0.8rem !important;
     font-size: 0.85rem !important;
   }
-  
-  .profileBtn {
-    padding: 0.4rem;
-  }
-  
-  .notificationBtn {
-    width: 20px;
-    height: 20px;
-  }
-  
-  .notificationsDropdown {
-    width: 280px;
-  }
 }
 
+/* Hide desktop login button on mobile to prevent duplication */
 @media (max-width: 730px) {
+  .navbarLoginBtn {
+    display: none !important;
+  }
+  
   .profileBtn {
     padding: 0.4rem;
   }

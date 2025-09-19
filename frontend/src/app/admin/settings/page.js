@@ -2,14 +2,13 @@
 
 import { useState, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { FaLock } from 'react-icons/fa';
-import { useAdminProfile } from '../../../hooks/useAdminProfile';
+import { FaLock, FaBuilding } from 'react-icons/fa';
+import { useAdminProfile } from '../hooks/useAdminProfile';
 import { selectCurrentAdmin, updateAdminEmail } from '../../../rtk/superadmin/adminSlice';
-import { SkeletonLoader } from '../components';
-import { PasswordChangeModal, OrgProfileSection } from './ProfileSection';
-import { SuccessModal } from '../components';
+import { SkeletonLoader, SuccessModal } from '../components';
+import { PasswordChangeModal, SecureEmailChangeModal } from './ProfileSection';
 import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError } from '../../../utils/adminAuth';
-import styles from './adminSettings.module.css';
+import styles from './AdminSettings.module.css';
 
 // Utility function for password change time
 const getPasswordChangeTime = (effectiveAdminData) => {
@@ -67,6 +66,7 @@ export default function SettingsPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showSecureEmailModal, setShowSecureEmailModal] = useState(false);
   
   // Email profile state
   const [emailEditData, setEmailEditData] = useState(null);
@@ -80,9 +80,19 @@ export default function SettingsPage() {
   };
 
   const handleSecureEmailSuccess = (newEmail) => {
+    setEmailEditData({ email: newEmail });
+    setShowSecureEmailModal(false);
     setSuccessMessage('Email has been successfully changed.');
     setShowSuccessModal(true);
     refreshAdmin();
+  };
+
+  const handleEmailEditClick = () => {
+    setShowSecureEmailModal(true);
+  };
+
+  const handleEmailEditClose = () => {
+    setShowSecureEmailModal(false);
   };
 
   const handleEmailSave = async (emailData) => {
@@ -181,15 +191,40 @@ export default function SettingsPage() {
 
       <div className={styles.settingsGrid}>
         {/* Email Profile Panel */}
-        <OrgProfileSection
-          orgData={effectiveAdminData}
-          onSave={handleEmailSave}
-          editData={emailEditData}
-          setEditData={setEmailEditData}
-          errors={emailErrors}
-          saving={emailSaving}
-          onSecureEmailSuccess={handleSecureEmailSuccess}
-        />
+        <div className={styles.settingsPanel}>
+          <div className={styles.panelHeader}>
+            <div className={styles.panelIcon}>
+              <FaBuilding />
+            </div>
+            <div className={styles.panelTitle}>
+              <h2>Email Address</h2>
+              <p>Your email address for this account.</p>
+            </div>
+            <button
+              className={styles.editButton}
+              onClick={handleEmailEditClick}
+            >
+              Edit
+            </button>
+          </div>
+
+          <div className={styles.panelContent}>
+            <div className={styles.displayContent}>
+              <div className={styles.orgProfileFieldGroup}>
+                <label className={styles.orgProfileLabel}>Email Address</label>
+                <div className={styles.orgProfileDisplayValue}>
+                  {effectiveAdminData?.email ? (
+                    <div className={styles.emailDisplay}>
+                      {effectiveAdminData.email}
+                    </div>
+                  ) : (
+                    'Not specified'
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Password Settings Panel */}
         <div className={styles.settingsPanel}>
@@ -232,6 +267,14 @@ export default function SettingsPage() {
         isOpen={showPasswordModal}
         onClose={() => setShowPasswordModal(false)}
         onSuccess={handlePasswordSuccess}
+      />
+
+      {/* Secure Email Change Modal */}
+      <SecureEmailChangeModal
+        isOpen={showSecureEmailModal}
+        onClose={handleEmailEditClose}
+        onSuccess={handleSecureEmailSuccess}
+        currentEmail={effectiveAdminData?.email}
       />
       
       {/* Success Modal */}

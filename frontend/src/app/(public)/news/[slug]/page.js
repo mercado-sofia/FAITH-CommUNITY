@@ -4,7 +4,7 @@ import { useState, useEffect, use } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { usePublicNewsArticle } from "../../../../hooks/usePublicData";
+import { usePublicNewsArticle } from "../../hooks/usePublicData";
 import Loader from "../../../../components/Loader";
 import { usePublicPageLoader } from "../../hooks/usePublicPageLoader";
 import styles from "../news.module.css";

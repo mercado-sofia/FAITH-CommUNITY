@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FaTimes, FaUndo, FaClock } from 'react-icons/fa';
 import { FiTrash2 } from 'react-icons/fi';
+import { formatDateShort } from '@/utils/dateUtils.js';
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import styles from './styles/RecentlyDeletedModal.module.css';
 
@@ -139,15 +140,7 @@ const RecentlyDeletedModal = ({ isOpen, onClose, orgId, onRestore, onPermanentDe
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Not specified';
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    } catch (error) {
-      return 'Invalid date';
-    }
+    return formatDateShort(dateString);
   };
 
   const truncateText = (text, maxLength = 100) => {

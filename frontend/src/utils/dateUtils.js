@@ -339,6 +339,7 @@ export const calculateAge = (birthDate) => {
 
 /**
  * Format date for API requests (ISO format)
+ * Uses local timezone to avoid date shifting issues
  * @param {string} dateString - Date string in any valid format
  * @returns {string} ISO date string (YYYY-MM-DD) or empty string
  */
@@ -352,7 +353,12 @@ export const formatDateForAPI = (dateString) => {
       return '';
     }
     
-    return date.toISOString().split('T')[0];
+    // Use local timezone to avoid date shifting issues
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
   } catch (error) {
     logger.error('Error in formatDateForAPI', error, { dateString });
     return '';
@@ -361,12 +367,18 @@ export const formatDateForAPI = (dateString) => {
 
 /**
  * Get current date in ISO format (YYYY-MM-DD)
+ * Uses local timezone to avoid date shifting issues
  * @returns {string} Current date in ISO format
  */
 export const getCurrentDateISO = () => {
   try {
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    // Use local timezone to avoid date shifting issues
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
   } catch (error) {
     logger.error('Error in getCurrentDateISO', error);
     return '';
@@ -375,6 +387,7 @@ export const getCurrentDateISO = () => {
 
 /**
  * Get date X days from now
+ * Uses local timezone to avoid date shifting issues
  * @param {number} days - Number of days to add (negative for past dates)
  * @returns {string} Date in ISO format (YYYY-MM-DD)
  */
@@ -382,7 +395,12 @@ export const getDateFromNow = (days) => {
   try {
     const date = new Date();
     date.setDate(date.getDate() + days);
-    return date.toISOString().split('T')[0];
+    // Use local timezone to avoid date shifting issues
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
   } catch (error) {
     logger.error('Error in getDateFromNow', error, { days });
     return '';

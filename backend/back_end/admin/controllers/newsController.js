@@ -76,7 +76,20 @@ export const createNews = async (req, res) => {
 
     const organization = orgRows[0];
 
-    // 2) Check slug uniqueness
+    // 2) Check title uniqueness within the same organization
+    const [titleCheck] = await db.execute(
+      "SELECT id FROM news WHERE title = ? AND organization_id = ? AND is_deleted = FALSE",
+      [title, organization.id]
+    );
+    if (titleCheck.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "A post with this title already exists in your organization. Please choose a different title.",
+        errorCode: "DUPLICATE_TITLE"
+      });
+    }
+
+    // 3) Check slug uniqueness
     const [slugCheck] = await db.execute(
       "SELECT id FROM news WHERE slug = ? AND is_deleted = FALSE",
       [slug]
@@ -736,6 +749,26 @@ export const updateNews = async (req, res) => {
     const [existingNews] = await db.execute("SELECT id FROM news WHERE id = ?", [id]);
     if (existingNews.length === 0) {
       return res.status(404).json({ success: false, message: "News not found" });
+    }
+
+    // Get organization_id for the current news item
+    const [currentNews] = await db.execute("SELECT organization_id FROM news WHERE id = ?", [id]);
+    if (currentNews.length === 0) {
+      return res.status(404).json({ success: false, message: "News not found" });
+    }
+    const organizationId = currentNews[0].organization_id;
+
+    // Check title uniqueness within the same organization (excluding current record)
+    const [titleCheck] = await db.execute(
+      "SELECT id FROM news WHERE title = ? AND organization_id = ? AND id != ? AND is_deleted = FALSE",
+      [title, organizationId, id]
+    );
+    if (titleCheck.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "A post with this title already exists in your organization. Please choose a different title.",
+        errorCode: "DUPLICATE_TITLE"
+      });
     }
 
     // Check slug uniqueness (excluding current record)

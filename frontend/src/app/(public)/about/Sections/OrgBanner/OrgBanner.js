@@ -2,7 +2,7 @@ import styles from './OrgBanner.module.css';
 import Image from 'next/image';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { useState } from 'react';
-import { usePublicOrganizations } from '../../../../../hooks/usePublicData';
+import { usePublicOrganizations } from '../../../hooks/usePublicData';
 
 export default function OrgBanner() {
   const cardWidth = 140;

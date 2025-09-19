@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Loader from '../../../../../components/Loader';
 import BannerSection from '../../../components/PageBanner';
 import { OrgInfoCard, AdvocacyCompetency, FeaturedProjects, OrgHeadsCarousel, LatestPosts } from '../../components';
-import { usePublicOrganizationData } from '../../../../../hooks/usePublicData';
+import { usePublicOrganizationData } from '../../../hooks/usePublicData';
 import { useAuthState } from '../../../../../hooks/useAuthState';
 import { usePublicPageLoader } from '../../../hooks/usePublicPageLoader';
 import styles from '../org.module.css';

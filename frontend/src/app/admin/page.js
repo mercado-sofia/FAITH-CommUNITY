@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { useMemo } from 'react';
 import styles from './dashboard/styles/dashboard.module.css';
 import { StatCardSection, RecentApplicationsTable } from './dashboard';
-import { useAdminVolunteers } from '../../hooks/useAdminData';
+import { useAdminVolunteers } from './hooks/useAdminData';
 import { selectCurrentAdmin, selectIsAuthenticated } from '../../rtk/superadmin/adminSlice';
 import { SkeletonLoader } from './components';
 

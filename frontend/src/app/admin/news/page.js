@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { selectCurrentAdmin } from '../../../rtk/superadmin/adminSlice';
-import { useAdminNews } from '../../../hooks/useAdminData';
+import { useAdminNews } from '../hooks/useAdminData';
 import { NewsTable, CreatePostForm } from './components';
 import { SearchAndFilterControls, RecentlyDeletedModal } from './components';
 import ErrorBoundary from '../../../components/ErrorBoundary';
@@ -163,9 +163,15 @@ export default function AdminNewsPage() {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('News creation failed:', { status: response.status, error: errorText });
-        throw new Error(`Failed to create news: ${response.status} ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error occurred' }));
+        console.error('News creation failed:', { status: response.status, error: errorData });
+        
+        // Handle specific error cases
+        if (errorData.errorCode === 'DUPLICATE_TITLE') {
+          throw new Error(errorData.message || 'A post with this title already exists in your organization.');
+        }
+        
+        throw new Error(errorData.message || `Failed to create news: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
@@ -231,9 +237,15 @@ export default function AdminNewsPage() {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('News update failed:', { status: response.status, error: errorText });
-        throw new Error(`Failed to update news: ${response.status} ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error occurred' }));
+        console.error('News update failed:', { status: response.status, error: errorData });
+        
+        // Handle specific error cases
+        if (errorData.errorCode === 'DUPLICATE_TITLE') {
+          throw new Error(errorData.message || 'A post with this title already exists in your organization.');
+        }
+        
+        throw new Error(errorData.message || `Failed to update news: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
@@ -512,6 +524,7 @@ export default function AdminNewsPage() {
               onCancel={() => setPageMode('list')}
               onSubmit={handleSubmitNews}
               isSubmitting={isSubmitting}
+              existingNews={news || []}
             />
           </>
         ) : pageMode === 'edit' ? (
@@ -528,6 +541,7 @@ export default function AdminNewsPage() {
               isSubmitting={isSubmitting}
               initialData={editingNews}
               isEditMode={true}
+              existingNews={news || []}
             />
           </>
         ) : null}

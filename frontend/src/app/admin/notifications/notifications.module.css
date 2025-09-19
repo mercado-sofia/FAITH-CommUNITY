@@ -1,8 +1,6 @@
 .container {
-  max-width: 1200px;
-  margin: 0 auto;
-  min-height: 100vh;
-  padding: 0 0 1rem;
+  background-color: #F0F4F7;
+  overflow-x: hidden;
 }
 
 .header {
@@ -18,9 +16,8 @@
   font-size: 1.4rem;
   font-weight: 700;
   font-family: var(--font-poppins), sans-serif;
-  color: #050809;
+  color: #06100f;
   margin: 0 0 0.5rem 0;
-  user-select: none;
 }
 
 .subheader {
@@ -87,6 +84,30 @@
   gap: 0.75rem;
   align-items: center;
   justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.bulkActionsContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  animation: slideInFromTop 0.3s ease-out;
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .markAllReadBtn {
@@ -94,7 +115,6 @@
   color: #10c4a6;
   border: none;
   padding: 0.75rem 0;
-  margin-left: 8px;
   border-radius: 0.5rem;
   font-size: 12px;
   font-weight: 600;
@@ -111,33 +131,80 @@
 }
 
 .deleteSelectedBtn {
-  background-color: transparent;
-  color: #3d3f41;
-  border: 2px solid #b7babe;
-  padding: 0.65rem 1.2rem;
-  border-radius: 8px;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
   font-weight: 600;
+  font-size: 13px;
+  font-family: var(--font-inter), sans-serif;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.deleteSelectedBtn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.5s;
+}
+
+.deleteSelectedBtn:hover {
+  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+  color: #b91c1c;
+  border-color: #fca5a5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+}
+
+.deleteSelectedBtn:hover::before {
+  left: 100%;
+}
+
+.deleteSelectedBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
 }
 
 .cancelSelectionBtn {
-  background-color: transparent;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   color: #64748b;
-  padding: 0.25rem;
-  border: none;
-  border-radius: 8px;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  width: 2.4rem;
+  height: 2.4rem;
 }
 
 .cancelSelectionBtn:hover {
-  background-color: #f1f5f9;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
   color: #374151;
-  border-color: #9ca3af;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cancelSelectionBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* Content Styles */
@@ -515,6 +582,19 @@
 
   .headerActions {
     justify-content: flex-start;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .bulkActionsContainer {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .deleteSelectedBtn {
+    flex: 1;
+    justify-content: center;
   }
 
   .notificationItem {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import styles from './StepUpModal.module.css';
+import styles from './styles/StepUpModal.module.css';
 
 export default function StepUpModal({ 
   open, 

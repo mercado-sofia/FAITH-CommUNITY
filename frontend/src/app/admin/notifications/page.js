@@ -10,7 +10,7 @@ import {
   useMarkAllAsReadMutation,
   useDeleteNotificationMutation 
 } from '../../../rtk/admin/notificationsApi';
-import { FiX, FiXCircle } from 'react-icons/fi';
+import { FiX, FiXCircle, FiTrash2 } from 'react-icons/fi';
 import { PiChecksBold } from 'react-icons/pi';
 import { MdCancel } from 'react-icons/md';
 import { DeleteConfirmationModal, SkeletonLoader } from '../components';
@@ -200,32 +200,33 @@ export default function NotificationsPage() {
         </div>
         
         <div className={styles.headerActions}>
-        {selectedNotifications.length > 0 && (
-          <>
+          {selectedNotifications.length > 0 && (
+            <div className={styles.bulkActionsContainer}>
+              <button 
+                className={styles.deleteSelectedBtn}
+                onClick={() => setShowDeleteModal(true)}
+              >
+                <FiTrash2 size={16} />
+                Delete Selected ({selectedNotifications.length})
+              </button>
+              <button 
+                className={styles.cancelSelectionBtn}
+                onClick={handleCancelSelection}
+                title="Cancel selection"
+              >
+                <FiX size={16} />
+              </button>
+            </div>
+          )}
+          {unreadCountData?.count > 0 && (
             <button 
-              className={styles.deleteSelectedBtn}
-              onClick={() => setShowDeleteModal(true)}
+              className={styles.markAllReadBtn}
+              onClick={handleMarkAllAsRead}
             >
-              Delete Selected ({selectedNotifications.length})
+              <PiChecksBold size={16} />
+              Mark All as Read
             </button>
-            <button 
-              className={styles.cancelSelectionBtn}
-              onClick={handleCancelSelection}
-              title="Cancel selection"
-            >
-              <FiX size={16} />
-            </button>
-          </>
-        )}
-        {unreadCountData?.count > 0 && (
-          <button 
-            className={styles.markAllReadBtn}
-            onClick={handleMarkAllAsRead}
-          >
-            <PiChecksBold size={16} />
-            Mark All as Read
-          </button>
-        )}
+          )}
         </div>
       </div>
       

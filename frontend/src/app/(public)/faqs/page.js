@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { FaChevronDown, FaChevronUp } from "react-icons/fa"
-import { usePublicFAQs } from "../../../hooks/usePublicData"
+import { usePublicFAQs } from "../hooks/usePublicData"
 import PageBanner from "../components/PageBanner"
 import Loader from "../../../components/Loader"
 import { usePublicPageLoader } from "../hooks/usePublicPageLoader"

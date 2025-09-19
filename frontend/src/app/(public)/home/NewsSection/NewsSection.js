@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import styles from './NewsSection.module.css';
-import { usePublicOrganizations, usePublicNews } from '../../../../hooks/usePublicData';
+import { usePublicOrganizations, usePublicNews } from '../../hooks/usePublicData';
 
 export default function NewsSection() {
   const orgNavRef = useRef(null);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
@@ -18,6 +19,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isSlidingOut, setIsSlidingOut] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const resizeTimeoutRef = useRef(null);
 
   // Dropdowns + notifications
@@ -68,6 +70,10 @@ export default function Navbar() {
     resizeTimeoutRef.current = setTimeout(() => {
       if (window.innerWidth > 1180) setMenuOpen(false);
     }, 100);
+  }, []);
+
+  useEffect(() => {
+    setIsMounted(true);
   }, []);
 
   useEffect(() => {
@@ -142,11 +148,13 @@ export default function Navbar() {
       document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
 
       setShowLogoutConfirm(false);
-      window.location.href = '/'; // or '/login'
+      // Force immediate page refresh to ensure clean state
+      window.location.reload();
     } catch (e) {
       console.error('Logout error:', e);
       setShowLogoutConfirm(false);
-      window.location.href = '/';
+      // Force immediate page refresh even on error
+      window.location.reload();
     }
   };
 
@@ -549,7 +557,7 @@ export default function Navbar() {
       </nav>
 
       {/* ===== Logout Confirmation Modal (green gradient style) ===== */}
-      {showLogoutConfirm && (
+      {showLogoutConfirm && isMounted && createPortal(
         <div 
           className={styles.logoutModalOverlay}
           role="dialog"
@@ -576,7 +584,8 @@ export default function Navbar() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from 'react'
+import { formatDateShort } from '@/utils/dateUtils.js'
 
 import styles from './styles/ViewDetailsModal.module.css'
 import { IoClose } from "react-icons/io5"
@@ -120,7 +121,7 @@ export default function VolunteerDetailModal({ app, onClose, onUpdate }) {
              <label className={styles.label}>Submitted on</label>
              <input
                type="text"
-               value={app.date ? new Date(app.date).toLocaleDateString() : 'N/A'}
+               value={app.date ? formatDateShort(app.date) : 'N/A'}
                readOnly
                className={styles.cleanInput}
              />

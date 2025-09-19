@@ -268,7 +268,7 @@ export default function ProgramCard({ project }) {
           {project.title}
         </Link>
 
-        <Link href={`/programs/org/${project.orgID}`} className={styles.cardOrg}>
+        <Link href={`/programs/org/${project.org || project.organization || project.orgAcronym}`} className={styles.cardOrg}>
           <Image
             src={project.icon ? `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${project.icon}` : '/logo/faith_community_logo.png'}
             alt={`${project.orgName} logo`}

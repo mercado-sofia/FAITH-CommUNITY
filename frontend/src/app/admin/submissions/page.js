@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAdminSubmissions } from '../../../hooks/useAdminData';
+import { useAdminSubmissions } from '../hooks/useAdminData';
+import { formatDateShort } from '@/utils/dateUtils.js';
 import { SearchAndFilterControls, SubmissionTable, BulkActionsBar } from './components';
 import { PaginationControls, SuccessModal, SkeletonLoader } from '../components';
 import styles from './submissions.module.css';
@@ -110,7 +111,7 @@ export default function SubmissionsPage() {
       const matchesSearch =
         submission.section?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         submission.status?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        new Date(submission.submitted_at).toLocaleDateString().includes(searchQuery.toLowerCase());
+        formatDateShort(submission.submitted_at).includes(searchQuery.toLowerCase());
 
       const matchesStatus =
         statusFilter.toLowerCase() === 'all status' ||

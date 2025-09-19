@@ -6,17 +6,12 @@ import Image from 'next/image';
 import ContentEditor from './ContentEditor';
 import DatePickerPopover from './DatePickerPopover';
 import DOMPurify from 'dompurify';
-import { formatDateForInput } from '../../../../utils/dateUtils.js';
+import { formatDateForInput, getCurrentDateISO } from '../../../../utils/dateUtils.js';
 import styles from './styles/CreatePostForm.module.css';
 
-const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData = null, isEditMode = false }) => {
-  // Get current local date in YYYY-MM-DD format
+const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData = null, isEditMode = false, existingNews = [] }) => {
   const getCurrentLocalDate = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return getCurrentDateISO();
   };
 
   const [formData, setFormData] = useState({
@@ -31,6 +26,7 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
   const [errors, setErrors] = useState({});
   const [dragActive, setDragActive] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const [isCheckingTitle, setIsCheckingTitle] = useState(false);
 
   // Initialize form data when in edit mode
   useEffect(() => {
@@ -61,6 +57,36 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
       .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with hyphens
       .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
   };
+
+  // Check for duplicate title within the same organization
+  const checkDuplicateTitle = useCallback(async (title) => {
+    if (!title || !title.trim() || isEditMode) return false;
+    
+    setIsCheckingTitle(true);
+    try {
+      // Check against existing news in the same organization
+      const duplicateExists = existingNews.some(news => 
+        news.title.toLowerCase().trim() === title.toLowerCase().trim() && 
+        news.id !== (initialData?.id || null)
+      );
+      
+      if (duplicateExists) {
+        setErrors(prev => ({ 
+          ...prev, 
+          title: 'A post with this title already exists in your organization. Please choose a different title.' 
+        }));
+        return true;
+      } else {
+        setErrors(prev => ({ ...prev, title: '' }));
+        return false;
+      }
+    } catch (error) {
+      console.error('Error checking duplicate title:', error);
+      return false;
+    } finally {
+      setIsCheckingTitle(false);
+    }
+  }, [existingNews, isEditMode, initialData?.id]);
 
   // Generate excerpt from content
   const generateExcerpt = useCallback(() => {
@@ -112,6 +138,15 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
     if (field === 'title' && errors.slug && newFormData.slug.trim()) {
       setErrors(prev => ({ ...prev, slug: '' }));
     }
+
+    // Check for duplicate title when title changes (with debounce)
+    if (field === 'title' && value && value.trim()) {
+      const timeoutId = setTimeout(() => {
+        checkDuplicateTitle(value);
+      }, 500); // 500ms debounce
+      
+      return () => clearTimeout(timeoutId);
+    }
   };
 
   // Handle file upload
@@ -162,7 +197,7 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
   };
 
   // Validate form
-  const validateForm = () => {
+  const validateForm = async () => {
     const newErrors = {};
     
     if (!formData.title.trim()) newErrors.title = 'Title is required';
@@ -172,15 +207,24 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
     if (!formData.featuredImage && !imagePreview) newErrors.featuredImage = 'Featured image is required';
     if (!formData.publishedAt) newErrors.publishedAt = 'Published date is required';
 
+    // Check for duplicate title if not in edit mode
+    if (formData.title.trim() && !isEditMode) {
+      const hasDuplicate = await checkDuplicateTitle(formData.title);
+      if (hasDuplicate) {
+        newErrors.title = 'A post with this title already exists in your organization. Please choose a different title.';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    const isValid = await validateForm();
+    if (!isValid) return;
     
     onSubmit(formData);
   };
@@ -195,6 +239,7 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
             <div className={styles.field}>
               <label className={styles.label}>
                 Title <span className={styles.required}>*</span>
+                {isCheckingTitle && <span className={styles.checkingIndicator}>Checking...</span>}
               </label>
               <input
                 type="text"
@@ -202,6 +247,7 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
                 onChange={(e) => handleInputChange('title', e.target.value)}
                 className={`${styles.input} ${errors.title ? styles.inputError : ''}`}
                 placeholder="Enter post title"
+                disabled={isCheckingTitle}
               />
               {errors.title && <span className={styles.errorText}>{errors.title}</span>}
             </div>

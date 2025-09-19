@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { IoCloseOutline } from "react-icons/io5"
 import { FiTrash2, FiX } from "react-icons/fi"
 import { FaEdit } from "react-icons/fa"
+import { formatDateLong } from '@/utils/dateUtils.js';
 import PaginationControls from "../../components/PaginationControls"
 import styles from "./styles/NewsTable.module.css"
 
@@ -21,16 +22,7 @@ const validateNewsData = (news) => {
 
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
-  try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  } catch (error) {
-    return 'Invalid Date';
-  }
+  return formatDateLong(dateString);
 };
 
 export default function NewsTable({ 

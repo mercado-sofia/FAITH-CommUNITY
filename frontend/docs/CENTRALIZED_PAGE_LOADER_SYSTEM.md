@@ -87,7 +87,7 @@ export default function MyPage() {
 
 ```javascript
 import { usePublicPageLoader } from '../hooks/usePublicPageLoader';
-import { usePublicData } from '../../../hooks/usePublicData';
+import { usePublicData } from '../hooks/usePublicData';
 import Loader from '../../../components/Loader';
 
 export default function MyPage() {

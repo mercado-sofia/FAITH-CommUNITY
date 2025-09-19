@@ -3,9 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FaEnvelope, FaLock, FaShieldAlt } from 'react-icons/fa';
 import styles from './settings.module.css';
-import SecureEmailChangeModal from './ProfileSection/SecureEmailChangeModal';
-import PasswordChangeModal from './ProfileSection/PasswordChangeModal';
-import TwoFAModal from './ProfileSection/TwoFAModal';
+import { SecureEmailChangeModal, PasswordChangeModal, TwoFAModal } from './ProfileSection';
 import SuccessModal from '../components/SuccessModal';
 import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError, checkAuthStatus } from '../../../utils/adminAuth';
 

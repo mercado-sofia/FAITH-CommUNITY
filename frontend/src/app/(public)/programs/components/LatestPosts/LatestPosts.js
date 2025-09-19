@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePublicNews, usePublicOrganizations } from '../../../../../hooks/usePublicData';
+import { usePublicNews, usePublicOrganizations } from '../../../hooks/usePublicData';
 import styles from './LatestPosts.module.css';
 
 export default function LatestPosts({ orgID }) {

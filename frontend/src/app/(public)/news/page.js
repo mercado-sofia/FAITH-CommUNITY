@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
-import { usePublicOrganizations, usePublicNews } from "../../../hooks/usePublicData";
+import { usePublicOrganizations, usePublicNews } from "../hooks/usePublicData";
 import styles from "./news.module.css";
 import Pagination from "../components/Pagination";
 import Loader from "../../../components/Loader";

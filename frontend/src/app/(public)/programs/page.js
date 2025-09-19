@@ -7,7 +7,7 @@ import Loader from '../../../components/Loader';
 import PageBanner from '../components/PageBanner';
 import { SearchAndFilterBar, OrgLinks, ProgramCard } from './components';
 import Pagination from '../components/Pagination';
-import { usePublicPrograms } from '../../../hooks/usePublicData';
+import { usePublicPrograms } from '../hooks/usePublicData';
 import { usePublicPageLoader } from '../hooks/usePublicPageLoader';
 
 const CARDS_PER_PAGE = 6;

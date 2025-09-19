@@ -1,3 +1,4 @@
 // Profile Section Components - Barrel Exports
-export { default as PasswordChangeModal } from './PasswordChangeModal';
-export { default as TwoFAModal } from './TwoFAModal';
+export { default as SecureEmailChangeModal } from './EmailChange/SecureEmailChangeModal';
+export { default as PasswordChangeModal } from './PasswordChange/PasswordChangeModal';
+export { default as TwoFAModal } from './TwoFAModal/TwoFAModal';

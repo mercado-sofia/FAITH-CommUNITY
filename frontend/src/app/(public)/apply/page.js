@@ -4,8 +4,11 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Loader from '../../../components/Loader';
 import PageBanner from '../components/PageBanner';
-import SimplifiedVolunteerForm from './VolunteerForm/VolunteerForm';
+import SimplifiedVolunteerForm from './VolunteerApplication/VolunteerForm';
+import ProgramPreview from './ProgramPreview/ProgramPreview';
+import ApplicationSteps from './ApplicationSteps/ApplicationSteps';
 import { usePublicPageLoader } from '../hooks/usePublicPageLoader';
+import { useApplyFormPersistence } from '../hooks/useApplyFormPersistence';
 import styles from './apply.module.css';
 
 export default function ApplyPage() {
@@ -14,6 +17,12 @@ export default function ApplyPage() {
   const [userData, setUserData] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const searchParams = useSearchParams();
+  
+  // Use persistence hook for selected program
+  const [selectedProgram, setSelectedProgram, clearSelectedProgram] = useApplyFormPersistence(
+    'apply_selected_program',
+    null
+  );
   
   // Use centralized page loader hook
   const { loading: pageLoading, pageReady } = usePublicPageLoader('apply');
@@ -30,20 +39,14 @@ export default function ApplyPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
-    console.log('Checking user authentication...');
     const token = localStorage.getItem('userToken');
     const storedUserData = localStorage.getItem('userData');
-    
-    console.log('Token exists:', !!token);
-    console.log('User data exists:', !!storedUserData);
     
     if (token && storedUserData) {
       try {
         const user = JSON.parse(storedUserData);
-        console.log('Parsed user data:', user);
         setUserData(user);
         setIsLoggedIn(true);
-        console.log('User is now logged in');
       } catch (error) {
         console.error('Error parsing user data:', error);
         localStorage.removeItem('userToken');
@@ -51,7 +54,6 @@ export default function ApplyPage() {
         setShowLoginModal(true);
       }
     } else {
-      console.log('No token or user data, showing login modal');
       // Show login modal for non-authenticated users
       setShowLoginModal(true);
     }
@@ -66,7 +68,7 @@ export default function ApplyPage() {
         // Don't immediately set showLoginModal to false - let the modal handle its own state
         // The modal will close itself when the user takes action
       } catch (error) {
-        console.error('Error dispatching login modal event:', error);
+        // Error dispatching login modal event - reset state
         // Only reset if there was an error
         setShowLoginModal(false);
       }
@@ -77,7 +79,6 @@ export default function ApplyPage() {
     return <Loader small centered />;
   }
 
-  console.log('Render state:', { pageLoading, pageReady, isLoggedIn, showLoginModal, userData: !!userData });
 
   return (
     <>
@@ -92,19 +93,25 @@ export default function ApplyPage() {
 
       <section aria-labelledby="apply-heading" className={styles.applySection}>
         <div className={styles.applyContainer}>
-          <div className={styles.applyHeader}>
-            <h2 id="apply-heading" className={styles.applyTitle}>
-              Volunteer Application
-            </h2>
-            <p className={styles.applySubtitle}>
-              Join our community of volunteers and make a difference today!
-            </p>
-          </div>
-
           {isLoggedIn ? (
-            <SimplifiedVolunteerForm 
-              selectedProgramId={selectedProgramId}
-            />
+            <div className={styles.twoPanelLayout}>
+              {/* Left Panel - Form */}
+              <div className={styles.leftPanel}>
+                <SimplifiedVolunteerForm 
+                  selectedProgramId={selectedProgramId}
+                  onProgramSelect={setSelectedProgram}
+                  onFormReset={clearSelectedProgram}
+                />
+              </div>
+
+              {/* Right Panel - Program Preview */}
+              <div className={styles.rightPanel}>
+                <ProgramPreview 
+                  selectedProgram={selectedProgram}
+                  isLoading={false}
+                />
+              </div>
+            </div>
           ) : (
             <div className={styles.loginPrompt}>
               <h3 className={styles.loginPromptTitle}>
@@ -120,6 +127,8 @@ export default function ApplyPage() {
           )}
         </div>
       </section>
+
+      <ApplicationSteps />
     </>
   );
 }

@@ -2,7 +2,7 @@
 
 import styles from './OrgLinks.module.css';
 import Link from 'next/link';
-import { usePublicOrganizations } from '../../../../../hooks/usePublicData';
+import { usePublicOrganizations } from '../../../hooks/usePublicData';
 
 export default function OrgLinks() {
   const { organizations, isLoading, error } = usePublicOrganizations();

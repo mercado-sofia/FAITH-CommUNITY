@@ -1,0 +1,231 @@
+/* Application Steps Styles */
+.stepsSection {
+  padding: 3rem 1rem;
+  background: linear-gradient(135deg, #f0fdfa 0%, #ecfdf5 100%);
+}
+
+.stepsContainer {
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.stepsTitle {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a7d66;
+  margin-bottom: 2.5rem;
+  font-family: var(--font-roboto);
+}
+
+.stepsFlow {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  align-items: center;
+}
+
+.stepWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0.5rem 2rem 1rem;
+  background: transparent;
+  border-radius: 1rem;
+  border: none;
+  transition: all 0.3s ease;
+  width: 100%;
+  gap: 10px;
+}
+
+.step:hover {
+  transform: translateY(-2px);
+}
+
+.stepIcon {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #14b8a5, #199679);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0;
+  color: white;
+  font-size: 1.25rem;
+  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+}
+
+.stepContent {
+  width: 100%;
+}
+
+.stepTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+  font-family: var(--font-roboto);
+}
+
+.stepDescription {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 0;
+  font-family: var(--font-roboto);
+}
+
+.arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1rem auto 0;
+  color: #14B8A6;
+  transform: rotate(90deg);
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .stepsSection {
+    padding: 2rem 0.5rem;
+  }
+  
+  .stepsContainer {
+    padding: 0 1rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .stepsSection {
+    padding: 3rem 1rem;
+  }
+  
+  .stepsTitle {
+    font-size: 1.65rem;
+    margin-bottom: 2rem;
+  }
+  
+  .stepsFlow {
+    gap: 2.5rem;
+  }
+  
+  .stepWrapper {
+    max-width: 1200px;
+  }
+  
+  .step {
+    flex-direction: row;
+    text-align: left;
+    padding: 2rem 2.2rem;
+    gap: 20px;
+  }
+  
+  .stepIcon {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+  
+  .stepTitle {
+    font-size: 17px;
+  }
+  
+  .stepDescription {
+    font-size: 14px;
+  }
+  
+  .arrow {
+    transform: rotate(90deg);
+    margin: 0.5rem auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .stepsFlow {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .stepWrapper {
+    flex: 1;
+    max-width: none;
+    position: relative;
+  }
+  
+  .step {
+    height: 100%;
+    min-height: 200px;
+    flex-direction: column;
+    text-align: center;
+    padding: 2rem 1rem;
+    gap: 18px;
+  }
+  
+  .stepIcon {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+    margin-bottom: 0;
+  }
+  
+  .arrow {
+    position: absolute;
+    top: 100px;
+    right: -1rem;
+    transform: rotate(0deg);
+    z-index: 10;
+    background: white;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin: 0;
+  }
+  
+  .stepWrapper:last-child .arrow {
+    display: none;
+  }
+}
+
+@media (min-width: 1200px) {
+  .stepsContainer {
+    padding: 0 6rem;
+  }
+  
+  .step {
+    padding: 2.5rem 2.6rem;
+    gap: 22px;
+  }
+  
+  .stepIcon {
+    width: 70px;
+    height: 70px;
+    font-size: 1.75rem;
+    margin-bottom: 0;
+  }
+  
+  .stepTitle {
+    font-size: 18px;
+  }
+  
+  .stepDescription {
+    font-size: 14px;
+  }
+}

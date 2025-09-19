@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { selectCurrentAdmin } from '../../../rtk/superadmin/adminSlice';
+import { formatDateTime } from '@/utils/dateUtils.js';
 import { 
   useGetMessagesQuery, 
   useGetUnreadCountQuery,
@@ -142,18 +143,7 @@ export default function InboxPage() {
   };
 
   const formatDate = (dateString) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      return 'Invalid date';
-    }
+    return formatDateTime(dateString);
   };
 
   const truncateText = (text, maxLength = 100) => {
@@ -231,11 +221,12 @@ export default function InboxPage() {
         
         <div className={styles.headerActions}>
           {selectedMessages.length > 0 && (
-            <>
+            <div className={styles.bulkActionsContainer}>
               <button 
                 className={styles.deleteSelectedBtn}
                 onClick={() => setShowBulkDeleteModal(true)}
               >
+                <FiTrash2 size={16} />
                 Delete Selected ({selectedMessages.length})
               </button>
               <button 
@@ -245,7 +236,7 @@ export default function InboxPage() {
               >
                 <FiX size={16} />
               </button>
-            </>
+            </div>
           )}
           
           {unreadCount > 0 && (

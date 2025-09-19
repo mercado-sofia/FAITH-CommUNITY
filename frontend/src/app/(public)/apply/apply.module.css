@@ -2,29 +2,30 @@
 .applySection {
   padding: 2rem 1rem;
   background: #fff;
+  min-height: 80vh;
 }
 
 .applyContainer {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
+  padding: 0 2rem;
+}
+
+/* Two Panel Layout */
+.twoPanelLayout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.leftPanel {
   width: 100%;
 }
 
-.applyHeader {
-  text-align: center;
-}
-
-.applyTitle {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-}
-
-.applySubtitle {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #15803d;
-  margin-bottom: 2rem;
+.rightPanel {
+  width: 100%;
+  position: sticky;
+  top: 2rem;
 }
 
 .loginPrompt {
@@ -51,10 +52,45 @@
 /* Responsive styles */
 @media (min-width: 768px) {
   .applySection {
-    padding: 4rem 2rem !important;
+    padding: 4rem 1rem !important;
   }
   
-  .applyTitle {
-    font-size: 2rem !important;
+  .applyContainer {
+    padding: 0 1rem;
+  }
+  
+}
+
+@media (min-width: 1024px) {
+  .applyContainer {
+    padding: 0 1.5rem;
+  }
+  
+  .twoPanelLayout {
+    grid-template-columns: 3fr 400px;
+    gap: 3rem;
+  }
+  
+  .rightPanel {
+    position: sticky;
+    top: 2rem;
+    height: fit-content;
+  }
+}
+
+@media (min-width: 1200px) {
+  .applyContainer {
+    padding: 0 2rem;
+  }
+  
+  .twoPanelLayout {
+    grid-template-columns: 4fr 450px;
+    gap: 4rem;
+  }
+}
+
+@media (min-width: 1400px) {
+  .applyContainer {
+    padding: 0 6rem;
   }
 }

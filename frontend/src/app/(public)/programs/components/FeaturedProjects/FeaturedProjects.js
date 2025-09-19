@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { usePublicPrograms } from '../../../../../hooks/usePublicData';
+import { usePublicPrograms } from '../../../hooks/usePublicData';
 import { getProgramImageUrl } from '../../../../../utils/uploadPaths';
 import styles from './FeaturedProjects.module.css';
 

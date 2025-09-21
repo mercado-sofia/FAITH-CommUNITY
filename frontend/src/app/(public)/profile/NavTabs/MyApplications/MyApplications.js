@@ -1,13 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FaFileAlt, FaCalendarAlt } from 'react-icons/fa';
+import { FaFileAlt, FaEllipsisH } from 'react-icons/fa';
+import { FiCalendar } from 'react-icons/fi';
+import { FaRegClock } from 'react-icons/fa6';
 import Image from 'next/image';
+import Link from 'next/link';
 import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
 import { formatDateShort, formatProgramDate } from '@/utils/dateUtils';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import ApplicationDetailsModal from './ApplicationDetailsModal';
-import CancelConfirmationModal from './CancelConfirmationModal';
+import ActionModal from './ActionModal';
 import styles from './MyApplications.module.css';
 
 export default function MyApplications() {
@@ -21,6 +24,11 @@ export default function MyApplications() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState(null);
   const [isViewingDetails, setIsViewingDetails] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [applicationToDelete, setApplicationToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [actionModalType, setActionModalType] = useState(null); // 'cancel' or 'delete'
 
   useEffect(() => {
     fetchApplications();
@@ -52,7 +60,6 @@ export default function MyApplications() {
     }
   };
 
-  // Removed status icons for cleaner look
 
   const getStatusText = (status) => {
     switch (status.toLowerCase()) {
@@ -73,7 +80,6 @@ export default function MyApplications() {
     return lowerStatus === 'pending' || lowerStatus === 'approved';
   };
 
-  // Using centralized date utilities - formatDate and formatProgramDate are now imported
 
   const filteredApplications = applications.filter(app => {
     if (filter === 'all') return true;
@@ -106,6 +112,7 @@ export default function MyApplications() {
 
   const handleCancelApplication = (application) => {
     setApplicationToCancel(application);
+    setActionModalType('cancel');
     setCancelModalOpen(true);
   };
 
@@ -113,6 +120,7 @@ export default function MyApplications() {
     setCancelModalOpen(false);
     setApplicationToCancel(null);
     setIsCancelling(false);
+    setActionModalType(null);
   };
 
   const handleConfirmCancel = async () => {
@@ -161,6 +169,70 @@ export default function MyApplications() {
     }
   };
 
+  const handleDeleteApplication = (application) => {
+    setApplicationToDelete(application);
+    setActionModalType('delete');
+    setDeleteModalOpen(true);
+    setActiveDropdown(null);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setApplicationToDelete(null);
+    setIsDeleting(false);
+    setActionModalType(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!applicationToDelete) return;
+
+    setIsDeleting(true);
+    setFeedbackMessage(null);
+
+    try {
+      const response = await fetch(getApiUrl(`/api/users/applications/${applicationToDelete.id}`), {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Remove the application from the local state
+        setApplications(prevApplications => 
+          prevApplications.filter(app => app.id !== applicationToDelete.id)
+        );
+        
+        setFeedbackMessage({
+          type: 'success',
+          text: 'Application deleted successfully'
+        });
+        
+        handleCloseDeleteModal();
+      } else {
+        setFeedbackMessage({
+          type: 'error',
+          text: data.message || 'Failed to delete application'
+        });
+      }
+    } catch (error) {
+      setFeedbackMessage({
+        type: 'error',
+        text: 'Network error. Please try again.'
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const toggleDropdown = (applicationId) => {
+    setActiveDropdown(activeDropdown === applicationId ? null : applicationId);
+  };
+
+  const closeDropdown = () => {
+    setActiveDropdown(null);
+  };
+
   // Clear feedback message after 5 seconds
   useEffect(() => {
     if (feedbackMessage) {
@@ -170,6 +242,20 @@ export default function MyApplications() {
       return () => clearTimeout(timer);
     }
   }, [feedbackMessage]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (activeDropdown && !event.target.closest('.dropdown-container')) {
+        closeDropdown();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activeDropdown]);
 
   if (isLoading) {
     return (
@@ -248,16 +334,153 @@ export default function MyApplications() {
         ) : (
           <div className={styles.applicationsContainer}>
             {filteredApplications.map((application) => (
-              <div key={application.id} className={`${styles.applicationCard} ${application.status.toLowerCase() === 'pending' ? styles.pendingCard : ''}`}>
+              <div key={application.id} className={styles.applicationCard}>
+                {/* Three Dots Menu - Positioned at card level */}
+                <div className={`${styles.dropdownContainer} dropdown-container`}>
+                  <button 
+                    className={styles.threeDotsButton}
+                    onClick={() => toggleDropdown(application.id)}
+                    aria-label="More options"
+                  >
+                    <FaEllipsisH />
+                  </button>
+                  
+                  {activeDropdown === application.id && (
+                    <div className={styles.dropdownMenu}>
+                      <button 
+                        className={styles.dropdownItem}
+                        onClick={() => {
+                          handleViewDetails(application.id);
+                          closeDropdown();
+                        }}
+                      >
+                        View Details
+                      </button>
+                      {canCancelApplication(application.status) && (
+                        <button 
+                          className={styles.dropdownItem}
+                          onClick={() => {
+                            handleCancelApplication(application);
+                            closeDropdown();
+                          }}
+                        >
+                          Cancel Application
+                        </button>
+                      )}
+                      <button 
+                        className={`${styles.dropdownItem} ${styles.deleteItem}`}
+                        onClick={() => {
+                          handleDeleteApplication(application);
+                          closeDropdown();
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 <div className={styles.applicationContent}>
-                  {/* Program Image Thumbnail */}
+                  {/* Left Content - Text Details */}
+                  <div className={styles.applicationInfo}>
+                    {/* Header Section with Date/Time */}
+                    <div className={styles.applicationHeader}>
+                      <div className={styles.dateTimeContainer}>
+                        <div className={styles.dateSection}>
+                          <FiCalendar className={styles.calendarIcon} />
+                          <span className={styles.dateText}>
+                            {formatProgramDate(application.programStartDate, application.programEndDate)}
+                          </span>
+                        </div>
+                        {application.programStartTime && application.programEndTime && (
+                          <>
+                            <div className={styles.separator}></div>
+                            <div className={styles.timeSection}>
+                              <FaRegClock className={styles.clockIcon} />
+                              <span className={styles.timeText}>
+                                {application.programStartTime} - {application.programEndTime}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Program Title */}
+                    <div className={styles.applicationTitle}>
+                      <h3>
+                        <Link 
+                          href={`/programs/${application.programSlug || application.programId}`}
+                          className={styles.programTitleLink}
+                        >
+                          {application.programName}
+                        </Link>
+                      </h3>
+                    </div>
+
+                    {/* Organization Info */}
+                    {application.organizationName && (
+                      <div className={styles.organizationInfo}>
+                        {application.organizationLogo ? (
+                          <Image 
+                            src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${application.organizationLogo}`}
+                            alt={`${application.organizationName} logo`}
+                            width={20}
+                            height={20}
+                            className={styles.organizationLogo}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'block';
+                            }}
+                          />
+                        ) : null}
+                        <div className={styles.organizationLogoFallback} style={{ display: application.organizationLogo ? 'none' : 'block' }}></div>
+                        <Link 
+                          href={`/programs/org/${application.organizationAcronym || application.organizationId}`}
+                          className={styles.organizationLink}
+                        >
+                          <span className={styles.organizationName}>{application.organizationName}</span>
+                          {application.organizationAcronym && (
+                            <span className={styles.organizationAcronym}>({application.organizationAcronym})</span>
+                          )}
+                        </Link>
+                      </div>
+                    )}
+                    
+                    {/* Date Applied */}
+                    <div className={styles.applicationDate}>
+                      Date Applied: {formatDateShort(application.appliedAt)}
+                    </div>
+
+                    {/* Reason/Notes */}
+                    {application.notes && (
+                      <div className={styles.applicationReason}>
+                        <p>{application.notes}</p>
+                      </div>
+                    )}
+
+                    {application.feedback && (
+                      <div className={styles.applicationReason}>
+                        <p>{application.feedback}</p>
+                      </div>
+                    )}
+
+                    {/* Status Badge - Bottom Right */}
+                    <div className={styles.statusContainer}>
+                      <span className={`${styles.statusBadge} ${styles[`status${application.status.charAt(0).toUpperCase() + application.status.slice(1)}`]}`}>
+                        {getStatusText(application.status)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Right Content - Program Image */}
                   <div className={styles.programImageThumbnail}>
                     {application.programImage ? (
                       <Image 
                         src={getProgramImageUrl(application.programImage)} 
                         alt={application.programName}
-                        width={120}
-                        height={90}
+                        width={240}
+                        height={200}
                         className={styles.thumbnailImage}
                         style={{ objectFit: 'cover' }}
                         onError={(e) => {
@@ -268,92 +491,6 @@ export default function MyApplications() {
                     ) : null}
                     <div className={styles.placeholderImage} style={{ display: application.programImage ? 'none' : 'flex' }}>
                       <FaFileAlt className={styles.placeholderIcon} />
-                    </div>
-                  </div>
-
-                  <div className={styles.applicationInfo}>
-                    <div className={styles.applicationHeader}>
-                      {/* Program Date with Calendar Icon */}
-                      {application.programStartDate && (
-                        <div className={styles.programDateRow}>
-                          <FaCalendarAlt className={styles.calendarIcon} />
-                          <span className={styles.programDateText}>
-                            {formatProgramDate(application.programStartDate, application.programEndDate)}
-                          </span>
-                        </div>
-                      )}
-                      
-                      {/* Program Title */}
-                      <div className={styles.applicationTitle}>
-                        <h3>{application.programName}</h3>
-                      </div>
-
-                      {/* Organization Info */}
-                      {application.organizationName && (
-                        <div className={styles.organizationInfo}>
-                          {application.organizationLogo ? (
-                            <Image
-                              src={`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${application.organizationLogo}`}
-                              alt={`${application.organizationName} logo`}
-                              className={styles.organizationLogo}
-                              width={24}
-                              height={24}
-                              style={{ objectFit: 'contain' }}
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'block';
-                              }}
-                            />
-                          ) : null}
-                          <div className={styles.organizationLogoFallback} style={{ display: application.organizationLogo ? 'none' : 'block' }}></div>
-                          <span className={styles.organizationName}>{application.organizationName}</span>
-                          {application.organizationAcronym && (
-                            <span className={styles.organizationAcronym}>({application.organizationAcronym})</span>
-                          )}
-                        </div>
-                      )}
-                      
-                      {/* Application Meta */}
-                      <div className={styles.applicationMeta}>
-                        <span className={styles.applicationDate}>
-                          Date Applied: {formatDateShort(application.appliedAt)}
-                        </span>
-                        <span className={`${styles.statusBadge} ${styles[`status${application.status.charAt(0).toUpperCase() + application.status.slice(1)}`]}`}>
-                          {getStatusText(application.status)}
-                        </span>
-                      </div>
-                    </div>
-
-                {application.notes && (
-                  <div className={styles.applicationNotes}>
-                    <p>{application.notes}</p>
-                  </div>
-                )}
-
-                {application.feedback && (
-                  <div className={styles.applicationFeedback}>
-                    <p>{application.feedback}</p>
-                  </div>
-                )}
-
-                    <div className={styles.applicationActions}>
-                      <button 
-                        className={styles.viewButton}
-                        onClick={() => handleViewDetails(application.id)}
-                        disabled={isViewingDetails}
-                        aria-label={`View details for ${application.programName} application`}
-                      >
-                        {isViewingDetails ? 'Loading...' : 'View Details'}
-                      </button>
-                      {canCancelApplication(application.status) && (
-                        <button 
-                          className={styles.cancelButton}
-                          onClick={() => handleCancelApplication(application)}
-                          aria-label={`Cancel ${application.programName} application`}
-                        >
-                          Cancel Application
-                        </button>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -371,12 +508,23 @@ export default function MyApplications() {
       />
 
       {/* Cancel Confirmation Modal */}
-      <CancelConfirmationModal
+      <ActionModal
         isOpen={cancelModalOpen}
         onClose={handleCloseCancelModal}
         onConfirm={handleConfirmCancel}
+        modalType="cancel"
         applicationName={applicationToCancel?.programName}
         isLoading={isCancelling}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ActionModal
+        isOpen={deleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+        modalType="delete"
+        applicationName={applicationToDelete?.programName}
+        isLoading={isDeleting}
       />
     </div>
   );

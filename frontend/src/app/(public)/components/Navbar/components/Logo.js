@@ -14,12 +14,13 @@ export default function Logo() {
         height={46}
         priority
       />
-      <div className={styles.logoTextWrapper}>
-        <span className={styles.logoTop}>FAITH</span>
-        <span className={styles.logoBottom}>
-          Comm<strong className={styles.orange}>UNITY</strong>
-        </span>
-      </div>
+      <Image
+        src="/text-logo.png"
+        alt="FAITH CommUNITY Text Logo"
+        width={140}
+        height={40}
+        priority
+      />
     </Link>
   );
 }

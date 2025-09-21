@@ -2,9 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { FaTimes, FaCalendarAlt, FaUser, FaCheckCircle, FaTimesCircle, FaExclamationCircle } from 'react-icons/fa';
+import { FaTimes, FaUser, FaFileAlt, FaTimesCircle, FaCheckCircle } from 'react-icons/fa';
+import { FiCalendar, FiClock } from 'react-icons/fi';
+import Image from 'next/image';
+import Link from 'next/link';
 import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
-import { formatDateLong } from '@/utils/dateUtils';
+import { formatDateLong, formatProgramDate } from '@/utils/dateUtils';
 import styles from './ApplicationDetailsModal.module.css';
 
 export default function ApplicationDetailsModal({ isOpen, onClose, applicationId }) {
@@ -87,17 +90,6 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
     return formatDateLong(dateString);
   };
 
-  const getStatusIcon = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'approved':
-        return <FaCheckCircle className={styles.statusIconApproved} />;
-      case 'rejected':
-        return <FaTimesCircle className={styles.statusIconRejected} />;
-      case 'pending':
-      default:
-        return <FaExclamationCircle className={styles.statusIconPending} />;
-    }
-  };
 
   const getStatusText = (status) => {
     switch (status?.toLowerCase()) {
@@ -140,35 +132,123 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
             </div>
           ) : application ? (
             <div className={styles.applicationDetails}>
-              {/* Program Title and Status */}
+              {/* Program Header */}
               <div className={styles.programHeader}>
-                <h3 className={styles.programTitle}>{application.programName}</h3>
-                <div className={styles.statusContainer}>
-                  {getStatusIcon(application.status)}
-                  <span className={`${styles.statusBadge} ${styles[`status${application.status?.charAt(0).toUpperCase() + application.status?.slice(1)}`]}`}>
-                    {getStatusText(application.status)}
-                  </span>
+                <div className={styles.programTitleSection}>
+                  <h3 className={styles.programTitle}>{application.programName}</h3>
+                  <div className={styles.statusContainer}>
+                    <span className={`${styles.statusBadge} ${styles[`status${application.status?.charAt(0).toUpperCase() + application.status?.slice(1)}`]}`}>
+                      {getStatusText(application.status)}
+                    </span>
+                  </div>
+                </div>
+                
+                {application.organizationName && (
+                  <div className={styles.organizationInfo}>
+                    {application.organizationLogo && (
+                      <Image 
+                        src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${application.organizationLogo}`}
+                        alt={`${application.organizationName} logo`}
+                        width={24}
+                        height={24}
+                        className={styles.organizationLogo}
+                      />
+                    )}
+                    <Link 
+                      href={`/programs/org/${application.organizationAcronym || application.organizationId}`}
+                      className={styles.organizationLink}
+                    >
+                      <span className={styles.organizationName}>{application.organizationName}</span>
+                      {application.organizationAcronym && (
+                        <span className={styles.organizationAcronym}>({application.organizationAcronym})</span>
+                      )}
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {/* Program Details Grid */}
+              <div className={styles.detailsGrid}>
+                {/* Program Schedule */}
+                <div className={styles.detailCard}>
+                  <div className={styles.detailHeader}>
+                    <FiCalendar className={styles.detailIcon} />
+                    <h4 className={styles.detailTitle}>Program Schedule</h4>
+                  </div>
+                  <div className={styles.detailContent}>
+                    <div className={styles.scheduleItem}>
+                      <span className={styles.scheduleLabel}>Date:</span>
+                      <span className={styles.scheduleValue}>
+                        {formatProgramDate(application.programStartDate, application.programEndDate)}
+                      </span>
+                    </div>
+                    {application.programStartTime && application.programEndTime && (
+                      <div className={styles.scheduleItem}>
+                        <span className={styles.scheduleLabel}>Time:</span>
+                        <span className={styles.scheduleValue}>
+                          <FiClock className={styles.timeIcon} />
+                          {application.programStartTime} - {application.programEndTime}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Application Timeline */}
+                <div className={styles.detailCard}>
+                  <div className={styles.detailHeader}>
+                    <FaFileAlt className={styles.detailIcon} />
+                    <h4 className={styles.detailTitle}>Application Timeline</h4>
+                  </div>
+                  <div className={styles.detailContent}>
+                    <div className={styles.timelineItem}>
+                      <div className={styles.timelineDot}></div>
+                      <div className={styles.timelineContent}>
+                        <span className={styles.timelineLabel}>Application Submitted</span>
+                        <span className={styles.timelineDate}>{formatDate(application.appliedAt)}</span>
+                      </div>
+                    </div>
+                    {application.status !== 'pending' && (
+                      <div className={styles.timelineItem}>
+                        <div className={styles.timelineDot}></div>
+                        <div className={styles.timelineContent}>
+                          <span className={styles.timelineLabel}>
+                            {application.status === 'approved' ? 'Application Approved' : 
+                             application.status === 'rejected' ? 'Application Rejected' : 
+                             'Application Cancelled'}
+                          </span>
+                          <span className={styles.timelineDate}>
+                            {application.updatedAt ? formatDate(application.updatedAt) : 'Recently'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Application Date */}
-              <div className={styles.section}>
-                <h4 className={styles.sectionTitle}>
-                  <FaCalendarAlt className={styles.sectionIcon} />
-                  Date Applied
-                </h4>
-                <p className={styles.sectionContent}>{formatDate(application.appliedAt)}</p>
-              </div>
-
-              {/* Application Notes/Reason */}
+              {/* Application Notes */}
               {application.notes && (
-                <div className={styles.section}>
-                  <h4 className={styles.sectionTitle}>
-                    <FaUser className={styles.sectionIcon} />
-                    Your Application Notes
-                  </h4>
-                  <div className={styles.notesContainer}>
-                    <p className={styles.notesContent}>{application.notes}</p>
+                <div className={styles.notesSection}>
+                  <div className={styles.notesHeader}>
+                    <FaUser className={styles.notesIcon} />
+                    <h4 className={styles.notesTitle}>Your Application Notes</h4>
+                  </div>
+                  <div className={styles.notesContent}>
+                    <p>{application.notes}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Feedback Section */}
+              {application.feedback && (
+                <div className={styles.feedbackSection}>
+                  <div className={styles.feedbackHeader}>
+                    <FaCheckCircle className={styles.feedbackIcon} />
+                    <h4 className={styles.feedbackTitle}>Admin Feedback</h4>
+                  </div>
+                  <div className={styles.feedbackContent}>
+                    <p>{application.feedback}</p>
                   </div>
                 </div>
               )}

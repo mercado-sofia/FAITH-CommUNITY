@@ -1448,11 +1448,13 @@ export const getUserApplications = async (req, res) => {
         p.title as programName,
         p.description as programDescription,
         p.image as programImage,
+        p.slug as programSlug,
         p.event_start_date as programStartDate,
         p.event_end_date as programEndDate,
         p.organization_id,
         o.orgName as organizationName,
-        o.org as organizationAcronym
+        o.org as organizationAcronym,
+        o.logo as organizationLogo
       FROM volunteers v
       LEFT JOIN programs_projects p ON v.program_id = p.id
       LEFT JOIN organizations o ON p.organization_id = o.id
@@ -1463,24 +1465,41 @@ export const getUserApplications = async (req, res) => {
     
 
     // Transform the data to match frontend expectations
-    const transformedApplications = applications.map(application => ({
-      id: application.id,
-      programId: application.program_id,
-      programName: application.programName,
-      programDescription: application.programDescription,
-      programImage: application.programImage,
-      programLocation: null, // Location not available in current database structure
-      programStartDate: application.programStartDate,
-      programEndDate: application.programEndDate,
-      organizationId: application.organization_id,
-      organizationName: application.organizationName,
-      organizationAcronym: application.organizationAcronym,
-      reason: application.reason,
-      status: application.status === 'Declined' ? 'rejected' : application.status.toLowerCase(),
-      appliedAt: application.appliedAt,
-      notes: application.reason, // Using reason as notes for now
-      feedback: null // This could be added later if feedback system is implemented
-    }));
+    const transformedApplications = applications.map(application => {
+      // Construct proper organization logo URL
+      let organizationLogoUrl = null;
+      if (application.organizationLogo) {
+        if (application.organizationLogo.includes('/')) {
+          // Legacy path - extract filename
+          const filename = application.organizationLogo.split('/').pop();
+          organizationLogoUrl = `/uploads/organizations/logos/${filename}`;
+        } else {
+          // New structure - direct filename
+          organizationLogoUrl = `/uploads/organizations/logos/${application.organizationLogo}`;
+        }
+      }
+
+      return {
+        id: application.id,
+        programId: application.program_id,
+        programName: application.programName,
+        programDescription: application.programDescription,
+        programImage: application.programImage,
+        programSlug: application.programSlug,
+        programLocation: null, // Location not available in current database structure
+        programStartDate: application.programStartDate,
+        programEndDate: application.programEndDate,
+        organizationId: application.organization_id,
+        organizationName: application.organizationName,
+        organizationAcronym: application.organizationAcronym,
+        organizationLogo: organizationLogoUrl,
+        reason: application.reason,
+        status: application.status === 'Declined' ? 'rejected' : application.status.toLowerCase(),
+        appliedAt: application.appliedAt,
+        notes: application.reason, // Using reason as notes for now
+        feedback: null // This could be added later if feedback system is implemented
+      };
+    });
 
     res.json({
       success: true,
@@ -1529,6 +1548,7 @@ export const getApplicationDetails = async (req, res) => {
         p.event_start_date as programStartDate,
         p.event_end_date as programEndDate,
         p.image as programImage,
+        p.slug as programSlug,
         p.organization_id,
         o.orgName as organizationName,
         o.org as organizationAcronym,
@@ -1558,6 +1578,7 @@ export const getApplicationDetails = async (req, res) => {
       programDescription: application.programDescription,
       programCategory: application.programCategory,
       programImage: application.programImage,
+      programSlug: application.programSlug,
       programStartDate: application.programStartDate,
       programEndDate: application.programEndDate,
       organizationId: application.organization_id,

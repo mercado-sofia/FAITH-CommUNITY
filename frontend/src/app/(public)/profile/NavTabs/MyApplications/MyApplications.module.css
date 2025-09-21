@@ -1,33 +1,31 @@
 /* My Applications Section */
 .myApplicationsSection {
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  padding: 2.5rem 2rem;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 4rem 2rem 2rem;
 }
 
 .sectionHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 2px solid #f1f5f9;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e9ecef;
 }
 
 .sectionHeader h2 {
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1e293b;
-  letter-spacing: -0.025em;
+  font-size: 17px;
+  font-weight: 600;
+  color: #000;
 }
 
 .filterTabs {
   display: flex;
   gap: 0.25rem;
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.5rem;
   background: #f8fafc;
   padding: 0.5rem;
   border-radius: 12px;
@@ -45,11 +43,6 @@
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
-}
-
-.filterTab:hover {
-  color: #334155;
-  background: rgba(255, 255, 255, 0.7);
 }
 
 .filterTab.active {
@@ -107,10 +100,6 @@
   flex-shrink: 0;
 }
 
-.closeFeedback:hover {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-
 .applicationsContainer {
   display: flex;
   flex-direction: column;
@@ -123,25 +112,131 @@
   border-radius: 12px;
   padding: 1.75rem;
   position: relative;
-  overflow: hidden;
-}
-
-.applicationHeader {
-  margin-bottom: 1.5rem;
+  overflow: visible;
 }
 
 /* Application Content Layout */
 .applicationContent {
   display: flex;
   gap: 1.25rem;
-  align-items: flex-start;
+  align-items: stretch;
+  flex-direction: row;
 }
 
-/* Program Image Thumbnail */
+/* Header Section */
+.applicationHeader {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.dateTimeContainer {
+  display: flex;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  gap: 0.75rem;
+}
+
+.dateSection,
+.timeSection {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.separator {
+  width: 1px;
+  height: 16px;
+  background: #cbd5e1;
+}
+
+.calendarIcon,
+.clockIcon {
+  color: #13A64D;
+  font-size: 0.875rem;
+}
+
+.dateText,
+.timeText {
+  font-size: 13px;
+  color: #292A2E;
+  font-weight: 500;
+}
+
+/* Three Dots Menu */
+.dropdownContainer {
+  position: absolute;
+  top: 1.25rem; /* Align with the top of the card content */
+  right: 1.75rem; /* Position at the right edge of the card, accounting for card padding */
+  z-index: 10;
+}
+
+.threeDotsButton {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 160px;
+  overflow: hidden;
+  animation: dropdownFadeIn 0.2s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownItem {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  text-align: left;
+  color: #334155;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+}
+
+.dropdownItem.deleteItem {
+  color: #dc2626;
+}
+
+/* Program Image Thumbnail - Left Content */
 .programImageThumbnail {
   flex-shrink: 0;
-  width: 120px;
-  height: 90px;
+  width: 240px;
+  height: 200px;
   border-radius: 8px;
   overflow: hidden;
   background: #f8fafc;
@@ -149,6 +244,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  order: 1;
 }
 
 .thumbnailImage {
@@ -172,73 +268,142 @@
   font-size: 1.5rem;
 }
 
-/* Application Info */
+/* Application Info - Right Content */
 .applicationInfo {
   flex: 1;
   min-width: 0; /* Prevents flex item from overflowing */
-}
-
-/* Program Date Row with Calendar Icon */
-.programDateRow {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.calendarIcon {
-  color: #0c4b3a;
-  font-size: 1rem;
-  flex-shrink: 0;
-}
-
-.programDateText {
-  font-size: 0.875rem;
-  color: #64748b;
-  font-weight: 500;
-  white-space: normal;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  line-height: 1.4;
+  flex-direction: column;
+  height: 200px;
+  order: 2;
+  position: relative;
+  padding-right: 120px; /* Space for status badge */
 }
 
 .applicationTitle {
-  margin-bottom: 1rem;
+  margin-bottom: 0.65rem;
 }
 
-.applicationTitle h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1e293b;
-  line-height: 1.3;
-  letter-spacing: -0.025em;
+.applicationTitle .programTitleLink {
+  color: inherit !important;
+  text-decoration: none !important;
+  transition: color 0.2s ease;
+  cursor: pointer !important;
+  display: inline-block;
 }
 
-.applicationMeta {
+.applicationTitle .programTitleLink:hover {
+  color: #0c4b3a !important;
+  text-decoration: underline !important;
+  cursor: pointer !important;
+}
+
+.statusApproved {
+  background: #e2f7f0;
+  color: #53ac87;
+  border-color: #e2f7f0;
+}
+
+.statusRejected {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fef2f2;
+}
+
+.statusPending {
+  background: #fbecd5;
+  color: #e8901c;
+  border-color: #fbecd5;
+}
+
+.statusCancelled {
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  color: #64748b;
+  border-color: #cbd5e1;
+}
+
+.organizationInfo {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
+  margin-bottom: 0.75rem;
 }
 
+.organizationInfo .organizationLink {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: inherit !important;
+  text-decoration: none !important;
+  transition: color 0.2s ease;
+  cursor: pointer !important;
+}
+
+.organizationInfo .organizationLink:hover {
+  color: #0c4b3a !important;
+  text-decoration: underline !important;
+  cursor: pointer !important;
+}
+
+.organizationLogo {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.organizationLogoFallback {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
+
+.organizationName {
+  font-size: 13px;
+  color: #575A68;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.organizationAcronym {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Application Date */
 .applicationDate {
   font-size: 0.875rem;
   color: #64748b;
   font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
-.applicationDate::before {
-  content: '●';
-  font-size: 0.5rem;
-  color: #0c4b3a;
-  margin-right: 0.25rem;
+/* Application Reason */
+.applicationReason {
+  margin-top: 0.75rem;
+  padding-left: 1rem;
+  border-left: 3px solid #1e293b;
 }
 
+.applicationReason p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Status Container - Bottom Right */
 .statusBadge {
   font-size: 0.75rem;
   font-weight: 600;
@@ -253,219 +418,29 @@
   transition: all 0.2s ease;
 }
 
-.statusBadge::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.statusApproved {
-  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
-  color: #0c4b3a;
-  border-color: #bbf7d0;
-}
-
-.statusRejected {
-  background: linear-gradient(135deg, #fee2e2, #fecaca);
-  color: #dc2626;
-  border-color: #fecaca;
-}
-
-.statusPending {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  color: #d97706;
-  border-color: #fde68a;
-}
-
-.statusCancelled {
-  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
-  color: #64748b;
-  border-color: #cbd5e1;
-}
-
-.applicationDetails {
-  margin-bottom: 1.5rem;
-}
-
-.programDates {
-  margin-bottom: 0.75rem;
-}
-
-.dateRange {
-  font-size: 0.875rem;
-  color: #475569;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.dateRange::before {
-  content: '●';
-  font-size: 0.5rem;
-  color: #0c4b3a;
-  margin-right: 0.25rem;
-}
-
-.organizationInfo {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.organizationLogo {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2px solid #e2e8f0;
-  padding: 2px;
-  background: white;
-  flex-shrink: 0;
-}
-
-.organizationLogoFallback {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #e2e8f0;
-  flex-shrink: 0;
-}
-
-.organizationName {
-  font-size: 0.875rem;
-  color: #334155;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.organizationAcronym {
-  font-size: 0.75rem;
-  color: #64748b;
-  background: #e2e8f0;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-weight: 500;
-}
-
-.applicationNotes,
-.applicationFeedback {
-  margin-bottom: 1.25rem;
-  padding: 1rem;
-  background: #f1f5f9;
-  border-radius: 8px;
-  border-left: 4px solid #0c4b3a;
-  position: relative;
-}
-
-.applicationNotes::before,
-.applicationFeedback::before {
-  content: '💬';
+.statusContainer {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
-  font-size: 0.875rem;
-  opacity: 0.6;
-  filter: hue-rotate(120deg) saturate(0.8) brightness(0.7);
-}
-
-.applicationNotes p,
-.applicationFeedback p {
-  margin: 0;
-  color: #475569;
-  font-size: 0.875rem;
-  line-height: 1.6;
-  font-weight: 500;
-}
-
-.applicationActions {
+  bottom: 0;
+  right: 0;
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e2e8f0;
-}
-
-.viewButton {
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #0c4b3a, #059669);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 4px rgba(12, 75, 58, 0.2);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-
-.viewButton:hover {
-  background: linear-gradient(135deg, #059669, #047857);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(12, 75, 58, 0.3);
-}
-
-.viewButton:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(12, 75, 58, 0.2);
-}
-
-.viewButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: 0 2px 4px rgba(12, 75, 58, 0.2);
-}
-
-.viewButton:disabled:hover {
-  background: linear-gradient(135deg, #0c4b3a, #059669);
-  transform: none;
-  box-shadow: 0 2px 4px rgba(12, 75, 58, 0.2);
-}
-
-.cancelButton {
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #dc2626, #b91c1c);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
-}
-
-.cancelButton:hover {
-  background: linear-gradient(135deg, #b91c1c, #991b1b);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-}
-
-.cancelButton:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
 }
 
 .emptyState {
   text-align: center;
-  padding: 4rem 2rem;
-  color: #64748b;
-  background: #f8fafc;
-  border-radius: 12px;
-  border: 2px dashed #cbd5e1;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+.emptyState p {
+  margin: 0 0 0.25rem;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.emptyState span {
+  font-size: 14px;
+  opacity: 0.8;
 }
 
 .emptyIcon {
@@ -473,20 +448,6 @@
   margin-bottom: 0.65rem;
   opacity: 0.6;
   color: #94a3b8;
-}
-
-.emptyState p {
-  margin: 0 0 5px 0;
-  font-size: 15px;
-  font-weight: 700;
-  color: #475569;
-}
-
-.emptyState span {
-  font-size: 13px;
-  opacity: 0.8;
-  color: #64748b;
-  line-height: 1.5;
 }
 
 /* Loading and Spinner */
@@ -509,17 +470,11 @@
   animation: spin 1s linear infinite;
 }
 
-.loading p {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #475569;
-  margin: 0;
-}
-
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
 
 /* Responsive Design */
 @media (max-width: 768px) {
@@ -555,51 +510,42 @@
   }
 
   .programImageThumbnail {
-    width: 100px;
-    height: 75px;
+    width: 180px;
+    height: 150px;
+  }
+
+  .applicationInfo {
+    height: 150px;
+    order: 2;
+    padding-right: 100px; /* Space for status badge on tablet */
+  }
+
+  .programImageThumbnail {
+    order: 1;
   }
 
   .placeholderIcon {
     font-size: 1.25rem;
   }
 
-  .programDateRow {
-    gap: 0.5rem;
-  }
-
-  .calendarIcon {
-    font-size: 0.875rem;
-  }
-
-  .programDateText {
-    font-size: 0.8125rem;
-  }
-
   .applicationTitle h3 {
     font-size: 1.125rem;
   }
 
-  .applicationMeta {
+  .applicationHeader {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.75rem;
+    gap: 1rem;
   }
 
-  .applicationDetails {
-    padding: 0.875rem;
-  }
-
-  .applicationActions {
-    justify-content: stretch;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .viewButton,
-  .cancelButton {
+  .dateTimeContainer {
     width: 100%;
-    text-align: center;
-    padding: 0.875rem 1.25rem;
+    justify-content: center;
+  }
+
+  .dropdownContainer {
+    top: 1.25rem; /* Align with the top of the card content on tablet */
+    right: 1.25rem; /* Position at the right edge of the card on tablet */
   }
 
   .emptyState {
@@ -631,37 +577,30 @@
   }
 
   .programImageThumbnail {
-    width: 80px;
-    height: 60px;
+    width: 160px;
+    height: 120px;
+  }
+
+  .applicationInfo {
+    height: 120px;
+    order: 2;
+    padding-right: 80px; /* Space for status badge on mobile */
+  }
+
+  .programImageThumbnail {
+    order: 1;
   }
 
   .placeholderIcon {
     font-size: 1rem;
   }
 
-  .programDateRow {
-    gap: 0.375rem;
-  }
-
-  .calendarIcon {
-    font-size: 0.8125rem;
-  }
-
-  .programDateText {
-    font-size: 0.75rem;
-  }
-
   .applicationTitle h3 {
     font-size: 1rem;
   }
 
-  .applicationDetails {
-    padding: 0.75rem;
-  }
-
-  .viewButton,
-  .cancelButton {
-    padding: 0.75rem 1rem;
-    font-size: 0.8125rem;
+  .dropdownContainer {
+    top: 1rem; /* Align with the top of the card content on mobile */
+    right: 1rem; /* Position at the right edge of the card on mobile */
   }
 }

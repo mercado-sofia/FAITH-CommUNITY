@@ -15,6 +15,13 @@
   line-height: 1;
 }
 
+.logoNameImage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+}
+
 .logoTop {
   font-size: 1.15rem;
   font-weight: 800;
@@ -40,5 +47,9 @@
 
   .logoTextWrapper {
     line-height: 1.1;
+  }
+
+  .logoNameImage {
+    height: 25px;
   }
 }

@@ -188,3 +188,136 @@ export const usePublicApprovedPrograms = () => {
     error,
   };
 };
+
+// Custom hook for public branding data
+export const usePublicBranding = () => {
+  const { data, error, isLoading } = useSWR(
+    `${API_BASE_URL}/api/superadmin/branding/public`,
+    fetcher,
+    {
+      dedupingInterval: 300000, // Cache for 5 minutes (branding doesn't change often)
+      onError: (error) => {
+        logger.swrError(`${API_BASE_URL}/api/superadmin/branding/public`, error);
+      }
+    }
+  );
+
+  // Transform data for public consumption with fallbacks
+  const brandingData = data?.data ? {
+    logo_url: data.data.logo_url,
+    name_url: data.data.name_url,
+    favicon_url: data.data.favicon_url,
+  } : null;
+
+  return {
+    brandingData,
+    isLoading,
+    error,
+  };
+};
+
+// Hook for fetching site name data
+export const usePublicSiteName = () => {
+  const { data, error, isLoading } = useSWR(
+    `${API_BASE_URL}/api/superadmin/branding/site-name/public`,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      dedupingInterval: 300000, // 5 minutes
+      errorRetryCount: 3,
+      errorRetryInterval: 5000,
+      onError: (error) => {
+        logger.swrError(`${API_BASE_URL}/api/superadmin/branding/site-name/public`, error);
+      }
+    }
+  );
+
+  // Transform data for public consumption with fallbacks
+  const siteNameData = data?.data ? {
+    site_name: data.data.site_name || 'FAITH CommUNITY',
+  } : { site_name: 'FAITH CommUNITY' };
+
+  return {
+    siteNameData,
+    isLoading,
+    error,
+  };
+};
+
+// Hook for fetching footer content data
+export const usePublicFooterContent = () => {
+  const { data, error, isLoading } = useSWR(
+    `${API_BASE_URL}/api/superadmin/footer`,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      dedupingInterval: 300000, // 5 minutes
+      errorRetryCount: 3,
+      errorRetryInterval: 5000,
+      onError: (error) => {
+        logger.swrError(`${API_BASE_URL}/api/superadmin/footer`, error);
+      }
+    }
+  );
+
+  // Transform data for public consumption with fallbacks
+  const footerData = data?.data ? {
+    contact: {
+      phone: data.data.contact?.phone?.url || '+163-3654-7896',
+      email: data.data.contact?.email?.url || 'info@faithcommunity.com'
+    },
+    quickLinks: data.data.quickLinks || [
+      { name: "About Us", url: "/about" },
+      { name: "Programs & Services", url: "/programs" },
+      { name: "Faithree", url: "/faithree" },
+      { name: "Apply Now", url: "/apply" },
+      { name: "FAQs", url: "/faqs" }
+    ],
+    services: data.data.services || [
+      "Give Donation",
+      "Education Support",
+      "Food Support",
+      "Health Support",
+      "Our Campaign"
+    ],
+    socialMedia: {
+      facebook: data.data.socialMedia?.facebook?.url || 'https://facebook.com',
+      instagram: data.data.socialMedia?.instagram?.url || 'https://instagram.com',
+      twitter: data.data.socialMedia?.twitter?.url || 'https://x.com'
+    },
+    copyright: data.data.copyright?.content || '© Copyright 2025 FAITH CommUNITY. All Rights Reserved.'
+  } : {
+    contact: {
+      phone: '+163-3654-7896',
+      email: 'info@faithcommunity.com'
+    },
+    quickLinks: [
+      { name: "About Us", url: "/about" },
+      { name: "Programs & Services", url: "/programs" },
+      { name: "Faithree", url: "/faithree" },
+      { name: "Apply Now", url: "/apply" },
+      { name: "FAQs", url: "/faqs" }
+    ],
+    services: [
+      "Give Donation",
+      "Education Support",
+      "Food Support",
+      "Health Support",
+      "Our Campaign"
+    ],
+    socialMedia: {
+      facebook: 'https://facebook.com',
+      instagram: 'https://instagram.com',
+      twitter: 'https://x.com'
+    },
+    copyright: '© Copyright 2025 FAITH CommUNITY. All Rights Reserved.'
+  };
+
+  return {
+    footerData,
+    isLoading,
+    error,
+  };
+};

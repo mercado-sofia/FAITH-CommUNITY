@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { FiTrash2, FiX, FiUserX, FiUserCheck } from 'react-icons/fi'
+import { FiTrash2, FiX, FiUserX, FiUserCheck, FiEdit3 } from 'react-icons/fi'
 import { FaSpinner } from 'react-icons/fa'
 import styles from './styles/ConfirmationModal.module.css'
 
@@ -9,10 +9,11 @@ export default function ConfirmationModal({
   isOpen,
   itemName,
   itemType = 'item', // 'program', 'submission', 'organization head', 'news', etc.
-  actionType = 'delete', // 'delete', 'deactivate', 'cancel'
+  actionType = 'delete', // 'delete', 'deactivate', 'cancel', 'update'
   onConfirm,
   onCancel,
-  isDeleting = false
+  isDeleting = false,
+  customMessage = null
 }) {
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -46,6 +47,13 @@ export default function ConfirmationModal({
           title: `Deactivate Account${itemName && /\d/.test(itemName) ? `: ${itemName}` : ''}`,
           message: `Are you sure you want to deactivate this account? The account will no longer be active and won't be available for logins.`,
           buttonText: 'Deactivate'
+        }
+      case 'update':
+        return {
+          icon: <FiEdit3 />,
+          title: `Update ${capitalizedItemType}${itemName ? `: "${itemName}"` : ''}`,
+          message: customMessage || `Are you sure you want to update this ${itemType}?`,
+          buttonText: 'Update'
         }
       case 'cancel':
         return {
@@ -164,7 +172,11 @@ export default function ConfirmationModal({
                 onConfirm();
               }
             }}
-            className={actionType === 'activate' ? styles.activateBtn : styles.deleteBtn}
+            className={
+              actionType === 'activate' ? styles.activateBtn : 
+              actionType === 'update' ? styles.updateBtn : 
+              styles.deleteBtn
+            }
             disabled={isDeleting}
           >
             {isDeleting ? <FaSpinner className={styles.spinner} /> : null}

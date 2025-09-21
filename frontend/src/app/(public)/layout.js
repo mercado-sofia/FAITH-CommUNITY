@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import styles from './styles/publicLayout.module.css';
 import PagePreloader from '../../components/PagePreloader';
 import { Poppins, Inter } from 'next/font/google';
+import { usePublicBranding } from './hooks/usePublicData';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -24,6 +25,7 @@ const inter = Inter({
 export default function PublicLayout({ children }) {
   const navbarRef = useRef(null);
   const [showLogoutLoader, setShowLogoutLoader] = useState(false);
+  const { brandingData } = usePublicBranding();
 
   useEffect(() => {
     // Preload critical resources
@@ -102,6 +104,15 @@ export default function PublicLayout({ children }) {
   return (
     <>
       <Head>
+        {/* Dynamic Favicon */}
+        {brandingData?.favicon_url && (
+          <link
+            rel="icon"
+            href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${brandingData.favicon_url}`}
+            type="image/x-icon"
+          />
+        )}
+        
         <link
           rel="preload"
           href="/sample/sample4.jpg"

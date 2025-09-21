@@ -8,7 +8,11 @@ import {
   uploadLogo,
   uploadFavicon,
   deleteLogo,
-  deleteFavicon
+  deleteFavicon,
+  uploadName,
+  deleteName,
+  getSiteName,
+  updateSiteName
 } from '../controllers/brandingController.js';
 import { verifySuperadminToken } from '../controllers/superadminAuthController.js';
 
@@ -66,7 +70,19 @@ router.get('/test', (req, res) => {
   res.json({ success: true, message: 'Branding routes are working' });
 });
 
-// Apply authentication middleware to all routes
+// Public route for getting branding data (no authentication required)
+router.get('/public', (req, res, next) => {
+  console.log('GET /branding/public route hit');
+  next();
+}, getBranding);
+
+// Public route for getting site name (no authentication required)
+router.get('/site-name/public', (req, res, next) => {
+  console.log('GET /branding/site-name/public route hit');
+  next();
+}, getSiteName);
+
+// Apply authentication middleware to all other routes
 router.use((req, res, next) => {
   console.log('Authentication middleware hit for:', req.method, req.path);
   console.log('Authorization header:', req.headers.authorization);
@@ -123,5 +139,26 @@ router.delete('/favicon', (req, res, next) => {
   console.log('DELETE /branding/favicon route hit');
   next();
 }, deleteFavicon);
+
+router.post('/upload-name', (req, res, next) => {
+  console.log('POST /branding/upload-name route hit');
+  next();
+}, upload.single('name'), handleMulterError, uploadName);
+
+router.delete('/name', (req, res, next) => {
+  console.log('DELETE /branding/name route hit');
+  next();
+}, deleteName);
+
+// Site name routes
+router.get('/site-name', (req, res, next) => {
+  console.log('GET /branding/site-name route hit');
+  next();
+}, getSiteName);
+
+router.put('/site-name', (req, res, next) => {
+  console.log('PUT /branding/site-name route hit');
+  next();
+}, updateSiteName);
 
 export default router;

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { FaChevronDown, FaChevronUp } from "react-icons/fa"
-import { usePublicFAQs } from "../hooks/usePublicData"
+import { usePublicFAQs, usePublicSiteName } from "../hooks/usePublicData"
 import { PageBanner } from "../components"
 import Loader from "../../../components/Loader"
 import { usePublicPageLoader } from "../hooks/usePublicPageLoader"
@@ -16,6 +16,9 @@ export default function FaqPage() {
   
   // Use SWR hook for data fetching
   const { faqs = [], error, isLoading: dataLoading } = usePublicFAQs()
+  
+  // Fetch site name data
+  const { siteNameData } = usePublicSiteName()
 
   const toggleFaq = (index) => {
     setActiveIndex(index === activeIndex ? null : index)
@@ -46,7 +49,7 @@ export default function FaqPage() {
           <h1 className={styles.heading}>
             Everything You Need to Know
             <br />
-            About <span>CommUNITY</span> Here.
+            About <span>{siteNameData?.site_name || 'CommUNITY'}</span> Here.
           </h1>
         </section>
 

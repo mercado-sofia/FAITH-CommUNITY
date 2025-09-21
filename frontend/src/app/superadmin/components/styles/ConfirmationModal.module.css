@@ -207,6 +207,39 @@
   opacity: 0.6;
 }
 
+.updateBtn {
+  flex: 1;
+  background-color: white;
+  color: #212121;
+  border: 1px solid #D5D7DA;
+  box-shadow: 0 1px 2px 0 rgba(10, 13, 18, 0.05);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.updateBtn:hover {
+  background-color: #000;
+  color: white;
+  border-color: #000;
+}
+
+.updateBtn:disabled {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .cancelBtn:disabled {
   background-color: #f3f4f6;
   border-color: #d1d5db;

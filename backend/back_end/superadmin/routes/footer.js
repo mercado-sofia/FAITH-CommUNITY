@@ -1,5 +1,14 @@
 import express from "express"
-import { getFooterContent, updateFooterContent } from "../controllers/footerController.js"
+import { 
+  getFooterContent, 
+  updateContactInfo, 
+  updateSocialMedia, 
+  updateCopyright,
+  getServices,
+  addService,
+  updateService,
+  deleteService
+} from "../controllers/footerController.js"
 import { verifySuperadminToken } from "../controllers/superadminAuthController.js"
 
 const router = express.Router()
@@ -10,7 +19,19 @@ router.get("/", getFooterContent)
 // Protected routes - require superadmin authentication
 router.use(verifySuperadminToken)
 
-// Update footer content (for future use)
-router.put("/", updateFooterContent)
+// Contact information routes
+router.put("/contact", updateContactInfo)
+
+// Social media routes
+router.put("/social-media", updateSocialMedia)
+
+// Copyright routes
+router.put("/copyright", updateCopyright)
+
+// Services routes
+router.get("/services", getServices)
+router.post("/services", addService)
+router.put("/services/:id", updateService)
+router.delete("/services/:id", deleteService)
 
 export default router

@@ -1261,6 +1261,7 @@ const initializeDatabase = async () => {
         CREATE TABLE branding (
           id INT AUTO_INCREMENT PRIMARY KEY,
           logo_url VARCHAR(500) NULL,
+          name_url VARCHAR(500) NULL,
           favicon_url VARCHAR(500) NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -1269,13 +1270,52 @@ const initializeDatabase = async () => {
       
       // Insert default branding record
       await connection.query(`
-        INSERT INTO branding (logo_url, favicon_url) 
-        VALUES (NULL, NULL)
+        INSERT INTO branding (logo_url, name_url, favicon_url) 
+        VALUES (NULL, NULL, NULL)
       `);
       
       console.log("✅ Branding table created successfully!");
     } else {
       console.log("✅ Branding table already exists");
+      
+      // Check if name_url column exists, if not add it
+      try {
+        const [columns] = await connection.query("SHOW COLUMNS FROM branding LIKE 'name_url'");
+        if (columns.length === 0) {
+          console.log("Adding name_url column to branding table...");
+          await connection.query("ALTER TABLE branding ADD COLUMN name_url VARCHAR(500) NULL AFTER logo_url");
+          console.log("✅ name_url column added successfully!");
+        } else {
+          console.log("✅ name_url column already exists");
+        }
+      } catch (e) {
+        console.log("Error checking/adding name_url column:", e.message);
+      }
+    }
+
+    // Check if site_name table exists
+    const [siteNameTables] = await connection.query('SHOW TABLES LIKE "site_name"');
+    
+    if (siteNameTables.length === 0) {
+      console.log("Creating site_name table...");
+      await connection.query(`
+        CREATE TABLE site_name (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          site_name VARCHAR(255) NOT NULL DEFAULT 'FAITH CommUNITY',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+      `);
+      
+      // Insert default site name record
+      await connection.query(`
+        INSERT INTO site_name (site_name) 
+        VALUES ('FAITH CommUNITY')
+      `);
+      
+      console.log("✅ Site name table created successfully!");
+    } else {
+      console.log("✅ Site name table already exists");
     }
 
     connection.release();

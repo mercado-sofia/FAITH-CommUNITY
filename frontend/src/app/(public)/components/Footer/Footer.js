@@ -10,6 +10,7 @@ import { LuCircleCheck } from "react-icons/lu";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Toast from "../Toast/Toast";
+import { usePublicSiteName, usePublicFooterContent } from "../../hooks/usePublicData";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
@@ -33,6 +34,10 @@ export default function Footer() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userData, setUserData] = useState(null);
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
+
+  // Fetch site name and footer data
+  const { siteNameData } = usePublicSiteName();
+  const { footerData } = usePublicFooterContent();
 
   // Check user authentication status
   useEffect(() => {
@@ -231,7 +236,7 @@ export default function Footer() {
       
       <div className={styles.footerContent}>
         <div className={styles.about}>
-          <h3>FAITH CommUNITY</h3>
+          <h3>{siteNameData?.site_name || 'FAITH CommUNITY'}</h3>
           <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam pulvinar ac.</p>
           <div className={styles.contactInfo}>
             <div className={styles.contactItem}>
@@ -240,7 +245,7 @@ export default function Footer() {
               </div>
               <div className={styles.contactText}>
                 <small>Call us any time:</small>
-                <p>+163-3654-7896</p>
+                <p>{footerData?.contact?.phone || '+163-3654-7896'}</p>
               </div>
             </div>
 
@@ -250,7 +255,7 @@ export default function Footer() {
               </div>
               <div className={styles.contactText}>
                 <small>Email us any time:</small>
-                <p>info@faithcommunity.com</p>
+                <p>{footerData?.contact?.email || 'info@faithcommunity.com'}</p>
               </div>
             </div>
           </div>
@@ -307,11 +312,17 @@ export default function Footer() {
             Our Service
           </h4>
           <ul>
-            <li>Give Donation</li>
-            <li>Education Support</li>
-            <li>Food Support</li>
-            <li>Health Support</li>
-            <li>Our Campaign</li>
+            {footerData?.services?.map((service, index) => (
+              <li key={index}>{service.name || service}</li>
+            )) || (
+              <>
+                <li>Give Donation</li>
+                <li>Education Support</li>
+                <li>Food Support</li>
+                <li>Health Support</li>
+                <li>Our Campaign</li>
+              </>
+            )}
           </ul>
         </div>
 
@@ -399,13 +410,13 @@ export default function Footer() {
           )}
 
           <div className={styles.socials}>
-            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+            <a href={footerData?.socialMedia?.facebook || "https://facebook.com"} target="_blank" rel="noopener noreferrer" aria-label="Facebook">
               <FaFacebookF size={13} />
             </a>
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+            <a href={footerData?.socialMedia?.instagram || "https://instagram.com"} target="_blank" rel="noopener noreferrer" aria-label="Instagram">
               <FaInstagram size={14} />
             </a>
-            <a href="https://x.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter (X)">
+            <a href={footerData?.socialMedia?.twitter || "https://x.com"} target="_blank" rel="noopener noreferrer" aria-label="Twitter (X)">
               <FaXTwitter size={13} />
             </a>
           </div>
@@ -413,7 +424,7 @@ export default function Footer() {
       </div>
 
       <div className={styles.bottomBar}>
-        <p>© Copyright 2025 <span>FAITH CommUNITY</span>. All Rights Reserved.</p>
+        <p>{footerData?.copyright || `© Copyright 2025 ${siteNameData?.site_name || 'FAITH CommUNITY'}. All Rights Reserved.`}</p>
       </div>
     </footer>
     </>

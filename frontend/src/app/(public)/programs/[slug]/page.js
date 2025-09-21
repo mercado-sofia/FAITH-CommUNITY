@@ -17,6 +17,8 @@ export default function ProgramDetailsPage() {
   const [program, setProgram] = useState(null);
   const [otherPrograms, setOtherPrograms] = useState([]);
   const [error, setError] = useState(null);
+  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
+  const [isFetchingProgram, setIsFetchingProgram] = useState(false);
   
   // Use centralized page loader hook
   const { loading: pageLoading, pageReady } = usePublicPageLoader(`program-${slug}`);
@@ -37,10 +39,13 @@ export default function ProgramDetailsPage() {
     }
   }, []);
 
-  // Fetch program data by slug or ID
+  // Fetch program data by slug or ID - only after page is ready
   useEffect(() => {
     const fetchProgramData = async () => {
       try {
+        setIsFetchingProgram(true);
+        setError(null);
+        setHasAttemptedFetch(true);
         
         // Check if slug is a number (ID) or string (slug)
         const isNumeric = !isNaN(slug) && !isNaN(parseFloat(slug));
@@ -87,13 +92,15 @@ export default function ProgramDetailsPage() {
       } catch (err) {
         setError(err.message);
       } finally {
+        setIsFetchingProgram(false);
       }
     };
 
-    if (slug) {
+    // Only fetch data when page is ready and we have a slug
+    if (slug && pageReady && !pageLoading) {
       fetchProgramData();
     }
-  }, [slug]);
+  }, [slug, pageReady, pageLoading]);
 
 
   const handleApplyClick = () => {
@@ -228,7 +235,7 @@ export default function ProgramDetailsPage() {
     }
   };
 
-  if (pageLoading || !pageReady) {
+  if (pageLoading || !pageReady || isFetchingProgram) {
     return <Loader small centered />;
   }
 
@@ -242,7 +249,7 @@ export default function ProgramDetailsPage() {
     );
   }
 
-  if (!program) {
+  if (!program && hasAttemptedFetch && !isFetchingProgram) {
     return (
       <div className={styles.container}>
         <div className={styles.errorContainer}>
@@ -257,6 +264,11 @@ export default function ProgramDetailsPage() {
         </div>
       </div>
     );
+  }
+
+  // Don't render program content if we don't have program data yet
+  if (!program) {
+    return <Loader small centered />;
   }
 
   const applicationContent = getApplicationContent();

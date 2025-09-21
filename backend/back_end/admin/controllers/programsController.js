@@ -1083,15 +1083,39 @@ export const addProgramProject = async (req, res) => {
   }
 
   try {
+    // Generate slug from title
+    const slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single
+      .trim('-'); // Remove leading/trailing hyphens
+    
+    // Ensure uniqueness by appending counter if needed
+    let finalSlug = slug;
+    let counter = 1;
+    while (true) {
+      const [existingSlug] = await db.execute(
+        'SELECT id FROM programs_projects WHERE slug = ?',
+        [finalSlug]
+      );
+      
+      if (existingSlug.length === 0) {
+        break;
+      }
+      finalSlug = `${slug}-${counter}`;
+      counter++;
+    }
+
     const [result] = await db.execute(
-      `INSERT INTO programs_projects (title, description, image, status)
-       VALUES (?, ?, ?, 'pending')`,
-      [title, description ?? null, image ?? null]
+      `INSERT INTO programs_projects (title, description, image, status, slug)
+       VALUES (?, ?, ?, 'pending', ?)`,
+      [title, description ?? null, image ?? null, finalSlug]
     );
 
     const newId = result.insertId;
     const appBase = process.env.APP_BASE_URL || 'http://localhost:3000';
-    const programUrl = `${appBase}/programs/${newId}`;
+    const programUrl = `${appBase}/programs/${finalSlug}`;
 
     // 🔔 Email subscribers (non-blocking but awaited here for logs)
     try {
@@ -1124,15 +1148,55 @@ export const updateProgramProject = async (req, res) => {
   let image = req.file ? req.file.filename : null;
 
   try {
+    // Generate new slug if title changed
+    let slugUpdate = '';
+    let slugValue = null;
+    
+    if (title) {
+      const slug = title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/-+/g, '-') // Replace multiple hyphens with single
+        .trim('-'); // Remove leading/trailing hyphens
+      
+      // Ensure uniqueness by appending counter if needed
+      let finalSlug = slug;
+      let counter = 1;
+      while (true) {
+        const [existingSlug] = await db.execute(
+          'SELECT id FROM programs_projects WHERE slug = ? AND id != ?',
+          [finalSlug, id]
+        );
+        
+        if (existingSlug.length === 0) {
+          break;
+        }
+        finalSlug = `${slug}-${counter}`;
+        counter++;
+      }
+      
+      slugUpdate = ', slug = ?';
+      slugValue = finalSlug;
+    }
+
     await db.execute(
       `UPDATE programs_projects
-       SET title = ?, description = ?, image = COALESCE(?, image), status = ?
+       SET title = ?, description = ?, image = COALESCE(?, image), status = ?${slugUpdate}
        WHERE id = ?`,
-      [title, description ?? null, image, status ?? 'pending', id]
+      title ? [title, description ?? null, image, status ?? 'pending', slugValue, id] 
+            : [title, description ?? null, image, status ?? 'pending', id]
     );
 
+    // Get the current slug for the URL
+    const [programRows] = await db.execute(
+      'SELECT slug FROM programs_projects WHERE id = ?',
+      [id]
+    );
+    const currentSlug = programRows[0]?.slug || id;
+
     const appBase = process.env.APP_BASE_URL || 'http://localhost:3000';
-    const programUrl = `${appBase}/programs/${id}`;
+    const programUrl = `${appBase}/programs/${currentSlug}`;
 
     // 🔔 Email subscribers about the update
     try {

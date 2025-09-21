@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import Image from 'next/image';
-import { FaTimes, FaCalendarAlt, FaBuilding, FaFileAlt, FaUser, FaClock, FaCheckCircle, FaTimesCircle, FaExclamationCircle } from 'react-icons/fa';
+import { FaTimes, FaCalendarAlt, FaUser, FaCheckCircle, FaTimesCircle, FaExclamationCircle } from 'react-icons/fa';
 import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
 import styles from './ApplicationDetailsModal.module.css';
 
@@ -145,20 +144,6 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
             </div>
           ) : application ? (
             <div className={styles.applicationDetails}>
-              {/* Program Image */}
-              {application.programImage && (
-                <div className={styles.programImageContainer}>
-                  <Image 
-                    src={application.programImage} 
-                    alt={application.programName}
-                    className={styles.programImage}
-                    width={400}
-                    height={300}
-                    style={{ objectFit: 'cover' }}
-                  />
-                </div>
-              )}
-
               {/* Program Title and Status */}
               <div className={styles.programHeader}>
                 <h3 className={styles.programTitle}>{application.programName}</h3>
@@ -170,81 +155,16 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
                 </div>
               </div>
 
-              {/* Program Description */}
-              {application.programDescription && (
-                <div className={styles.section}>
-                  <h4 className={styles.sectionTitle}>
-                    <FaFileAlt className={styles.sectionIcon} />
-                    Program Description
-                  </h4>
-                  <p className={styles.sectionContent}>{application.programDescription}</p>
-                </div>
-              )}
+              {/* Application Date */}
+              <div className={styles.section}>
+                <h4 className={styles.sectionTitle}>
+                  <FaCalendarAlt className={styles.sectionIcon} />
+                  Date Applied
+                </h4>
+                <p className={styles.sectionContent}>{formatDate(application.appliedAt)}</p>
+              </div>
 
-              {/* Program Category */}
-              {application.programCategory && (
-                <div className={styles.section}>
-                  <h4 className={styles.sectionTitle}>
-                    <FaFileAlt className={styles.sectionIcon} />
-                    Category
-                  </h4>
-                  <span className={styles.categoryBadge}>{application.programCategory}</span>
-                </div>
-              )}
-
-              {/* Program Dates */}
-              {(application.programStartDate || application.programEndDate) && (
-                <div className={styles.section}>
-                  <h4 className={styles.sectionTitle}>
-                    <FaCalendarAlt className={styles.sectionIcon} />
-                    Program Dates
-                  </h4>
-                  <div className={styles.dateInfo}>
-                    {application.programStartDate && (
-                      <div className={styles.dateItem}>
-                        <span className={styles.dateLabel}>Start Date:</span>
-                        <span className={styles.dateValue}>{formatDate(application.programStartDate)}</span>
-                      </div>
-                    )}
-                    {application.programEndDate && (
-                      <div className={styles.dateItem}>
-                        <span className={styles.dateLabel}>End Date:</span>
-                        <span className={styles.dateValue}>{formatDate(application.programEndDate)}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Organization Info */}
-              {application.organizationName && (
-                <div className={styles.section}>
-                  <h4 className={styles.sectionTitle}>
-                    <FaBuilding className={styles.sectionIcon} />
-                    Organization
-                  </h4>
-                  <div className={styles.organizationInfo}>
-                    {application.organizationLogo && (
-                      <Image 
-                        src={application.organizationLogo} 
-                        alt={application.organizationName}
-                        className={styles.organizationLogo}
-                        width={60}
-                        height={60}
-                        style={{ objectFit: 'contain' }}
-                      />
-                    )}
-                    <div className={styles.organizationDetails}>
-                      <span className={styles.organizationName}>{application.organizationName}</span>
-                      {application.organizationAcronym && (
-                        <span className={styles.organizationAcronym}>({application.organizationAcronym})</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Application Notes */}
+              {/* Application Notes/Reason */}
               {application.notes && (
                 <div className={styles.section}>
                   <h4 className={styles.sectionTitle}>
@@ -256,32 +176,6 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
                   </div>
                 </div>
               )}
-
-              {/* Application Timeline */}
-              <div className={styles.section}>
-                <h4 className={styles.sectionTitle}>
-                  <FaClock className={styles.sectionIcon} />
-                  Application Timeline
-                </h4>
-                <div className={styles.timelineContainer}>
-                  <div className={styles.timelineItem}>
-                    <div className={styles.timelineDot}></div>
-                    <div className={styles.timelineContent}>
-                      <span className={styles.timelineLabel}>Applied</span>
-                      <span className={styles.timelineDate}>{formatDate(application.appliedAt)}</span>
-                    </div>
-                  </div>
-                  {application.updatedAt && application.updatedAt !== application.appliedAt && (
-                    <div className={styles.timelineItem}>
-                      <div className={styles.timelineDot}></div>
-                      <div className={styles.timelineContent}>
-                        <span className={styles.timelineLabel}>Last Updated</span>
-                        <span className={styles.timelineDate}>{formatDate(application.updatedAt)}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
           ) : null}
         </div>

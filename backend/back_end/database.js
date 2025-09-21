@@ -1252,6 +1252,32 @@ const initializeDatabase = async () => {
       await connection.query(`ALTER TABLE superadmin ADD COLUMN twofa_secret VARCHAR(255) NULL`)
     } catch (e) {}
 
+    // Check if branding table exists
+    const [brandingTables] = await connection.query('SHOW TABLES LIKE "branding"');
+    
+    if (brandingTables.length === 0) {
+      console.log("Creating branding table...");
+      await connection.query(`
+        CREATE TABLE branding (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          logo_url VARCHAR(500) NULL,
+          favicon_url VARCHAR(500) NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+      `);
+      
+      // Insert default branding record
+      await connection.query(`
+        INSERT INTO branding (logo_url, favicon_url) 
+        VALUES (NULL, NULL)
+      `);
+      
+      console.log("✅ Branding table created successfully!");
+    } else {
+      console.log("✅ Branding table already exists");
+    }
+
     connection.release();
     return promisePool;
   } catch (error) {

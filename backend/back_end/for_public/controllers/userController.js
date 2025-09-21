@@ -1447,6 +1447,7 @@ export const getUserApplications = async (req, res) => {
         v.created_at as appliedAt,
         p.title as programName,
         p.description as programDescription,
+        p.image as programImage,
         p.event_start_date as programStartDate,
         p.event_end_date as programEndDate,
         p.organization_id,
@@ -1467,6 +1468,7 @@ export const getUserApplications = async (req, res) => {
       programId: application.program_id,
       programName: application.programName,
       programDescription: application.programDescription,
+      programImage: application.programImage,
       programLocation: null, // Location not available in current database structure
       programStartDate: application.programStartDate,
       programEndDate: application.programEndDate,

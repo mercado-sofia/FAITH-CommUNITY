@@ -268,17 +268,21 @@ export default function ProgramCard({ project }) {
           {project.title}
         </Link>
 
-        <Link href={`/programs/org/${project.org || project.organization || project.orgAcronym}`} className={styles.cardOrg}>
-          <Image
-            src={project.icon ? `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${project.icon}` : '/logo/faith_community_logo.png'}
-            alt={`${project.orgName} logo`}
-            width={24}
-            height={24}
-            className={styles.cardOrgIcon}
-            onError={(e) => {
-              e.target.src = '/logo/faith_community_logo.png';
-            }}
-          />
+        <Link href={`/programs/org/${project.orgID || project.org || project.organization || project.orgAcronym}`} className={styles.cardOrg}>
+          {project.icon ? (
+            <Image
+              src={`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${project.icon}`}
+              alt={`${project.orgName} logo`}
+              width={24}
+              height={24}
+              className={styles.cardOrgIcon}
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'block';
+              }}
+            />
+          ) : null}
+          <div className={styles.cardOrgIconFallback} style={{ display: project.icon ? 'none' : 'block' }}></div>
           <span>{project.orgName}</span>
         </Link>
 

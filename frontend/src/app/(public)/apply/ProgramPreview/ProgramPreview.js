@@ -80,7 +80,7 @@ export default function ProgramPreview({ selectedProgram, isLoading }) {
             <Link href={`/programs/${selectedProgram.slug || selectedProgram.id}`} className={styles.programTitleLink}>
               <h3 className={styles.programTitle}>{selectedProgram.name || selectedProgram.title}</h3>
             </Link>
-            <Link href={`/programs/org/${selectedProgram.org || selectedProgram.organization || selectedProgram.orgAcronym}`} className={styles.organizationLink}>
+            <Link href={`/programs/org/${selectedProgram.orgID || selectedProgram.org || selectedProgram.organization || selectedProgram.orgAcronym}`} className={styles.organizationLink}>
               <Image
                 src={selectedProgram.icon ? `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${selectedProgram.icon}` : '/logo/faith_community_logo.png'}
                 alt={`${selectedProgram.org || selectedProgram.organization} logo`}

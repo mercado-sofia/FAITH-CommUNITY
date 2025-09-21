@@ -5,6 +5,7 @@ import { FaFileAlt, FaCalendarAlt } from 'react-icons/fa';
 import Image from 'next/image';
 import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
 import { formatDateShort, formatProgramDate } from '../../../../../utils/dateUtils.js';
+import { getProgramImageUrl } from '../../../../../utils/uploadPaths';
 import ApplicationDetailsModal from './ApplicationDetailsModal';
 import CancelConfirmationModal from './CancelConfirmationModal';
 import styles from './MyApplications.module.css';
@@ -253,18 +254,21 @@ export default function MyApplications() {
                   <div className={styles.programImageThumbnail}>
                     {application.programImage ? (
                       <Image 
-                        src={application.programImage} 
+                        src={getProgramImageUrl(application.programImage)} 
                         alt={application.programName}
                         width={120}
                         height={90}
                         className={styles.thumbnailImage}
                         style={{ objectFit: 'cover' }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
                       />
-                    ) : (
-                      <div className={styles.placeholderImage}>
-                        <FaFileAlt className={styles.placeholderIcon} />
-                      </div>
-                    )}
+                    ) : null}
+                    <div className={styles.placeholderImage} style={{ display: application.programImage ? 'none' : 'flex' }}>
+                      <FaFileAlt className={styles.placeholderIcon} />
+                    </div>
                   </div>
 
                   <div className={styles.applicationInfo}>
@@ -283,6 +287,31 @@ export default function MyApplications() {
                       <div className={styles.applicationTitle}>
                         <h3>{application.programName}</h3>
                       </div>
+
+                      {/* Organization Info */}
+                      {application.organizationName && (
+                        <div className={styles.organizationInfo}>
+                          {application.organizationLogo ? (
+                            <Image
+                              src={`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${application.organizationLogo}`}
+                              alt={`${application.organizationName} logo`}
+                              className={styles.organizationLogo}
+                              width={24}
+                              height={24}
+                              style={{ objectFit: 'contain' }}
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'block';
+                              }}
+                            />
+                          ) : null}
+                          <div className={styles.organizationLogoFallback} style={{ display: application.organizationLogo ? 'none' : 'block' }}></div>
+                          <span className={styles.organizationName}>{application.organizationName}</span>
+                          {application.organizationAcronym && (
+                            <span className={styles.organizationAcronym}>({application.organizationAcronym})</span>
+                          )}
+                        </div>
+                      )}
                       
                       {/* Application Meta */}
                       <div className={styles.applicationMeta}>
@@ -294,17 +323,6 @@ export default function MyApplications() {
                         </span>
                       </div>
                     </div>
-
-                {application.organizationName && (
-                  <div className={styles.applicationDetails}>
-                    <div className={styles.organizationInfo}>
-                      <span className={styles.organizationName}>{application.organizationName}</span>
-                      {application.organizationAcronym && (
-                        <span className={styles.organizationAcronym}>({application.organizationAcronym})</span>
-                      )}
-                    </div>
-                  </div>
-                )}
 
                 {application.notes && (
                   <div className={styles.applicationNotes}>

@@ -122,31 +122,8 @@
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 1.75rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
-}
-
-.applicationCard::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #0c4b3a, #059669);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.applicationCard:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
-  transform: translateY(-2px);
-}
-
-.applicationCard:hover::before {
-  opacity: 1;
 }
 
 .applicationHeader {
@@ -310,10 +287,6 @@
 
 .applicationDetails {
   margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: #f8fafc;
-  border-radius: 8px;
-  border-left: 4px solid #0c4b3a;
 }
 
 .programDates {
@@ -343,6 +316,24 @@
   flex-wrap: wrap;
 }
 
+.organizationLogo {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #e2e8f0;
+  padding: 2px;
+  background: white;
+  flex-shrink: 0;
+}
+
+.organizationLogoFallback {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
+
 .organizationName {
   font-size: 0.875rem;
   color: #334155;
@@ -350,12 +341,6 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.organizationName::before {
-  content: '🏢';
-  font-size: 0.75rem;
-  filter: hue-rotate(120deg) saturate(0.8) brightness(0.7);
 }
 
 .organizationAcronym {

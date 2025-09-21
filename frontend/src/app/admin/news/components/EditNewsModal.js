@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FaTimes, FaCalendar } from 'react-icons/fa';
-import { formatDateForInput } from '../../../../utils/dateUtils.js';
+import { formatDateForInput } from '@/utils/dateUtils.js';
 import styles from './styles/EditNewsModal.module.css';
 
 const EditNewsModal = ({ news, onClose, onSubmit }) => {

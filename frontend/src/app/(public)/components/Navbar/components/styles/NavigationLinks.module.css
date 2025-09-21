@@ -1,0 +1,67 @@
+.navLinks {
+  display: flex;
+  flex: 1;
+  justify-content: flex-start;
+  background: none;
+  padding: 0.7rem 2.4rem;
+  border-radius: 0;
+  gap: 2.4rem;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: .5px;
+  align-items: center;
+  margin-left: 0.5rem;
+}
+
+.navLink {
+  color: black;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+  position: relative;
+  font-weight: 600;
+}
+
+.navLink::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -4px;
+  left: 0;
+  background-color: #2F796C;
+  transition: width 0.3s ease;
+}
+
+.navLink:hover {
+  color: #0D594C;
+}
+
+.navLink:hover::after {
+  width: 100%;
+}
+
+/* Active state - only changes text color, no underline */
+.navLink.active {
+  color: #0D594C;
+}
+
+.navLink.active::after {
+  width: 0;
+}
+
+/* Disable hover effect for active links */
+.navLink.active:hover {
+  color: #0D594C;
+}
+
+.navLink.active:hover::after {
+  width: 0;
+}
+
+/* Hide navigation links on smaller screens */
+@media (max-width: 1264px) {
+  .navLinks {
+    display: none;
+  }
+}

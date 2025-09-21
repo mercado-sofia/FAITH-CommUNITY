@@ -6,7 +6,7 @@ import Image from 'next/image';
 import ContentEditor from './ContentEditor';
 import DatePickerPopover from './DatePickerPopover';
 import DOMPurify from 'dompurify';
-import { formatDateForInput, getCurrentDateISO } from '../../../../utils/dateUtils.js';
+import { formatDateForInput, getCurrentDateISO } from '@/utils/dateUtils.js';
 import styles from './styles/CreatePostForm.module.css';
 
 const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData = null, isEditMode = false, existingNews = [] }) => {

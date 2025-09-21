@@ -1,6 +1,6 @@
 'use client';
 
-import styles from './styles/Pagination.module.css';
+import styles from './Pagination.module.css';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { PiCaretDoubleLeft, PiCaretDoubleRight } from 'react-icons/pi';
 import { useState, useEffect } from 'react';

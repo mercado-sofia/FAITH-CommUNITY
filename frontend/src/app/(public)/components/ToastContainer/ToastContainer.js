@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import Toast from './Toast';
+import Toast from '../Toast/Toast';
 
 /**
  * ToastContainer - Global toast notification system

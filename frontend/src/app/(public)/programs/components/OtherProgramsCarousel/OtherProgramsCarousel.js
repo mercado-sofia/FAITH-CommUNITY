@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { getProgramImageUrl } from '../../../../../utils/uploadPaths';
+import { getProgramImageUrl } from '@/utils/uploadPaths';
 import styles from './OtherProgramsCarousel.module.css';
 
 export default function OtherProgramsCarousel({ programs, organizationName }) {

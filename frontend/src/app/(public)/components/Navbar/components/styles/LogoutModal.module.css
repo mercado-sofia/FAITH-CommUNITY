@@ -1,0 +1,116 @@
+/* ===== Logout Modal Styles ===== */
+.logoutModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.logoutModal {
+  background: linear-gradient(to bottom right, #f9fffe, #ffffff);
+  padding: 2.6rem 2rem 2.2rem;
+  border-radius: 14px;
+  width: 90%;
+  max-width: 320px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  color: #050609;
+  animation: popIn 0.2s ease-out;
+}
+
+/* Title */
+.logoutModalTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #050809;
+  margin-bottom: 1rem;
+}
+
+/* Body text */
+.logoutModalText {
+  font-size: 15px;
+  font-weight: 500;
+  color: #2c2c2c;
+}
+
+/* Buttons row */
+.logoutButtonGroup {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+  gap: 10px;
+}
+
+/* Link-style Logout button */
+.logoutTextBtn {
+  background: none;
+  border: none;
+  color: #238172;
+  font-weight: 600;
+  font-size: 14px;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  padding: 0.75rem 1rem;
+  width: 114px;
+  text-align: center;
+  letter-spacing: .2px;
+  user-select: none;
+}
+
+.logoutTextBtn:hover { 
+  color: #2fa18e; 
+}
+
+.logoutTextBtn:focus-visible {
+  outline: 2px solid #238172;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Solid Cancel button */
+.cancelBtn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #238172;  /* main accent */
+  color: white;
+  font-weight: 600;
+  font-size: 13.5px;
+  font-family: var(--font-inter);
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: 114px;
+  text-align: center;
+  letter-spacing: .2px;
+  user-select: none;
+}
+
+.cancelBtn:hover { 
+  background-color: #2fa18e; 
+}
+
+.cancelBtn:focus-visible {
+  outline: 2px solid #1c675d;
+  outline-offset: 2px;
+}
+
+/* Motion preference */
+@keyframes popIn {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logoutModal { 
+    animation: none; 
+  }
+}

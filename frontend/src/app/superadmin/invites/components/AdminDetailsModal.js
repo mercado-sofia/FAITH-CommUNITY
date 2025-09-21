@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { FiX, FiMail, FiHome, FiUser, FiCalendar, FiCheckCircle, FiClock, FiXCircle, FiUserX } from 'react-icons/fi';
+import { formatDateTime } from '../../../../utils/dateUtils';
 import styles from './styles/AdminDetailsModal.module.css';
 
 const AdminDetailsModal = ({ 
@@ -15,19 +16,9 @@ const AdminDetailsModal = ({
 
   if (!isOpen || !adminData) return null;
 
+  // Using centralized date utility - format remains exactly the same
   const formatDate = (dateString) => {
-    if (!dateString) return 'Not specified';
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      return 'Invalid date';
-    }
+    return formatDateTime(dateString);
   };
 
   const getStatusIcon = (adminData) => {

@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { usePublicNewsArticle } from "../../hooks/usePublicData";
+import { formatDateLong } from "@/utils/dateUtils";
 import Loader from "../../../../components/Loader";
 import { usePublicPageLoader } from "../../hooks/usePublicPageLoader";
 import styles from "../news.module.css";
@@ -49,17 +50,9 @@ export default function NewsDetailPage({ params }) {
     notFound();
   }
 
+  // Using centralized date utility - format remains exactly the same
   const formatDate = (dateString) => {
-    if (!dateString) return 'Not specified';
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    } catch (error) {
-      return 'Invalid date';
-    }
+    return formatDateLong(dateString);
   };
 
   // Only show loader if actually loading or if it's the first visit and needs extra time

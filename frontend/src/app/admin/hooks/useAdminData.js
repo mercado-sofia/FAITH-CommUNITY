@@ -1,7 +1,7 @@
 import useSWR from 'swr';
 import { useMemo } from 'react';
-import logger from '../../../utils/logger';
-import { formatDateForAPI } from '../../../utils/dateUtils';
+import logger from '@/utils/logger';
+import { formatDateForAPI } from '@/utils/dateUtils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 

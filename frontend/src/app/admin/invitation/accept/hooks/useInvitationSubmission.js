@@ -1,5 +1,5 @@
 import { useState } from "react"
-import logger from "../../../../../utils/logger"
+import logger from "@/utils/logger"
 
 export const useInvitationSubmission = (API_BASE_URL) => {
   const [isSubmitting, setIsSubmitting] = useState(false)

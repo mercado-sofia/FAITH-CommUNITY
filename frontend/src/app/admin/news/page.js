@@ -3,13 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { selectCurrentAdmin } from '../../../rtk/superadmin/adminSlice';
+import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { useAdminNews } from '../hooks/useAdminData';
 import { NewsTable, CreatePostForm } from './components';
 import { SearchAndFilterControls, RecentlyDeletedModal } from './components';
-import ErrorBoundary from '../../../components/ErrorBoundary';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { DeleteConfirmationModal, SuccessModal, SkeletonLoader } from '../components';
-import { invalidateNewsCache } from '../../../utils/cacheInvalidator';
+import { invalidateNewsCache } from '../utils/cacheInvalidator';
 import styles from './news.module.css';
 import { FaPlus } from 'react-icons/fa';
 

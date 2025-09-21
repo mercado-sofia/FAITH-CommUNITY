@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { FiEdit2, FiTrash2, FiClipboard } from 'react-icons/fi';
 import { IoCloseOutline } from "react-icons/io5";
+import { formatDateTime } from '../../../../utils/dateUtils';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import styles from './styles/FAQTable.module.css';
 
@@ -54,19 +55,25 @@ export default function FAQTable({
     }
   };
 
+  // Custom function to preserve exact date/time split format for UI
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const datePart = date.toLocaleDateString('en-US', {
-      month: '2-digit',
-      day: '2-digit',
-      year: 'numeric'
-    });
-    const timePart = date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-    return { datePart, timePart };
+    if (!dateString) return { datePart: 'N/A', timePart: 'N/A' };
+    try {
+      const date = new Date(dateString);
+      const datePart = date.toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric'
+      });
+      const timePart = date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+      return { datePart, timePart };
+    } catch (error) {
+      return { datePart: 'Invalid', timePart: 'Invalid' };
+    }
   };
 
   const truncateText = (text, maxLength = 200) => {

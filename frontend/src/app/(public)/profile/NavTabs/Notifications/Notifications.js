@@ -6,6 +6,7 @@ import { FaBell, FaEnvelope, FaCheck } from 'react-icons/fa';
 import { FiTrash2 } from 'react-icons/fi';
 import { PiWarningOctagonBold } from 'react-icons/pi';
 import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
+import { getRelativeTime } from '@/utils/dateUtils';
 import styles from './Notifications.module.css';
 
 export default function Notifications() {
@@ -94,15 +95,9 @@ export default function Notifications() {
     }
   };
 
+  // Using centralized date utility for consistent relative time formatting
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return getRelativeTime(dateString);
   };
 
   if (isLoading) {
@@ -165,7 +160,7 @@ export default function Notifications() {
                   <h4>{notification.title}</h4>
                   <p>{notification.message}</p>
                   <span className={styles.notificationDate}>
-                    {formatDate(notification.createdAt)}
+                    {formatDate(notification.created_at)}
                   </span>
                 </div>
                 <div className={styles.notificationActions}>

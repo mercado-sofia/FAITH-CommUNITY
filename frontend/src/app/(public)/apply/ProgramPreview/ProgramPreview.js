@@ -5,8 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import styles from './ProgramPreview.module.css';
 import { FaUsers, FaCalendarAlt } from 'react-icons/fa';
-import { formatProgramDates } from '../../../../utils/dateUtils';
-import { getProgramImageUrl } from '../../../../utils/uploadPaths';
+import { formatProgramDates } from '@/utils/dateUtils';
 
 export default function ProgramPreview({ selectedProgram, isLoading }) {
   const [imageError, setImageError] = useState(false);

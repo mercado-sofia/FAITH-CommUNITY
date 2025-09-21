@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { FiTrash2, FiMoreHorizontal, FiUserX, FiX, FiUserCheck, FiXCircle } from 'react-icons/fi';
 import { TbListDetails } from 'react-icons/tb';
 import { IoCloseOutline } from "react-icons/io5";
+import { formatDateTime } from '../../../../utils/dateUtils';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import AdminDetailsModal from './AdminDetailsModal';
 import styles from './styles/InvitationsTable.module.css';
@@ -157,19 +158,25 @@ export default function InvitationsTable({
     }
   };
 
+  // Custom function to preserve exact date/time split format for UI
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const datePart = date.toLocaleDateString('en-US', {
-      month: '2-digit',
-      day: '2-digit',
-      year: 'numeric'
-    });
-    const timePart = date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-    return { datePart, timePart };
+    if (!dateString) return { datePart: 'N/A', timePart: 'N/A' };
+    try {
+      const date = new Date(dateString);
+      const datePart = date.toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric'
+      });
+      const timePart = date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+      return { datePart, timePart };
+    } catch (error) {
+      return { datePart: 'Invalid', timePart: 'Invalid' };
+    }
   };
 
 

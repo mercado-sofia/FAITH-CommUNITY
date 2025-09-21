@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import styles from "./SignupForm.module.css"
 import { FaUser, FaLock, FaEye, FaEyeSlash, FaPhone, FaMapMarkerAlt, FaVenusMars, FaSpinner } from "react-icons/fa"
 import CustomDropdown from "./CustomDropdown"
-import { formatDateForAPI } from "../../../../utils/dateUtils.js"
+import { formatDateForAPI } from "@/utils/dateUtils.js"
 
 export default function SignupForm({ onRegistrationSuccess }) {
   const [currentStep, setCurrentStep] = useState(1)

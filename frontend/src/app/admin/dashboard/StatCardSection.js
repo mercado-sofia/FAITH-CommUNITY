@@ -5,7 +5,7 @@ import StatCard from './StatCard';
 import styles from './styles/StatCard.module.css';
 import Link from 'next/link';
 import { useAdminVolunteers, useAdminPrograms } from '../hooks/useAdminData';
-import { selectCurrentAdmin, selectIsAuthenticated } from '../../../rtk/superadmin/adminSlice';
+import { selectCurrentAdmin, selectIsAuthenticated } from '@/rtk/superadmin/adminSlice';
 
 export default function StatCardSection() {
   const currentAdmin = useSelector(selectCurrentAdmin);

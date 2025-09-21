@@ -1,5 +1,5 @@
 import { SWRConfig } from 'swr';
-import logger from './logger';
+import logger from '../../../utils/logger';
 
 // Global SWR configuration
 export const swrConfig = {

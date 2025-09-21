@@ -4,6 +4,7 @@ import React from 'react'
 import Image from 'next/image'
 import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/programsApi'
 import { getFeaturedProjectImageUrl } from '@/utils/uploadPaths'
+import { formatDateShort } from '../../../../utils/dateUtils'
 import styles from './featured.module.css'
 
 const FeaturedProjectsPage = () => {
@@ -65,7 +66,7 @@ const FeaturedProjectsPage = () => {
               {project.status}
             </span>
             <span className={styles.projectDate}>
-              {project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'N/A'}
+              {project.createdAt ? formatDateShort(project.createdAt) : 'N/A'}
             </span>
           </div>
         </div>

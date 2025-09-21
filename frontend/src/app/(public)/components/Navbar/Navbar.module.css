@@ -1,0 +1,209 @@
+/* Green top bar - fixed at top */
+.navbarWrapper {
+  background-color: #0c4b3a;
+  padding-top: 0.6rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+}
+
+/* Navbar inner layout */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 6rem;
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(50, 51, 52, 0.1), 0 4px 12px rgba(0, 0, 0, 0.08);
+  gap: 0.8rem;
+  border: none;
+  min-height: 60px;
+}
+
+/* Right side buttons */
+.rightActions {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.faithBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(to right, #DBEDE9, #489285, #0D594C);
+  border: none;
+  border-radius: 9999px;
+  font-weight: 600;
+  color: white;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 0.5rem 1.6rem;
+  width: auto;
+  height: 40px;
+}
+
+.applyBtn {
+  position: relative;
+  background: linear-gradient(to right, #FFAC00, #FFCE6A);
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 0.5rem 2.5rem;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  text-decoration: none;
+  z-index: 0;
+}
+
+.applyBtn::before {
+  content: "";
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #FFAC00;
+  z-index: -1;
+  transition: top 0.3s ease;
+  border-radius: 999px;
+}
+
+.applyBtn:hover::before {
+  top: 0;
+}
+
+/* Hamburger */
+.hamburgerBtn {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  color: #1A685B;
+  cursor: pointer;
+}
+
+/* Authentication Button Styles */
+.navbarLoginBtn,
+.signupBtn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 6px !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  transition: all 0.3s ease !important;
+  border: none !important;
+  cursor: pointer !important;
+  height: 40px !important;
+  white-space: nowrap !important;
+}
+
+.navbarLoginBtn {
+  background: transparent !important;
+  color: #0c4b3a !important;
+  border: 2px solid #0c4b3a !important;
+}
+
+.navbarLoginBtn:hover {
+  background: #f9fdfc !important;
+}
+
+.signupBtn {
+  background: #0c4b3a;
+  color: white;
+  border: 2px solid #0c4b3a;
+}
+
+.signupBtn:hover {
+  background: #145847;
+  border-color: #145847;
+}
+
+/* Loading States */
+.loadingNavbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 60px;
+}
+
+.loadingSpinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #0c4b3a;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 1264px) {
+  .rightActions {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .hamburgerBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.5rem;
+    order: 3;
+  }
+
+  .navbarLoginBtn,
+  .signupBtn {
+    padding: 0.4rem 0.8rem !important;
+    font-size: 0.85rem !important;
+  }
+}
+
+/* Mobile (640px and below) */
+@media (max-width: 730px) {
+  .navbar {
+    padding: 0.6rem 1.4rem;
+    justify-content: space-between;
+  }
+
+  .rightActions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  
+  .faithBtn,
+  .applyBtn {
+    display: none;
+  }
+
+  .hamburgerBtn {
+    display: flex;
+    font-size: 1.4rem;
+  }
+
+  /* Hide desktop login button on mobile to prevent duplication */
+  .navbarLoginBtn {
+    display: none !important;
+  }
+}

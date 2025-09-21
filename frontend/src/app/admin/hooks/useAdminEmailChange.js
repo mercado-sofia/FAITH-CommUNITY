@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError } from '../../../utils/adminAuth';
+import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError } from '@/utils/adminAuth';
 
 export const useAdminEmailChange = () => {
   const [isLoading, setIsLoading] = useState(false);

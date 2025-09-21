@@ -8,7 +8,7 @@ import DeleteAccount from './DeleteAccount/DeleteAccount';
 import { useFormValidation } from '../../hooks/useFormValidation';
 import { useProfileApi } from '../../hooks/useApiCall';
 import { useToast } from '../../components/Toast';
-import { formatBirthDate, formatDateForInput } from '../../../../../utils/dateUtils.js';
+import { formatBirthDate, formatDateForInput } from '@/utils/dateUtils';
 import styles from './PersonalInfo.module.css';
 
 const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {

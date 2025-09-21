@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react"
-import logger from "../../../../../utils/logger"
+import logger from "@/utils/logger"
 
 export const useOrganizationValidation = (API_BASE_URL) => {
   const [validationStatus, setValidationStatus] = useState({

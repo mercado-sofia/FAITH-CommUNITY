@@ -4,6 +4,7 @@ import {
   useGetUnreadNotificationCountQuery,
   useMarkNotificationAsReadMutation
 } from '../rtk/(public)/userNotificationsApi';
+import { getRelativeTime } from '../utils/dateUtils';
 
 export const useNotifications = (isAuthenticated) => {
   // Fetch notifications data
@@ -32,7 +33,7 @@ export const useNotifications = (isAuthenticated) => {
 
   // Handle notification click
   const handleNotificationClick = useCallback(async (notification) => {
-    if (!notification.is_read) {
+    if (!notification.isRead) {
       try {
         await markAsRead(notification.id);
         // Refetch data to update UI
@@ -45,16 +46,9 @@ export const useNotifications = (isAuthenticated) => {
   }, [markAsRead, refetchNotifications, refetchUnreadCount]);
 
 
-  // Format notification time
+  // Format notification time using centralized utility
   const formatNotificationTime = useCallback((createdAt) => {
-    const now = new Date();
-    const notificationTime = new Date(createdAt);
-    const diffInMinutes = Math.floor((now - notificationTime) / (1000 * 60));
-    
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-    return `${Math.floor(diffInMinutes / 1440)}d ago`;
+    return getRelativeTime(createdAt);
   }, []);
 
   return {

@@ -1,6 +1,6 @@
 import useSWR from 'swr';
 import logger from '../../../utils/logger';
-import { swrConfig } from '../../../utils/swrConfig';
+import { swrConfig } from '../utils/swrConfig';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 

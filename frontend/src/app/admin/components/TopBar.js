@@ -6,16 +6,16 @@ import Link from 'next/link';
 import { TbMail } from "react-icons/tb";
 import { MdNotificationsNone } from "react-icons/md";
 import { FiXCircle } from "react-icons/fi";
-import { useNavigation } from '../../../contexts/NavigationContext';
+import { useNavigation } from '@/contexts/NavigationContext';
 import { useSelector } from 'react-redux';
-import { selectCurrentAdmin } from '../../../rtk/superadmin/adminSlice';
+import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { 
   useGetNotificationsQuery, 
   useGetUnreadCountQuery,
   useMarkAsReadMutation,
   useMarkAllAsReadMutation 
-} from '../../../rtk/admin/notificationsApi';
-import { useGetUnreadCountQuery as useGetInboxUnreadCountQuery } from '../../../rtk/admin/inboxApi';
+} from '@/rtk/admin/notificationsApi';
+import { useGetUnreadCountQuery as useGetInboxUnreadCountQuery } from '@/rtk/admin/inboxApi';
 import styles from './styles/topbar.module.css';
 
 export default function TopBar() {

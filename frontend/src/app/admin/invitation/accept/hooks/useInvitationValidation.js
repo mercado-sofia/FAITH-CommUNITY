@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react"
-import logger from "../../../../../utils/logger"
+import logger from "@/utils/logger"
 
 export const useInvitationValidation = (API_BASE_URL) => {
   const [isValidating, setIsValidating] = useState(true)

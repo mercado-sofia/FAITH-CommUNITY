@@ -7,7 +7,7 @@ import SuccessModal from "../components/SuccessModal";
 import { usePublicApprovedPrograms } from "../../hooks/usePublicData";
 import FormErrorBoundary from "../components/FormErrorBoundary";
 import { useApplyFormPersistence } from "../../hooks/useApplyFormPersistence";
-import logger from "../../../../utils/logger";
+import logger from "@/utils/logger";
 
 function SubmitStatus({ status }) {
   if (!status.submitted) return null;

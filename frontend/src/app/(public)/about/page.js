@@ -1,7 +1,7 @@
 'use client';
 
 import Loader from '../../../components/Loader';
-import PageBanner from '../components/PageBanner';
+import { PageBanner } from '../components';
 import { MissionAndVision, AboutMore, OrgBanner } from './Sections';
 import OfficerSection from '../home/OfficerSection/OfficerSection';
 import { usePublicPageLoader } from '../hooks/usePublicPageLoader';

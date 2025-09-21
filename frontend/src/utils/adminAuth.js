@@ -1,6 +1,6 @@
 /**
  * Admin and Superadmin Authentication Utilities
- * Handles token validation, refresh attempts, and secure redirects
+ * Handles token validation, refresh attempts, and secure redirects for both admin and superadmin users
  */
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';

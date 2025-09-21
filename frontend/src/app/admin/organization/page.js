@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { updateAdminOrg, updateAdminLogo } from "../../../rtk/superadmin/adminSlice";
+import { updateAdminOrg, updateAdminLogo } from "@/rtk/superadmin/adminSlice";
 import { useAdminOrganization, useAdminAdvocacies, useAdminCompetencies, useAdminHeads } from "../hooks/useAdminData";
 import { applyRoleHierarchyOrdering } from "./utils";
 import { EditModal, OrgInfoSection, SummaryModal } from "./OrgInfo";

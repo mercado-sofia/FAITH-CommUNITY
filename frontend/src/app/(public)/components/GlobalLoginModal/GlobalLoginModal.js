@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
-import styles from './styles/GlobalLoginModal.module.css';
+import styles from './GlobalLoginModal.module.css';
 
 export default function GlobalLoginModal() {
   const [isOpen, setIsOpen] = useState(false);

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import styles from './NewsSection.module.css';
 import { usePublicOrganizations, usePublicNews } from '../../hooks/usePublicData';
+import { formatDateLong } from '@/utils/dateUtils';
 
 export default function NewsSection() {
   const orgNavRef = useRef(null);
@@ -140,17 +141,9 @@ export default function NewsSection() {
 
   const maxDisplay = 6;
 
+  // Using centralized date utility - format remains exactly the same
   const formatDate = (dateString) => {
-    if (!dateString) return 'Not specified';
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    } catch (error) {
-      return 'Invalid date';
-    }
+    return formatDateLong(dateString);
   };
 
   if ((orgLoading || newsLoading) && organizations.length === 0) {

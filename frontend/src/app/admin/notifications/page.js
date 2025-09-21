@@ -2,14 +2,14 @@
 
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { selectCurrentAdmin } from '../../../rtk/superadmin/adminSlice';
+import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { 
   useGetNotificationsQuery, 
   useGetUnreadCountQuery,
   useMarkAsReadMutation,
   useMarkAllAsReadMutation,
   useDeleteNotificationMutation 
-} from '../../../rtk/admin/notificationsApi';
+} from '@/rtk/admin/notificationsApi';
 import { FiX, FiXCircle, FiTrash2 } from 'react-icons/fi';
 import { PiChecksBold } from 'react-icons/pi';
 import { MdCancel } from 'react-icons/md';

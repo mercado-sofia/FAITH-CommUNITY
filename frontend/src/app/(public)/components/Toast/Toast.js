@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FiCheckCircle, FiX, FiAlertCircle, FiInfo, FiAlertTriangle } from 'react-icons/fi';
-import styles from './styles/Toast.module.css';
+import styles from './Toast.module.css';
 
 export default function Toast({ message, type = 'success', duration = 3000, onClose }) {
   useEffect(() => {

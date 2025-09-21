@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { FaTimes, FaCalendarAlt, FaUser, FaCheckCircle, FaTimesCircle, FaExclamationCircle } from 'react-icons/fa';
 import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
+import { formatDateLong } from '@/utils/dateUtils';
 import styles from './ApplicationDetailsModal.module.css';
 
 export default function ApplicationDetailsModal({ isOpen, onClose, applicationId }) {
@@ -81,14 +82,9 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
     }
   };
 
+  // Using centralized date utility for consistent long date formatting
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    return formatDateLong(dateString);
   };
 
   const getStatusIcon = (status) => {

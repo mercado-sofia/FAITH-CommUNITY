@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { selectCurrentAdmin } from '../../../rtk/superadmin/adminSlice';
+import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { formatDateTime } from '@/utils/dateUtils.js';
 import { 
   useGetMessagesQuery, 
@@ -10,7 +10,7 @@ import {
   useMarkMessageAsReadMutation,
   useMarkAllAsReadMutation,
   useDeleteMessageMutation 
-} from '../../../rtk/admin/inboxApi';
+} from '@/rtk/admin/inboxApi';
 import { FiMail, FiTrash2, FiEye, FiCheck, FiX } from 'react-icons/fi';
 import { FaSpinner } from 'react-icons/fa';
 import { DeleteConfirmationModal, SkeletonLoader } from '../components';

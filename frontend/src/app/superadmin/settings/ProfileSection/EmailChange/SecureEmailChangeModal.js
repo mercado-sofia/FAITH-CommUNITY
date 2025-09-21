@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FaEye, FaEyeSlash, FaTimes, FaCheck, FaShieldAlt, FaClock } from 'react-icons/fa';
-import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError } from '../../../../../utils/adminAuth';
+import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError } from '@/utils/adminAuth';
 import styles from './SecureEmailChangeModal.module.css';
 
 export default function SecureEmailChangeModal({ 

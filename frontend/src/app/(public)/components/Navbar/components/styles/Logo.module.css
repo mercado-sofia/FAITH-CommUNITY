@@ -1,0 +1,44 @@
+/* Logo Section */
+.logoContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  color: inherit;
+  width: 160px;
+  flex-shrink: 0;
+}
+
+.logoTextWrapper {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.logoTop {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #15803d;
+}
+
+.logoBottom {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #06100f;
+}
+
+.orange {
+  color: #FFAC00;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 730px) {
+  .logoContainer {
+    width: auto;
+    gap: 0.5rem;
+  }
+
+  .logoTextWrapper {
+    line-height: 1.1;
+  }
+}

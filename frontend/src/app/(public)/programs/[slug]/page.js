@@ -6,9 +6,37 @@ import Image from 'next/image';
 import Link from 'next/link';
 import styles from './programDetails.module.css';
 import Loader from '../../../../components/Loader';
-import { getProgramImageUrl } from '../../../../utils/uploadPaths';
+import { getProgramImageUrl } from '@/utils/uploadPaths';
+import { formatDateLong } from '@/utils/dateUtils';
 import OtherProgramsCarousel from '../components/OtherProgramsCarousel/OtherProgramsCarousel';
 import { usePublicPageLoader } from '../../hooks/usePublicPageLoader';
+
+// Custom functions to preserve exact date formatting for program details
+const formatEventDateWithWeekday = (dateString) => {
+  if (!dateString) return 'Not specified';
+  try {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch (error) {
+    return 'Invalid date';
+  }
+};
+
+const formatEventDateShort = (dateString) => {
+  if (!dateString) return 'Not specified';
+  try {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    });
+  } catch (error) {
+    return 'Invalid date';
+  }
+};
 
 export default function ProgramDetailsPage() {
   const { slug } = useParams();
@@ -131,19 +159,9 @@ export default function ProgramDetailsPage() {
     // Check for multiple dates first
     if (program.multiple_dates && Array.isArray(program.multiple_dates) && program.multiple_dates.length > 0) {
       if (program.multiple_dates.length === 1) {
-        return new Date(program.multiple_dates[0]).toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        });
+        return formatEventDateWithWeekday(program.multiple_dates[0]);
       } else {
-        const dates = program.multiple_dates.map(date => 
-          new Date(date).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric'
-          })
-        );
+        const dates = program.multiple_dates.map(date => formatEventDateShort(date));
         return `Multiple Dates: ${dates.join(', ')}`;
       }
     }
@@ -155,36 +173,16 @@ export default function ProgramDetailsPage() {
       
       if (startDate.getTime() === endDate.getTime()) {
         // Single day event
-        return startDate.toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        });
+        return formatEventDateWithWeekday(program.event_start_date);
       } else {
         // Date range
-        return `${startDate.toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })} - ${endDate.toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })}`;
+        return `${formatEventDateWithWeekday(program.event_start_date)} - ${formatEventDateWithWeekday(program.event_end_date)}`;
       }
     }
     
     // Check for single start date
     if (program.event_start_date) {
-      return new Date(program.event_start_date).toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+      return formatEventDateWithWeekday(program.event_start_date);
     }
     
     return 'Date not specified';

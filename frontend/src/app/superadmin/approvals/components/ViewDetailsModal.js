@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { FaTimes, FaCheck, FaEye, FaExpand, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
+import { formatDateTime } from '../../../../utils/dateUtils';
 import styles from './styles/ViewDetailsModal.module.css';
 
 const ViewDetailsModal = ({ 
@@ -15,16 +16,9 @@ const ViewDetailsModal = ({
   
   if (!isOpen || !submissionData) return null;
 
+  // Using centralized date utility - format remains exactly the same
   const formatDate = (dateString) => {
-    if (!dateString) return 'Unknown';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return formatDateTime(dateString);
   };
 
   const getSectionDisplayName = (section) => {
@@ -238,7 +232,7 @@ const ViewDetailsModal = ({
                           <div className={styles.eventDatesList}>
                             {programData.multiple_dates.map((date, index) => (
                               <span key={index} className={styles.eventDateTag}>
-                                {new Date(date).toLocaleDateString()}
+                                {formatDate(date)}
                               </span>
                             ))}
                           </div>
@@ -248,13 +242,13 @@ const ViewDetailsModal = ({
                       if (programData.event_start_date === programData.event_end_date) {
                         return (
                           <div className={styles.summaryItem}>
-                            <strong>Event Date:</strong> {new Date(programData.event_start_date).toLocaleDateString()}
+                            <strong>Event Date:</strong> {formatDate(programData.event_start_date)}
                           </div>
                         );
                       } else {
                         return (
                           <div className={styles.summaryItem}>
-                            <strong>Event Date Range:</strong> {new Date(programData.event_start_date).toLocaleDateString()} - {new Date(programData.event_end_date).toLocaleDateString()}
+                            <strong>Event Date Range:</strong> {formatDate(programData.event_start_date)} - {formatDate(programData.event_end_date)}
                           </div>
                         );
                       }

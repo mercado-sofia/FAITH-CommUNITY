@@ -6,7 +6,7 @@ import { useSelector } from 'react-redux'
 import { SearchAndFilterControls, VolunteerTable } from './components'
 import { DeleteConfirmationModal, SuccessModal } from '../components'
 import { useAdminVolunteers, useAdminPrograms } from '../hooks/useAdminData'
-import { selectCurrentAdmin, selectIsAuthenticated } from '../../../rtk/superadmin/adminSlice'
+import { selectCurrentAdmin, selectIsAuthenticated } from '@/rtk/superadmin/adminSlice'
 import { SkeletonLoader } from '../components'
 import styles from './volunteers.module.css'
 

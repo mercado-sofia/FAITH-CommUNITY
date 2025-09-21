@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { HiOutlineDotsHorizontal } from 'react-icons/hi';
+import { formatDateShort } from '../../../../utils/dateUtils';
 import ViewDetailsModal from './ViewDetailsModal';
 import styles from './styles/ApprovalsTable.module.css';
 
@@ -53,12 +54,9 @@ export default function ApprovalsTable({
     setSelectedItemForDetails(null);
   };
 
+  // Using centralized date utility - format remains exactly the same
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
+    return formatDateShort(date);
   };
 
   return (

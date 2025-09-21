@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { selectCurrentAdmin } from '../../../rtk/superadmin/adminSlice';
+import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { useAdminPrograms } from '../hooks/useAdminData';
 import { ProgramCard, AddProgramModal, EditProgramModal, ViewDetailsModal } from './components';
 import { DeleteConfirmationModal } from '../components';

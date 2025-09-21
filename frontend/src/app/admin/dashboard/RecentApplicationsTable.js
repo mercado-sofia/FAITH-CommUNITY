@@ -7,7 +7,7 @@ import { FiEye } from 'react-icons/fi';
 import { CgOptions } from "react-icons/cg";
 import { FaUser } from "react-icons/fa";
 import Image from "next/image";
-import { formatDateForAPI } from '../../../utils/dateUtils';
+import { formatDateForAPI } from '@/utils/dateUtils';
 import styles from './styles/RecentTables.module.css';
 
 // Helper function to safely parse dates for sorting

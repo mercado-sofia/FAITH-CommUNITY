@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
-import { selectCurrentAdmin } from '../../../../rtk/superadmin/adminSlice';
-import { useGetNotificationsQuery } from '../../../../rtk/admin/notificationsApi';
+import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
+import { useGetNotificationsQuery } from '@/rtk/admin/notificationsApi';
 import { FiTrash2, FiEye } from 'react-icons/fi';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import styles from '../notifications.module.css';

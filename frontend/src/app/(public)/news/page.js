@@ -5,8 +5,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { usePublicOrganizations, usePublicNews } from "../hooks/usePublicData";
+import { formatDateLong } from "@/utils/dateUtils";
 import styles from "./news.module.css";
-import Pagination from "../components/Pagination";
+import { Pagination } from "../components";
 import Loader from "../../../components/Loader";
 import { usePublicPageLoader } from "../hooks/usePublicPageLoader";
 
@@ -104,17 +105,9 @@ export default function AllNewsPage() {
     currentPage * NEWS_PER_PAGE
   );
 
+  // Using centralized date utility - format remains exactly the same
   const formatDate = (dateString) => {
-    if (!dateString) return 'Not specified';
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    } catch (error) {
-      return 'Invalid date';
-    }
+    return formatDateLong(dateString);
   };
 
   if (pageLoading || !pageReady || orgLoading || newsLoading) {

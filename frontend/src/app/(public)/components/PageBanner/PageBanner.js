@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { FiChevronRight } from 'react-icons/fi';
-import styles from './styles/pagebanner.module.css';
+import styles from './PageBanner.module.css';
 
 export default function PageBanner({ title, breadcrumbs = [], backgroundImage }) {
   return (

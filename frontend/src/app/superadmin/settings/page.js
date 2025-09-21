@@ -6,7 +6,7 @@ import styles from './settings.module.css';
 import { SecureEmailChangeModal, PasswordChangeModal, TwoFAModal } from './ProfileSection';
 import SuccessModal from '../components/SuccessModal';
 import BrandingManagement from './SiteContent/Branding';
-import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError, checkAuthStatus } from '../../../utils/adminAuth';
+import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError, checkAuthStatus } from '@/utils/adminAuth';
 
 // Utility function for password change time
 const getPasswordChangeTime = (userData) => {

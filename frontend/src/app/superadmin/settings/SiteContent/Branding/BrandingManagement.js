@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { FaUpload, FaTrash } from 'react-icons/fa';
 import Image from 'next/image';
 import styles from './BrandingManagement.module.css';
-import { makeAuthenticatedRequest, showAuthError } from '../../../../../utils/adminAuth';
+import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 
 export default function BrandingManagement({ showSuccessModal }) {
   const [brandingData, setBrandingData] = useState(null);

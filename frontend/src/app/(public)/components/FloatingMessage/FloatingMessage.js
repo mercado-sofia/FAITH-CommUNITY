@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import styles from "./styles/floatingMessage.module.css";
+import styles from "./FloatingMessage.module.css";
 import { FiMessageCircle } from "react-icons/fi";
 import { FaChevronRight, FaSpinner } from "react-icons/fa";
 import { IoChevronDown } from "react-icons/io5";
-import { useGetAllOrganizationsQuery } from "../../../rtk/(public)/organizationsApi";
-import { useSubmitMessageMutation } from "../../../rtk/(public)/messagesApi";
+import { useGetAllOrganizationsQuery } from "../../../../rtk/(public)/organizationsApi";
+import { useSubmitMessageMutation } from "../../../../rtk/(public)/messagesApi";
 
 export default function FloatingMessage() {
   const [isOpen, setIsOpen] = useState(false);

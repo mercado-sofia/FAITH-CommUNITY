@@ -1,10 +1,6 @@
 'use client';
 
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import FloatingMessage from './components/FloatingMessage';
-import ToastContainer from './components/ToastContainer';
-import GlobalLoginModal from './components/GlobalLoginModal';
+import { Navbar, Footer, FloatingMessage, ToastContainer, GlobalLoginModal } from './components';
 import Loader from '../../components/Loader';
 import '../globals.css';
 import Head from 'next/head';

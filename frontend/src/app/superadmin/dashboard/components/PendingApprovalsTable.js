@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react';
 import { FiEye, FiChevronDown } from 'react-icons/fi';
+import { formatDateShort } from '../../../../utils/dateUtils';
 import styles from './styles/PendingApprovalsTable.module.css';
 import { useGetRecentApprovalsQuery, useGetOrganizationsForFilterQuery } from '../../../../rtk/superadmin/dashboardApi';
 
@@ -67,10 +68,15 @@ export default function PendingApprovalsTable() {
   const displayList = organizationFilteredList.slice(0, Math.max(5, organizationFilteredList.length));
 
   // Format date for display - handle string dates from API
+  // Custom function to preserve exact ISO date format for UI
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toISOString().split('T')[0];
+    try {
+      const date = new Date(dateString);
+      return date.toISOString().split('T')[0];
+    } catch (error) {
+      return 'Invalid';
+    }
   };
 
   // Get section display name

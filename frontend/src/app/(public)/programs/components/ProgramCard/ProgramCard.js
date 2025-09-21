@@ -3,8 +3,23 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
+import { formatDateLong } from '@/utils/dateUtils';
 import styles from './ProgramCard.module.css';
-import logger from '../../../../../utils/logger';
+import logger from '@/utils/logger';
+
+// Custom function to preserve exact "Posted on" date format (en-PH locale)
+const formatPostedDate = (dateString) => {
+  if (!dateString) return 'Not specified';
+  try {
+    return new Date(dateString).toLocaleDateString('en-PH', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  } catch (error) {
+    return 'Invalid date';
+  }
+};
 
 // Utility function to get date information from various date formats
 const getDateInfo = (project) => {
@@ -289,11 +304,7 @@ export default function ProgramCard({ project }) {
         <p className={styles.cardDesc}>{project.description}</p>
 
         <p className={styles.cardDate}>
-          Posted on {new Date(project.date).toLocaleDateString('en-PH', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
+          Posted on {formatPostedDate(project.date)}
         </p>
       </div>
     </div>

@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Loader from '../../../../../components/Loader';
-import BannerSection from '../../../components/PageBanner';
+import { PageBanner as BannerSection } from '../../../components';
 import { OrgInfoCard, AdvocacyCompetency, FeaturedProjects, OrgHeadsCarousel, LatestPosts } from '../../components';
 import { usePublicOrganizationData } from '../../../hooks/usePublicData';
 import { useAuthState } from '../../../../../hooks/useAuthState';

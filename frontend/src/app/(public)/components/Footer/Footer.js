@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import styles from "./styles/footer.module.css";
+import styles from "./Footer.module.css";
 import { FaFacebookF, FaPhoneAlt, FaEnvelope } from "react-icons/fa";
 import { FaInstagram, FaXTwitter } from "react-icons/fa6";
 import { HiMiniArrowRight } from "react-icons/hi2";
@@ -9,7 +9,7 @@ import { Send } from "lucide-react";
 import { LuCircleCheck } from "react-icons/lu";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import Toast from "./Toast";
+import Toast from "../Toast/Toast";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||

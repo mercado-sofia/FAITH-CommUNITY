@@ -1,16 +1,16 @@
-import express from 'express';
-import {
-  createFooterInfo,
-  updateFooterInfo,
-  getFooterInfo,
-  getAllFooterEntries
-} from '../controllers/footerController.js';
+import express from "express"
+import { getFooterContent, updateFooterContent } from "../controllers/footerController.js"
+import { verifySuperadminToken } from "../controllers/superadminAuthController.js"
 
-const router = express.Router();
+const router = express.Router()
 
-router.post('/', createFooterInfo);
-router.put('/:id', updateFooterInfo);
-router.get('/', getFooterInfo);              // GET ACTIVE only
-router.get('/all', getAllFooterEntries);     // GET ALL records
+// Public route - get footer content
+router.get("/", getFooterContent)
 
-export default router;
+// Protected routes - require superadmin authentication
+router.use(verifySuperadminToken)
+
+// Update footer content (for future use)
+router.put("/", updateFooterContent)
+
+export default router

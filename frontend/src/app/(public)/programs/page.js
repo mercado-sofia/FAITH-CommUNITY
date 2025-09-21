@@ -34,6 +34,15 @@ export default function ProgramsPage() {
   const { programs, isLoading: dataLoading, error } = usePublicPrograms();
 
 
+  // Sync submittedSearch with URL parameters
+  useEffect(() => {
+    const urlSearch = searchParams.get('search') || '';
+    if (urlSearch !== submittedSearch) {
+      setSubmittedSearch(urlSearch);
+    }
+  }, [searchParams, submittedSearch]);
+
+  // Update URL when filter, sort, or page changes (but not for search)
   useEffect(() => {
     const params = new URLSearchParams();
     if (submittedSearch.trim()) params.set('search', submittedSearch);
@@ -42,34 +51,41 @@ export default function ProgramsPage() {
     if (currentPage !== 1) params.set('page', currentPage.toString());
 
     const query = params.toString();
-    router.push(`/programs${query ? `?${query}` : ''}`);
-  }, [submittedSearch, filter, sort, currentPage, router]);
+    const newUrl = `/programs${query ? `?${query}` : ''}`;
+    
+    // Only update URL if it's different to avoid infinite loops
+    if (window.location.pathname + window.location.search !== newUrl) {
+      router.push(newUrl);
+    }
+  }, [filter, sort, currentPage, router, submittedSearch]);
 
-  const handleSearch = async (term) => {
-    const controller = new AbortController();
-    setIsLoading(true);
+  const handleSearch = (term) => {
     setCurrentPage(1);
-    await new Promise((res) => setTimeout(res, 300)); // Reduced delay
-    setSubmittedSearch(term);
-    setIsLoading(false);
-    return () => controller.abort();
+    
+    // Update URL immediately - this will trigger the useEffect to update submittedSearch
+    const params = new URLSearchParams();
+    if (term.trim()) params.set('search', term);
+    if (filter !== 'All') params.set('filter', filter);
+    if (sort !== 'Newest') params.set('sort', sort);
+    
+    const query = params.toString();
+    router.push(`/programs${query ? `?${query}` : ''}`);
   };
 
-  const handlePageChange = async (page) => {
-    const controller = new AbortController();
+  const handlePageChange = (page) => {
     setIsLoading(true);
     setCurrentPage(page);
-    await new Promise((res) => setTimeout(res, 200)); // Reduced delay
 
-    const section = document.getElementById('projectSection');
-    if (section) {
-      const offset = 100;
-      const y = section.getBoundingClientRect().top + window.pageYOffset - offset;
-      window.scrollTo({ top: y, behavior: 'smooth' });
-    }
-
-    setIsLoading(false);
-    return () => controller.abort();
+    // Scroll to top of results section
+    setTimeout(() => {
+      const section = document.getElementById('projectSection');
+      if (section) {
+        const offset = 100;
+        const y = section.getBoundingClientRect().top + window.pageYOffset - offset;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+      setIsLoading(false);
+    }, 100);
   };
 
   const filteredProjects = useMemo(() => {
@@ -121,8 +137,14 @@ export default function ProgramsPage() {
 
       <SearchAndFilterBar
         onSearch={handleSearch}
-        onSortChange={setSort}
-        onFilterChange={setFilter}
+        onSortChange={(newSort) => {
+          setSort(newSort);
+          setCurrentPage(1);
+        }}
+        onFilterChange={(newFilter) => {
+          setFilter(newFilter);
+          setCurrentPage(1);
+        }}
         initialSearchTerm={initialSearch}
         initialFilter={initialFilter}
         initialSort={initialSort}
@@ -140,7 +162,7 @@ export default function ProgramsPage() {
           </div>
         ) : (
           <>
-            {submittedSearch.trim() !== '' && !isLoading && (
+            {submittedSearch.trim() !== '' && (
               <div className={styles.projectHeader}>
                 <h2>{filteredProjects.length} Programs Found</h2>
               </div>

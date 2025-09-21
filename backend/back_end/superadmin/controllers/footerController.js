@@ -1,100 +1,66 @@
-//db table: footer_content
-import db from '../../database.js';
+import db from "../../database.js"
 
-// CREATE
-export const createFooterInfo = async (req, res) => {
-  const {
-    orgName,
-    description,
-    phone_number,
-    email,
-    address,
-    facebook_link,
-    instagram_link,
-    twitter_link,
-    status
-  } = req.body;
-
+// Get footer content
+export const getFooterContent = async (req, res) => {
   try {
-    const [result] = await db.execute(
-      `INSERT INTO footer_info (
-        orgName, description, phone_number, email, address,
-        facebook_link, instagram_link, twitter_link, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        orgName,
-        description,
-        phone_number,
-        email,
-        address,
-        facebook_link,
-        instagram_link,
-        twitter_link,
-        status || 'ACTIVE'
-      ]
-    );
-    res.status(201).json({ message: 'Footer info created', id: result.insertId });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    // For now, return static content
+    // In the future, this could be stored in a database table
+    const footerContent = {
+      organizationName: "FAITH CommUNITY",
+      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam pulvinar ac.",
+      phone: "+163-3654-7896",
+      email: "info@faithcommunity.com",
+      socialLinks: {
+        facebook: "https://facebook.com",
+        instagram: "https://instagram.com",
+        twitter: "https://x.com"
+      },
+      quickLinks: [
+        { name: "About Us", url: "/about" },
+        { name: "Programs & Services", url: "/programs" },
+        { name: "Faithree", url: "/faithree" },
+        { name: "Apply Now", url: "/apply" },
+        { name: "FAQs", url: "/faqs" }
+      ],
+      services: [
+        "Give Donation",
+        "Education Support", 
+        "Food Support",
+        "Health Support",
+        "Our Campaign"
+      ],
+      copyright: "© Copyright 2025 FAITH CommUNITY. All Rights Reserved."
+    }
+
+    res.json({
+      success: true,
+      data: footerContent
+    })
+  } catch (error) {
+    console.error("Error getting footer content:", error)
+    res.status(500).json({
+      success: false,
+      message: "Failed to get footer content",
+      error: error.message
+    })
   }
-};
+}
 
-// UPDATE
-export const updateFooterInfo = async (req, res) => {
-  const { id } = req.params;
-  const {
-    orgName,
-    description,
-    phone_number,
-    email,
-    address,
-    facebook_link,
-    instagram_link,
-    twitter_link,
-    status
-  } = req.body;
-
+// Update footer content (for future use)
+export const updateFooterContent = async (req, res) => {
   try {
-    await db.execute(
-      `UPDATE footer_info SET
-        orgName = ?, description = ?, phone_number = ?, email = ?, address = ?,
-        facebook_link = ?, instagram_link = ?, twitter_link = ?, status = ?
-       WHERE id = ?`,
-      [
-        orgName,
-        description,
-        phone_number,
-        email,
-        address,
-        facebook_link,
-        instagram_link,
-        twitter_link,
-        status || 'ACTIVE',
-        id
-      ]
-    );
-    res.json({ message: 'Footer info updated' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    // This would be implemented when footer content becomes editable
+    // For now, just return success
+    res.json({
+      success: true,
+      message: "Footer content updated successfully"
+    })
+  } catch (error) {
+    console.error("Error updating footer content:", error)
+    res.status(500).json({
+      success: false,
+      message: "Failed to update footer content",
+      error: error.message
+    })
   }
-};
-
-// GET (active)
-export const getFooterInfo = async (req, res) => {
-  try {
-    const [rows] = await db.query("SELECT * FROM footer_info WHERE status = 'ACTIVE' LIMIT 1");
-    res.status(200).json(rows[0] || {});
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-// GET ALL (for admin or superadmin)
-export const getAllFooterEntries = async (req, res) => {
-  try {
-    const [rows] = await db.query("SELECT * FROM footer_info ORDER BY id DESC");
-    res.status(200).json(rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+}

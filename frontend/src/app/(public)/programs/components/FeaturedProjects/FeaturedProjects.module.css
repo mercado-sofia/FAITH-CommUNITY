@@ -24,7 +24,6 @@
   margin-bottom: 2rem;
 }
 
-
 .programsShowcaseLoading,
 .programsShowcaseEmpty {
   padding: 2rem;
@@ -150,7 +149,7 @@
 
 .programActionButton {
   position: relative;
-  background: linear-gradient(to right, #FFAC00, #FFCE6A);
+  background: linear-gradient(to right, rgba(255, 172, 0, 0.8), rgba(255, 206, 106, 0.8));
   color: white;
   padding: 0.8rem 1.2rem;
   border: none;
@@ -186,7 +185,7 @@
 }
 
 .programActionButton.learnMore {
-  background: linear-gradient(to right, #1a685b, #1c8775);
+  background: linear-gradient(to right, rgba(26, 104, 91, 0.8), rgba(28, 135, 117, 0.8));
 }
 
 .programActionButton.learnMore::before {

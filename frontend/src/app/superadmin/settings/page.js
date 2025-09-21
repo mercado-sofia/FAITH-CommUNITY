@@ -5,6 +5,7 @@ import { FaEnvelope, FaLock, FaShieldAlt } from 'react-icons/fa';
 import styles from './settings.module.css';
 import { SecureEmailChangeModal, PasswordChangeModal, TwoFAModal } from './ProfileSection';
 import SuccessModal from '../components/SuccessModal';
+import BrandingManagement from './SiteContent/Branding';
 import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError, checkAuthStatus } from '../../../utils/adminAuth';
 
 // Utility function for password change time
@@ -55,6 +56,7 @@ export default function SuperAdminSettings() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showTwoFAModal, setShowTwoFAModal] = useState(false);
   const [twofaEnabled, setTwofaEnabled] = useState(false);
+  const [activeTab, setActiveTab] = useState('account');
 
   // Load current user data
   useEffect(() => {
@@ -213,8 +215,27 @@ export default function SuperAdminSettings() {
         <h1>Settings</h1>
       </div>
 
-      {/* Profile Section */}
-      <div className={styles.settingsGrid}>
+      {/* Tab Navigation */}
+      <div className={styles.tabNavigation}>
+        <button 
+          className={`${styles.tabButton} ${activeTab === 'account' ? styles.activeTab : ''}`}
+          onClick={() => setActiveTab('account')}
+        >
+          Account
+        </button>
+        <button 
+          className={`${styles.tabButton} ${activeTab === 'site-content' ? styles.activeTab : ''}`}
+          onClick={() => setActiveTab('site-content')}
+        >
+          Site Content
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'account' && (
+        <div className={styles.tabContent}>
+          {/* Profile Section */}
+          <div className={styles.settingsGrid}>
         {/* Email Address Panel */}
         <div className={styles.settingsPanel}>
           <div className={styles.panelHeader}>
@@ -320,6 +341,15 @@ export default function SuperAdminSettings() {
           </div>
         </div>
       </div>
+        </div>
+      )}
+
+      {/* Site Content Tab */}
+      {activeTab === 'site-content' && (
+        <div className={styles.tabContent}>
+          <BrandingManagement showSuccessModal={showSuccessModal} />
+        </div>
+      )}
 
       {/* Secure Email Change Modal */}
       <SecureEmailChangeModal

@@ -323,6 +323,7 @@ import superadminProgramsRoutes from "./back_end/superadmin/routes/programsRoute
 import superadminAuthRoutes from "./back_end/superadmin/routes/superadminAuth.js"
 import superadminNotificationsRoutes from "./back_end/superadmin/routes/notifications.js"
 import invitationRoutes from "./back_end/superadmin/routes/invitations.js"
+import brandingRoutes from "./back_end/superadmin/routes/branding.js"
 
 // Add rate limits around admin/superadmin auth endpoints
 app.use(["/api/admins/login", "/api/admins/forgot-password", "/api/admins/reset-password"], authSpeedLimiter, authLimiter)
@@ -336,6 +337,7 @@ app.use("/api/projects/superadmin", superadminProgramsRoutes)
 app.use(["/api/superadmin/auth/login", "/api/superadmin/auth/forgot-password", "/api/superadmin/auth/reset-password"], authSpeedLimiter, authLimiter)
 app.use("/api/superadmin/auth", superadminAuthRoutes)
 app.use("/api/superadmin/notifications", superadminNotificationsRoutes)
+app.use("/api/superadmin/branding", brandingRoutes)
 app.use("/api/invitations", invitationRoutes)
 
 // CSRF protection using csrf-csrf (double-submit cookie pattern)

@@ -178,10 +178,34 @@ export const approveSubmission = async (req, res) => {
     if (section === 'programs') {
       
       try {
+        // Generate slug from title
+        const slug = data.title
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+          .replace(/\s+/g, '-') // Replace spaces with hyphens
+          .replace(/-+/g, '-') // Replace multiple hyphens with single
+          .trim('-'); // Remove leading/trailing hyphens
+        
+        // Ensure uniqueness by appending counter if needed
+        let finalSlug = slug;
+        let counter = 1;
+        while (true) {
+          const [existingSlug] = await db.execute(
+            'SELECT id FROM programs_projects WHERE slug = ?',
+            [finalSlug]
+          );
+          
+          if (existingSlug.length === 0) {
+            break;
+          }
+          finalSlug = `${slug}-${counter}`;
+          counter++;
+        }
+
         // Insert new program into programs_projects table
         const [result] = await db.execute(
-          `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             orgId,
             data.title,
@@ -190,7 +214,8 @@ export const approveSubmission = async (req, res) => {
             data.status,
             data.image,
             data.event_start_date || null,
-            data.event_end_date || null
+            data.event_end_date || null,
+            finalSlug
           ]
         );
         
@@ -432,9 +457,33 @@ export const bulkApproveSubmissions = async (req, res) => {
         }
 
         if (section === 'programs') {
+          // Generate slug from title
+          const slug = data.title
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+            .replace(/\s+/g, '-') // Replace spaces with hyphens
+            .replace(/-+/g, '-') // Replace multiple hyphens with single
+            .trim('-'); // Remove leading/trailing hyphens
+          
+          // Ensure uniqueness by appending counter if needed
+          let finalSlug = slug;
+          let counter = 1;
+          while (true) {
+            const [existingSlug] = await db.execute(
+              'SELECT id FROM programs_projects WHERE slug = ?',
+              [finalSlug]
+            );
+            
+            if (existingSlug.length === 0) {
+              break;
+            }
+            finalSlug = `${slug}-${counter}`;
+            counter++;
+          }
+
           const [result] = await db.execute(
-            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               orgId,
               data.title,
@@ -443,7 +492,8 @@ export const bulkApproveSubmissions = async (req, res) => {
               data.status,
               data.image,
               data.event_start_date || null,
-              data.event_end_date || null
+              data.event_end_date || null,
+              finalSlug
             ]
           );
           

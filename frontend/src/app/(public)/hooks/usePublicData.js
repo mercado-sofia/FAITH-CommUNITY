@@ -169,9 +169,35 @@ export const usePublicFAQs = () => {
 
 // Custom hook for approved upcoming programs (for apply form)
 export const usePublicApprovedPrograms = () => {
+  // Custom fetcher with authentication
+  const authenticatedFetcher = async (url) => {
+    try {
+      const userToken = localStorage.getItem('userToken');
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(userToken && { 'Authorization': `Bearer ${userToken}` }),
+        },
+      });
+
+      if (!response.ok) {
+        const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
+        logger.apiError(url, error, { status: response.status });
+        throw error;
+      }
+
+      return response.json();
+    } catch (error) {
+      logger.apiError(url, error);
+      throw error;
+    }
+  };
+
   const { data, error, isLoading } = useSWR(
     `${API_BASE_URL}/api/programs/approved/upcoming`,
-    fetcher,
+    authenticatedFetcher,
     {
       revalidateOnFocus: false,
       dedupingInterval: 300000, // Cache for 5 minutes
@@ -183,7 +209,7 @@ export const usePublicApprovedPrograms = () => {
   );
 
   return {
-    programs: Array.isArray(data) ? data : [],
+    programs: Array.isArray(data?.data) ? data.data : [],
     isLoading,
     error,
   };

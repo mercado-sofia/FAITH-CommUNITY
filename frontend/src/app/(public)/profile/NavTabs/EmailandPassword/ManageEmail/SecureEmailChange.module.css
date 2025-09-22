@@ -1,77 +1,4 @@
-/* Secure Email Change Styles */
-.emailSection {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
-}
-
-.sectionHeader {
-  margin-bottom: 20px;
-}
-
-.sectionHeader h2 {
-  color: #1A685B;
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0;
-}
-
-.emailContent {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.infoItem {
-  display: flex;
-  align-items: center;
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-}
-
-.infoContent label {
-  display: block;
-  font-size: 13px;
-  font-weight: 500;
-  color: #6b7280;
-  margin-bottom: 4px;
-}
-
-.infoContent p {
-  margin: 0;
-  font-size: 14px;
-  color: #1f2937;
-  font-weight: 500;
-}
-
-.actionButtons {
-  display: flex;
-  gap: 12px;
-}
-
-.changeEmailButton {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  background: linear-gradient(135deg, #1A685B 0%, #2D8F7F 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.changeEmailButton:hover {
-  box-shadow: 0 4px 12px rgba(26, 104, 91, 0.3);
-}
-
+/* Secure Email Change Modal Styles */
 /* Modal Styles */
 .modalOverlay {
   position: fixed !important;
@@ -427,8 +354,6 @@
   transform: none;
   box-shadow: none;
 }
-
-/* Modal Open Body Class */
 
 /* Responsive Design */
 @media (max-width: 640px) {

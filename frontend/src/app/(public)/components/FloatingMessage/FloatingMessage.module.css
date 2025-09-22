@@ -105,6 +105,10 @@
   color: #999;
   font-weight: 500;
   transition: border-color 0.2s ease, color 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .dropdownIcon {
@@ -137,6 +141,10 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   scrollbar-width: thin !important;
   scrollbar-color: #1ab097 transparent !important;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 /* Webkit scrollbar styling for Chrome/Safari/Edge - Override global styles */

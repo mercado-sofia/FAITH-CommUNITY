@@ -144,8 +144,8 @@ export const formatDateRange = (startDate, endDate) => {
       // Consecutive days - Range date format (continuous)
       return `${formatDateShort(startDate)} - ${formatDateShort(endDate)}`;
     } else {
-      // Multiple separate dates - show all dates with bullet separator
-      return `${formatDateShort(startDate)} • ${formatDateShort(endDate)}`;
+      // Multiple separate dates - use "and" for two dates
+      return `${formatDateShort(startDate)} and ${formatDateShort(endDate)}`;
     }
   } catch (error) {
     logger.error('Error in formatDateRange', error, { startDate, endDate });
@@ -184,8 +184,8 @@ export const formatProgramDate = (startDate, endDate) => {
       // Consecutive days - Range date format (continuous)
       return `${formatDateShort(startDate)} - ${formatDateShort(endDate)}`;
     } else {
-      // Multiple separate dates - show all dates with bullet separator
-      return `${formatDateShort(startDate)} • ${formatDateShort(endDate)}`;
+      // Multiple separate dates - use "and" for two dates
+      return `${formatDateShort(startDate)} and ${formatDateShort(endDate)}`;
     }
   } catch (error) {
     logger.error('Error in formatProgramDate', error, { startDate, endDate });
@@ -211,9 +211,12 @@ export const formatProgramDates = (program) => {
       if (program.multiple_dates.length === 1) {
         return formatDateShort(program.multiple_dates[0]);
       } else if (program.multiple_dates.length === 2) {
-        return `${formatDateShort(program.multiple_dates[0])} & ${formatDateShort(program.multiple_dates[1])}`;
+        return `${formatDateShort(program.multiple_dates[0])} and ${formatDateShort(program.multiple_dates[1])}`;
       } else {
-        return `${formatDateShort(program.multiple_dates[0])} +${program.multiple_dates.length - 1} more dates`;
+        // For 3+ dates: use commas and "and" before the last date
+        const formattedDates = program.multiple_dates.map(date => formatDateShort(date));
+        const lastDate = formattedDates.pop();
+        return `${formattedDates.join(', ')}, and ${lastDate}`;
       }
     }
     

@@ -79,6 +79,9 @@ export default function Navbar() {
 
   const handleConfirmLogout = async () => {
     try {
+      // Show logout loader
+      window.dispatchEvent(new CustomEvent('showLogoutLoader'));
+      
       const userToken = localStorage.getItem('userToken');
 
       // Best-effort API call
@@ -108,13 +111,19 @@ export default function Navbar() {
       document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
 
       setShowLogoutConfirm(false);
-      // Force immediate page refresh to ensure clean state
-      window.location.reload();
+      
+      // Smooth redirect to homepage
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('hideLogoutLoader'));
+        router.push('/');
+      }, 1000); // Give time for cleanup and smooth transition
+      
     } catch (e) {
       console.error('Logout error:', e);
       setShowLogoutConfirm(false);
-      // Force immediate page refresh even on error
-      window.location.reload();
+      window.dispatchEvent(new CustomEvent('hideLogoutLoader'));
+      // Fallback to homepage redirect even on error
+      router.push('/');
     }
   };
 

@@ -1,0 +1,237 @@
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.modal {
+  background-color: white;
+  border-radius: 16px;
+  width: 100%;
+  padding: 2rem 2rem 1.8rem;
+  max-width: 400px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.2s ease-in-out;
+  overflow: hidden;
+  position: relative;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1.5rem;
+}
+
+.modalTitle {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  font-family: var(--font-inter);
+  color: #000;
+}
+
+.warningIconContainer {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.deleteIconContainer {
+  background-color: #FEE2E2;
+  color: #DC2626;
+}
+
+.cancelIconContainer {
+  background-color: #FEF3C7;
+  color: #D97706;
+}
+
+.completeIconContainer {
+  background-color: #D1FAE5;
+  color: #059669;
+}
+
+.confirmDeleteMessage {
+  margin-bottom: 2.2rem;
+}
+
+.confirmDeleteMessage p {
+  margin: 0;
+  color: #6B7280;
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+  padding: 0 0.5rem;
+}
+
+.confirmDeleteButtons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.cancelBtn {
+  flex: 1;
+  background-color: #F9FAFB;
+  color: #374151;
+  border: 1px solid #E5E7EB;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.cancelBtn:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.cancelBtn:disabled {
+  background-color: #F3F4F6;
+  border-color: #E5E7EB;
+  color: #9CA3AF;
+  cursor: not-allowed;
+}
+
+.deleteBtn {
+  flex: 1;
+  background-color: #DC2626;
+  color: white;
+  border: 1px solid #DC2626;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  gap: 8px;
+}
+
+.deleteBtn:hover {
+  background-color: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.deleteBtn:disabled {
+  background-color: #9CA3AF;
+  border-color: #9CA3AF;
+  cursor: not-allowed;
+}
+
+.cancelActionBtn {
+  flex: 1;
+  background-color: #D97706;
+  color: white;
+  border: 1px solid #D97706;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  gap: 8px;
+}
+
+.cancelActionBtn:hover {
+  background-color: #B45309;
+  border-color: #B45309;
+}
+
+.cancelActionBtn:disabled {
+  background-color: #9CA3AF;
+  border-color: #9CA3AF;
+  cursor: not-allowed;
+}
+
+.completeActionBtn {
+  flex: 1;
+  background-color: #059669;
+  color: white;
+  border: 1px solid #059669;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  gap: 8px;
+}
+
+.completeActionBtn:hover {
+  background-color: #047857;
+  border-color: #047857;
+}
+
+.completeActionBtn:disabled {
+  background-color: #9CA3AF;
+  border-color: #9CA3AF;
+  cursor: not-allowed;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .modal {
+    max-width: 90%;
+    margin: 1rem;
+  }
+  
+  .confirmDeleteButtons {
+    flex-direction: column;
+  }
+  
+  .cancelBtn,
+  .deleteBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1670,3 +1670,129 @@ export const cancelApplication = async (req, res) => {
     });
   }
 };
+
+// Delete user application
+export const deleteApplication = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Application ID is required'
+      });
+    }
+
+    // First, verify the application belongs to the user
+    const [existingApp] = await db.query(
+      'SELECT id, status FROM volunteers WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
+
+    if (existingApp.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found or access denied'
+      });
+    }
+
+    const application = existingApp[0];
+
+    // Handle different statuses appropriately
+    if (application.status === 'Approved') {
+      // For approved applications, change status to 'Cancelled' instead of deleting
+      await db.query(
+        'UPDATE volunteers SET status = ?, updated_at = NOW() WHERE id = ? AND user_id = ?',
+        ['Cancelled', id, userId]
+      );
+      
+      res.json({
+        success: true,
+        message: 'Application cancelled successfully'
+      });
+      return;
+    }
+
+    if (application.status === 'Completed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete completed applications. They are kept for historical records.'
+      });
+    }
+
+    // Delete the application (for pending, cancelled, or declined applications)
+    await db.query(
+      'DELETE FROM volunteers WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
+
+    res.json({
+      success: true,
+      message: 'Application deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting application:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete application',
+      error: error.message
+    });
+  }
+};
+
+// Complete user application
+export const completeApplication = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Application ID is required'
+      });
+    }
+
+    // First, verify the application belongs to the user
+    const [existingApp] = await db.query(
+      'SELECT id, status FROM volunteers WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
+
+    if (existingApp.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found or access denied'
+      });
+    }
+
+    const application = existingApp[0];
+
+    // Check if application can be marked as completed (only approved applications)
+    if (application.status !== 'Approved') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only approved applications can be marked as completed'
+      });
+    }
+
+    // Update the application status to 'Completed'
+    await db.query(
+      'UPDATE volunteers SET status = ?, updated_at = NOW() WHERE id = ? AND user_id = ?',
+      ['Completed', id, userId]
+    );
+
+    res.json({
+      success: true,
+      message: 'Application marked as completed successfully'
+    });
+  } catch (error) {
+    console.error('Error completing application:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to mark application as completed',
+      error: error.message
+    });
+  }
+};

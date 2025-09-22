@@ -100,18 +100,6 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
   const [fieldErrors, setFieldErrors] = useState({});
   const [validationErrors, setValidationErrors] = useState({});
 
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   const showFieldError = (fieldName, message) => {
     setFieldErrors(prev => ({
       ...prev,

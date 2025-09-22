@@ -14,7 +14,6 @@ import styles from './apply.module.css';
 export default function ApplyPage() {
   const [selectedProgramId, setSelectedProgramId] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userData, setUserData] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const searchParams = useSearchParams();
   
@@ -44,11 +43,9 @@ export default function ApplyPage() {
     
     if (token && storedUserData) {
       try {
-        const user = JSON.parse(storedUserData);
-        setUserData(user);
+        JSON.parse(storedUserData);
         setIsLoggedIn(true);
       } catch (error) {
-        console.error('Error parsing user data:', error);
         localStorage.removeItem('userToken');
         localStorage.removeItem('userData');
         setShowLoginModal(true);

@@ -34,11 +34,6 @@
   flex: 1;
 }
 
-.selectValue:empty::before {
-  content: attr(data-placeholder);
-  color: #6c757d;
-}
-
 .selectArrow {
   color: #374151;
   font-size: 0.75rem;

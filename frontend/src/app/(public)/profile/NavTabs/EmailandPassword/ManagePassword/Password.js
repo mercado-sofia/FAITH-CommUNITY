@@ -50,8 +50,7 @@ const PasswordRequirements = ({ password }) => {
   );
 };
 
-export default function Password({ userData, setUserData }) {
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
+export default function Password({ userData, setUserData, showModal, setShowModal }) {
   
   // Password change states
   const [passwordData, setPasswordData] = useState({
@@ -164,7 +163,7 @@ export default function Password({ userData, setUserData }) {
           confirmPassword: ''
         });
         setTimeout(() => {
-          setShowPasswordModal(false);
+          setShowModal(false);
           setPasswordSuccess('');
           document.body.classList.remove('modalOpen');
         }, 2000);
@@ -203,7 +202,7 @@ export default function Password({ userData, setUserData }) {
   };
 
   const closePasswordModal = () => {
-    setShowPasswordModal(false);
+    setShowModal(false);
     setPasswordData({
       currentPassword: '',
       newPassword: '',
@@ -224,37 +223,9 @@ export default function Password({ userData, setUserData }) {
   };
 
   return (
-    <div className={styles.passwordSection}>
-      <div className={styles.sectionHeader}>
-        <h2>Password</h2>
-      </div>
-
-      <div className={styles.passwordContent}>
-        {/* Current Password Display */}
-        <div className={styles.infoItem}>
-          <div className={styles.infoContent}>
-            <label>Password Status</label>
-            <p>For security, we recommend changing your password regularly.</p>
-          </div>
-        </div>
-
-        {/* Action Button */}
-        <div className={styles.actionButtons}>
-          <button 
-            onClick={() => {
-              setShowPasswordModal(true);
-              document.body.classList.add('modalOpen');
-            }} 
-            className={styles.changePasswordButton}
-          >
-            <FaLock />
-            <span>Change Password</span>
-          </button>
-        </div>
-      </div>
-
+    <>
       {/* Change Password Modal */}
-      {showPasswordModal && createPortal(
+      {showModal && createPortal(
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
             <div className={styles.modalHeader}>
@@ -379,6 +350,6 @@ export default function Password({ userData, setUserData }) {
         </div>,
         document.body
       )}
-    </div>
+    </>
   );
 }

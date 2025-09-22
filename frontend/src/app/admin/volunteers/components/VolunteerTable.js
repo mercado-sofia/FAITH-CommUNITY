@@ -159,7 +159,10 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
     if (selectedVolunteers.length === 0 || !bulkAction) return
     
     const newStatus = bulkAction === 'approve' ? 'Approved' : 'Declined'
-    selectedVolunteers.forEach(volunteerId => {
+    
+    // Only process volunteers with actionable statuses (exclude Cancelled and Completed)
+    const actionableVolunteerIds = actionableSelectedVolunteers.map(volunteer => volunteer.id)
+    actionableVolunteerIds.forEach(volunteerId => {
       onStatusUpdate(volunteerId, newStatus)
     })
     
@@ -223,13 +226,22 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
   )
   const selectedStatuses = selectedVolunteersData.map(volunteer => volunteer.status)
 
+  // Define statuses that can be approved or declined (exclude Cancelled and Completed)
+  const actionableStatuses = ['Pending', 'Approved', 'Declined']
+  
+  // Filter selected volunteers to only include those with actionable statuses
+  const actionableSelectedVolunteers = selectedVolunteersData.filter(volunteer => 
+    actionableStatuses.includes(volunteer.status)
+  )
+  const actionableSelectedStatuses = actionableSelectedVolunteers.map(volunteer => volunteer.status)
+
   // Smart button state logic - Only disable when action would be meaningless
-  const isApproveDisabled = selectedStatuses.length > 0 && selectedStatuses.every(status => status === 'Approved')
-  const isDeclineDisabled = selectedStatuses.length > 0 && selectedStatuses.every(status => status === 'Declined')
+  const isApproveDisabled = actionableSelectedStatuses.length === 0 || actionableSelectedStatuses.every(status => status === 'Approved')
+  const isDeclineDisabled = actionableSelectedStatuses.length === 0 || actionableSelectedStatuses.every(status => status === 'Declined')
 
   // Count only volunteers that will actually be affected by the action
-  const volunteersToApprove = selectedStatuses.filter(status => status !== 'Approved').length
-  const volunteersToDecline = selectedStatuses.filter(status => status !== 'Declined').length
+  const volunteersToApprove = actionableSelectedStatuses.filter(status => status !== 'Approved').length
+  const volunteersToDecline = actionableSelectedStatuses.filter(status => status !== 'Declined').length
 
   return (
     <>
@@ -363,13 +375,13 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
                             }}
                           >
                             <li onClick={() => handleAction(volunteer, "view")}>View Details</li>
-                            {volunteer.status !== "Approved" && (
+                            {volunteer.status !== "Approved" && volunteer.status !== "Cancelled" && volunteer.status !== "Completed" && (
                               <li onClick={() => handleAction(volunteer, "approve")}>
                                 Approve
                               </li>
                             )}
-                            {volunteer.status !== "Declined" && (
-                              <li onClick={() => handleAction(volunteer, "reject")}>
+                            {volunteer.status !== "Declined" && volunteer.status !== "Cancelled" && volunteer.status !== "Completed" && (
+                              <li onClick={() => handleAction(volunteer, "decline")}>
                                 Decline
                               </li>
                             )}
@@ -408,7 +420,7 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
         />
       )}
 
-      {(modalType === "approve" || modalType === "reject") && selectedVolunteer && (
+      {(modalType === "approve" || modalType === "decline") && selectedVolunteer && (
         <div className={styles.modalOverlay}>
           <div className={styles.confirmModal}>
             <button 
@@ -424,7 +436,7 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
                   className={modalType === "approve" ? styles.approveHeading : styles.declineHeading}
                   style={{ color: modalType === "approve" ? "#10b981" : "#d50808" }}
                 >
-                  {modalType === "approve" ? "Approve" : "Reject"}
+                  {modalType === "approve" ? "Approve" : "Decline"}
                 </span> Application
               </h2>
               <p>
@@ -443,7 +455,7 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
                 className={modalType === 'approve' ? styles.modalApproveBtn : styles.modalDeclineBtn}
                 onClick={handleConfirmAction}
               >
-                {modalType === 'approve' ? 'Approve' : 'Reject'}
+                {modalType === 'approve' ? 'Approve' : 'Decline'}
               </button>
             </div>
           </div>
@@ -474,6 +486,11 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
                 Are you sure you want to {bulkAction} <strong>
                   {bulkAction === 'approve' ? volunteersToApprove : volunteersToDecline}
                 </strong> selected volunteer{(bulkAction === 'approve' ? volunteersToApprove : volunteersToDecline) !== 1 ? 's' : ''}?
+                {selectedVolunteers.length > actionableSelectedVolunteers.length && (
+                  <span style={{ display: 'block', marginTop: '8px', fontSize: '0.9em', color: '#666' }}>
+                    Note: {selectedVolunteers.length - actionableSelectedVolunteers.length} volunteer{selectedVolunteers.length - actionableSelectedVolunteers.length !== 1 ? 's' : ''} with Cancelled or Completed status will be skipped.
+                  </span>
+                )}
               </p>
             </div>
 

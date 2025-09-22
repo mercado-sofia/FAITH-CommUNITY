@@ -130,28 +130,28 @@ export default function VolunteerDetailModal({ app, onClose, onUpdate }) {
 
         <div className={styles.actions}>
                      <button
-             className={`${styles.actionButton} ${styles.decline} ${app.status !== 'Pending' ? styles.disabled : ''}`}
+             className={`${styles.actionButton} ${styles.decline} ${!['Pending', 'Approved', 'Declined'].includes(app.status) ? styles.disabled : ''}`}
              onClick={(e) => {
                e.preventDefault()
-               if (app.status === 'Pending') {
+               if (['Pending', 'Approved', 'Declined'].includes(app.status)) {
                  onUpdate(app.id, 'Declined')
                  onClose() // Auto close modal after action
                }
              }}
-             disabled={app.status !== 'Pending'}
+             disabled={!['Pending', 'Approved', 'Declined'].includes(app.status)}
            >
              Decline
            </button>
            <button
-             className={`${styles.actionButton} ${styles.accept} ${app.status !== 'Pending' ? styles.disabled : ''}`}
+             className={`${styles.actionButton} ${styles.accept} ${!['Pending', 'Approved', 'Declined'].includes(app.status) ? styles.disabled : ''}`}
              onClick={(e) => {
                e.preventDefault()
-               if (app.status === 'Pending') {
+               if (['Pending', 'Approved', 'Declined'].includes(app.status)) {
                  onUpdate(app.id, 'Approved')
                  onClose() // Auto close modal after action
                }
              }}
-             disabled={app.status !== 'Pending'}
+             disabled={!['Pending', 'Approved', 'Declined'].includes(app.status)}
            >
              Accept
            </button>

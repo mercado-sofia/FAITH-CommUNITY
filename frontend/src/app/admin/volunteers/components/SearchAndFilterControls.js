@@ -27,7 +27,7 @@ export default function SearchAndFilterControls({
   const [showDropdown, setShowDropdown] = useState(null)
   const [localQuery, setLocalQuery] = useState(searchQuery || '')
   const sortOptions = ['Latest', 'Oldest']
-  const statusOptions = ['All status', 'Pending', 'Approved', 'Declined']
+  const statusOptions = ['All status', 'Pending', 'Approved', 'Declined', 'Cancelled']
 
   const toggleDropdown = (key) => {
     setShowDropdown((prev) => (prev === key ? null : key))

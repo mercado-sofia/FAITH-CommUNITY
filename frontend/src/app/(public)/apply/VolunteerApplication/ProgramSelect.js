@@ -120,7 +120,6 @@ const ProgramSelect = forwardRef(function ProgramSelect(
                   >
                     <div>
                       <strong>{option.name}</strong>
-                      <small className={styles.orgName}> - {option.org}</small>
                     </div>
                   </li>
                 ))

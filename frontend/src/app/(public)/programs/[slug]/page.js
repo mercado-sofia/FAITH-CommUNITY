@@ -7,7 +7,6 @@ import Link from 'next/link';
 import styles from './programDetails.module.css';
 import Loader from '../../../../components/Loader';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
-import { formatDateLong } from '@/utils/dateUtils';
 import OtherProgramsCarousel from '../components/OtherProgramsCarousel/OtherProgramsCarousel';
 import { usePublicPageLoader } from '../../hooks/usePublicPageLoader';
 
@@ -47,11 +46,12 @@ export default function ProgramDetailsPage() {
   const [error, setError] = useState(null);
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
   const [isFetchingProgram, setIsFetchingProgram] = useState(false);
+  const [userApplications, setUserApplications] = useState([]);
   
   // Use centralized page loader hook
   const { loading: pageLoading, pageReady } = usePublicPageLoader(`program-${slug}`);
 
-  // Check user authentication status
+  // Check user authentication status and fetch applications
   useEffect(() => {
     const token = localStorage.getItem('userToken');
     const storedUserData = localStorage.getItem('userData');
@@ -60,12 +60,42 @@ export default function ProgramDetailsPage() {
       try {
         JSON.parse(storedUserData);
         setIsLoggedIn(true);
+        fetchUserApplications();
       } catch (error) {
         localStorage.removeItem('userToken');
         localStorage.removeItem('userData');
       }
     }
   }, []);
+
+  // Fetch user applications
+  const fetchUserApplications = async () => {
+    try {
+      const token = localStorage.getItem('userToken');
+      
+      if (!token) {
+        setUserApplications([]);
+        return;
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/users/applications`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserApplications(data.applications || []);
+      } else {
+        setUserApplications([]);
+      }
+    } catch (error) {
+      console.error('Error fetching user applications:', error);
+      setUserApplications([]);
+    }
+  };
 
   // Fetch program data by slug or ID - only after page is ready
   useEffect(() => {
@@ -111,10 +141,15 @@ export default function ProgramDetailsPage() {
         
         // Fetch other programs from the same organization
         if (programData.organization_id) {
-          const otherResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/programs/org/${programData.organization_id}/other/${programData.id}`);
-          if (otherResponse.ok) {
-            const otherResult = await otherResponse.json();
-            setOtherPrograms(otherResult.data);
+          try {
+            const otherResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/programs/org/${programData.organization_id}/other/${programData.id}`);
+            if (otherResponse.ok) {
+              const otherResult = await otherResponse.json();
+              setOtherPrograms(otherResult.data);
+            }
+          } catch (err) {
+            // Silently fail for other programs - not critical
+            console.warn('Failed to fetch other programs:', err);
           }
         }
       } catch (err) {
@@ -133,6 +168,14 @@ export default function ProgramDetailsPage() {
 
   const handleApplyClick = () => {
     if (program && program.status === 'Upcoming') {
+      // Check if user has already applied
+      const hasApplied = isLoggedIn && userApplications.some(app => app.programId === program.id);
+      
+      if (hasApplied) {
+        // Do nothing - button is disabled
+        return;
+      }
+      
       if (!isLoggedIn) {
         // Show login modal for non-authenticated users
         window.dispatchEvent(new CustomEvent('showLoginModal'));
@@ -197,8 +240,20 @@ export default function ProgramDetailsPage() {
       isDisabled: true
     };
 
+    // Check if user has already applied to this program
+    const hasApplied = isLoggedIn && userApplications.some(app => app.programId === program.id);
+
     switch (program.status) {
       case 'Upcoming':
+        if (hasApplied) {
+          return {
+            title: 'Application Submitted',
+            text: 'You have already applied to this program. Your application is being reviewed and you will be notified of the status soon.',
+            buttonText: 'Already Applied',
+            icon: '📝',
+            isDisabled: true
+          };
+        }
         return {
           title: 'Ready to Join?',
           text: 'Take the first step towards making a positive impact in your community. Apply now and become part of this meaningful program.',
@@ -361,9 +416,9 @@ export default function ProgramDetailsPage() {
                           />
                         )}
                         <div className={styles.orgDetails}>
-                          <div className={styles.orgName}>{program.orgName || program.orgID || program.organization_name || program.organization_acronym}</div>
-                          {(program.orgID || program.organization_acronym) && (program.orgName || program.organization_name) && (
-                            <div className={styles.orgId}>{program.orgID || program.organization_acronym}</div>
+                          <div className={styles.orgName}>{program.organization_name || program.organization_acronym}</div>
+                          {program.organization_acronym && program.organization_name && (
+                            <div className={styles.orgId}>{program.organization_acronym}</div>
                           )}
                         </div>
                       </div>
@@ -388,7 +443,13 @@ export default function ProgramDetailsPage() {
                 </p>
                 <button 
                   onClick={handleApplyClick}
-                  className={`${styles.applyButton} ${applicationContent.isDisabled ? styles.applyButtonDisabled : ''}`}
+                  className={`${styles.applyButton} ${
+                    applicationContent.isDisabled 
+                      ? applicationContent.buttonText === 'Already Applied' 
+                        ? styles.applyButtonAlreadyApplied 
+                        : styles.applyButtonDisabled 
+                      : ''
+                  }`}
                   disabled={applicationContent.isDisabled}
                 >
                   {applicationContent.buttonText}
@@ -400,7 +461,7 @@ export default function ProgramDetailsPage() {
             {otherPrograms.length > 0 && (
               <OtherProgramsCarousel 
                 programs={otherPrograms}
-                organizationName={program.organization_name || program.organization_acronym}
+                organizationName={program.organization_name}
               />
             )}
           </div>

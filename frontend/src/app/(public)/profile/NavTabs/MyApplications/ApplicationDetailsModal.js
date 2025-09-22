@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
 import { formatDateLong, formatProgramDate } from '@/utils/dateUtils';
 import styles from './ApplicationDetailsModal.module.css';
+import sharedStyles from './MyApplications.module.css';
 
 export default function ApplicationDetailsModal({ isOpen, onClose, applicationId }) {
   const [application, setApplication] = useState(null);
@@ -20,16 +21,12 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
     setError(null);
     
     try {
-      console.log('Fetching application details for ID:', applicationId);
       const response = await fetch(getApiUrl(`/api/users/applications/${applicationId}`), {
         headers: getAuthHeaders()
       });
-
-      console.log('Response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Application data received:', data);
         setApplication(data.application);
       } else {
         const errorData = await response.json();
@@ -96,7 +93,12 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
       case 'approved':
         return 'Approved';
       case 'rejected':
-        return 'Rejected';
+      case 'declined':
+        return 'Declined';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'completed':
+        return 'Completed';
       case 'pending':
       default:
         return 'Pending Review';
@@ -118,7 +120,7 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
         <div className={styles.modalContent}>
           {isLoading ? (
             <div className={styles.loadingState}>
-              <div className={styles.spinner}></div>
+              <div className={sharedStyles.spinner}></div>
               <p>Loading application details...</p>
             </div>
           ) : error ? (
@@ -137,7 +139,7 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
                 <div className={styles.programTitleSection}>
                   <h3 className={styles.programTitle}>{application.programName}</h3>
                   <div className={styles.statusContainer}>
-                    <span className={`${styles.statusBadge} ${styles[`status${application.status?.charAt(0).toUpperCase() + application.status?.slice(1)}`]}`}>
+                    <span className={`${sharedStyles.statusBadge} ${sharedStyles[`status${application.status?.charAt(0).toUpperCase() + application.status?.slice(1)}`]}`}>
                       {getStatusText(application.status)}
                     </span>
                   </div>
@@ -214,7 +216,8 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
                         <div className={styles.timelineContent}>
                           <span className={styles.timelineLabel}>
                             {application.status === 'approved' ? 'Application Approved' : 
-                             application.status === 'rejected' ? 'Application Rejected' : 
+                             application.status === 'rejected' || application.status === 'declined' ? 'Application Declined' : 
+                             application.status === 'completed' ? 'Application Completed' :
                              'Application Cancelled'}
                           </span>
                           <span className={styles.timelineDate}>

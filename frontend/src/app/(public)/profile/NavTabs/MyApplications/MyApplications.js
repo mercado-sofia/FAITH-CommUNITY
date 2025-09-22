@@ -10,7 +10,7 @@ import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
 import { formatDateShort, formatProgramDate } from '@/utils/dateUtils';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import ApplicationDetailsModal from './ApplicationDetailsModal';
-import ActionModal from './ActionModal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import styles from './MyApplications.module.css';
 
 export default function MyApplications() {
@@ -28,7 +28,9 @@ export default function MyApplications() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [applicationToDelete, setApplicationToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [actionModalType, setActionModalType] = useState(null); // 'cancel' or 'delete'
+  const [completeModalOpen, setCompleteModalOpen] = useState(false);
+  const [applicationToComplete, setApplicationToComplete] = useState(null);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   useEffect(() => {
     fetchApplications();
@@ -65,10 +67,12 @@ export default function MyApplications() {
     switch (status.toLowerCase()) {
       case 'approved':
         return 'Approved';
-      case 'rejected':
-        return 'Rejected';
+      case 'declined':
+        return 'Declined';
       case 'cancelled':
         return 'Cancelled';
+      case 'completed':
+        return 'Completed';
       case 'pending':
       default:
         return 'Pending Review';
@@ -80,17 +84,26 @@ export default function MyApplications() {
     return lowerStatus === 'pending' || lowerStatus === 'approved';
   };
 
+  const canCompleteApplication = (status) => {
+    const lowerStatus = status.toLowerCase();
+    return lowerStatus === 'approved';
+  };
+
+  const canDeleteApplication = (status) => {
+    const lowerStatus = status.toLowerCase();
+    return lowerStatus !== 'completed'; // Completed applications cannot be deleted
+  };
+
 
   const filteredApplications = applications.filter(app => {
     if (filter === 'all') return true;
-    return app.status.toLowerCase() === filter;
+    return app.status.toLowerCase() === filter.toLowerCase();
   });
 
   const handleViewDetails = (applicationId) => {
     if (isViewingDetails) return; // Prevent multiple clicks
     
     try {
-      console.log('Opening details for application ID:', applicationId);
       setIsViewingDetails(true);
       setSelectedApplicationId(applicationId);
       setIsModalOpen(true);
@@ -112,7 +125,6 @@ export default function MyApplications() {
 
   const handleCancelApplication = (application) => {
     setApplicationToCancel(application);
-    setActionModalType('cancel');
     setCancelModalOpen(true);
   };
 
@@ -120,7 +132,6 @@ export default function MyApplications() {
     setCancelModalOpen(false);
     setApplicationToCancel(null);
     setIsCancelling(false);
-    setActionModalType(null);
   };
 
   const handleConfirmCancel = async () => {
@@ -171,8 +182,13 @@ export default function MyApplications() {
 
   const handleDeleteApplication = (application) => {
     setApplicationToDelete(application);
-    setActionModalType('delete');
     setDeleteModalOpen(true);
+    setActiveDropdown(null);
+  };
+
+  const handleCompleteApplication = (application) => {
+    setApplicationToComplete(application);
+    setCompleteModalOpen(true);
     setActiveDropdown(null);
   };
 
@@ -180,7 +196,12 @@ export default function MyApplications() {
     setDeleteModalOpen(false);
     setApplicationToDelete(null);
     setIsDeleting(false);
-    setActionModalType(null);
+  };
+
+  const handleCloseCompleteModal = () => {
+    setCompleteModalOpen(false);
+    setApplicationToComplete(null);
+    setIsCompleting(false);
   };
 
   const handleConfirmDelete = async () => {
@@ -198,15 +219,32 @@ export default function MyApplications() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Remove the application from the local state
-        setApplications(prevApplications => 
-          prevApplications.filter(app => app.id !== applicationToDelete.id)
-        );
-        
-        setFeedbackMessage({
-          type: 'success',
-          text: 'Application deleted successfully'
-        });
+        // Handle different responses based on application status
+        if (applicationToDelete.status.toLowerCase() === 'approved') {
+          // For approved applications, update status to cancelled instead of removing
+          setApplications(prevApplications => 
+            prevApplications.map(app => 
+              app.id === applicationToDelete.id 
+                ? { ...app, status: 'cancelled' }
+                : app
+            )
+          );
+          
+          setFeedbackMessage({
+            type: 'success',
+            text: 'Application cancelled successfully'
+          });
+        } else {
+          // For other applications, remove from the list
+          setApplications(prevApplications => 
+            prevApplications.filter(app => app.id !== applicationToDelete.id)
+          );
+          
+          setFeedbackMessage({
+            type: 'success',
+            text: 'Application deleted successfully'
+          });
+        }
         
         handleCloseDeleteModal();
       } else {
@@ -222,6 +260,52 @@ export default function MyApplications() {
       });
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleConfirmComplete = async () => {
+    if (!applicationToComplete) return;
+
+    setIsCompleting(true);
+    setFeedbackMessage(null);
+
+    try {
+      const response = await fetch(getApiUrl(`/api/users/applications/${applicationToComplete.id}/complete`), {
+        method: 'PUT',
+        headers: getAuthHeaders()
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Update the application status in the local state
+        setApplications(prevApplications => 
+          prevApplications.map(app => 
+            app.id === applicationToComplete.id 
+              ? { ...app, status: 'completed' }
+              : app
+          )
+        );
+        
+        setFeedbackMessage({
+          type: 'success',
+          text: 'Application marked as completed successfully'
+        });
+        
+        handleCloseCompleteModal();
+      } else {
+        setFeedbackMessage({
+          type: 'error',
+          text: data.message || 'Failed to mark application as completed'
+        });
+      }
+    } catch (error) {
+      setFeedbackMessage({
+        type: 'error',
+        text: 'Network error. Please try again.'
+      });
+    } finally {
+      setIsCompleting(false);
     }
   };
 
@@ -283,7 +367,7 @@ export default function MyApplications() {
           className={`${styles.filterTab} ${filter === 'all' ? styles.active : ''}`}
           onClick={() => setFilter('all')}
         >
-          All Applications ({applications.length})
+          All ({applications.length})
         </button>
         <button
           className={`${styles.filterTab} ${filter === 'pending' ? styles.active : ''}`}
@@ -298,10 +382,22 @@ export default function MyApplications() {
           Approved ({applications.filter(app => app.status.toLowerCase() === 'approved').length})
         </button>
         <button
-          className={`${styles.filterTab} ${filter === 'rejected' ? styles.active : ''}`}
-          onClick={() => setFilter('rejected')}
+          className={`${styles.filterTab} ${filter === 'declined' ? styles.active : ''}`}
+          onClick={() => setFilter('declined')}
         >
-          Rejected ({applications.filter(app => app.status.toLowerCase() === 'rejected').length})
+          Declined ({applications.filter(app => app.status.toLowerCase() === 'declined').length})
+        </button>
+        <button
+          className={`${styles.filterTab} ${filter === 'cancelled' ? styles.active : ''}`}
+          onClick={() => setFilter('cancelled')}
+        >
+          Cancelled ({applications.filter(app => app.status.toLowerCase() === 'cancelled').length})
+        </button>
+        <button
+          className={`${styles.filterTab} ${filter === 'completed' ? styles.active : ''}`}
+          onClick={() => setFilter('completed')}
+        >
+          Completed ({applications.filter(app => app.status.toLowerCase() === 'completed').length})
         </button>
       </div>
 
@@ -367,15 +463,28 @@ export default function MyApplications() {
                           Cancel Application
                         </button>
                       )}
-                      <button 
-                        className={`${styles.dropdownItem} ${styles.deleteItem}`}
-                        onClick={() => {
-                          handleDeleteApplication(application);
-                          closeDropdown();
-                        }}
-                      >
-                        Delete
-                      </button>
+                      {canCompleteApplication(application.status) && (
+                        <button 
+                          className={styles.dropdownItem}
+                          onClick={() => {
+                            handleCompleteApplication(application);
+                            closeDropdown();
+                          }}
+                        >
+                          Mark as Completed
+                        </button>
+                      )}
+                      {canDeleteApplication(application.status) && (
+                        <button 
+                          className={`${styles.dropdownItem} ${styles.deleteItem}`}
+                          onClick={() => {
+                            handleDeleteApplication(application);
+                            closeDropdown();
+                          }}
+                        >
+                          Delete
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -467,7 +576,7 @@ export default function MyApplications() {
 
                     {/* Status Badge - Bottom Right */}
                     <div className={styles.statusContainer}>
-                      <span className={`${styles.statusBadge} ${styles[`status${application.status.charAt(0).toUpperCase() + application.status.slice(1)}`]}`}>
+                      <span className={`${styles.statusBadge} ${styles[`status${application.status.charAt(0).toUpperCase() + application.status.slice(1).toLowerCase()}`]}`}>
                         {getStatusText(application.status)}
                       </span>
                     </div>
@@ -508,23 +617,40 @@ export default function MyApplications() {
       />
 
       {/* Cancel Confirmation Modal */}
-      <ActionModal
+      <ConfirmationModal
         isOpen={cancelModalOpen}
         onClose={handleCloseCancelModal}
         onConfirm={handleConfirmCancel}
-        modalType="cancel"
-        applicationName={applicationToCancel?.programName}
+        actionType="cancel"
+        itemName={applicationToCancel?.programName}
         isLoading={isCancelling}
       />
 
       {/* Delete Confirmation Modal */}
-      <ActionModal
+      <ConfirmationModal
         isOpen={deleteModalOpen}
         onClose={handleCloseDeleteModal}
         onConfirm={handleConfirmDelete}
-        modalType="delete"
-        applicationName={applicationToDelete?.programName}
+        actionType="delete"
+        itemName={applicationToDelete?.programName}
         isLoading={isDeleting}
+        message={
+          applicationToDelete?.status?.toLowerCase() === 'approved' 
+            ? "Are you sure you want to cancel your approved application? This will change the status to 'Cancelled' and the admin will be notified."
+            : applicationToDelete?.status?.toLowerCase() === 'completed'
+            ? "Completed applications cannot be deleted as they are kept for historical records."
+            : "Are you sure you want to permanently delete your application? This will remove all application data and cannot be undone."
+        }
+      />
+
+      {/* Complete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={completeModalOpen}
+        onClose={handleCloseCompleteModal}
+        onConfirm={handleConfirmComplete}
+        actionType="complete"
+        itemName={applicationToComplete?.programName}
+        isLoading={isCompleting}
       />
     </div>
   );

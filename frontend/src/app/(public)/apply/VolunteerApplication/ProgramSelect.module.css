@@ -56,6 +56,10 @@
   align-items: center;
   justify-content: flex-start;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .dropdownIcon {
@@ -83,6 +87,10 @@
   padding: 0.25rem 0;
   scrollbar-width: thin;
   scrollbar-color: #1A685B transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .dropdownItem {
@@ -93,6 +101,10 @@
   cursor: pointer;
   transition: background 0.2s ease, color 0.2s ease;
   white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .dropdownItem:hover {
@@ -131,6 +143,10 @@
   color: #666;
   text-align: center;
   font-style: italic;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 /* === Error Styling === */

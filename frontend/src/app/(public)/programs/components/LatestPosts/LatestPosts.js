@@ -13,11 +13,6 @@ export default function LatestPosts({ orgID }) {
   // Filter and sort news for this organization (limit to 3 most recent)
   const latestPosts = useMemo(() => {
     if (!news.length || !orgID || !organizations.length) {
-      console.log('LatestPosts Debug - Missing data:', { 
-        newsLength: news.length, 
-        orgID, 
-        organizationsLength: organizations.length 
-      });
       return [];
     }
 
@@ -27,29 +22,15 @@ export default function LatestPosts({ orgID }) {
     );
 
     if (!organization) {
-      console.log('LatestPosts Debug - Organization not found:', { orgID, organizations });
       return [];
     }
-
-    console.log('LatestPosts Debug - Found organization:', organization);
-    console.log('LatestPosts Debug - All news data:', news);
 
     const orgNews = news.filter(item => {
       // Match by numeric organization ID
       const newsOrgId = item.organization_id;
       const match = newsOrgId == organization.id;
-      
-      console.log('LatestPosts Debug - Checking news item:', {
-        newsId: item.id,
-        newsTitle: item.title,
-        newsOrgId,
-        organizationId: organization.id,
-        match
-      });
       return match;
     });
-
-    console.log('LatestPosts Debug - Filtered orgNews:', orgNews);
 
     // Sort by date (newest first) and take only the first 3
     const sortedNews = orgNews
@@ -60,7 +41,6 @@ export default function LatestPosts({ orgID }) {
       })
       .slice(0, 3);
 
-    console.log('LatestPosts Debug - Final sorted news (top 3):', sortedNews);
     return sortedNews;
   }, [news, orgID, organizations]);
 

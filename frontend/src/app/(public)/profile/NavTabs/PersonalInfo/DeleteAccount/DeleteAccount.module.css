@@ -135,33 +135,6 @@
   color: #000;
 }
 
-.modalHeader {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  margin-bottom: 1.5rem;
-}
-
-.modalTitle {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  font-family: var(--font-inter);
-  color: #000;
-}
-
-.warningIconContainer {
-  width: 28px;
-  height: 28px;
-  background-color: #FEE2E2;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #DC2626;
-  font-size: 1rem;
-  flex-shrink: 0;
-}
 
 .closeBtn {
   background: none;
@@ -271,84 +244,61 @@
   gap: 0.75rem;
 }
 
-.confirmDeleteMessage {
-  margin-bottom: 2.2rem;
-}
-
-.confirmDeleteMessage p {
-  margin: 0;
-  color: #6B7280;
-  font-size: 13px;
-  line-height: 1.6;
-  text-align: center;
-  padding: 0 0.5rem;
-}
-
-.confirmDeleteButtons {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  margin-top: 0;
-}
-
 .cancelBtn {
   flex: 1;
-  background-color: #F9FAFB;
-  color: #374151;
-  border: 1px solid #E5E7EB;
   padding: 0.75rem 1rem;
+  background: #f8f9fa;
+  color: #6c757d;
+  border: 1px solid #dee2e6;
   border-radius: 8px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   font-family: var(--font-inter);
   cursor: pointer;
-  transition: all 0.15s ease;
-  user-select: none;
+  transition: all 0.2s ease;
+  outline: none;
 }
 
-.cancelBtn:hover {
-  background-color: #f9fafb;
-  border-color: #9ca3af;
+.cancelBtn:hover:not(:disabled) {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  color: #495057;
+}
+
+.cancelBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .deleteBtn {
   flex: 1;
-  background-color: #DC2626;
-  color: white;
-  border: 1px solid #DC2626;
   padding: 0.75rem 1rem;
+  background: #dc2626;
+  color: white;
+  border: 1px solid #dc2626;
   border-radius: 8px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   font-family: var(--font-inter);
   cursor: pointer;
-  transition: all 0.15s ease;
-  user-select: none;
+  transition: all 0.2s ease;
+  outline: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  outline: none;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
-.deleteBtn:hover {
-  background-color: #b91c1c;
+.deleteBtn:hover:not(:disabled) {
+  background: #b91c1c;
   border-color: #b91c1c;
 }
 
 .deleteBtn:disabled {
-  background-color: #9ca3af;
-  border-color: #9ca3af;
-  cursor: not-allowed;
   opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.cancelBtn:disabled {
-  background-color: #f3f4f6;
-  border-color: #d1d5db;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
 
 @keyframes fadeIn {
   from {
@@ -391,11 +341,5 @@
   
   .actions {
     flex-direction: column;
-  }
-  
-  .cancelBtn,
-  .deleteBtn {
-    width: 100%;
-    justify-content: center;
   }
 }

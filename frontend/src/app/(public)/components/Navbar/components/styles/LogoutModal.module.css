@@ -61,16 +61,41 @@
   text-align: center;
   letter-spacing: .2px;
   user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: color 0.2s ease;
 }
 
-.logoutTextBtn:hover { 
+.logoutTextBtn:hover:not(:disabled) { 
   color: #2fa18e; 
+}
+
+.logoutTextBtn:disabled {
+  color: #999;
+  cursor: not-allowed;
 }
 
 .logoutTextBtn:focus-visible {
   outline: 2px solid #238172;
   outline-offset: 2px;
   border-radius: 8px;
+}
+
+/* Spinner for logout button */
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #e0e0e0;
+  border-top: 2px solid #238172;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Solid Cancel button */
@@ -94,8 +119,13 @@
   user-select: none;
 }
 
-.cancelBtn:hover { 
+.cancelBtn:hover:not(:disabled) { 
   background-color: #2fa18e; 
+}
+
+.cancelBtn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 
 .cancelBtn:focus-visible {

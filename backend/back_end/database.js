@@ -474,6 +474,22 @@ const initializeDatabase = async () => {
       }
     }
 
+    // Add is_approved column to programs_projects table if it doesn't exist
+    try {
+      // Checking for is_approved column in programs_projects table...
+      await connection.query(`
+        ALTER TABLE programs_projects 
+        ADD COLUMN is_approved BOOLEAN DEFAULT TRUE
+      `);
+      console.log("✅ Added is_approved column to programs_projects table!");
+    } catch (error) {
+      if (error.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Error adding is_approved column:', error);
+      } else {
+        // is_approved column already exists in programs_projects table
+      }
+    }
+
     // Note: featured_projects table migration code removed - now using programs_projects.is_featured
 
     // Check if faqs table exists
@@ -825,7 +841,7 @@ const initializeDatabase = async () => {
           user_id INT NOT NULL,
           program_id INT NOT NULL,
           reason TEXT NOT NULL,
-          status ENUM('Pending', 'Approved', 'Declined') DEFAULT 'Pending',
+          status ENUM('Pending', 'Approved', 'Declined', 'Cancelled', 'Completed') DEFAULT 'Pending',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -838,6 +854,22 @@ const initializeDatabase = async () => {
       `);
       console.log("✅ Volunteers table created successfully!");
     } else {
+      // Check if volunteers table needs migration to include 'Completed' status
+      const [statusColumn] = await connection.query(`
+        SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'volunteers' AND COLUMN_NAME = 'status' AND TABLE_SCHEMA = DATABASE()
+      `);
+      
+      if (statusColumn.length > 0 && !statusColumn[0].COLUMN_TYPE.includes('Completed')) {
+        console.log("Updating volunteers table to include 'Completed' status...");
+        await connection.query(`
+          ALTER TABLE volunteers 
+          MODIFY COLUMN status ENUM('Pending', 'Approved', 'Declined', 'Cancelled', 'Completed') 
+          DEFAULT 'Pending'
+        `);
+        console.log("✅ Volunteers table updated with 'Completed' status!");
+      }
+      
       // Check if volunteers table needs migration to new structure
       const [oldStructureColumns] = await connection.query(`
         SELECT COLUMN_NAME 
@@ -856,7 +888,7 @@ const initializeDatabase = async () => {
             user_id INT NOT NULL,
             program_id INT NOT NULL,
             reason TEXT NOT NULL,
-            status ENUM('Pending', 'Approved', 'Declined') DEFAULT 'Pending',
+            status ENUM('Pending', 'Approved', 'Declined', 'Cancelled') DEFAULT 'Pending',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -873,6 +905,23 @@ const initializeDatabase = async () => {
         await connection.query('RENAME TABLE volunteers_new TO volunteers');
         
         console.log("✅ Volunteers table migrated to new structure!");
+      }
+      
+      // Check if volunteers table needs 'Cancelled' status added
+      const [cancelledStatusColumn] = await connection.query(`
+        SELECT COLUMN_TYPE 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'volunteers' 
+        AND COLUMN_NAME = 'status'
+      `);
+      
+      if (cancelledStatusColumn.length > 0 && !cancelledStatusColumn[0].COLUMN_TYPE.includes('Cancelled')) {
+        console.log("Adding 'Cancelled' status to volunteers table...");
+        await connection.query(`
+          ALTER TABLE volunteers 
+          MODIFY COLUMN status ENUM('Pending', 'Approved', 'Declined', 'Cancelled') DEFAULT 'Pending'
+        `);
+        console.log("✅ 'Cancelled' status added to volunteers table!");
       }
     }
 

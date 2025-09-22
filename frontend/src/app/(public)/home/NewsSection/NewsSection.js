@@ -281,7 +281,7 @@ export default function NewsSection() {
                     </p>
                     <p className={styles.newsDate}>
                       <em>Published:</em> {formatDate(newsItem.published_at || newsItem.date)}<br />
-                      <em>By:</em> {newsItem.orgName || newsItem.orgID || 'Unknown Organization'}
+                      <em>By:</em> {newsItem.orgName || 'Unknown Organization'}
                     </p>
                     <span className={styles.readMore}>Read More</span>
                   </div>

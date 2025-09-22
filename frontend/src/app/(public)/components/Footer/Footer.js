@@ -2,8 +2,33 @@
 
 import Link from "next/link";
 import styles from "./Footer.module.css";
-import { FaFacebookF, FaPhoneAlt, FaEnvelope } from "react-icons/fa";
-import { FaInstagram, FaXTwitter } from "react-icons/fa6";
+import { 
+  FaFacebook, 
+  FaInstagram, 
+  FaYoutube, 
+  FaLinkedin, 
+  FaTiktok, 
+  FaPinterest, 
+  FaSnapchat, 
+  FaWhatsapp, 
+  FaTelegram, 
+  FaDiscord, 
+  FaReddit, 
+  FaTwitch, 
+  FaSpotify, 
+  FaApple, 
+  FaGoogle, 
+  FaGithub, 
+  FaDribbble, 
+  FaBehance, 
+  FaMedium, 
+  FaVimeo, 
+  FaSkype, 
+  FaSlack,
+  FaPhoneAlt, 
+  FaEnvelope 
+} from "react-icons/fa";
+import { FaXTwitter } from "react-icons/fa6";
 import { HiMiniArrowRight } from "react-icons/hi2";
 import { Send } from "lucide-react";
 import { LuCircleCheck } from "react-icons/lu";
@@ -15,6 +40,33 @@ import { usePublicSiteName, usePublicFooterContent } from "../../hooks/usePublic
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
   "http://localhost:8080";
+
+// Social media platform mapping with icons
+const SOCIAL_PLATFORMS = {
+  'Facebook': FaFacebook,
+  'Instagram': FaInstagram,
+  'X': FaXTwitter,
+  'YouTube': FaYoutube,
+  'LinkedIn': FaLinkedin,
+  'TikTok': FaTiktok,
+  'Pinterest': FaPinterest,
+  'Snapchat': FaSnapchat,
+  'WhatsApp': FaWhatsapp,
+  'Telegram': FaTelegram,
+  'Discord': FaDiscord,
+  'Reddit': FaReddit,
+  'Twitch': FaTwitch,
+  'Spotify': FaSpotify,
+  'Apple Music': FaApple,
+  'Google': FaGoogle,
+  'GitHub': FaGithub,
+  'Dribbble': FaDribbble,
+  'Behance': FaBehance,
+  'Medium': FaMedium,
+  'Vimeo': FaVimeo,
+  'Skype': FaSkype,
+  'Slack': FaSlack
+};
 
 export default function Footer() {
   const quickLinksRef = useRef(null);
@@ -222,6 +274,11 @@ export default function Footer() {
     setToast({ show: false, message: "", type: "success" });
   };
 
+  // Helper function to get platform icon
+  const getPlatformIcon = (platformName) => {
+    return SOCIAL_PLATFORMS[platformName] || null;
+  };
+
   return (
     <>
       {toast.show && createPortal(
@@ -410,15 +467,23 @@ export default function Footer() {
           )}
 
           <div className={styles.socials}>
-            <a href={footerData?.socialMedia?.facebook || "https://facebook.com"} target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-              <FaFacebookF size={13} />
-            </a>
-            <a href={footerData?.socialMedia?.instagram || "https://instagram.com"} target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-              <FaInstagram size={14} />
-            </a>
-            <a href={footerData?.socialMedia?.twitter || "https://x.com"} target="_blank" rel="noopener noreferrer" aria-label="Twitter (X)">
-              <FaXTwitter size={13} />
-            </a>
+            {footerData?.socialMedia && Array.isArray(footerData.socialMedia) && footerData.socialMedia.length > 0 && (
+              footerData.socialMedia.map((social, index) => {
+                const IconComponent = getPlatformIcon(social.platform);
+                return (
+                  <a 
+                    key={index}
+                    href={social.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    aria-label={social.platform}
+                    className={styles.socialLink}
+                  >
+                    {IconComponent ? <IconComponent size={13} /> : <span>{social.platform.charAt(0)}</span>}
+                  </a>
+                );
+              })
+            )}
           </div>
         </div>
       </div>

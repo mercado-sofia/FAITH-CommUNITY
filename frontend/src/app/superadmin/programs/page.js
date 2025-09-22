@@ -387,11 +387,11 @@ const SuperadminProgramsPage = () => {
               <div key={org.organizationId} className={styles.organizationSection}>
                 <div className={styles.organizationHeader}>
                   <div className={styles.organizationInfo}>
-                    {org.organizationLogo && (
+                    {org.orgLogo && (
                       <Image 
-                        src={getOrganizationImageUrl(org.organizationLogo, 'logo')}
+                        src={getOrganizationImageUrl(org.orgLogo, 'logo')}
                         alt={`${org.organizationName} logo`}
-                        className={styles.organizationLogo}
+                        className={styles.orgLogo}
                         width={60}
                         height={60}
                         onError={(e) => e.target.style.display = 'none'}

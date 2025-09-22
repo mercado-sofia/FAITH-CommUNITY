@@ -19,7 +19,7 @@ export const getAllProgramsByOrganization = async (req, res) => {
         pp.organization_id,
         o.orgName as organization_name,
         o.org as organization_acronym,
-        o.logo as organization_logo,
+        o.logo as orgLogo,
         o.org_color as organization_color
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
@@ -56,14 +56,14 @@ export const getAllProgramsByOrganization = async (req, res) => {
 
       // Construct proper logo URL
       let logoUrl;
-      if (program.organization_logo) {
-        if (program.organization_logo.includes('/')) {
+      if (program.orgLogo) {
+        if (program.orgLogo.includes('/')) {
           // Legacy path - extract filename
-          const filename = program.organization_logo.split('/').pop();
+          const filename = program.orgLogo.split('/').pop();
           logoUrl = `/uploads/organizations/logos/${filename}`;
         } else {
           // New structure - direct filename
-          logoUrl = `/uploads/organizations/logos/${program.organization_logo}`;
+          logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
         }
       } else {
         // Fallback to default logo
@@ -72,7 +72,7 @@ export const getAllProgramsByOrganization = async (req, res) => {
 
       return {
         ...program,
-        organization_logo: logoUrl,
+        orgLogo: logoUrl,
         multiple_dates: multipleDates,
         additional_images: additionalImages
       };
@@ -141,7 +141,7 @@ export const getProgramById = async (req, res) => {
         pp.organization_id,
         o.orgName as organization_name,
         o.org as organization_acronym,
-        o.logo as organization_logo,
+        o.logo as orgLogo,
         o.org_color as organization_color
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
@@ -186,14 +186,14 @@ export const getProgramById = async (req, res) => {
 
     // Construct proper logo URL
     let logoUrl;
-    if (program.organization_logo) {
-      if (program.organization_logo.includes('/')) {
+    if (program.orgLogo) {
+      if (program.orgLogo.includes('/')) {
         // Legacy path - extract filename
-        const filename = program.organization_logo.split('/').pop();
+        const filename = program.orgLogo.split('/').pop();
         logoUrl = `/uploads/organizations/logos/${filename}`;
       } else {
         // New structure - direct filename
-        logoUrl = `/uploads/organizations/logos/${program.organization_logo}`;
+        logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
       }
     } else {
       // Fallback to default logo
@@ -202,7 +202,7 @@ export const getProgramById = async (req, res) => {
 
     const programWithDates = {
       ...program,
-      organization_logo: logoUrl,
+      orgLogo: logoUrl,
       multiple_dates: multipleDates,
       additional_images: additionalImages
     };
@@ -241,7 +241,7 @@ export const getProgramsByOrganizationId = async (req, res) => {
         pp.organization_id,
         o.orgName as organization_name,
         o.org as organization_acronym,
-        o.logo as organization_logo,
+        o.logo as orgLogo,
         o.org_color as organization_color
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
@@ -272,14 +272,14 @@ export const getProgramsByOrganizationId = async (req, res) => {
 
       // Construct proper logo URL
       let logoUrl;
-      if (program.organization_logo) {
-        if (program.organization_logo.includes('/')) {
+      if (program.orgLogo) {
+        if (program.orgLogo.includes('/')) {
           // Legacy path - extract filename
-          const filename = program.organization_logo.split('/').pop();
+          const filename = program.orgLogo.split('/').pop();
           logoUrl = `/uploads/organizations/logos/${filename}`;
         } else {
           // New structure - direct filename
-          logoUrl = `/uploads/organizations/logos/${program.organization_logo}`;
+          logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
         }
       } else {
         // Fallback to default logo
@@ -288,7 +288,7 @@ export const getProgramsByOrganizationId = async (req, res) => {
 
       return {
         ...program,
-        organization_logo: logoUrl,
+        orgLogo: logoUrl,
         multiple_dates: multipleDates
       };
     }));

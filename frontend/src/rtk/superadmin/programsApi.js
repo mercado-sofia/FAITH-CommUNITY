@@ -33,7 +33,7 @@ export const superadminProgramsApi = createApi({
                 organizationId: program.organization_id,
                 organizationName: program.organization_name,
                 organizationAcronym: program.organization_acronym,
-                organizationLogo: program.organization_logo,
+                orgLogo: program.orgLogo,
                 organizationColor: program.organization_color,
                 programs: {
                   upcoming: [],
@@ -133,7 +133,7 @@ export const superadminProgramsApi = createApi({
             organization_id: program.organization_id,
             organization_name: program.organization_name,
             organization_acronym: program.organization_acronym,
-            organization_logo: program.organization_logo
+            orgLogo: program.orgLogo
           };
         }
         return null;

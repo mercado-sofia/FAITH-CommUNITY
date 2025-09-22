@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { getProgramImageUrl } from '@/utils/uploadPaths';
+import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
 import { formatDateLong } from '@/utils/dateUtils';
 import styles from './ProgramCard.module.css';
 import logger from '@/utils/logger';
@@ -283,21 +283,26 @@ export default function ProgramCard({ project }) {
           {project.title}
         </Link>
 
-        <Link href={`/programs/org/${project.orgID || project.org || project.organization || project.orgAcronym}`} className={styles.cardOrg}>
-          {project.icon ? (
+        <Link href={`/programs/org/${project.orgAcronym || project.orgID}`} className={styles.cardOrg}>
+          {project.orgLogo ? (
             <Image
-              src={`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${project.icon}`}
+              src={getOrganizationImageUrl(project.orgLogo)}
               alt={`${project.orgName} logo`}
               width={24}
               height={24}
               className={styles.cardOrgIcon}
               onError={(e) => {
+                logger.error('Failed to load organization logo', null, { 
+                  projectId: project.id, 
+                  orgName: project.orgName,
+                  logoUrl: project.orgLogo 
+                });
                 e.target.style.display = 'none';
                 e.target.nextSibling.style.display = 'block';
               }}
             />
           ) : null}
-          <div className={styles.cardOrgIconFallback} style={{ display: project.icon ? 'none' : 'block' }}></div>
+          <div className={styles.cardOrgIconFallback} style={{ display: project.orgLogo ? 'none' : 'block' }}></div>
           <span>{project.orgName}</span>
         </Link>
 

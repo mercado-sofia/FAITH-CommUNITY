@@ -604,6 +604,25 @@ export const verifyEmailChangeOTP = async (req, res) => {
       [verificationResult.newEmail, userId]
     );
 
+    // Get updated user data for new token
+    const [updatedUsers] = await db.query(
+      'SELECT * FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (updatedUsers.length === 0) {
+      return res.status(404).json({ error: 'User not found after email update' });
+    }
+
+    const updatedUser = updatedUsers[0];
+
+    // Generate new access token with updated email
+    const newAccessToken = signAccessToken({ 
+      id: updatedUser.id, 
+      email: updatedUser.email, 
+      role: 'user' 
+    });
+
     // Clean up expired OTPs
     await EmailChangeOTP.cleanupExpiredOTPs();
 
@@ -615,7 +634,22 @@ export const verifyEmailChangeOTP = async (req, res) => {
     
     res.json({ 
       message: 'Email changed successfully',
-      newEmail: verificationResult.newEmail
+      newEmail: verificationResult.newEmail,
+      token: newAccessToken,
+      user: {
+        id: updatedUser.id,
+        firstName: updatedUser.first_name,
+        lastName: updatedUser.last_name,
+        email: updatedUser.email,
+        contactNumber: updatedUser.contact_number,
+        gender: updatedUser.gender,
+        address: updatedUser.address,
+        birthDate: updatedUser.birth_date,
+        profile_photo_url: updatedUser.profile_photo_url,
+        occupation: updatedUser.occupation,
+        citizenship: updatedUser.citizenship,
+        newsletterSubscribed: Boolean(updatedUser.newsletter_subscribed)
+      }
     });
 
   } catch (error) {
@@ -1454,7 +1488,7 @@ export const getUserApplications = async (req, res) => {
         p.organization_id,
         o.orgName as organizationName,
         o.org as organizationAcronym,
-        o.logo as organizationLogo
+        o.logo as orgLogo
       FROM volunteers v
       LEFT JOIN programs_projects p ON v.program_id = p.id
       LEFT JOIN organizations o ON p.organization_id = o.id
@@ -1467,15 +1501,15 @@ export const getUserApplications = async (req, res) => {
     // Transform the data to match frontend expectations
     const transformedApplications = applications.map(application => {
       // Construct proper organization logo URL
-      let organizationLogoUrl = null;
-      if (application.organizationLogo) {
-        if (application.organizationLogo.includes('/')) {
+      let orgLogoUrl = null;
+      if (application.orgLogo) {
+        if (application.orgLogo.includes('/')) {
           // Legacy path - extract filename
-          const filename = application.organizationLogo.split('/').pop();
-          organizationLogoUrl = `/uploads/organizations/logos/${filename}`;
+          const filename = application.orgLogo.split('/').pop();
+          orgLogoUrl = `/uploads/organizations/logos/${filename}`;
         } else {
           // New structure - direct filename
-          organizationLogoUrl = `/uploads/organizations/logos/${application.organizationLogo}`;
+          orgLogoUrl = `/uploads/organizations/logos/${application.orgLogo}`;
         }
       }
 
@@ -1492,7 +1526,7 @@ export const getUserApplications = async (req, res) => {
         organizationId: application.organization_id,
         organizationName: application.organizationName,
         organizationAcronym: application.organizationAcronym,
-        organizationLogo: organizationLogoUrl,
+        orgLogo: orgLogoUrl,
         reason: application.reason,
         status: application.status === 'Declined' ? 'rejected' : application.status.toLowerCase(),
         appliedAt: application.appliedAt,
@@ -1552,7 +1586,7 @@ export const getApplicationDetails = async (req, res) => {
         p.organization_id,
         o.orgName as organizationName,
         o.org as organizationAcronym,
-        o.logo as organizationLogo,
+        o.logo as orgLogo,
         o.org_color as organizationColor
       FROM volunteers v
       LEFT JOIN programs_projects p ON v.program_id = p.id
@@ -1584,7 +1618,7 @@ export const getApplicationDetails = async (req, res) => {
       organizationId: application.organization_id,
       organizationName: application.organizationName,
       organizationAcronym: application.organizationAcronym,
-      organizationLogo: application.organizationLogo,
+      orgLogo: application.orgLogo,
       organizationColor: application.organizationColor,
       reason: application.reason,
       status: application.status === 'Declined' ? 'rejected' : application.status.toLowerCase(),

@@ -130,6 +130,24 @@
   object-fit: contain;
 }
 
+.organizationIconFallback {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.fallbackText {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
 .organizationName {
   font-size: 14px;
   font-weight: 600;

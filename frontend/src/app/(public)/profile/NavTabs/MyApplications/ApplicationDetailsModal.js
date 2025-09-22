@@ -8,6 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
 import { formatDateLong, formatProgramDate } from '@/utils/dateUtils';
+import { getOrganizationImageUrl } from '@/utils/uploadPaths';
 import styles from './ApplicationDetailsModal.module.css';
 import sharedStyles from './MyApplications.module.css';
 
@@ -147,17 +148,17 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
                 
                 {application.organizationName && (
                   <div className={styles.organizationInfo}>
-                    {application.organizationLogo && (
+                    {application.orgLogo && (
                       <Image 
-                        src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${application.organizationLogo}`}
+                        src={getOrganizationImageUrl(application.orgLogo)}
                         alt={`${application.organizationName} logo`}
                         width={24}
                         height={24}
-                        className={styles.organizationLogo}
+                        className={styles.orgLogo}
                       />
                     )}
                     <Link 
-                      href={`/programs/org/${application.organizationAcronym || application.organizationId}`}
+                      href={`/programs/org/${application.organizationAcronym}`}
                       className={styles.organizationLink}
                     >
                       <span className={styles.organizationName}>{application.organizationName}</span>

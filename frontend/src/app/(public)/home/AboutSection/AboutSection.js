@@ -3,8 +3,11 @@
 import styles from './AboutSection.module.css';
 import Image from 'next/image';
 import { FaHeart, FaCube } from 'react-icons/fa';
+import { usePublicSiteName } from '../../hooks/usePublicData';
 
 export default function AboutSection() {
+  const { siteNameData } = usePublicSiteName();
+
   return (
     <section className={styles.aboutSection}>
       <div className={styles.wrapper}>
@@ -24,9 +27,9 @@ export default function AboutSection() {
 
           <div className={styles.aboutContent}>
             <p className={styles.aboutLabel}>Who we are</p>
-            <h2 className={styles.aboutHeading}>The Story Behind FAITH CommUNITY</h2>
+            <h2 className={styles.aboutHeading}>The Story Behind {siteNameData?.site_name || 'FAITH CommUNITY'}</h2>
             <p className={styles.aboutParagraph}>
-              FAITH CommUNITY serves as a bridge between volunteers and organizations,
+              {siteNameData?.site_name || 'FAITH CommUNITY'} serves as a bridge between volunteers and organizations,
               created to support and document the shared efforts of the FAITH Colleges
               community in delivering meaningful outreach and service.
             </p>

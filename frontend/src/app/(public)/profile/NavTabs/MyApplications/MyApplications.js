@@ -8,7 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
 import { formatDateShort, formatProgramDate } from '@/utils/dateUtils';
-import { getProgramImageUrl } from '@/utils/uploadPaths';
+import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
 import ApplicationDetailsModal from './ApplicationDetailsModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import styles from './MyApplications.module.css';
@@ -530,22 +530,22 @@ export default function MyApplications() {
                     {/* Organization Info */}
                     {application.organizationName && (
                       <div className={styles.organizationInfo}>
-                        {application.organizationLogo ? (
+                        {application.orgLogo ? (
                           <Image 
-                            src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${application.organizationLogo}`}
+                            src={getOrganizationImageUrl(application.orgLogo)}
                             alt={`${application.organizationName} logo`}
                             width={20}
                             height={20}
-                            className={styles.organizationLogo}
+                            className={styles.orgLogo}
                             onError={(e) => {
                               e.target.style.display = 'none';
                               e.target.nextSibling.style.display = 'block';
                             }}
                           />
                         ) : null}
-                        <div className={styles.organizationLogoFallback} style={{ display: application.organizationLogo ? 'none' : 'block' }}></div>
+                        <div className={styles.orgLogoFallback} style={{ display: application.orgLogo ? 'none' : 'block' }}></div>
                         <Link 
-                          href={`/programs/org/${application.organizationAcronym || application.organizationId}`}
+                          href={`/programs/org/${application.organizationAcronym}`}
                           className={styles.organizationLink}
                         >
                           <span className={styles.organizationName}>{application.organizationName}</span>

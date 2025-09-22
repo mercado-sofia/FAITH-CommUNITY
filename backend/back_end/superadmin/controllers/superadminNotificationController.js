@@ -101,7 +101,7 @@ class SuperAdminNotificationController {
           sn.created_at,
           o.org as organization_acronym,
           o.orgName as organization_name,
-          o.logo as organization_logo,
+          o.logo as orgLogo,
           o.org_color as organization_color
         FROM superadmin_notifications sn
         LEFT JOIN organizations o ON sn.organization_id = o.id
@@ -128,14 +128,14 @@ class SuperAdminNotificationController {
 
         // Construct proper logo URL from stored logo
         let logoUrl = null;
-        if (notification.organization_logo) {
-          if (notification.organization_logo.includes('/')) {
+        if (notification.orgLogo) {
+          if (notification.orgLogo.includes('/')) {
             // Legacy path - extract filename
-            const filename = notification.organization_logo.split('/').pop();
+            const filename = notification.orgLogo.split('/').pop();
             logoUrl = `/uploads/organizations/logos/${filename}`;
           } else {
             // New structure - direct filename
-            logoUrl = `/uploads/organizations/logos/${notification.organization_logo}`;
+            logoUrl = `/uploads/organizations/logos/${notification.orgLogo}`;
           }
         } else if (notification.organization_acronym) {
           // Fallback to expected logo path
@@ -146,7 +146,7 @@ class SuperAdminNotificationController {
           ...notification,
           message: dynamicMessage, // Use the dynamically generated message
           timeAgo: SuperAdminNotificationController.getTimeAgo(notification.created_at),
-          organization_logo: logoUrl
+          orgLogo: logoUrl
         };
       });
 

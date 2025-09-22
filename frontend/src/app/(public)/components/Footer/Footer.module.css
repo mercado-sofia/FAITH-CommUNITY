@@ -281,7 +281,8 @@
   gap: 10px;
 }
 
-.socials a {
+.socials a,
+.socialLink {
   width: 32px;
   height: 32px;
   background-color: #fff;
@@ -292,11 +293,16 @@
   justify-content: center;
   text-decoration: none;
   transition: all 0.3s ease;
+  stroke: #06100f;
+  fill: #06100f;
 }
 
-.socials a:hover {
+.socials a:hover,
+.socialLink:hover {
   background-color: #fbbf24;
   color: #fff;
+  stroke: #fff;
+  fill: #fff;
 }
 
 .bottomBar {

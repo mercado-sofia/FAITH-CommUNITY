@@ -125,7 +125,7 @@ export const getProgramsByOrg = async (req, res) => {
         created_at: program.created_at,
         orgID: program.orgAcronym || organization.org,
         orgName: program.orgName || organization.orgName,
-        icon: logoUrl,
+        orgLogo: logoUrl,
         slug: program.slug
       };
     });
@@ -216,7 +216,7 @@ export const getApprovedPrograms = async (req, res) => {
         multiple_dates: program.multiple_dates,
         orgID: program.orgAcronym,
         orgName: program.orgName,
-        icon: logoUrl,
+        orgLogo: logoUrl,
         created_at: program.created_at,
         slug: program.slug
       };
@@ -345,7 +345,7 @@ export const getApprovedProgramsByOrg = async (req, res) => {
         multiple_dates: program.multiple_dates,
         orgID: program.orgAcronym,
         orgName: program.orgName,
-        icon: logoUrl,
+        orgLogo: logoUrl,
         created_at: program.created_at,
         slug: program.slug
       };
@@ -792,7 +792,7 @@ export const getAllFeaturedPrograms = async (req, res) => {
         orgName: program.orgName,
         orgAcronym: program.orgAcronym,
         orgColor: program.orgColor,
-        icon: logoUrl,
+        orgLogo: logoUrl,
         created_at: program.created_at,
         slug: program.slug
       };
@@ -889,7 +889,7 @@ export const getFeaturedPrograms = async (req, res) => {
         orgName: program.orgName,
         orgAcronym: program.orgAcronym,
         orgColor: program.orgColor,
-        icon: logoUrl,
+        orgLogo: logoUrl,
         created_at: program.created_at,
         slug: program.slug
       };
@@ -930,7 +930,7 @@ export const getProgramBySlug = async (req, res) => {
         pp.slug,
         o.orgName as organization_name,
         o.org as organization_acronym,
-        o.logo as organization_logo,
+        o.logo as orgLogo,
         o.org_color as organization_color
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
@@ -975,14 +975,14 @@ export const getProgramBySlug = async (req, res) => {
 
     // Construct proper logo URL
     let logoUrl;
-    if (program.organization_logo) {
-      if (program.organization_logo.includes('/')) {
+    if (program.orgLogo) {
+      if (program.orgLogo.includes('/')) {
         // Legacy path - extract filename
-        const filename = program.organization_logo.split('/').pop();
+        const filename = program.orgLogo.split('/').pop();
         logoUrl = `/uploads/organizations/logos/${filename}`;
       } else {
         // New structure - direct filename
-        logoUrl = `/uploads/organizations/logos/${program.organization_logo}`;
+        logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
       }
     } else {
       // Fallback to default logo
@@ -991,7 +991,7 @@ export const getProgramBySlug = async (req, res) => {
 
     const programWithDates = {
       ...program,
-      organization_logo: logoUrl,
+      orgLogo: logoUrl,
       multiple_dates: multipleDates,
       additional_images: additionalImages
     };
@@ -1027,7 +1027,7 @@ export const getOtherProgramsByOrganization = async (req, res) => {
         pp.created_at,
         o.orgName as organization_name,
         o.org as organization_acronym,
-        o.logo as organization_logo
+        o.logo as orgLogo
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
       WHERE pp.organization_id = ? AND pp.id != ? AND pp.is_approved = TRUE
@@ -1039,12 +1039,12 @@ export const getOtherProgramsByOrganization = async (req, res) => {
     
     const programs = results.map(program => {
       let logoUrl;
-      if (program.organization_logo) {
-        if (program.organization_logo.includes('/')) {
-          const filename = program.organization_logo.split('/').pop();
+      if (program.orgLogo) {
+        if (program.orgLogo.includes('/')) {
+          const filename = program.orgLogo.split('/').pop();
           logoUrl = `/uploads/organizations/logos/${filename}`;
         } else {
-          logoUrl = `/uploads/organizations/logos/${program.organization_logo}`;
+          logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
         }
       } else {
         logoUrl = `/logo/faith_community_logo.png`;
@@ -1052,7 +1052,7 @@ export const getOtherProgramsByOrganization = async (req, res) => {
       
       return {
         ...program,
-        organization_logo: logoUrl
+        orgLogo: logoUrl
       };
     });
     
@@ -1249,7 +1249,7 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
         pp.organization_id,
         o.orgName as organization_name,
         o.org as organization_acronym,
-        o.logo as organization_logo,
+        o.logo as orgLogo,
         o.org_color as organization_color
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
@@ -1275,12 +1275,12 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
         }
 
         let logoUrl;
-        if (program.organization_logo) {
-          if (String(program.organization_logo).includes('/')) {
-            const filename = String(program.organization_logo).split('/').pop();
+        if (program.orgLogo) {
+          if (String(program.orgLogo).includes('/')) {
+            const filename = String(program.orgLogo).split('/').pop();
             logoUrl = `/uploads/organizations/logos/${filename}`;
           } else {
-            logoUrl = `/uploads/organizations/logos/${program.organization_logo}`;
+            logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
           }
         } else {
           logoUrl = `/logo/faith_community_logo.png`;
@@ -1288,7 +1288,7 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
 
         return {
           ...program,
-          organization_logo: logoUrl,
+          orgLogo: logoUrl,
           multiple_dates: multipleDates,
         };
       })

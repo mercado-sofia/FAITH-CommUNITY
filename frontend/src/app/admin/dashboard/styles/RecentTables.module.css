@@ -162,6 +162,11 @@
   color: #dc2626;
 }
 
+.cancelled {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
 /* 📏 Truncation */
 .truncate {
   white-space: nowrap;

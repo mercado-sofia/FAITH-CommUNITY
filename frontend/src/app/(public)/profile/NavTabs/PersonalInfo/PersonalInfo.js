@@ -144,19 +144,6 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
     validateRequiredField(name, value);
   };
 
-  const updateHasChanges = useCallback(() => {
-    // Check if any field has changed
-    const hasAnyChanges = Object.keys(editData).some(key => {
-      const original = userData[key] || '';
-      const current = editData[key] || '';
-      return original !== current;
-    });
-    
-    // Also check if photo has been selected or marked for removal
-    const hasPhotoChanges = selectedPhotoFile !== null || photoToRemove;
-    
-    setHasChanges(hasAnyChanges || hasPhotoChanges);
-  }, [editData, userData, selectedPhotoFile, photoToRemove]);
 
   // Watch for changes to update hasChanges - but only when editData or photo states change
   useEffect(() => {
@@ -173,7 +160,7 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
       
       setHasChanges(hasAnyChanges || hasPhotoChanges);
     }
-  }, [editData, selectedPhotoFile, selectedPhotoPreview, photoToRemove, isEditMode, userData]);
+  }, [editData, selectedPhotoFile, photoToRemove, isEditMode, userData]);
 
 
   const handleSaveProfile = async (e) => {

@@ -311,9 +311,9 @@
 }
 
 .statusPending {
-  background: #fbecd5;
-  color: #e8901c;
-  border-color: #fbecd5;
+  background: #fef3c7;
+  color: #d97706;
+  border-color: #fef3c7;
 }
 
 .statusCancelled {
@@ -322,12 +322,18 @@
   border-color: #cbd5e1;
 }
 
+.statusCompleted {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1d4ed8;
+  border-color: #dbeafe;
+}
+
 .organizationInfo {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1.25rem;
 }
 
 .organizationInfo .organizationLink {
@@ -382,12 +388,12 @@
   font-size: 0.875rem;
   color: #64748b;
   font-weight: 500;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.35rem;
 }
 
 /* Application Reason */
 .applicationReason {
-  margin-top: 0.75rem;
+  margin-top: 0.25rem;
   padding-left: 1rem;
   border-left: 3px solid #1e293b;
 }

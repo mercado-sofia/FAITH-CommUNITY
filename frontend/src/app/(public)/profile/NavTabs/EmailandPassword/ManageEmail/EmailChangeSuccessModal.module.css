@@ -160,12 +160,10 @@
 
 .actionButton:hover {
   background: linear-gradient(135deg, #059669, #047857);
-  transform: translateY(-1px);
   box-shadow: 0 6px 8px -1px rgba(16, 185, 129, 0.3);
 }
 
 .actionButton:active {
-  transform: translateY(0);
   box-shadow: 0 2px 4px -1px rgba(16, 185, 129, 0.2);
 }
 

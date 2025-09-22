@@ -20,7 +20,7 @@ const sanitizeInput = (input) => {
 };
 
 const validateStatus = (status) => {
-  const validStatuses = ['Pending', 'Approved', 'Declined'];
+  const validStatuses = ['Pending', 'Approved', 'Declined', 'Cancelled', 'Completed'];
   return validStatuses.includes(status);
 };
 

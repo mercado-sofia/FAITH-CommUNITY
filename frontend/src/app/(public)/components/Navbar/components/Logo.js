@@ -26,7 +26,7 @@ export default function Logo() {
         src={logoSrc}
         alt="FAITH CommUNITY Logo"
         width={45}
-        height={46}
+        height={45}
         priority
       />
 
@@ -36,37 +36,21 @@ export default function Logo() {
           <Image
             src={nameImageSrc}
             alt="FAITH CommUNITY"
-            width={120}
-            height={30}
-            priority
-            style={{ objectFit: 'contain' }}
-          />
-        </div>
-      ) : (
-        // Try local image first. If it doesn't exist at runtime, Next/Image will 404;
-        // the developer can remove this branch if they want to always fall back to text.
-        <div className={styles.logoNameImage}>
-          <Image
-            src={nameImageSrc}
-            alt="FAITH CommUNITY Text Logo"
             width={140}
             height={40}
             priority
             style={{ objectFit: 'contain' }}
           />
         </div>
+      ) : (
+        // Text fallback when local image is missing
+        <div className={styles.logoTextWrapper}>
+          <span className={styles.logoTop}>FAITH</span>
+          <span className={styles.logoBottom}>
+            CommUNITY
+          </span>
+        </div>
       )}
-
-      {/* If you prefer text fallback when local image missing, use this instead:
-        { !brandingData?.name_url && (
-          <div className={styles.logoTextWrapper}>
-            <span className={styles.logoTop}>FAITH</span>
-            <span className={styles.logoBottom}>
-              Comm<strong className={styles.orange}>UNITY</strong>
-            </span>
-          </div>
-        )}
-      */}
     </Link>
   );
 }

@@ -174,25 +174,6 @@
   font-weight: bold;
 }
 
-.editErrorMessage {
-  background: #f8d7da;
-  color: #721c24;
-  padding: 0.75rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
-  border: 1px solid #f5c6cb;
-}
-
-.editSuccessMessage {
-  background: #d4edda;
-  color: #155724;
-  padding: 0.75rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
-  border: 1px solid #c3e6cb;
-}
 
 /* Personal Information Form */
 .personalInfoForm {

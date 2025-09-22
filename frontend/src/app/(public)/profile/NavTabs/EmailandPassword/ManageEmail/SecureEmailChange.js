@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FaEnvelope, FaEye, FaEyeSlash, FaTimes, FaCheck, FaShieldAlt, FaClock } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaTimes, FaCheck, FaShieldAlt, FaClock } from 'react-icons/fa';
 import { createPortal } from 'react-dom';
 import { useProfileApi } from '../../../hooks/useApiCall';
 import { useFormValidation } from '../../../hooks/useFormValidation';
@@ -10,14 +10,12 @@ import LoadingSpinner from '../../../components/LoadingSpinner';
 import EmailChangeSuccessModal from './EmailChangeSuccessModal';
 import styles from './SecureEmailChange.module.css';
 
-export default function SecureEmailChange({ userData, setUserData }) {
-  const [showEmailModal, setShowEmailModal] = useState(false);
+export default function SecureEmailChange({ userData, setUserData, showModal, setShowModal }) {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1); // 1: Password verification, 2: OTP verification
   const [otpToken, setOtpToken] = useState(null);
   const [expiresAt, setExpiresAt] = useState(null);
-  const [forceUpdate, setForceUpdate] = useState(0);
   const [emailChangeData, setEmailChangeData] = useState({ oldEmail: '', newEmail: '' });
   
   // Email change states
@@ -39,11 +37,6 @@ export default function SecureEmailChange({ userData, setUserData }) {
     showSuccess('Your email has been successfully changed.');
   };
 
-  // Debug userData changes
-  useEffect(() => {
-    console.log('UserData changed in SecureEmailChange:', userData);
-    console.log('Force update count:', forceUpdate);
-  }, [userData, forceUpdate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -87,23 +80,9 @@ export default function SecureEmailChange({ userData, setUserData }) {
     }
 
     try {
-      console.log('Sending email change request with data:', {
-        newEmail: emailData.newEmail,
-        currentPassword: emailData.currentPassword ? '[HIDDEN]' : '[MISSING]'
-      });
-      
       const response = await requestEmailChange({
         newEmail: emailData.newEmail,
         currentPassword: emailData.currentPassword
-      });
-
-      console.log('Email change request successful:', response);
-      console.log('Response data structure:', {
-        hasData: !!response.data,
-        hasToken: !!response.data?.token,
-        hasExpiresAt: !!response.data?.expiresAt,
-        token: response.data?.token,
-        expiresAt: response.data?.expiresAt
       });
 
       // Store token and expiration for step 2
@@ -115,10 +94,6 @@ export default function SecureEmailChange({ userData, setUserData }) {
       
     } catch (error) {
       console.error('Email change request failed:', error);
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack
-      });
       
       // Handle server error by showing field-specific error
       let errorMessage = 'Failed to request email change';
@@ -155,20 +130,10 @@ export default function SecureEmailChange({ userData, setUserData }) {
     }
 
     try {
-      console.log('Verifying OTP with data:', {
-        token: otpToken,
-        otp: emailData.otp,
-        tokenExists: !!otpToken,
-        otpLength: emailData.otp?.length
-      });
-      
       const response = await verifyEmailChangeOTP({
         token: otpToken,
         otp: emailData.otp
       });
-
-      console.log('Email change verification successful:', response);
-      console.log('New email from response:', response.data?.newEmail);
 
       // Store email change data for the success modal
       setEmailChangeData({
@@ -182,21 +147,8 @@ export default function SecureEmailChange({ userData, setUserData }) {
         email: response.data.newEmail
       };
       
-      console.log('Updating user data:', {
-        oldEmail: userData.email,
-        newEmail: response.data.newEmail,
-        updatedUserData
-      });
-      
       localStorage.setItem('userData', JSON.stringify(updatedUserData));
       setUserData(updatedUserData);
-      
-      // Force component re-render
-      setForceUpdate(prev => prev + 1);
-      
-      // Verify the update worked
-      console.log('UserData before update:', userData);
-      console.log('Updated userData being set:', updatedUserData);
       
       // Reset form and close email change modal
       setEmailData({
@@ -207,7 +159,7 @@ export default function SecureEmailChange({ userData, setUserData }) {
       setCurrentStep(1);
       setOtpToken(null);
       setExpiresAt(null);
-      setShowEmailModal(false);
+      setShowModal(false);
       document.body.classList.remove('modalOpen');
       
       // Show success modal
@@ -225,7 +177,7 @@ export default function SecureEmailChange({ userData, setUserData }) {
   };
 
   const closeEmailModal = () => {
-    setShowEmailModal(false);
+    setShowModal(false);
     setCurrentStep(1);
     setEmailData({
       newEmail: '',
@@ -266,37 +218,9 @@ export default function SecureEmailChange({ userData, setUserData }) {
 
 
   return (
-    <div className={styles.emailSection}>
-      <div className={styles.sectionHeader}>
-        <h2>Email</h2>
-      </div>
-
-      <div className={styles.emailContent}>
-        {/* Current Email Display */}
-        <div className={styles.infoItem}>
-          <div className={styles.infoContent}>
-            <label>Current Email</label>
-            <p>{userData.email}</p>
-          </div>
-        </div>
-
-        {/* Action Button */}
-        <div className={styles.actionButtons}>
-          <button 
-            onClick={() => {
-              setShowEmailModal(true);
-              document.body.classList.add('modalOpen');
-            }} 
-            className={styles.changeEmailButton}
-          >
-            <FaEnvelope />
-            <span>Change Email</span>
-          </button>
-        </div>
-      </div>
-
+    <>
       {/* Secure Email Change Modal */}
-      {showEmailModal && createPortal(
+      {showModal && createPortal(
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
             <div className={styles.modalHeader}>
@@ -492,6 +416,6 @@ export default function SecureEmailChange({ userData, setUserData }) {
           oldEmail={emailChangeData.oldEmail}
         />
       )}
-    </div>
+    </>
   );
 }

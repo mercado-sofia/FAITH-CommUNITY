@@ -54,7 +54,7 @@ export const getProgramsByOrg = async (req, res) => {
       `SELECT p.*, 'approved' as source_type, o.org as orgAcronym, o.orgName as orgName, o.logo as orgLogo
        FROM programs_projects p
        LEFT JOIN organizations o ON p.organization_id = o.id
-       WHERE p.organization_id = ? 
+       WHERE p.organization_id = ? AND p.is_approved = TRUE
        ORDER BY p.created_at DESC`,
       [organization.id]
     );
@@ -148,6 +148,7 @@ export const getApprovedPrograms = async (req, res) => {
       SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
+      WHERE p.is_approved = TRUE
       ORDER BY p.created_at DESC
     `);
 
@@ -276,7 +277,7 @@ export const getApprovedProgramsByOrg = async (req, res) => {
       SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
-       WHERE p.organization_id = ?
+       WHERE p.organization_id = ? AND p.is_approved = TRUE
        ORDER BY p.created_at DESC
     `, [organization.id]);
 
@@ -818,7 +819,7 @@ export const getFeaturedPrograms = async (req, res) => {
       SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo, o.org_color as orgColor
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
-      WHERE p.is_featured = TRUE
+      WHERE p.is_featured = TRUE AND p.is_approved = TRUE
       ORDER BY p.created_at DESC
     `);
 
@@ -933,7 +934,7 @@ export const getProgramBySlug = async (req, res) => {
         o.org_color as organization_color
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
-      WHERE pp.slug = ?
+      WHERE pp.slug = ? AND pp.is_approved = TRUE
     `;
     
     const [results] = await db.execute(query, [slug]);
@@ -1029,7 +1030,7 @@ export const getOtherProgramsByOrganization = async (req, res) => {
         o.logo as organization_logo
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
-      WHERE pp.organization_id = ? AND pp.id != ?
+      WHERE pp.organization_id = ? AND pp.id != ? AND pp.is_approved = TRUE
       ORDER BY pp.created_at DESC
       LIMIT 6
     `;
@@ -1108,8 +1109,8 @@ export const addProgramProject = async (req, res) => {
     }
 
     const [result] = await db.execute(
-      `INSERT INTO programs_projects (title, description, image, status, slug)
-       VALUES (?, ?, ?, 'pending', ?)`,
+      `INSERT INTO programs_projects (title, description, image, status, slug, is_approved)
+       VALUES (?, ?, ?, 'pending', ?, FALSE)`,
       [title, description ?? null, image ?? null, finalSlug]
     );
 

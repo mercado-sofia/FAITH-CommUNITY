@@ -160,9 +160,8 @@
 }
 
 .twoFAContainer .settingsPanel {
-  width: 574px;
-  max-width: 574px;
-  flex: none;
+  flex: 1;
+  min-width: 0;
 }
 
 /* Settings Panel */

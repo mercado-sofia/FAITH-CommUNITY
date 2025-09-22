@@ -8,19 +8,14 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
   const [mounted, setMounted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(5);
 
-  // Determine if this is an "already applied" case
-  const isAlreadyApplied = type === "already_applied";
-  
   // Set appropriate styling and content based on type
   const modalConfig = {
     success: {
-      icon: "FiCheckCircle",
       title: "Success!",
       iconColor: "#10B981", // Green
       titleColor: "#059669"
     },
     already_applied: {
-      icon: "FiInfo",
       title: "Already Applied",
       iconColor: "#3B82F6", // Blue
       titleColor: "#2563EB"

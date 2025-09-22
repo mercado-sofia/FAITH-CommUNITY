@@ -240,7 +240,7 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
                 </button>
                 {showOptions && (
                   <ul className={styles.dropdownMenu}>
-                    {['All', 'Pending', 'Approved', 'Declined'].map((status) => (
+                    {['All', 'Pending', 'Approved', 'Declined', 'Cancelled'].map((status) => (
                       <li
                         key={status}
                         className={`${styles.dropdownItem} ${
@@ -297,7 +297,11 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
                           ? styles.pending
                           : volunteer.status === 'Approved'
                           ? styles.approved
-                          : styles.declined
+                          : volunteer.status === 'Declined'
+                          ? styles.declined
+                          : volunteer.status === 'Cancelled'
+                          ? styles.cancelled
+                          : styles.pending
                       }`}
                     >
                       {volunteer.status}

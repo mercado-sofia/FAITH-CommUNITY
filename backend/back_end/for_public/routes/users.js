@@ -34,6 +34,8 @@ import {
   getUserApplications,
   getApplicationDetails,
   cancelApplication,
+  deleteApplication,
+  completeApplication,
 } from '../controllers/userController.js';
 
 const router = express.Router();
@@ -106,5 +108,7 @@ router.delete('/notifications/:notificationId', verifyToken, deleteNotification)
 router.get('/applications', verifyToken, getUserApplications);
 router.get('/applications/:id', verifyToken, getApplicationDetails);
 router.put('/applications/:id/cancel', verifyToken, cancelApplication);
+router.put('/applications/:id/complete', verifyToken, completeApplication);
+router.delete('/applications/:id', verifyToken, deleteApplication);
 
 export default router;

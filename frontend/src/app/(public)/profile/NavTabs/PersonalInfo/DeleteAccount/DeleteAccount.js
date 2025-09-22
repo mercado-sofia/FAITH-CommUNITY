@@ -6,6 +6,7 @@ import { FaEye, FaEyeSlash, FaCheck, FaSpinner } from 'react-icons/fa';
 import { FiTrash2, FiX } from 'react-icons/fi';
 import { PiWarningOctagonBold } from 'react-icons/pi';
 import { getApiUrl, getAuthHeaders } from '../../../utils/profileApi';
+import ConfirmationModal from '../../../components/ConfirmationModal';
 import styles from './DeleteAccount.module.css';
 
 export default function DeleteAccount() {
@@ -21,7 +22,6 @@ export default function DeleteAccount() {
   // Delete Account Functions
   const handleDeleteAccount = () => {
     setShowDeleteModal(true);
-    document.body.classList.add(styles.modalOpen);
   };
 
   const handleConfirmDelete = () => {
@@ -31,7 +31,6 @@ export default function DeleteAccount() {
 
   const handleCancelDelete = () => {
     setShowDeleteModal(false);
-    document.body.classList.remove(styles.modalOpen);
   };
 
   const handleDeleteAccountSubmit = async (e) => {
@@ -81,7 +80,6 @@ export default function DeleteAccount() {
     setDeleteError('');
     setDeleteSuccess('');
     setShowDeletePassword(false);
-    document.body.classList.remove(styles.modalOpen);
   };
 
   return (
@@ -108,41 +106,15 @@ export default function DeleteAccount() {
       </div>
 
       {/* Delete Account Modals */}
-      {showDeleteModal && createPortal(
-        <div className={styles.modalOverlay}>
-          <div className={styles.modal}>
-            <div className={styles.modalHeader}>
-              <div className={styles.warningIconContainer}>
-                <PiWarningOctagonBold />
-              </div>
-              <h2 className={styles.modalTitle}>Delete Account</h2>
-            </div>
-            
-            <div className={styles.confirmDeleteMessage}>
-              <p>Are you sure you want to delete your account? This action is permanent and cannot be undone.</p>
-            </div>
-
-            <div className={styles.confirmDeleteButtons}>
-              <button 
-                type="button" 
-                className={styles.cancelBtn}
-                onClick={handleCancelDelete}
-                tabIndex="-1"
-              >
-                Cancel
-              </button>
-              <button 
-                type="button" 
-                className={styles.deleteBtn}
-                onClick={handleConfirmDelete}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title="Delete Account"
+        message="Are you sure you want to delete your account? This action is permanent and cannot be undone."
+        confirmButtonText="Delete"
+        cancelButtonText="Cancel"
+      />
       
       {/* Password Confirmation Modal */}
       {showConfirmModal && createPortal(

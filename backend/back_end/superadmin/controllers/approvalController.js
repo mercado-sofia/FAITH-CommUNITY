@@ -204,8 +204,8 @@ export const approveSubmission = async (req, res) => {
 
         // Insert new program into programs_projects table
         const [result] = await db.execute(
-          `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
           [
             orgId,
             data.title,
@@ -482,8 +482,8 @@ export const bulkApproveSubmissions = async (req, res) => {
           }
 
           const [result] = await db.execute(
-            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
             [
               orgId,
               data.title,

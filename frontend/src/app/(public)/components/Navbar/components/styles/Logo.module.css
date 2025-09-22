@@ -2,7 +2,7 @@
 .logoContainer {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0;
   text-decoration: none;
   color: inherit;
   width: 160px;
@@ -42,7 +42,7 @@
 @media (max-width: 730px) {
   .logoContainer {
     width: auto;
-    gap: 0.5rem;
+    gap: 0;
   }
 
   .logoTextWrapper {

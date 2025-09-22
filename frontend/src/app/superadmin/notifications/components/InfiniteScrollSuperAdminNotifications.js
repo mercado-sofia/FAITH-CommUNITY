@@ -239,9 +239,9 @@ export default function InfiniteScrollSuperAdminNotifications({
             
             {/* Organization Logo */}
             <div className={styles.organizationLogoContainer}>
-              {notification.organization_logo ? (
+              {notification.orgLogo ? (
                 <Image
-                  src={getOrganizationImageUrl(notification.organization_logo, 'logo')}
+                  src={getOrganizationImageUrl(notification.orgLogo, 'logo')}
                   alt={`${notification.organization_acronym || 'Unknown Organization'} logo`}
                   width={40}
                   height={40}
@@ -258,7 +258,7 @@ export default function InfiniteScrollSuperAdminNotifications({
               ) : null}
               <div 
                 className={styles.organizationLogoPlaceholder}
-                style={{ display: notification.organization_logo ? 'none' : 'flex' }}
+                style={{ display: notification.orgLogo ? 'none' : 'flex' }}
               >
                 {notification.organization_acronym ? (
                   <span className={styles.organizationAcronymFallback}>

@@ -6,7 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import styles from './programDetails.module.css';
 import Loader from '../../../../components/Loader';
-import { getProgramImageUrl } from '@/utils/uploadPaths';
+import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
 import OtherProgramsCarousel from '../components/OtherProgramsCarousel/OtherProgramsCarousel';
 import { usePublicPageLoader } from '../../hooks/usePublicPageLoader';
 
@@ -403,9 +403,9 @@ export default function ProgramDetailsPage() {
                       className={styles.orgLink}
                     >
                       <div className={styles.orgInfo}>
-                        {program.organization_logo && (
+                        {program.orgLogo && (
                           <Image 
-                            src={program.organization_logo ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${program.organization_logo}` : '/logo/faith_community_logo.png'} 
+                            src={getOrganizationImageUrl(program.orgLogo)} 
                             alt={`${program.organization_name || program.organization_acronym} logo`}
                             width={48} 
                             height={48}

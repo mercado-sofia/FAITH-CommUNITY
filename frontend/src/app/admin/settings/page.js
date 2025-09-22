@@ -6,7 +6,8 @@ import { FaLock, FaBuilding } from 'react-icons/fa';
 import { useAdminProfile } from '../hooks/useAdminProfile';
 import { selectCurrentAdmin, updateAdminEmail } from '@/rtk/superadmin/adminSlice';
 import { SkeletonLoader, SuccessModal } from '../components';
-import { PasswordChangeModal, SecureEmailChangeModal } from './ProfileSection';
+import { PasswordChangeModal } from './ProfileSection';
+import { SecureEmailChange } from '@/components/SecureEmailChange';
 import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError } from '@/utils/adminAuth';
 import styles from './AdminSettings.module.css';
 
@@ -84,6 +85,10 @@ export default function SettingsPage() {
     setShowSecureEmailModal(false);
     setSuccessMessage('Email has been successfully changed.');
     setShowSuccessModal(true);
+    
+    // Update Redux store to keep sidebar in sync
+    dispatch(updateAdminEmail({ email: newEmail }));
+    
     refreshAdmin();
   };
 
@@ -270,10 +275,11 @@ export default function SettingsPage() {
       />
 
       {/* Secure Email Change Modal */}
-      <SecureEmailChangeModal
+      <SecureEmailChange
         isOpen={showSecureEmailModal}
         onClose={handleEmailEditClose}
         onSuccess={handleSecureEmailSuccess}
+        userType="admin"
         currentEmail={effectiveAdminData?.email}
       />
       

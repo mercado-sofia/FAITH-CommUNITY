@@ -15,7 +15,7 @@ export const getFooterContent = async (req, res) => {
       contact: {},
       quickLinks: [],
       services: [],
-      socialMedia: {},
+      socialMedia: [],
       copyright: {}
     };
 
@@ -43,10 +43,13 @@ export const getFooterContent = async (req, res) => {
           });
           break;
         case 'social_media':
-          footerData.socialMedia[row.title.toLowerCase()] = {
+          footerData.socialMedia.push({
+            id: row.id,
+            platform: row.title,
             url: row.url,
-            icon: row.icon
-          };
+            icon: row.icon,
+            displayOrder: row.display_order
+          });
           break;
         case 'copyright':
           footerData.copyright = {
@@ -55,6 +58,9 @@ export const getFooterContent = async (req, res) => {
           break;
       }
     });
+
+    // Sort social media by display order
+    footerData.socialMedia.sort((a, b) => a.displayOrder - b.displayOrder);
 
     res.json({
       success: true,
@@ -108,30 +114,48 @@ export const updateContactInfo = async (req, res) => {
 // Update social media URLs
 export const updateSocialMedia = async (req, res) => {
   try {
-    const { facebook, instagram, twitter } = req.body;
+    const { socialMedia } = req.body;
 
-    // Update Facebook
-    if (facebook !== undefined) {
-      await db.query(
-        'UPDATE footer_content SET url = ?, updated_at = CURRENT_TIMESTAMP WHERE section_type = ? AND title = ?',
-        [facebook, 'social_media', 'Facebook']
-      );
+    if (!socialMedia || !Array.isArray(socialMedia)) {
+      return res.status(400).json({
+        success: false,
+        message: "Social media data must be an array"
+      });
     }
 
-    // Update Instagram
-    if (instagram !== undefined) {
-      await db.query(
-        'UPDATE footer_content SET url = ?, updated_at = CURRENT_TIMESTAMP WHERE section_type = ? AND title = ?',
-        [instagram, 'social_media', 'Instagram']
-      );
-    }
+    // First, deactivate all existing social media entries
+    await db.query(
+      'UPDATE footer_content SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE section_type = ?',
+      ['social_media']
+    );
 
-    // Update Twitter/X
-    if (twitter !== undefined) {
-      await db.query(
-        'UPDATE footer_content SET url = ?, updated_at = CURRENT_TIMESTAMP WHERE section_type = ? AND title = ?',
-        [twitter, 'social_media', 'Twitter']
+    // Insert or update social media entries
+    for (let i = 0; i < socialMedia.length; i++) {
+      const { platform, url, icon } = socialMedia[i];
+      
+      if (!platform || !url) {
+        continue; // Skip invalid entries
+      }
+
+      // Check if entry already exists
+      const [existing] = await db.query(
+        'SELECT id FROM footer_content WHERE section_type = ? AND title = ?',
+        ['social_media', platform]
       );
+
+      if (existing.length > 0) {
+        // Update existing entry
+        await db.query(
+          'UPDATE footer_content SET url = ?, icon = ?, is_active = 1, display_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+          [url, icon || '', i + 1, existing[0].id]
+        );
+      } else {
+        // Insert new entry
+        await db.query(
+          'INSERT INTO footer_content (section_type, title, url, icon, display_order, is_active) VALUES (?, ?, ?, ?, ?, 1)',
+          ['social_media', platform, url, icon || '', i + 1]
+        );
+      }
     }
 
     res.json({

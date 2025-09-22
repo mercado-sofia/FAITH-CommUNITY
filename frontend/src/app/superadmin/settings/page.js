@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { FaEnvelope, FaLock, FaShieldAlt } from 'react-icons/fa';
 import styles from './settings.module.css';
-import { SecureEmailChangeModal, PasswordChangeModal, TwoFAModal } from './ProfileSection';
+import { PasswordChangeModal, TwoFAModal } from './ProfileSection';
+import { SecureEmailChange } from '@/components/SecureEmailChange';
 import SuccessModal from '../components/SuccessModal';
-import BrandingManagement from './SiteContent/Branding';
+import { SiteNameManagement, FooterContentManagement, BrandingManagement } from './SiteContent';
+import brandingStyles from './SiteContent/Branding/BrandingManagement.module.css';
 import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError, checkAuthStatus } from '@/utils/adminAuth';
 
 // Utility function for password change time
@@ -347,16 +349,22 @@ export default function SuperAdminSettings() {
       {/* Site Content Tab */}
       {activeTab === 'site-content' && (
         <div className={styles.tabContent}>
-          <BrandingManagement showSuccessModal={showSuccessModal} />
+          <div className={brandingStyles.brandingContainer}>
+            <SiteNameManagement showSuccessModal={showSuccessModal} />
+            <FooterContentManagement showSuccessModal={showSuccessModal} />
+            <BrandingManagement showSuccessModal={showSuccessModal} />
+          </div>
         </div>
       )}
 
       {/* Secure Email Change Modal */}
-      <SecureEmailChangeModal
+      <SecureEmailChange
         isOpen={showSecureEmailModal}
         onClose={() => setShowSecureEmailModal(false)}
         onSuccess={handleEmailSuccess}
+        userType="superadmin"
         currentUser={currentUser}
+        userId={currentUser?.id}
       />
 
       {/* Password Change Modal */}

@@ -219,7 +219,7 @@ export default function AllNewsPage() {
                      <div className={styles.newsMetadata}>
                        <div>
                          <p className={styles.newsDate}>
-                           <em>Published:</em> {formatDate(newsItem.published_at || newsItem.date)} &nbsp;&nbsp; <em>By:</em> {newsItem.orgName || newsItem.orgID || 'Unknown Organization'}
+                           <em>Published:</em> {formatDate(newsItem.published_at || newsItem.date)} &nbsp;&nbsp; <em>By:</em> {newsItem.orgName || 'Unknown Organization'}
                          </p>
                          <p className={styles.readMore}>Read More</p>
                        </div>

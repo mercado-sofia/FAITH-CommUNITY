@@ -308,11 +308,7 @@ export const usePublicFooterContent = () => {
       "Health Support",
       "Our Campaign"
     ],
-    socialMedia: {
-      facebook: data.data.socialMedia?.facebook?.url || 'https://facebook.com',
-      instagram: data.data.socialMedia?.instagram?.url || 'https://instagram.com',
-      twitter: data.data.socialMedia?.twitter?.url || 'https://x.com'
-    },
+    socialMedia: data.data.socialMedia || [],
     copyright: data.data.copyright?.content || '© Copyright 2025 FAITH CommUNITY. All Rights Reserved.'
   } : {
     contact: {
@@ -333,11 +329,7 @@ export const usePublicFooterContent = () => {
       "Health Support",
       "Our Campaign"
     ],
-    socialMedia: {
-      facebook: 'https://facebook.com',
-      instagram: 'https://instagram.com',
-      twitter: 'https://x.com'
-    },
+    socialMedia: [],
     copyright: '© Copyright 2025 FAITH CommUNITY. All Rights Reserved.'
   };
 

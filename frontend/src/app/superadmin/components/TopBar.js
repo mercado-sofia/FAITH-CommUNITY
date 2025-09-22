@@ -294,9 +294,9 @@ export default function TopBar() {
                       style={{ cursor: 'pointer' }}
                     >
                       <div className={styles.notificationIcon}>
-                        {notification.organization_logo ? (
+                        {notification.orgLogo ? (
                           <Image
-                            src={getOrganizationImageUrl(notification.organization_logo, 'logo')}
+                            src={getOrganizationImageUrl(notification.orgLogo, 'logo')}
                             alt={`${notification.organization_acronym} logo`}
                             width={24}
                             height={24}
@@ -310,7 +310,7 @@ export default function TopBar() {
                         ) : null}
                         <div 
                           className={styles.fallbackIcon}
-                          style={{ display: notification.organization_logo ? 'none' : 'flex' }}
+                          style={{ display: notification.orgLogo ? 'none' : 'flex' }}
                         >
                           {notification.organization_acronym ? (
                             <span className={styles.organizationAcronymFallback}>

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import styles from './ProgramPreview.module.css';
 import { FaUsers, FaCalendarAlt } from 'react-icons/fa';
 import { formatProgramDates } from '@/utils/dateUtils';
+import { getOrganizationImageUrl } from '@/utils/uploadPaths';
 
 export default function ProgramPreview({ selectedProgram, isLoading }) {
   const [imageError, setImageError] = useState(false);
@@ -79,18 +80,26 @@ export default function ProgramPreview({ selectedProgram, isLoading }) {
             <Link href={`/programs/${selectedProgram.slug || selectedProgram.id}`} className={styles.programTitleLink}>
               <h3 className={styles.programTitle}>{selectedProgram.name || selectedProgram.title}</h3>
             </Link>
-            <Link href={`/programs/org/${selectedProgram.orgID || selectedProgram.org || selectedProgram.organization || selectedProgram.orgAcronym}`} className={styles.organizationLink}>
-              <Image
-                src={selectedProgram.icon ? `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${selectedProgram.icon}` : '/logo/faith_community_logo.png'}
-                alt={`${selectedProgram.org || selectedProgram.organization} logo`}
-                width={24}
-                height={24}
-                className={styles.organizationIcon}
-                onError={(e) => {
-                  e.target.src = '/logo/faith_community_logo.png';
-                }}
-              />
-              <span className={styles.organizationName}>{selectedProgram.org || selectedProgram.organization}</span>
+            <Link href={`/programs/org/${selectedProgram.orgAcronym || selectedProgram.orgID}`} className={styles.organizationLink}>
+              {selectedProgram.orgLogo ? (
+                <Image
+                  src={getOrganizationImageUrl(selectedProgram.orgLogo)}
+                  alt={`${selectedProgram.orgName || 'Organization'} logo`}
+                  width={24}
+                  height={24}
+                  className={styles.organizationIcon}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <div className={styles.organizationIconFallback} style={{ display: selectedProgram.orgLogo ? 'none' : 'flex' }}>
+                <span className={styles.fallbackText}>
+                  {selectedProgram.orgName ? selectedProgram.orgName.charAt(0).toUpperCase() : 'O'}
+                </span>
+              </div>
+              <span className={styles.organizationName}>{selectedProgram.orgName || 'Organization'}</span>
             </Link>
           </div>
 

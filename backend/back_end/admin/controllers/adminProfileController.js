@@ -1,6 +1,10 @@
 //db table: admins
 import db from "../../database.js"
 import bcrypt from "bcrypt"
+import jwt from "jsonwebtoken"
+
+// JWT secret for admin (should match the one used in admin login)
+const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
 
 // Get admin's own profile
 export const getAdminProfile = async (req, res) => {
@@ -204,13 +208,60 @@ export const verifyAdminEmailChangeOTP = async (req, res) => {
       [verificationResult.newEmail, adminId]
     );
 
+    // Get updated admin data for new token
+    const [updatedAdminRows] = await db.execute(
+      `SELECT a.id, a.email, a.role, a.is_active, a.organization_id,
+              o.org, o.orgName, o.logo
+       FROM admins a
+       LEFT JOIN organizations o ON a.organization_id = o.id
+       WHERE a.id = ?`,
+      [adminId]
+    );
+
+    if (updatedAdminRows.length === 0) {
+      return res.status(404).json({ error: "Admin not found after email update" });
+    }
+
+    const updatedAdmin = updatedAdminRows[0];
+
+    // Generate new JWT token with updated email
+    const newJwtToken = jwt.sign(
+      {
+        id: updatedAdmin.id,
+        email: updatedAdmin.email,
+        role: updatedAdmin.role,
+        organization_id: updatedAdmin.organization_id,
+        org: updatedAdmin.org,
+        orgName: updatedAdmin.orgName,
+      },
+      JWT_SECRET,
+      { 
+        expiresIn: "30m",
+        issuer: process.env.JWT_ISS || "faith-community",
+        audience: process.env.JWT_AUD || "admin"
+      },
+    );
+
     // Clean up expired OTPs
     await EmailChangeOTP.cleanupExpiredOTPs();
 
     res.json({
       success: true,
       message: "Email changed successfully",
-      data: { email: verificationResult.newEmail }
+      data: { 
+        email: verificationResult.newEmail,
+        token: newJwtToken,
+        admin: {
+          id: updatedAdmin.id,
+          organization_id: updatedAdmin.organization_id,
+          org: updatedAdmin.org,
+          orgName: updatedAdmin.orgName,
+          logo: updatedAdmin.logo,
+          email: updatedAdmin.email,
+          role: updatedAdmin.role,
+          status: updatedAdmin.is_active ? "ACTIVE" : "INACTIVE",
+        }
+      }
     });
 
   } catch (err) {

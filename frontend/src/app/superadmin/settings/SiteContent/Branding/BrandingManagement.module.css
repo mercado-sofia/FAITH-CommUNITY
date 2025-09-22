@@ -26,7 +26,7 @@
 .brandingContainer {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1rem;
   max-width: 1200px;
 }
 
@@ -37,7 +37,7 @@
   border: 1px solid #e2e8f0;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   overflow: hidden;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -128,19 +128,25 @@
 
 /* Remove Button */
 .removeBtn {
-  background: none;
-  border: none;
   color: #dc2626;
+  background-color: #fef2f2;
+  border: 2px solid #dc2626;
   cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 3px;
-  font-size: 11px;
+  padding: 0.5rem;
+  border-radius: 8px;
+  font-size: 14px;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
 }
 
 .removeBtn:hover {
-  background: #fef2f2;
-  color: #b91c1c;
+  background: #ffe1e1;
+  color: #dc2626;
+  border-color: #dc2626;
 }
 
 /* Preview */
@@ -338,9 +344,9 @@
 }
 
 .deleteServiceBtn {
-  background: #ef4444;
-  color: white;
-  border: none;
+  color: #dc2626;
+  background-color: #fef2f2;
+  border: 2px solid #dc2626;
   border-radius: 8px;
   padding: 0.5rem;
   cursor: pointer;
@@ -350,22 +356,27 @@
   justify-content: center;
   min-width: 36px;
   height: 36px;
+  font-size: 14px;
   flex-shrink: 0;
 }
 
 .deleteServiceBtn:hover:not(:disabled) {
-  background: #dc2626;
+  background: #ffe1e1;
+  color: #dc2626;
+  border-color: #dc2626;
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
 }
 
 .deleteServiceBtn:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
 }
 
 .deleteServiceBtn:disabled {
-  background: #9ca3af;
+  background: #f3f4f6;
+  color: #9ca3af;
+  border-color: #d1d5db;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -538,6 +549,14 @@
     min-width: 32px;
     height: 32px;
     padding: 0.5rem;
+    font-size: 12px;
+  }
+  
+  .removeBtn {
+    min-width: 32px;
+    height: 32px;
+    padding: 0.5rem;
+    font-size: 12px;
   }
   
   .brandingItem {

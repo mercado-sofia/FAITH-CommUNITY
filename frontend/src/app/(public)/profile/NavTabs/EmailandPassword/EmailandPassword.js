@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { FaEnvelope, FaLock } from 'react-icons/fa';
-import SecureEmailChange from './ManageEmail/SecureEmailChange';
+import { SecureEmailChange } from '@/components/SecureEmailChange';
 import Password from './ManagePassword/Password';
 import styles from './EmailandPassword.module.css';
 
@@ -82,9 +82,13 @@ export default function EmailandPassword({ userData, setUserData }) {
 
       {/* Modal Components */}
       <SecureEmailChange 
-        userData={userData} 
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        onSuccess={() => {}}
+        userType="public"
+        currentEmail={userData.email}
+        showSuccessModal={true}
         setUserData={setUserData}
-        showModal={showEmailModal}
         setShowModal={setShowEmailModal}
       />
       <Password 

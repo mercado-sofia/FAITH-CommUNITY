@@ -7,6 +7,7 @@ import { FaChevronDown } from "react-icons/fa";
 const ProgramSelect = forwardRef(function ProgramSelect(
   {
     programOptions,
+    userApplications = [],
     formData,
     setFormData,
     dropdownOpen,
@@ -21,6 +22,11 @@ const ProgramSelect = forwardRef(function ProgramSelect(
 ) {
   const wrapperRef = useRef(null);
   const dropdownListRef = useRef(null);
+
+  // Helper function to check if a program is already applied
+  const isProgramAlreadyApplied = (programId) => {
+    return userApplications.some(application => application.programId === programId);
+  };
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -86,7 +92,7 @@ const ProgramSelect = forwardRef(function ProgramSelect(
               }
             }}
           >
-            {isLoading ? "Loading programs..." : error ? "Error loading programs" : formData.program?.name || <span className={errorMessage ? styles.placeholderError : ""}>Select Program</span>}
+            {isLoading ? "Loading programs..." : error ? "Error loading programs" : formData.program?.title || <span className={errorMessage ? styles.placeholderError : ""}>Select Program</span>}
             <FaChevronDown className={`${styles.dropdownIcon} ${dropdownOpen ? styles.arrowDown : styles.arrowRight} ${errorMessage ? styles.iconError : ""}`} />
           </div>
 
@@ -98,31 +104,39 @@ const ProgramSelect = forwardRef(function ProgramSelect(
               role="listbox"
             >
               {programOptions.length > 0 ? (
-                programOptions.map((option) => (
-                  <li
-                    key={option.id}
-                    className={styles.dropdownItem}
-                    onClick={() => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        program: option,
-                      }));
-                      setDropdownOpen(false);
-                      // Clear program error when a program is selected
-                      if (clearFieldError) {
-                        clearFieldError('program');
-                      }
-                      // Notify parent component about program selection
-                      if (onProgramSelect) {
-                        onProgramSelect(option);
-                      }
-                    }}
-                  >
-                    <div>
-                      <strong>{option.name}</strong>
-                    </div>
-                  </li>
-                ))
+                programOptions.map((option) => {
+                  const isAlreadyApplied = isProgramAlreadyApplied(option.id);
+                  return (
+                    <li
+                      key={option.id}
+                      className={`${styles.dropdownItem} ${isAlreadyApplied ? styles.disabledItem : ''}`}
+                      onClick={() => {
+                        if (isAlreadyApplied) return; // Prevent selection of already applied programs
+                        
+                        setFormData((prev) => ({
+                          ...prev,
+                          program: option,
+                        }));
+                        setDropdownOpen(false);
+                        // Clear program error when a program is selected
+                        if (clearFieldError) {
+                          clearFieldError('program');
+                        }
+                        // Notify parent component about program selection
+                        if (onProgramSelect) {
+                          onProgramSelect(option);
+                        }
+                      }}
+                    >
+                      <div>
+                        <strong>{option.title}</strong>
+                        {isAlreadyApplied && (
+                          <span className={styles.alreadyAppliedText}> (Already Applied)</span>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })
               ) : (
                 <li className={styles.noPrograms}>
                   No volunteer programs are currently accepting applications. Please check back later or contact us to learn about upcoming opportunities.

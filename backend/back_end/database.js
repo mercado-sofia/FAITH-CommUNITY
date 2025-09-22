@@ -1367,6 +1367,42 @@ const initializeDatabase = async () => {
       console.log("✅ Site name table already exists");
     }
 
+    // Check if footer_content table exists
+    const [footerContentTables] = await connection.query('SHOW TABLES LIKE "footer_content"');
+    
+    if (footerContentTables.length === 0) {
+      console.log("Creating footer_content table...");
+      await connection.query(`
+        CREATE TABLE footer_content (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          section_type ENUM('contact', 'quick_links', 'services', 'social_media', 'copyright') NOT NULL,
+          title VARCHAR(255) NOT NULL,
+          content TEXT NULL,
+          url VARCHAR(500) NULL,
+          icon VARCHAR(100) NULL,
+          display_order INT DEFAULT 1,
+          is_active TINYINT(1) DEFAULT 1,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_section_type (section_type),
+          INDEX idx_is_active (is_active),
+          INDEX idx_display_order (display_order)
+        )
+      `);
+      
+      // Insert default footer content records
+      await connection.query(`
+        INSERT INTO footer_content (section_type, title, url, display_order) VALUES
+        ('contact', 'phone', '+163-3654-7896', 1),
+        ('contact', 'email', 'info@faithcommunity.com', 2),
+        ('copyright', 'copyright', '© Copyright 2025 FAITH CommUNITY. All Rights Reserved.', 1)
+      `);
+      
+      console.log("✅ Footer content table created successfully!");
+    } else {
+      console.log("✅ Footer content table already exists");
+    }
+
     connection.release();
     return promisePool;
   } catch (error) {

@@ -240,7 +240,7 @@ export const getNewsByOrg = async (req, res) => {
         created_at: n.created_at,
         orgID: n.orgAcronym || 'Unknown',
         orgName: n.orgName || 'Unknown Organization',
-        icon: logoUrl
+        orgLogo: logoUrl
       };
     });
 
@@ -290,7 +290,7 @@ export const getApprovedNews = async (req, res) => {
         organization_id: n.organization_id,
         orgID: n.orgAcronym || `Org-${n.organization_id}`,
         orgName: n.orgName || `Organization ${n.organization_id}`,
-        icon: logoUrl
+        orgLogo: logoUrl
       };
     });
 
@@ -364,7 +364,7 @@ export const getApprovedNewsByOrg = async (req, res) => {
         organization_id: n.organization_id,
         orgID: n.orgAcronym || organization.org || `Org-${n.organization_id}`,
         orgName: n.orgName || organization.orgName || `Organization ${n.organization_id}`,
-        icon: logoUrl
+        orgLogo: logoUrl
       };
     });
 
@@ -423,7 +423,7 @@ export const getNewsById = async (req, res) => {
       organization_id: n.organization_id,
       orgID: n.orgAcronym || `Org-${n.organization_id}`,
       orgName: n.orgName || `Organization ${n.organization_id}`,
-      icon: logoUrl,
+      orgLogo: logoUrl,
     };
 
     return res.json(newsData);
@@ -482,7 +482,7 @@ export const getNewsBySlug = async (req, res) => {
       organization_id: n.organization_id,
       orgID: n.orgAcronym || `Org-${n.organization_id}`,
       orgName: n.orgName || `Organization ${n.organization_id}`,
-      icon: logoUrl,
+      orgLogo: logoUrl,
     };
 
     return res.json(newsData);
@@ -623,7 +623,7 @@ export const getRecentlyDeletedNews = async (req, res) => {
         days_until_permanent_deletion: Math.max(0, daysRemaining),
         orgID: n.orgAcronym || 'Unknown',
         orgName: n.orgName || 'Unknown Organization',
-        icon: logoUrl
+        orgLogo: logoUrl
       };
     });
 

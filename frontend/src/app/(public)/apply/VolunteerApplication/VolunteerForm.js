@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import styles from "./volunteerForm.module.css";
 import ProgramSelect from "./ProgramSelect";
 import SuccessModal from "../components/SuccessModal";
-import { usePublicApprovedPrograms } from "../../hooks/usePublicData";
+import { usePublicPrograms } from "../../hooks/usePublicData";
 import FormErrorBoundary from "../components/FormErrorBoundary";
 import { useApplyFormPersistence } from "../../hooks/useApplyFormPersistence";
 import logger from "@/utils/logger";
@@ -24,12 +24,19 @@ function SubmitStatus({ status }) {
 }
 
 export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSelect, onFormReset }) {
-  // Fetch approved upcoming programs from the API
+  // Fetch all approved programs from the API (including already applied ones)
   const {
-    programs: programOptions = [],
+    programs: allPrograms = [],
     isLoading: programsLoading,
     error: programsError
-  } = usePublicApprovedPrograms();
+  } = usePublicPrograms();
+
+  // Filter to only show upcoming programs
+  const programOptions = allPrograms.filter(program => program.status === 'Upcoming');
+
+  // State for user applications
+  const [userApplications, setUserApplications] = useState([]);
+  const [applicationsLoading, setApplicationsLoading] = useState(false);
 
   // Initial form data
   const initialFormData = {
@@ -45,6 +52,43 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
     FORM_PERSISTENCE_KEY, 
     initialFormData
   );
+
+  // Fetch user applications
+  const fetchUserApplications = async () => {
+    try {
+      setApplicationsLoading(true);
+      const token = localStorage.getItem('userToken');
+      
+      if (!token) {
+        setUserApplications([]);
+        return;
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/users/applications`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserApplications(data.applications || []);
+      } else {
+        setUserApplications([]);
+      }
+    } catch (error) {
+      console.error('Error fetching user applications:', error);
+      setUserApplications([]);
+    } finally {
+      setApplicationsLoading(false);
+    }
+  };
+
+  // Fetch user applications on component mount
+  useEffect(() => {
+    fetchUserApplications();
+  }, []);
 
   // Auto-select program if selectedProgramId is provided
   useEffect(() => {
@@ -223,6 +267,9 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
           // Clear form data using the hook's clear function
           clearFormData();
           
+          // Refresh user applications to update the dropdown
+          fetchUserApplications();
+          
           // Reset program preview if callback is provided
           if (onFormReset) {
             onFormReset();
@@ -278,6 +325,9 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
 
       // Clear form data using the hook's clear function
       clearFormData();
+
+      // Refresh user applications to update the dropdown
+      fetchUserApplications();
 
       // Reset program preview if callback is provided
       if (onFormReset) {
@@ -342,6 +392,7 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
         <FormErrorBoundary componentName="ProgramSelect" formSection="program-selection">
           <ProgramSelect
             programOptions={programOptions}
+            userApplications={userApplications}
             formData={formData}
             setFormData={setFormData}
             dropdownOpen={dropdownOpen}

@@ -1,6 +1,4 @@
 import 'dotenv/config';
-console.log("SMTP host:", process.env.SMTP_HOST);
-console.log("SMTP user (masked):", (process.env.SMTP_USER||"").slice(0,4) + "***");
 
 import express from "express"
 import cors from "cors"
@@ -123,13 +121,6 @@ app.use(bodyParser.urlencoded({ extended: true }))
 // Static file serving for uploads removed - using Cloudinary now
 
 
-// Debug logger middleware (reduce noise in production)
-if (process.env.NODE_ENV !== "production") {
-  app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`)
-    next()
-  })
-}
 
 // Global rate limiting and burst control
 const globalLimiter = rateLimit({
@@ -353,7 +344,6 @@ app.use((err, req, res, next) => {
 
 // 404 handler
 app.use((req, res) => {
-  console.log(`404: ${req.method} ${req.url} not found`)
   res.status(404).json({
     success: false,
     message: "Route not found",
@@ -384,31 +374,3 @@ app.listen(PORT, () => {
     console.error('❌ Initial cleanup failed:', error);
   });
 })
-
-// Function to list all registered routes
-function listRoutes(app) {
-  if (!app?._router?.stack) {
-    console.log("No routes registered yet.");
-    return;
-  }
-  const out = [];
-  app._router.stack.forEach((m) => {
-    if (m.name === "router" && m.handle?.stack) {
-      const base =
-        (m.regexp?.source.match(/\^\\\/(.+?)\\\/\?\(\?=\\\/\|\$\)/)?.[1] || "")
-          .replace(/\\\//g, "/");
-      m.handle.stack.forEach((h) => {
-        if (h.route) {
-          out.push(
-            `${Object.keys(h.route.methods)
-              .join(",")
-              .toUpperCase()} /${base}${h.route.path}`.replace(/\/\//g, "/")
-          );
-        }
-      });
-    }
-  });
-  console.log("Registered routes:\n" + out.join("\n"));
-}
-
-listRoutes(app);

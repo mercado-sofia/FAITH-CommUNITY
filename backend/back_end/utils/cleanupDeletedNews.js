@@ -7,7 +7,6 @@ import db from '../database.js';
  */
 export const cleanupDeletedNews = async () => {
   try {
-    console.log('🧹 Starting cleanup of deleted news items...');
     
     // Delete news items that have been deleted for more than 15 days
     const [result] = await db.execute(`
@@ -17,9 +16,7 @@ export const cleanupDeletedNews = async () => {
     `);
 
     if (result.affectedRows > 0) {
-      console.log(`✅ Cleaned up ${result.affectedRows} deleted news items older than 15 days`);
     } else {
-      console.log('ℹ️ No deleted news items found for cleanup');
     }
 
     return {
@@ -28,7 +25,7 @@ export const cleanupDeletedNews = async () => {
       message: `Cleaned up ${result.affectedRows} deleted news items`
     };
   } catch (error) {
-    console.error('❌ Error during cleanup of deleted news:', error);
+    console.error('Error during cleanup of deleted news:', error);
     return {
       success: false,
       error: error.message,
@@ -58,7 +55,7 @@ export const manualCleanupDeletedNews = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('❌ Error in manual cleanup:', error);
+    console.error('Error in manual cleanup:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to perform manual cleanup',

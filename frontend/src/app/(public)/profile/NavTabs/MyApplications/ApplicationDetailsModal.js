@@ -7,7 +7,7 @@ import { FiCalendar, FiClock } from 'react-icons/fi';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
-import { formatDateLong, formatProgramDate } from '@/utils/dateUtils';
+import { formatDateLong, formatProgramDates } from '@/utils/dateUtils';
 import { getOrganizationImageUrl } from '@/utils/uploadPaths';
 import styles from './ApplicationDetailsModal.module.css';
 import sharedStyles from './MyApplications.module.css';
@@ -154,7 +154,12 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
                         alt={`${application.organizationName} logo`}
                         width={24}
                         height={24}
-                        className={styles.orgLogo}
+                        className={styles.organizationLogo}
+                        style={{
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          overflow: 'hidden'
+                        }}
                       />
                     )}
                     <Link 
@@ -182,7 +187,7 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
                     <div className={styles.scheduleItem}>
                       <span className={styles.scheduleLabel}>Date:</span>
                       <span className={styles.scheduleValue}>
-                        {formatProgramDate(application.programStartDate, application.programEndDate)}
+                        {formatProgramDates(application)}
                       </span>
                     </div>
                     {application.programStartTime && application.programEndTime && (

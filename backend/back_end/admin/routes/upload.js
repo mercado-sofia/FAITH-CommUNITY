@@ -81,14 +81,6 @@ router.post('/', authenticateAdmin, cloudinaryUploadConfigs.programMain.single('
         { prefix }
       );
       
-      console.log('✅ File uploaded successfully to Cloudinary:', {
-        originalname: req.file.originalname,
-        size: req.file.size,
-        mimetype: req.file.mimetype,
-        uploadType: uploadType,
-        url: uploadResult.url,
-        public_id: uploadResult.public_id
-      });
       
       res.json({ 
         success: true,

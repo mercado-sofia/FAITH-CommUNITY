@@ -17,10 +17,9 @@ cloudinary.config({
 export const testCloudinaryConnection = async () => {
   try {
     const result = await cloudinary.api.ping();
-    console.log('✅ Cloudinary connection successful:', result);
     return true;
   } catch (error) {
-    console.error('❌ Cloudinary connection failed:', error);
+    console.error('Cloudinary connection failed:', error);
     return false;
   }
 };

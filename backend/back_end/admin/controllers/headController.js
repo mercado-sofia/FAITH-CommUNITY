@@ -168,7 +168,6 @@ export const updateHead = async (req, res) => {
           if (oldPublicId) {
             try {
               await deleteFromCloudinary(oldPublicId);
-              console.log('Old organization head photo deleted from Cloudinary:', oldPublicId);
             } catch (deleteError) {
               console.warn('Failed to delete old organization head photo from Cloudinary:', deleteError.message);
             }
@@ -278,7 +277,6 @@ export const bulkDeleteHeads = async (req, res) => {
 
   try {
     // Verify organization exists first
-    console.log('Checking if organization exists with ID:', organization_id);
     const [orgCheck] = await db.execute("SELECT id FROM organizations WHERE id = ?", [organization_id])
     // Organization check result
     
@@ -298,7 +296,6 @@ export const bulkDeleteHeads = async (req, res) => {
     );
 
     if (headsCheck.length !== head_ids.length) {
-      console.log('Some heads do not belong to this organization or do not exist');
       return res.status(400).json({
         success: false,
         message: "Some heads do not belong to this organization or do not exist",
@@ -306,13 +303,11 @@ export const bulkDeleteHeads = async (req, res) => {
     }
 
     // Delete the heads
-    console.log('Deleting heads with IDs:', head_ids);
     const [result] = await db.execute(
       `DELETE FROM organization_heads WHERE id IN (${placeholders}) AND organization_id = ?`,
       [...head_ids, organization_id]
     );
 
-    console.log('Delete result:', result);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({
@@ -321,7 +316,6 @@ export const bulkDeleteHeads = async (req, res) => {
       })
     }
 
-    console.log(`Successfully deleted ${result.affectedRows} heads`);
     res.json({
       success: true,
       message: `Successfully deleted ${result.affectedRows} organization head(s)`,
@@ -340,25 +334,9 @@ export const bulkDeleteHeads = async (req, res) => {
 export const bulkUpdateHeads = async (req, res) => {
   const { organization_id, heads } = req.body
 
-  console.log('Bulk update heads request:');
-  console.log('Organization ID:', organization_id);
-  console.log('Heads array:', heads);
-  console.log('Request body:', req.body);
   
-  // Log each head's photo field to check for issues
-  if (heads && Array.isArray(heads)) {
-    heads.forEach((head, index) => {
-      console.log(`Head ${index + 1} photo:`, {
-        hasPhoto: !!head.photo,
-        photoType: typeof head.photo,
-        photoLength: head.photo ? head.photo.length : 0,
-        photoStartsWithData: head.photo ? head.photo.startsWith('data:') : false
-      });
-    });
-  }
 
   if (!organization_id || !Array.isArray(heads)) {
-    console.log('Validation failed: Missing organization_id or heads is not array');
     return res.status(400).json({
       success: false,
       message: "Organization ID and heads array are required",
@@ -367,7 +345,6 @@ export const bulkUpdateHeads = async (req, res) => {
 
   try {
     // Verify organization exists first
-    console.log('Checking if organization exists with ID:', organization_id);
     const [orgCheck] = await db.execute("SELECT id FROM organizations WHERE id = ?", [organization_id])
     // Organization check result
     
@@ -380,18 +357,13 @@ export const bulkUpdateHeads = async (req, res) => {
     }
 
     // Delete existing heads for this organization
-    console.log('Deleting existing heads for organization:', organization_id);
     await db.execute("DELETE FROM organization_heads WHERE organization_id = ?", [organization_id])
-    console.log('Existing heads deleted successfully');
 
     // Insert new heads
-    console.log('Inserting', heads.length, 'new heads');
     for (let i = 0; i < heads.length; i++) {
       const head = heads[i];
-      console.log(`Processing head ${i + 1}:`, head);
       
       if (!head.head_name || !head.role) {
-        console.log('Validation failed: missing name or role for head', i + 1);
         return res.status(400).json({
           success: false,
           message: "Each head must have a name and role",
@@ -435,24 +407,12 @@ export const bulkUpdateHeads = async (req, res) => {
       // Clean up photo field - remove base64 data and limit length
       let cleanPhoto = head.photo?.trim() || null;
       if (cleanPhoto && cleanPhoto.startsWith('data:')) {
-        console.log(`Head ${i + 1}: Removing base64 photo data`);
         cleanPhoto = null;
       }
       if (cleanPhoto && cleanPhoto.length > 500) {
-        console.log(`Head ${i + 1}: Photo field too long, truncating`);
         cleanPhoto = cleanPhoto.substring(0, 500);
       }
 
-      console.log('Inserting head with data:', {
-        organization_id,
-        head_name: head.head_name.trim(),
-        role: head.role.trim(),
-        priority,
-        display_order,
-        facebook: head.facebook?.trim() || '',
-        email: head.email?.trim() || null,
-        photo: cleanPhoto,
-      });
       
       await db.execute(
         `INSERT INTO organization_heads (organization_id, head_name, role, priority, display_order, facebook, email, photo)
@@ -469,10 +429,8 @@ export const bulkUpdateHeads = async (req, res) => {
         ],
       )
       
-      console.log(`Head ${i + 1} inserted successfully`);
     }
 
-    console.log('All heads inserted successfully');
     res.json({
       success: true,
       message: "Organization heads updated successfully",
@@ -510,7 +468,6 @@ export const reorderHeads = async (req, res) => {
       }
     }
 
-    console.log('Heads reordered successfully');
     res.json({
       success: true,
       message: "Organization heads reordered successfully"

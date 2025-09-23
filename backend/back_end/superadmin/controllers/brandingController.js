@@ -80,23 +80,14 @@ export const updateBranding = async (req, res) => {
 // Upload logo
 export const uploadLogo = async (req, res) => {
   try {
-    console.log('Upload logo request received');
-    console.log('Request file:', req.file);
-    console.log('Request body:', req.body);
     
     if (!req.file) {
-      console.log('No file provided in request');
       return res.status(400).json({ 
         success: false, 
         message: 'No logo file provided' 
       });
     }
 
-    console.log('File details:', {
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size
-    });
 
     // Upload to Cloudinary
     const uploadResult = await uploadSingleToCloudinary(
@@ -122,7 +113,6 @@ export const uploadLogo = async (req, res) => {
         if (oldPublicId) {
           try {
             await deleteFromCloudinary(oldPublicId);
-            console.log('Old logo deleted from Cloudinary:', oldPublicId);
           } catch (deleteError) {
             console.warn('Failed to delete old logo from Cloudinary:', deleteError.message);
           }
@@ -135,7 +125,6 @@ export const uploadLogo = async (req, res) => {
       );
     }
 
-    console.log('Logo uploaded successfully to Cloudinary:', logoUrl);
     res.json({
       success: true,
       message: 'Logo uploaded successfully',
@@ -164,23 +153,14 @@ export const uploadLogo = async (req, res) => {
 // Upload favicon
 export const uploadFavicon = async (req, res) => {
   try {
-    console.log('Upload favicon request received');
-    console.log('Request file:', req.file);
-    console.log('Request body:', req.body);
     
     if (!req.file) {
-      console.log('No file provided in request');
       return res.status(400).json({ 
         success: false, 
         message: 'No favicon file provided' 
       });
     }
 
-    console.log('File details:', {
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size
-    });
 
     // Upload to Cloudinary
     const uploadResult = await uploadSingleToCloudinary(
@@ -206,7 +186,6 @@ export const uploadFavicon = async (req, res) => {
         if (oldPublicId) {
           try {
             await deleteFromCloudinary(oldPublicId);
-            console.log('Old favicon deleted from Cloudinary:', oldPublicId);
           } catch (deleteError) {
             console.warn('Failed to delete old favicon from Cloudinary:', deleteError.message);
           }
@@ -219,7 +198,6 @@ export const uploadFavicon = async (req, res) => {
       );
     }
 
-    console.log('Favicon uploaded successfully to Cloudinary:', faviconUrl);
     res.json({
       success: true,
       message: 'Favicon uploaded successfully',
@@ -263,7 +241,6 @@ export const deleteLogo = async (req, res) => {
       if (publicId) {
         try {
           await deleteFromCloudinary(publicId);
-          console.log('Logo deleted from Cloudinary:', publicId);
         } catch (deleteError) {
           console.warn('Failed to delete logo from Cloudinary:', deleteError.message);
         }
@@ -307,7 +284,6 @@ export const deleteFavicon = async (req, res) => {
       if (publicId) {
         try {
           await deleteFromCloudinary(publicId);
-          console.log('Favicon deleted from Cloudinary:', publicId);
         } catch (deleteError) {
           console.warn('Failed to delete favicon from Cloudinary:', deleteError.message);
         }
@@ -336,23 +312,14 @@ export const deleteFavicon = async (req, res) => {
 // Upload name image
 export const uploadName = async (req, res) => {
   try {
-    console.log('Upload name request received');
-    console.log('Request file:', req.file);
-    console.log('Request body:', req.body);
     
     if (!req.file) {
-      console.log('No file provided in request');
       return res.status(400).json({ 
         success: false, 
         message: 'No name file provided' 
       });
     }
 
-    console.log('File details:', {
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size
-    });
 
     // Upload to Cloudinary
     const uploadResult = await uploadSingleToCloudinary(
@@ -378,7 +345,6 @@ export const uploadName = async (req, res) => {
         if (oldPublicId) {
           try {
             await deleteFromCloudinary(oldPublicId);
-            console.log('Old name image deleted from Cloudinary:', oldPublicId);
           } catch (deleteError) {
             console.warn('Failed to delete old name image from Cloudinary:', deleteError.message);
           }
@@ -391,7 +357,6 @@ export const uploadName = async (req, res) => {
       );
     }
 
-    console.log('Name uploaded successfully to Cloudinary:', nameUrl);
     res.json({
       success: true,
       message: 'Name uploaded successfully',
@@ -435,7 +400,6 @@ export const deleteName = async (req, res) => {
       if (publicId) {
         try {
           await deleteFromCloudinary(publicId);
-          console.log('Name image deleted from Cloudinary:', publicId);
         } catch (deleteError) {
           console.warn('Failed to delete name image from Cloudinary:', deleteError.message);
         }

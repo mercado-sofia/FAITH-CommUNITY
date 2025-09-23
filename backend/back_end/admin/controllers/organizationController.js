@@ -21,7 +21,6 @@ export const getOrganizationByName = async (req, res) => {
     }
 
     const org = orgRows[0]
-    console.log("📦 Fetched org:", org)
 
     const [advocacies] = await db.execute("SELECT advocacy FROM advocacies WHERE organization_id = ?", [org.id])
     const [competencies] = await db.execute("SELECT competency FROM competencies WHERE organization_id = ?", [org.id])
@@ -133,8 +132,6 @@ export const updateOrganizationInfo = async (req, res) => {
   const { id } = req.params
   const { logo, orgName, org, facebook, description, status, orgColor } = req.body
 
-  console.log("Backend: Received update request for Org ID:", id)
-  console.log("Backend: Received body data:", { logo, orgName, org, facebook, description, status, orgColor })
 
   // Validate required fields
   if (!org || !orgName) {
@@ -159,7 +156,6 @@ export const updateOrganizationInfo = async (req, res) => {
         if (oldPublicId) {
           try {
             await deleteFromCloudinary(oldPublicId);
-            console.log('Old organization logo deleted from Cloudinary:', oldPublicId);
           } catch (deleteError) {
             console.warn('Failed to delete old organization logo from Cloudinary:', deleteError.message);
           }
@@ -188,15 +184,6 @@ export const updateOrganizationInfo = async (req, res) => {
   const finalStatus = status || "ACTIVE" // Ensure status is always a string
   const finalOrgColor = orgColor || "#444444"
 
-  console.log("Backend: Final processed values:", { 
-    org,
-    orgName,
-    finalLogo, 
-    finalFacebook, 
-    finalDescription, 
-    finalStatus, 
-    finalOrgColor 
-  })
 
   // Values prepared for database update
   // Now updating org and orgName in organizations table
@@ -317,7 +304,6 @@ export const getOrganizationById = async (req, res) => {
     }
 
     const org = orgRows[0]
-    console.log("📦 Fetched org by ID:", org)
 
     const [advocacies] = await db.execute("SELECT advocacy FROM advocacies WHERE organization_id = ?", [org.id])
     const [competencies] = await db.execute("SELECT competency FROM competencies WHERE organization_id = ?", [org.id])

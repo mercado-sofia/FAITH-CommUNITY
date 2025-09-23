@@ -7,7 +7,7 @@ import { FaRegClock } from 'react-icons/fa6';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
-import { formatDateShort, formatProgramDate } from '@/utils/dateUtils';
+import { formatDateShort, formatProgramDates } from '@/utils/dateUtils';
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
 import ApplicationDetailsModal from './ApplicationDetailsModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -498,7 +498,7 @@ export default function MyApplications() {
                         <div className={styles.dateSection}>
                           <FiCalendar className={styles.calendarIcon} />
                           <span className={styles.dateText}>
-                            {formatProgramDate(application.programStartDate, application.programEndDate)}
+                            {formatProgramDates(application)}
                           </span>
                         </div>
                         {application.programStartTime && application.programEndTime && (
@@ -536,7 +536,12 @@ export default function MyApplications() {
                             alt={`${application.organizationName} logo`}
                             width={20}
                             height={20}
-                            className={styles.orgLogo}
+                            className={styles.organizationLogo}
+                            style={{
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              overflow: 'hidden'
+                            }}
                             onError={(e) => {
                               e.target.style.display = 'none';
                               e.target.nextSibling.style.display = 'block';

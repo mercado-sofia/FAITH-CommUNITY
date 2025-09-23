@@ -4,16 +4,13 @@ import SuperAdminNotificationController from '../superadmin/controllers/superadm
 
 export const createMissingNotifications = async () => {
   try {
-    console.log('🔍 Checking for missing notifications...');
 
     // Get superadmin ID
     const [superadminRows] = await db.execute("SELECT id FROM superadmin LIMIT 1");
     if (superadminRows.length === 0) {
-      console.log('❌ No superadmin found');
       return;
     }
     const superadminId = superadminRows[0].id;
-    console.log('✅ Found superadmin ID:', superadminId);
 
     // Get all pending program submissions
     const [programSubmissions] = await db.execute(`
@@ -24,12 +21,10 @@ export const createMissingNotifications = async () => {
       ORDER BY s.submitted_at DESC
     `);
 
-    console.log(`📋 Found ${programSubmissions.length} pending program submissions`);
 
     // Check which ones already have notifications
     const submissionIds = programSubmissions.map(s => s.id);
     if (submissionIds.length === 0) {
-      console.log('✅ No program submissions to process');
       return;
     }
 
@@ -40,7 +35,6 @@ export const createMissingNotifications = async () => {
     `, submissionIds);
 
     const existingSubmissionIds = new Set(existingNotifications.map(n => n.submission_id));
-    console.log(`📊 Found ${existingNotifications.length} existing notifications for program submissions`);
 
     // Create notifications for missing submissions
     let createdCount = 0;
@@ -65,26 +59,23 @@ export const createMissingNotifications = async () => {
           );
 
           createdCount++;
-          console.log(`✅ Created notification for submission ${submission.id}: "${programTitle}"`);
         } catch (error) {
-          console.error(`❌ Failed to create notification for submission ${submission.id}:`, error.message);
+          console.error(`Failed to create notification for submission ${submission.id}:`, error.message);
         }
       }
     }
 
-    console.log(`🎉 Created ${createdCount} missing notifications for program submissions`);
   } catch (error) {
-    console.error('❌ Error creating missing notifications:', error);
+    console.error('Error creating missing notifications:', error);
   }
 };
 
 // Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   createMissingNotifications().then(() => {
-    console.log('✅ Script completed');
     process.exit(0);
   }).catch(error => {
-    console.error('❌ Script failed:', error);
+    console.error('Script failed:', error);
     process.exit(1);
   });
 }

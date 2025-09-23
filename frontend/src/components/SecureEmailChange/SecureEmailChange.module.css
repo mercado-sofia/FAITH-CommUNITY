@@ -64,7 +64,7 @@
 }
 
 .securityIcon {
-  color: #1A685B;
+  color: #06100f;
   font-size: 18px;
   width: 35px;
   height: 35px;
@@ -144,7 +144,7 @@
 }
 
 .step.active .stepNumber {
-  background: #1A685B;
+  background: #06100f;
   color: white;
 }
 
@@ -155,7 +155,7 @@
 }
 
 .step.active .stepLabel {
-  color: #1A685B;
+  color: #06100f;
 }
 
 /* Form Styles */
@@ -231,8 +231,8 @@
 .emailInput:focus,
 .otpInput:focus {
   outline: none;
-  border-color: #1A685B;
-  box-shadow: 0 0 0 3px rgba(26, 104, 91, 0.1);
+  border-color: #06100f;
+  box-shadow: 0 0 0 3px rgba(6, 16, 15, 0.1);
 }
 
 .emailInput.error,
@@ -257,8 +257,8 @@
 
 .passwordInputWrapper input:focus {
   outline: none;
-  border-color: #1A685B;
-  box-shadow: 0 0 0 3px rgba(26, 104, 91, 0.1);
+  border-color: #06100f;
+  box-shadow: 0 0 0 3px rgba(6, 16, 15, 0.1);
 }
 
 .passwordInputWrapper input.error {
@@ -349,7 +349,7 @@
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
-  background: linear-gradient(135deg, #1A685B 0%, #2D8F7F 100%);
+  background: #06100f;
   color: white;
   border: none;
   border-radius: 8px;
@@ -361,7 +361,7 @@
 
 .continueButton:hover,
 .verifyButton:hover {
-  box-shadow: 0 4px 12px rgba(26, 104, 91, 0.3);
+  box-shadow: 0 4px 12px rgba(6, 16, 15, 0.3);
 }
 
 .continueButton:disabled,
@@ -423,7 +423,7 @@
 
 .successIcon {
   font-size: 2rem;
-  color: #10b981;
+  color: #06100f;
   display: flex;
   align-items: center;
   justify-content: center;

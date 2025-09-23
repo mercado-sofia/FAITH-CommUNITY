@@ -26,7 +26,6 @@ export async function subscribe(req, res) {
     );
 
     const verifyUrl = `${API_BASE}/api/subscribers/verify?token=${verifyToken}`;
-    console.log("Dev Verify URL:", verifyUrl);
 
     try {
       await sendMail({

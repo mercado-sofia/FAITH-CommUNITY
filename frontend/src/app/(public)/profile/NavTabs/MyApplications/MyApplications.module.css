@@ -358,6 +358,12 @@
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 1;
+  border: none;
+  outline: none;
+  clip-path: circle(50%);
 }
 
 .organizationLogoFallback {
@@ -366,6 +372,9 @@
   border-radius: 50%;
   background: #e2e8f0;
   flex-shrink: 0;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 1;
 }
 
 .organizationName {

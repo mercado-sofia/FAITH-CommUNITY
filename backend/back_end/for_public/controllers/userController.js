@@ -371,39 +371,30 @@ export const uploadProfilePhoto = async (req, res) => {
   try {
     const userId = req.user.id;
     
-    console.log('📸 Profile photo upload request:', {
-      userId,
-      hasFile: !!req.file,
-      fileInfo: req.file ? {
-        originalname: req.file.originalname,
-        mimetype: req.file.mimetype,
-        size: req.file.size
-      } : null
-    });
 
     // Check if file exists
     if (!req.file) {
-      console.error('❌ No file provided in request');
+      console.error('No file provided in request');
       return res.status(400).json({ error: 'No file provided' });
     }
 
     // Check if file buffer exists
     if (!req.file.buffer) {
-      console.error('❌ No file buffer found');
+      console.error('No file buffer found');
       return res.status(400).json({ error: 'File buffer not found' });
     }
 
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/avif'];
     if (!allowedTypes.includes(req.file.mimetype)) {
-      console.error('❌ Invalid file type:', req.file.mimetype);
+      console.error('Invalid file type:', req.file.mimetype);
       return res.status(400).json({ error: 'Invalid file type. Only JPEG, PNG, GIF, WebP, AVIF, and SVG images are allowed' });
     }
 
     // Validate file size (3MB limit)
     const maxSize = 3 * 1024 * 1024; // 3MB
     if (req.file.size > maxSize) {
-      console.error('❌ File too large:', req.file.size, 'bytes');
+      console.error('File too large:', req.file.size, 'bytes');
       return res.status(400).json({ error: 'File too large. Maximum size is 3MB' });
     }
 
@@ -439,7 +430,6 @@ export const uploadProfilePhoto = async (req, res) => {
       if (oldPublicId) {
         try {
           await deleteFromCloudinary(oldPublicId);
-          console.log('Old profile photo deleted from Cloudinary:', oldPublicId);
         } catch (deleteError) {
           console.warn('Failed to delete old profile photo from Cloudinary:', deleteError.message);
         }
@@ -447,7 +437,6 @@ export const uploadProfilePhoto = async (req, res) => {
     }
 
     // Upload new profile photo to Cloudinary
-    console.log('☁️ Uploading to Cloudinary...');
     
     let uploadResult;
     try {
@@ -457,21 +446,14 @@ export const uploadProfilePhoto = async (req, res) => {
         { prefix: 'profile_' }
       );
     } catch (cloudinaryError) {
-      console.error('❌ Cloudinary upload failed:', cloudinaryError);
+      console.error('Cloudinary upload failed:', cloudinaryError);
       throw new Error(`Cloudinary upload failed: ${cloudinaryError.message}`);
     }
 
-    console.log('✅ Cloudinary upload successful:', {
-      public_id: uploadResult.public_id,
-      url: uploadResult.url,
-      format: uploadResult.format,
-      size: uploadResult.size
-    });
 
     const profilePhotoUrl = uploadResult.url;
     
     // Update user's profile_photo_url in database
-    console.log('💾 Updating database...');
     try {
       await db.query(
         'UPDATE users SET profile_photo_url = ?, updated_at = NOW() WHERE id = ?',
@@ -490,13 +472,12 @@ export const uploadProfilePhoto = async (req, res) => {
         [userId]
       );
     } catch (dbError) {
-      console.error('❌ Final database query failed:', dbError);
+      console.error('Final database query failed:', dbError);
       throw new Error(`Final database query failed: ${dbError.message}`);
     }
     
     const updatedUser = updatedUsers[0];
     
-    console.log('✅ Profile photo upload completed successfully');
     
     res.json({
       message: 'Profile photo uploaded successfully',
@@ -524,11 +505,7 @@ export const uploadProfilePhoto = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Upload profile photo error:', {
-      message: error.message,
-      stack: error.stack,
-      userId: req.user?.id
-    });
+    console.error('Upload profile photo error:', error.message);
     
     // Provide more specific error messages
     let errorMessage = 'Internal server error';
@@ -569,7 +546,6 @@ export const removeProfilePhoto = async (req, res) => {
       if (publicId) {
         try {
           await deleteFromCloudinary(publicId);
-          console.log('Profile photo deleted from Cloudinary:', publicId);
         } catch (deleteError) {
           console.warn('Failed to delete profile photo from Cloudinary:', deleteError.message);
         }
@@ -616,8 +592,6 @@ export const removeProfilePhoto = async (req, res) => {
 // Change email - Step 1: Request email change with password verification
 export const requestEmailChange = async (req, res) => {
   try {
-    // console.log('Request Email Change - Body:', req.body);
-    // console.log('Request Email Change - User:', req.user);
     
     const userId = req.user.id;
     const { newEmail, currentPassword } = req.body;
@@ -735,11 +709,6 @@ export const verifyEmailChangeOTP = async (req, res) => {
     // Clean up expired OTPs
     await EmailChangeOTP.cleanupExpiredOTPs();
 
-    console.log('Email change verification successful:', {
-      userId,
-      newEmail: verificationResult.newEmail,
-      message: 'Email changed successfully'
-    });
     
     res.json({ 
       message: 'Email changed successfully',
@@ -1147,16 +1116,12 @@ export const resendVerificationEmail = async (req, res) => {
 // Verify JWT token middleware
 export const verifyToken = async (req, res, next) => {
   try {
-    // console.log('VerifyToken - Headers:', req.headers.authorization);
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
-      // console.log('VerifyToken - No token found');
       return res.status(401).json({ error: 'Access token required' });
     }
 
-    // console.log('VerifyToken - Token found, verifying...');
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    // console.log('VerifyToken - Decoded user:', decoded);
     req.user = decoded;
     next();
 
@@ -1605,10 +1570,40 @@ export const getUserApplications = async (req, res) => {
       ORDER BY v.created_at DESC`,
       [userId]
     );
-    
+
+    // Get multiple dates for each program
+    const applicationsWithDates = await Promise.all(applications.map(async (application) => {
+      let multipleDates = [];
+      
+      // If program has event_start_date and event_end_date, check if they're the same (single day)
+      if (application.programStartDate && application.programEndDate) {
+        if (application.programStartDate === application.programEndDate) {
+          // Single day program
+          multipleDates = [application.programStartDate];
+        } else {
+          // Date range - include both dates
+          multipleDates = [application.programStartDate, application.programEndDate];
+        }
+      } else if (application.programStartDate) {
+        // Only start date
+        multipleDates = [application.programStartDate];
+      } else {
+        // Check for multiple dates in program_event_dates table
+        const [dateRows] = await db.execute(
+          'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
+          [application.program_id]
+        );
+        multipleDates = dateRows.map(row => row.event_date);
+      }
+
+      return {
+        ...application,
+        multiple_dates: multipleDates
+      };
+    }));
 
     // Transform the data to match frontend expectations
-    const transformedApplications = applications.map(application => {
+    const transformedApplications = applicationsWithDates.map(application => {
       // Construct proper organization logo URL
       let orgLogoUrl = null;
       if (application.orgLogo) {
@@ -1625,6 +1620,7 @@ export const getUserApplications = async (req, res) => {
         programLocation: null, // Location not available in current database structure
         programStartDate: application.programStartDate,
         programEndDate: application.programEndDate,
+        multiple_dates: application.multiple_dates, // Include multiple dates array
         organizationId: application.organization_id,
         organizationName: application.organizationName,
         organizationAcronym: application.organizationAcronym,
@@ -1706,6 +1702,30 @@ export const getApplicationDetails = async (req, res) => {
 
     const application = results[0];
     
+    // Get multiple dates for this program
+    let multipleDates = [];
+    
+    // If program has event_start_date and event_end_date, check if they're the same (single day)
+    if (application.programStartDate && application.programEndDate) {
+      if (application.programStartDate === application.programEndDate) {
+        // Single day program
+        multipleDates = [application.programStartDate];
+      } else {
+        // Date range - include both dates
+        multipleDates = [application.programStartDate, application.programEndDate];
+      }
+    } else if (application.programStartDate) {
+      // Only start date
+      multipleDates = [application.programStartDate];
+    } else {
+      // Check for multiple dates in program_event_dates table
+      const [dateRows] = await db.execute(
+        'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
+        [application.program_id]
+      );
+      multipleDates = dateRows.map(row => row.event_date);
+    }
+    
     // Transform the data to match frontend expectations
     const transformedApplication = {
       id: application.id,
@@ -1717,6 +1737,7 @@ export const getApplicationDetails = async (req, res) => {
       programSlug: application.programSlug,
       programStartDate: application.programStartDate,
       programEndDate: application.programEndDate,
+      multiple_dates: multipleDates, // Include multiple dates array
       organizationId: application.organization_id,
       organizationName: application.organizationName,
       organizationAcronym: application.organizationAcronym,

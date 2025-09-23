@@ -3,6 +3,7 @@
 import express from "express"
 const router = express.Router()
 import { createOrganization, updateOrganizationInfo, getOrganizationByName, getOrganizationById, checkAcronymExists, checkNameExists } from "../controllers/organizationController.js"
+import { cloudinaryUploadConfigs } from "../../utils/cloudinaryUpload.js"
 
 // GET organization by org name/acronym
 router.get("/org/:org_name", getOrganizationByName)
@@ -14,7 +15,7 @@ router.get("/:id", getOrganizationById)
 router.post("/", createOrganization)
 
 // PUT update organization by ID
-router.put("/:id", updateOrganizationInfo)
+router.put("/:id", cloudinaryUploadConfigs.organizationLogo.single('logo'), updateOrganizationInfo)
 
 // GET check if organization acronym exists
 router.get("/check-acronym/:acronym", checkAcronymExists)

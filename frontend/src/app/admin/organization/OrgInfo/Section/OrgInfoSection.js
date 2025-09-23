@@ -13,7 +13,8 @@ export default function OrgInfoSection({
   setOriginalData,
   setEditPreviewData,
   currentSection,
-  setCurrentSection
+  setCurrentSection,
+  setModalMessage
 }) {
   const handleEditClick = () => {
     setOriginalData({ ...orgData })
@@ -21,6 +22,8 @@ export default function OrgInfoSection({
     setIsEditing(true)
     setCurrentSection('organization')
     setShowEditModal(true)
+    // Reset modal message when opening modal
+    setModalMessage({ text: "", type: "" })
   }
 
   return (

@@ -374,6 +374,10 @@ export default function OrganizationPage() {
           logo: result.url 
         }));
         setModalMessage({ text: "Logo uploaded successfully", type: "success" });
+        // Auto-clear success message after 3 seconds
+        setTimeout(() => {
+          setModalMessage({ text: "", type: "" });
+        }, 3000);
       } else {
         if (response.status === 401) {
           // Token expired or invalid - redirect to login
@@ -559,6 +563,8 @@ export default function OrganizationPage() {
     setOriginalData(null);
     setTempEditData({});
     setReEditSubmissionId(null);
+    // Reset modal message when closing modal
+    setModalMessage({ text: "", type: "" });
   };
 
   const handleSectionConfirmChanges = async () => {
@@ -962,6 +968,7 @@ export default function OrganizationPage() {
           setEditPreviewData={setEditPreviewData}
           currentSection={currentSection}
           setCurrentSection={setCurrentSection}
+          setModalMessage={setModalMessage}
         />
       )}
 

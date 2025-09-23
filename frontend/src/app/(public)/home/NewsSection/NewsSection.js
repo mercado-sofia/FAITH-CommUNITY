@@ -6,6 +6,7 @@ import Link from 'next/link';
 import styles from './NewsSection.module.css';
 import { usePublicOrganizations, usePublicNews } from '../../hooks/usePublicData';
 import { formatDateLong } from '@/utils/dateUtils';
+import { getOrganizationImageUrl } from '@/utils/uploadPaths';
 
 export default function NewsSection() {
   const orgNavRef = useRef(null);
@@ -203,7 +204,7 @@ export default function NewsSection() {
                   className={`${styles.orgItem} ${isActive ? styles.active : ""}`}
                 >
                   <Image
-                    src={orgObj.logo ? `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${orgObj.logo}` : '/logo/faith_community_logo.png'}
+                    src={getOrganizationImageUrl(orgObj.logo, 'logo')}
                     alt={`${orgObj.acronym || orgObj.name} logo`}
                     width={30}
                     height={30}
@@ -253,10 +254,7 @@ export default function NewsSection() {
             </div>
           ) : (
             filteredNews.slice(0, maxDisplay).map((newsItem) => {
-              const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
-              const imagePath = newsItem.featured_image ? 
-                (newsItem.featured_image.startsWith('/') ? newsItem.featured_image : `/${newsItem.featured_image}`) : null;
-              const imageUrl = imagePath ? `${baseUrl}${imagePath}` : null;
+              const imageUrl = newsItem.featured_image || null;
               
               return (
                 <Link key={newsItem.id} href={`/news/${newsItem.slug}`} className={styles.newsCard}>

@@ -42,8 +42,14 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
 
       // Set image preview if there's an existing featured image
       if (initialData.featured_image) {
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-        setImagePreview(`${API_BASE_URL}/${initialData.featured_image}`);
+        // Check if it's already a full URL (Cloudinary or other)
+        if (initialData.featured_image.startsWith('http')) {
+          setImagePreview(initialData.featured_image);
+        } else {
+          // For legacy local paths, construct the full URL
+          const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+          setImagePreview(`${API_BASE_URL}/${initialData.featured_image}`);
+        }
       }
     }
   }, [isEditMode, initialData]);

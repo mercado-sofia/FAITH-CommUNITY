@@ -1,6 +1,7 @@
 //db table: organizations
 
 import db from "../../database.js"
+import { getOrganizationLogoUrl } from "../../utils/imageUrlUtils.js";
 
 export const getOrganizationByName = async (req, res) => {
   const { org_name } = req.params
@@ -34,14 +35,7 @@ export const getOrganizationByName = async (req, res) => {
     const transformedHeads = heads.map(head => {
       let photoUrl;
       if (head.photo) {
-        if (head.photo.includes('/')) {
-          // Legacy path - extract filename
-          const filename = head.photo.split('/').pop();
-          photoUrl = `/uploads/organizations/heads/${filename}`;
-        } else {
-          // New structure - direct filename
-          photoUrl = `/uploads/organizations/heads/${head.photo}`;
-        }
+        photoUrl = getOrganizationLogoUrl(head.photo);
       } else {
         // Fallback to default photo
         photoUrl = null;
@@ -56,14 +50,7 @@ export const getOrganizationByName = async (req, res) => {
     // Construct proper logo URL
     let logoUrl;
     if (org.logo) {
-      if (org.logo.includes('/')) {
-        // Legacy path - extract filename
-        const filename = org.logo.split('/').pop();
-        logoUrl = `/uploads/organizations/logos/${filename}`;
-      } else {
-        // New structure - direct filename
-        logoUrl = `/uploads/organizations/logos/${org.logo}`;
-      }
+      logoUrl = getOrganizationLogoUrl(org.logo);
     } else {
       // Fallback to expected logo path
       logoUrl = `/logo/${org.org.toLowerCase()}_logo.jpg`;
@@ -157,8 +144,45 @@ export const updateOrganizationInfo = async (req, res) => {
     })
   }
 
+  // Handle Cloudinary upload for logo if provided
+  let finalLogo = (logo === "" || logo === undefined) ? null : logo
+  if (req.file) {
+    try {
+      const { deleteFromCloudinary, extractPublicIdFromUrl, CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+      const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
+      
+      // Get current organization to check for existing logo
+      const [currentOrg] = await db.execute("SELECT logo FROM organizations WHERE id = ?", [id]);
+      if (currentOrg.length > 0 && currentOrg[0].logo) {
+        // Delete old logo from Cloudinary
+        const oldPublicId = extractPublicIdFromUrl(currentOrg[0].logo);
+        if (oldPublicId) {
+          try {
+            await deleteFromCloudinary(oldPublicId);
+            console.log('Old organization logo deleted from Cloudinary:', oldPublicId);
+          } catch (deleteError) {
+            console.warn('Failed to delete old organization logo from Cloudinary:', deleteError.message);
+          }
+        }
+      }
+      
+      // Upload new logo to Cloudinary
+      const uploadResult = await uploadSingleToCloudinary(
+        req.file, 
+        CLOUDINARY_FOLDERS.ORGANIZATIONS.LOGOS,
+        { prefix: 'org_logo_' }
+      );
+      finalLogo = uploadResult.url;
+    } catch (uploadError) {
+      console.error('Error uploading organization logo to Cloudinary:', uploadError);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Failed to upload organization logo' 
+      });
+    }
+  }
+
   // Convert empty strings and undefined values to null for optional fields
-  const finalLogo = (logo === "" || logo === undefined) ? null : logo
   const finalFacebook = (facebook === "" || facebook === undefined) ? null : facebook
   const finalDescription = (description === "" || description === undefined) ? null : description
   const finalStatus = status || "ACTIVE" // Ensure status is always a string
@@ -307,14 +331,7 @@ export const getOrganizationById = async (req, res) => {
     const transformedHeads = heads.map(head => {
       let photoUrl;
       if (head.photo) {
-        if (head.photo.includes('/')) {
-          // Legacy path - extract filename
-          const filename = head.photo.split('/').pop();
-          photoUrl = `/uploads/organizations/heads/${filename}`;
-        } else {
-          // New structure - direct filename
-          photoUrl = `/uploads/organizations/heads/${head.photo}`;
-        }
+        photoUrl = getOrganizationLogoUrl(head.photo);
       } else {
         // Fallback to default photo
         photoUrl = null;
@@ -329,14 +346,7 @@ export const getOrganizationById = async (req, res) => {
     // Construct proper logo URL
     let logoUrl;
     if (org.logo) {
-      if (org.logo.includes('/')) {
-        // Legacy path - extract filename
-        const filename = org.logo.split('/').pop();
-        logoUrl = `/uploads/organizations/logos/${filename}`;
-      } else {
-        // New structure - direct filename
-        logoUrl = `/uploads/organizations/logos/${org.logo}`;
-      }
+      logoUrl = getOrganizationLogoUrl(org.logo);
     } else {
       logoUrl = null;
     }

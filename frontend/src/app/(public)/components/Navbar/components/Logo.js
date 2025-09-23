@@ -8,16 +8,15 @@ import styles from './styles/Logo.module.css';
 export default function Logo() {
   const { brandingData, isLoading } = usePublicBranding();
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
   const logoSrc = brandingData?.logo_url
-    ? `${apiBase}${brandingData.logo_url}`
+    ? brandingData.logo_url
     : '/logo/faith_community_logo.png';
 
   // name image priority:
   // 1) uploaded brandingData.name_url
   // 2) local /text-logo.png (public folder)
   // 3) fallback text
-  const nameImageSrc = brandingData?.name_url ? `${apiBase}${brandingData.name_url}` : '/text-logo.png';
+  const nameImageSrc = brandingData?.name_url ? brandingData.name_url : '/text-logo.png';
 
   return (
     <Link href="/" className={styles.logoContainer}>

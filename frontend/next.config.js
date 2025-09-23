@@ -22,29 +22,30 @@ const nextConfig = {
   // Image optimization
   images: {
     remotePatterns: [
+      // Cloudinary patterns
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
+      },
+      // Local development patterns (if needed for fallbacks)
       {
         protocol: 'http',
         hostname: 'localhost',
         port: '8080',
-        pathname: '/uploads/**',
+        pathname: '/**',
       },
       {
         protocol: 'http',
         hostname: 'localhost',
         port: '3000',
-        pathname: '/uploads/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'localhost',
-        port: '3000',
-        pathname: '/uploads/**',
+        pathname: '/**',
       },
       // Production patterns - add your production domain here
       {
         protocol: 'https',
         hostname: process.env.NEXT_PUBLIC_API_HOSTNAME || 'your-production-domain.com',
-        pathname: '/uploads/**',
+        pathname: '/**',
       },
     ],
     formats: ['image/webp', 'image/avif'],

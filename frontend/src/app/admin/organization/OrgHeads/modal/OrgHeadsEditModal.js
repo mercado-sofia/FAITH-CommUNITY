@@ -136,8 +136,8 @@ export default function OrgHeadsEditModal({
       const result = await response.json()
 
       if (result.success) {
-        // Use the full URL from backend, or construct it from filename
-        const photoPath = result.url || (result.filePath ? `/uploads/organizations/heads/${result.filePath}` : null)
+        // Use the full URL from backend (Cloudinary URL)
+        const photoPath = result.url || result.filePath
         
         setUploadProgress(100)
         

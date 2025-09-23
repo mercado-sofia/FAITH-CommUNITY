@@ -45,7 +45,7 @@ const VolunteerAvatar = ({ volunteer, size = 32 }) => {
   return (
     <div className={styles.avatarContainer} style={{ width: size, height: size }}>
       <Image
-        src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${volunteer.profile_photo_url}`}
+        src={volunteer.profile_photo_url}
         alt={`${volunteer.name}'s profile`}
         width={size}
         height={size}

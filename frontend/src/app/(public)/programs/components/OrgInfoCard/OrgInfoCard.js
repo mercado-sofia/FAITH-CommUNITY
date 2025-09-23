@@ -1,6 +1,7 @@
 import styles from './OrgInfoCard.module.css';
 import Image from 'next/image';
 import { FaFacebookF, FaEnvelope } from 'react-icons/fa';
+import { getOrganizationImageUrl } from '@/utils/uploadPaths';
 
 export default function OrgInfoCard({ data }) {
   const { name, acronym, description, facebook, email, logo } = data;
@@ -10,7 +11,7 @@ export default function OrgInfoCard({ data }) {
       <div className={styles.orgCard}>
         <div className={styles.logoWrapper}>
           <Image
-            src={logo ? `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${logo}` : '/default.png'}
+            src={getOrganizationImageUrl(logo, 'logo')}
             alt={`${name} Logo`}
             width={220}
             height={220}

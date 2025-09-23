@@ -1,5 +1,6 @@
 //db table: organizations
 import db from '../../database.js';
+import { getOrganizationLogoUrl } from '../../utils/imageUrlUtils.js';
 
 export const getAllOrganizations = async (req, res) => {
   try {
@@ -20,14 +21,7 @@ export const getAllOrganizations = async (req, res) => {
       let logoUrl;
       if (row.logo) {
         // If logo is stored as a filename, construct the proper URL
-        if (row.logo.includes('/')) {
-          // Legacy path - extract filename
-          const filename = row.logo.split('/').pop();
-          logoUrl = `/uploads/organizations/logos/${filename}`;
-        } else {
-          // New structure - direct filename
-          logoUrl = `/uploads/organizations/logos/${row.logo}`;
-        }
+        logoUrl = getOrganizationLogoUrl(row.logo);
       } else {
         // Fallback to expected logo path
         logoUrl = `/logo/${row.acronym.toLowerCase()}_logo.jpg`;

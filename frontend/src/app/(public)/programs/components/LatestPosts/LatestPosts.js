@@ -97,10 +97,7 @@ export default function LatestPosts({ orgID }) {
         
         <div className={styles.postsList}>
           {latestPosts.map((newsItem) => {
-            const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
-            const imagePath = newsItem.featured_image ? 
-              (newsItem.featured_image.startsWith('/') ? newsItem.featured_image : `/${newsItem.featured_image}`) : null;
-            const imageUrl = imagePath ? `${baseUrl}${imagePath}` : null;
+            const imageUrl = newsItem.featured_image || null;
             
             return (
               <Link key={newsItem.id} href={`/news/${newsItem.slug}`} className={styles.newsCard}>

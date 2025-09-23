@@ -3,6 +3,7 @@ import db from "../../database.js";
 import path from 'path';
 import fs from 'fs';
 import { sendToSubscribers } from './subscribersController.js';
+import { getOrganizationLogoUrl, getProgramImageUrl } from "../../utils/imageUrlUtils.js";
 
 // ---------------- Helper: escape HTML ----------------
 function escapeHtml(str = "") {
@@ -97,14 +98,7 @@ export const getProgramsByOrg = async (req, res) => {
       let logoUrl;
       if (program.orgLogo) {
         // If logo is stored as a filename, construct the proper URL
-        if (program.orgLogo.includes('/')) {
-          // Legacy path - extract filename
-          const filename = program.orgLogo.split('/').pop();
-          logoUrl = `/uploads/organizations/logos/${filename}`;
-        } else {
-          // New structure - direct filename
-          logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
-        }
+        logoUrl = getOrganizationLogoUrl(program.orgLogo);
       } else {
         // Fallback to default logo
         logoUrl = `/logo/faith_community_logo.png`;
@@ -189,14 +183,7 @@ export const getApprovedPrograms = async (req, res) => {
       let logoUrl;
       if (program.orgLogo) {
         // If logo is stored as a filename, construct the proper URL
-        if (program.orgLogo.includes('/')) {
-          // Legacy path - extract filename
-          const filename = program.orgLogo.split('/').pop();
-          logoUrl = `/uploads/organizations/logos/${filename}`;
-        } else {
-          // New structure - direct filename
-          logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
-        }
+        logoUrl = getOrganizationLogoUrl(program.orgLogo);
       } else {
         // Fallback to default logo
         logoUrl = `/logo/faith_community_logo.png`;
@@ -318,14 +305,7 @@ export const getApprovedProgramsByOrg = async (req, res) => {
       let logoUrl;
       if (program.orgLogo) {
         // If logo is stored as a filename, construct the proper URL
-        if (program.orgLogo.includes('/')) {
-          // Legacy path - extract filename
-          const filename = program.orgLogo.split('/').pop();
-          logoUrl = `/uploads/organizations/logos/${filename}`;
-        } else {
-          // New structure - direct filename
-          logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
-        }
+        logoUrl = getOrganizationLogoUrl(program.orgLogo);
       } else {
         // Fallback to default logo
         logoUrl = `/logo/faith_community_logo.png`;
@@ -467,33 +447,32 @@ export const updateProgram = async (req, res) => {
     // Program found
     let imagePath = existingProgram[0].image; // Keep existing image by default
 
-    // Handle main image if provided
+    // Handle main image if provided (base64 or Cloudinary URL)
     if (image && image.startsWith('data:image/')) {
-      // Convert base64 to file
+      // Convert base64 to buffer and upload to Cloudinary
       const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
       const buffer = Buffer.from(base64Data, 'base64');
       
-      // Generate unique filename
-      const timestamp = Date.now();
-      const randomSuffix = Math.round(Math.random() * 1e9);
-      const extension = image.match(/data:image\/(\w+);/)[1];
-      const filename = `program-${timestamp}-${randomSuffix}.${extension}`;
+      // Create a temporary file object for Cloudinary upload
+      const tempFile = {
+        buffer: buffer,
+        originalname: `program-${Date.now()}.${image.match(/data:image\/(\w+);/)[1]}`,
+        mimetype: image.match(/data:image\/(\w+);/)[0].replace('data:', '').replace(';', ''),
+        size: buffer.length
+      };
       
-      // Save file to uploads directory
-      const fs = await import('fs');
-      const path = await import('path');
-      const uploadsDir = path.join(process.cwd(), 'uploads', 'programs', 'main-images');
+      // Upload to Cloudinary
+      const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+      const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
       
-      // Ensure directory exists
-      if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true });
-      }
+      const uploadResult = await uploadSingleToCloudinary(
+        tempFile, 
+        CLOUDINARY_FOLDERS.PROGRAMS.MAIN,
+        { prefix: 'prog_main_' }
+      );
       
-      const filePath = path.join(uploadsDir, filename);
-      fs.writeFileSync(filePath, buffer);
-      
-      imagePath = `programs/main-images/${filename}`;
-      // Main image saved
+      imagePath = uploadResult.public_id;
+      // Main image uploaded to Cloudinary
     } else if (image === null) {
       // User wants to remove the image
       imagePath = null;
@@ -551,37 +530,42 @@ export const updateProgram = async (req, res) => {
       
       // Then insert new additional images
       if (additionalImages.length > 0) {
-        const fs = await import('fs');
-        const path = await import('path');
-        const uploadsDir = path.join(process.cwd(), 'uploads', 'programs', 'additional-images');
-        
-        // Ensure directory exists
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir, { recursive: true });
-        }
+        const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+        const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
 
         for (let i = 0; i < additionalImages.length; i++) {
           const imageData = additionalImages[i];
           
           if (imageData && imageData.startsWith('data:image/')) {
-            // Convert base64 to file
-            const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
-            const buffer = Buffer.from(base64Data, 'base64');
-            
-            // Generate unique filename
-            const timestamp = Date.now();
-            const randomSuffix = Math.round(Math.random() * 1e9);
-            const extension = imageData.match(/data:image\/(\w+);/)[1];
-            const filename = `additional-${timestamp}-${randomSuffix}-${i}.${extension}`;
-            
-            const filePath = path.join(uploadsDir, filename);
-            fs.writeFileSync(filePath, buffer);
-            
-            // Store file path in database
-            await db.execute(
-              'INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)',
-              [id, `programs/additional-images/${filename}`, i]
-            );
+            try {
+              // Convert base64 to buffer
+              const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+              const buffer = Buffer.from(base64Data, 'base64');
+              
+              // Create a file-like object for Cloudinary upload
+              const file = {
+                buffer: buffer,
+                originalname: `additional-${i}.jpg`,
+                mimetype: imageData.match(/data:image\/(\w+);/)[1],
+                size: buffer.length
+              };
+              
+              // Upload to Cloudinary
+              const uploadResult = await uploadSingleToCloudinary(
+                file, 
+                CLOUDINARY_FOLDERS.PROGRAMS.ADDITIONAL,
+                { prefix: 'prog_add_' }
+              );
+              
+              // Store Cloudinary URL in database
+              await db.execute(
+                'INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)',
+                [id, uploadResult.url, i]
+              );
+            } catch (uploadError) {
+              console.error('Error uploading additional image to Cloudinary:', uploadError);
+              // Continue with other images even if one fails
+            }
           }
         }
       }
@@ -763,14 +747,7 @@ export const getAllFeaturedPrograms = async (req, res) => {
       let logoUrl;
       if (program.orgLogo) {
         // If logo is stored as a filename, construct the proper URL
-        if (program.orgLogo.includes('/')) {
-          // Legacy path - extract filename
-          const filename = program.orgLogo.split('/').pop();
-          logoUrl = `/uploads/organizations/logos/${filename}`;
-        } else {
-          // New structure - direct filename
-          logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
-        }
+        logoUrl = getOrganizationLogoUrl(program.orgLogo);
       } else {
         // Fallback to default logo
         logoUrl = `/logo/faith_community_logo.png`;
@@ -860,14 +837,7 @@ export const getFeaturedPrograms = async (req, res) => {
       let logoUrl;
       if (program.orgLogo) {
         // If logo is stored as a filename, construct the proper URL
-        if (program.orgLogo.includes('/')) {
-          // Legacy path - extract filename
-          const filename = program.orgLogo.split('/').pop();
-          logoUrl = `/uploads/organizations/logos/${filename}`;
-        } else {
-          // New structure - direct filename
-          logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
-        }
+        logoUrl = getOrganizationLogoUrl(program.orgLogo);
       } else {
         // Fallback to default logo
         logoUrl = `/logo/faith_community_logo.png`;
@@ -977,12 +947,7 @@ export const getProgramBySlug = async (req, res) => {
     let logoUrl;
     if (program.orgLogo) {
       if (program.orgLogo.includes('/')) {
-        // Legacy path - extract filename
-        const filename = program.orgLogo.split('/').pop();
-        logoUrl = `/uploads/organizations/logos/${filename}`;
-      } else {
-        // New structure - direct filename
-        logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
+        logoUrl = getOrganizationLogoUrl(program.orgLogo);
       }
     } else {
       // Fallback to default logo
@@ -1040,12 +1005,7 @@ export const getOtherProgramsByOrganization = async (req, res) => {
     const programs = results.map(program => {
       let logoUrl;
       if (program.orgLogo) {
-        if (program.orgLogo.includes('/')) {
-          const filename = program.orgLogo.split('/').pop();
-          logoUrl = `/uploads/organizations/logos/${filename}`;
-        } else {
-          logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
-        }
+        logoUrl = getOrganizationLogoUrl(program.orgLogo);
       } else {
         logoUrl = `/logo/faith_community_logo.png`;
       }
@@ -1076,7 +1036,22 @@ export const addProgramProject = async (req, res) => {
   let image = '';
 
   if (req.file) {
-    image = req.file.filename;
+    try {
+      const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+      const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
+      const uploadResult = await uploadSingleToCloudinary(
+        req.file, 
+        CLOUDINARY_FOLDERS.PROGRAMS.MAIN,
+        { prefix: 'prog_main_' }
+      );
+      image = uploadResult.url;
+    } catch (uploadError) {
+      console.error('Error uploading program image to Cloudinary:', uploadError);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Failed to upload program image' 
+      });
+    }
   }
 
   if (!title) {
@@ -1125,7 +1100,7 @@ export const addProgramProject = async (req, res) => {
         html: `
           <h2>${escapeHtml(title)}</h2>
           <p>${escapeHtml(description || "")}</p>
-          ${image ? `<p><img src="${escapeHtml("/uploads/" + image)}" alt="${escapeHtml(title)}" style="max-width:100%;height:auto"/></p>` : ""}
+          ${image ? `<p><img src="${escapeHtml(getProgramImageUrl(image))}" alt="${escapeHtml(title)}" style="max-width:100%;height:auto"/></p>` : ""}
           <p><a href="${programUrl}">View details</a></p>
         `,
       });
@@ -1206,7 +1181,7 @@ export const updateProgramProject = async (req, res) => {
         html: `
           <h2>${escapeHtml(title)}</h2>
           <p>${escapeHtml(description || "")}</p>
-          ${image ? `<p><img src="${escapeHtml("/uploads/" + image)}" alt="${escapeHtml(title)}" style="max-width:100%;height:auto"/></p>` : ""}
+          ${image ? `<p><img src="${escapeHtml(getProgramImageUrl(image))}" alt="${escapeHtml(title)}" style="max-width:100%;height:auto"/></p>` : ""}
           <p><a href="${programUrl}">View details</a></p>
         `,
       });
@@ -1276,12 +1251,7 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
 
         let logoUrl;
         if (program.orgLogo) {
-          if (String(program.orgLogo).includes('/')) {
-            const filename = String(program.orgLogo).split('/').pop();
-            logoUrl = `/uploads/organizations/logos/${filename}`;
-          } else {
-            logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
-          }
+          logoUrl = getOrganizationLogoUrl(program.orgLogo);
         } else {
           logoUrl = `/logo/faith_community_logo.png`;
         }

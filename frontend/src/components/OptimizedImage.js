@@ -26,7 +26,19 @@ const OptimizedImage = ({
     setHasError(true);
   }, []);
 
-  if (hasError) {
+  // Validate src URL
+  const isValidUrl = (url) => {
+    if (!url || typeof url !== 'string') return false;
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      // Check if it's a relative path
+      return url.startsWith('/') || url.startsWith('./') || url.startsWith('../');
+    }
+  };
+
+  if (hasError || !isValidUrl(src)) {
     return (
       <div 
         className={`${className} flex items-center justify-center bg-gray-200 rounded-full`}

@@ -9,6 +9,7 @@ import { useFormValidation } from '../../hooks/useFormValidation';
 import { useProfileApi } from '../../hooks/useApiCall';
 import { useToast } from '../../components/Toast';
 import { formatBirthDate, formatDateForInput } from '@/utils/dateUtils';
+import { getProfilePhotoUrl } from '@/utils/uploadPaths';
 import styles from './PersonalInfo.module.css';
 
 const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
@@ -189,23 +190,46 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
 
       // Handle photo operations
       if (selectedPhotoFile) {
+        console.log('Starting photo upload...', selectedPhotoFile);
         setIsUploadingPhoto(true);
+        setPhotoError('');
+        
         try {
-          const { data: photoData } = await uploadProfilePhoto(selectedPhotoFile);
-          updatedUserData.profile_photo_url = photoData.profilePhotoUrl;
+          const response = await uploadProfilePhoto(selectedPhotoFile);
+          console.log('Photo upload response:', response);
+          
+          // Handle different response structures
+          const photoUrl = response.data?.profilePhotoUrl || response.data?.profile_photo_url || response.profilePhotoUrl;
+          
+          if (!photoUrl) {
+            throw new Error('No photo URL returned from server');
+          }
+          
+          updatedUserData.profile_photo_url = photoUrl;
+          console.log('Photo uploaded successfully:', photoUrl);
         } catch (error) {
-          setPhotoError('Failed to upload photo');
+          console.error('Photo upload error:', error);
+          const errorMessage = error.message || 'Failed to upload photo';
+          setPhotoError(errorMessage);
+          showError(`Photo upload failed: ${errorMessage}`);
           setIsUploadingPhoto(false);
           return;
         }
         setIsUploadingPhoto(false);
       } else if (photoToRemove) {
+        console.log('Removing profile photo...');
         setIsUploadingPhoto(true);
+        setPhotoError('');
+        
         try {
           await removeProfilePhoto();
           updatedUserData.profile_photo_url = null;
+          console.log('Photo removed successfully');
         } catch (error) {
-          setPhotoError('Failed to remove photo');
+          console.error('Photo removal error:', error);
+          const errorMessage = error.message || 'Failed to remove photo';
+          setPhotoError(errorMessage);
+          showError(`Photo removal failed: ${errorMessage}`);
           setIsUploadingPhoto(false);
           return;
         }
@@ -213,6 +237,7 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
       }
 
       // Update profile data
+      console.log('Updating profile data...', editData);
       await updateProfile(editData);
 
       // Update user data in localStorage
@@ -221,15 +246,17 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
       
       showSuccess('Profile updated successfully!');
       
-                  // Add a small delay to show the success message before closing edit mode
-                  setTimeout(() => {
-                    setIsEditMode(false);
-                    setEditData({});
-                    resetPhotoStates();
-                  }, 1000);
+      // Add a small delay to show the success message before closing edit mode
+      setTimeout(() => {
+        setIsEditMode(false);
+        setEditData({});
+        resetPhotoStates();
+      }, 1000);
       
     } catch (error) {
-      showError(error.message || 'An error occurred while updating profile');
+      console.error('Profile update error:', error);
+      const errorMessage = error.message || 'An error occurred while updating profile';
+      showError(errorMessage);
     }
   };
 
@@ -295,12 +322,15 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
                 />
               ) : userData?.profile_photo_url ? (
                 <Image
-                  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${userData.profile_photo_url}`}
+                  src={getProfilePhotoUrl(userData.profile_photo_url)}
                   alt="Profile"
                   width={60}
                   height={60}
                   className={styles.image}
                   priority
+                  onError={(e) => {
+                    e.target.src = '/default-profile.png';
+                  }}
                 />
               ) : (
                 <Image

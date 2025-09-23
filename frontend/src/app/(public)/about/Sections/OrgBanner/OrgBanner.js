@@ -81,7 +81,7 @@ export default function OrgBanner() {
               {organizations.map((org, i) => (
                 <div className={styles.orgItem} key={org.id || i}>
                   <Image 
-                    src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${org.logo}`} 
+                    src={org.logo} 
                     alt={org.name} 
                     width={100} 
                     height={100}

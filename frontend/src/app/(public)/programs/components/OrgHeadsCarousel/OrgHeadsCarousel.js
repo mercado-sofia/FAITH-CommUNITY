@@ -5,6 +5,7 @@ import styles from './OrgHeadsCarousel.module.css';
 import Image from 'next/image';
 import { FaFacebookF, FaEnvelope, FaPlus } from 'react-icons/fa';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { getOrganizationImageUrl } from '@/utils/uploadPaths';
 
 export default function OrgHeadsCarousel({ heads }) {
   const scrollRef = useRef(null);
@@ -64,7 +65,7 @@ export default function OrgHeadsCarousel({ heads }) {
                     <div className={styles.imageContainer}>
                       {head.photo ? (
                         <Image
-                          src={`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}${head.photo}`}
+                          src={getOrganizationImageUrl(head.photo, 'head')}
                           alt={head.head_name || head.name || 'Organization Head'}
                           width={240}
                           height={280}
@@ -75,7 +76,10 @@ export default function OrgHeadsCarousel({ heads }) {
                           }}
                         />
                       ) : null}
-                      <div className={styles.noImageFallback}>
+                      <div 
+                        className={styles.noImageFallback}
+                        style={{ display: head.photo ? 'none' : 'flex' }}
+                      >
                         <span>No Image</span>
                       </div>
                       <div className={styles.iconBar}>

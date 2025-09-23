@@ -7,20 +7,6 @@ import { formatDateLong } from '@/utils/dateUtils';
 import styles from './ProgramCard.module.css';
 import logger from '@/utils/logger';
 
-// Custom function to preserve exact "Posted on" date format (en-PH locale)
-const formatPostedDate = (dateString) => {
-  if (!dateString) return 'Not specified';
-  try {
-    return new Date(dateString).toLocaleDateString('en-PH', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  } catch (error) {
-    return 'Invalid date';
-  }
-};
-
 // Utility function to get date information from various date formats
 const getDateInfo = (project) => {
   // Check for multiple dates first
@@ -214,62 +200,36 @@ export default function ProgramCard({ project }) {
   return (
     <div className={styles.card}>
       <div className={styles.cardImageContainer}>
-        {project.image && project.image.startsWith('data:image/') && project.image.includes('base64,') ? (
-          // Use regular img tag for valid base64 images
-          <Image
-            src={project.image}
-            alt={project.title}
-            width={400}
-            height={240}
-            className={styles.cardImage}
-            onError={(e) => {
-              logger.error('Failed to load base64 image', null, { 
-                projectId: project.id, 
-                imagePreview: project.image.substring(0, 50) + '...' 
-              });
-              e.target.style.display = 'none';
-              e.target.nextSibling.style.display = 'block';
-            }}
-          />
-        ) : project.image && !project.image.startsWith('data:') ? (
-          // Use Next.js Image for regular URLs (including relative file paths)
+        {project.image ? (
           <Image
             src={getProgramImageUrl(project.image)}
             alt={project.title}
             width={400}
             height={240}
             className={styles.cardImage}
-            priority
-          />
-        ) : (
-          // Fallback placeholder for missing or invalid images
-          <div 
-            className={styles.cardImage}
-            style={{ 
-              backgroundColor: '#f3f4f6', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              color: '#6b7280',
-              fontSize: '14px'
+            onError={(e) => {
+              logger.error('Failed to load program image', null, { 
+                projectId: project.id, 
+                imageUrl: project.image 
+              });
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'flex';
             }}
-          >
-            No Image Available
-          </div>
-        )}
-        {/* Hidden fallback for image error */}
+          />
+        ) : null}
+        {/* Fallback for missing or failed images */}
         <div 
           className={styles.cardImage}
           style={{ 
             backgroundColor: '#f3f4f6', 
-            display: 'none', 
+            display: project.image ? 'none' : 'flex', 
             alignItems: 'center', 
             justifyContent: 'center',
             color: '#6b7280',
             fontSize: '14px'
           }}
         >
-          Image Failed to Load
+          {project.image ? 'Image Failed to Load' : 'No Image Available'}
         </div>
         
         {/* Date Badge */}
@@ -302,14 +262,17 @@ export default function ProgramCard({ project }) {
               }}
             />
           ) : null}
-          <div className={styles.cardOrgIconFallback} style={{ display: project.orgLogo ? 'none' : 'block' }}></div>
+          <div 
+            className={styles.cardOrgIconFallback} 
+            style={{ display: project.orgLogo ? 'none' : 'block' }}
+          ></div>
           <span>{project.orgName}</span>
         </Link>
 
         <p className={styles.cardDesc}>{project.description}</p>
 
         <p className={styles.cardDate}>
-          Posted on {formatPostedDate(project.date)}
+          Posted on {formatDateLong(project.date)}
         </p>
       </div>
     </div>

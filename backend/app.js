@@ -2,7 +2,6 @@ import 'dotenv/config';
 console.log("SMTP host:", process.env.SMTP_HOST);
 console.log("SMTP user (masked):", (process.env.SMTP_USER||"").slice(0,4) + "***");
 
-
 import express from "express"
 import cors from "cors"
 import bodyParser from "body-parser"
@@ -17,15 +16,12 @@ import path from "path"
 import { fileURLToPath } from "url"
 import fs from "fs"
 
-
 // Import cleanup function for deleted news
 import cleanupDeletedNews from "./back_end/utils/cleanupDeletedNews.js"
-
 
 // Get current directory
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-
 
 // Initialize Express
 const app = express()
@@ -52,14 +48,9 @@ const logger = pino({
 })
 app.use(pinoHttp({ logger }))
 
+// Upload configuration is now handled by Cloudinary
 
-// Import upload configuration to ensure proper directory structure
-import "./back_end/utils/uploadConfig.js"
-
-
-// Ensure uploads directory exists (this is now handled by uploadConfig.js)
-const uploadsDir = path.join(__dirname, "uploads")
-
+// No need for local uploads directory - using Cloudinary
 
 // Middleware
 // Security headers
@@ -129,7 +120,7 @@ app.use(
 app.use(cookieParser())
 app.use(bodyParser.json({ limit: "10mb" }))
 app.use(bodyParser.urlencoded({ extended: true }))
-app.use("/uploads", express.static(uploadsDir))
+// Static file serving for uploads removed - using Cloudinary now
 
 
 // Debug logger middleware (reduce noise in production)
@@ -160,7 +151,6 @@ const globalSpeedLimiter = slowDown({
 app.use(globalSpeedLimiter)
 app.use(globalLimiter)
 
-
 // Health check route
 app.get("/api/health", (req, res) => {
   res.json({
@@ -170,12 +160,10 @@ app.get("/api/health", (req, res) => {
   })
 })
 
-
 // Test route
 app.get("/api/test", (req, res) => {
   res.json({ success: true, message: "API is running" })
 })
-
 
 // Debug routes (only in non-production)
 if (process.env.NODE_ENV !== "production") {
@@ -377,7 +365,7 @@ app.use((req, res) => {
 // Start Server
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`)
-  console.log(`📁 Uploads directory: ${uploadsDir}`)
+  console.log(`☁️ Using Cloudinary for file storage`)
   console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`)
  
   // Set up daily cleanup job for deleted news (runs every 24 hours)

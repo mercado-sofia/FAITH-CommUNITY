@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import OptimizedImage from '../../../../../components/OptimizedImage';
+import { getProfilePhotoUrl } from '../../../../../utils/uploadPaths';
 import styles from './styles/MobileSidebar.module.css';
 import { FaChevronRight, FaUser, FaSignOutAlt, FaCog, FaClipboardList } from 'react-icons/fa';
 
@@ -94,7 +95,7 @@ export default function MobileSidebar({
             <div className={styles.mobileProfileIcon}>
               {user?.profile_photo_url ? (
                 <OptimizedImage
-                  src={user.profile_photo_url}
+                  src={getProfilePhotoUrl(user.profile_photo_url)}
                   alt="Profile"
                   width={48}
                   height={48}

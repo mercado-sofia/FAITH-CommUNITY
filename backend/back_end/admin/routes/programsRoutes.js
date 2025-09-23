@@ -26,18 +26,11 @@ import {
 
 const router = express.Router();
 
-// Multer configuration for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Make sure your app.js creates this folder at startup (you already do)
-    cb(null, path.join(process.cwd(), 'uploads'));
-  },
-  filename: (req, file, cb) => {
-    const sanitized = file.originalname.replace(/\s+/g, '_');
-    cb(null, `${Date.now()}_${sanitized}`);
-  },
-});
-const upload = multer({ storage });
+// Import Cloudinary upload configuration
+import { cloudinaryUploadConfigs } from '../../utils/cloudinaryUpload.js';
+
+// Use Cloudinary upload configuration for programs
+const upload = cloudinaryUploadConfigs.programMain;
 
 // Admin routes
 router.get('/admin/programs/:orgId', getProgramsByOrg);

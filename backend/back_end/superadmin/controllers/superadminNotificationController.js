@@ -1,6 +1,7 @@
 //db table: superadmin_notifications
 
 import db from '../../database.js';
+import { getOrganizationLogoUrl } from '../../utils/imageUrlUtils.js';
 
 class SuperAdminNotificationController {
   // Test endpoint to check notifications
@@ -130,12 +131,7 @@ class SuperAdminNotificationController {
         let logoUrl = null;
         if (notification.orgLogo) {
           if (notification.orgLogo.includes('/')) {
-            // Legacy path - extract filename
-            const filename = notification.orgLogo.split('/').pop();
-            logoUrl = `/uploads/organizations/logos/${filename}`;
-          } else {
-            // New structure - direct filename
-            logoUrl = `/uploads/organizations/logos/${notification.orgLogo}`;
+            logoUrl = getOrganizationLogoUrl(notification.orgLogo);
           }
         } else if (notification.organization_acronym) {
           // Fallback to expected logo path

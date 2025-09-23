@@ -157,9 +157,7 @@ export default function NewsDetailPage({ params }) {
 
         {/* Featured Image - Display prominently after header */}
         {news.featured_image && (() => {
-          const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
-          const imagePath = news.featured_image.startsWith('/') ? news.featured_image : `/${news.featured_image}`;
-          const imageUrl = `${baseUrl}${imagePath}`;
+          const imageUrl = news.featured_image;
           
           return (
             <div className={styles.featuredImageContainer}>

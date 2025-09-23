@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useDropdown } from '../../../../../hooks/useDropdown';
 import OptimizedImage from '../../../../../components/OptimizedImage';
+import { getProfilePhotoUrl } from '../../../../../utils/uploadPaths';
 import styles from './styles/ProfileDropdown.module.css';
 import { FaChevronRight, FaUser, FaSignOutAlt, FaCog, FaClipboardList } from 'react-icons/fa';
 
@@ -27,7 +28,7 @@ export default function ProfileDropdown({ user, isAuthenticated, onLogoutClick }
         <div className={styles.profileIcon}>
           {user?.profile_photo_url ? (
             <OptimizedImage
-              src={`http://localhost:8080${user.profile_photo_url}`}
+              src={getProfilePhotoUrl(user.profile_photo_url)}
               alt="Profile"
               width={32}
               height={32}
@@ -48,7 +49,7 @@ export default function ProfileDropdown({ user, isAuthenticated, onLogoutClick }
             <div className={styles.dropdownProfileIcon}>
               {user?.profile_photo_url ? (
                 <OptimizedImage
-                  src={`http://localhost:8080${user.profile_photo_url}`}
+                  src={getProfilePhotoUrl(user.profile_photo_url)}
                   alt="Profile"
                   width={40}
                   height={40}

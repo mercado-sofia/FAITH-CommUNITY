@@ -1,6 +1,7 @@
 //db table: users, user_notifications
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { getOrganizationLogoUrl } from '../../utils/imageUrlUtils.js';
 import {
   signAccessToken,
   issueRefreshToken,
@@ -370,70 +371,176 @@ export const uploadProfilePhoto = async (req, res) => {
   try {
     const userId = req.user.id;
     
+    console.log('📸 Profile photo upload request:', {
+      userId,
+      hasFile: !!req.file,
+      fileInfo: req.file ? {
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size
+      } : null
+    });
+
+    // Check if file exists
     if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+      console.error('❌ No file provided in request');
+      return res.status(400).json({ error: 'No file provided' });
     }
 
-    // Move file from temp directory to user-profile directory
-    const fs = await import('fs');
-    const path = await import('path');
-    
-    const tempFilePath = req.file.path;
-    const fileName = req.file.filename;
-    const userProfileDir = path.join(process.cwd(), 'uploads', 'user-profile');
-    
-    // Ensure user-profile directory exists
-    if (!fs.existsSync(userProfileDir)) {
-      fs.mkdirSync(userProfileDir, { recursive: true });
+    // Check if file buffer exists
+    if (!req.file.buffer) {
+      console.error('❌ No file buffer found');
+      return res.status(400).json({ error: 'File buffer not found' });
     }
-    
-    const targetPath = path.join(userProfileDir, fileName);
-    
-    // Move file to user-profile directory
-    fs.renameSync(tempFilePath, targetPath);
-    
-    // Generate the URL for the uploaded file
-    const profilePhotoUrl = `/uploads/user-profile/${fileName}`;
-    
-    // Update user's profile_photo_url in database
-    await db.query(
-      'UPDATE users SET profile_photo_url = ?, updated_at = NOW() WHERE id = ?',
-      [profilePhotoUrl, userId]
-    );
-    
-    // Get updated user data
-    const [users] = await db.query(
-      'SELECT * FROM users WHERE id = ?',
-      [userId]
-    );
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/avif'];
+    if (!allowedTypes.includes(req.file.mimetype)) {
+      console.error('❌ Invalid file type:', req.file.mimetype);
+      return res.status(400).json({ error: 'Invalid file type. Only JPEG, PNG, GIF, WebP, AVIF, and SVG images are allowed' });
+    }
+
+    // Validate file size (3MB limit)
+    const maxSize = 3 * 1024 * 1024; // 3MB
+    if (req.file.size > maxSize) {
+      console.error('❌ File too large:', req.file.size, 'bytes');
+      return res.status(400).json({ error: 'File too large. Maximum size is 3MB' });
+    }
+
+    // Import Cloudinary utilities
+    const { 
+      deleteFromCloudinary, 
+      extractPublicIdFromUrl,
+      CLOUDINARY_FOLDERS 
+    } = await import('../../utils/cloudinaryConfig.js');
+    const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
+
+    // Get current user to check for existing profile photo
+    let users;
+    try {
+      [users] = await db.query(
+        'SELECT * FROM users WHERE id = ?',
+        [userId]
+      );
+    } catch (dbError) {
+      console.error('❌ Database query failed:', dbError);
+      throw new Error(`Database query failed: ${dbError.message}`);
+    }
     
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
     
     const user = users[0];
+
+    // Delete old profile photo from Cloudinary if it exists
+    if (user.profile_photo_url) {
+      const oldPublicId = extractPublicIdFromUrl(user.profile_photo_url);
+      if (oldPublicId) {
+        try {
+          await deleteFromCloudinary(oldPublicId);
+          console.log('Old profile photo deleted from Cloudinary:', oldPublicId);
+        } catch (deleteError) {
+          console.warn('Failed to delete old profile photo from Cloudinary:', deleteError.message);
+        }
+      }
+    }
+
+    // Upload new profile photo to Cloudinary
+    console.log('☁️ Uploading to Cloudinary...');
+    
+    let uploadResult;
+    try {
+      uploadResult = await uploadSingleToCloudinary(
+        req.file, 
+        CLOUDINARY_FOLDERS.USER_PROFILES,
+        { prefix: 'profile_' }
+      );
+    } catch (cloudinaryError) {
+      console.error('❌ Cloudinary upload failed:', cloudinaryError);
+      throw new Error(`Cloudinary upload failed: ${cloudinaryError.message}`);
+    }
+
+    console.log('✅ Cloudinary upload successful:', {
+      public_id: uploadResult.public_id,
+      url: uploadResult.url,
+      format: uploadResult.format,
+      size: uploadResult.size
+    });
+
+    const profilePhotoUrl = uploadResult.url;
+    
+    // Update user's profile_photo_url in database
+    console.log('💾 Updating database...');
+    try {
+      await db.query(
+        'UPDATE users SET profile_photo_url = ?, updated_at = NOW() WHERE id = ?',
+        [profilePhotoUrl, userId]
+      );
+    } catch (dbError) {
+      console.error('❌ Database update failed:', dbError);
+      throw new Error(`Database update failed: ${dbError.message}`);
+    }
+    
+    // Get updated user data
+    let updatedUsers;
+    try {
+      [updatedUsers] = await db.query(
+        'SELECT * FROM users WHERE id = ?',
+        [userId]
+      );
+    } catch (dbError) {
+      console.error('❌ Final database query failed:', dbError);
+      throw new Error(`Final database query failed: ${dbError.message}`);
+    }
+    
+    const updatedUser = updatedUsers[0];
+    
+    console.log('✅ Profile photo upload completed successfully');
     
     res.json({
       message: 'Profile photo uploaded successfully',
       profilePhotoUrl: profilePhotoUrl,
+      cloudinary_info: {
+        public_id: uploadResult.public_id,
+        format: uploadResult.format,
+        width: uploadResult.width,
+        height: uploadResult.height,
+        size: uploadResult.size
+      },
       user: {
-        id: user.id,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        email: user.email,
-        contactNumber: user.contact_number,
-        gender: user.gender,
-        address: user.address,
-        birthDate: user.birth_date,
-        occupation: user.occupation,
-        citizenship: user.citizenship,
-        profile_photo_url: user.profile_photo_url
+        id: updatedUser.id,
+        firstName: updatedUser.first_name,
+        lastName: updatedUser.last_name,
+        email: updatedUser.email,
+        contactNumber: updatedUser.contact_number,
+        gender: updatedUser.gender,
+        address: updatedUser.address,
+        birthDate: updatedUser.birth_date,
+        occupation: updatedUser.occupation,
+        citizenship: updatedUser.citizenship,
+        profile_photo_url: updatedUser.profile_photo_url
       }
     });
 
   } catch (error) {
-    console.error('Upload profile photo error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ Upload profile photo error:', {
+      message: error.message,
+      stack: error.stack,
+      userId: req.user?.id
+    });
+    
+    // Provide more specific error messages
+    let errorMessage = 'Internal server error';
+    if (error.message.includes('Cloudinary')) {
+      errorMessage = 'Failed to upload to cloud storage';
+    } else if (error.message.includes('database')) {
+      errorMessage = 'Failed to update database';
+    } else if (error.message.includes('file')) {
+      errorMessage = 'File processing error';
+    }
+    
+    res.status(500).json({ error: errorMessage });
   }
 };
 
@@ -454,16 +561,18 @@ export const removeProfilePhoto = async (req, res) => {
     
     const currentPhotoUrl = users[0].profile_photo_url;
     
-    // Delete the photo file if it exists
+    // Delete the photo from Cloudinary if it exists
     if (currentPhotoUrl) {
-      const fs = await import('fs');
-      const path = await import('path');
+      const { deleteFromCloudinary, extractPublicIdFromUrl } = await import('../../utils/cloudinaryConfig.js');
       
-      // Remove the leading slash and construct the full path
-      const photoPath = path.join(process.cwd(), currentPhotoUrl.substring(1));
-      
-      if (fs.existsSync(photoPath)) {
-        fs.unlinkSync(photoPath);
+      const publicId = extractPublicIdFromUrl(currentPhotoUrl);
+      if (publicId) {
+        try {
+          await deleteFromCloudinary(publicId);
+          console.log('Profile photo deleted from Cloudinary:', publicId);
+        } catch (deleteError) {
+          console.warn('Failed to delete profile photo from Cloudinary:', deleteError.message);
+        }
       }
     }
     
@@ -1503,14 +1612,7 @@ export const getUserApplications = async (req, res) => {
       // Construct proper organization logo URL
       let orgLogoUrl = null;
       if (application.orgLogo) {
-        if (application.orgLogo.includes('/')) {
-          // Legacy path - extract filename
-          const filename = application.orgLogo.split('/').pop();
-          orgLogoUrl = `/uploads/organizations/logos/${filename}`;
-        } else {
-          // New structure - direct filename
-          orgLogoUrl = `/uploads/organizations/logos/${application.orgLogo}`;
-        }
+        orgLogoUrl = getOrganizationLogoUrl(application.orgLogo);
       }
 
       return {

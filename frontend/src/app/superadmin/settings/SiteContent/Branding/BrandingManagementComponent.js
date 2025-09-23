@@ -200,7 +200,7 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
             {brandingData?.logo_url ? (
               <div className={styles.preview}>
                 <Image 
-                  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${brandingData.logo_url}`} 
+                  src={brandingData.logo_url} 
                   alt="Logo" 
                   width={100}
                   height={100}
@@ -246,7 +246,7 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
             {brandingData?.name_url ? (
               <div className={styles.preview}>
                 <Image 
-                  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${brandingData.name_url}`} 
+                  src={brandingData.name_url} 
                   alt="Logo Name" 
                   width={100}
                   height={100}
@@ -292,7 +292,7 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
             {brandingData?.favicon_url ? (
               <div className={styles.preview}>
                 <Image 
-                  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${brandingData.favicon_url}`} 
+                  src={brandingData.favicon_url} 
                   alt="Favicon" 
                   width={64}
                   height={64}

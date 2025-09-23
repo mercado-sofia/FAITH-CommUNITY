@@ -1,5 +1,6 @@
 //db table: programs_projects
 import db from '../../database.js';
+import { getOrganizationLogoUrl } from '../../utils/imageUrlUtils.js';
 
 // Get all programs grouped by organization for superadmin
 export const getAllProgramsByOrganization = async (req, res) => {
@@ -57,14 +58,7 @@ export const getAllProgramsByOrganization = async (req, res) => {
       // Construct proper logo URL
       let logoUrl;
       if (program.orgLogo) {
-        if (program.orgLogo.includes('/')) {
-          // Legacy path - extract filename
-          const filename = program.orgLogo.split('/').pop();
-          logoUrl = `/uploads/organizations/logos/${filename}`;
-        } else {
-          // New structure - direct filename
-          logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
-        }
+        logoUrl = getOrganizationLogoUrl(program.orgLogo);
       } else {
         // Fallback to default logo
         logoUrl = `/logo/faith_community_logo.png`;
@@ -188,12 +182,7 @@ export const getProgramById = async (req, res) => {
     let logoUrl;
     if (program.orgLogo) {
       if (program.orgLogo.includes('/')) {
-        // Legacy path - extract filename
-        const filename = program.orgLogo.split('/').pop();
-        logoUrl = `/uploads/organizations/logos/${filename}`;
-      } else {
-        // New structure - direct filename
-        logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
+        logoUrl = getOrganizationLogoUrl(program.orgLogo);
       }
     } else {
       // Fallback to default logo
@@ -273,14 +262,7 @@ export const getProgramsByOrganizationId = async (req, res) => {
       // Construct proper logo URL
       let logoUrl;
       if (program.orgLogo) {
-        if (program.orgLogo.includes('/')) {
-          // Legacy path - extract filename
-          const filename = program.orgLogo.split('/').pop();
-          logoUrl = `/uploads/organizations/logos/${filename}`;
-        } else {
-          // New structure - direct filename
-          logoUrl = `/uploads/organizations/logos/${program.orgLogo}`;
-        }
+        logoUrl = getOrganizationLogoUrl(program.orgLogo);
       } else {
         // Fallback to default logo
         logoUrl = `/logo/faith_community_logo.png`;

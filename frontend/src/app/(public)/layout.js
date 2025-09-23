@@ -108,7 +108,7 @@ export default function PublicLayout({ children }) {
         {brandingData?.favicon_url && (
           <link
             rel="icon"
-            href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${brandingData.favicon_url}`}
+            href={brandingData.favicon_url}
             type="image/x-icon"
           />
         )}

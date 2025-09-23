@@ -66,6 +66,29 @@ export const addHead = async (req, res) => {
       })
     }
 
+    // Handle Cloudinary upload for photo if provided
+    let finalPhoto = photo?.trim() || null
+    if (req.file) {
+      try {
+        const { uploadSingleToCloudinary, CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+        const { uploadSingleToCloudinary: uploadToCloudinary } = await import('../../utils/cloudinaryUpload.js');
+        
+        // Upload new photo to Cloudinary
+        const uploadResult = await uploadToCloudinary(
+          req.file, 
+          CLOUDINARY_FOLDERS.ORGANIZATIONS.HEADS,
+          { prefix: 'org_head_' }
+        );
+        finalPhoto = uploadResult.url;
+      } catch (uploadError) {
+        console.error('Error uploading organization head photo to Cloudinary:', uploadError);
+        return res.status(500).json({ 
+          success: false, 
+          message: 'Failed to upload organization head photo' 
+        });
+      }
+    }
+
     const [result] = await db.execute(
       `INSERT INTO organization_heads (organization_id, head_name, role, priority, display_order, facebook, email, photo)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -77,7 +100,7 @@ export const addHead = async (req, res) => {
         display_order || 999, 
         facebook?.trim() || '', 
         email?.trim() || null, 
-        photo?.trim() || null
+        finalPhoto
       ],
     )
 
@@ -130,6 +153,44 @@ export const updateHead = async (req, res) => {
   }
 
   try {
+    // Handle Cloudinary upload for photo if provided
+    let finalPhoto = photo?.trim() || null
+    if (req.file) {
+      try {
+        const { deleteFromCloudinary, extractPublicIdFromUrl, CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+        const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
+        
+        // Get current head to check for existing photo
+        const [currentHead] = await db.execute("SELECT photo FROM organization_heads WHERE id = ?", [id]);
+        if (currentHead.length > 0 && currentHead[0].photo) {
+          // Delete old photo from Cloudinary
+          const oldPublicId = extractPublicIdFromUrl(currentHead[0].photo);
+          if (oldPublicId) {
+            try {
+              await deleteFromCloudinary(oldPublicId);
+              console.log('Old organization head photo deleted from Cloudinary:', oldPublicId);
+            } catch (deleteError) {
+              console.warn('Failed to delete old organization head photo from Cloudinary:', deleteError.message);
+            }
+          }
+        }
+        
+        // Upload new photo to Cloudinary
+        const uploadResult = await uploadSingleToCloudinary(
+          req.file, 
+          CLOUDINARY_FOLDERS.ORGANIZATIONS.HEADS,
+          { prefix: 'org_head_' }
+        );
+        finalPhoto = uploadResult.url;
+      } catch (uploadError) {
+        console.error('Error uploading organization head photo to Cloudinary:', uploadError);
+        return res.status(500).json({ 
+          success: false, 
+          message: 'Failed to upload organization head photo' 
+        });
+      }
+    }
+
     const [result] = await db.execute(
       `UPDATE organization_heads 
        SET head_name = ?, role = ?, priority = ?, display_order = ?, facebook = ?, email = ?, photo = ? 
@@ -141,7 +202,7 @@ export const updateHead = async (req, res) => {
         display_order || 999, 
         facebook?.trim() || '', 
         email?.trim() || null, 
-        photo?.trim() || null, 
+        finalPhoto, 
         id
       ],
     )

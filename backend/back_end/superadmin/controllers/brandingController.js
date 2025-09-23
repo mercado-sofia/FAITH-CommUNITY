@@ -2,6 +2,12 @@ import db from '../../database.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { 
+  deleteFromCloudinary, 
+  extractPublicIdFromUrl,
+  CLOUDINARY_FOLDERS 
+} from '../../utils/cloudinaryConfig.js';
+import { uploadSingleToCloudinary } from '../../utils/cloudinaryUpload.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -87,13 +93,19 @@ export const uploadLogo = async (req, res) => {
     }
 
     console.log('File details:', {
-      filename: req.file.filename,
       originalname: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size
     });
 
-    const logoUrl = `/uploads/branding/${req.file.filename}`;
+    // Upload to Cloudinary
+    const uploadResult = await uploadSingleToCloudinary(
+      req.file, 
+      CLOUDINARY_FOLDERS.BRANDING,
+      { prefix: 'logo_' }
+    );
+
+    const logoUrl = uploadResult.url;
 
     // Update branding with new logo URL
     const [existingRows] = await db.query('SELECT * FROM branding ORDER BY id DESC LIMIT 1');
@@ -104,11 +116,16 @@ export const uploadLogo = async (req, res) => {
         [logoUrl, null]
       );
     } else {
-      // Delete old logo file if it exists
+      // Delete old logo from Cloudinary if it exists
       if (existingRows[0].logo_url) {
-        const oldLogoPath = path.join(__dirname, '../../../uploads/branding', path.basename(existingRows[0].logo_url));
-        if (fs.existsSync(oldLogoPath)) {
-          fs.unlinkSync(oldLogoPath);
+        const oldPublicId = extractPublicIdFromUrl(existingRows[0].logo_url);
+        if (oldPublicId) {
+          try {
+            await deleteFromCloudinary(oldPublicId);
+            console.log('Old logo deleted from Cloudinary:', oldPublicId);
+          } catch (deleteError) {
+            console.warn('Failed to delete old logo from Cloudinary:', deleteError.message);
+          }
         }
       }
       
@@ -118,11 +135,20 @@ export const uploadLogo = async (req, res) => {
       );
     }
 
-    console.log('Logo uploaded successfully:', logoUrl);
+    console.log('Logo uploaded successfully to Cloudinary:', logoUrl);
     res.json({
       success: true,
       message: 'Logo uploaded successfully',
-      data: { logo_url: logoUrl }
+      data: { 
+        logo_url: logoUrl,
+        public_id: uploadResult.public_id,
+        cloudinary_info: {
+          format: uploadResult.format,
+          width: uploadResult.width,
+          height: uploadResult.height,
+          size: uploadResult.size
+        }
+      }
     });
   } catch (error) {
     console.error('Error uploading logo:', error);
@@ -151,13 +177,19 @@ export const uploadFavicon = async (req, res) => {
     }
 
     console.log('File details:', {
-      filename: req.file.filename,
       originalname: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size
     });
 
-    const faviconUrl = `/uploads/branding/${req.file.filename}`;
+    // Upload to Cloudinary
+    const uploadResult = await uploadSingleToCloudinary(
+      req.file, 
+      CLOUDINARY_FOLDERS.BRANDING,
+      { prefix: 'favicon_' }
+    );
+
+    const faviconUrl = uploadResult.url;
 
     // Update branding with new favicon URL
     const [existingRows] = await db.query('SELECT * FROM branding ORDER BY id DESC LIMIT 1');
@@ -168,11 +200,16 @@ export const uploadFavicon = async (req, res) => {
         [null, faviconUrl]
       );
     } else {
-      // Delete old favicon file if it exists
+      // Delete old favicon from Cloudinary if it exists
       if (existingRows[0].favicon_url) {
-        const oldFaviconPath = path.join(__dirname, '../../../uploads/branding', path.basename(existingRows[0].favicon_url));
-        if (fs.existsSync(oldFaviconPath)) {
-          fs.unlinkSync(oldFaviconPath);
+        const oldPublicId = extractPublicIdFromUrl(existingRows[0].favicon_url);
+        if (oldPublicId) {
+          try {
+            await deleteFromCloudinary(oldPublicId);
+            console.log('Old favicon deleted from Cloudinary:', oldPublicId);
+          } catch (deleteError) {
+            console.warn('Failed to delete old favicon from Cloudinary:', deleteError.message);
+          }
         }
       }
       
@@ -182,11 +219,20 @@ export const uploadFavicon = async (req, res) => {
       );
     }
 
-    console.log('Favicon uploaded successfully:', faviconUrl);
+    console.log('Favicon uploaded successfully to Cloudinary:', faviconUrl);
     res.json({
       success: true,
       message: 'Favicon uploaded successfully',
-      data: { favicon_url: faviconUrl }
+      data: { 
+        favicon_url: faviconUrl,
+        public_id: uploadResult.public_id,
+        cloudinary_info: {
+          format: uploadResult.format,
+          width: uploadResult.width,
+          height: uploadResult.height,
+          size: uploadResult.size
+        }
+      }
     });
   } catch (error) {
     console.error('Error uploading favicon:', error);
@@ -211,11 +257,16 @@ export const deleteLogo = async (req, res) => {
       });
     }
 
-    // Delete logo file if it exists
+    // Delete logo from Cloudinary if it exists
     if (existingRows[0].logo_url) {
-      const logoPath = path.join(__dirname, '../../../uploads/branding', path.basename(existingRows[0].logo_url));
-      if (fs.existsSync(logoPath)) {
-        fs.unlinkSync(logoPath);
+      const publicId = extractPublicIdFromUrl(existingRows[0].logo_url);
+      if (publicId) {
+        try {
+          await deleteFromCloudinary(publicId);
+          console.log('Logo deleted from Cloudinary:', publicId);
+        } catch (deleteError) {
+          console.warn('Failed to delete logo from Cloudinary:', deleteError.message);
+        }
       }
     }
 
@@ -250,11 +301,16 @@ export const deleteFavicon = async (req, res) => {
       });
     }
 
-    // Delete favicon file if it exists
+    // Delete favicon from Cloudinary if it exists
     if (existingRows[0].favicon_url) {
-      const faviconPath = path.join(__dirname, '../../../uploads/branding', path.basename(existingRows[0].favicon_url));
-      if (fs.existsSync(faviconPath)) {
-        fs.unlinkSync(faviconPath);
+      const publicId = extractPublicIdFromUrl(existingRows[0].favicon_url);
+      if (publicId) {
+        try {
+          await deleteFromCloudinary(publicId);
+          console.log('Favicon deleted from Cloudinary:', publicId);
+        } catch (deleteError) {
+          console.warn('Failed to delete favicon from Cloudinary:', deleteError.message);
+        }
       }
     }
 
@@ -293,13 +349,19 @@ export const uploadName = async (req, res) => {
     }
 
     console.log('File details:', {
-      filename: req.file.filename,
       originalname: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size
     });
 
-    const nameUrl = `/uploads/branding/${req.file.filename}`;
+    // Upload to Cloudinary
+    const uploadResult = await uploadSingleToCloudinary(
+      req.file, 
+      CLOUDINARY_FOLDERS.BRANDING,
+      { prefix: 'name_' }
+    );
+
+    const nameUrl = uploadResult.url;
 
     // Update branding with new name URL
     const [existingRows] = await db.query('SELECT * FROM branding ORDER BY id DESC LIMIT 1');
@@ -310,11 +372,16 @@ export const uploadName = async (req, res) => {
         [null, nameUrl, null]
       );
     } else {
-      // Delete old name file if it exists
+      // Delete old name from Cloudinary if it exists
       if (existingRows[0].name_url) {
-        const oldNamePath = path.join(__dirname, '../../../uploads/branding', path.basename(existingRows[0].name_url));
-        if (fs.existsSync(oldNamePath)) {
-          fs.unlinkSync(oldNamePath);
+        const oldPublicId = extractPublicIdFromUrl(existingRows[0].name_url);
+        if (oldPublicId) {
+          try {
+            await deleteFromCloudinary(oldPublicId);
+            console.log('Old name image deleted from Cloudinary:', oldPublicId);
+          } catch (deleteError) {
+            console.warn('Failed to delete old name image from Cloudinary:', deleteError.message);
+          }
         }
       }
       
@@ -324,11 +391,20 @@ export const uploadName = async (req, res) => {
       );
     }
 
-    console.log('Name uploaded successfully:', nameUrl);
+    console.log('Name uploaded successfully to Cloudinary:', nameUrl);
     res.json({
       success: true,
       message: 'Name uploaded successfully',
-      data: { name_url: nameUrl }
+      data: { 
+        name_url: nameUrl,
+        public_id: uploadResult.public_id,
+        cloudinary_info: {
+          format: uploadResult.format,
+          width: uploadResult.width,
+          height: uploadResult.height,
+          size: uploadResult.size
+        }
+      }
     });
   } catch (error) {
     console.error('Error uploading name:', error);
@@ -353,11 +429,16 @@ export const deleteName = async (req, res) => {
       });
     }
 
-    // Delete name file if it exists
+    // Delete name from Cloudinary if it exists
     if (existingRows[0].name_url) {
-      const namePath = path.join(__dirname, '../../../uploads/branding', path.basename(existingRows[0].name_url));
-      if (fs.existsSync(namePath)) {
-        fs.unlinkSync(namePath);
+      const publicId = extractPublicIdFromUrl(existingRows[0].name_url);
+      if (publicId) {
+        try {
+          await deleteFromCloudinary(publicId);
+          console.log('Name image deleted from Cloudinary:', publicId);
+        } catch (deleteError) {
+          console.warn('Failed to delete name image from Cloudinary:', deleteError.message);
+        }
       }
     }
 

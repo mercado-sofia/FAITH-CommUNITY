@@ -24,8 +24,23 @@ export const useApiCall = () => {
         ...options
       };
 
+      console.log('Making API call:', {
+        endpoint: getApiUrl(endpoint),
+        method: options.method || 'GET',
+        hasBody: !!options.body,
+        bodyType: options.body instanceof FormData ? 'FormData' : typeof options.body
+      });
+
       const response = await fetch(getApiUrl(endpoint), defaultOptions);
-      const data = await response.json();
+      
+      // Handle non-JSON responses (like file uploads)
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
 
       if (!response.ok) {
         console.error('API Error Details:', {
@@ -33,17 +48,47 @@ export const useApiCall = () => {
           statusText: response.statusText,
           data: data,
           endpoint: endpoint,
-          options: options
+          options: options,
+          contentType: contentType
         });
-        throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`);
+        
+        // Handle different error response formats
+        let errorMessage;
+        if (typeof data === 'string') {
+          errorMessage = data;
+        } else if (data && typeof data === 'object') {
+          errorMessage = data.error || data.message || data.details || `HTTP error! status: ${response.status}`;
+        } else {
+          errorMessage = `HTTP error! status: ${response.status}`;
+        }
+        
+        // If we still don't have a meaningful error message, provide a default
+        if (!errorMessage || errorMessage === `HTTP error! status: ${response.status}`) {
+          errorMessage = `Server error (${response.status}): ${response.statusText}`;
+        }
+        
+        throw new Error(errorMessage);
       }
+
+      console.log('API call successful:', {
+        endpoint,
+        status: response.status,
+        data: data
+      });
 
       return { data, response };
     } catch (err) {
       if (err.name === 'AbortError') {
         // Request was cancelled, don't set error
+        console.log('API call cancelled:', endpoint);
         return null;
       }
+      
+      console.error('API call failed:', {
+        endpoint,
+        error: err.message,
+        stack: err.stack
+      });
       
       const errorMessage = err.message || 'An error occurred while making the request';
       setError(errorMessage);
@@ -88,6 +133,10 @@ export const useProfileApi = () => {
   }, [makeApiCall]);
 
   const uploadProfilePhoto = useCallback(async (photoFile) => {
+    if (!photoFile) {
+      throw new Error('No photo file provided');
+    }
+
     const formData = new FormData();
     formData.append('profilePhoto', photoFile);
     

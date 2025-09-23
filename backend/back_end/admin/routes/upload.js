@@ -1,7 +1,7 @@
 //upload handler: uploadController.js
 
 import express from 'express';
-import upload from '../middleware/upload.js';
+import { cloudinaryUploadConfigs } from '../../utils/cloudinaryUpload.js';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
@@ -33,20 +33,12 @@ const authenticateAdmin = (req, res, next) => {
   }
 };
 
-// Ensure uploads directory exists
-const uploadsDir = path.resolve('uploads');
-console.log('📁 Uploads directory (absolute):', uploadsDir);
-if (!fs.existsSync(uploadsDir)) {
-  console.log('📁 Creating uploads directory:', uploadsDir);
-  fs.mkdirSync(uploadsDir, { recursive: true });
-} else {
-  console.log('📁 Uploads directory already exists:', uploadsDir);
-}
+// Using Cloudinary for file storage - no local uploads directory needed
 
-router.post('/', authenticateAdmin, upload.single('file'), (req, res, next) => {
+// Generic upload handler that processes any file type
+router.post('/', authenticateAdmin, cloudinaryUploadConfigs.programMain.single('file'), async (req, res, next) => {
   console.log('🔄 Upload route hit');
   console.log('📁 Request body:', req.body);
-  console.log('📎 Request file:', req.file);
   console.log('📎 Request headers:', req.headers);
   
   try {
@@ -55,125 +47,66 @@ router.post('/', authenticateAdmin, upload.single('file'), (req, res, next) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
     
-    // Validate file exists
-    if (!fs.existsSync(req.file.path)) {
-      console.error('❌ Uploaded file does not exist:', req.file.path);
-      return res.status(500).json({ error: 'Uploaded file not found' });
+    // Determine upload type from request body or query params
+    const uploadType = req.body.uploadType || req.query.type || 'program';
+    console.log('📝 Upload type:', uploadType);
+    
+    // Use appropriate folder and prefix based on upload type
+    let folder;
+    let prefix;
+    
+    switch (uploadType) {
+      case 'organization-logo':
+        folder = 'faith-community/organizations/logos';
+        prefix = 'org_logo_';
+        break;
+      case 'organization-head':
+        folder = 'faith-community/organizations/heads';
+        prefix = 'org_head_';
+        break;
+      default:
+        folder = 'faith-community/programs/main';
+        prefix = 'prog_main_';
+        break;
     }
     
-    // Check file permissions
     try {
-      fs.accessSync(req.file.path, fs.constants.R_OK);
-      console.log('✅ Source file is readable');
-    } catch (accessError) {
-      console.error('❌ Source file is not readable:', accessError);
-      return res.status(500).json({ error: 'Uploaded file is not readable' });
-    }
-    
-         // Determine upload type from request body or query params
-     const uploadType = req.body.uploadType || req.query.type || 'program';
-     console.log('📝 Upload type:', uploadType);
-     let fileUrl;
-     let targetPath; // Declare targetPath at function scope
-    
-    if (uploadType === 'organization-logo') {
-             // Move file to organizations/logos directory
-       const targetDir = path.join(uploadsDir, 'organizations', 'logos');
-       targetPath = path.join(targetDir, req.file.filename);
+      const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+      const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
       
-      // Ensure target directory exists
-      if (!fs.existsSync(targetDir)) {
-        fs.mkdirSync(targetDir, { recursive: true });
-      }
+      // Upload to Cloudinary
+      const uploadResult = await uploadSingleToCloudinary(
+        req.file, 
+        folder,
+        { prefix }
+      );
       
-      // Move file to correct location
-      try {
-        fs.renameSync(req.file.path, targetPath);
-        console.log('✅ File moved successfully:', { from: req.file.path, to: targetPath });
-      } catch (moveError) {
-        console.error('❌ Failed to move file:', moveError);
-        return res.status(500).json({ error: 'Failed to save uploaded file' });
-      }
-      fileUrl = `/uploads/organizations/logos/${req.file.filename}`;
-    } else if (uploadType === 'organization-head') {
-      console.log('📁 Processing organization-head upload');
-             // Move file to organizations/heads directory
-       const targetDir = path.join(uploadsDir, 'organizations', 'heads');
-       targetPath = path.join(targetDir, req.file.filename);
+      console.log('✅ File uploaded successfully to Cloudinary:', {
+        originalname: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+        uploadType: uploadType,
+        url: uploadResult.url,
+        public_id: uploadResult.public_id
+      });
       
-      console.log('📁 Target directory:', targetDir);
-      console.log('📁 Target path:', targetPath);
-      
-      // Ensure target directory exists
-      if (!fs.existsSync(targetDir)) {
-        console.log('📁 Creating target directory:', targetDir);
-        try {
-          fs.mkdirSync(targetDir, { recursive: true });
-          console.log('✅ Target directory created successfully');
-        } catch (mkdirError) {
-          console.error('❌ Failed to create target directory:', mkdirError);
-          return res.status(500).json({ error: 'Failed to create upload directory: ' + mkdirError.message });
+      res.json({ 
+        success: true,
+        filename: req.file.originalname,
+        filePath: uploadResult.public_id, // Use public_id for frontend compatibility
+        url: uploadResult.url,
+        cloudinary_info: {
+          public_id: uploadResult.public_id,
+          format: uploadResult.format,
+          width: uploadResult.width,
+          height: uploadResult.height,
+          size: uploadResult.size
         }
-      } else {
-        console.log('📁 Target directory already exists');
-      }
-      
-      // Check if target directory is writable
-      try {
-        fs.accessSync(targetDir, fs.constants.W_OK);
-        console.log('✅ Target directory is writable');
-      } catch (accessError) {
-        console.error('❌ Target directory is not writable:', accessError);
-        return res.status(500).json({ error: 'Upload directory is not writable' });
-      }
-      
-      // Move file to correct location
-      try {
-        console.log('📁 Moving file from:', req.file.path, 'to:', targetPath);
-        fs.renameSync(req.file.path, targetPath);
-        console.log('✅ File moved successfully:', { from: req.file.path, to: targetPath });
-      } catch (moveError) {
-        console.error('❌ Failed to move file:', moveError);
-        return res.status(500).json({ error: 'Failed to save uploaded file: ' + moveError.message });
-      }
-      fileUrl = `/uploads/organizations/heads/${req.file.filename}`;
-    } else {
-             // Default: programs/main-images
-       const targetDir = path.join(uploadsDir, 'programs', 'main-images');
-       targetPath = path.join(targetDir, req.file.filename);
-      
-      // Ensure target directory exists
-      if (!fs.existsSync(targetDir)) {
-        fs.mkdirSync(targetDir, { recursive: true });
-      }
-      
-      // Move file to correct location
-      try {
-        fs.renameSync(req.file.path, targetPath);
-        console.log('✅ File moved successfully:', { from: req.file.path, to: targetPath });
-      } catch (moveError) {
-        console.error('❌ Failed to move file:', moveError);
-        return res.status(500).json({ error: 'Failed to save uploaded file' });
-      }
-      fileUrl = `/uploads/programs/main-images/${req.file.filename}`;
+      });
+    } catch (uploadError) {
+      console.error('❌ Cloudinary upload error:', uploadError);
+      res.status(500).json({ error: 'Failed to upload file to Cloudinary: ' + uploadError.message });
     }
-    
-    console.log('✅ File uploaded successfully:', {
-      originalname: req.file.originalname,
-      filename: req.file.filename,
-      size: req.file.size,
-      mimetype: req.file.mimetype,
-      uploadType: uploadType,
-      url: fileUrl,
-      targetPath: targetPath
-    });
-    
-    res.json({ 
-      success: true,
-      filename: req.file.filename,
-      filePath: req.file.filename, // Add this for frontend compatibility
-      url: fileUrl
-    });
   } catch (error) {
     console.error('❌ File upload error:', error);
     next(error); // Pass error to error handling middleware
@@ -202,37 +135,7 @@ router.use((error, req, res, next) => {
 });
 
 // Public upload route for organization logos (no authentication required)
-// Create a separate multer instance for public uploads
-const publicUpload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      const targetDir = path.join(uploadsDir, 'organizations', 'logos');
-      if (!fs.existsSync(targetDir)) {
-        fs.mkdirSync(targetDir, { recursive: true });
-      }
-      cb(null, targetDir);
-    },
-    filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const extension = path.extname(file.originalname);
-      const baseName = path.basename(file.originalname, extension);
-      const sanitizedBaseName = baseName.replace(/[^a-zA-Z0-9]/g, "_");
-      cb(null, `org_logo_${sanitizedBaseName}-${uniqueSuffix}${extension}`);
-    }
-  }),
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'), false);
-    }
-  }
-});
-
-router.post('/public/organization-logo', publicUpload.single('logo'), (req, res, next) => {
+router.post('/public/organization-logo', cloudinaryUploadConfigs.organizationLogo.single('logo'), async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ 
@@ -241,15 +144,37 @@ router.post('/public/organization-logo', publicUpload.single('logo'), (req, res,
       });
     }
     
-    // File is already in the correct location due to multer configuration
-    const fileUrl = `/uploads/organizations/logos/${req.file.filename}`;
-    
-    res.json({
-      success: true,
-      filename: req.file.filename,
-      logoPath: req.file.filename, // Return just the filename for database storage
-      url: fileUrl
-    });
+    try {
+      const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+      const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
+      
+      // Upload to Cloudinary
+      const uploadResult = await uploadSingleToCloudinary(
+        req.file, 
+        CLOUDINARY_FOLDERS.ORGANIZATIONS.LOGOS,
+        { prefix: 'org_logo_' }
+      );
+      
+      res.json({
+        success: true,
+        filename: req.file.originalname,
+        logoPath: uploadResult.public_id, // Return public_id for database storage
+        url: uploadResult.url,
+        cloudinary_info: {
+          public_id: uploadResult.public_id,
+          format: uploadResult.format,
+          width: uploadResult.width,
+          height: uploadResult.height,
+          size: uploadResult.size
+        }
+      });
+    } catch (uploadError) {
+      console.error('❌ Cloudinary upload error:', uploadError);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to upload file to Cloudinary: ' + uploadError.message 
+      });
+    }
   } catch (error) {
     console.error('Public upload error:', error);
     res.status(500).json({ 

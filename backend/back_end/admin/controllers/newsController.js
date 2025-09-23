@@ -1,6 +1,7 @@
 //db table: news
 import jwt from "jsonwebtoken";
 import db from "../../database.js";
+import { getOrganizationLogoUrl } from "../../utils/imageUrlUtils.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env";
 
@@ -28,7 +29,27 @@ async function notifySubscribers({ type, subject, messageHtml }) {
 export const createNews = async (req, res) => {
   const { title, slug, content, excerpt, published_at } = req.body;
   const { orgId } = req.params;
-  const featured_image = req.file ? req.file.path : null;
+  
+  // Handle Cloudinary upload for featured image
+  let featured_image = null;
+  if (req.file) {
+    try {
+      const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+      const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
+      const uploadResult = await uploadSingleToCloudinary(
+        req.file, 
+        CLOUDINARY_FOLDERS.NEWS,
+        { prefix: 'news_' }
+      );
+      featured_image = uploadResult.url;
+    } catch (uploadError) {
+      console.error('Error uploading featured image to Cloudinary:', uploadError);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Failed to upload featured image' 
+      });
+    }
+  }
 
   // Verify authentication
   const authHeader = req.headers.authorization;
@@ -218,12 +239,7 @@ export const getNewsByOrg = async (req, res) => {
     const news = newsRows.map(n => {
       let logoUrl;
       if (n.orgLogo) {
-        if (n.orgLogo.includes('/')) {
-          const filename = n.orgLogo.split('/').pop();
-          logoUrl = `/uploads/organizations/logos/${filename}`;
-        } else {
-          logoUrl = `/uploads/organizations/logos/${n.orgLogo}`;
-        }
+        logoUrl = getOrganizationLogoUrl(n.orgLogo);
       } else {
         logoUrl = `/logo/faith_community_logo.png`;
       }
@@ -267,12 +283,7 @@ export const getApprovedNews = async (req, res) => {
     const news = rows.map(n => {
       let logoUrl;
       if (n.orgLogo) {
-        if (n.orgLogo.includes('/')) {
-          const filename = n.orgLogo.split('/').pop();
-          logoUrl = `/uploads/organizations/logos/${filename}`;
-        } else {
-          logoUrl = `/uploads/organizations/logos/${n.orgLogo}`;
-        }
+        logoUrl = getOrganizationLogoUrl(n.orgLogo);
       } else {
         logoUrl = `/logo/faith_community_logo.png`;
       }
@@ -341,12 +352,7 @@ export const getApprovedNewsByOrg = async (req, res) => {
     const news = rows.map(n => {
       let logoUrl;
       if (n.orgLogo) {
-        if (n.orgLogo.includes('/')) {
-          const filename = n.orgLogo.split('/').pop();
-          logoUrl = `/uploads/organizations/logos/${filename}`;
-        } else {
-          logoUrl = `/uploads/organizations/logos/${n.orgLogo}`;
-        }
+        logoUrl = getOrganizationLogoUrl(n.orgLogo);
       } else {
         logoUrl = `/logo/faith_community_logo.png`;
       }
@@ -399,12 +405,7 @@ export const getNewsById = async (req, res) => {
     const n = rows[0];
     let logoUrl;
     if (n.orgLogo) {
-      if (n.orgLogo.includes('/')) {
-        const filename = n.orgLogo.split('/').pop();
-        logoUrl = `/uploads/organizations/logos/${filename}`;
-      } else {
-        logoUrl = `/uploads/organizations/logos/${n.orgLogo}`;
-      }
+      logoUrl = getOrganizationLogoUrl(n.orgLogo);
     } else {
       logoUrl = `/logo/faith_community_logo.png`;
     }
@@ -457,12 +458,7 @@ export const getNewsBySlug = async (req, res) => {
     const n = rows[0];
     let logoUrl;
     if (n.orgLogo) {
-      if (n.orgLogo.includes('/')) {
-        const filename = n.orgLogo.split('/').pop();
-        logoUrl = `/uploads/organizations/logos/${filename}`;
-      } else {
-        logoUrl = `/uploads/organizations/logos/${n.orgLogo}`;
-      }
+      logoUrl = getOrganizationLogoUrl(n.orgLogo);
     } else {
       logoUrl = `/logo/faith_community_logo.png`;
     }
@@ -593,12 +589,7 @@ export const getRecentlyDeletedNews = async (req, res) => {
     const news = newsRows.map(n => {
       let logoUrl;
       if (n.orgLogo) {
-        if (n.orgLogo.includes('/')) {
-          const filename = n.orgLogo.split('/').pop();
-          logoUrl = `/uploads/organizations/logos/${filename}`;
-        } else {
-          logoUrl = `/uploads/organizations/logos/${n.orgLogo}`;
-        }
+        logoUrl = getOrganizationLogoUrl(n.orgLogo);
       } else {
         logoUrl = `/logo/faith_community_logo.png`;
       }
@@ -721,7 +712,44 @@ export const permanentlyDeleteNews = async (req, res) => {
 export const updateNews = async (req, res) => {
   const { id } = req.params;
   const { title, slug, content, excerpt, published_at } = req.body;
-  const featured_image = req.file ? req.file.path : null;
+  
+  // Handle Cloudinary upload for featured image
+  let featured_image = null;
+  if (req.file) {
+    try {
+      const { deleteFromCloudinary, extractPublicIdFromUrl, CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+      const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
+      
+      // Get current news to check for existing featured image
+      const [currentNews] = await db.execute("SELECT featured_image FROM news WHERE id = ?", [id]);
+      if (currentNews.length > 0 && currentNews[0].featured_image) {
+        // Delete old featured image from Cloudinary
+        const oldPublicId = extractPublicIdFromUrl(currentNews[0].featured_image);
+        if (oldPublicId) {
+          try {
+            await deleteFromCloudinary(oldPublicId);
+            console.log('Old featured image deleted from Cloudinary:', oldPublicId);
+          } catch (deleteError) {
+            console.warn('Failed to delete old featured image from Cloudinary:', deleteError.message);
+          }
+        }
+      }
+      
+      // Upload new featured image to Cloudinary
+      const uploadResult = await uploadSingleToCloudinary(
+        req.file, 
+        CLOUDINARY_FOLDERS.NEWS,
+        { prefix: 'news_' }
+      );
+      featured_image = uploadResult.url;
+    } catch (uploadError) {
+      console.error('Error uploading featured image to Cloudinary:', uploadError);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Failed to upload featured image' 
+      });
+    }
+  }
 
   // Verify authentication
   const authHeader = req.headers.authorization;

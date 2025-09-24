@@ -6,12 +6,16 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
 import styles from './HeroSection.module.css';
+import { usePublicHeroSection } from '../../hooks/usePublicData';
 
 export default function HeroSection() {
   const router = useRouter();
   const [showVideo, setShowVideo] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
+  // Fetch hero section data
+  const { heroData, isLoading, error } = usePublicHeroSection();
 
   // Check user authentication status
   useEffect(() => {
@@ -50,9 +54,9 @@ export default function HeroSection() {
       <div className={styles.wrapper}>
         <div className={styles.heroWrapper}>
           <div className={styles.leftColumn}>
-            <p className={styles.welcome}>Welcome to FAITH CommUNITY</p>
+            <p className={styles.welcome}>{heroData?.tag || 'Welcome to FAITH CommUNITY'}</p>
             <h1 className={styles.herotitle}>
-              A Unified Platform for Community Extension Programs
+              {heroData?.heading || 'A Unified Platform for Community Extension Programs'}
             </h1>
 
             <div className={styles.ctaContainer}>
@@ -83,61 +87,65 @@ export default function HeroSection() {
                   </svg>
                 </Link>
 
-                <div className={styles.playCircle} onClick={() => setShowVideo(true)}>
-                  <span className={styles.playIcon}>▶</span>
-                </div>
+                {(heroData?.video_url || heroData?.video_link) && (
+                  <div className={styles.playCircle} onClick={() => setShowVideo(true)}>
+                    <span className={styles.playIcon}>▶</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           <div className={styles.rightColumn}>
-            <div className={`${styles.card} ${styles.first}`}>
-              <Image
-                src="/sample/sample2.jpg"
-                alt="Main Card"
-                width={280}
-                height={180}
-                className={styles.cardImage}
-                priority
-              />
-              <div className={styles.cardText}>
-                <h2>Inside the Initiative</h2>
-                <p>Where Ideas Take Root</p>
-              </div>
-            </div>
-            <div className={styles.cardVertical}>
-              <Image
-                src="/sample/sample8.jpg"
-                alt="Vertical Card 1"
-                width={280}
-                height={340}
-                className={styles.cardImage}
-                priority
-              />
-              <div className={styles.cardOverlayText}>Project Snapshot</div>
-            </div>
-            <div className={styles.cardVertical}>
-              <Image
-                src="/sample/sample3.jpeg"
-                alt="Vertical Card 2"
-                width={280}
-                height={340}
-                className={styles.cardImage}
-                priority
-              />
-              <div className={styles.cardOverlayText}>Extension in Action</div>
-            </div>
+            {heroData?.images?.map((image, index) => {
+              const isFirst = index === 0;
+              const imageSrc = image.url || (isFirst ? "/sample/sample2.jpg" : index === 1 ? "/sample/sample8.jpg" : "/sample/sample3.jpeg");
+              
+              return (
+                <div key={image.id} className={`${styles.card} ${isFirst ? styles.first : styles.cardVertical}`}>
+                  <Image
+                    src={imageSrc}
+                    alt={isFirst ? "Main Card" : `Vertical Card ${index}`}
+                    width={280}
+                    height={isFirst ? 180 : 340}
+                    className={styles.cardImage}
+                    priority
+                  />
+                  {isFirst ? (
+                    <div className={styles.cardText}>
+                      <h2>{image.heading}</h2>
+                      <p>{image.subheading}</p>
+                    </div>
+                  ) : (
+                    <div className={styles.cardOverlayText}>
+                      <h3>{image.heading}</h3>
+                      <p>{image.subheading}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {showVideo && mounted && createPortal(
+      {showVideo && mounted && (heroData?.video_url || heroData?.video_link) && createPortal(
         <div className={styles.videoOverlay}>
           <button className={styles.closeButton} onClick={() => setShowVideo(false)}>✖</button>
-          <video controls autoPlay className={styles.videoPlayer}>
-            <source src="/video/sample_video.mp4" type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
+          {heroData?.video_type === 'link' ? (
+            <iframe
+              src={heroData.video_link}
+              className={styles.videoPlayer}
+              frameBorder="0"
+              allowFullScreen
+              title="Hero Video"
+            />
+          ) : (
+            <video controls autoPlay className={styles.videoPlayer}>
+              <source src={heroData.video_url} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          )}
         </div>,
         document.body
       )}

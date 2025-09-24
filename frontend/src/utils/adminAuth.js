@@ -29,6 +29,11 @@ export const clearAuthAndRedirect = (userType = 'admin') => {
 export const isTokenExpired = (token) => {
   if (!token) return true;
   
+  // Handle hardcoded superadmin token
+  if (token === "superadmin") {
+    return false; // Never expires
+  }
+  
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
     const currentTime = Math.floor(Date.now() / 1000);

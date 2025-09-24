@@ -20,10 +20,10 @@ const adminSlice = createSlice({
       state.userType = "admin"
       state.error = null
     },
-    loginSuperAdmin: (state) => {
+    loginSuperAdmin: (state, action) => {
       state.isAuthenticated = true
-      state.token = "superadmin"
-      state.admin = {
+      state.token = action.payload.token || "superadmin"
+      state.admin = action.payload.superadmin || {
         email: "superadmin@faith.com",
         role: "superadmin",
         org: "FAITH",

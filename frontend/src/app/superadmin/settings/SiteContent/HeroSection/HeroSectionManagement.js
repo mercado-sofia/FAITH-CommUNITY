@@ -27,6 +27,10 @@ export default function HeroSectionManagement({ showSuccessModal }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   
+  // Upload loading states
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [isUploadingImages, setIsUploadingImages] = useState({});
+  
   // Edit states for each section
   const [isEditingText, setIsEditingText] = useState(false);
   const [isEditingVideo, setIsEditingVideo] = useState(false);
@@ -217,6 +221,13 @@ export default function HeroSectionManagement({ showSuccessModal }) {
     try {
       console.log('Starting file upload:', { type, imageId, fileName: file.name, fileSize: file.size, fileType: file.type });
       
+      // Set loading state
+      if (type === 'video') {
+        setIsUploadingVideo(true);
+      } else if (type === 'image' && imageId) {
+        setIsUploadingImages(prev => ({ ...prev, [imageId]: true }));
+      }
+      
       const formData = new FormData();
       formData.append(type, file);
       if (imageId) {
@@ -286,6 +297,13 @@ export default function HeroSectionManagement({ showSuccessModal }) {
     } catch (error) {
       console.error(`Error uploading ${type}:`, error);
       showSuccessModal(`Failed to upload ${type}. Please try again.`);
+    } finally {
+      // Clear loading state
+      if (type === 'video') {
+        setIsUploadingVideo(false);
+      } else if (type === 'image' && imageId) {
+        setIsUploadingImages(prev => ({ ...prev, [imageId]: false }));
+      }
     }
   };
 
@@ -370,9 +388,25 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         <div className={styles.textContentSection}>
           <div className={styles.sectionHeader}>
             <h3>Text Content</h3>
-            <button className={styles.editBtn} onClick={toggleTextEdit}>
-              <FaEdit /> Edit
-            </button>
+            {isEditingText ? (
+              <div className={styles.headerActions}>
+                <button className={styles.cancelBtn} onClick={cancelTextEdit}>
+                  Cancel
+                </button>
+                <button className={styles.saveBtn} onClick={async () => {
+                  // Save both tag and heading
+                  await handleTextUpdate('tag', heroData.tag);
+                  await handleTextUpdate('heading', heroData.heading);
+                  setIsEditingText(false);
+                }}>
+                  Save
+                </button>
+              </div>
+            ) : (
+              <button className={styles.editBtn} onClick={toggleTextEdit}>
+                <FaEdit /> Edit
+              </button>
+            )}
           </div>
           
           {isEditingText ? (
@@ -400,21 +434,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                   placeholder="Enter main heading..."
                 />
               </div>
-
-              {/* Action Buttons */}
-              <div className={styles.actionButtons}>
-                <button className={styles.cancelBtn} onClick={cancelTextEdit}>
-                  Cancel
-                </button>
-                <button className={styles.saveBtn} onClick={async () => {
-                  // Save both tag and heading
-                  await handleTextUpdate('tag', heroData.tag);
-                  await handleTextUpdate('heading', heroData.heading);
-                  setIsEditingText(false);
-                }}>
-                  Save Changes
-                </button>
-              </div>
             </>
           ) : (
             <div className={styles.readOnlyContent}>
@@ -434,9 +453,26 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         <div className={styles.mediaSection}>
           <div className={styles.sectionHeader}>
             <h3>Video Content</h3>
-            <button className={styles.editBtn} onClick={toggleVideoEdit}>
-              <FaEdit /> Edit
-            </button>
+            {isEditingVideo ? (
+              <div className={styles.headerActions}>
+                <button className={styles.cancelBtn} onClick={cancelVideoEdit}>
+                  Cancel
+                </button>
+                <button className={styles.saveBtn} onClick={async () => {
+                  // Save video link if it exists
+                  if (heroData.video_link) {
+                    await handleVideoLinkUpdate(heroData.video_link, 'link');
+                  }
+                  setIsEditingVideo(false);
+                }}>
+                  Save
+                </button>
+              </div>
+            ) : (
+              <button className={styles.editBtn} onClick={toggleVideoEdit}>
+                <FaEdit /> Edit
+              </button>
+            )}
           </div>
           {/* Video Preview - Always Visible */}
           <div className={styles.mediaItem}>
@@ -501,6 +537,7 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                 type="file"
                 id="video-upload"
                 accept="video/*"
+                disabled={isUploadingVideo}
                 onChange={(e) => {
                   if (e.target.files[0]) {
                     handleFileUpload(e.target.files[0], 'video');
@@ -508,25 +545,18 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                 }}
                 style={{ display: 'none' }}
               />
-              <label htmlFor="video-upload" className={styles.uploadBtn}>
-                <FaUpload /> Upload Video File
+              <label htmlFor="video-upload" className={`${styles.uploadBtn} ${isUploadingVideo ? styles.uploadBtnDisabled : ''}`}>
+                {isUploadingVideo ? (
+                  <>
+                    <div className={styles.spinner}></div>
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <FaUpload /> Upload Video File
+                  </>
+                )}
               </label>
-
-              {/* Action Buttons */}
-              <div className={styles.actionButtons}>
-                <button className={styles.cancelBtn} onClick={cancelVideoEdit}>
-                  Cancel
-                </button>
-                <button className={styles.saveBtn} onClick={async () => {
-                  // Save video link if it exists
-                  if (heroData.video_link) {
-                    await handleVideoLinkUpdate(heroData.video_link, 'link');
-                  }
-                  setIsEditingVideo(false);
-                }}>
-                  Save Changes
-                </button>
-              </div>
             </div>
           ) : (
             <div className={styles.readOnlyContent}>
@@ -555,17 +585,35 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                 <div className={styles.itemHeader}>
                   <span className={styles.itemLabel}>Image {index + 1}</span>
                   <div className={styles.itemActions}>
-                    <button className={styles.editBtn} onClick={() => toggleImageEdit(image.id)}>
-                      <FaEdit /> Edit
-                    </button>
-                    {image.url && (
-                      <button 
-                        className={styles.removeBtn}
-                        onClick={() => handleFileDelete('image', image.id)}
-                        title="Remove image"
-                      >
-                        <FiTrash2 color="#dc2626" />
-                      </button>
+                    {isEditingImages[image.id] ? (
+                      <div className={styles.headerActions}>
+                        <button className={styles.cancelBtn} onClick={() => cancelImageEdit(image.id)}>
+                          Cancel
+                        </button>
+                        <button className={styles.saveBtn} onClick={async () => {
+                          // Save both heading and subheading
+                          await handleImageTextUpdate(image.id, 'heading', image.heading);
+                          await handleImageTextUpdate(image.id, 'subheading', image.subheading);
+                          setIsEditingImages(prev => ({ ...prev, [image.id]: false }));
+                        }}>
+                          Save
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <button className={styles.editBtn} onClick={() => toggleImageEdit(image.id)}>
+                          <FaEdit /> Edit
+                        </button>
+                        {image.url && (
+                          <button 
+                            className={styles.removeBtn}
+                            onClick={() => handleFileDelete('image', image.id)}
+                            title="Remove image"
+                          >
+                            <FiTrash2 color="#dc2626" />
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -624,6 +672,7 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                       type="file"
                       id={`image-upload-${image.id}`}
                       accept="image/*"
+                      disabled={isUploadingImages[image.id]}
                       onChange={(e) => {
                         if (e.target.files[0]) {
                           handleFileUpload(e.target.files[0], 'image', image.id);
@@ -631,24 +680,18 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                       }}
                       style={{ display: 'none' }}
                     />
-                    <label htmlFor={`image-upload-${image.id}`} className={styles.uploadBtn}>
-                      <FaUpload /> Upload Image
+                    <label htmlFor={`image-upload-${image.id}`} className={`${styles.uploadBtn} ${isUploadingImages[image.id] ? styles.uploadBtnDisabled : ''}`}>
+                      {isUploadingImages[image.id] ? (
+                        <>
+                          <div className={styles.spinner}></div>
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <FaUpload /> Upload Image
+                        </>
+                      )}
                     </label>
-
-                    {/* Action Buttons */}
-                    <div className={styles.actionButtons}>
-                      <button className={styles.cancelBtn} onClick={() => cancelImageEdit(image.id)}>
-                        Cancel
-                      </button>
-                      <button className={styles.saveBtn} onClick={async () => {
-                        // Save both heading and subheading
-                        await handleImageTextUpdate(image.id, 'heading', image.heading);
-                        await handleImageTextUpdate(image.id, 'subheading', image.subheading);
-                        setIsEditingImages(prev => ({ ...prev, [image.id]: false }));
-                      }}>
-                        Save Changes
-                      </button>
-                    </div>
                   </>
                 ) : (
                   <div className={styles.readOnlyContent}>

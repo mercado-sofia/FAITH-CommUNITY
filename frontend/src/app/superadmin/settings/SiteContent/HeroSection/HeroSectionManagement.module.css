@@ -82,6 +82,12 @@
   margin-bottom: 1.5rem;
 }
 
+.headerActions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
 .sectionHeader h3 {
   font-size: 16px;
   font-weight: 600;
@@ -287,6 +293,27 @@
   transform: translateY(-1px);
 }
 
+.uploadBtnDisabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.uploadBtnDisabled:hover {
+  background: #f8fafc;
+  border-color: #d1d5db;
+  transform: none;
+}
+
+.uploadBtn .spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
 /* Edit Button */
 .editBtn {
   display: inline-flex;
@@ -312,14 +339,6 @@
   transform: translateY(-1px);
 }
 
-/* Action Buttons */
-.actionButtons {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
-}
 
 .cancelBtn {
   display: inline-flex;
@@ -335,6 +354,8 @@
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: var(--font-poppins), sans-serif;
+  min-width: 80px;
+  flex: 1;
 }
 
 .cancelBtn:hover {
@@ -356,6 +377,8 @@
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: var(--font-poppins), sans-serif;
+  min-width: 80px;
+  flex: 1;
 }
 
 .saveBtn:hover {

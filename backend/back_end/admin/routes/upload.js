@@ -6,6 +6,7 @@ import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 import jwt from 'jsonwebtoken';
+import { verifyAdminOrSuperadmin } from '../../superadmin/middleware/verifyAdminOrSuperadmin.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env";
@@ -36,7 +37,7 @@ const authenticateAdmin = (req, res, next) => {
 // Using Cloudinary for file storage - no local uploads directory needed
 
 // Generic upload handler that processes any file type
-router.post('/', authenticateAdmin, cloudinaryUploadConfigs.programMain.single('file'), async (req, res, next) => {
+router.post('/', verifyAdminOrSuperadmin, cloudinaryUploadConfigs.programMain.single('file'), async (req, res, next) => {
   console.log('🔄 Upload route hit');
   console.log('📁 Request body:', req.body);
   console.log('📎 Request headers:', req.headers);
@@ -63,6 +64,10 @@ router.post('/', authenticateAdmin, cloudinaryUploadConfigs.programMain.single('
       case 'organization-head':
         folder = 'faith-community/organizations/heads';
         prefix = 'org_head_';
+        break;
+      case 'heads-faces':
+        folder = 'faith-community/heads-faces';
+        prefix = 'head_';
         break;
       default:
         folder = 'faith-community/programs/main';

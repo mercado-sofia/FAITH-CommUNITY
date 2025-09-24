@@ -1491,6 +1491,73 @@ const initializeDatabase = async () => {
       console.log("✅ Hero section images table already exists");
     }
 
+    // Check if about_us table exists
+    const [aboutUsTables] = await connection.query('SHOW TABLES LIKE "about_us"');
+    
+    if (aboutUsTables.length === 0) {
+      console.log("Creating about_us table...");
+      await connection.query(`
+        CREATE TABLE about_us (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          tag VARCHAR(255) DEFAULT 'About Us FAITH CommUNITY',
+          heading TEXT DEFAULT 'We Believe That We Can Help More People With You',
+          description TEXT DEFAULT 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.',
+          extension_categories JSON DEFAULT '[
+            {"name": "Extension For Education", "color": "green"},
+            {"name": "Extension For Medical", "color": "red"},
+            {"name": "Extension For Community", "color": "orange"},
+            {"name": "Extension For Foods", "color": "green"}
+          ]',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+      `);
+      
+      // Insert default about us record
+      await connection.query(`
+        INSERT INTO about_us (tag, heading, description) VALUES
+        ('About Us FAITH CommUNITY', 'We Believe That We Can Help More People With You', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.')
+      `);
+      
+      console.log("✅ About us table created successfully!");
+    } else {
+      console.log("✅ About us table already exists");
+    }
+
+    // Check if heads_faces table exists
+    const [headsFacesTables] = await connection.query('SHOW TABLES LIKE "heads_faces"');
+    
+    if (headsFacesTables.length === 0) {
+      console.log("Creating heads_faces table...");
+      await connection.query(`
+        CREATE TABLE heads_faces (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          description TEXT,
+          email VARCHAR(255),
+          phone VARCHAR(50),
+          image_url VARCHAR(500),
+          position VARCHAR(100) DEFAULT 'Head of FACES',
+          display_order INT DEFAULT 0,
+          status ENUM('ACTIVE', 'INACTIVE') DEFAULT 'ACTIVE',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+      `);
+      
+      // Insert default heads of FACES records
+      await connection.query(`
+        INSERT INTO heads_faces (name, description, email, phone, position, display_order) VALUES
+        ('Jana Mae A. Cruz', 'Chair of the Community Extension Committee', 'jana.cruz@faith.edu.ph', '+63 912 345 6789', 'Chair', 1),
+        ('Jana Mae A. Cruz', 'Organization Adviser for Community Extension', 'jana.cruz@faith.edu.ph', '+63 912 345 6789', 'Org Adviser', 2),
+        ('Jana Mae A. Cruz', 'Secretary of the Community Extension Committee', 'jana.cruz@faith.edu.ph', '+63 912 345 6789', 'Secretary', 3)
+      `);
+      
+      console.log("✅ Heads of FACES table created successfully!");
+    } else {
+      console.log("✅ Heads of FACES table already exists");
+    }
+
     connection.release();
     return promisePool;
   } catch (error) {

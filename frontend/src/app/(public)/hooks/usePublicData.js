@@ -388,3 +388,102 @@ export const usePublicHeroSection = () => {
     error,
   };
 };
+
+// Hook for fetching mission and vision data
+export const usePublicMissionVision = () => {
+  const { data, error, isLoading } = useSWR(
+    `${API_BASE_URL}/api/mission-vision`,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      dedupingInterval: 300000, // 5 minutes (mission/vision doesn't change often)
+      errorRetryCount: 3,
+      errorRetryInterval: 5000,
+      onError: (error) => {
+        logger.swrError(`${API_BASE_URL}/api/mission-vision`, error);
+      }
+    }
+  );
+
+  // Transform data for public consumption with fallbacks
+  const missionVisionData = {
+    mission: data?.find(item => item.type === 'Mission')?.content || 
+            'To serve communities through education and engagement, fostering growth and development for a better tomorrow.',
+    vision: data?.find(item => item.type === 'Vision')?.content || 
+            'To be the leading platform for community extension programs, creating lasting positive impact in society.'
+  };
+
+  return {
+    missionVisionData,
+    isLoading,
+    error,
+  };
+};
+
+// Hook for fetching about us data
+export const usePublicAboutUs = () => {
+  const { data, error, isLoading } = useSWR(
+    `${API_BASE_URL}/api/superadmin/about-us/public`,
+    async (url) => {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const result = await response.json();
+      return result.data;
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      dedupingInterval: 300000, // 5 minutes (about us doesn't change often)
+      errorRetryCount: 3,
+      errorRetryInterval: 5000,
+      onError: (error) => {
+        logger.swrError(`${API_BASE_URL}/api/superadmin/about-us/public`, error);
+      }
+    }
+  );
+
+  // Transform data for public consumption with fallbacks
+  const aboutUsData = {
+    tag: data?.tag || 'About Us FAITH CommUNITY',
+    heading: data?.heading || 'We Believe That We Can Help More People With You',
+    description: data?.description || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.',
+    extension_categories: data?.extension_categories || [
+      { name: 'Extension For Education', icon: 'education', color: 'green' },
+      { name: 'Extension For Medical', icon: 'medical', color: 'red' },
+      { name: 'Extension For Community', icon: 'community', color: 'orange' },
+      { name: 'Extension For Foods', icon: 'food', color: 'green' }
+    ]
+  };
+
+  return {
+    aboutUsData,
+    isLoading,
+    error,
+  };
+};
+
+// Custom hook for heads of FACES data
+export const usePublicHeadsFaces = () => {
+  const { data, error, isLoading } = useSWR(
+    `${API_BASE_URL}/api/superadmin/heads-faces`,
+    fetcher,
+    {
+      dedupingInterval: 60000, // Cache for 1 minute
+      onError: (error) => {
+        logger.swrError(`${API_BASE_URL}/api/superadmin/heads-faces`, error);
+      }
+    }
+  );
+
+  // Transform data for public consumption with fallbacks
+  const headsFacesData = data?.data || [];
+
+  return {
+    headsFacesData,
+    isLoading,
+    error,
+  };
+};

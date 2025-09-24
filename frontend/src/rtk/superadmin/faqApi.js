@@ -9,7 +9,7 @@ export const faqApi = createApi({
 
       // Add JWT token for admin authentication if needed
       const token = getState().admin?.token || localStorage.getItem("adminToken")
-      if (token && token !== "superadmin") {
+      if (token) {
         headers.set("Authorization", `Bearer ${token}`)
       }
 

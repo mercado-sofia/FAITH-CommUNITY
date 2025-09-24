@@ -339,3 +339,52 @@ export const usePublicFooterContent = () => {
     error,
   };
 };
+
+// Hook for fetching hero section data
+export const usePublicHeroSection = () => {
+  const { data, error, isLoading } = useSWR(
+    `${API_BASE_URL}/api/hero-section`,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      dedupingInterval: 60000, // 1 minute (hero section changes more frequently)
+      errorRetryCount: 3,
+      errorRetryInterval: 5000,
+      onError: (error) => {
+        logger.swrError(`${API_BASE_URL}/api/hero-section`, error);
+      }
+    }
+  );
+
+  // Transform data for public consumption with fallbacks
+  const heroData = data?.data ? {
+    tag: data.data.tag || 'Welcome to FAITH CommUNITY',
+    heading: data.data.heading || 'A Unified Platform for Community Extension Programs',
+    video_url: data.data.video_url,
+    video_link: data.data.video_link,
+    video_type: data.data.video_type || 'upload',
+    images: data.data.images || [
+      { id: 1, url: null, heading: 'Inside the Initiative', subheading: 'Where Ideas Take Root' },
+      { id: 2, url: null, heading: 'Collaboration', subheading: 'Working Together' },
+      { id: 3, url: null, heading: 'Innovation', subheading: 'Building the Future' }
+    ]
+  } : {
+    tag: 'Welcome to FAITH CommUNITY',
+    heading: 'A Unified Platform for Community Extension Programs',
+    video_url: null,
+    video_link: null,
+    video_type: 'upload',
+    images: [
+      { id: 1, url: null, heading: 'Inside the Initiative', subheading: 'Where Ideas Take Root' },
+      { id: 2, url: null, heading: 'Collaboration', subheading: 'Working Together' },
+      { id: 3, url: null, heading: 'Innovation', subheading: 'Building the Future' }
+    ]
+  };
+
+  return {
+    heroData,
+    isLoading,
+    error,
+  };
+};

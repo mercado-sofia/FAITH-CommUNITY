@@ -16,7 +16,7 @@ export const adminApi = createApi({
       // Use superadmin token if available, otherwise use admin token
       const token = superadminToken || adminToken
       
-      if (token && token !== "superadmin") {
+      if (token) {
         headers.set("Authorization", `Bearer ${token}`)
       }
 

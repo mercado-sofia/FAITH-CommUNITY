@@ -94,13 +94,26 @@
   opacity: 0;
   transition: opacity 0.3s ease, transform 0.3s ease;
   color: white;
-  font-size: 1.5rem;
-  font-weight: bold;
   position: absolute;
   bottom: 2rem;
   left: 2rem;
   z-index: 1;
   transform: translateY(10px);
+}
+
+.cardOverlayText h3 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0 0 0.5rem 0;
+  color: white;
+}
+
+.cardOverlayText p {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+  color: white;
+  opacity: 0.9;
 }
 
 .cardVertical:hover .cardOverlayText {

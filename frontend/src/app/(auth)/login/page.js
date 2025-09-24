@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch } from "react-redux"
-import { loginAdmin, logoutAdmin } from "../../../rtk/superadmin/adminSlice"
+import { loginAdmin, loginSuperAdmin, logoutAdmin } from "../../../rtk/superadmin/adminSlice"
 import styles from "./login.module.css"
 import { FaUser, FaSpinner } from "react-icons/fa"
 import Image from "next/image"
@@ -199,6 +199,7 @@ export default function LoginPage() {
             localStorage.setItem("token", data.token)
             localStorage.setItem("user", JSON.stringify(data.superadmin))
             localStorage.setItem("userRole", "superadmin")
+            dispatch(loginSuperAdmin({ token: data.token, superadmin: data.superadmin }))
             break
           case "admin":
             localStorage.setItem("adminToken", data.token)

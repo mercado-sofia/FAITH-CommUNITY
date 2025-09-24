@@ -6,7 +6,7 @@ import styles from './settings.module.css';
 import { PasswordChangeModal, TwoFAModal } from './ProfileSection';
 import { SecureEmailChange } from '@/components/SecureEmailChange';
 import SuccessModal from '../components/SuccessModal';
-import { SiteNameManagement, FooterContentManagement, BrandingManagement } from './SiteContent';
+import { SiteNameManagement, FooterContentManagement, BrandingManagement, HeroSectionManagement } from './SiteContent';
 import brandingStyles from './SiteContent/Branding/BrandingManagement.module.css';
 import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError, checkAuthStatus } from '@/utils/adminAuth';
 
@@ -353,6 +353,7 @@ export default function SuperAdminSettings() {
             <SiteNameManagement showSuccessModal={showSuccessModal} />
             <FooterContentManagement showSuccessModal={showSuccessModal} />
             <BrandingManagement showSuccessModal={showSuccessModal} />
+            <HeroSectionManagement showSuccessModal={showSuccessModal} />
           </div>
         </div>
       )}

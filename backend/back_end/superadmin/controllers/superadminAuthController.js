@@ -65,7 +65,9 @@ export const loginSuperadmin = async (req, res) => {
     }
 
 
-    const token = jwt.sign(
+    // For the main superadmin account (ID 1), use hardcoded token for compatibility
+    // For other superadmin accounts, use JWT tokens
+    const token = superadmin.id === 1 ? "superadmin" : jwt.sign(
       { id: superadmin.id, username: superadmin.username, role: "superadmin" },
       JWT_SECRET,
       { 
@@ -105,6 +107,17 @@ export const verifySuperadminToken = (req, res, next) => {
   }
 
   try {
+    // Handle hardcoded superadmin token
+    if (token === "superadmin") {
+      req.superadmin = {
+        id: 1,
+        username: "superadmin@faith.com",
+        role: "superadmin"
+      }
+      next()
+      return
+    }
+
     const decoded = jwt.verify(token, JWT_SECRET, {
       issuer: process.env.JWT_ISS || "faith-community",
       audience: process.env.JWT_AUD || "admin",

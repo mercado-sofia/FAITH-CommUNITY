@@ -2,11 +2,28 @@
 
 import styles from './AboutSection.module.css';
 import Image from 'next/image';
-import { FaHeart, FaCube } from 'react-icons/fa';
-import { usePublicSiteName } from '../../hooks/usePublicData';
+import { FaCheck } from 'react-icons/fa';
+import { usePublicAboutUs } from '../../hooks/usePublicData';
+import Loader from '../../../../components/Loader';
 
 export default function AboutSection() {
-  const { siteNameData } = usePublicSiteName();
+  const { aboutUsData, isLoading, error } = usePublicAboutUs();
+
+  if (isLoading) {
+    return (
+      <section className={styles.aboutSection}>
+        <div className={styles.wrapper}>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+            <Loader small />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    console.error('Error loading about us data:', error);
+  }
 
   return (
     <section className={styles.aboutSection}>
@@ -26,30 +43,37 @@ export default function AboutSection() {
           </div>
 
           <div className={styles.aboutContent}>
-            <p className={styles.aboutLabel}>Who we are</p>
-            <h2 className={styles.aboutHeading}>The Story Behind {siteNameData?.site_name || 'FAITH CommUNITY'}</h2>
+            <p className={styles.aboutLabel}>{aboutUsData?.tag || 'About Us FAITH CommUNITY'}</p>
+            <h2 className={styles.aboutHeading}>{aboutUsData?.heading || 'We Believe That We Can Help More People With You'}</h2>
             <p className={styles.aboutParagraph}>
-              {siteNameData?.site_name || 'FAITH CommUNITY'} serves as a bridge between volunteers and organizations,
-              created to support and document the shared efforts of the FAITH Colleges
-              community in delivering meaningful outreach and service.
+              {aboutUsData?.description || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.'}
             </p>
-          </div>
-        </div>
-
-        <div className={styles.aboutBoxes}>
-          <div className={styles.missionbox}>
-            <FaHeart className={styles.abouticon} />
-            <h3>Our Mission</h3>
-            <p>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. In pretium vitae est non lacinia. Aenean ullam eleifend massa, eu facilisis lectus ornare vel.
-            </p>
-          </div>
-          <div className={styles.visionbox}>
-            <FaCube className={styles.abouticon} />
-            <h3>Our Vision</h3>
-            <p>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. In pretium vitae est non lacinia. Aenean ullam eleifend massa, eu facilisis lectus ornare vel.
-            </p>
+            
+            {/* Extension Categories List */}
+            <div className={styles.extensionCategories}>
+              {aboutUsData?.extension_categories?.map((category, index) => (
+                <div key={index} className={styles.extensionCategory}>
+                  <FaCheck className={styles.checkIcon} style={{ 
+                    color: category.color === 'green' ? '#10b981' : 
+                           category.color === 'red' ? '#ef4444' : 
+                           category.color === 'orange' ? '#f97316' : 
+                           category.color === 'blue' ? '#3b82f6' :
+                           category.color === 'purple' ? '#8b5cf6' :
+                           category.color === 'yellow' ? '#f59e0b' :
+                           category.color === 'pink' ? '#ec4899' :
+                           category.color === 'teal' ? '#14b8a6' :
+                           category.color === 'indigo' ? '#6366f1' :
+                           category.color === 'gray' ? '#6b7280' :
+                           category.color === 'emerald' ? '#10b981' :
+                           category.color === 'rose' ? '#f43f5e' :
+                           category.color === 'cyan' ? '#06b6d4' :
+                           category.color === 'lime' ? '#84cc16' :
+                           category.color === 'amber' ? '#f59e0b' : '#3b82f6' 
+                  }} />
+                  <span>{category.name}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

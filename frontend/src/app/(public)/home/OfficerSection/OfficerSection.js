@@ -9,51 +9,20 @@ import {
   FaFacebookF,
   FaEnvelope,
   FaPlus,
+  FaPhone,
 } from 'react-icons/fa';
-
-const officers = [
-  {
-    name: "Jana Mae A. Cruz",
-    role: "Dean",
-    image: "/id/id2.jpg",
-    facebook: "#",
-    email: "dean@email.com",
-  },
-  {
-    name: "Jana Mae A. Cruz",
-    role: "Chair",
-    image: "/id/id4.jpg",
-    facebook: "#",
-    email: "chair@email.com",
-  },
-  {
-    name: "Jana Mae A. Cruz",
-    role: "Org Adviser",
-    image: "/id/id1.jpg",
-    facebook: "#",
-    email: "adviser@email.com",
-  },
-  {
-    name: "Jana Mae A. Cruz",
-    role: "Secretary",
-    image: "/id/id5.jpg",
-    facebook: "#",
-    email: "secretary@email.com",
-  },
-  {
-    name: "Jana Mae A. Cruz",
-    role: "Dean",
-    image: "/id/id2.jpg",
-    facebook: "#",
-    email: "dean@email.com",
-  },
-];
+import { usePublicHeadsFaces } from '../../hooks/usePublicData';
+import Loader from '../../../../components/Loader';
 
 export default function OfficerSection() {
+  const { headsFacesData, isLoading, error } = usePublicHeadsFaces();
   const [startIndex, setStartIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(3);
   const [cardWidth, setCardWidth] = useState(280);
   const [cardGap, setCardGap] = useState(24);
+
+  // Use dynamic data or fallback to empty array
+  const officers = headsFacesData || [];
 
   useEffect(() => {
     const updateResponsive = () => {
@@ -103,6 +72,31 @@ export default function OfficerSection() {
 
   const translateX = startIndex * (cardWidth + cardGap);
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <section className={styles.officerSection}>
+        <div className={styles.officerHeading}>
+          <p className={styles.officerSubtitle}>Head Advisers & Officers</p>
+          <h2 className={styles.officerTitle}>Meet Our Community Extension Committee</h2>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+          <Loader small />
+        </div>
+      </section>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    console.error('Error loading heads of FACES:', error);
+  }
+
+  // Don't render if no officers
+  if (!officers || officers.length === 0) {
+    return null;
+  }
+
   return (
     <section className={styles.officerSection}>
       <div className={styles.officerHeading}>
@@ -126,29 +120,36 @@ export default function OfficerSection() {
             style={{ transform: `translateX(-${translateX}px)` }}
           >
             {officers.map((officer, index) => (
-              <div className={styles.officerCard} key={index}>
-              <div className={styles.officerPhotoWrapper}>
-                <Image
-                  src={officer.image}
-                  alt={officer.name}
-                  fill
-                  className={styles.officerImage}
-                  sizes="(max-width: 640px) 220px, (max-width: 964px) 240px, (max-width: 1160px) 280px, 280px"
-                />
-                <div className={styles.officerOverlay}>
-                  <a href={officer.facebook} target="_blank" rel="noreferrer" className={styles.officerIcon}>
-                    <FaFacebookF />
-                  </a>
-                  <button className={`${styles.officerIcon} ${styles.officerMainIcon}`}>
-                    <FaPlus />
-                  </button>
-                  <a href={`mailto:${officer.email}`} className={styles.officerIcon}>
-                    <FaEnvelope />
-                  </a>
+              <div className={styles.officerCard} key={officer.id || index}>
+                <div className={styles.officerPhotoWrapper}>
+                  <Image
+                    src={officer.image_url || "/default-profile.png"}
+                    alt={officer.name}
+                    fill
+                    className={styles.officerImage}
+                    sizes="(max-width: 640px) 220px, (max-width: 964px) 240px, (max-width: 1160px) 280px, 280px"
+                  />
+                  <div className={styles.officerOverlay}>
+                    {officer.email && (
+                      <a href={`mailto:${officer.email}`} className={styles.officerIcon} title="Email">
+                        <FaEnvelope />
+                      </a>
+                    )}
+                    <button className={`${styles.officerIcon} ${styles.officerMainIcon}`} title="View Details">
+                      <FaPlus />
+                    </button>
+                    {officer.phone && (
+                      <a href={`tel:${officer.phone}`} className={styles.officerIcon} title="Phone">
+                        <FaPhone />
+                      </a>
+                    )}
+                  </div>
                 </div>
-              </div>
                 <p className={styles.officerName}>{officer.name}</p>
-                <p className={styles.officerRole}>{officer.role}</p>
+                <p className={styles.officerRole}>{officer.position}</p>
+                {officer.description && (
+                  <p className={styles.officerDescription}>{officer.description}</p>
+                )}
               </div>
             ))}
           </div>

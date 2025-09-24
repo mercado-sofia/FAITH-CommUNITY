@@ -167,6 +167,19 @@
   cursor: default;
 }
 
+.officerDescription {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0.5rem 0 0 0;
+  text-align: center;
+  line-height: 1.4;
+  max-height: 2.8em;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
 /* 1160px */
 @media (max-width: 1160px) {
   .officerSliderWrapper {
@@ -266,5 +279,9 @@
 
   .officerRole {
     font-size: 14px;
+  }
+
+  .officerDescription {
+    font-size: 12px;
   }
 }

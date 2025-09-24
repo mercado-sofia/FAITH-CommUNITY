@@ -1,11 +1,31 @@
 import styles from './MissionAndVision.module.css';
 import { FaRegHeart } from 'react-icons/fa';
 import { MdPersonOutline } from 'react-icons/md';
+import { usePublicMissionVision } from '../../../hooks/usePublicData';
+import Loader from '../../../../../components/Loader';
 
 export default function MissionAndVision() {
+  const { missionVisionData, isLoading, error } = usePublicMissionVision();
+
+  if (isLoading) {
+    return (
+      <section className={styles.details}>
+        <h3 className={styles.sectionTag}>FAITH CommUNITY's</h3>
+        <h2 className={styles.sectionTitle}>Mission and Vision</h2>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+          <Loader small />
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    console.error('Error loading mission and vision:', error);
+  }
+
   return (
     <section className={styles.details}>
-      <h3 className={styles.sectionTag}>FAITH CommUNITY’s</h3>
+      <h3 className={styles.sectionTag}>FAITH CommUNITY's</h3>
       <h2 className={styles.sectionTitle}>Mission and Vision</h2>
 
       <div className={styles.cardWrapper}>
@@ -15,8 +35,8 @@ export default function MissionAndVision() {
           </div>
           <h4>Mission</h4>
           <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum id diam
-            interdum, mollis ligula et, facilisis sem. Sed nec aliquam turpis.
+            {missionVisionData?.mission || 
+            'To serve communities through education and engagement, fostering growth and development for a better tomorrow.'}
           </p>
         </div>
 
@@ -26,8 +46,8 @@ export default function MissionAndVision() {
           </div>
           <h4>Vision</h4>
           <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum id diam
-            interdum, mollis ligula et, facilisis sem. Sed nec aliquam turpis.
+            {missionVisionData?.vision || 
+            'To be the leading platform for community extension programs, creating lasting positive impact in society.'}
           </p>
         </div>
       </div>

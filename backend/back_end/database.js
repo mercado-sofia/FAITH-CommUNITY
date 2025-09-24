@@ -1403,6 +1403,94 @@ const initializeDatabase = async () => {
       console.log("✅ Footer content table already exists");
     }
 
+    // Check if hero_section table exists
+    const [heroSectionTables] = await connection.query('SHOW TABLES LIKE "hero_section"');
+    
+    if (heroSectionTables.length === 0) {
+      console.log("Creating hero_section table...");
+      await connection.query(`
+        CREATE TABLE hero_section (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          tag VARCHAR(255) DEFAULT 'Welcome to FAITH CommUNITY',
+          heading TEXT DEFAULT 'A Unified Platform for Community Extension Programs',
+          video_url VARCHAR(500) NULL,
+          video_link VARCHAR(500) NULL,
+          video_type ENUM('upload', 'link') DEFAULT 'upload',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+      `);
+      
+      // Insert default hero section record
+      await connection.query(`
+        INSERT INTO hero_section (tag, heading) VALUES
+        ('Welcome to FAITH CommUNITY', 'A Unified Platform for Community Extension Programs')
+      `);
+      
+      console.log("✅ Hero section table created successfully!");
+    } else {
+      console.log("✅ Hero section table already exists");
+      
+      // Check if new columns exist and add them if they don't
+      const [columns] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'hero_section' 
+        AND TABLE_SCHEMA = DATABASE()
+      `);
+      
+      const columnNames = columns.map(col => col.COLUMN_NAME);
+      
+      if (!columnNames.includes('video_link')) {
+        console.log("Adding video_link column to hero_section table...");
+        await connection.query(`
+          ALTER TABLE hero_section 
+          ADD COLUMN video_link VARCHAR(500) NULL AFTER video_url
+        `);
+      }
+      
+      if (!columnNames.includes('video_type')) {
+        console.log("Adding video_type column to hero_section table...");
+        await connection.query(`
+          ALTER TABLE hero_section 
+          ADD COLUMN video_type ENUM('upload', 'link') DEFAULT 'upload' AFTER video_link
+        `);
+      }
+    }
+
+    // Check if hero_section_images table exists
+    const [heroSectionImagesTables] = await connection.query('SHOW TABLES LIKE "hero_section_images"');
+    
+    if (heroSectionImagesTables.length === 0) {
+      console.log("Creating hero_section_images table...");
+      await connection.query(`
+        CREATE TABLE hero_section_images (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          image_id INT NOT NULL,
+          image_url VARCHAR(500) NULL,
+          heading VARCHAR(255) DEFAULT 'Image Heading',
+          subheading VARCHAR(255) DEFAULT 'Image Subheading',
+          display_order INT DEFAULT 1,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          UNIQUE KEY unique_image_id (image_id),
+          INDEX idx_display_order (display_order)
+        )
+      `);
+      
+      // Insert default hero section images
+      await connection.query(`
+        INSERT INTO hero_section_images (image_id, heading, subheading, display_order) VALUES
+        (1, 'Inside the Initiative', 'Where Ideas Take Root', 1),
+        (2, 'Collaboration', 'Working Together', 2),
+        (3, 'Innovation', 'Building the Future', 3)
+      `);
+      
+      console.log("✅ Hero section images table created successfully!");
+    } else {
+      console.log("✅ Hero section images table already exists");
+    }
+
     connection.release();
     return promisePool;
   } catch (error) {

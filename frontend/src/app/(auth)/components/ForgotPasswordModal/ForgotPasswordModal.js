@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { FaTimes, FaUser, FaSpinner } from "react-icons/fa"
 import styles from "./ForgotPasswordModal.module.css"
 
@@ -15,6 +15,7 @@ export default function ForgotPasswordModal({
   onSubmit,
 }) {
   const inputRef = useRef(null)
+  const [focusedField, setFocusedField] = useState("")
 
   useEffect(() => {
     if (!isOpen) return
@@ -23,6 +24,14 @@ export default function ForgotPasswordModal({
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [isOpen, onClose])
+
+  const handleFocus = (fieldName) => {
+    setFocusedField(fieldName)
+  }
+
+  const handleBlur = () => {
+    setFocusedField("")
+  }
 
   if (!isOpen) return null
 
@@ -42,14 +51,20 @@ export default function ForgotPasswordModal({
               Enter your email address and we&apos;ll send you a link to reset your password.
             </p>
 
+            <label htmlFor="email" className={`${styles.label} ${focusedField === 'email' || email ? styles.focused : ''}`}>
+              Email
+            </label>
             <div className={styles.inputGroup}>
               <FaUser className={styles.icon} />
               <input
                 ref={inputRef}
+                id="email"
                 type="email"
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onFocus={() => handleFocus('email')}
+                onBlur={handleBlur}
                 required
                 disabled={loading}
               />
@@ -65,9 +80,11 @@ export default function ForgotPasswordModal({
         ) : (
           <div className={styles.successMessage}>
             <p>{message}</p>
-            <button type="button" onClick={onClose} className={styles.actionBtn}>
-              Close
-            </button>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button type="button" onClick={onClose} className={styles.actionBtn}>
+                Close
+              </button>
+            </div>
           </div>
         )}
       </div>

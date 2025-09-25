@@ -8,7 +8,7 @@ import { FaRegCircleXmark } from 'react-icons/fa6';
 import { MdErrorOutline } from 'react-icons/md';
 import styles from './confirmPage.module.css';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') || 'http://localhost:8080';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:8080';
 
 export default function SubscriptionConfirmPage() {
   const { token } = useParams();

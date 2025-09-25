@@ -1,16 +1,17 @@
 import styles from './MissionAndVision.module.css';
 import { FaRegHeart } from 'react-icons/fa';
 import { MdPersonOutline } from 'react-icons/md';
-import { usePublicMissionVision } from '../../../hooks/usePublicData';
+import { usePublicMissionVision, usePublicSiteName } from '../../../hooks/usePublicData';
 import Loader from '../../../../../components/Loader';
 
 export default function MissionAndVision() {
   const { missionVisionData, isLoading, error } = usePublicMissionVision();
+  const { siteNameData } = usePublicSiteName();
 
   if (isLoading) {
     return (
       <section className={styles.details}>
-        <h3 className={styles.sectionTag}>FAITH CommUNITY's</h3>
+        <h3 className={styles.sectionTag}>{siteNameData?.site_name ? `${siteNameData.site_name}'s` : ''}</h3>
         <h2 className={styles.sectionTitle}>Mission and Vision</h2>
         <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
           <Loader small />
@@ -25,7 +26,7 @@ export default function MissionAndVision() {
 
   return (
     <section className={styles.details}>
-      <h3 className={styles.sectionTag}>FAITH CommUNITY's</h3>
+      <h3 className={styles.sectionTag}>{siteNameData?.site_name ? `${siteNameData.site_name}'s` : ''}</h3>
       <h2 className={styles.sectionTitle}>Mission and Vision</h2>
 
       <div className={styles.cardWrapper}>

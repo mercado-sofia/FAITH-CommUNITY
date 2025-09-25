@@ -34,16 +34,9 @@ export const getAboutUs = async (req, res) => {
 // Update about us content
 export const updateAboutUs = async (req, res) => {
   try {
-    const { tag, heading, description, extension_categories } = req.body;
+    const { heading, description, extension_categories } = req.body;
 
     // Validate required fields
-    if (!tag || tag.trim() === '') {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Tag is required' 
-      });
-    }
-
     if (!heading || heading.trim() === '') {
       return res.status(400).json({ 
         success: false, 
@@ -83,14 +76,14 @@ export const updateAboutUs = async (req, res) => {
     if (existingRows.length === 0) {
       // Create new about us record
       [result] = await db.query(
-        'INSERT INTO about_us (tag, heading, description, extension_categories) VALUES (?, ?, ?, ?)',
-        [tag.trim(), heading.trim(), description.trim(), JSON.stringify(extension_categories)]
+        'INSERT INTO about_us (heading, description, extension_categories) VALUES (?, ?, ?)',
+        [heading.trim(), description.trim(), JSON.stringify(extension_categories)]
       );
     } else {
       // Update existing about us record
       [result] = await db.query(
-        'UPDATE about_us SET tag = ?, heading = ?, description = ?, extension_categories = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [tag.trim(), heading.trim(), description.trim(), JSON.stringify(extension_categories), existingRows[0].id]
+        'UPDATE about_us SET heading = ?, description = ?, extension_categories = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [heading.trim(), description.trim(), JSON.stringify(extension_categories), existingRows[0].id]
       );
     }
 

@@ -1,29 +1,14 @@
 'use client';
 
+import { memo } from 'react';
 import styles from './AboutSection.module.css';
 import Image from 'next/image';
-import { FaCheck } from 'react-icons/fa';
-import { usePublicAboutUs } from '../../hooks/usePublicData';
-import Loader from '../../../../components/Loader';
+import { FaHeart, FaCube } from 'react-icons/fa';
+import { usePublicSiteName, usePublicMissionVision } from '../../hooks/usePublicData';
 
-export default function AboutSection() {
-  const { aboutUsData, isLoading, error } = usePublicAboutUs();
-
-  if (isLoading) {
-    return (
-      <section className={styles.aboutSection}>
-        <div className={styles.wrapper}>
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
-            <Loader small />
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (error) {
-    console.error('Error loading about us data:', error);
-  }
+function AboutSection() {
+  const { siteNameData } = usePublicSiteName();
+  const { missionVisionData, isLoading: missionVisionLoading, error: missionVisionError } = usePublicMissionVision();
 
   return (
     <section className={styles.aboutSection}>
@@ -39,40 +24,39 @@ export default function AboutSection() {
               loading="lazy"
               decoding="async"
               sizes="(max-width: 1300px) 100vw, 700px"
+              placeholder="blur"
+              blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
             />
           </div>
 
           <div className={styles.aboutContent}>
-            <p className={styles.aboutLabel}>{aboutUsData?.tag || 'About Us FAITH CommUNITY'}</p>
-            <h2 className={styles.aboutHeading}>{aboutUsData?.heading || 'We Believe That We Can Help More People With You'}</h2>
+            <p className={styles.aboutLabel}>Who we are</p>
+            <h2 className={styles.aboutHeading}>The Story Behind {siteNameData?.site_name || 'FAITH CommUNITY'}</h2>
             <p className={styles.aboutParagraph}>
-              {aboutUsData?.description || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.'}
+              {siteNameData?.site_name || 'FAITH CommUNITY'} serves as a bridge between volunteers and organizations,
+              created to support and document the shared efforts of the FAITH Colleges
+              community in delivering meaningful outreach and service.
             </p>
             
-            {/* Extension Categories List */}
-            <div className={styles.extensionCategories}>
-              {aboutUsData?.extension_categories?.map((category, index) => (
-                <div key={index} className={styles.extensionCategory}>
-                  <FaCheck className={styles.checkIcon} style={{ 
-                    color: category.color === 'green' ? '#10b981' : 
-                           category.color === 'red' ? '#ef4444' : 
-                           category.color === 'orange' ? '#f97316' : 
-                           category.color === 'blue' ? '#3b82f6' :
-                           category.color === 'purple' ? '#8b5cf6' :
-                           category.color === 'yellow' ? '#f59e0b' :
-                           category.color === 'pink' ? '#ec4899' :
-                           category.color === 'teal' ? '#14b8a6' :
-                           category.color === 'indigo' ? '#6366f1' :
-                           category.color === 'gray' ? '#6b7280' :
-                           category.color === 'emerald' ? '#10b981' :
-                           category.color === 'rose' ? '#f43f5e' :
-                           category.color === 'cyan' ? '#06b6d4' :
-                           category.color === 'lime' ? '#84cc16' :
-                           category.color === 'amber' ? '#f59e0b' : '#3b82f6' 
-                  }} />
-                  <span>{category.name}</span>
-                </div>
-              ))}
+            <div className={styles.aboutBoxes}>
+              <div className={styles.missionbox}>
+                <FaHeart className={styles.abouticon} />
+                <h3>Our Mission</h3>
+                <p>
+                  {missionVisionLoading ? 'Loading mission...' : 
+                   missionVisionError ? 'Unable to load mission statement.' :
+                   missionVisionData?.mission || 'To serve communities through education and engagement, fostering growth and development for a better tomorrow.'}
+                </p>
+              </div>
+              <div className={styles.visionbox}>
+                <FaCube className={styles.abouticon} />
+                <h3>Our Vision</h3>
+                <p>
+                  {missionVisionLoading ? 'Loading vision...' : 
+                   missionVisionError ? 'Unable to load vision statement.' :
+                   missionVisionData?.vision || 'To be the leading platform for community extension programs, creating lasting positive impact in society.'}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -80,3 +64,5 @@ export default function AboutSection() {
     </section>
   );
 }
+
+export default memo(AboutSection);

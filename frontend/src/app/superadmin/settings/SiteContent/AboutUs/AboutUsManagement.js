@@ -15,7 +15,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
   // Edit mode state
   const [isEditingAboutUs, setIsEditingAboutUs] = useState(false);
   const [tempAboutUs, setTempAboutUs] = useState({
-    tag: '',
     heading: '',
     description: '',
     extension_categories: []
@@ -62,7 +61,7 @@ export default function AboutUsManagement({ showSuccessModal }) {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [styles.customDropdown]);
+  }, []);
 
   // Load about us data
   useEffect(() => {
@@ -80,7 +79,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
           const data = await response.json();
           setAboutUsData(data.data);
           setTempAboutUs({
-            tag: data.data.tag || '',
             heading: data.data.heading || '',
             description: data.data.description || '',
             extension_categories: data.data.extension_categories || []
@@ -102,7 +100,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
     setIsEditingAboutUs(!isEditingAboutUs);
     if (!isEditingAboutUs) {
       setTempAboutUs({
-        tag: aboutUsData?.tag || '',
         heading: aboutUsData?.heading || '',
         description: aboutUsData?.description || '',
         extension_categories: aboutUsData?.extension_categories || []
@@ -114,7 +111,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
   const handleCancelEdit = () => {
     setIsEditingAboutUs(false);
     setTempAboutUs({
-      tag: aboutUsData?.tag || '',
       heading: aboutUsData?.heading || '',
       description: aboutUsData?.description || '',
       extension_categories: aboutUsData?.extension_categories || []
@@ -123,10 +119,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
 
   // About us update handler
   const handleAboutUsUpdate = () => {
-    if (!tempAboutUs.tag.trim()) {
-      showSuccessModal('Tag cannot be empty');
-      return;
-    }
     if (!tempAboutUs.heading.trim()) {
       showSuccessModal('Heading cannot be empty');
       return;
@@ -155,7 +147,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            tag: tempAboutUs.tag.trim(),
             heading: tempAboutUs.heading.trim(),
             description: tempAboutUs.description.trim(),
             extension_categories: tempAboutUs.extension_categories
@@ -289,26 +280,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
 
       <div className={styles.panelContent}>
         <div className={styles.aboutUsSection}>
-          {/* Tag Field */}
-          <div className={styles.inputGroup}>
-            <label htmlFor="tag" className={styles.inputLabel}>
-              Tag
-            </label>
-            <input
-              type="text"
-              id="tag"
-              value={isEditingAboutUs ? tempAboutUs.tag : (aboutUsData?.tag || '')}
-              onChange={(e) => isEditingAboutUs ? 
-                setTempAboutUs(prev => ({ ...prev, tag: e.target.value })) :
-                null
-              }
-              className={styles.textInput}
-              placeholder="Enter tag (e.g., About Us FAITH CommUNITY)"
-              maxLength={255}
-              disabled={!isEditingAboutUs}
-            />
-          </div>
-
           {/* Heading Field */}
           <div className={styles.inputGroup}>
             <label htmlFor="heading" className={styles.inputLabel}>

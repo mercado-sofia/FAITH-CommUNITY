@@ -38,7 +38,7 @@ import Toast from "../Toast/Toast";
 import { usePublicSiteName, usePublicFooterContent } from "../../hooks/usePublicData";
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
   "http://localhost:8080";
 
 // Social media platform mapping with icons

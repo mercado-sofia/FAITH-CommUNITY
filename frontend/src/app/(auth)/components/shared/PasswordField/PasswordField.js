@@ -43,6 +43,7 @@ export default function PasswordField({
 				onClick={() => setShow((p) => !p)}
 				aria-label={show ? "Hide password" : "Show password"}
 				disabled={disabled}
+				tabIndex="-1"
 			>
 				{show ? <FaEyeSlash /> : <FaEye />}
 			</button>

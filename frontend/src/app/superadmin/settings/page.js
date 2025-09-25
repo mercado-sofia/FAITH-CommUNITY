@@ -351,12 +351,12 @@ export default function SuperAdminSettings() {
         <div className={styles.tabContent}>
           <div className={brandingStyles.brandingContainer}>
             <SiteNameManagement showSuccessModal={showSuccessModal} />
-            <FooterContentManagement showSuccessModal={showSuccessModal} />
-            <BrandingManagement showSuccessModal={showSuccessModal} />
+            <MissionVisionManagement showSuccessModal={showSuccessModal} />
             <HeroSectionManagement showSuccessModal={showSuccessModal} />
             <AboutUsManagement showSuccessModal={showSuccessModal} />
             <HeadManagement showSuccessModal={showSuccessModal} />
-            <MissionVisionManagement showSuccessModal={showSuccessModal} />
+            <FooterContentManagement showSuccessModal={showSuccessModal} />
+            <BrandingManagement showSuccessModal={showSuccessModal} />
           </div>
         </div>
       )}

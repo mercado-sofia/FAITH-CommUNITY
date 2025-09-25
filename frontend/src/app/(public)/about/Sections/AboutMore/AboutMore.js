@@ -1,11 +1,12 @@
 import styles from './aboutMore.module.css';
 import Image from "next/image";
 import { FaCheck } from 'react-icons/fa';
-import { usePublicAboutUs } from '../../../hooks/usePublicData';
+import { usePublicAboutUs, usePublicSiteName } from '../../../hooks/usePublicData';
 import Loader from '../../../../../components/Loader';
 
 export default function AboutMore() {
   const { aboutUsData, isLoading, error } = usePublicAboutUs();
+  const { siteNameData } = usePublicSiteName();
 
   if (isLoading) {
     return (
@@ -37,7 +38,7 @@ export default function AboutMore() {
         </div>
 
         <div className={styles.aboutMoreContent}>
-          <h4 className={styles.aboutMoreSubtitle}>{aboutUsData?.tag || 'About Us FAITH CommUNITY'}</h4>
+          <h4 className={styles.aboutMoreSubtitle}>About Us {siteNameData?.site_name || 'FAITH CommUNITY'}</h4>
           <h2 className={styles.aboutMoreTitle}>
             {aboutUsData?.heading || 'We Believe That We Can Help More People With You'}
           </h2>

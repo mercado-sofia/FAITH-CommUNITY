@@ -29,8 +29,8 @@ export default function Logo() {
         priority
       />
 
-      {/* Logo Name - uploaded image -> local image -> fallback text */}
-      {brandingData?.name_url ? (
+      {/* Logo Name - uploaded image only */}
+      {brandingData?.name_url && (
         <div className={styles.logoNameImage}>
           <Image
             src={nameImageSrc}
@@ -40,14 +40,6 @@ export default function Logo() {
             priority
             style={{ objectFit: 'contain' }}
           />
-        </div>
-      ) : (
-        // Text fallback when local image is missing
-        <div className={styles.logoTextWrapper}>
-          <span className={styles.logoTop}>FAITH</span>
-          <span className={styles.logoBottom}>
-            CommUNITY
-          </span>
         </div>
       )}
     </Link>

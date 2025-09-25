@@ -168,6 +168,8 @@ export default function ResetPasswordPage() {
                 id="newPassword"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
+                onFocus={() => handleFocus('newPassword')}
+                onBlur={handleBlur}
                 disabled={isLoading}
                 ariaLabel="New password"
               />
@@ -177,6 +179,8 @@ export default function ResetPasswordPage() {
                 id="confirmPassword"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                onFocus={() => handleFocus('confirmPassword')}
+                onBlur={handleBlur}
                 disabled={isLoading}
                 ariaLabel="Confirm password"
               />

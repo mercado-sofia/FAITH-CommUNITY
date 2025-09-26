@@ -54,7 +54,6 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
   // Branding file upload handlers
   const handleFileUpload = async (file, type) => {
     try {
-      console.log('Starting file upload:', { type, fileName: file.name, fileSize: file.size, fileType: file.type });
       
       const formData = new FormData();
       formData.append(type, file);
@@ -64,12 +63,10 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
       // Get the token for manual request (to avoid Content-Type issues with FormData)
       const token = localStorage.getItem('superAdminToken');
       if (!token) {
-        console.log('No token found');
         showSuccessModal('Authentication required. Please log in again.');
         return;
       }
 
-      console.log('Making request to:', `${baseUrl}/api/superadmin/branding/upload-${type}`);
 
       const response = await fetch(`${baseUrl}/api/superadmin/branding/upload-${type}`, {
         method: 'POST',
@@ -80,7 +77,6 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
         body: formData,
       });
 
-      console.log('Response received:', { status: response.status, statusText: response.statusText });
 
       if (response.ok) {
         const data = await response.json();

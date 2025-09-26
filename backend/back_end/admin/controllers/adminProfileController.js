@@ -1,6 +1,6 @@
 //db table: admins
 import db from "../../database.js"
-import bcrypt from "bcrypt"
+import * as bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 
 // JWT secret for admin (should match the one used in admin login)
@@ -12,7 +12,7 @@ export const getAdminProfile = async (req, res) => {
     const adminId = req.admin.id
 
     const [rows] = await db.execute(
-      `SELECT a.id, a.email, a.role, a.is_active, a.organization_id, a.created_at,
+      `SELECT a.id, a.email, a.role, a.is_active, a.organization_id, a.created_at, a.password_changed_at,
               o.org, o.orgName
        FROM admins a
        LEFT JOIN organizations o ON a.organization_id = o.id
@@ -237,8 +237,8 @@ export const verifyAdminEmailChangeOTP = async (req, res) => {
       JWT_SECRET,
       { 
         expiresIn: "30m",
-        issuer: process.env.JWT_ISS || "faith-community",
-        audience: process.env.JWT_AUD || "admin"
+        issuer: process.env.JWT_ISS || "faith-community-api",
+        audience: process.env.JWT_AUD || "faith-community-client"
       },
     );
 
@@ -299,12 +299,12 @@ export const updateAdminPassword = async (req, res) => {
 
     // Verify current password and get admin details
     const [adminRows] = await db.execute(
-      "SELECT password, email, first_name, last_name FROM admins WHERE id = ?",
+      "SELECT password, email FROM admins WHERE id = ? AND is_active = TRUE",
       [adminId]
     )
 
     if (adminRows.length === 0) {
-      return res.status(404).json({ error: "Admin not found" })
+      return res.status(404).json({ error: "Admin not found or inactive" })
     }
 
     const isPasswordValid = await bcrypt.compare(currentPassword, adminRows[0].password)
@@ -318,18 +318,16 @@ export const updateAdminPassword = async (req, res) => {
 
     // Update password
     await db.execute(
-      "UPDATE admins SET password = ?, updated_at = NOW() WHERE id = ?",
+      "UPDATE admins SET password = ?, password_changed_at = NOW(), updated_at = NOW() WHERE id = ?",
       [hashedPassword, adminId]
     )
 
     // Send password change notification
     try {
       const { PasswordChangeNotification } = await import('../../utils/passwordChangeNotification.js');
-      const userName = adminRows[0].first_name && adminRows[0].last_name ? 
-        `${adminRows[0].first_name} ${adminRows[0].last_name}` : null;
       await PasswordChangeNotification.sendPasswordChangeNotification(
         adminRows[0].email, 
-        userName, 
+        null, // Admins don't have first_name/last_name
         'admin'
       );
     } catch (notificationError) {
@@ -381,36 +379,3 @@ export const verifyPasswordForEmailChange = async (req, res) => {
   }
 }
 
-// Verify password for password change
-export const verifyPasswordForPasswordChange = async (req, res) => {
-  try {
-    const adminId = req.admin.id
-    const { password } = req.body
-
-    if (!password) {
-      return res.status(400).json({ error: "Password is required" })
-    }
-
-    const [adminRows] = await db.execute(
-      "SELECT password FROM admins WHERE id = ?",
-      [adminId]
-    )
-
-    if (adminRows.length === 0) {
-      return res.status(404).json({ error: "Admin not found" })
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, adminRows[0].password)
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: "Invalid password" })
-    }
-
-    res.json({
-      success: true,
-      message: "Password verified successfully"
-    })
-  } catch (err) {
-    console.error("Error verifying password:", err)
-    res.status(500).json({ error: "Internal server error" })
-  }
-}

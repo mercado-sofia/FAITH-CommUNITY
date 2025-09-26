@@ -66,9 +66,6 @@ export const programsApi = createApi({
         return []
       },
       transformErrorResponse: (response) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('programsApi - getPublicFeaturedProjects error:', response);
-        }
         return response;
       }
     }),

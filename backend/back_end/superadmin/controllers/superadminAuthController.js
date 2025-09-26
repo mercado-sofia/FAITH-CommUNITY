@@ -1,6 +1,6 @@
 // db table: superadmin
 import db from "../../database.js"
-import bcrypt from "bcrypt"
+import * as bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import crypto from "crypto"
 import { LoginAttemptTracker } from "../../utils/loginAttemptTracker.js"
@@ -21,8 +21,8 @@ export const loginSuperadmin = async (req, res) => {
   }
 
   try {
-    // Check failed login attempts
-    const failedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress);
+    // Check failed login attempts for superadmin type only
+    const failedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'superadmin');
     
     // Block for 5 minutes after 5 failed attempts
     if (failedAttempts >= 5) {
@@ -37,14 +37,14 @@ export const loginSuperadmin = async (req, res) => {
     )
 
     if (superadminRows.length === 0) {
-      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress);
+      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'superadmin');
       return res.status(401).json({ error: "Invalid credentials" })
     }
 
     const superadmin = superadminRows[0]
     const isPasswordValid = await bcrypt.compare(password, superadmin.password)
     if (!isPasswordValid) {
-      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress);
+      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'superadmin');
       return res.status(401).json({ error: "Invalid credentials" })
     }
 
@@ -72,13 +72,13 @@ export const loginSuperadmin = async (req, res) => {
       JWT_SECRET,
       { 
         expiresIn: "30m",
-        issuer: process.env.JWT_ISS || "faith-community",
-        audience: process.env.JWT_AUD || "admin"
+        issuer: process.env.JWT_ISS || "faith-community-api",
+        audience: process.env.JWT_AUD || "faith-community-client"
       },
     )
 
     // Clear failed login attempts on successful login
-    await LoginAttemptTracker.clearFailedAttempts(email, ipAddress);
+    await LoginAttemptTracker.clearFailedAttempts(email, ipAddress, 'superadmin');
     
     res.json({
       message: "Login successful",
@@ -119,8 +119,8 @@ export const verifySuperadminToken = (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community",
-      audience: process.env.JWT_AUD || "admin",
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
     })
     req.superadmin = decoded
     next()
@@ -360,8 +360,28 @@ export const updateSuperadminPassword = async (req, res) => {
   }
 
   try {
+    // Ensure password_changed_at column exists
+    try { 
+      await db.execute(`ALTER TABLE superadmin ADD COLUMN password_changed_at TIMESTAMP NULL DEFAULT NULL`) 
+    } catch (alterError) {
+      // Column already exists, ignore error
+    }
+
+    // Ensure twofa_enabled and twofa_secret columns exist (handle both naming conventions)
+    try { 
+      await db.execute(`ALTER TABLE superadmin ADD COLUMN twofa_enabled TINYINT(1) DEFAULT 0`) 
+    } catch (alterError) {
+      // Column already exists, ignore error
+    }
+    
+    try { 
+      await db.execute(`ALTER TABLE superadmin ADD COLUMN twofa_secret VARCHAR(255) NULL`) 
+    } catch (alterError) {
+      // Column already exists, ignore error
+    }
+
     const [superadminRows] = await db.execute(
-      "SELECT id, password, username FROM superadmin WHERE id = ?",
+      "SELECT id, password, username, twofa_enabled, twofa_secret FROM superadmin WHERE id = ?",
       [id],
     )
 
@@ -376,6 +396,21 @@ export const updateSuperadminPassword = async (req, res) => {
       return res.status(401).json({ error: "Current password is incorrect" })
     }
 
+    // Check if 2FA is enabled and verify token
+    if (superadmin.twofa_enabled) {
+      if (!otp) {
+        return res.status(401).json({ error: "2FA token required", requireTwoFA: true })
+      }
+      
+      if (!validateTwoFATokenFormat(otp)) {
+        return res.status(401).json({ error: "Invalid 2FA token format", requireTwoFA: true })
+      }
+      
+      const isValidToken = verifyTwoFAToken(otp, superadmin.twofa_secret || "")
+      if (!isValidToken) {
+        return res.status(401).json({ error: "Invalid 2FA token", requireTwoFA: true })
+      }
+    }
 
     const saltRounds = 12
     const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds)

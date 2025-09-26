@@ -391,9 +391,7 @@ export default function OrganizationPage() {
         throw new Error(`Upload failed: ${response.status} - ${errorText}`);
       }
     } catch (error) {
-      console.error("Upload error details:", error);
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
+      console.error("Upload error:", error);
       setModalMessage({ text: `Failed to upload logo: ${error.message}`, type: "error" });
     } finally {
       updateUiState({ uploading: false });

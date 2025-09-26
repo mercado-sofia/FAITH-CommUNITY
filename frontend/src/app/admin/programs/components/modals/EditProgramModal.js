@@ -429,7 +429,6 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
         programData.additionalImages = additionalImagesBase64;
       }
 
-      console.log('Submitting program data:', programData);
       await onSubmit(programData);
     } catch (error) {
       console.error('Error updating program:', error);
@@ -595,7 +594,6 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
                   height={200}
                   style={{ objectFit: 'cover' }}
                   onError={(e) => {
-                    console.error('Image failed to load:', e.target.src);
                     e.target.style.display = 'none';
                   }}
                 />
@@ -655,7 +653,6 @@ const EditProgramModal = ({ program, onClose, onSubmit }) => {
                         height={100}
                         style={{ objectFit: 'cover' }}
                         onError={(e) => {
-                          console.error('Additional image failed to load:', e.target.src);
                           e.target.style.display = 'none';
                         }}
                         onLoad={() => {

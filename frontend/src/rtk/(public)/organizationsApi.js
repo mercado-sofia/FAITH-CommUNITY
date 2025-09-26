@@ -28,10 +28,6 @@ export const organizationsApi = createApi({
         return []
       },
       transformErrorResponse: (response) => {
-        // Only log errors in development
-        if (process.env.NODE_ENV === 'development') {
-          console.error('organizationsApi - getAllOrganizations error:', response);
-        }
         return response;
       }
     }),

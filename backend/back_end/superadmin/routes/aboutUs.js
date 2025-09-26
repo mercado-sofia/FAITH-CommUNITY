@@ -32,60 +32,31 @@ const upload = multer({
 
 // Test endpoint to verify routes are working
 router.get('/test', (req, res) => {
-  console.log('About Us test endpoint hit');
   res.json({ success: true, message: 'About Us routes are working' });
 });
 
 // Public route for getting about us data (no authentication required)
-router.get('/public', (req, res, next) => {
-  console.log('GET /about-us/public route hit');
-  next();
-}, getAboutUs);
+router.get('/public', getAboutUs);
 
 // Apply authentication middleware to all other routes
-router.use((req, res, next) => {
-  console.log('Authentication middleware hit for:', req.method, req.path);
-  console.log('Authorization header:', req.headers.authorization);
-  next();
-}, verifySuperadminToken);
+router.use(verifySuperadminToken);
 
 // Routes
-router.get('/', (req, res, next) => {
-  console.log('GET /about-us route hit');
-  next();
-}, getAboutUs);
+router.get('/', getAboutUs);
 
-router.put('/', (req, res, next) => {
-  console.log('PUT /about-us route hit');
-  next();
-}, updateAboutUs);
+router.put('/', updateAboutUs);
 
 // Extension category routes
-router.post('/extension-categories', (req, res, next) => {
-  console.log('POST /about-us/extension-categories route hit');
-  next();
-}, addExtensionCategory);
+router.post('/extension-categories', addExtensionCategory);
 
-router.put('/extension-categories/:categoryIndex', (req, res, next) => {
-  console.log('PUT /about-us/extension-categories/:categoryIndex route hit');
-  next();
-}, updateExtensionCategory);
+router.put('/extension-categories/:categoryIndex', updateExtensionCategory);
 
-router.delete('/extension-categories/:categoryIndex', (req, res, next) => {
-  console.log('DELETE /about-us/extension-categories/:categoryIndex route hit');
-  next();
-}, deleteExtensionCategory);
+router.delete('/extension-categories/:categoryIndex', deleteExtensionCategory);
 
 // Image upload route
-router.post('/upload-image', (req, res, next) => {
-  console.log('POST /about-us/upload-image route hit');
-  next();
-}, upload.single('image'), uploadAboutUsImage);
+router.post('/upload-image', upload.single('image'), uploadAboutUsImage);
 
 // Image delete route
-router.delete('/image', (req, res, next) => {
-  console.log('DELETE /about-us/image route hit');
-  next();
-}, deleteAboutUsImage);
+router.delete('/image', deleteAboutUsImage);
 
 export default router;

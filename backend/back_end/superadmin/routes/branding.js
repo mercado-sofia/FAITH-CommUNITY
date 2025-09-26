@@ -21,32 +21,20 @@ const upload = cloudinaryUploadConfigs.branding;
 
 // Test endpoint to verify routes are working
 router.get('/test', (req, res) => {
-  console.log('Branding test endpoint hit');
   res.json({ success: true, message: 'Branding routes are working' });
 });
 
 // Public route for getting branding data (no authentication required)
-router.get('/public', (req, res, next) => {
-  console.log('GET /branding/public route hit');
-  next();
-}, getBranding);
+router.get('/public', getBranding);
 
 // Public route for getting site name (no authentication required)
-router.get('/site-name/public', (req, res, next) => {
-  console.log('GET /branding/site-name/public route hit');
-  next();
-}, getSiteName);
+router.get('/site-name/public', getSiteName);
 
 // Apply authentication middleware to all other routes
-router.use((req, res, next) => {
-  console.log('Authentication middleware hit for:', req.method, req.path);
-  console.log('Authorization header:', req.headers.authorization);
-  next();
-}, verifySuperadminToken);
+router.use(verifySuperadminToken);
 
 // Error handling middleware for multer
 const handleMulterError = (error, req, res, next) => {
-  console.log('Multer error:', error);
   if (error.code === 'LIMIT_FILE_SIZE') {
     return res.status(400).json({
       success: false,
@@ -63,55 +51,25 @@ const handleMulterError = (error, req, res, next) => {
 };
 
 // Routes
-router.get('/', (req, res, next) => {
-  console.log('GET /branding route hit');
-  next();
-}, getBranding);
+router.get('/', getBranding);
 
-router.put('/', (req, res, next) => {
-  console.log('PUT /branding route hit');
-  next();
-}, updateBranding);
+router.put('/', updateBranding);
 
-router.post('/upload-logo', (req, res, next) => {
-  console.log('POST /branding/upload-logo route hit');
-  next();
-}, upload.single('logo'), handleMulterError, uploadLogo);
+router.post('/upload-logo', upload.single('logo'), handleMulterError, uploadLogo);
 
-router.post('/upload-favicon', (req, res, next) => {
-  console.log('POST /branding/upload-favicon route hit');
-  next();
-}, upload.single('favicon'), handleMulterError, uploadFavicon);
+router.post('/upload-favicon', upload.single('favicon'), handleMulterError, uploadFavicon);
 
-router.delete('/logo', (req, res, next) => {
-  console.log('DELETE /branding/logo route hit');
-  next();
-}, deleteLogo);
+router.delete('/logo', deleteLogo);
 
-router.delete('/favicon', (req, res, next) => {
-  console.log('DELETE /branding/favicon route hit');
-  next();
-}, deleteFavicon);
+router.delete('/favicon', deleteFavicon);
 
-router.post('/upload-name', (req, res, next) => {
-  console.log('POST /branding/upload-name route hit');
-  next();
-}, upload.single('name'), handleMulterError, uploadName);
+router.post('/upload-name', upload.single('name'), handleMulterError, uploadName);
 
-router.delete('/name', (req, res, next) => {
-  console.log('DELETE /branding/name route hit');
-  next();
-}, deleteName);
+router.delete('/name', deleteName);
 
 // Site name routes
-router.get('/site-name', (req, res, next) => {
-  console.log('GET /branding/site-name route hit');
-  next();
-}, getSiteName);
+router.get('/site-name', getSiteName);
 
-router.put('/site-name', (req, res, next) => {
-  console.log('PUT /branding/site-name route hit');
-  next();
-}, updateSiteName);
+router.put('/site-name', updateSiteName);
 
 export default router;

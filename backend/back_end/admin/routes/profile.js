@@ -8,8 +8,7 @@ import {
   requestAdminEmailChange,
   verifyAdminEmailChangeOTP,
   updateAdminPassword,
-  verifyPasswordForEmailChange,
-  verifyPasswordForPasswordChange
+  verifyPasswordForEmailChange
 } from "../controllers/adminProfileController.js"
 import { verifyAdminToken } from "../controllers/adminAuthController.js"
 
@@ -34,8 +33,5 @@ router.put("/password", updateAdminPassword)
 
 // Verify password for email change
 router.post("/verify-password-email", verifyPasswordForEmailChange)
-
-// Verify password for password change
-router.post("/verify-password-change", verifyPasswordForPasswordChange)
 
 export default router

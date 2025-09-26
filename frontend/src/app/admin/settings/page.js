@@ -6,8 +6,8 @@ import { FaLock, FaBuilding } from 'react-icons/fa';
 import { useAdminProfile } from '../hooks/useAdminProfile';
 import { selectCurrentAdmin, updateAdminEmail } from '@/rtk/superadmin/adminSlice';
 import { SkeletonLoader, SuccessModal } from '../components';
-import { PasswordChangeModal } from './ProfileSection';
-import { SecureEmailChange } from '@/components/SecureEmailChange';
+import { EmailChange } from '@/components/EmailChange';
+import PasswordChange from '@/components/PasswordChange';
 import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError } from '@/utils/adminAuth';
 import styles from './AdminSettings.module.css';
 
@@ -268,14 +268,15 @@ export default function SettingsPage() {
       </div>
 
       {/* Password Change Modal */}
-      <PasswordChangeModal
+      <PasswordChange
         isOpen={showPasswordModal}
         onClose={() => setShowPasswordModal(false)}
         onSuccess={handlePasswordSuccess}
+        userType="admin"
       />
 
-      {/* Secure Email Change Modal */}
-      <SecureEmailChange
+      {/* Email Change Modal */}
+      <EmailChange
         isOpen={showSecureEmailModal}
         onClose={handleEmailEditClose}
         onSuccess={handleSecureEmailSuccess}

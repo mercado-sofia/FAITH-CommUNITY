@@ -36,16 +36,9 @@ export const getAboutUs = async (req, res) => {
 // Update about us content
 export const updateAboutUs = async (req, res) => {
   try {
-    const { tag, heading, description, extension_categories, image_url } = req.body;
+    const { heading, description, extension_categories, image_url } = req.body;
 
     // Validate required fields
-    if (!tag || tag.trim() === '') {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Tag is required' 
-      });
-    }
-
     if (!heading || heading.trim() === '') {
       return res.status(400).json({ 
         success: false, 
@@ -85,14 +78,14 @@ export const updateAboutUs = async (req, res) => {
     if (existingRows.length === 0) {
       // Create new about us record
       [result] = await db.query(
-        'INSERT INTO about_us (tag, heading, description, extension_categories, image_url) VALUES (?, ?, ?, ?, ?)',
-        [tag.trim(), heading.trim(), description.trim(), JSON.stringify(extension_categories), image_url || null]
+        'INSERT INTO about_us (heading, description, extension_categories, image_url) VALUES (?, ?, ?, ?)',
+        [heading.trim(), description.trim(), JSON.stringify(extension_categories), image_url || null]
       );
     } else {
       // Update existing about us record
       [result] = await db.query(
-        'UPDATE about_us SET tag = ?, heading = ?, description = ?, extension_categories = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [tag.trim(), heading.trim(), description.trim(), JSON.stringify(extension_categories), image_url || null, existingRows[0].id]
+        'UPDATE about_us SET heading = ?, description = ?, extension_categories = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [heading.trim(), description.trim(), JSON.stringify(extension_categories), image_url || null, existingRows[0].id]
       );
     }
 
@@ -351,20 +344,12 @@ export const uploadAboutUsImage = async (req, res) => {
       });
     }
 
-    console.log('Starting about us image upload:', { 
-      fileName: req.file.originalname, 
-      fileSize: req.file.size, 
-      fileType: req.file.mimetype 
-    });
-
     // Upload to Cloudinary
     const uploadResult = await uploadSingleToCloudinary(
       req.file, 
       'faith-community/about-us',
       { prefix: 'about_us_' }
     );
-
-    console.log('About us image upload successful:', uploadResult);
 
     // Get current about us data
     const [existingRows] = await db.query('SELECT * FROM about_us ORDER BY id DESC LIMIT 1');

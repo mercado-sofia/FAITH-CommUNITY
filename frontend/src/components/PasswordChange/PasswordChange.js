@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FaLock, FaEye, FaEyeSlash, FaTimes, FaCheck, FaSpinner } from 'react-icons/fa';
-import styles from './PasswordChangeModal.module.css';
-import { SuccessModal } from '../../../components';
+import { createPortal } from 'react-dom';
+import styles from './PasswordChange.module.css';
+import { SuccessModal } from '../../app/admin/components';
 
 // Utility functions
 const sanitizePassword = (password) => {
@@ -121,31 +122,71 @@ const PasswordRequirements = ({ password }) => {
   );
 };
 
-export default function PasswordChangeModal({ 
-  isOpen, 
-  onClose, 
-  onSuccess 
+/**
+ * Centralized Secure Password Change Component
+ * Supports all user types: public, admin, superadmin
+ * 
+ * @param {object} props
+ * @param {boolean} props.isOpen - Modal open state
+ * @param {function} props.onClose - Close modal callback
+ * @param {function} props.onSuccess - Success callback
+ * @param {string} props.userType - 'public' | 'admin' | 'superadmin'
+ * @param {object} props.currentUser - Current user object (for superadmin)
+ * @param {string} props.userId - User ID (for superadmin)
+ * @param {boolean} props.showSuccessModal - Whether to show success modal (public users)
+ * @param {function} props.setUserData - Set user data callback (public users)
+ * @param {function} props.setShowModal - Set modal state callback (public users)
+ */
+export default function PasswordChange({
+  isOpen,
+  onClose,
+  onSuccess,
+  userType = 'public',
+  currentUser,
+  userId,
+  showSuccessModal = false,
+  setUserData,
+  setShowModal
 }) {
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isVerifyingPassword, setIsVerifyingPassword] = useState(false);
   
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    otp: ''
   });
   
   const [passwordVisibility, setPasswordVisibility] = useState({
     currentPassword: false,
     newPassword: false,
-    confirmPassword: false
+    confirmPassword: false,
+    otp: false
   });
   
   const [errors, setErrors] = useState({});
   const [errorMessage, setErrorMessage] = useState('');
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showSuccessModalState, setShowSuccessModalState] = useState(false);
+  const [twofaEnabled, setTwofaEnabled] = useState(false);
+  const [isLoading2FAStatus, setIsLoading2FAStatus] = useState(false);
 
   const rateLimiter = new RateLimiter(5, 15 * 60 * 1000);
+
+  // Check 2FA status for superadmin users
+  const check2FAStatus = useCallback(async () => {
+    if (userType !== 'superadmin' || !currentUser) return;
+    
+    setIsLoading2FAStatus(true);
+    try {
+      // Use the currentUser data to check 2FA status
+      setTwofaEnabled(currentUser.twofa_enabled || false);
+    } catch (error) {
+      console.error('Error checking 2FA status:', error);
+      setTwofaEnabled(false);
+    } finally {
+      setIsLoading2FAStatus(false);
+    }
+  }, [userType, currentUser]);
 
   useEffect(() => {
     if (isOpen) {
@@ -153,18 +194,25 @@ export default function PasswordChangeModal({
       setPasswordData({
         currentPassword: '',
         newPassword: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        otp: ''
       });
       setPasswordVisibility({
         currentPassword: false,
         newPassword: false,
-        confirmPassword: false
+        confirmPassword: false,
+        otp: false
       });
       setErrors({});
       setErrorMessage('');
-      setShowSuccessModal(false); // Reset success modal state
+      setShowSuccessModalState(false);
+      
+      // Check 2FA status for superadmin users
+      if (userType === 'superadmin' && currentUser) {
+        check2FAStatus();
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, userType, currentUser, check2FAStatus]);
 
   useEffect(() => {
     if (isOpen) {
@@ -227,14 +275,62 @@ export default function PasswordChangeModal({
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
+
+    // Validate OTP for superadmin users with 2FA enabled
+    if (userType === 'superadmin' && twofaEnabled) {
+      if (!passwordData.otp.trim()) {
+        newErrors.otp = '2FA code is required';
+      } else if (!/^\d{6}$/.test(passwordData.otp.trim())) {
+        newErrors.otp = '2FA code must be 6 digits';
+      }
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  const getApiEndpoint = () => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    
+    switch (userType) {
+      case 'public':
+        return `${baseUrl}/api/users/password`;
+      case 'admin':
+        return `${baseUrl}/api/admin/profile/password`;
+      case 'superadmin':
+        return `${baseUrl}/api/superadmin/auth/password/${userId}`;
+      default:
+        return `${baseUrl}/api/users/password`;
+    }
+  };
+
+  const getAuthHeaders = () => {
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+
+    switch (userType) {
+      case 'public':
+        const token = localStorage.getItem('userToken');
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        break;
+      case 'admin':
+        const adminToken = localStorage.getItem('adminToken');
+        if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
+        break;
+      case 'superadmin':
+        const superAdminToken = localStorage.getItem('superAdminToken');
+        if (superAdminToken) headers['Authorization'] = `Bearer ${superAdminToken}`;
+        break;
+    }
+
+    return headers;
+  };
+
   const handleChangePassword = async () => {
     if (validatePasswordChange()) {
-      const rateLimitKey = `password_change_${Date.now()}`;
+      // Use a consistent key for rate limiting based on user type
+      const rateLimitKey = `password_change_${userType}`;
       if (!rateLimiter.isAllowed(rateLimitKey)) {
         setErrorMessage(`Too many password change attempts. Please try again in 15 minutes.`);
         setTimeout(() => setErrorMessage(''), 5000);
@@ -242,73 +338,99 @@ export default function PasswordChangeModal({
       }
 
       try {
-        setIsVerifyingPassword(true);
+        setIsUpdating(true);
+
+        // Prepare request body
+        const requestBody = {
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword
+        };
+
+        // Add OTP for superadmin users with 2FA enabled
+        if (userType === 'superadmin' && twofaEnabled && passwordData.otp) {
+          requestBody.otp = passwordData.otp;
+        }
+
+        const apiEndpoint = getApiEndpoint();
+        const headers = getAuthHeaders();
         
-        // Verify current password
-        const verifyResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admin/profile/verify-password-change`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-          },
-          body: JSON.stringify({ password: passwordData.currentPassword })
+        console.log('Password Change Request:', {
+          userType,
+          endpoint: apiEndpoint,
+          headers: { ...headers, Authorization: headers.Authorization ? 'Bearer [REDACTED]' : 'None' },
+          body: { ...requestBody, currentPassword: '[REDACTED]', newPassword: '[REDACTED]' }
         });
 
-        if (!verifyResponse.ok) {
-          const errorData = await verifyResponse.json().catch(() => ({}));
-          const errorInfo = handleApiError({ status: verifyResponse.status, message: errorData.message }, 'password_verification');
+        // Update password
+        const updateResponse = await fetch(apiEndpoint, {
+          method: 'PUT',
+          headers: headers,
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!updateResponse.ok) {
+          const errorData = await updateResponse.json().catch(() => ({}));
+          console.error('Password Change Error:', {
+            status: updateResponse.status,
+            statusText: updateResponse.statusText,
+            errorData,
+            userType,
+            endpoint: apiEndpoint
+          });
           
-          if (errorInfo.type === 'password_error') {
-            // Set password-specific error
+          const errorInfo = handleApiError({ status: updateResponse.status, message: errorData.message }, 'password_update');
+          
+          // Handle 2FA-specific errors
+          if (errorData.requireTwoFA) {
+            setErrors(prev => ({ ...prev, otp: errorData.message }));
+            setErrorMessage('');
+          } else if (errorInfo.type === 'password_error') {
             setErrors(prev => ({ ...prev, currentPassword: errorInfo.message }));
             setErrorMessage('');
           } else {
-            // Set general error message
             setErrorMessage(errorInfo.message);
             setTimeout(() => setErrorMessage(''), 5000);
           }
           return;
         }
-
-        setIsVerifyingPassword(false);
-        setIsUpdating(true);
-
-        // Update password
-        const updateResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admin/profile/password`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-          },
-          body: JSON.stringify({
-            currentPassword: passwordData.currentPassword,
-            newPassword: passwordData.newPassword
-          })
-        });
-
-        if (!updateResponse.ok) {
-          const errorData = await updateResponse.json().catch(() => ({}));
-          const errorInfo = handleApiError({ status: updateResponse.status, message: errorData.message }, 'password_update');
-          throw new Error(errorInfo.message);
-        }
         
         rateLimiter.reset(rateLimitKey);
         
-        // Show success modal
-        setShowSuccessModal(true);
-        
-        // Call onSuccess callback
-        onSuccess();
-        
-        // Close modal after a short delay
-        setTimeout(() => {
-          onClose();
-        }, 1500);
+        if (userType === 'public') {
+          // For public users, show success message and close modal
+          setPasswordData({
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: '',
+            otp: ''
+          });
+          setPasswordVisibility({
+            currentPassword: false,
+            newPassword: false,
+            confirmPassword: false,
+            otp: false
+          });
+          setErrors({});
+          setErrorMessage('');
+          if (setShowModal) setShowModal(false);
+          document.body.classList.remove('modalOpen');
+          
+          // Show success modal
+          setShowSuccessModalState(true);
+        } else {
+          // For admin/superadmin, show success modal and close
+          setShowSuccessModalState(true);
+          onSuccess();
+          
+          // Close modal after a short delay
+          setTimeout(() => {
+            onClose();
+          }, 1500);
+        }
       } catch (error) {
         setErrorMessage(error.message || 'Failed to change password. Please try again.');
         setTimeout(() => setErrorMessage(''), 5000);
       } finally {
-        setIsVerifyingPassword(false);
         setIsUpdating(false);
       }
     }
@@ -318,21 +440,37 @@ export default function PasswordChangeModal({
     setPasswordData({
       currentPassword: '',
       newPassword: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      otp: ''
     });
     setPasswordVisibility({
       currentPassword: false,
       newPassword: false,
-      confirmPassword: false
+      confirmPassword: false,
+      otp: false
     });
     setErrors({});
     setErrorMessage('');
-    onClose();
+    
+    if (setShowModal) {
+      setShowModal(false);
+      document.body.classList.remove('modalOpen');
+    } else {
+      onClose();
+    }
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModalState(false);
+    if (showSuccessModal) {
+      // For public users, you might want to show a toast or other notification
+      console.log('Password changed successfully!');
+    }
   };
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <div className={styles.modalOverlay} onClick={handleCancel}>
       <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
@@ -348,7 +486,7 @@ export default function PasswordChangeModal({
           <button 
             className={styles.closeButton}
             onClick={handleCancel}
-            disabled={isUpdating || isVerifyingPassword}
+            disabled={isUpdating}
           >
             <FaTimes />
           </button>
@@ -372,13 +510,13 @@ export default function PasswordChangeModal({
                   onChange={handlePasswordInputChange}
                   className={`${styles.input} ${styles.passwordInput} ${errors.currentPassword ? styles.inputError : ''}`}
                   placeholder="Enter your current password"
-                  disabled={isUpdating || isVerifyingPassword}
+                  disabled={isUpdating}
                 />
                 <button
                   type="button"
                   className={styles.passwordToggle}
                   onClick={() => togglePasswordVisibility('currentPassword')}
-                  disabled={isUpdating || isVerifyingPassword}
+                  disabled={isUpdating}
                   tabIndex={-1}
                 >
                   {passwordVisibility.currentPassword ? <FaEyeSlash /> : <FaEye />}
@@ -397,13 +535,13 @@ export default function PasswordChangeModal({
                   onChange={handlePasswordInputChange}
                   className={`${styles.input} ${styles.passwordInput} ${errors.newPassword ? styles.inputError : ''}`}
                   placeholder="Enter your new password"
-                  disabled={isUpdating || isVerifyingPassword}
+                  disabled={isUpdating}
                 />
                 <button
                   type="button"
                   className={styles.passwordToggle}
                   onClick={() => togglePasswordVisibility('newPassword')}
-                  disabled={isUpdating || isVerifyingPassword}
+                  disabled={isUpdating}
                   tabIndex={-1}
                 >
                   {passwordVisibility.newPassword ? <FaEyeSlash /> : <FaEye />}
@@ -423,13 +561,13 @@ export default function PasswordChangeModal({
                   onChange={handlePasswordInputChange}
                   className={`${styles.input} ${styles.passwordInput} ${errors.confirmPassword ? styles.inputError : ''}`}
                   placeholder="Confirm your new password"
-                  disabled={isUpdating || isVerifyingPassword}
+                  disabled={isUpdating}
                 />
                 <button
                   type="button"
                   className={styles.passwordToggle}
                   onClick={() => togglePasswordVisibility('confirmPassword')}
-                  disabled={isUpdating || isVerifyingPassword}
+                  disabled={isUpdating}
                   tabIndex={-1}
                 >
                   {passwordVisibility.confirmPassword ? <FaEyeSlash /> : <FaEye />}
@@ -438,20 +576,52 @@ export default function PasswordChangeModal({
               {errors.confirmPassword && <span className={styles.errorText}>{errors.confirmPassword}</span>}
             </div>
 
+            {/* 2FA OTP Field for Superadmin */}
+            {userType === 'superadmin' && twofaEnabled && (
+              <div className={styles.fieldGroup}>
+                <label className={styles.label}>2FA Code</label>
+                <div className={styles.passwordInputContainer}>
+                  <input
+                    type={passwordVisibility.otp ? "text" : "password"}
+                    name="otp"
+                    value={passwordData.otp}
+                    onChange={handlePasswordInputChange}
+                    className={`${styles.input} ${styles.passwordInput} ${errors.otp ? styles.inputError : ''}`}
+                    placeholder="Enter 6-digit 2FA code"
+                    disabled={isUpdating}
+                    maxLength={6}
+                  />
+                  <button
+                    type="button"
+                    className={styles.passwordToggle}
+                    onClick={() => togglePasswordVisibility('otp')}
+                    disabled={isUpdating}
+                    tabIndex={-1}
+                  >
+                    {passwordVisibility.otp ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
+                {errors.otp && <span className={styles.errorText}>{errors.otp}</span>}
+                <div className={styles.helpText}>
+                  Enter the 6-digit code from your authenticator app
+                </div>
+              </div>
+            )}
+
             <div className={styles.actionButtons}>
               <button 
                 className={styles.cancelButton}
                 onClick={handleCancel}
-                disabled={isUpdating || isVerifyingPassword}
+                disabled={isUpdating}
               >
                 Cancel
               </button>
               <button 
                 className={styles.saveButton}
                 onClick={handleChangePassword}
-                disabled={isUpdating || isVerifyingPassword}
+                disabled={isUpdating}
               >
-                {(isUpdating || isVerifyingPassword) ? <FaSpinner className={styles.spinner} /> : null}
+                {isUpdating ? <FaSpinner className={styles.spinner} /> : null}
                 Update Password
               </button>
             </div>
@@ -462,11 +632,18 @@ export default function PasswordChangeModal({
       {/* Success Modal */}
       <SuccessModal
         message="Password changed successfully!"
-        isVisible={showSuccessModal}
-        onClose={() => setShowSuccessModal(false)}
+        isVisible={showSuccessModalState}
+        onClose={handleSuccessModalClose}
         type="success"
         autoHideDuration={2000}
       />
     </div>
+  );
+
+  return (
+    <>
+      {/* Render modal with portal for public users, inline for admin/superadmin */}
+      {userType === 'public' ? createPortal(modalContent, document.body) : modalContent}
+    </>
   );
 }

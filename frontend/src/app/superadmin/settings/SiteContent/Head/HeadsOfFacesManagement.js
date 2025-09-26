@@ -113,7 +113,6 @@ export default function HeadsOfFacesManagement({ showSuccessModal }) {
     try {
       setUploadingImage(true);
       
-      console.log('Starting file upload:', { fileName: file.name, fileSize: file.size, fileType: file.type });
       
       const formData = new FormData();
       formData.append('file', file);
@@ -124,12 +123,10 @@ export default function HeadsOfFacesManagement({ showSuccessModal }) {
       // Get the token for manual request
       const token = localStorage.getItem('superAdminToken');
       if (!token) {
-        console.log('No token found');
         showSuccessModal('Authentication required. Please log in again.');
         return null;
       }
 
-      console.log('Making request to:', `${baseUrl}/api/upload`);
 
       const response = await fetch(`${baseUrl}/api/upload`, {
         method: 'POST',
@@ -139,11 +136,9 @@ export default function HeadsOfFacesManagement({ showSuccessModal }) {
         body: formData,
       });
 
-      console.log('Response received:', { status: response.status, statusText: response.statusText });
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Upload successful:', data);
         return data.url; // Return the Cloudinary URL
       } else {
         const errorData = await response.json();

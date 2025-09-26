@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { FaEnvelope, FaLock, FaShieldAlt } from 'react-icons/fa';
 import styles from './settings.module.css';
-import { PasswordChangeModal, TwoFAModal } from './ProfileSection';
-import { SecureEmailChange } from '@/components/SecureEmailChange';
+import TwoFAModal from './TwoFAModal/TwoFAModal';
+import { EmailChange } from '@/components/EmailChange';
+import PasswordChange from '@/components/PasswordChange';
 import SuccessModal from '../components/SuccessModal';
 import { SiteNameManagement, FooterContentManagement, BrandingManagement, HeroSectionManagement, MissionVisionManagement, AboutUsManagement, HeadManagement } from './SiteContent';
 import brandingStyles from './SiteContent/Branding/BrandingManagement.module.css';
@@ -394,8 +395,8 @@ export default function SuperAdminSettings() {
         </div>
       )}
 
-      {/* Secure Email Change Modal */}
-      <SecureEmailChange
+      {/* Email Change Modal */}
+      <EmailChange
         isOpen={showSecureEmailModal}
         onClose={() => setShowSecureEmailModal(false)}
         onSuccess={handleEmailSuccess}
@@ -405,11 +406,13 @@ export default function SuperAdminSettings() {
       />
 
       {/* Password Change Modal */}
-      <PasswordChangeModal
+      <PasswordChange
         isOpen={showPasswordModal}
         onClose={() => setShowPasswordModal(false)}
         onSuccess={handlePasswordSuccess}
+        userType="superadmin"
         currentUser={currentUser}
+        userId={currentUser?.id}
       />
 
       {/* Two-Factor Authentication Modal */}

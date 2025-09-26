@@ -23,8 +23,8 @@ const authenticateAdmin = (req, res, next) => {
   
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community",
-      audience: process.env.JWT_AUD || "admin",
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
     });
     req.admin = decoded;
     next();
@@ -38,10 +38,6 @@ const authenticateAdmin = (req, res, next) => {
 
 // Generic upload handler that processes any file type
 router.post('/', verifyAdminOrSuperadmin, cloudinaryUploadConfigs.programMain.single('file'), async (req, res, next) => {
-  console.log('🔄 Upload route hit');
-  console.log('📁 Request body:', req.body);
-  console.log('📎 Request headers:', req.headers);
-  
   try {
     if (!req.file) {
       console.error('❌ No file in request');
@@ -50,7 +46,6 @@ router.post('/', verifyAdminOrSuperadmin, cloudinaryUploadConfigs.programMain.si
     
     // Determine upload type from request body or query params
     const uploadType = req.body.uploadType || req.query.type || 'program';
-    console.log('📝 Upload type:', uploadType);
     
     // Use appropriate folder and prefix based on upload type
     let folder;

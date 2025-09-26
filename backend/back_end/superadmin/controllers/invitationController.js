@@ -1,6 +1,6 @@
 import db from "../../database.js"
 import crypto from "crypto"
-import bcrypt from "bcrypt"
+import * as bcrypt from "bcrypt"
 import nodemailer from "nodemailer"
 
 // Email configuration

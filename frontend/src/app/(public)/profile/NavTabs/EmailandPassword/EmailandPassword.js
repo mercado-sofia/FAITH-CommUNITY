@@ -2,13 +2,48 @@
 
 import { useState } from 'react';
 import { FaEnvelope, FaLock } from 'react-icons/fa';
-import { SecureEmailChange } from '@/components/SecureEmailChange';
-import Password from './ManagePassword/Password';
+import { EmailChange } from '@/components/EmailChange';
+import PasswordChange from '@/components/PasswordChange';
+import ChangeSuccessModal from './ChangeSuccessModal';
 import styles from './EmailandPassword.module.css';
 
 export default function EmailandPassword({ userData, setUserData }) {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successModalData, setSuccessModalData] = useState({
+    changeType: 'email', // 'email' or 'password'
+    newEmail: '',
+    oldEmail: ''
+  });
+
+  // Success handlers
+  const handleEmailChangeSuccess = (newEmail, oldEmail) => {
+    setSuccessModalData({
+      changeType: 'email',
+      newEmail,
+      oldEmail
+    });
+    setShowEmailModal(false);
+    setShowSuccessModal(true);
+    document.body.classList.remove('modalOpen');
+  };
+
+  const handlePasswordChangeSuccess = () => {
+    setSuccessModalData({
+      changeType: 'password',
+      newEmail: '',
+      oldEmail: ''
+    });
+    setShowPasswordModal(false);
+    setShowSuccessModal(true);
+    document.body.classList.remove('modalOpen');
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    document.body.classList.remove('modalOpen');
+  };
 
   return (
     <div className={styles.emailPasswordSection}>
@@ -81,21 +116,39 @@ export default function EmailandPassword({ userData, setUserData }) {
       </div>
 
       {/* Modal Components */}
-      <SecureEmailChange 
+      <EmailChange 
         isOpen={showEmailModal}
-        onClose={() => setShowEmailModal(false)}
-        onSuccess={() => {}}
+        onClose={() => {
+          setShowEmailModal(false);
+          document.body.classList.remove('modalOpen');
+        }}
+        onSuccess={handleEmailChangeSuccess}
         userType="public"
         currentEmail={userData.email}
-        showSuccessModal={true}
+        showSuccessModal={false}
         setUserData={setUserData}
         setShowModal={setShowEmailModal}
       />
-      <Password 
-        userData={userData} 
+      <PasswordChange
+        isOpen={showPasswordModal}
+        onClose={() => {
+          setShowPasswordModal(false);
+          document.body.classList.remove('modalOpen');
+        }}
+        onSuccess={handlePasswordChangeSuccess}
+        userType="public"
+        showSuccessModal={false}
         setUserData={setUserData}
-        showModal={showPasswordModal}
         setShowModal={setShowPasswordModal}
+      />
+
+      {/* Success Modal */}
+      <ChangeSuccessModal
+        isOpen={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        changeType={successModalData.changeType}
+        newEmail={successModalData.newEmail}
+        oldEmail={successModalData.oldEmail}
       />
     </div>
   );

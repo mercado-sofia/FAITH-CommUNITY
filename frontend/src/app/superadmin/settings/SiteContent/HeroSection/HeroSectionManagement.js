@@ -229,7 +229,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
   // File upload handlers
   const handleFileUpload = async (file, type, imageId = null) => {
     try {
-      console.log('Starting file upload:', { type, imageId, fileName: file.name, fileSize: file.size, fileType: file.type });
       
       // Set loading state
       if (type === 'video') {
@@ -249,7 +248,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
       // Get the token for manual request
       const token = localStorage.getItem('superAdminToken');
       if (!token) {
-        console.log('No token found');
         showSuccessModal('Authentication required. Please log in again.');
         return;
       }
@@ -258,7 +256,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         ? `${baseUrl}/api/superadmin/hero-section/upload-image`
         : `${baseUrl}/api/superadmin/hero-section/upload-${type}`;
 
-      console.log('Making request to:', endpoint);
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -268,7 +265,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         body: formData,
       });
 
-      console.log('Response received:', { status: response.status, statusText: response.statusText });
 
       if (response.ok) {
         const data = await response.json();

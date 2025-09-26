@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { FiEdit3, FiXCircle, FiPlus, FiTrash2, FiUpload, FiImage } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import ConfirmationModal from '../../../components/ConfirmationModal';
@@ -17,7 +18,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
   // Edit mode state
   const [isEditingAboutUs, setIsEditingAboutUs] = useState(false);
   const [tempAboutUs, setTempAboutUs] = useState({
-    tag: '',
     heading: '',
     description: '',
     extension_categories: [],
@@ -90,7 +90,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
           const data = await response.json();
           setAboutUsData(data.data);
           setTempAboutUs({
-            tag: data.data.tag || '',
             heading: data.data.heading || '',
             description: data.data.description || '',
             extension_categories: data.data.extension_categories || [],
@@ -112,7 +111,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
     setIsEditingAboutUs(!isEditingAboutUs);
     if (!isEditingAboutUs) {
       setTempAboutUs({
-        tag: aboutUsData?.tag || '',
         heading: aboutUsData?.heading || '',
         description: aboutUsData?.description || '',
         extension_categories: aboutUsData?.extension_categories || [],
@@ -125,7 +123,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
   const handleCancelEdit = () => {
     setIsEditingAboutUs(false);
     setTempAboutUs({
-      tag: aboutUsData?.tag || '',
       heading: aboutUsData?.heading || '',
       description: aboutUsData?.description || '',
       extension_categories: aboutUsData?.extension_categories || [],
@@ -136,10 +133,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
 
   // About us update handler
   const handleAboutUsUpdate = () => {
-    if (!tempAboutUs.tag.trim()) {
-      showSuccessModal('Tag cannot be empty');
-      return;
-    }
     if (!tempAboutUs.heading.trim()) {
       showSuccessModal('Heading cannot be empty');
       return;
@@ -183,7 +176,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              tag: tempAboutUs.tag.trim(),
               heading: tempAboutUs.heading.trim(),
               description: tempAboutUs.description.trim(),
               extension_categories: tempAboutUs.extension_categories,
@@ -301,7 +293,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
     try {
       setUploadingImage(true);
       
-      console.log('Starting file upload:', { fileName: file.name, fileSize: file.size, fileType: file.type });
       
       const formData = new FormData();
       formData.append('image', file);
@@ -311,12 +302,10 @@ export default function AboutUsManagement({ showSuccessModal }) {
       // Get the token for manual request
       const token = localStorage.getItem('superAdminToken');
       if (!token) {
-        console.log('No token found');
         showSuccessModal('Authentication required. Please log in again.');
         return null;
       }
 
-      console.log('Making request to:', `${baseUrl}/api/superadmin/about-us/upload-image`);
 
       const response = await fetch(`${baseUrl}/api/superadmin/about-us/upload-image`, {
         method: 'POST',
@@ -326,11 +315,9 @@ export default function AboutUsManagement({ showSuccessModal }) {
         body: formData,
       });
 
-      console.log('Response received:', { status: response.status, statusText: response.statusText });
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Upload successful:', data);
         return data.imageUrl; // Return the Cloudinary URL from the response
       } else {
         const errorData = await response.json();
@@ -441,26 +428,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
 
       <div className={styles.panelContent}>
         <div className={styles.aboutUsSection}>
-          {/* Tag Field */}
-          <div className={styles.inputGroup}>
-            <label htmlFor="tag" className={styles.inputLabel}>
-              Tag
-            </label>
-            <input
-              type="text"
-              id="tag"
-              value={isEditingAboutUs ? tempAboutUs.tag : (aboutUsData?.tag || '')}
-              onChange={(e) => isEditingAboutUs ? 
-                setTempAboutUs(prev => ({ ...prev, tag: e.target.value })) :
-                null
-              }
-              className={styles.textInput}
-              placeholder="Enter tag (e.g., About Us FAITH CommUNITY)"
-              maxLength={255}
-              disabled={!isEditingAboutUs}
-            />
-          </div>
-
           {/* Heading Field */}
           <div className={styles.inputGroup}>
             <label htmlFor="heading" className={styles.inputLabel}>
@@ -522,18 +489,24 @@ export default function AboutUsManagement({ showSuccessModal }) {
               {/* Current Image Display */}
               {(isEditingAboutUs ? tempAboutUs.image_url : (aboutUsData?.image_url || '')) ? (
                 <div className={styles.currentImageContainer}>
-                  <img
+                  <Image
                     src={isEditingAboutUs ? tempAboutUs.image_url : (aboutUsData?.image_url || '')}
                     alt="Current About Us Image"
                     className={styles.currentImage}
+                    width={400}
+                    height={300}
+                    style={{ objectFit: 'cover' }}
                   />
                 </div>
               ) : selectedFile ? (
                 <div className={styles.currentImageContainer}>
-                  <img
+                  <Image
                     src={URL.createObjectURL(selectedFile)}
                     alt="Selected Image Preview"
                     className={styles.currentImage}
+                    width={400}
+                    height={300}
+                    style={{ objectFit: 'cover' }}
                   />
                 </div>
               ) : (

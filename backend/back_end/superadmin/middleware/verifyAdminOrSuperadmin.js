@@ -27,8 +27,8 @@ export const verifyAdminOrSuperadmin = (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community",
-      audience: process.env.JWT_AUD || "admin",
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
     })
 
     // Check if it's a superadmin token

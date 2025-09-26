@@ -273,6 +273,44 @@ const initializeDatabase = async () => {
       // organization_id column already exists in admins table
     }
 
+    // Check if password_changed_at column exists in admins table, add it if missing
+    const [passwordChangedAtColumn] = await connection.query(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'admins' 
+      AND COLUMN_NAME = 'password_changed_at'
+    `);
+    
+    if (passwordChangedAtColumn.length === 0) {
+      console.log("Adding password_changed_at column to admins table...");
+      await connection.query(`
+        ALTER TABLE admins 
+        ADD COLUMN password_changed_at TIMESTAMP NULL DEFAULT NULL
+      `);
+      console.log("✅ password_changed_at column added to admins table!");
+    } else {
+      // password_changed_at column already exists in admins table
+    }
+
+    // Check if updated_at column exists in admins table, add it if missing
+    const [updatedAtColumn] = await connection.query(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'admins' 
+      AND COLUMN_NAME = 'updated_at'
+    `);
+    
+    if (updatedAtColumn.length === 0) {
+      console.log("Adding updated_at column to admins table...");
+      await connection.query(`
+        ALTER TABLE admins 
+        ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+      `);
+      console.log("✅ updated_at column added to admins table!");
+    } else {
+      // updated_at column already exists in admins table
+    }
+
     // Migration: Move org and orgName from admins to organizations table
     const [orgColumns] = await connection.query(`
       SELECT COLUMN_NAME 
@@ -1499,7 +1537,6 @@ const initializeDatabase = async () => {
       await connection.query(`
         CREATE TABLE about_us (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          tag VARCHAR(255) DEFAULT 'About Us FAITH CommUNITY',
           heading TEXT DEFAULT 'We Believe That We Can Help More People With You',
           description TEXT DEFAULT 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.',
           extension_categories JSON DEFAULT '[
@@ -1508,6 +1545,7 @@ const initializeDatabase = async () => {
             {"name": "Extension For Community", "color": "orange"},
             {"name": "Extension For Foods", "color": "green"}
           ]',
+          image_url VARCHAR(500) DEFAULT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )
@@ -1515,13 +1553,32 @@ const initializeDatabase = async () => {
       
       // Insert default about us record
       await connection.query(`
-        INSERT INTO about_us (tag, heading, description) VALUES
-        ('About Us FAITH CommUNITY', 'We Believe That We Can Help More People With You', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.')
+        INSERT INTO about_us (heading, description) VALUES
+        ('We Believe That We Can Help More People With You', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.')
       `);
       
       console.log("✅ About us table created successfully!");
     } else {
       console.log("✅ About us table already exists");
+      
+      // Check if tag column exists and remove it (migration)
+      try {
+        const [columns] = await connection.query(`
+          SELECT COLUMN_NAME 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_SCHEMA = DATABASE() 
+          AND TABLE_NAME = 'about_us' 
+          AND COLUMN_NAME = 'tag'
+        `);
+        
+        if (columns.length > 0) {
+          console.log("Removing tag column from about_us table...");
+          await connection.query('ALTER TABLE about_us DROP COLUMN tag');
+          console.log("✅ Tag column removed from about_us table!");
+        }
+      } catch (error) {
+        console.log("Note: Could not check/remove tag column:", error.message);
+      }
     }
 
     // Check if heads_faces table exists

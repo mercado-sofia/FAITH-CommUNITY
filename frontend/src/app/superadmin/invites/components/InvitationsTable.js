@@ -181,15 +181,6 @@ export default function InvitationsTable({
 
 
   const getStatusColor = (invitation) => {
-    // Debug: Log the invitation data to see what we're working with
-    console.log('Invitation data:', {
-      id: invitation.id,
-      email: invitation.email,
-      status: invitation.status,
-      admin_is_active: invitation.admin_is_active,
-      admin_is_active_type: typeof invitation.admin_is_active
-    });
-    
     // If invitation is accepted but admin is inactive, show as inactive
     // Check for both boolean false and numeric 0 (MySQL returns booleans as 0/1)
     if (invitation.status === 'accepted' && (invitation.admin_is_active === false || invitation.admin_is_active === 0)) {

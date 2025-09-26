@@ -23,7 +23,6 @@ export const superadminProgramsApi = createApi({
       query: () => `/program-projects/superadmin/all`,
       providesTags: ["SuperadminProgram"],
       transformResponse: (response) => {
-        console.log('superadminProgramsApi - getAllProgramsByOrganization response:', response);
         if (response.success && Array.isArray(response.data)) {
           // Group programs by organization
           const groupedPrograms = response.data.reduce((acc, program) => {
@@ -75,7 +74,6 @@ export const superadminProgramsApi = createApi({
         return []
       },
       transformErrorResponse: (response) => {
-        console.error('superadminProgramsApi - getAllProgramsByOrganization error:', response);
         return response;
       }
     }),
@@ -85,7 +83,6 @@ export const superadminProgramsApi = createApi({
       query: () => `/program-projects/superadmin/statistics`,
       providesTags: ["SuperadminProgram"],
       transformResponse: (response) => {
-        console.log('superadminProgramsApi - getProgramsStatistics response:', response);
         if (response.success && response.data) {
           return {
             totalPrograms: response.data.total_programs || 0,
@@ -104,7 +101,6 @@ export const superadminProgramsApi = createApi({
         };
       },
       transformErrorResponse: (response) => {
-        console.error('superadminProgramsApi - getProgramsStatistics error:', response);
         return response;
       }
     }),
@@ -114,7 +110,6 @@ export const superadminProgramsApi = createApi({
       query: (id) => `/projects/superadmin/${id}`,
       providesTags: (result, error, id) => [{ type: "SuperadminProgram", id }],
       transformResponse: (response) => {
-        console.log('superadminProgramsApi - getProgramById response:', response);
         if (response.success && response.data) {
           const program = response.data;
           return {
@@ -139,7 +134,6 @@ export const superadminProgramsApi = createApi({
         return null;
       },
       transformErrorResponse: (response) => {
-        console.error('superadminProgramsApi - getProgramById error:', response);
         return response;
       }
     }),
@@ -150,7 +144,6 @@ export const superadminProgramsApi = createApi({
       providesTags: ["SuperadminProgram"],
       keepUnusedDataFor: 60,
       transformResponse: (response) => {
-        console.log('superadminProgramsApi - getAllFeaturedProjects response:', response);
         if (response.success && Array.isArray(response.data)) {
           return response.data.map(project => ({
             id: project.id,
@@ -171,7 +164,6 @@ export const superadminProgramsApi = createApi({
         return []
       },
       transformErrorResponse: (response) => {
-        console.error('superadminProgramsApi - getAllFeaturedProjects error:', response);
         return response;
       }
     }),
@@ -185,11 +177,9 @@ export const superadminProgramsApi = createApi({
       }),
       invalidatesTags: ["SuperadminProgram"],
       transformResponse: (response) => {
-        console.log('superadminProgramsApi - addFeaturedProject response:', response);
         return response;
       },
       transformErrorResponse: (response) => {
-        console.error('superadminProgramsApi - addFeaturedProject error:', response);
         return response;
       }
     }),
@@ -203,11 +193,9 @@ export const superadminProgramsApi = createApi({
       }),
       invalidatesTags: ["SuperadminProgram"],
       transformResponse: (response) => {
-        console.log('superadminProgramsApi - removeFeaturedProject response:', response);
         return response;
       },
       transformErrorResponse: (response) => {
-        console.error('superadminProgramsApi - removeFeaturedProject error:', response);
         return response;
       }
     }),
@@ -216,13 +204,9 @@ export const superadminProgramsApi = createApi({
     checkFeaturedStatus: builder.query({
       query: (programId) => `/admin/programs/single/${programId}`,
       transformResponse: (response) => {
-        console.log('superadminProgramsApi - checkFeaturedStatus response:', response);
         return response.success ? response.data.is_featured : false;
       },
       transformErrorResponse: (response) => {
-        if (response && Object.keys(response).length > 0) {
-          console.error('superadminProgramsApi - checkFeaturedStatus error:', response);
-        }
         return response;
       }
     }),

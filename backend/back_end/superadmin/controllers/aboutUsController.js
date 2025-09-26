@@ -1,4 +1,6 @@
 import db from '../../database.js';
+import { uploadSingleToCloudinary } from '../../utils/cloudinaryUpload.js';
+import { deleteFromCloudinary, extractPublicIdFromUrl } from '../../utils/cloudinaryConfig.js';
 
 // Get about us content
 export const getAboutUs = async (req, res) => {
@@ -34,9 +36,16 @@ export const getAboutUs = async (req, res) => {
 // Update about us content
 export const updateAboutUs = async (req, res) => {
   try {
-    const { heading, description, extension_categories } = req.body;
+    const { tag, heading, description, extension_categories, image_url } = req.body;
 
     // Validate required fields
+    if (!tag || tag.trim() === '') {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Tag is required' 
+      });
+    }
+
     if (!heading || heading.trim() === '') {
       return res.status(400).json({ 
         success: false, 
@@ -76,14 +85,14 @@ export const updateAboutUs = async (req, res) => {
     if (existingRows.length === 0) {
       // Create new about us record
       [result] = await db.query(
-        'INSERT INTO about_us (heading, description, extension_categories) VALUES (?, ?, ?)',
-        [heading.trim(), description.trim(), JSON.stringify(extension_categories)]
+        'INSERT INTO about_us (tag, heading, description, extension_categories, image_url) VALUES (?, ?, ?, ?, ?)',
+        [tag.trim(), heading.trim(), description.trim(), JSON.stringify(extension_categories), image_url || null]
       );
     } else {
       // Update existing about us record
       [result] = await db.query(
-        'UPDATE about_us SET heading = ?, description = ?, extension_categories = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [heading.trim(), description.trim(), JSON.stringify(extension_categories), existingRows[0].id]
+        'UPDATE about_us SET tag = ?, heading = ?, description = ?, extension_categories = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [tag.trim(), heading.trim(), description.trim(), JSON.stringify(extension_categories), image_url || null, existingRows[0].id]
       );
     }
 
@@ -328,6 +337,138 @@ export const deleteExtensionCategory = async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Failed to delete extension category' 
+    });
+  }
+};
+
+// Upload about us image
+export const uploadAboutUsImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No image file uploaded' 
+      });
+    }
+
+    console.log('Starting about us image upload:', { 
+      fileName: req.file.originalname, 
+      fileSize: req.file.size, 
+      fileType: req.file.mimetype 
+    });
+
+    // Upload to Cloudinary
+    const uploadResult = await uploadSingleToCloudinary(
+      req.file, 
+      'faith-community/about-us',
+      { prefix: 'about_us_' }
+    );
+
+    console.log('About us image upload successful:', uploadResult);
+
+    // Get current about us data
+    const [existingRows] = await db.query('SELECT * FROM about_us ORDER BY id DESC LIMIT 1');
+    
+    if (existingRows.length === 0) {
+      // Create new about us record with image
+      await db.query(
+        'INSERT INTO about_us (image_url) VALUES (?)',
+        [uploadResult.url]
+      );
+    } else {
+      // Update existing about us record with new image
+      await db.query(
+        'UPDATE about_us SET image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [uploadResult.url, existingRows[0].id]
+      );
+    }
+
+    // Fetch updated about us data
+    const [updatedRows] = await db.query('SELECT * FROM about_us ORDER BY id DESC LIMIT 1');
+    
+    // Parse JSON fields
+    const aboutUsData = {
+      ...updatedRows[0],
+      extension_categories: updatedRows[0].extension_categories ? JSON.parse(updatedRows[0].extension_categories) : []
+    };
+
+    res.json({
+      success: true,
+      message: 'About us image uploaded successfully',
+      data: aboutUsData,
+      imageUrl: uploadResult.url,
+      cloudinary_info: {
+        public_id: uploadResult.public_id,
+        format: uploadResult.format,
+        width: uploadResult.width,
+        height: uploadResult.height,
+        size: uploadResult.size
+      }
+    });
+  } catch (error) {
+    console.error('Error uploading about us image:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to upload about us image: ' + error.message 
+    });
+  }
+};
+
+// Delete about us image
+export const deleteAboutUsImage = async (req, res) => {
+  try {
+    // Get current about us data
+    const [existingRows] = await db.query('SELECT * FROM about_us ORDER BY id DESC LIMIT 1');
+    
+    if (existingRows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'About us content not found' 
+      });
+    }
+
+    if (!existingRows[0].image_url) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'No image to delete' 
+      });
+    }
+
+    // Delete from Cloudinary if image exists
+    const publicId = extractPublicIdFromUrl(existingRows[0].image_url);
+    if (publicId) {
+      try {
+        await deleteFromCloudinary(publicId);
+      } catch (deleteError) {
+        console.warn('Failed to delete image from Cloudinary:', deleteError.message);
+      }
+    }
+
+    // Update database - set image_url to NULL
+    await db.query(
+      'UPDATE about_us SET image_url = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [existingRows[0].id]
+    );
+
+    // Fetch updated about us data
+    const [updatedRows] = await db.query('SELECT * FROM about_us ORDER BY id DESC LIMIT 1');
+    
+    // Parse JSON fields
+    const aboutUsData = {
+      ...updatedRows[0],
+      extension_categories: updatedRows[0].extension_categories ? JSON.parse(updatedRows[0].extension_categories) : []
+    };
+
+    res.json({
+      success: true,
+      message: 'About us image deleted successfully',
+      data: aboutUsData
+    });
+  } catch (error) {
+    console.error('Error deleting about us image:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to delete about us image: ' + error.message 
     });
   }
 };

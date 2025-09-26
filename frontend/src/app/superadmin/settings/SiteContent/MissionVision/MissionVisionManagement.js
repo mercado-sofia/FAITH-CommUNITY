@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiTarget, FiEye } from 'react-icons/fi';
+import { FiTarget, FiEye, FiEdit3 } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
+import { SkeletonLoader } from '../../../components';
 import styles from './MissionVisionManagement.module.css';
 
 export default function MissionVisionManagement({ showSuccessModal }) {
   const [missionVisionData, setMissionVisionData] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   
@@ -21,7 +21,6 @@ export default function MissionVisionManagement({ showSuccessModal }) {
   useEffect(() => {
     const loadMissionVisionData = async () => {
       try {
-        setLoading(true);
         const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/mission-vision`,
@@ -46,7 +45,6 @@ export default function MissionVisionManagement({ showSuccessModal }) {
         console.error('Error loading mission and vision data:', error);
         showAuthError('Failed to load mission and vision data. Please try again.');
       } finally {
-        setLoading(false);
       }
     };
 
@@ -152,24 +150,6 @@ export default function MissionVisionManagement({ showSuccessModal }) {
     }
   };
 
-  if (loading) {
-    return (
-      <div className={styles.settingsPanel}>
-        <div className={styles.panelHeader}>
-          <div className={styles.panelTitle}>
-            <h2>Mission & Vision</h2>
-            <p>Manage your organization&apos;s mission and vision statements</p>
-          </div>
-        </div>
-        <div className={styles.panelContent}>
-          <div className={styles.loadingContainer}>
-            <div className={styles.spinner}></div>
-            <p>Loading mission and vision data...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className={styles.settingsPanel}>
@@ -184,6 +164,7 @@ export default function MissionVisionManagement({ showSuccessModal }) {
               className={styles.editToggleBtn}
               onClick={handleEditToggle}
             >
+              <FiEdit3 size={16} />
               Edit
             </button>
           ) : (

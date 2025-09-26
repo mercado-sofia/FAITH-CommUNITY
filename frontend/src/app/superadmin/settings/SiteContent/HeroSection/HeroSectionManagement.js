@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { FaUpload, FaPlay, FaEdit } from 'react-icons/fa';
-import { FiTrash2 } from 'react-icons/fi';
+import { FiTrash2, FiEdit3 } from 'react-icons/fi';
 import Image from 'next/image';
 import styles from './HeroSectionManagement.module.css';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import ConfirmationModal from '../../../components/ConfirmationModal';
+import { SkeletonLoader } from '../../../components';
+import { useScrollPosition } from '@/hooks/useScrollPosition';
 
 export default function HeroSectionManagement({ showSuccessModal }) {
+  const { preserveScrollPositionAsync } = useScrollPosition();
   const [heroData, setHeroData] = useState({
     tag: 'Welcome to FAITH CommUNITY',
     heading: 'A Unified Platform for Community Extension Programs',
@@ -21,7 +24,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
       { id: 3, url: null, heading: 'Innovation', subheading: 'Building the Future' }
     ]
   });
-  const [heroLoading, setHeroLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteType, setDeleteType] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -36,12 +38,21 @@ export default function HeroSectionManagement({ showSuccessModal }) {
   const [isEditingVideo, setIsEditingVideo] = useState(false);
   const [isEditingImages, setIsEditingImages] = useState({});
   const [editingImage, setEditingImage] = useState(null);
+  
+  // Main edit state and temp data for batch save
+  const [isEditingHero, setIsEditingHero] = useState(false);
+  const [tempHeroData, setTempHeroData] = useState({});
+  const [showHeroModal, setShowHeroModal] = useState(false);
+  const [isUpdatingHero, setIsUpdatingHero] = useState(false);
+  
+  // File selection states for batch upload
+  const [selectedVideoFile, setSelectedVideoFile] = useState(null);
+  const [selectedImageFiles, setSelectedImageFiles] = useState({});
 
   // Load hero data
   useEffect(() => {
     const loadHeroData = async () => {
       try {
-        setHeroLoading(true);
         const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/hero-section`,
@@ -59,7 +70,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         console.error('Error loading hero data:', error);
         showAuthError('Failed to load hero section data. Please try again.');
       } finally {
-        setHeroLoading(false);
       }
     };
 
@@ -365,14 +375,116 @@ export default function HeroSectionManagement({ showSuccessModal }) {
     setDeleteType(null);
   };
 
-  if (heroLoading) {
-    return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.spinner}></div>
-        <p>Loading hero section settings...</p>
-      </div>
-    );
-  }
+  // Main edit toggle for Hero Section
+  const handleEditToggle = () => {
+    if (!isEditingHero) {
+      setTempHeroData({
+        tag: heroData.tag,
+        heading: heroData.heading,
+        video_url: heroData.video_url,
+        video_link: heroData.video_link,
+        video_type: heroData.video_type,
+        images: [...heroData.images]
+      });
+    }
+    setIsEditingHero(!isEditingHero);
+  };
+
+  // Cancel edit
+  const handleCancelEdit = () => {
+    setIsEditingHero(false);
+    setTempHeroData({});
+    setSelectedVideoFile(null);
+    setSelectedImageFiles({});
+  };
+
+  // Hero update handler
+  const handleHeroUpdate = () => {
+    if (!tempHeroData.tag?.trim()) {
+      showSuccessModal('Tag cannot be empty');
+      return;
+    }
+    if (!tempHeroData.heading?.trim()) {
+      showSuccessModal('Heading cannot be empty');
+      return;
+    }
+    setShowHeroModal(true);
+  };
+
+  // Confirm hero update with batch file uploads
+  const handleHeroConfirm = async () => {
+    await preserveScrollPositionAsync(async () => {
+      try {
+        setIsUpdatingHero(true);
+        
+        let finalHeroData = { ...tempHeroData };
+        
+        // Upload video if selected
+        if (selectedVideoFile) {
+          try {
+            const videoUrl = await handleFileUpload(selectedVideoFile, 'video');
+            finalHeroData.video_url = videoUrl;
+            finalHeroData.video_link = null;
+            finalHeroData.video_type = 'upload';
+            setSelectedVideoFile(null);
+          } catch (error) {
+            showSuccessModal('Failed to upload video. Please try again.');
+            return;
+          }
+        }
+        
+        // Upload images if selected
+        for (const [imageId, file] of Object.entries(selectedImageFiles)) {
+          try {
+            const imageUrl = await handleFileUpload(file, 'image', parseInt(imageId));
+            finalHeroData.images = finalHeroData.images.map(img => 
+              img.id === parseInt(imageId) ? { ...img, url: imageUrl } : img
+            );
+          } catch (error) {
+            showSuccessModal(`Failed to upload image ${imageId}. Please try again.`);
+            return;
+          }
+        }
+        setSelectedImageFiles({});
+        
+        // Save all hero data
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const response = await makeAuthenticatedRequest(
+          `${baseUrl}/api/superadmin/hero-section`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(finalHeroData),
+          },
+          'superadmin'
+        );
+
+        if (response && response.ok) {
+          const data = await response.json();
+          setHeroData(data.data);
+          setIsEditingHero(false);
+          showSuccessModal('Hero section updated successfully! The changes will be visible on the public site immediately.');
+        } else {
+          const errorData = await response.json();
+          showSuccessModal(errorData.message || 'Failed to update hero section');
+        }
+      } catch (error) {
+        console.error('Error updating hero section:', error);
+        showSuccessModal('Failed to update hero section. Please try again.');
+      } finally {
+        setIsUpdatingHero(false);
+        setShowHeroModal(false);
+      }
+    });
+  };
+
+  // Cancel hero update
+  const handleHeroCancel = () => {
+    setShowHeroModal(false);
+  };
+
 
   return (
     <div className={styles.settingsPanel}>
@@ -381,6 +493,23 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           <h2>Hero Section</h2>
           <p>Manage the main hero section content, including tag, heading, video, and banner images</p>
         </div>
+        <div className={styles.panelActions}>
+          {isEditingHero ? (
+            <div className={styles.headerActions}>
+              <button className={styles.cancelBtn} onClick={handleCancelEdit}>
+                Cancel
+              </button>
+              <button className={styles.saveBtn} onClick={handleHeroUpdate}>
+                Save Changes
+              </button>
+            </div>
+          ) : (
+            <button className={styles.editToggleBtn} onClick={handleEditToggle}>
+              <FiEdit3 size={16} />
+              Edit
+            </button>
+          )}
+        </div>
       </div>
 
       <div className={styles.panelContent}>
@@ -388,28 +517,9 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         <div className={styles.textContentSection}>
           <div className={styles.sectionHeader}>
             <h3>Text Content</h3>
-            {isEditingText ? (
-              <div className={styles.headerActions}>
-                <button className={styles.cancelBtn} onClick={cancelTextEdit}>
-                  Cancel
-                </button>
-                <button className={styles.saveBtn} onClick={async () => {
-                  // Save both tag and heading
-                  await handleTextUpdate('tag', heroData.tag);
-                  await handleTextUpdate('heading', heroData.heading);
-                  setIsEditingText(false);
-                }}>
-                  Save
-                </button>
-              </div>
-            ) : (
-              <button className={styles.editBtn} onClick={toggleTextEdit}>
-                <FaEdit /> Edit
-              </button>
-            )}
           </div>
           
-          {isEditingText ? (
+          {isEditingHero ? (
             <>
               {/* Tag */}
               <div className={styles.inputGroup}>
@@ -417,8 +527,8 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                 <input
                   type="text"
                   className={styles.textInput}
-                  value={heroData.tag}
-                  onChange={(e) => setHeroData(prev => ({ ...prev, tag: e.target.value }))}
+                  value={tempHeroData.tag || ''}
+                  onChange={(e) => setTempHeroData(prev => ({ ...prev, tag: e.target.value }))}
                   placeholder="Enter tag text..."
                 />
               </div>
@@ -429,8 +539,8 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                 <textarea
                   className={styles.textInput}
                   rows={3}
-                  value={heroData.heading}
-                  onChange={(e) => setHeroData(prev => ({ ...prev, heading: e.target.value }))}
+                  value={tempHeroData.heading || ''}
+                  onChange={(e) => setTempHeroData(prev => ({ ...prev, heading: e.target.value }))}
                   placeholder="Enter main heading..."
                 />
               </div>
@@ -453,32 +563,12 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         <div className={styles.mediaSection}>
           <div className={styles.sectionHeader}>
             <h3>Video Content</h3>
-            {isEditingVideo ? (
-              <div className={styles.headerActions}>
-                <button className={styles.cancelBtn} onClick={cancelVideoEdit}>
-                  Cancel
-                </button>
-                <button className={styles.saveBtn} onClick={async () => {
-                  // Save video link if it exists
-                  if (heroData.video_link) {
-                    await handleVideoLinkUpdate(heroData.video_link, 'link');
-                  }
-                  setIsEditingVideo(false);
-                }}>
-                  Save
-                </button>
-              </div>
-            ) : (
-              <button className={styles.editBtn} onClick={toggleVideoEdit}>
-                <FaEdit /> Edit
-              </button>
-            )}
           </div>
           {/* Video Preview - Always Visible */}
           <div className={styles.mediaItem}>
             <div className={styles.itemHeader}>
               <span className={styles.itemLabel}>Hero Video</span>
-              {(heroData.video_url || heroData.video_link) && (
+              {isEditingHero && (heroData.video_url || heroData.video_link) && (
                 <button 
                   className={styles.removeBtn}
                   onClick={() => handleFileDelete('video')}
@@ -514,7 +604,7 @@ export default function HeroSectionManagement({ showSuccessModal }) {
             )}
           </div>
 
-          {isEditingVideo ? (
+          {isEditingHero ? (
             <div className={styles.mediaItem}>
               {/* Video Link Input */}
               <div className={styles.inputGroup}>
@@ -522,8 +612,8 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                 <input
                   type="url"
                   className={styles.textInput}
-                  value={heroData.video_link || ''}
-                  onChange={(e) => setHeroData(prev => ({ ...prev, video_link: e.target.value }))}
+                  value={tempHeroData.video_link || ''}
+                  onChange={(e) => setTempHeroData(prev => ({ ...prev, video_link: e.target.value }))}
                   placeholder="https://www.youtube.com/watch?v=..."
                 />
               </div>
@@ -533,30 +623,44 @@ export default function HeroSectionManagement({ showSuccessModal }) {
               </div>
               
               {/* Video Upload */}
+              {!selectedVideoFile ? (
+                <div className={styles.fileInputContainer}>
               <input
                 type="file"
                 id="video-upload"
                 accept="video/*"
-                disabled={isUploadingVideo}
                 onChange={(e) => {
                   if (e.target.files[0]) {
-                    handleFileUpload(e.target.files[0], 'video');
+                        setSelectedVideoFile(e.target.files[0]);
                   }
                 }}
                 style={{ display: 'none' }}
               />
-              <label htmlFor="video-upload" className={`${styles.uploadBtn} ${isUploadingVideo ? styles.uploadBtnDisabled : ''}`}>
-                {isUploadingVideo ? (
-                  <>
-                    <div className={styles.spinner}></div>
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <FaUpload /> Upload Video File
-                  </>
-                )}
+                  <label htmlFor="video-upload" className={styles.uploadBtn}>
+                    <FaUpload /> Choose Video File
               </label>
+                </div>
+              ) : (
+                <div className={styles.uploadActions}>
+                  <div className={styles.selectedFileInfo}>
+                    <span className={styles.fileName}>{selectedVideoFile.name}</span>
+                    <span className={styles.fileSize}>
+                      {(selectedVideoFile.size / 1024 / 1024).toFixed(2)} MB
+                    </span>
+                    <span className={styles.uploadNote}>
+                      Video will be uploaded when you save changes
+                    </span>
+                  </div>
+                  <div className={styles.uploadButtons}>
+                    <button
+                      onClick={() => setSelectedVideoFile(null)}
+                      className={styles.cancelBtn}
+                    >
+                      Remove Selection
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className={styles.readOnlyContent}>
@@ -585,26 +689,7 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                 <div className={styles.itemHeader}>
                   <span className={styles.itemLabel}>Image {index + 1}</span>
                   <div className={styles.itemActions}>
-                    {isEditingImages[image.id] ? (
-                      <div className={styles.headerActions}>
-                        <button className={styles.cancelBtn} onClick={() => cancelImageEdit(image.id)}>
-                          Cancel
-                        </button>
-                        <button className={styles.saveBtn} onClick={async () => {
-                          // Save both heading and subheading
-                          await handleImageTextUpdate(image.id, 'heading', image.heading);
-                          await handleImageTextUpdate(image.id, 'subheading', image.subheading);
-                          setIsEditingImages(prev => ({ ...prev, [image.id]: false }));
-                        }}>
-                          Save
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <button className={styles.editBtn} onClick={() => toggleImageEdit(image.id)}>
-                          <FaEdit /> Edit
-                        </button>
-                        {image.url && (
+                    {isEditingHero && image.url && (
                           <button 
                             className={styles.removeBtn}
                             onClick={() => handleFileDelete('image', image.id)}
@@ -612,19 +697,29 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                           >
                             <FiTrash2 color="#dc2626" />
                           </button>
-                        )}
-                      </>
                     )}
                   </div>
                 </div>
                 
-                {isEditingImages[image.id] ? (
+                {isEditingHero ? (
                   <>
+                    {/* Image Preview */}
                     {image.url ? (
                       <div className={styles.preview}>
                         <Image 
                           src={image.url} 
                           alt={`Banner image ${index + 1}`} 
+                          width={200}
+                          height={150}
+                          unoptimized
+                          style={{ maxWidth: '100%', height: 'auto', objectFit: 'cover' }}
+                        />
+                      </div>
+                    ) : selectedImageFiles[image.id] ? (
+                      <div className={styles.preview}>
+                        <Image 
+                          src={URL.createObjectURL(selectedImageFiles[image.id])} 
+                          alt={`Banner image ${index + 1} preview`} 
                           width={200}
                           height={150}
                           unoptimized
@@ -642,11 +737,11 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                         <input
                           type="text"
                           className={styles.textInput}
-                          value={image.heading}
+                          value={tempHeroData.images?.[index]?.heading || ''}
                           onChange={(e) => {
-                            const newImages = [...heroData.images];
+                            const newImages = [...tempHeroData.images];
                             newImages[index].heading = e.target.value;
-                            setHeroData(prev => ({ ...prev, images: newImages }));
+                            setTempHeroData(prev => ({ ...prev, images: newImages }));
                           }}
                           placeholder="Enter image heading..."
                         />
@@ -657,41 +752,60 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                         <input
                           type="text"
                           className={styles.textInput}
-                          value={image.subheading}
+                          value={tempHeroData.images?.[index]?.subheading || ''}
                           onChange={(e) => {
-                            const newImages = [...heroData.images];
+                            const newImages = [...tempHeroData.images];
                             newImages[index].subheading = e.target.value;
-                            setHeroData(prev => ({ ...prev, images: newImages }));
+                            setTempHeroData(prev => ({ ...prev, images: newImages }));
                           }}
                           placeholder="Enter image subheading..."
                         />
                       </div>
                     </div>
                     
+                    {/* Image Upload */}
+                    {!selectedImageFiles[image.id] ? (
+                      <div className={styles.fileInputContainer}>
                     <input
                       type="file"
                       id={`image-upload-${image.id}`}
                       accept="image/*"
-                      disabled={isUploadingImages[image.id]}
                       onChange={(e) => {
                         if (e.target.files[0]) {
-                          handleFileUpload(e.target.files[0], 'image', image.id);
+                              setSelectedImageFiles(prev => ({ ...prev, [image.id]: e.target.files[0] }));
                         }
                       }}
                       style={{ display: 'none' }}
                     />
-                    <label htmlFor={`image-upload-${image.id}`} className={`${styles.uploadBtn} ${isUploadingImages[image.id] ? styles.uploadBtnDisabled : ''}`}>
-                      {isUploadingImages[image.id] ? (
-                        <>
-                          <div className={styles.spinner}></div>
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <FaUpload /> Upload Image
-                        </>
-                      )}
-                    </label>
+                        <label htmlFor={`image-upload-${image.id}`} className={styles.uploadBtn}>
+                          <FaUpload /> Choose Image
+                        </label>
+                      </div>
+                    ) : (
+                      <div className={styles.uploadActions}>
+                        <div className={styles.selectedFileInfo}>
+                          <span className={styles.fileName}>{selectedImageFiles[image.id].name}</span>
+                          <span className={styles.fileSize}>
+                            {(selectedImageFiles[image.id].size / 1024 / 1024).toFixed(2)} MB
+                          </span>
+                          <span className={styles.uploadNote}>
+                            Image will be uploaded when you save changes
+                          </span>
+                        </div>
+                        <div className={styles.uploadButtons}>
+                          <button
+                            onClick={() => setSelectedImageFiles(prev => {
+                              const newFiles = { ...prev };
+                              delete newFiles[image.id];
+                              return newFiles;
+                            })}
+                            className={styles.cancelBtn}
+                          >
+                            Remove Selection
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className={styles.readOnlyContent}>
@@ -734,6 +848,16 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
         isDeleting={isDeleting}
+      />
+      
+      <ConfirmationModal
+        isOpen={showHeroModal}
+        itemName="Hero Section"
+        itemType="all changes"
+        actionType="save"
+        onConfirm={handleHeroConfirm}
+        onCancel={handleHeroCancel}
+        isDeleting={isUpdatingHero}
       />
     </div>
   );

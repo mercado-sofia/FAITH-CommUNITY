@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { FaCircleCheck } from "react-icons/fa6";
 import { FiX } from 'react-icons/fi';
 import styles from './styles/SuccessModal.module.css';
@@ -10,6 +10,8 @@ export default function SuccessModal({
   type = 'success',
   autoHideDuration = 0 
 }) {
+  const scrollPositionRef = useRef(0);
+
   useEffect(() => {
     if (isVisible && autoHideDuration > 0) {
       const timer = setTimeout(() => {
@@ -19,6 +21,43 @@ export default function SuccessModal({
       return () => clearTimeout(timer);
     }
   }, [isVisible, autoHideDuration, onClose]);
+
+  // Preserve scroll position when modal opens/closes
+  useEffect(() => {
+    if (isVisible) {
+      // Save current scroll position when modal opens
+      scrollPositionRef.current = window.scrollY;
+      
+      // Lock body scroll
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollPositionRef.current}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Restore body scroll when modal closes
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+      
+      // Restore scroll position
+      window.scrollTo(0, scrollPositionRef.current);
+    }
+
+    // Cleanup function
+    return () => {
+      if (isVisible) {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollPositionRef.current);
+      }
+    };
+  }, [isVisible]);
 
   if (!isVisible) return null;
 

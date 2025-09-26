@@ -450,6 +450,7 @@ export const usePublicAboutUs = () => {
     tag: data?.tag || 'About Us FAITH CommUNITY',
     heading: data?.heading || 'We Believe That We Can Help More People With You',
     description: data?.description || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.',
+    image_url: data?.image_url || '/sample/sample1.jpg',
     extension_categories: data?.extension_categories || [
       { name: 'Extension For Education', icon: 'education', color: 'green' },
       { name: 'Extension For Medical', icon: 'medical', color: 'red' },

@@ -1,14 +1,34 @@
 import express from 'express';
+import multer from 'multer';
 import {
   getAboutUs,
   updateAboutUs,
   addExtensionCategory,
   updateExtensionCategory,
-  deleteExtensionCategory
+  deleteExtensionCategory,
+  uploadAboutUsImage,
+  deleteAboutUsImage
 } from '../controllers/aboutUsController.js';
 import { verifySuperadminToken } from '../controllers/superadminAuthController.js';
 
 const router = express.Router();
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Allow only image files
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
 
 // Test endpoint to verify routes are working
 router.get('/test', (req, res) => {
@@ -55,5 +75,17 @@ router.delete('/extension-categories/:categoryIndex', (req, res, next) => {
   console.log('DELETE /about-us/extension-categories/:categoryIndex route hit');
   next();
 }, deleteExtensionCategory);
+
+// Image upload route
+router.post('/upload-image', (req, res, next) => {
+  console.log('POST /about-us/upload-image route hit');
+  next();
+}, upload.single('image'), uploadAboutUsImage);
+
+// Image delete route
+router.delete('/image', (req, res, next) => {
+  console.log('DELETE /about-us/image route hit');
+  next();
+}, deleteAboutUsImage);
 
 export default router;

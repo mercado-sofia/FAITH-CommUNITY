@@ -634,3 +634,101 @@
     padding: 0.1rem 0.4rem;
   }
 }
+
+/* Upload Actions Styles */
+.uploadActions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+.selectedFileInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+}
+
+.fileName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.fileSize {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.uploadNote {
+  font-size: 11px;
+  color: #059669;
+  font-style: italic;
+  margin-top: 0.25rem;
+}
+
+.uploadButtons {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.cancelBtn {
+  padding: 0.5rem 1rem;
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancelBtn:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+.cancelBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fileInputContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+/* Edit Toggle Button */
+.editToggleBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-poppins), sans-serif;
+}
+
+.editToggleBtn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.editToggleBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

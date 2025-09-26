@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import { FiEdit3, FiXCircle, FiPlus, FiTrash2, FiUpload, FiSave, FiMenu } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import ConfirmationModal from '../../../components/ConfirmationModal';
+import { useScrollPosition } from '@/hooks/useScrollPosition';
 import styles from './HeadsOfFacesManagement.module.css';
 
 export default function HeadsOfFacesManagement({ showSuccessModal }) {
+  const { preserveScrollPositionAsync } = useScrollPosition();
   const [headsData, setHeadsData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -397,46 +399,48 @@ export default function HeadsOfFacesManagement({ showSuccessModal }) {
 
   // Confirm save changes
   const handleSaveConfirm = async () => {
-    try {
-      setIsUpdating(true);
-      
-      // Update display_order in backend
-      const reorderData = tempHeadsData.map((head, index) => ({
-        id: head.id,
-        display_order: index + 1
-      }));
+    await preserveScrollPositionAsync(async () => {
+      try {
+        setIsUpdating(true);
+        
+        // Update display_order in backend
+        const reorderData = tempHeadsData.map((head, index) => ({
+          id: head.id,
+          display_order: index + 1
+        }));
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const response = await makeAuthenticatedRequest(
-        `${baseUrl}/api/superadmin/heads-faces/reorder/order`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const response = await makeAuthenticatedRequest(
+          `${baseUrl}/api/superadmin/heads-faces/reorder/order`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ heads: reorderData })
           },
-          body: JSON.stringify({ heads: reorderData })
-        },
-        'superadmin'
-      );
+          'superadmin'
+        );
 
-      if (response && response.ok) {
-        // Update the actual data with temp data
-        setHeadsData([...tempHeadsData]);
-        
-        // Exit edit mode
-        setIsEditing(false);
-        setShowSaveConfirmationModal(false);
-        
-        showSuccessModal('Heads of FACES updated successfully!');
-      } else {
-        showAuthError('Failed to save changes');
+        if (response && response.ok) {
+          // Update the actual data with temp data
+          setHeadsData([...tempHeadsData]);
+          
+          // Exit edit mode
+          setIsEditing(false);
+          setShowSaveConfirmationModal(false);
+          
+          showSuccessModal('Heads of FACES updated successfully!');
+        } else {
+          showAuthError('Failed to save changes');
+        }
+      } catch (error) {
+        console.error('Error saving changes:', error);
+        showAuthError('Failed to save changes. Please try again.');
+      } finally {
+        setIsUpdating(false);
       }
-    } catch (error) {
-      console.error('Error saving changes:', error);
-      showAuthError('Failed to save changes. Please try again.');
-    } finally {
-      setIsUpdating(false);
-    }
+    });
   };
 
   // Cancel save changes

@@ -1,5 +1,5 @@
 //db table: users, user_notifications
-import bcrypt from 'bcrypt';
+import * as bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { getOrganizationLogoUrl } from '../../utils/imageUrlUtils.js';
 import {
@@ -206,8 +206,8 @@ export const loginUser = async (req, res) => {
     const { email, password } = req.body;
     const ipAddress = req.ip || req.connection.remoteAddress;
 
-    // Check failed login attempts
-    const failedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress);
+    // Check failed login attempts for user type only
+    const failedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'user');
     
     // Block for 5 minutes after 5 failed attempts
     if (failedAttempts >= 5) {
@@ -224,7 +224,7 @@ export const loginUser = async (req, res) => {
     );
 
     if (users.length === 0) {
-      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress);
+      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'user');
       await SecurityMonitoring.logSecurityEvent('failed_login', 'warn', { email, reason: 'user_not_found' }, req);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
@@ -234,7 +234,7 @@ export const loginUser = async (req, res) => {
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
-      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress);
+      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'user');
       await SecurityMonitoring.logSecurityEvent('failed_login', 'warn', { email, reason: 'invalid_password' }, req);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
@@ -255,7 +255,7 @@ export const loginUser = async (req, res) => {
     })
 
     // Clear failed login attempts on successful login
-    await LoginAttemptTracker.clearFailedAttempts(email, ipAddress);
+    await LoginAttemptTracker.clearFailedAttempts(email, ipAddress, 'user');
     
     // Log successful login
     await SecurityMonitoring.logSecurityEvent('successful_login', 'info', { email, userId: user.id }, req);
@@ -748,20 +748,8 @@ export const changePassword = async (req, res) => {
     const userId = req.user.id;
     const { currentPassword, newPassword } = req.body;
 
-    // Get current password hash and user details
-    const [users] = await db.query(
-      'SELECT password_hash, email, first_name, last_name FROM users WHERE id = ?',
-      [userId]
-    );
-
-    if (users.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, users[0].password_hash);
-    if (!isCurrentPasswordValid) {
-      return res.status(400).json({ error: 'Current password is incorrect' });
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current and new password are required' });
     }
 
     // Enhanced password complexity validation
@@ -773,6 +761,22 @@ export const changePassword = async (req, res) => {
       return res.status(400).json({ 
         error: 'Password must contain at least one uppercase letter, one lowercase letter, and one number' 
       });
+    }
+
+    // Get current password hash and user details
+    const [users] = await db.query(
+      'SELECT password_hash, email, first_name, last_name FROM users WHERE id = ? AND is_active = 1',
+      [userId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found or inactive' });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, users[0].password_hash);
+    if (!isCurrentPasswordValid) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
     }
 
     // Hash new password
@@ -1121,7 +1125,10 @@ export const verifyToken = async (req, res, next) => {
       return res.status(401).json({ error: 'Access token required' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'change-me-in-env', {
+      issuer: process.env.JWT_ISS || 'faith-community-api',
+      audience: process.env.JWT_AUD || 'faith-community-client'
+    });
     req.user = decoded;
     next();
 

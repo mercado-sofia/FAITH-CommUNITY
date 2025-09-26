@@ -38,7 +38,7 @@ export default function AboutMore() {
         </div>
 
         <div className={styles.aboutMoreContent}>
-          <h4 className={styles.aboutMoreSubtitle}>{aboutUsData?.tag || 'About Us FAITH CommUNITY'}</h4>
+          <h4 className={styles.aboutMoreSubtitle}>About Us{siteNameData?.site_name ? ` ${siteNameData.site_name}` : ''}</h4>
           <h2 className={styles.aboutMoreTitle}>
             {aboutUsData?.heading || 'We Believe That We Can Help More People With You'}
           </h2>

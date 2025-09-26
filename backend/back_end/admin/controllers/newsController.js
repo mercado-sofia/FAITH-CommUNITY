@@ -61,8 +61,8 @@ export const createNews = async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community",
-      audience: process.env.JWT_AUD || "admin",
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
     });
     req.admin = decoded;
   } catch (err) {
@@ -185,8 +185,8 @@ export const getNewsByOrg = async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community",
-      audience: process.env.JWT_AUD || "admin",
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
     });
     req.admin = decoded;
     // Token verified for admin
@@ -503,8 +503,8 @@ export const deleteNewsSubmission = async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community",
-      audience: process.env.JWT_AUD || "admin",
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
     });
     req.admin = decoded;
   } catch (err) {
@@ -545,8 +545,8 @@ export const getRecentlyDeletedNews = async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community",
-      audience: process.env.JWT_AUD || "admin",
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
     });
     req.admin = decoded;
   } catch (err) {
@@ -639,8 +639,8 @@ export const restoreNews = async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community",
-      audience: process.env.JWT_AUD || "admin",
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
     });
     req.admin = decoded;
   } catch (err) {
@@ -680,8 +680,8 @@ export const permanentlyDeleteNews = async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community",
-      audience: process.env.JWT_AUD || "admin",
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
     });
     req.admin = decoded;
   } catch (err) {
@@ -728,7 +728,6 @@ export const updateNews = async (req, res) => {
         if (oldPublicId) {
           try {
             await deleteFromCloudinary(oldPublicId);
-            console.log('Old featured image deleted from Cloudinary:', oldPublicId);
           } catch (deleteError) {
             console.warn('Failed to delete old featured image from Cloudinary:', deleteError.message);
           }
@@ -761,8 +760,8 @@ export const updateNews = async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community",
-      audience: process.env.JWT_AUD || "admin",
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
     });
     req.admin = decoded;
   } catch (err) {

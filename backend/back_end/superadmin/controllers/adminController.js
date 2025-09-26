@@ -1,6 +1,6 @@
 // db table: admins
 import db from "../../database.js"
-import bcrypt from "bcrypt"
+import * as bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import { authenticator } from "otplib"
 import { logAdminAction } from "../../utils/audit.js"
@@ -20,8 +20,8 @@ export const loginAdmin = async (req, res) => {
   }
 
   try {
-    // Check failed login attempts
-    const failedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress);
+    // Check failed login attempts for admin type only
+    const failedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'admin');
     
     // Block for 5 minutes after 5 failed attempts
     if (failedAttempts >= 5) {
@@ -40,7 +40,7 @@ export const loginAdmin = async (req, res) => {
     )
 
     if (adminRows.length === 0) {
-      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress);
+      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'admin');
       return res.status(401).json({ error: "Invalid credentials or account inactive" })
     }
 
@@ -48,7 +48,7 @@ export const loginAdmin = async (req, res) => {
     const isPasswordValid = await bcrypt.compare(password, admin.password)
 
     if (!isPasswordValid) {
-      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress);
+      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'admin');
       return res.status(401).json({ error: "Invalid credentials" })
     }
 
@@ -68,8 +68,8 @@ export const loginAdmin = async (req, res) => {
       JWT_SECRET,
       { 
         expiresIn: "30m",
-        issuer: process.env.JWT_ISS || "faith-community",
-        audience: process.env.JWT_AUD || "admin"
+        issuer: process.env.JWT_ISS || "faith-community-api",
+        audience: process.env.JWT_AUD || "faith-community-client"
       },
     )
 
@@ -82,7 +82,7 @@ export const loginAdmin = async (req, res) => {
     )
 
     // Clear failed login attempts on successful login
-    await LoginAttemptTracker.clearFailedAttempts(email, ipAddress);
+    await LoginAttemptTracker.clearFailedAttempts(email, ipAddress, 'admin');
     
     await logAdminAction(admin.id, 'login', 'Admin logged in', req)
     res.json({
@@ -116,8 +116,8 @@ export const verifyAdminToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
-      issuer: process.env.JWT_ISS || "faith-community",
-      audience: process.env.JWT_AUD || "admin",
+      issuer: process.env.JWT_ISS || "faith-community-api",
+      audience: process.env.JWT_AUD || "faith-community-client",
     })
     req.admin = decoded
     next()
@@ -135,7 +135,7 @@ export const verifyAdminToken = (req, res, next) => {
 export const getAllAdmins = async (req, res) => {
   try {
     const [rows] = await db.execute(
-      `SELECT a.id, a.email, a.role, a.is_active, a.organization_id, a.created_at,
+      `SELECT a.id, a.email, a.role, a.is_active, a.organization_id, a.created_at, a.password_changed_at,
               o.org, o.orgName, o.logo
        FROM admins a
        LEFT JOIN organizations o ON a.organization_id = o.id
@@ -157,7 +157,7 @@ export const getAdminById = async (req, res) => {
 
   try {
     const [rows] = await db.execute(
-      `SELECT a.id, a.email, a.role, a.is_active, a.organization_id, a.created_at,
+      `SELECT a.id, a.email, a.role, a.is_active, a.organization_id, a.created_at, a.password_changed_at,
               o.org, o.orgName, o.logo
        FROM admins a
        LEFT JOIN organizations o ON a.organization_id = o.id

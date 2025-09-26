@@ -116,7 +116,6 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
             height={220}
             style={{ objectFit: 'cover' }}
             onError={(e) => {
-              console.error('Image failed to load:', e.target.src);
               e.target.style.display = 'none';
               e.target.nextSibling.style.display = 'flex';
             }}

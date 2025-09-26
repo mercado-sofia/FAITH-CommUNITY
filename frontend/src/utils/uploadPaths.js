@@ -12,29 +12,22 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:808
  */
 export const getImageUrl = (imagePath, type = 'programs', subType = 'main') => {
   try {
-    logger.debug('getImageUrl called', { imagePath, type, subType });
-    
     if (!imagePath) {
-      logger.debug('Empty imagePath, returning fallback');
       return '/default-profile.png';
     }
     
     // If it's already a full URL or base64, return as is
     if (imagePath.startsWith('http') || imagePath.startsWith('data:')) {
-      logger.debug('Full URL or base64 detected, returning as is');
       return imagePath;
     }
     
     // If it's a Cloudinary public_id, construct the URL
     if (imagePath.includes('faith-community/')) {
       const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'your-cloud-name';
-      const result = `https://res.cloudinary.com/${cloudName}/image/upload/${imagePath}`;
-      logger.debug('Cloudinary URL result', { result });
-      return result;
+      return `https://res.cloudinary.com/${cloudName}/image/upload/${imagePath}`;
     }
     
     // If it's not a Cloudinary URL, return fallback
-    logger.warn('Invalid image path detected, using fallback:', imagePath);
     return '/default-profile.png';
   } catch (error) {
     logger.error('Error in getImageUrl', error, { imagePath, type, subType });
@@ -50,17 +43,12 @@ export const getImageUrl = (imagePath, type = 'programs', subType = 'main') => {
  */
 export const getProgramImageUrl = (imagePath, subType = 'main') => {
   try {
-    logger.debug('getProgramImageUrl called', { imagePath, subType });
-    
     // Handle null, undefined, or empty values
     if (!imagePath || imagePath === '' || imagePath === null || imagePath === undefined) {
-      logger.debug('Empty imagePath, returning fallback');
       return '/default-profile.png';
     }
     
-    const result = getImageUrl(imagePath, 'programs', subType === 'additional' ? 'additional-images' : 'main-images');
-    logger.debug('getProgramImageUrl result', { result });
-    return result;
+    return getImageUrl(imagePath, 'programs', subType === 'additional' ? 'additional-images' : 'main-images');
   } catch (error) {
     logger.error('Error in getProgramImageUrl', error, { imagePath, subType });
     return '/default-profile.png';
@@ -75,30 +63,23 @@ export const getProgramImageUrl = (imagePath, subType = 'main') => {
  */
 export const getOrganizationImageUrl = (imagePath, subType = 'logo') => {
   try {
-    logger.debug('getOrganizationImageUrl called', { imagePath, subType });
-    
     // Handle null, undefined, or empty values
     if (!imagePath || imagePath === '' || imagePath === null || imagePath === undefined) {
-      logger.debug('Empty imagePath, returning fallback');
       return subType === 'head' ? '/default-profile.png' : '/logo/faith_community_logo.png';
     }
     
     // If it's already a full URL or base64, return as is
     if (imagePath.startsWith('http') || imagePath.startsWith('data:')) {
-      logger.debug('Full URL or base64 detected, returning as is');
       return imagePath;
     }
     
     // If it's a Cloudinary public_id, construct the URL
     if (imagePath.includes('faith-community/')) {
       const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'your-cloud-name';
-      const result = `https://res.cloudinary.com/${cloudName}/image/upload/${imagePath}`;
-      logger.debug('Cloudinary URL result', { result });
-      return result;
+      return `https://res.cloudinary.com/${cloudName}/image/upload/${imagePath}`;
     }
     
     // If it's not a Cloudinary URL, return fallback
-    logger.warn('Invalid image path detected in getOrganizationImageUrl:', imagePath);
     return subType === 'head' ? '/default-profile.png' : '/logo/faith_community_logo.png';
   } catch (error) {
     logger.error('Error in getOrganizationImageUrl', error, { imagePath, subType });
@@ -122,29 +103,22 @@ export const getNewsImageUrl = (imagePath) => {
  */
 export const getProfilePhotoUrl = (imagePath) => {
   try {
-    logger.debug('getProfilePhotoUrl called', { imagePath });
-    
     if (!imagePath) {
-      logger.debug('Empty imagePath, returning fallback');
       return '/default-profile.png';
     }
     
     // If it's already a full URL or base64, return as is
     if (imagePath.startsWith('http') || imagePath.startsWith('data:')) {
-      logger.debug('Full URL or base64 detected, returning as is');
       return imagePath;
     }
     
     // If it's a Cloudinary public_id, construct the URL
     if (imagePath.includes('faith-community/')) {
       const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'your-cloud-name';
-      const result = `https://res.cloudinary.com/${cloudName}/image/upload/${imagePath}`;
-      logger.debug('Cloudinary URL result', { result });
-      return result;
+      return `https://res.cloudinary.com/${cloudName}/image/upload/${imagePath}`;
     }
     
     // If it's not a Cloudinary URL, return fallback
-    logger.warn('Invalid image path detected, using fallback:', imagePath);
     return '/default-profile.png';
   } catch (error) {
     logger.error('Error in getProfilePhotoUrl', error, { imagePath });

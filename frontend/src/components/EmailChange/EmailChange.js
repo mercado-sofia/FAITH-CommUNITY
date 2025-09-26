@@ -3,12 +3,11 @@
 import { useState, useEffect } from 'react';
 import { FaEye, FaEyeSlash, FaTimes, FaCheck, FaShieldAlt, FaClock, FaSpinner } from 'react-icons/fa';
 import { createPortal } from 'react-dom';
-import { useEmailChange } from './hooks/useEmailChange';
+import { useEmailChange } from '@/hooks/useEmailChange';
 import { useFormValidation } from '@/app/(public)/profile/hooks/useFormValidation';
 import { useToast } from '@/app/(public)/components/Toast';
 import LoadingSpinner from '@/components/Loader';
-import EmailChangeSuccessModal from './EmailChangeSuccessModal';
-import styles from './SecureEmailChange.module.css';
+import styles from './EmailChange.module.css';
 
 /**
  * Centralized Secure Email Change Component
@@ -26,7 +25,7 @@ import styles from './SecureEmailChange.module.css';
  * @param {function} props.setUserData - Set user data callback (public users)
  * @param {function} props.setShowModal - Set modal state callback (public users)
  */
-export default function SecureEmailChange({
+export default function EmailChange({
   isOpen,
   onClose,
   onSuccess,
@@ -171,18 +170,30 @@ export default function SecureEmailChange({
       
       // Handle server error by showing field-specific error
       let errorMessage = 'Failed to request email change';
+      let targetField = 'currentPassword'; // Default to password field
       
       if (error.message) {
-        if (error.message.toLowerCase().includes('password') && error.message.toLowerCase().includes('incorrect')) {
+        const lowerMessage = error.message.toLowerCase();
+        
+        if (lowerMessage.includes('password') && lowerMessage.includes('incorrect')) {
           errorMessage = 'Wrong password';
-        } else if (error.message.toLowerCase().includes('unauthorized')) {
+          targetField = 'currentPassword';
+        } else if (lowerMessage.includes('unauthorized')) {
           errorMessage = 'Wrong password';
+          targetField = 'currentPassword';
+        } else if (lowerMessage.includes('email') && (lowerMessage.includes('taken') || lowerMessage.includes('exists') || lowerMessage.includes('already'))) {
+          errorMessage = error.message;
+          targetField = 'newEmail';
+        } else if (lowerMessage.includes('email') && (lowerMessage.includes('invalid') || lowerMessage.includes('format'))) {
+          errorMessage = error.message;
+          targetField = 'newEmail';
         } else {
           errorMessage = error.message;
+          targetField = 'newEmail'; // Default email-related errors to email field
         }
       }
       
-      setFieldError('currentPassword', errorMessage);
+      setFieldError(targetField, errorMessage);
     }
   };
 
@@ -330,6 +341,7 @@ export default function SecureEmailChange({
             </div>
             <div className={styles.headerText}>
               <h2>Secure Email Change</h2>
+              <p>Update your email address securely with verification</p>
             </div>
           </div>
           <button 
@@ -356,66 +368,68 @@ export default function SecureEmailChange({
 
         {/* Step 1: Password Verification */}
         {currentStep === 1 && (
-          <form onSubmit={handleStep1Submit} className={styles.emailForm}>
-            <div className={styles.stepHeader}>
-              <h3>Step 1: Enter New Email & Verify Your Identity</h3>
-              <p>Enter your new email address and current password to continue</p>
-            </div>
-
-            <div className={styles.passwordField}>
-              <label>Current Email</label>
-              <input
-                type="email"
-                value={getCurrentEmail()}
-                readOnly
-                className={styles.currentEmailInput}
-              />
-            </div>
-
-            <div className={styles.passwordField}>
-              <label>New Email Address</label>
-              <input
-                type="email"
-                name="newEmail"
-                value={emailData.newEmail}
-                onChange={handleInputChange}
-                placeholder="Enter new email address"
-                className={`${styles.emailInput} ${fieldErrors.newEmail ? styles.error : ''}`}
-              />
-              {fieldErrors.newEmail && (
-                <div className={styles.fieldErrorMessage}>
-                  {fieldErrors.newEmail}
-                </div>
-              )}
-            </div>
-
-            <div className={styles.passwordField}>
-              <label>Current Password</label>
-              <div className={styles.passwordInputWrapper}>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="currentPassword"
-                  value={emailData.currentPassword}
-                  onChange={handleInputChange}
-                  placeholder="Enter current password"
-                  className={fieldErrors.currentPassword ? styles.error : ''}
-                />
-                <button
-                  type="button"
-                  className={styles.passwordToggle}
-                  onClick={togglePasswordVisibility}
-                  tabIndex={-1}
-                >
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
-                </button>
+          <>
+            <form onSubmit={handleStep1Submit} className={styles.emailForm}>
+              <div className={styles.stepHeader}>
+                <h3>Step 1: Enter New Email & Verify Your Identity</h3>
+                <p>Enter your new email address and current password to continue</p>
               </div>
-              {fieldErrors.currentPassword && (
-                <div className={styles.fieldErrorMessage}>
-                  {fieldErrors.currentPassword}
-                </div>
-              )}
-            </div>
 
+              <div className={styles.passwordField}>
+                <label>Current Email</label>
+                <input
+                  type="email"
+                  value={getCurrentEmail()}
+                  readOnly
+                  className={styles.currentEmailInput}
+                />
+              </div>
+
+              <div className={styles.passwordField}>
+                <label>New Email Address</label>
+                <input
+                  type="email"
+                  name="newEmail"
+                  value={emailData.newEmail}
+                  onChange={handleInputChange}
+                  placeholder="Enter new email address"
+                  className={`${styles.emailInput} ${fieldErrors.newEmail ? styles.error : ''}`}
+                />
+                {fieldErrors.newEmail && (
+                  <div className={styles.fieldErrorMessage}>
+                    {fieldErrors.newEmail}
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.passwordField}>
+                <label>Current Password</label>
+                <div className={styles.passwordInputWrapper}>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="currentPassword"
+                    value={emailData.currentPassword}
+                    onChange={handleInputChange}
+                    placeholder="Enter current password"
+                    className={fieldErrors.currentPassword ? styles.error : ''}
+                  />
+                  <button
+                    type="button"
+                    className={styles.passwordToggle}
+                    onClick={togglePasswordVisibility}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
+                {fieldErrors.currentPassword && (
+                  <div className={styles.fieldErrorMessage}>
+                    {fieldErrors.currentPassword}
+                  </div>
+                )}
+              </div>
+            </form>
+            
             <div className={styles.emailModalButtons}>
               <button 
                 type="button" 
@@ -426,54 +440,57 @@ export default function SecureEmailChange({
                 Cancel
               </button>
               <button 
-                type="submit" 
+                type="button" 
                 className={styles.continueButton}
+                onClick={handleStep1Submit}
                 disabled={isLoading}
               >
-                Send Verification Code
+                {isLoading ? 'Sending' : 'Send Verification Code'}
                 {isLoading && <FaSpinner className={styles.spinner} />}
               </button>
             </div>
-          </form>
+          </>
         )}
 
         {/* Step 2: OTP Verification */}
         {currentStep === 2 && (
-          <form onSubmit={handleStep2Submit} className={styles.emailForm}>
-            <div className={styles.stepHeader}>
-              <h3>Step 2: Enter Verification Code</h3>
-              <p>We&apos;ve sent a 6-digit code to <strong>{emailData.newEmail}</strong></p>
-              {expiresAt && (
-                <div className={styles.timer}>
-                  <FaClock />
-                  <span>Code expires in: {formatTimeRemaining()}</span>
-                </div>
-              )}
-            </div>
+          <>
+            <form onSubmit={handleStep2Submit} className={styles.emailForm}>
+              <div className={styles.stepHeader}>
+                <h3>Step 2: Enter Verification Code</h3>
+                <p>We&apos;ve sent a 6-digit code to <strong>{emailData.newEmail}</strong></p>
+                {expiresAt && (
+                  <div className={styles.timer}>
+                    <FaClock />
+                    <span>Code expires in: {formatTimeRemaining()}</span>
+                  </div>
+                )}
+              </div>
 
-            <div className={styles.otpField}>
-              <label>Verification Code</label>
-              <input
-                type="text"
-                name="otp"
-                value={emailData.otp}
-                onChange={handleInputChange}
-                placeholder="Enter 6-digit code"
-                maxLength="6"
-                className={`${styles.otpInput} ${fieldErrors.otp ? styles.error : ''}`}
-              />
-              {fieldErrors.otp && (
-                <div className={styles.fieldErrorMessage}>
-                  {fieldErrors.otp}
-                </div>
-              )}
-            </div>
+              <div className={styles.otpField}>
+                <label>Verification Code</label>
+                <input
+                  type="text"
+                  name="otp"
+                  value={emailData.otp}
+                  onChange={handleInputChange}
+                  placeholder="Enter 6-digit code"
+                  maxLength="6"
+                  className={`${styles.otpInput} ${fieldErrors.otp ? styles.error : ''}`}
+                />
+                {fieldErrors.otp && (
+                  <div className={styles.fieldErrorMessage}>
+                    {fieldErrors.otp}
+                  </div>
+                )}
+              </div>
 
-            <div className={styles.securityNote}>
-              <FaShieldAlt />
-              <p>This code was sent to your new email address to verify ownership. Check your spam folder if you don&apos;t see it.</p>
-            </div>
-
+              <div className={styles.securityNote}>
+                <FaShieldAlt />
+                <p>This code was sent to your new email address to verify ownership. Check your spam folder if you don&apos;t see it.</p>
+              </div>
+            </form>
+            
             <div className={styles.emailModalButtons}>
               <button 
                 type="button" 
@@ -484,8 +501,9 @@ export default function SecureEmailChange({
                 Back
               </button>
               <button 
-                type="submit" 
+                type="button" 
                 className={styles.verifyButton}
+                onClick={handleStep2Submit}
                 disabled={isLoading}
               >
                 <FaCheck />
@@ -493,7 +511,7 @@ export default function SecureEmailChange({
                 {isLoading && <FaSpinner className={styles.spinner} />}
               </button>
             </div>
-          </form>
+          </>
         )}
       </div>
     </div>
@@ -504,15 +522,6 @@ export default function SecureEmailChange({
       {/* Render modal with portal for public users, inline for admin/superadmin */}
       {userType === 'public' ? createPortal(modalContent, document.body) : modalContent}
 
-      {/* Success Confirmation Modal (for public users) */}
-      {showSuccessModal && showSuccessModalState && emailChangeData.newEmail && emailChangeData.oldEmail && (
-        <EmailChangeSuccessModal
-          isOpen={showSuccessModalState}
-          onClose={handleSuccessModalClose}
-          newEmail={emailChangeData.newEmail}
-          oldEmail={emailChangeData.oldEmail}
-        />
-      )}
     </>
   );
 }

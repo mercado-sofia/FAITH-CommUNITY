@@ -579,13 +579,9 @@ export const softDeleteVolunteer = async (req, res) => {
 // Test endpoints
 export const testGet = (req, res) => res.send("Hello from volunteer controller!");
 export const testPost = (req, res) => {
-  console.log('Test POST endpoint hit');
   res.json({ success: true, message: "Test POST successful" });
 };
 export const testAuth = (req, res) => {
-  console.log('Test auth endpoint hit');
-  console.log('Request user:', req.user);
-  console.log('Request headers:', req.headers);
   res.json({ 
     success: true, 
     message: "Auth test successful",

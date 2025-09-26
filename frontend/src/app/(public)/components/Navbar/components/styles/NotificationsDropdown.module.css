@@ -189,8 +189,9 @@
 /* Mobile responsive adjustments */
 @media (max-width: 730px) {
   .notificationBtn {
-    width: 18px;
-    height: 18px;
+    width: 28px;
+    height: 28px;
+    font-size: 1rem;
   }
   
   .notificationsDropdown {

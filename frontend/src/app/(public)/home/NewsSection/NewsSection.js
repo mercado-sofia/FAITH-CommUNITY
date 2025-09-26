@@ -257,7 +257,7 @@ export default function NewsSection() {
               const imageUrl = newsItem.featured_image || null;
               
               return (
-                <Link key={newsItem.id} href={`/news/${newsItem.slug}`} className={styles.newsCard}>
+                <div key={newsItem.id} className={styles.newsCard}>
                   {imageUrl && (
                     <div className={styles.newsImageContainer}>
                       <Image
@@ -281,9 +281,9 @@ export default function NewsSection() {
                       <em>Published:</em> {formatDate(newsItem.published_at || newsItem.date)}<br />
                       <em>By:</em> {newsItem.orgName || 'Unknown Organization'}
                     </p>
-                    <span className={styles.readMore}>Read More</span>
+                    <Link href={`/news/${newsItem.slug}`} className={styles.readMore}>Read More</Link>
                   </div>
-                </Link>
+                </div>
               );
             })
           )}

@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import OptimizedImage from '../../../../../components/OptimizedImage';
-import { getProfilePhotoUrl } from '../../../../../utils/uploadPaths';
+import { useState } from 'react';
+import OptimizedImage from '@/components/OptimizedImage';
+import { getProfilePhotoUrl } from '@/utils/uploadPaths';
 import styles from './styles/MobileSidebar.module.css';
-import { FaChevronRight, FaUser, FaSignOutAlt, FaCog, FaClipboardList } from 'react-icons/fa';
+import { FaChevronRight, FaChevronDown, FaUser, FaSignOutAlt, FaCog, FaClipboardList } from 'react-icons/fa';
 
 export default function MobileSidebar({ 
   menuOpen, 
@@ -19,6 +20,7 @@ export default function MobileSidebar({
   handleLinkHover 
 }) {
   const router = useRouter();
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
 
   if (!menuOpen) {
     return null;
@@ -87,62 +89,17 @@ export default function MobileSidebar({
             width={18}
             height={18}
           />
-          <span>FAITH Colleges</span>
+          <span>Go to FAITH Colleges</span>
         </a>
         
-        {isAuthenticated ? (
-          <div className={styles.mobileUserProfile}>
-            <div className={styles.mobileProfileIcon}>
-              {user?.profile_photo_url ? (
-                <OptimizedImage
-                  src={getProfilePhotoUrl(user.profile_photo_url)}
-                  alt="Profile"
-                  width={48}
-                  height={48}
-                  className={styles.mobileProfileImage}
-                  fallbackIcon={FaUser}
-                />
-              ) : (
-                <FaUser className={styles.mobileProfileIconDefault} />
-              )}
-            </div>
-            <span className={styles.userName}>
-              {user?.firstName} {user?.lastName}
-            </span>
-            <Link 
-              href="/profile" 
-              className={styles.mobileProfileLink}
-              onClick={toggleMenu}
-            >
-              <FaCog />
-              <span>Manage Account</span>
-            </Link>
-            <Link 
-              href="/profile?tab=applications" 
-              className={styles.mobileProfileLink}
-              onClick={toggleMenu}
-            >
-              <FaClipboardList />
-              <span>My Applications</span>
-            </Link>
-            <button 
-              onClick={() => { onLogoutClick(); toggleMenu(); }} 
-              className={styles.logoutBtn}
-            >
-              <FaSignOutAlt />
-              <span>Logout</span>
-            </button>
-          </div>
-        ) : (
-          <>
-            <Link 
-              href="/login" 
-              className={styles.navbarLoginBtn} 
-              onClick={toggleMenu}
-            >
-              Log In or Sign Up
-            </Link>
-          </>
+        {!isAuthenticated && (
+          <Link 
+            href="/login" 
+            className={styles.navbarLoginBtn} 
+            onClick={toggleMenu}
+          >
+            Log In or Sign Up
+          </Link>
         )}
         
         <Link 
@@ -153,6 +110,67 @@ export default function MobileSidebar({
         >
           Apply
         </Link>
+
+        {/* Mobile Profile Dropdown - Only for authenticated users */}
+        {isAuthenticated && (
+          <div className={styles.mobileProfileSection}>
+            <button 
+              className={styles.mobileProfileToggle}
+              onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+            >
+              <div className={styles.mobileProfileIcon}>
+                {user?.profile_photo_url ? (
+                  <OptimizedImage
+                    src={getProfilePhotoUrl(user.profile_photo_url)}
+                    alt="Profile"
+                    width={32}
+                    height={32}
+                    className={styles.mobileProfileImage}
+                    fallbackIcon={FaUser}
+                  />
+                ) : (
+                  <FaUser className={styles.mobileProfileIconDefault} />
+                )}
+              </div>
+              <span className={styles.mobileProfileName}>
+                {user?.firstName} {user?.lastName}
+              </span>
+              {isProfileDropdownOpen ? (
+                <FaChevronDown className={styles.mobileProfileChevron} />
+              ) : (
+                <FaChevronRight className={styles.mobileProfileChevron} />
+              )}
+            </button>
+            
+            {isProfileDropdownOpen && (
+              <div className={styles.mobileProfileDropdown}>
+                <Link 
+                  href="/profile" 
+                  className={styles.mobileProfileLink}
+                  onClick={toggleMenu}
+                >
+                  <FaCog />
+                  <span>Manage Account</span>
+                </Link>
+                <Link 
+                  href="/profile?tab=applications" 
+                  className={styles.mobileProfileLink}
+                  onClick={toggleMenu}
+                >
+                  <FaClipboardList />
+                  <span>My Applications</span>
+                </Link>
+                <button 
+                  onClick={() => { onLogoutClick(); toggleMenu(); }} 
+                  className={styles.mobileLogoutBtn}
+                >
+                  <FaSignOutAlt />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

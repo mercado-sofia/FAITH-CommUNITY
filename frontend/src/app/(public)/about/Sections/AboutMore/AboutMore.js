@@ -2,7 +2,7 @@ import styles from './aboutMore.module.css';
 import Image from "next/image";
 import { FaCheck } from 'react-icons/fa';
 import { usePublicAboutUs, usePublicSiteName } from '../../../hooks/usePublicData';
-import Loader from '../../../../../components/Loader';
+import Loader from '@/components/Loader';
 
 export default function AboutMore() {
   const { aboutUsData, isLoading, error } = usePublicAboutUs();

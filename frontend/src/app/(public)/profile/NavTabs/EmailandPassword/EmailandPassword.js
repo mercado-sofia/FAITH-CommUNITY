@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { FaEnvelope, FaLock } from 'react-icons/fa';
+import { createPortal } from 'react-dom';
 import { EmailChange } from '@/components/EmailChange';
 import PasswordChange from '@/components/PasswordChange';
 import ChangeSuccessModal from './ChangeSuccessModal';
@@ -115,34 +116,41 @@ export default function EmailandPassword({ userData, setUserData }) {
         </div>
       </div>
 
-      {/* Modal Components */}
-      <EmailChange 
-        isOpen={showEmailModal}
-        onClose={() => {
-          setShowEmailModal(false);
-          document.body.classList.remove('modalOpen');
-        }}
-        onSuccess={handleEmailChangeSuccess}
-        userType="public"
-        currentEmail={userData.email}
-        showSuccessModal={false}
-        setUserData={setUserData}
-        setShowModal={setShowEmailModal}
-      />
-      <PasswordChange
-        isOpen={showPasswordModal}
-        onClose={() => {
-          setShowPasswordModal(false);
-          document.body.classList.remove('modalOpen');
-        }}
-        onSuccess={handlePasswordChangeSuccess}
-        userType="public"
-        showSuccessModal={false}
-        setUserData={setUserData}
-        setShowModal={setShowPasswordModal}
-      />
+      {/* Modal Components - Rendered with Portal for proper overlay */}
+      {showEmailModal && createPortal(
+        <EmailChange 
+          isOpen={showEmailModal}
+          onClose={() => {
+            setShowEmailModal(false);
+            document.body.classList.remove('modalOpen');
+          }}
+          onSuccess={handleEmailChangeSuccess}
+          userType="public"
+          currentEmail={userData.email}
+          showSuccessModal={false}
+          setUserData={setUserData}
+          setShowModal={setShowEmailModal}
+        />,
+        document.body
+      )}
+      
+      {showPasswordModal && createPortal(
+        <PasswordChange
+          isOpen={showPasswordModal}
+          onClose={() => {
+            setShowPasswordModal(false);
+            document.body.classList.remove('modalOpen');
+          }}
+          onSuccess={handlePasswordChangeSuccess}
+          userType="public"
+          showSuccessModal={false}
+          setUserData={setUserData}
+          setShowModal={setShowPasswordModal}
+        />,
+        document.body
+      )}
 
-      {/* Success Modal */}
+      {/* Success Modal - Already uses portal internally */}
       <ChangeSuccessModal
         isOpen={showSuccessModal}
         onClose={handleSuccessModalClose}

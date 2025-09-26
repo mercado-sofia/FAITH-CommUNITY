@@ -3,9 +3,9 @@
   position: fixed;
   top: 0;
   right: 0;
-  width: 260px;
+  width: 280px;
   height: 100vh;
-  background: white;
+  background: #FFFFFF;
   display: flex;
   flex-direction: column;
   padding: 6rem 2rem 2rem;
@@ -30,11 +30,6 @@
   font-weight: 500;
   margin-bottom: 1.6rem;
   text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.mobileNavLink:hover {
-  color: #ffac00;
 }
 
 .closeSidebarBtn {
@@ -56,47 +51,60 @@
   z-index: 1001;
 }
 
-.closeSidebarBtn:hover {
-  background-color: #145847;
-}
 
-/* Buttons inside sidebar (only visible under 640px) */
+/* Buttons inside sidebar */
 .mobileButtons {
-  display: none;
+  display: flex;
   flex-direction: column;
   gap: 1rem;
   margin-top: 2rem;
 }
 
-/* Mobile User Profile */
-.mobileUserProfile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1.5rem;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
+/* Mobile Profile Section */
+.mobileProfileSection {
   width: 100%;
+  margin-top: 1rem;
 }
 
-/* Mobile Profile Icon Styles */
+.mobileProfileToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobileProfileToggle:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(12, 75, 58, 0.2);
+}
+
+.mobileProfileToggle:active {
+  background: #e9ecef;
+}
+
 .mobileProfileIcon {
-  width: 48px;
-  height: 48px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #f3f4f6;
-  margin-bottom: 12px;
+  flex-shrink: 0;
 }
 
 .mobileProfileIconDefault {
-  width: 24px;
-  height: 24px;
+  width: 16px;
+  height: 16px;
   color: #6b7280;
 }
 
@@ -107,77 +115,159 @@
   border-radius: 50%;
 }
 
+.mobileProfileName {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobileProfileChevron {
+  font-size: 0.8rem;
+  color: #6c757d;
+  flex-shrink: 0;
+}
+
+.mobileProfileDropdown {
+  margin-top: 0.5rem;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+
 .mobileProfileLink {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  background: white;
-  border: 1px solid #e9ecef;
-  border-radius: 6px;
+  background: none;
+  border: none;
   text-decoration: none;
   color: #333;
   font-size: 0.9rem;
   width: 100%;
-  justify-content: center;
-  transition: all 0.2s ease;
+  border-bottom: 1px solid #e9ecef;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.mobileProfileLink:hover {
-  border-color: #0c4b3a;
-  color: #0c4b3a;
+.mobileProfileLink:focus {
+  outline: none;
+  background: #f8f9fa;
+}
+
+.mobileProfileLink:last-of-type {
+  border-bottom: none;
+}
+
+.mobileLogoutBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  text-decoration: none;
+  color: #dc3545;
+  font-size: 0.9rem;
+  width: 100%;
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobileLogoutBtn:focus {
+  outline: none;
+  background: rgba(220, 53, 69, 0.1);
 }
 
 /* Gray color for icons in mobile profile links */
 .mobileProfileLink svg {
   color: #6c757d;
-  transition: color 0.2s ease;
 }
 
-.mobileProfileLink:hover svg {
-  color: #0c4b3a;
+.mobileLogoutBtn svg {
+  color: #dc3545;
 }
 
-.mobileUserProfile .userName {
-  font-size: 1.1rem;
-  font-weight: 600;
-  text-align: center;
-  color: #333;
-}
 
-.mobileUserProfile .logoutBtn {
-  width: 100%;
+/* Mobile Button Styles */
+.mobileButtons .faithBtn {
+  display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 0.75rem;
-  font-size: 0.9rem;
-  background: #dc3545;
+  gap: 0.5rem;
+  background: linear-gradient(to right, #DBEDE9, #489285, #0D594C);
+  border: none;
+  border-radius: 9999px;
+  font-weight: 600;
   color: white;
-  border: 1px solid #dc3545;
-  border-radius: 6px;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 0.75rem 1rem;
+  width: 100%;
+  height: 44px;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.mobileUserProfile .logoutBtn:hover {
-  background: #c82333;
-  border-color: #c82333;
+.mobileButtons .faithBtn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(13, 89, 76, 0.3);
 }
 
-/* Show mobile buttons on smaller screens */
-@media (max-width: 730px) {
-  .mobileButtons {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-top: 2.5rem;
-  }
+.mobileButtons .applyBtn {
+  background: linear-gradient(to right, #FFAC00, #FFCE6A);
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  text-decoration: none;
+  width: 100%;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
 
-  .mobileButtons .faithBtn,
-  .mobileButtons .applyBtn {
-    display: flex;
-    width: 100%;
-    justify-content: center;
-    height: 40px;
-    font-size: 15px;
-    letter-spacing: 0.5px;
-    border-radius: 9999px;
-  }
+.mobileButtons .applyBtn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 172, 0, 0.3);
+}
+
+.mobileButtons .navbarLoginBtn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0.75rem 1.5rem !important;
+  border-radius: 6px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  border: 2px solid #0c4b3a !important;
+  cursor: pointer !important;
+  height: 44px !important;
+  white-space: nowrap !important;
+  background: transparent !important;
+  color: #0c4b3a !important;
+  width: 100%;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.mobileButtons .navbarLoginBtn:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(12, 75, 58, 0.2) !important;
 }

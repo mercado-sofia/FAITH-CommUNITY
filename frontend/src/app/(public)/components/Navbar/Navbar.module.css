@@ -93,6 +93,19 @@
   font-size: 1.4rem;
   color: #1A685B;
   cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+.hamburgerBtn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(26, 104, 91, 0.2);
+}
+
+.hamburgerBtn:active {
+  background: rgba(26, 104, 91, 0.1);
 }
 
 /* Authentication Button Styles */

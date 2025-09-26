@@ -3,11 +3,11 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import Loader from '../../../../../components/Loader';
+import Loader from '@/components/Loader';
 import { PageBanner as BannerSection } from '../../../components';
 import { OrgInfoCard, AdvocacyCompetency, FeaturedProjects, OrgHeadsCarousel, LatestPosts } from '../../components';
 import { usePublicOrganizationData } from '../../../hooks/usePublicData';
-import { useAuthState } from '../../../../../hooks/useAuthState';
+import { useAuthState } from '@/hooks/useAuthState';
 import { usePublicPageLoader } from '../../../hooks/usePublicPageLoader';
 import styles from '../org.module.css';
 

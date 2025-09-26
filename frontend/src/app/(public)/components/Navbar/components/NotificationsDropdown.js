@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useNotifications } from '../../../../../hooks/useNotifications';
-import { useDropdown } from '../../../../../hooks/useDropdown';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useDropdown } from '@/hooks/useDropdown';
 import styles from './styles/NotificationsDropdown.module.css';
 import { FaBell } from 'react-icons/fa';
 

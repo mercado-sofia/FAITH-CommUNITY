@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { FaEye, FaEyeSlash, FaTimes, FaCheck, FaShieldAlt, FaClock, FaSpinner } from 'react-icons/fa';
-import { createPortal } from 'react-dom';
 import { useEmailChange } from '@/hooks/useEmailChange';
 import { useFormValidation } from '@/app/(public)/profile/hooks/useFormValidation';
 import { useToast } from '@/app/(public)/components/Toast';
-import LoadingSpinner from '@/components/Loader';
 import styles from './EmailChange.module.css';
 
 /**
@@ -519,9 +517,8 @@ export default function EmailChange({
 
   return (
     <>
-      {/* Render modal with portal for public users, inline for admin/superadmin */}
-      {userType === 'public' ? createPortal(modalContent, document.body) : modalContent}
-
+      {/* Modal content - portal handling moved to parent component for public users */}
+      {modalContent}
     </>
   );
 }

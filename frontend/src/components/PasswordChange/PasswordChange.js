@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { FaLock, FaEye, FaEyeSlash, FaTimes, FaCheck, FaSpinner } from 'react-icons/fa';
-import { createPortal } from 'react-dom';
 import styles from './PasswordChange.module.css';
 import { SuccessModal } from '../../app/admin/components';
 
@@ -642,8 +641,8 @@ export default function PasswordChange({
 
   return (
     <>
-      {/* Render modal with portal for public users, inline for admin/superadmin */}
-      {userType === 'public' ? createPortal(modalContent, document.body) : modalContent}
+      {/* Modal content - portal handling moved to parent component for public users */}
+      {modalContent}
     </>
   );
 }

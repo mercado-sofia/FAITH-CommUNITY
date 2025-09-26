@@ -172,7 +172,7 @@
 
 /* Mobile responsive adjustments */
 @media (max-width: 730px) {
-  .profileBtn {
-    padding: 0.4rem;
+  .profileWrapper {
+    display: none;
   }
 }

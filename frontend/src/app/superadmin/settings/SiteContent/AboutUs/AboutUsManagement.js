@@ -1,24 +1,36 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiEdit3, FiXCircle, FiPlus, FiTrash2 } from 'react-icons/fi';
+import { FiEdit3, FiXCircle, FiPlus, FiTrash2, FiUpload, FiImage } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import ConfirmationModal from '../../../components/ConfirmationModal';
+import { SkeletonLoader } from '../../../components';
+import { useScrollPosition } from '@/hooks/useScrollPosition';
 import styles from './AboutUsManagement.module.css';
 
 export default function AboutUsManagement({ showSuccessModal }) {
+  const { preserveScrollPositionAsync } = useScrollPosition();
   const [aboutUsData, setAboutUsData] = useState(null);
-  const [aboutUsLoading, setAboutUsLoading] = useState(false);
   const [isUpdatingAboutUs, setIsUpdatingAboutUs] = useState(false);
   const [showAboutUsModal, setShowAboutUsModal] = useState(false);
   
   // Edit mode state
   const [isEditingAboutUs, setIsEditingAboutUs] = useState(false);
   const [tempAboutUs, setTempAboutUs] = useState({
+    tag: '',
     heading: '',
     description: '',
-    extension_categories: []
+    extension_categories: [],
+    image_url: ''
   });
+
+  // Image upload state
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  
+  // Image deletion state
+  const [showDeleteImageModal, setShowDeleteImageModal] = useState(false);
+  const [isDeletingImage, setIsDeletingImage] = useState(false);
 
   // Extension category management
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
@@ -67,7 +79,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
   useEffect(() => {
     const loadAboutUsData = async () => {
       try {
-        setAboutUsLoading(true);
         const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/about-us`,
@@ -79,16 +90,17 @@ export default function AboutUsManagement({ showSuccessModal }) {
           const data = await response.json();
           setAboutUsData(data.data);
           setTempAboutUs({
+            tag: data.data.tag || '',
             heading: data.data.heading || '',
             description: data.data.description || '',
-            extension_categories: data.data.extension_categories || []
+            extension_categories: data.data.extension_categories || [],
+            image_url: data.data.image_url || ''
           });
         }
       } catch (error) {
         console.error('Error loading about us data:', error);
         showAuthError('Failed to load about us data. Please try again.');
       } finally {
-        setAboutUsLoading(false);
       }
     };
 
@@ -100,9 +112,11 @@ export default function AboutUsManagement({ showSuccessModal }) {
     setIsEditingAboutUs(!isEditingAboutUs);
     if (!isEditingAboutUs) {
       setTempAboutUs({
+        tag: aboutUsData?.tag || '',
         heading: aboutUsData?.heading || '',
         description: aboutUsData?.description || '',
-        extension_categories: aboutUsData?.extension_categories || []
+        extension_categories: aboutUsData?.extension_categories || [],
+        image_url: aboutUsData?.image_url || ''
       });
     }
   };
@@ -111,14 +125,21 @@ export default function AboutUsManagement({ showSuccessModal }) {
   const handleCancelEdit = () => {
     setIsEditingAboutUs(false);
     setTempAboutUs({
+      tag: aboutUsData?.tag || '',
       heading: aboutUsData?.heading || '',
       description: aboutUsData?.description || '',
-      extension_categories: aboutUsData?.extension_categories || []
+      extension_categories: aboutUsData?.extension_categories || [],
+      image_url: aboutUsData?.image_url || ''
     });
+    setSelectedFile(null); // Clear any selected file
   };
 
   // About us update handler
   const handleAboutUsUpdate = () => {
+    if (!tempAboutUs.tag.trim()) {
+      showSuccessModal('Tag cannot be empty');
+      return;
+    }
     if (!tempAboutUs.heading.trim()) {
       showSuccessModal('Heading cannot be empty');
       return;
@@ -136,41 +157,59 @@ export default function AboutUsManagement({ showSuccessModal }) {
 
   // Confirm about us update
   const handleAboutUsConfirm = async () => {
-    try {
-      setIsUpdatingAboutUs(true);
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const response = await makeAuthenticatedRequest(
-        `${baseUrl}/api/superadmin/about-us`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
+    await preserveScrollPositionAsync(async () => {
+      try {
+        setIsUpdatingAboutUs(true);
+        
+        let finalImageUrl = tempAboutUs.image_url;
+        
+        // Upload image if a new file is selected
+        if (selectedFile) {
+          try {
+            finalImageUrl = await handleImageUpload(selectedFile);
+            setSelectedFile(null); // Clear selected file after successful upload
+          } catch (error) {
+            showSuccessModal('Failed to upload image. Please try again.');
+            return;
+          }
+        }
+        
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const response = await makeAuthenticatedRequest(
+          `${baseUrl}/api/superadmin/about-us`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              tag: tempAboutUs.tag.trim(),
+              heading: tempAboutUs.heading.trim(),
+              description: tempAboutUs.description.trim(),
+              extension_categories: tempAboutUs.extension_categories,
+              image_url: finalImageUrl
+            }),
           },
-          body: JSON.stringify({
-            heading: tempAboutUs.heading.trim(),
-            description: tempAboutUs.description.trim(),
-            extension_categories: tempAboutUs.extension_categories
-          }),
-        },
-        'superadmin'
-      );
+          'superadmin'
+        );
 
-      if (response && response.ok) {
-        const data = await response.json();
-        setAboutUsData(data.data);
-        setIsEditingAboutUs(false);
-        showSuccessModal('About us content updated successfully! The changes will be visible on the public site immediately.');
-      } else {
-        const errorData = await response.json();
-        showSuccessModal(errorData.message || 'Failed to update about us content');
+        if (response && response.ok) {
+          const data = await response.json();
+          setAboutUsData(data.data);
+          setIsEditingAboutUs(false);
+          showSuccessModal('About us content updated successfully! The changes will be visible on the public site immediately.');
+        } else {
+          const errorData = await response.json();
+          showSuccessModal(errorData.message || 'Failed to update about us content');
+        }
+      } catch (error) {
+        console.error('Error updating about us content:', error);
+        showSuccessModal('Failed to update about us content. Please try again.');
+      } finally {
+        setIsUpdatingAboutUs(false);
+        setShowAboutUsModal(false);
       }
-    } catch (error) {
-      console.error('Error updating about us content:', error);
-      showSuccessModal('Failed to update about us content. Please try again.');
-    } finally {
-      setIsUpdatingAboutUs(false);
-      setShowAboutUsModal(false);
-    }
+    });
   };
 
   // Cancel about us update
@@ -185,13 +224,15 @@ export default function AboutUsManagement({ showSuccessModal }) {
       return;
     }
 
-    const updatedCategories = [...tempAboutUs.extension_categories, { ...newCategory }];
-    setTempAboutUs(prev => ({
-      ...prev,
-      extension_categories: updatedCategories
-    }));
-    setNewCategory({ name: '', color: 'green' });
-    setShowAddCategoryModal(false);
+    preserveScrollPositionAsync(async () => {
+      const updatedCategories = [...tempAboutUs.extension_categories, { ...newCategory }];
+      setTempAboutUs(prev => ({
+        ...prev,
+        extension_categories: updatedCategories
+      }));
+      setNewCategory({ name: '', color: 'green' });
+      setShowAddCategoryModal(false);
+    });
   };
 
   // Edit extension category
@@ -207,14 +248,16 @@ export default function AboutUsManagement({ showSuccessModal }) {
       return;
     }
 
-    const updatedCategories = [...tempAboutUs.extension_categories];
-    updatedCategories[editingCategoryIndex] = { ...editingCategory };
-    setTempAboutUs(prev => ({
-      ...prev,
-      extension_categories: updatedCategories
-    }));
-    setEditingCategoryIndex(-1);
-    setEditingCategory({ name: '', color: 'green' });
+    preserveScrollPositionAsync(async () => {
+      const updatedCategories = [...tempAboutUs.extension_categories];
+      updatedCategories[editingCategoryIndex] = { ...editingCategory };
+      setTempAboutUs(prev => ({
+        ...prev,
+        extension_categories: updatedCategories
+      }));
+      setEditingCategoryIndex(-1);
+      setEditingCategory({ name: '', color: 'green' });
+    });
   };
 
   // Delete extension category
@@ -224,21 +267,139 @@ export default function AboutUsManagement({ showSuccessModal }) {
       return;
     }
 
-    const updatedCategories = tempAboutUs.extension_categories.filter((_, i) => i !== index);
-    setTempAboutUs(prev => ({
-      ...prev,
-      extension_categories: updatedCategories
-    }));
+    preserveScrollPositionAsync(async () => {
+      const updatedCategories = tempAboutUs.extension_categories.filter((_, i) => i !== index);
+      setTempAboutUs(prev => ({
+        ...prev,
+        extension_categories: updatedCategories
+      }));
+    });
   };
 
-  if (aboutUsLoading) {
-    return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.spinner}></div>
-        <p>Loading about us settings...</p>
-      </div>
-    );
-  }
+  // File upload handlers
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        showSuccessModal('Please select an image file');
+        return;
+      }
+      
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        showSuccessModal('File size must be less than 10MB');
+        return;
+      }
+      
+      setSelectedFile(file);
+    }
+  };
+
+  // Upload image to Cloudinary
+  const uploadImage = async (file) => {
+    try {
+      setUploadingImage(true);
+      
+      console.log('Starting file upload:', { fileName: file.name, fileSize: file.size, fileType: file.type });
+      
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      
+      // Get the token for manual request
+      const token = localStorage.getItem('superAdminToken');
+      if (!token) {
+        console.log('No token found');
+        showSuccessModal('Authentication required. Please log in again.');
+        return null;
+      }
+
+      console.log('Making request to:', `${baseUrl}/api/superadmin/about-us/upload-image`);
+
+      const response = await fetch(`${baseUrl}/api/superadmin/about-us/upload-image`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      console.log('Response received:', { status: response.status, statusText: response.statusText });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Upload successful:', data);
+        return data.imageUrl; // Return the Cloudinary URL from the response
+      } else {
+        const errorData = await response.json();
+        console.error('Upload failed:', errorData);
+        throw new Error(errorData.message || 'Failed to upload image');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // Handle image upload (now part of the main save flow)
+  const handleImageUpload = async (file) => {
+    try {
+      const imageUrl = await uploadImage(file);
+      return imageUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error;
+    }
+  };
+
+  // Handle image deletion
+  const handleDeleteImage = () => {
+    setShowDeleteImageModal(true);
+  };
+
+  const handleDeleteImageConfirm = async () => {
+    await preserveScrollPositionAsync(async () => {
+      try {
+        setIsDeletingImage(true);
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        
+        const response = await makeAuthenticatedRequest(
+          `${baseUrl}/api/superadmin/about-us/image`,
+          { method: 'DELETE' },
+          'superadmin'
+        );
+
+        if (response && response.ok) {
+          const data = await response.json();
+          setAboutUsData(data.data);
+          setTempAboutUs(prev => ({
+            ...prev,
+            image_url: ''
+          }));
+          setSelectedFile(null); // Clear any selected file
+          showSuccessModal('Image deleted successfully!');
+        } else {
+          const errorData = await response.json();
+          showSuccessModal(errorData.message || 'Failed to delete image');
+        }
+      } catch (error) {
+        console.error('Error deleting image:', error);
+        showSuccessModal('Failed to delete image. Please try again.');
+      } finally {
+        setIsDeletingImage(false);
+        setShowDeleteImageModal(false);
+      }
+    });
+  };
+
+  const handleDeleteImageCancel = () => {
+    setShowDeleteImageModal(false);
+  };
+
 
   return (
     <div className={styles.settingsPanel}>
@@ -280,6 +441,26 @@ export default function AboutUsManagement({ showSuccessModal }) {
 
       <div className={styles.panelContent}>
         <div className={styles.aboutUsSection}>
+          {/* Tag Field */}
+          <div className={styles.inputGroup}>
+            <label htmlFor="tag" className={styles.inputLabel}>
+              Tag
+            </label>
+            <input
+              type="text"
+              id="tag"
+              value={isEditingAboutUs ? tempAboutUs.tag : (aboutUsData?.tag || '')}
+              onChange={(e) => isEditingAboutUs ? 
+                setTempAboutUs(prev => ({ ...prev, tag: e.target.value })) :
+                null
+              }
+              className={styles.textInput}
+              placeholder="Enter tag (e.g., About Us FAITH CommUNITY)"
+              maxLength={255}
+              disabled={!isEditingAboutUs}
+            />
+          </div>
+
           {/* Heading Field */}
           <div className={styles.inputGroup}>
             <label htmlFor="heading" className={styles.inputLabel}>
@@ -317,6 +498,92 @@ export default function AboutUsManagement({ showSuccessModal }) {
               rows={4}
               disabled={!isEditingAboutUs}
             />
+          </div>
+
+          {/* Image Upload Section */}
+          <div className={styles.inputGroup}>
+            <div className={styles.imageSectionHeader}>
+              <label className={styles.inputLabel}>
+                About Us Image
+              </label>
+              {isEditingAboutUs && (isEditingAboutUs ? tempAboutUs.image_url : (aboutUsData?.image_url || '')) && (
+                <div className={styles.imageActions}>
+                  <button
+                    onClick={handleDeleteImage}
+                    className={styles.removeBtn}
+                    title="Remove image"
+                  >
+                    <FiTrash2 color="#dc2626" />
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className={styles.imageUploadSection}>
+              {/* Current Image Display */}
+              {(isEditingAboutUs ? tempAboutUs.image_url : (aboutUsData?.image_url || '')) ? (
+                <div className={styles.currentImageContainer}>
+                  <img
+                    src={isEditingAboutUs ? tempAboutUs.image_url : (aboutUsData?.image_url || '')}
+                    alt="Current About Us Image"
+                    className={styles.currentImage}
+                  />
+                </div>
+              ) : selectedFile ? (
+                <div className={styles.currentImageContainer}>
+                  <img
+                    src={URL.createObjectURL(selectedFile)}
+                    alt="Selected Image Preview"
+                    className={styles.currentImage}
+                  />
+                </div>
+              ) : (
+                <div className={styles.emptyImageState}>
+                  No image uploaded
+                </div>
+              )}
+              
+              {/* Image Upload Controls - Only show when no image exists and in edit mode */}
+              {isEditingAboutUs && !(isEditingAboutUs ? tempAboutUs.image_url : (aboutUsData?.image_url || '')) && (
+                <div className={styles.imageUploadControls}>
+                  {!selectedFile ? (
+                    <div className={styles.fileInputContainer}>
+                      <input
+                        type="file"
+                        id="imageUpload"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className={styles.fileInput}
+                        disabled={uploadingImage}
+                      />
+                      <label htmlFor="imageUpload" className={styles.fileInputLabel}>
+                        <FiUpload size={16} />
+                        Choose Image
+                      </label>
+                    </div>
+                  ) : (
+                    <div className={styles.uploadActions}>
+                      <div className={styles.selectedFileInfo}>
+                        <span className={styles.fileName}>{selectedFile.name}</span>
+                        <span className={styles.fileSize}>
+                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                        </span>
+                        <span className={styles.uploadNote}>
+                          Image will be uploaded when you save changes
+                        </span>
+                      </div>
+                      <div className={styles.uploadButtons}>
+                        <button
+                          onClick={() => setSelectedFile(null)}
+                          className={styles.cancelBtn}
+                        >
+                          Remove Selection
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Extension Categories */}
@@ -526,6 +793,18 @@ export default function AboutUsManagement({ showSuccessModal }) {
       </div>
         </div>
       )}
+
+      {/* Delete Image Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteImageModal}
+        itemName="About Us Image"
+        itemType="image"
+        actionType="delete"
+        onConfirm={handleDeleteImageConfirm}
+        onCancel={handleDeleteImageCancel}
+        isDeleting={isDeletingImage}
+        customMessage="This will permanently delete the About Us image from both the Home page and About Us page. This action cannot be undone."
+      />
     </div>
   );
 }

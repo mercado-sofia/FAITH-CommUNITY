@@ -4,11 +4,12 @@ import { memo } from 'react';
 import styles from './AboutSection.module.css';
 import Image from 'next/image';
 import { FaHeart, FaCube } from 'react-icons/fa';
-import { usePublicSiteName, usePublicMissionVision } from '../../hooks/usePublicData';
+import { usePublicSiteName, usePublicMissionVision, usePublicAboutUs } from '../../hooks/usePublicData';
 
 function AboutSection() {
   const { siteNameData } = usePublicSiteName();
   const { missionVisionData, isLoading: missionVisionLoading, error: missionVisionError } = usePublicMissionVision();
+  const { aboutUsData, isLoading: aboutUsLoading, error: aboutUsError } = usePublicAboutUs();
 
   return (
     <section className={styles.aboutSection}>
@@ -16,8 +17,8 @@ function AboutSection() {
         <div className={styles.aboutWrapper}>
           <div className={styles.aboutImageWrapper}>
             <Image
-              src="/sample/sample1.jpg"
-              alt="Teacher and student"
+              src={aboutUsLoading ? "/sample/sample1.jpg" : (aboutUsData?.image_url || "/sample/sample1.jpg")}
+              alt="About Us Image"
               width={700}
               height={500}
               className={styles.aboutImage}

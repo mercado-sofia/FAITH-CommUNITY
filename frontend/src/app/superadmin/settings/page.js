@@ -9,6 +9,8 @@ import SuccessModal from '../components/SuccessModal';
 import { SiteNameManagement, FooterContentManagement, BrandingManagement, HeroSectionManagement, MissionVisionManagement, AboutUsManagement, HeadManagement } from './SiteContent';
 import brandingStyles from './SiteContent/Branding/BrandingManagement.module.css';
 import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError, checkAuthStatus } from '@/utils/adminAuth';
+import { useScrollPosition } from '@/hooks/useScrollPosition';
+import { SkeletonLoader } from '../components';
 
 // Utility function for password change time
 const getPasswordChangeTime = (userData) => {
@@ -51,6 +53,7 @@ const getPasswordChangeTime = (userData) => {
 };
 
 export default function SuperAdminSettings() {
+  const { preserveScrollPositionAsync } = useScrollPosition();
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [successModal, setSuccessModal] = useState({ isVisible: false, message: '' });
@@ -59,6 +62,7 @@ export default function SuperAdminSettings() {
   const [showTwoFAModal, setShowTwoFAModal] = useState(false);
   const [twofaEnabled, setTwofaEnabled] = useState(false);
   const [activeTab, setActiveTab] = useState('account');
+  const [siteContentLoading, setSiteContentLoading] = useState(true);
 
   // Load current user data
   useEffect(() => {
@@ -113,6 +117,19 @@ export default function SuperAdminSettings() {
     loadUserData();
   }, []);
 
+  // Simulate site content loading
+  useEffect(() => {
+    if (activeTab === 'site-content') {
+      setSiteContentLoading(true);
+      // Simulate loading time for better UX
+      const timer = setTimeout(() => {
+        setSiteContentLoading(false);
+      }, 800);
+
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab]);
+
   // Success modal handlers
   const showSuccessModal = (message) => {
     setSuccessModal({ isVisible: true, message });
@@ -124,47 +141,49 @@ export default function SuperAdminSettings() {
 
   // Handle successful updates
   const handleUpdateSuccess = () => {
-    // Reload user data after successful update
-    const loadUserData = async () => {
-      try {
-        const superAdminData = localStorage.getItem('superAdminData');
-        let superadminId = null;
-        
-        if (superAdminData) {
-          const parsedData = JSON.parse(superAdminData);
-          superadminId = parsedData.id;
+    preserveScrollPositionAsync(async () => {
+      // Reload user data after successful update
+      const loadUserData = async () => {
+        try {
+          const superAdminData = localStorage.getItem('superAdminData');
+          let superadminId = null;
+          
+          if (superAdminData) {
+            const parsedData = JSON.parse(superAdminData);
+            superadminId = parsedData.id;
+          }
+
+          if (!superadminId) {
+            clearAuthAndRedirect('superadmin');
+            return;
+          }
+
+          const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+          const response = await makeAuthenticatedRequest(
+            `${baseUrl}/api/superadmin/auth/profile/${superadminId}`,
+            { method: 'GET' },
+            'superadmin'
+          );
+
+          if (!response) {
+            // Authentication utility handled redirect
+            return;
+          }
+
+          const data = await response.json();
+
+          if (response.ok) {
+            setCurrentUser(data);
+            setTwofaEnabled(data.twofa_enabled || false);
+          }
+        } catch (error) {
+          console.error('Failed to reload user data:', error);
+          showAuthError('Failed to reload user data. Please refresh the page.');
         }
+      };
 
-        if (!superadminId) {
-          clearAuthAndRedirect('superadmin');
-          return;
-        }
-
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-        const response = await makeAuthenticatedRequest(
-          `${baseUrl}/api/superadmin/auth/profile/${superadminId}`,
-          { method: 'GET' },
-          'superadmin'
-        );
-
-        if (!response) {
-          // Authentication utility handled redirect
-          return;
-        }
-
-        const data = await response.json();
-
-        if (response.ok) {
-          setCurrentUser(data);
-          setTwofaEnabled(data.twofa_enabled || false);
-        }
-      } catch (error) {
-        console.error('Failed to reload user data:', error);
-        showAuthError('Failed to reload user data. Please refresh the page.');
-      }
-    };
-
-    loadUserData();
+      await loadUserData();
+    });
   };
 
   const handleEmailSuccess = () => {
@@ -350,13 +369,27 @@ export default function SuperAdminSettings() {
       {activeTab === 'site-content' && (
         <div className={styles.tabContent}>
           <div className={brandingStyles.brandingContainer}>
-            <SiteNameManagement showSuccessModal={showSuccessModal} />
-            <MissionVisionManagement showSuccessModal={showSuccessModal} />
-            <HeroSectionManagement showSuccessModal={showSuccessModal} />
-            <AboutUsManagement showSuccessModal={showSuccessModal} />
-            <HeadManagement showSuccessModal={showSuccessModal} />
-            <FooterContentManagement showSuccessModal={showSuccessModal} />
-            <BrandingManagement showSuccessModal={showSuccessModal} />
+            {siteContentLoading ? (
+              <>
+                <SkeletonLoader type="siteContent" />
+                <SkeletonLoader type="missionVision" />
+                <SkeletonLoader type="heroSection" />
+                <SkeletonLoader type="aboutUs" />
+                <SkeletonLoader type="siteContent" />
+                <SkeletonLoader type="siteContent" />
+                <SkeletonLoader type="branding" />
+              </>
+            ) : (
+              <>
+                <SiteNameManagement showSuccessModal={showSuccessModal} />
+                <MissionVisionManagement showSuccessModal={showSuccessModal} />
+                <HeroSectionManagement showSuccessModal={showSuccessModal} />
+                <AboutUsManagement showSuccessModal={showSuccessModal} />
+                <HeadManagement showSuccessModal={showSuccessModal} />
+                <FooterContentManagement showSuccessModal={showSuccessModal} />
+                <BrandingManagement showSuccessModal={showSuccessModal} />
+              </>
+            )}
           </div>
         </div>
       )}

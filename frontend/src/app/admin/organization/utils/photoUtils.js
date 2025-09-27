@@ -200,11 +200,11 @@ export class ImageCache {
   async get(src) {
     // Validate input
     if (!src || src === '' || src === null || src === undefined) {
-      return '/default.png';
+      return '/defaults/default.png';
     }
 
     // If it's already a placeholder, return it
-    if (src === '/default.png' || src === '/default-profile.png') {
+    if (src === '/defaults/default.png' || src === '/defaults/default-profile.png') {
       return src;
     }
 
@@ -252,7 +252,7 @@ export class ImageCache {
     } catch (error) {
       this.loading.delete(src);
       // Return placeholder on error
-      const placeholder = '/default.png';
+      const placeholder = '/defaults/default.png';
       this.cache.set(src, placeholder);
       return placeholder;
     }

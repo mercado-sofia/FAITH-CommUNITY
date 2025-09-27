@@ -33,13 +33,13 @@ export default function Sidebar() {
         <div className={styles.logoGradientBorder}>
           <div className={styles.logoInnerWhite}>
             <Image
-              src={orgLogo ? getOrganizationImageUrl(orgLogo, 'logo') : "/default-profile.png"}
+              src={orgLogo ? getOrganizationImageUrl(orgLogo, 'logo') : "/defaults/default-profile.png"}
               width={45}
               height={45}
               alt="Organization Logo"
               unoptimized={true}
               onError={(e) => {
-                e.target.src = "/default-profile.png";
+                e.target.src = "/defaults/default-profile.png";
               }}
             />
           </div>

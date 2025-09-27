@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Loader from '../../../components/Loader';
+import Loader from '../../../components/ui/Loader';
 import { PageBanner } from '../components';
 import SimplifiedVolunteerForm from './VolunteerApplication/VolunteerForm';
 import ProgramPreview from './ProgramPreview/ProgramPreview';
@@ -81,7 +81,7 @@ export default function ApplyPage() {
     <>
       <PageBanner
         title="Apply Now"
-        backgroundImage="/sample/sample2.jpg"
+        backgroundImage="/samples/sample2.jpg"
         breadcrumbs={[
           { href: "/", label: "Home" },
           { label: "Apply" },

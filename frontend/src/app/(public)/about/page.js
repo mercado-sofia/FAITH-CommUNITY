@@ -1,6 +1,6 @@
 'use client';
 
-import Loader from '../../../components/Loader';
+import Loader from '../../../components/ui/Loader';
 import { PageBanner } from '../components';
 import { MissionAndVision, AboutMore, OrgBanner } from './Sections';
 import OfficerSection from '../home/OfficerSection/OfficerSection';
@@ -19,7 +19,7 @@ export default function AboutPage() {
     <>
       <PageBanner
         title="About Us"
-        backgroundImage="/sample/sample8.jpg"
+        backgroundImage="/samples/sample8.jpg"
         breadcrumbs={[
           { href: '/', label: 'Home' },
           { label: 'About Us' },

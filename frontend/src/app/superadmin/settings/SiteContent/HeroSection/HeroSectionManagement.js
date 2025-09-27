@@ -1,14 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FaUpload, FaPlay, FaEdit } from 'react-icons/fa';
+import { FaUpload, FaPlay } from 'react-icons/fa';
 import { FiTrash2, FiEdit3 } from 'react-icons/fi';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
 import styles from './HeroSectionManagement.module.css';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import ConfirmationModal from '../../../components/ConfirmationModal';
-import { SkeletonLoader } from '../../../components';
 import { useScrollPosition } from '@/hooks/useScrollPosition';
 
 export default function HeroSectionManagement({ showSuccessModal }) {
@@ -28,19 +27,17 @@ export default function HeroSectionManagement({ showSuccessModal }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteType, setDeleteType] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+<<<<<<< HEAD
   const [isUpdating, setIsUpdating] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [mounted, setMounted] = useState(false);
+=======
+>>>>>>> 9523d3092b596d8652786a6bc24ed1d1b65eff08
   
   // Upload loading states
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const [isUploadingImages, setIsUploadingImages] = useState({});
   
-  // Edit states for each section
-  const [isEditingText, setIsEditingText] = useState(false);
-  const [isEditingVideo, setIsEditingVideo] = useState(false);
-  const [isEditingImages, setIsEditingImages] = useState({});
-  const [editingImage, setEditingImage] = useState(null);
   
   // Main edit state and temp data for batch save
   const [isEditingHero, setIsEditingHero] = useState(false);
@@ -79,6 +76,7 @@ export default function HeroSectionManagement({ showSuccessModal }) {
     loadHeroData();
   }, [showSuccessModal]);
 
+<<<<<<< HEAD
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -166,6 +164,8 @@ export default function HeroSectionManagement({ showSuccessModal }) {
       [imageId]: false
     }));
   };
+=======
+>>>>>>> 9523d3092b596d8652786a6bc24ed1d1b65eff08
 
   // Helper function to convert YouTube URLs to embed format
   const convertToEmbedUrl = (url) => {
@@ -188,79 +188,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
     return url; // Return original if no conversion needed
   };
 
-  // Update video link
-  const handleVideoLinkUpdate = async (videoLink, videoType) => {
-    try {
-      setIsUpdating(true);
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const response = await makeAuthenticatedRequest(
-        `${baseUrl}/api/superadmin/hero-section/video-link`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ video_link: videoLink, video_type: videoType }),
-        },
-        'superadmin'
-      );
-
-      if (response && response.ok) {
-        setHeroData(prev => ({
-          ...prev,
-          video_link: videoLink,
-          video_type: videoType,
-          video_url: null // Clear uploaded video when using link
-        }));
-        showSuccessModal('Video link updated successfully!');
-      } else {
-        const errorData = await response.json();
-        showSuccessModal(errorData.message || 'Failed to update video link');
-      }
-    } catch (error) {
-      console.error('Error updating video link:', error);
-      showSuccessModal('Failed to update video link. Please try again.');
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  // Update image text content
-  const handleImageTextUpdate = async (imageId, field, value) => {
-    try {
-      setIsUpdating(true);
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const response = await makeAuthenticatedRequest(
-        `${baseUrl}/api/superadmin/hero-section/image-text`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ imageId, field, value }),
-        },
-        'superadmin'
-      );
-
-      if (response && response.ok) {
-        setHeroData(prev => ({
-          ...prev,
-          images: prev.images.map(img => 
-            img.id === imageId ? { ...img, [field]: value } : img
-          )
-        }));
-        showSuccessModal('Image text updated successfully!');
-      } else {
-        const errorData = await response.json();
-        showSuccessModal(errorData.message || 'Failed to update image text');
-      }
-    } catch (error) {
-      console.error('Error updating image text:', error);
-      showSuccessModal('Failed to update image text. Please try again.');
-    } finally {
-      setIsUpdating(false);
-    }
-  };
 
   // File upload handlers
   const handleFileUpload = async (file, type, imageId = null) => {
@@ -525,18 +452,30 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           <h2>Hero Section</h2>
           <p>Manage the main hero section content, including tag, heading, video, and banner images</p>
         </div>
-        <div className={styles.panelActions}>
+        <div className={styles.headerActions}>
           {isEditingHero ? (
-            <div className={styles.headerActions}>
-              <button className={styles.cancelBtn} onClick={handleCancelEdit}>
+            <>
+              <button
+                onClick={handleCancelEdit}
+                className={styles.cancelBtn}
+                disabled={isUpdatingHero}
+              >
                 Cancel
               </button>
-              <button className={styles.saveBtn} onClick={handleHeroUpdate}>
-                Save Changes
+              <button
+                onClick={handleHeroUpdate}
+                disabled={isUpdatingHero}
+                className={styles.saveBtn}
+              >
+                {isUpdatingHero ? 'Saving...' : 'Save Changes'}
               </button>
-            </div>
+            </>
           ) : (
-            <button className={styles.editToggleBtn} onClick={handleEditToggle}>
+            <button
+              onClick={handleEditToggle}
+              className={styles.editToggleBtn}
+              disabled={isUpdatingHero}
+            >
               <FiEdit3 size={16} />
               Edit
             </button>
@@ -891,10 +830,11 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         isOpen={showHeroModal}
         itemName="Hero Section"
         itemType="all changes"
-        actionType="save"
+        actionType="update"
         onConfirm={handleHeroConfirm}
         onCancel={handleHeroCancel}
         isDeleting={isUpdatingHero}
+        customMessage="This will update the hero section content across the entire public website. The changes will be visible immediately."
       />
 
       {/* Full Viewport Video Modal */}

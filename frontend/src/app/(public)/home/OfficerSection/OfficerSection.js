@@ -7,7 +7,7 @@ import {
   FaPhone,
 } from 'react-icons/fa';
 import { usePublicHeadsFaces } from '../../hooks/usePublicData';
-import Loader from '../../../../components/Loader';
+import Loader from '../../../../components/ui/Loader';
 
 export default function OfficerSection() {
   const { headsFacesData, isLoading, error } = usePublicHeadsFaces();
@@ -54,7 +54,7 @@ export default function OfficerSection() {
             {/* Left side - Text content */}
             <div className={styles.textContent}>
               <div className={styles.greeting}>
-                <span className={styles.greetingText}>Hello, I'm</span>
+                <span className={styles.greetingText}>Hello, I&apos;m</span>
                 <h1 className={styles.adviserName}>{primaryAdviser.name}</h1>
               </div>
               
@@ -90,7 +90,7 @@ export default function OfficerSection() {
             <div className={styles.imageContainer}>
               <div className={styles.imageWrapper}>
                 <Image
-                  src={primaryAdviser.image_url || "/default-profile.png"}
+                  src={primaryAdviser.image_url || "/defaults/default-profile.png"}
                   alt={primaryAdviser.name}
                   fill
                   className={styles.adviserImage}

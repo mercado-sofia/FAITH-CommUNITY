@@ -1,6 +1,6 @@
 /* Volunteer Banner Section - Used by main organization page */
 .volunteerBanner {
-  background-image: url('/volunteerBanner.png');
+  background-image: url('/assets/backgrounds/volunteerBanner.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

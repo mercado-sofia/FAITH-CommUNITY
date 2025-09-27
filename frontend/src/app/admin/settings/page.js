@@ -6,8 +6,7 @@ import { FaLock, FaBuilding } from 'react-icons/fa';
 import { useAdminProfile } from '../hooks/useAdminProfile';
 import { selectCurrentAdmin, updateAdminEmail } from '@/rtk/superadmin/adminSlice';
 import { SkeletonLoader, SuccessModal } from '../components';
-import { EmailChange } from '@/components/EmailChange';
-import PasswordChange from '@/components/PasswordChange';
+import { EmailChange, PasswordChange } from '@/components';
 import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError } from '@/utils/adminAuth';
 import styles from './AdminSettings.module.css';
 

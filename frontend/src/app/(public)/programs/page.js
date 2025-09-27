@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import styles from './programs.module.css';
-import Loader from '../../../components/Loader';
+import Loader from '../../../components/ui/Loader';
 import { PageBanner, Pagination } from '../components';
 import { SearchAndFilterBar, OrgLinks, ProgramCard } from './components';
 import { usePublicPrograms } from '../hooks/usePublicData';
@@ -127,7 +127,7 @@ export default function ProgramsPage() {
     <>
       <PageBanner
         title="Programs and Services"
-        backgroundImage="/sample/sample2.jpg"
+        backgroundImage="/samples/sample2.jpg"
         breadcrumbs={[
           { href: '/', label: 'Home' },
           { label: 'Programs and Services' },

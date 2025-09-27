@@ -104,7 +104,7 @@ export default function ImpactSection() {
       return {
         image: project.image ? 
           getFeaturedProjectImageUrl(project.image)
-          : '/sample/sample1.jpg',
+          : '/samples/sample1.jpg',
         title: project.title || 'Featured Project',
         date: displayDate,
         description: project.description || 'An amazing project making a difference in the community.',

@@ -90,7 +90,7 @@ const ViewDetailsModal = ({
     
     if (programData.image) {
       images.push({
-        src: getProgramImageUrl(programData.image) || '/default-profile.png',
+        src: getProgramImageUrl(programData.image) || '/defaults/default-profile.png',
         alt: 'Main Program Image',
         type: 'main'
       });
@@ -99,7 +99,7 @@ const ViewDetailsModal = ({
     if (programData.additionalImages && Array.isArray(programData.additionalImages)) {
       programData.additionalImages.forEach((image, index) => {
         images.push({
-          src: getProgramImageUrl(image) || '/default-profile.png',
+          src: getProgramImageUrl(image) || '/defaults/default-profile.png',
           alt: `Additional Image ${index + 1}`,
           type: 'additional'
         });
@@ -166,7 +166,7 @@ const ViewDetailsModal = ({
                   <div className={styles.mainImageContainer}>
                     <div className={styles.imageWrapper} onClick={() => openImageViewer(getAllProgramImages(), 0)}>
                       <Image 
-                        src={getProgramImageUrl(programData.image) || '/default-profile.png'} 
+                        src={getProgramImageUrl(programData.image) || '/defaults/default-profile.png'} 
                         alt="Program Main Image" 
                         width={400}
                         height={300}
@@ -194,7 +194,7 @@ const ViewDetailsModal = ({
                         onClick={() => openImageViewer(getAllProgramImages(), index + 1)}
                       >
                         <Image 
-                          src={getProgramImageUrl(image) || '/default-profile.png'} 
+                          src={getProgramImageUrl(image) || '/defaults/default-profile.png'} 
                           alt={`Additional image ${index + 1}`} 
                           width={120}
                           height={120}

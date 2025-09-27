@@ -13,7 +13,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:808
 export const getImageUrl = (imagePath, type = 'programs', subType = 'main') => {
   try {
     if (!imagePath) {
-      return '/default-profile.png';
+      return '/defaults/default-profile.png';
     }
     
     // If it's already a full URL or base64, return as is
@@ -28,10 +28,10 @@ export const getImageUrl = (imagePath, type = 'programs', subType = 'main') => {
     }
     
     // If it's not a Cloudinary URL, return fallback
-    return '/default-profile.png';
+    return '/defaults/default-profile.png';
   } catch (error) {
     logger.error('Error in getImageUrl', error, { imagePath, type, subType });
-    return '/default-profile.png';
+    return '/defaults/default-profile.png';
   }
 };
 
@@ -45,13 +45,13 @@ export const getProgramImageUrl = (imagePath, subType = 'main') => {
   try {
     // Handle null, undefined, or empty values
     if (!imagePath || imagePath === '' || imagePath === null || imagePath === undefined) {
-      return '/default-profile.png';
+      return '/defaults/default-profile.png';
     }
     
     return getImageUrl(imagePath, 'programs', subType === 'additional' ? 'additional-images' : 'main-images');
   } catch (error) {
     logger.error('Error in getProgramImageUrl', error, { imagePath, subType });
-    return '/default-profile.png';
+    return '/defaults/default-profile.png';
   }
 };
 
@@ -65,7 +65,7 @@ export const getOrganizationImageUrl = (imagePath, subType = 'logo') => {
   try {
     // Handle null, undefined, or empty values
     if (!imagePath || imagePath === '' || imagePath === null || imagePath === undefined) {
-      return subType === 'head' ? '/default-profile.png' : '/logo/faith_community_logo.png';
+      return subType === 'head' ? '/defaults/default-profile.png' : '/assets/logos/faith_community_logo.png';
     }
     
     // If it's already a full URL or base64, return as is
@@ -80,10 +80,10 @@ export const getOrganizationImageUrl = (imagePath, subType = 'logo') => {
     }
     
     // If it's not a Cloudinary URL, return fallback
-    return subType === 'head' ? '/default-profile.png' : '/logo/faith_community_logo.png';
+    return subType === 'head' ? '/defaults/default-profile.png' : '/assets/logos/faith_community_logo.png';
   } catch (error) {
     logger.error('Error in getOrganizationImageUrl', error, { imagePath, subType });
-    return subType === 'head' ? '/default-profile.png' : '/logo/faith_community_logo.png';
+    return subType === 'head' ? '/defaults/default-profile.png' : '/assets/logos/faith_community_logo.png';
   }
 };
 
@@ -104,7 +104,7 @@ export const getNewsImageUrl = (imagePath) => {
 export const getProfilePhotoUrl = (imagePath) => {
   try {
     if (!imagePath) {
-      return '/default-profile.png';
+      return '/defaults/default-profile.png';
     }
     
     // If it's already a full URL or base64, return as is
@@ -119,10 +119,10 @@ export const getProfilePhotoUrl = (imagePath) => {
     }
     
     // If it's not a Cloudinary URL, return fallback
-    return '/default-profile.png';
+    return '/defaults/default-profile.png';
   } catch (error) {
     logger.error('Error in getProfilePhotoUrl', error, { imagePath });
-    return '/default-profile.png';
+    return '/defaults/default-profile.png';
   }
 };
 
@@ -153,10 +153,10 @@ export const isValidImageUrl = (url) => {
  */
 export const getFallbackImageUrl = (type = 'default') => {
   const fallbackImages = {
-    default: '/default-profile.png',
-    program: '/sample/sample1.jpg',
-    organization: '/logo/facts_logo.jpg',
-    volunteer: '/default-profile.png'
+    default: '/defaults/default-profile.png',
+    program: '/samples/sample1.jpg',
+    organization: '/assets/logos/faith_community_logo.png',
+    volunteer: '/defaults/default-profile.png'
   };
   
   return fallbackImages[type] || fallbackImages.default;

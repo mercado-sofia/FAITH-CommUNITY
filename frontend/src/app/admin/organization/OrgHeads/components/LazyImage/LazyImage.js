@@ -10,7 +10,7 @@ export default function LazyImage({
   width,
   height,
   className = '',
-  placeholder = '/default.png',
+  placeholder = '/defaults/default.png',
   onLoad,
   onError,
   priority = false,

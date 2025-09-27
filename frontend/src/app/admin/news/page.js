@@ -7,7 +7,7 @@ import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { useAdminNews } from '../hooks/useAdminData';
 import { NewsTable, CreatePostForm } from './components';
 import { SearchAndFilterControls, RecentlyDeletedModal } from './components';
-import ErrorBoundary from '@/components/ErrorBoundary';
+import { ErrorBoundary } from '@/components';
 import { DeleteConfirmationModal, SuccessModal, SkeletonLoader } from '../components';
 import { invalidateNewsCache } from '../utils/cacheInvalidator';
 import styles from './news.module.css';

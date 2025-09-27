@@ -18,7 +18,7 @@ export default function OrgInfoCard({ data }) {
             className={styles.orgLogo}
             priority
             onError={(e) => {
-              e.target.src = '/default.png';
+              e.target.src = '/defaults/default.png';
             }}
           />
         </div>

@@ -86,7 +86,7 @@ export default function OrgBanner() {
                     width={100} 
                     height={100}
                     onError={(e) => {
-                      e.target.src = '/default.png'; // Fallback image
+                      e.target.src = '/defaults/default.png'; // Fallback image
                     }}
                   />
                   <p>{org.acronym}</p>

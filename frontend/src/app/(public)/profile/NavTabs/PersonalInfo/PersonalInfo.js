@@ -313,7 +313,7 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
                 />
               ) : photoToRemove ? (
                 <Image
-                  src="/default-profile.png"
+                  src="/defaults/default-profile.png"
                   alt="Default Profile"
                   width={60}
                   height={60}
@@ -329,12 +329,12 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
                   className={styles.image}
                   priority
                   onError={(e) => {
-                    e.target.src = '/default-profile.png';
+                    e.target.src = '/defaults/default-profile.png';
                   }}
                 />
               ) : (
                 <Image
-                  src="/default-profile.png"
+                  src="/defaults/default-profile.png"
                   alt="Default Profile"
                   width={60}
                   height={60}

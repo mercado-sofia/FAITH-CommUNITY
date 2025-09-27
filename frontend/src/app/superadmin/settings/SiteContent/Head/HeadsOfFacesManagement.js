@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiEdit3, FiXCircle, FiPlus, FiTrash2, FiUpload, FiSave, FiMenu } from 'react-icons/fi';
+import Image from 'next/image';
+import { FiEdit3, FiXCircle, FiPlus, FiTrash2, FiUpload, FiMenu } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import ConfirmationModal from '../../../components/ConfirmationModal';
 import { useScrollPosition } from '@/hooks/useScrollPosition';
@@ -10,7 +11,6 @@ import styles from './HeadsOfFacesManagement.module.css';
 export default function HeadsOfFacesManagement({ showSuccessModal }) {
   const { preserveScrollPositionAsync } = useScrollPosition();
   const [headsData, setHeadsData] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -44,7 +44,6 @@ export default function HeadsOfFacesManagement({ showSuccessModal }) {
   useEffect(() => {
     const loadHeadsData = async () => {
       try {
-        setLoading(true);
         const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/heads-faces`,
@@ -59,8 +58,6 @@ export default function HeadsOfFacesManagement({ showSuccessModal }) {
       } catch (error) {
         console.error('Error loading heads data:', error);
         showAuthError('Failed to load heads data. Please try again.');
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -445,24 +442,6 @@ export default function HeadsOfFacesManagement({ showSuccessModal }) {
     setTempHeadsData([...headsData]);
   };
 
-  if (loading) {
-    return (
-      <div className={styles.settingsPanel}>
-        <div className={styles.panelHeader}>
-          <div className={styles.panelTitle}>
-            <h2>Heads Of FACES</h2>
-            <p>Manage the heads of FACES displayed on the public interface</p>
-          </div>
-        </div>
-        <div className={styles.panelContent}>
-          <div className={styles.loadingContainer}>
-            <div className={styles.loadingSpinner}></div>
-            <p>Loading heads data...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className={styles.settingsPanel}>
@@ -560,7 +539,7 @@ export default function HeadsOfFacesManagement({ showSuccessModal }) {
                 <div className={styles.cardHeader}>
                   <div className={styles.headImage}>
                     {head.image_url ? (
-                      <img src={head.image_url} alt={head.name} />
+                      <Image src={head.image_url} alt={head.name} width={60} height={60} className={styles.headImage} />
                     ) : (
                       <div className={styles.placeholderImage}>
                         <span>{head.name.charAt(0)}</span>
@@ -707,7 +686,7 @@ export default function HeadsOfFacesManagement({ showSuccessModal }) {
                   </label>
                   {selectedFile && (
                     <div className={styles.filePreview}>
-                      <img src={formData.image_url} alt="Preview" />
+                      <Image src={formData.image_url} alt="Preview" width={100} height={100} className={styles.previewImage} />
                       <span>{selectedFile.name}</span>
                     </div>
                   )}
@@ -825,7 +804,7 @@ export default function HeadsOfFacesManagement({ showSuccessModal }) {
                   </label>
                   {(selectedFile || formData.image_url) && (
                     <div className={styles.filePreview}>
-                      <img src={formData.image_url} alt="Preview" />
+                      <Image src={formData.image_url} alt="Preview" width={100} height={100} className={styles.previewImage} />
                       {selectedFile && <span>{selectedFile.name}</span>}
                     </div>
                   )}

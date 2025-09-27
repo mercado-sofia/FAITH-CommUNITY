@@ -22,8 +22,8 @@ export const usePublicPageLoader = (pageName, options = {}) => {
   // Get initial state for this page
   const initialState = getPageLoaderState(pageName);
   
-  const [loading, setLoading] = useState(!initialState.hasVisited);
-  const [pageReady, setPageReady] = useState(false);
+  const [loading, setLoading] = useState(false); // Start with false to avoid stuck loading
+  const [pageReady, setPageReady] = useState(true); // Start with true to show content immediately
   const timerRef = useRef(null);
   const pageReadyTimerRef = useRef(null);
 
@@ -37,6 +37,7 @@ export const usePublicPageLoader = (pageName, options = {}) => {
         setLoading(false);
       }, initialDelay);
     } else {
+      // If already visited, set loading to false immediately
       setLoading(false);
     }
 
@@ -52,9 +53,14 @@ export const usePublicPageLoader = (pageName, options = {}) => {
     if (!loading) {
       const extraDelay = initialState.isFirstVisit ? firstVisitExtraDelay : 0;
       
-      pageReadyTimerRef.current = setTimeout(() => {
+      if (extraDelay > 0) {
+        pageReadyTimerRef.current = setTimeout(() => {
+          setPageReady(true);
+        }, extraDelay);
+      } else {
+        // If no extra delay needed, set pageReady immediately
         setPageReady(true);
-      }, extraDelay);
+      }
     }
 
     return () => {

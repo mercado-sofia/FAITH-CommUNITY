@@ -8,7 +8,6 @@ export default function PublicHomePage() {
   // Use centralized page loader hook
   const { loading, pageReady } = usePublicPageLoader('home');
 
-
   if (loading || !pageReady) {
     return <Loader small centered />;
   }

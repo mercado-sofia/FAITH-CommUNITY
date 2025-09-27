@@ -27,12 +27,9 @@ export default function HeroSectionManagement({ showSuccessModal }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteType, setDeleteType] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
-<<<<<<< HEAD
   const [isUpdating, setIsUpdating] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [mounted, setMounted] = useState(false);
-=======
->>>>>>> 9523d3092b596d8652786a6bc24ed1d1b65eff08
   
   // Upload loading states
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
@@ -144,25 +141,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
     }
   };
 
-  // Edit state handlers
-  const toggleTextEdit = () => setIsEditingText(!isEditingText);
-  const toggleVideoEdit = () => setIsEditingVideo(!isEditingVideo);
-  const toggleImageEdit = (imageId) => {
-    setIsEditingImages(prev => ({
-      ...prev,
-      [imageId]: !prev[imageId]
-    }));
-  };
-
-  // Cancel edit handlers
-  const cancelTextEdit = () => setIsEditingText(false);
-  const cancelVideoEdit = () => setIsEditingVideo(false);
-  const cancelImageEdit = (imageId) => {
-    setIsEditingImages(prev => ({
-      ...prev,
-      [imageId]: false
-    }));
-  };
 
   // Helper function to convert YouTube URLs to embed format
   const convertToEmbedUrl = (url) => {

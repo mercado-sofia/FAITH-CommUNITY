@@ -1,4 +1,4 @@
-import { testCloudinaryConnection } from './back_end/utils/cloudinaryConfig.js';
+import { testCloudinaryConnection } from './src/utils/cloudinaryConfig.js';
 import dotenv from 'dotenv';
 
 // Load environment variables

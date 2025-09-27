@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import OptimizedImage from '@/components/OptimizedImage';
+import { OptimizedImage } from '@/components';
 import { getProfilePhotoUrl } from '@/utils/uploadPaths';
 import styles from './styles/MobileSidebar.module.css';
 import { FaChevronRight, FaChevronDown, FaUser, FaSignOutAlt, FaCog, FaClipboardList } from 'react-icons/fa';
@@ -84,7 +84,7 @@ export default function MobileSidebar({
           className={styles.faithBtn}
         >
           <Image
-            src="/logo/faith_logo.png"
+            src="/assets/logos/faith_logo.png"
             alt="FAITH Logo"
             width={18}
             height={18}

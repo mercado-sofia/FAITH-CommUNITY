@@ -118,12 +118,12 @@ export default function DragDropHeadsContainer({
                 height={100}
                 className={styles.photo}
                 onError={(e) => {
-                  e.target.src = '/default.png'
+                  e.target.src = '/defaults/default.png'
                 }}
               />
             ) : (
               <Image
-                src="/default.png"
+                src="/defaults/default.png"
                 alt="Default profile photo placeholder"
                 width={80}
                 height={100}

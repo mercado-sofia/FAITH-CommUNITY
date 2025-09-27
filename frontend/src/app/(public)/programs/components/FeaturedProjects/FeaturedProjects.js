@@ -63,7 +63,7 @@ export default function FeaturedProjects({ orgID }) {
     if (program.image) {
       return getProgramImageUrl(program.image);
     }
-    return '/sample/sample2.jpg'; // Default image
+    return '/samples/sample2.jpg'; // Default image
   };
 
   if (isLoading) {

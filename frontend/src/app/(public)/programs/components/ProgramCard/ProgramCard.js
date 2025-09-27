@@ -74,7 +74,7 @@ const DateBadge = ({ dateInfo }) => {
         >
           {/* Use the short badge SVG */}
           <image 
-            href="/BadgeShort.svg" 
+            href="/assets/icons/BadgeShort.svg" 
             width="80" 
             height="60" 
             preserveAspectRatio="xMidYMid slice"
@@ -124,7 +124,7 @@ const DateBadge = ({ dateInfo }) => {
         >
           {/* Use the long badge SVG */}
           <image 
-            href="/BadgeLong.svg" 
+            href="/assets/icons/BadgeLong.svg" 
             width="120" 
             height="60" 
             preserveAspectRatio="xMidYMid slice"

@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { FaEnvelope, FaLock } from 'react-icons/fa';
 import { createPortal } from 'react-dom';
-import { EmailChange } from '@/components/EmailChange';
-import PasswordChange from '@/components/PasswordChange';
+import { EmailChange, PasswordChange } from '@/components';
 import ChangeSuccessModal from './ChangeSuccessModal';
 import styles from './EmailandPassword.module.css';
 

@@ -48,7 +48,7 @@ useEffect(() => {
   return (
     <section
       className={styles.inviteSection}
-      style={{ backgroundImage: "url('/sample/sample4.jpg')" }}
+      style={{ backgroundImage: "url('/samples/sample4.jpg')" }}
     >
       <div className={styles.overlay} />
 

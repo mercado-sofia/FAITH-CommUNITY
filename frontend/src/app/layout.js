@@ -1,9 +1,7 @@
 import "./globals.css";
 import { Inter, Roboto, Source_Sans_3 } from "next/font/google";
-import LoaderWrapper from "../components/LoaderWrapper";
+import { LoaderWrapper, DisableTabOnButtonsLinks, SWRProvider } from "@/components";
 import ReduxProvider from "./ReduxProvider";
-import DisableTabOnButtonsLinks from "../components/DisableTabOnButtonsLinks";
-import SWRProvider from '../components/SWRProvider';
 import '../utils/devTools'; // Load development tools
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });

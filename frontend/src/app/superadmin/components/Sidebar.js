@@ -37,14 +37,14 @@ export default function Sidebar() {
         <div className={styles.logoGradientBorder}>
           <div className={styles.logoInnerWhite}>
             <Image 
-              src="/default-profile.png" 
+              src="/defaults/default-profile.png" 
               width={45} 
               height={45} 
               alt="FAITH Logo" 
               unoptimized={true}
               onError={(e) => {
                 console.error('Superadmin sidebar logo failed to load');
-                e.target.src = "/default-profile.png";
+                e.target.src = "/defaults/default-profile.png";
               }}
             />
           </div>

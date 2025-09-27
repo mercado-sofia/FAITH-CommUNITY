@@ -271,7 +271,7 @@ export default function LoginPage() {
       <AuthLeftPanel labelText="Log In" />
       <div className={styles.rightPane}>
         <div className={styles.logoWrapper}>
-          <Image src="/logo/faith_community_logo.png" alt="Logo" width={80} height={80} />
+          <Image src="/assets/logos/faith_community_logo.png" alt="Logo" width={80} height={80} />
         </div>
         <form onSubmit={handleLogin} className={styles.form} noValidate>
           <h2 className={styles.title}>Log In</h2>

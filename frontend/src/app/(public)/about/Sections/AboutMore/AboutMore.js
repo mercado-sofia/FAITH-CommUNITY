@@ -2,7 +2,7 @@ import styles from './aboutMore.module.css';
 import Image from "next/image";
 import { FaCheck } from 'react-icons/fa';
 import { usePublicAboutUs, usePublicSiteName } from '../../../hooks/usePublicData';
-import Loader from '@/components/Loader';
+import { Loader } from '@/components';
 
 export default function AboutMore() {
   const { aboutUsData, isLoading, error } = usePublicAboutUs();
@@ -29,7 +29,7 @@ export default function AboutMore() {
       <div className={styles.aboutMoreWrapper}>
         <div className={styles.aboutMoreImage}>
         <Image 
-          src={aboutUsData?.image_url || "/sample/sample1.jpg"} 
+          src={aboutUsData?.image_url || "/samples/sample1.jpg"} 
           alt="About Image"
           width={500}
           height={400}

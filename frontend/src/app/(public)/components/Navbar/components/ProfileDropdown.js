@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useDropdown } from '@/hooks/useDropdown';
-import OptimizedImage from '@/components/OptimizedImage';
+import { OptimizedImage } from '@/components';
 import { getProfilePhotoUrl } from '@/utils/uploadPaths';
 import styles from './styles/ProfileDropdown.module.css';
 import { FaChevronRight, FaUser, FaSignOutAlt, FaCog, FaClipboardList } from 'react-icons/fa';

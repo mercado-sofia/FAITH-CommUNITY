@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { FiEdit3, FiXCircle, FiPlus, FiTrash2, FiUpload, FiSave, FiMenu } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import ConfirmationModal from '../../../components/ConfirmationModal';
@@ -560,7 +561,7 @@ export default function HeadsOfFacesManagement({ showSuccessModal }) {
                 <div className={styles.cardHeader}>
                   <div className={styles.headImage}>
                     {head.image_url ? (
-                      <img src={head.image_url} alt={head.name} />
+                      <Image src={head.image_url} alt={head.name} width={60} height={60} className={styles.headImage} />
                     ) : (
                       <div className={styles.placeholderImage}>
                         <span>{head.name.charAt(0)}</span>
@@ -707,7 +708,7 @@ export default function HeadsOfFacesManagement({ showSuccessModal }) {
                   </label>
                   {selectedFile && (
                     <div className={styles.filePreview}>
-                      <img src={formData.image_url} alt="Preview" />
+                      <Image src={formData.image_url} alt="Preview" width={100} height={100} className={styles.previewImage} />
                       <span>{selectedFile.name}</span>
                     </div>
                   )}
@@ -825,7 +826,7 @@ export default function HeadsOfFacesManagement({ showSuccessModal }) {
                   </label>
                   {(selectedFile || formData.image_url) && (
                     <div className={styles.filePreview}>
-                      <img src={formData.image_url} alt="Preview" />
+                      <Image src={formData.image_url} alt="Preview" width={100} height={100} className={styles.previewImage} />
                       {selectedFile && <span>{selectedFile.name}</span>}
                     </div>
                   )}

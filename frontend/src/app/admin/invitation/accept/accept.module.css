@@ -16,7 +16,7 @@
   left: 0;
   right: 0;
   height: 50vh;
-  background: url('/admin-account-setup/topbg.png') no-repeat top center;
+  background: url('/assets/backgrounds/admin-account-setup/topbg.png') no-repeat top center;
   background-size: cover;
   z-index: 1;
 }

@@ -109,7 +109,7 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
       {program.image ? (
         <div className={styles.imageContainer}>
           <Image
-            src={getProgramImageUrl(program.image) || '/default-profile.png'}
+            src={getProgramImageUrl(program.image) || '/defaults/default-profile.png'}
             alt={program.title}
             className={styles.programImage}
             width={400}

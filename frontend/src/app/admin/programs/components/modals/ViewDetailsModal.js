@@ -44,7 +44,7 @@ const ViewDetailsModal = ({ program, onClose }) => {
               {program.image ? (
                 <div className={styles.imageSection}>
                   <Image
-                    src={getProgramImageUrl(program.image) || '/default-profile.png'}
+                    src={getProgramImageUrl(program.image) || '/defaults/default-profile.png'}
                     alt={program.title}
                     className={styles.programImage}
                     width={600}

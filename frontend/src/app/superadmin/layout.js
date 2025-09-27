@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { NavigationProvider } from "../../contexts/NavigationContext";
 import Sidebar from "./components/Sidebar"
 import TopBar from "./components/TopBar"
-import Loader from "../../components/Loader";
+import { Loader } from "@/components";
 import styles from "./styles/layout.module.css"
 import { Poppins, Inter, Urbanist } from 'next/font/google';
 

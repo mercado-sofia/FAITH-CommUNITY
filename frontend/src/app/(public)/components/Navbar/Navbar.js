@@ -159,7 +159,7 @@ export default function Navbar() {
             className={styles.faithBtn}
           >
             <Image
-              src="/logo/faith_logo.png"
+              src="/assets/logos/faith_logo.png"
               alt="FAITH Logo"
               width={18}
               height={18}

@@ -99,7 +99,7 @@ export default function HeroSection() {
           <div className={styles.rightColumn}>
             {heroData?.images?.map((image, index) => {
               const isFirst = index === 0;
-              const imageSrc = image.url || (isFirst ? "/sample/sample2.jpg" : index === 1 ? "/sample/sample8.jpg" : "/sample/sample3.jpeg");
+              const imageSrc = image.url || (isFirst ? "/samples/sample2.jpg" : index === 1 ? "/samples/sample8.jpg" : "/samples/sample3.jpeg");
               
               return (
                 <div key={image.id} className={`${styles.card} ${isFirst ? styles.first : styles.cardVertical}`}>

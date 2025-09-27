@@ -43,7 +43,7 @@ export const usePublicOrganizationData = (orgID) => {
     description: data.data.description || '',
     facebook: data.data.facebook || '',
     email: data.data.email || '',
-    logo: data.data.logo || '/logo/faith_community_logo.png',
+    logo: data.data.logo || '/assets/logos/faith_community_logo.png',
     advocacies: data.data.advocacies || '', // Backend returns string, not array
     competencies: data.data.competencies || '', // Backend returns string, not array
     heads: sortHeadsByOrder(data.data.heads || []), // Apply same sorting as admin section
@@ -449,7 +449,7 @@ export const usePublicAboutUs = () => {
   const aboutUsData = {
     heading: data?.heading || 'We Believe That We Can Help More People With You',
     description: data?.description || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.',
-    image_url: data?.image_url || '/sample/sample1.jpg',
+    image_url: data?.image_url || '/samples/sample1.jpg',
     extension_categories: data?.extension_categories || [
       { name: 'Extension For Education', icon: 'education', color: 'green' },
       { name: 'Extension For Medical', icon: 'medical', color: 'red' },

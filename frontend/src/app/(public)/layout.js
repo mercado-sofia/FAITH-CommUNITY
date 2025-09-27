@@ -1,12 +1,11 @@
 'use client';
 
 import { Navbar, Footer, FloatingMessage, ToastContainer, GlobalLoginModal } from './components';
-import Loader from '../../components/Loader';
+import { Loader, PagePreloader } from '@/components';
 import '../globals.css';
 import Head from 'next/head';
 import { useEffect, useRef, useState } from 'react';
 import styles from './styles/publicLayout.module.css';
-import PagePreloader from '../../components/PagePreloader';
 import { Poppins, Inter } from 'next/font/google';
 import { usePublicBranding } from './hooks/usePublicData';
 
@@ -32,10 +31,10 @@ export default function PublicLayout({ children }) {
     const preloadCriticalResources = () => {
       // Preload critical images
       const criticalImages = [
-        '/logo/faith_community_logo.png',
-        '/sample/sample2.jpg',
-        '/sample/sample8.jpg',
-        '/sample/sample3.jpeg'
+        '/assets/logos/faith_community_logo.png',
+        '/samples/sample2.jpg',
+        '/samples/sample8.jpg',
+        '/samples/sample3.jpeg'
       ];
 
       criticalImages.forEach(src => {
@@ -115,7 +114,7 @@ export default function PublicLayout({ children }) {
         
         <link
           rel="preload"
-          href="/sample/sample4.jpg"
+          href="/samples/sample4.jpg"
           as="image"
         />
         {/* Preload critical fonts */}

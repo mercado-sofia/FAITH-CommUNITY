@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import Loader from '@/components/Loader';
+import { Loader } from '@/components';
 import { PageBanner as BannerSection } from '../../../components';
 import { OrgInfoCard, AdvocacyCompetency, FeaturedProjects, OrgHeadsCarousel, LatestPosts } from '../../components';
 import { usePublicOrganizationData } from '../../../hooks/usePublicData';
@@ -69,7 +69,7 @@ export default function OrgPage() {
       description: 'No data available for this organization.',
       facebook: '',
       email: '',
-      logo: '/logo/faith_community_logo.png',
+      logo: '/assets/logos/faith_community_logo.png',
       advocacies: [],
       competencies: [],
       heads: [],
@@ -80,7 +80,7 @@ export default function OrgPage() {
       <>
         <BannerSection
           title="Programs and Services"
-          backgroundImage="/sample/sample2.jpg"
+          backgroundImage="/samples/sample2.jpg"
           breadcrumbs={[
             { href: '/', label: 'Home' },
             { href: '/programs', label: 'Programs and Services' },
@@ -130,7 +130,7 @@ export default function OrgPage() {
     <>
       <BannerSection
         title="Programs and Services"
-        backgroundImage="/sample/sample2.jpg"
+        backgroundImage="/samples/sample2.jpg"
         breadcrumbs={[
           { href: '/', label: 'Home' },
           { href: '/programs', label: 'Programs and Services' },

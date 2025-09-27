@@ -7,7 +7,7 @@ import helmet from "helmet"
 import rateLimit from "express-rate-limit"
 import slowDown from "express-slow-down"
 import cookieParser from "cookie-parser"
-import { doubleCsrfProtection, generateCsrfToken } from "./back_end/utils/csrf.js"
+import { doubleCsrfProtection, generateCsrfToken } from "./src/utils/csrf.js"
 import pino from "pino"
 import pinoHttp from "pino-http"
 import path from "path"
@@ -15,7 +15,7 @@ import { fileURLToPath } from "url"
 import fs from "fs"
 
 // Import cleanup function for deleted news
-import cleanupDeletedNews from "./back_end/utils/cleanupDeletedNews.js"
+import cleanupDeletedNews from "./src/utils/cleanupDeletedNews.js"
 
 // Get current directory
 const __filename = fileURLToPath(import.meta.url)
@@ -160,7 +160,7 @@ app.get("/api/test", (req, res) => {
 if (process.env.NODE_ENV !== "production") {
   app.get("/api/debug/tables", async (req, res) => {
     try {
-      const db = await import("./back_end/database.js")
+      const db = await import("./src/database.js")
       const [tables] = await db.default.execute("SHOW TABLES")
       res.json({ success: true, tables: tables })
     } catch (error) {
@@ -170,7 +170,7 @@ if (process.env.NODE_ENV !== "production") {
 
   app.get("/api/debug/verification-tokens", async (req, res) => {
     try {
-      const db = await import("./back_end/database.js")
+      const db = await import("./src/database.js")
       const [tokens] = await db.default.execute(`
         SELECT id, email, verification_token, verification_token_expires, email_verified 
         FROM users 
@@ -185,7 +185,7 @@ if (process.env.NODE_ENV !== "production") {
   app.get("/api/debug/check-token/:token", async (req, res) => {
     try {
       const { token } = req.params
-      const db = await import("./back_end/database.js")
+      const db = await import("./src/database.js")
       const [exactMatch] = await db.default.execute(
         `SELECT id, email, verification_token, verification_token_expires, email_verified FROM users WHERE verification_token = ?`,
         [token]
@@ -206,11 +206,11 @@ if (process.env.NODE_ENV !== "production") {
 
 
 // Public Routes
-import applyRoutes from "./back_end/for_public/routes/apply.js"
-import organizationsRoutes from "./back_end/for_public/routes/organizations.js"
-import messagesRoutes from "./back_end/for_public/routes/messages.js"
-import usersRoutes from "./back_end/for_public/routes/users.js"
-import subscriptionRoutes from "./back_end/for_public/routes/subscription.js"
+import applyRoutes from "./src/(public)/routes/apply.js"
+import organizationsRoutes from "./src/(public)/routes/organizations.js"
+import messagesRoutes from "./src/(public)/routes/messages.js"
+import usersRoutes from "./src/(public)/routes/users.js"
+import subscriptionRoutes from "./src/(public)/routes/subscription.js"
 
 // Auth endpoint specific rate limits
 const authLimiter = rateLimit({
@@ -254,21 +254,21 @@ app.use("/api", messagesRoutes)
 app.use("/api/users", usersRoutes)
 
 // ADMIN ROUTES
-import advocaciesRoutes from "./back_end/admin/routes/advocacies.js"
-import competenciesRoutes from "./back_end/admin/routes/competencies.js"
-import headsRoutes from "./back_end/admin/routes/heads.js"
-import organizationRoutes from "./back_end/admin/routes/organization.js"
-import programsRoutes from "./back_end/admin/routes/programsRoutes.js"
-import submissionRoutes from "./back_end/admin/routes/submission.js"
-import uploadRoutes from "./back_end/admin/routes/upload.js"
-import volunteersRoutes from "./back_end/admin/routes/volunteers.js"
-import profileRoutes from "./back_end/admin/routes/profile.js"
+import advocaciesRoutes from "./src/admin/routes/advocacies.js"
+import competenciesRoutes from "./src/admin/routes/competencies.js"
+import headsRoutes from "./src/admin/routes/heads.js"
+import organizationRoutes from "./src/admin/routes/organization.js"
+import programsRoutes from "./src/admin/routes/programsRoutes.js"
+import submissionRoutes from "./src/admin/routes/submission.js"
+import uploadRoutes from "./src/admin/routes/upload.js"
+import volunteersRoutes from "./src/admin/routes/volunteers.js"
+import profileRoutes from "./src/admin/routes/profile.js"
 // MFA routes removed - only superadmin accounts use MFA
 
-import newsRoutes from "./back_end/admin/routes/newsRoutes.js"
-import notificationsRoutes from "./back_end/admin/routes/notifications.js"
-import inboxRoutes from "./back_end/admin/routes/inbox.js"
-import subscribersRoutes from "./back_end/admin/routes/subscribers.js";
+import newsRoutes from "./src/admin/routes/newsRoutes.js"
+import notificationsRoutes from "./src/admin/routes/notifications.js"
+import inboxRoutes from "./src/admin/routes/inbox.js"
+import subscribersRoutes from "./src/admin/routes/subscribers.js";
 
 
 app.use("/api/advocacies", advocaciesRoutes)
@@ -292,20 +292,20 @@ app.use("/api/subscribers", subscribersRoutes);
 
 
 // SUPERADMIN ROUTES
-import adminsRoutes from "./back_end/superadmin/routes/admins.js"
-import approvalRoutes from "./back_end/superadmin/routes/approvalRoutes.js"
-import faqRoutes from "./back_end/superadmin/routes/faqs.js"
-import missionVisionRoutes from "./back_end/superadmin/routes/missionVision.js"
-import footerRoutes from "./back_end/superadmin/routes/footer.js"
-import subscriptionsRoutes from "./back_end/superadmin/routes/subscriptions.js"
-import superadminProgramsRoutes from "./back_end/superadmin/routes/programsRoutes.js"
-import superadminAuthRoutes from "./back_end/superadmin/routes/superadminAuth.js"
-import superadminNotificationsRoutes from "./back_end/superadmin/routes/notifications.js"
-import invitationRoutes from "./back_end/superadmin/routes/invitations.js"
-import brandingRoutes from "./back_end/superadmin/routes/branding.js"
-import heroSectionRoutes from "./back_end/superadmin/routes/heroSection.js"
-import aboutUsRoutes from "./back_end/superadmin/routes/aboutUs.js"
-import headsFacesRoutes from "./back_end/superadmin/routes/headsFaces.js"
+import adminsRoutes from "./src/superadmin/routes/admins.js"
+import approvalRoutes from "./src/superadmin/routes/approvalRoutes.js"
+import faqRoutes from "./src/superadmin/routes/faqs.js"
+import missionVisionRoutes from "./src/superadmin/routes/missionVision.js"
+import footerRoutes from "./src/superadmin/routes/footer.js"
+import subscriptionsRoutes from "./src/superadmin/routes/subscriptions.js"
+import superadminProgramsRoutes from "./src/superadmin/routes/programsRoutes.js"
+import superadminAuthRoutes from "./src/superadmin/routes/superadminAuth.js"
+import superadminNotificationsRoutes from "./src/superadmin/routes/notifications.js"
+import invitationRoutes from "./src/superadmin/routes/invitations.js"
+import brandingRoutes from "./src/superadmin/routes/branding.js"
+import heroSectionRoutes from "./src/superadmin/routes/heroSection.js"
+import aboutUsRoutes from "./src/superadmin/routes/aboutUs.js"
+import headsFacesRoutes from "./src/superadmin/routes/headsFaces.js"
 
 // Add rate limits around admin/superadmin auth endpoints - DISABLED FOR NOW
 // app.use(["/api/admins/login", "/api/admins/forgot-password", "/api/admins/reset-password"], authSpeedLimiter, authLimiter)

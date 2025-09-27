@@ -5,7 +5,7 @@
     rgba(33, 165, 143, 0.85) 40.87%,
     rgba(255, 172, 0, 0.95) 100%
   ),
-  url("/sample/sample4.jpg") center/cover no-repeat;
+  url("/samples/sample4.jpg") center/cover no-repeat;
   color: white;
   text-align: center;
 }

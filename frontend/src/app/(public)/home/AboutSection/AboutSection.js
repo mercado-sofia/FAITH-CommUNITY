@@ -17,7 +17,7 @@ function AboutSection() {
         <div className={styles.aboutWrapper}>
           <div className={styles.aboutImageWrapper}>
             <Image
-              src={aboutUsLoading ? "/sample/sample1.jpg" : (aboutUsData?.image_url || "/sample/sample1.jpg")}
+              src={aboutUsLoading ? "/samples/sample1.jpg" : (aboutUsData?.image_url || "/samples/sample1.jpg")}
               alt="About Us Image"
               width={700}
               height={500}

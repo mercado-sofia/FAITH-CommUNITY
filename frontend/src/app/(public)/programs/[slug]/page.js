@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import styles from './programDetails.module.css';
-import Loader from '../../../../components/Loader';
+import Loader from '../../../../components/ui/Loader';
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
 import OtherProgramsCarousel from '../components/OtherProgramsCarousel/OtherProgramsCarousel';
 import { usePublicPageLoader } from '../../hooks/usePublicPageLoader';
@@ -411,7 +411,7 @@ export default function ProgramDetailsPage() {
                             height={48}
                             className={styles.orgLogo}
                             onError={(e) => {
-                              e.target.src = '/logo/faith_community_logo.png';
+                              e.target.src = '/assets/logos/faith_community_logo.png';
                             }}
                           />
                         )}

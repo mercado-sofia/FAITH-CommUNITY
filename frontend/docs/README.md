@@ -1,127 +1,90 @@
-# AdvocacyCompetency Component
+# FAITH CommUNITY Frontend Documentation
 
-## Overview
-This module provides a unified approach to handling advocacy and competency sections for organizations.
+## 📚 Documentation Index
 
-## Final Structure
+Welcome to the FAITH CommUNITY frontend documentation. This comprehensive guide covers all aspects of the volunteer management platform that connects volunteers with organizations for meaningful community service.
 
-```
-AdvocacyCompetency/
-├── index.js                          # Main exports
-├── README.md                         # Documentation
-├── components/                       # Reusable components
-│   ├── index.js                      # Component exports
-│   ├── AutoResizeTextarea/           # Self-contained component
-│   │   ├── index.js
-│   │   ├── AutoResizeTextarea.js
-│   │   └── AutoResizeTextarea.module.css
-│   └── Section/                      # Unified section component
-│       ├── index.js
-│       ├── Section.js
-│       └── Section.module.css
-├── modals/                          # Modal components
-│   ├── index.js                     # Modal exports
-│   ├── SectionEditModal.js          # Edit modal
-│   ├── SectionSummaryModal.js       # Summary modal
-│   └── styles/                      # Modal styles
-│       ├── modalBase.module.css     # Shared base styles
-│       ├── SectionEditModal.module.css
-│       └── SectionSummaryModal.module.css
-├── hooks/                           # Custom hooks
-│   ├── index.js                     # Hook exports
-│   ├── useModalScrollLock.js        # Modal scroll lock
-│   └── useFormChanges.js            # Form change detection
-└── config/                          # Configuration
-    ├── index.js                     # Config exports
-    └── sectionConfig.js             # Section configurations
-```
+## 🏗️ 01-Architecture
+- [Centralized Page Loader System](./01-architecture/CENTRALIZED_PAGE_LOADER_SYSTEM.md) - Unified loading system for public pages
+- [Virtualization Guide](./01-architecture/VIRTUALIZATION_GUIDE.md) - Performance optimization for large datasets
 
-### Components
-- **Section**: Unified component that handles both advocacy and competency sections
-- **AutoResizeTextarea**: Reusable textarea component with auto-resize functionality
+## 🎨 02-Frontend
+- [CSS Optimization Guide](./02-frontend/CSS_OPTIMIZATION_GUIDE.md) - Performance and styling best practices
+- [Performance Optimization Guide](./02-frontend/PERFORMANCE_OPTIMIZATION_GUIDE.md) - Frontend performance improvements
+- [Profile Page Documentation](./02-frontend/profile-page/) - Complete profile management system
 
-### Modals
-- **SectionEditModal**: Modal for editing section content
-- **SectionSummaryModal**: Modal for reviewing changes before submission
+## 🔐 03-Security
+- [Email Change Analysis](./03-security/EMAIL_CHANGE_ANALYSIS.md) - Secure email change implementation
+- [Admin Invitation Fixes](./03-security/ADMIN_INVITATION_FIXES.md) - Admin invitation system security
 
-### Hooks
-- **useModalScrollLock**: Locks background scroll when modal is open
-- **useFormChanges**: Detects changes in form data
+## 📧 04-Features
+- [Newsletter Implementation](./04-features/NEWSLETTER_IMPLEMENTATION_GUIDE.md) - Newsletter subscription system
 
-### Configuration
-- **sectionConfigs**: Configuration object defining section types and their properties
+## 🧪 05-Testing
+- [Form Persistence Tests](./05-testing/FORM_PERSISTENCE_TEST.md) - Volunteer application form testing
+- [Program Preview Tests](./05-testing/PROGRAM_PREVIEW_PERSISTENCE_TEST.md) - Program selection testing
+- [Admin Invitation Tests](./05-testing/test_invitation_flow.md) - Admin invitation flow testing
+- [Password Reset Tests](./05-testing/test_reset_password.md) - Password reset functionality testing
 
-## Usage
+## 🛠️ 06-Development
+- [Logging System](./06-development/LOGGING_README.md) - Production-ready logging implementation
 
-### Using the Unified Section Component
+## 🎯 Project Overview
 
-```javascript
-import { Section } from './AdvocacyCompetency'
+**FAITH CommUNITY** is a comprehensive volunteer management platform that serves as a bridge between volunteers and organizations. The platform facilitates community service programs, volunteer applications, and organizational management within the FAITH Colleges community.
 
-// In your parent component
-<Section 
-  type="advocacy"
-  data={advocacyData}
-  setIsEditing={setIsEditing}
-  setShowEditModal={setShowEditModal}
-  setOriginalData={setOriginalData}
-  setCurrentSection={setCurrentSection}
-  setTempEditData={setTempEditData}
-/>
+### Key Features
+- **Public Portal**: Volunteer registration, program browsing, and application system
+- **Admin Portal**: Organization management, program creation, and volunteer coordination
+- **Superadmin Portal**: System administration and user management
+- **Newsletter System**: Automated communication with subscribers
+- **Secure Authentication**: Multi-level authentication with email verification
+- **File Management**: Cloudinary integration for scalable file storage
 
-<Section 
-  type="competency"
-  data={competencyData}
-  setIsEditing={setIsEditing}
-  setShowEditModal={setShowEditModal}
-  setOriginalData={setOriginalData}
-  setCurrentSection={setCurrentSection}
-  setTempEditData={setTempEditData}
-/>
+### Technology Stack
+- **Frontend**: Next.js 14, React, Redux Toolkit, SWR
+- **Backend**: Node.js, Express.js, MySQL
+- **Authentication**: JWT with 2FA support
+- **File Storage**: Cloudinary integration
+- **Email**: SMTP with professional templates
+
+## 🚀 Quick Start
+
+### Development Setup
+```bash
+# Frontend
+cd frontend
+npm install
+npm run dev
+
+# Backend
+cd backend
+npm install
+npm run dev
 ```
 
-### Migration from Old Components
+### Environment Variables
+See individual documentation files for specific environment variable requirements.
 
-Replace:
-```javascript
-// Old way
-<AdvocacySection advocacyData={advocacyData} ... />
-<CompetencySection competencyData={competencyData} ... />
-```
+## 📖 Documentation Standards
 
-With:
-```javascript
-// New way
-<Section type="advocacy" data={advocacyData} ... />
-<Section type="competency" data={competencyData} ... />
-```
+When adding new documentation:
+1. Place files in the appropriate numbered category folder
+2. Use descriptive, clear titles
+3. Include code examples where applicable
+4. Update this README index when adding new files
+5. Follow the existing markdown formatting standards
 
-## Benefits
-- **DRY Principle**: Single component handles both section types
-- **Easier Maintenance**: Changes only need to be made once
-- **Consistent Behavior**: Guaranteed identical functionality
-- **Extensible**: Easy to add new section types by updating sectionConfigs
-- **Better Testing**: Only one component to test thoroughly
+## 🔄 Recent Updates
 
-## Adding New Section Types
+- ✅ Centralized page loader system implemented
+- ✅ Profile page photo upload system fixed
+- ✅ Email change security implementation completed
+- ✅ Newsletter subscription system deployed
+- ✅ Admin invitation system enhanced
+- ✅ Performance optimizations applied
 
-To add a new section type (e.g., 'mission'), simply update the configuration:
+---
 
-```javascript
-// In config/sectionConfig.js
-export const sectionConfigs = {
-  advocacy: { ... },
-  competency: { ... },
-  mission: {
-    title: 'Mission',
-    field: 'mission',
-    placeholder: 'No mission information specified',
-    type: 'mission'
-  }
-}
-```
-
-Then use it:
-```javascript
-<Section type="mission" data={missionData} ... />
-```
+*Last updated: December 2024*
+*For technical support, refer to the specific documentation files or contact the development team.*

@@ -93,6 +93,13 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit }) =>
     }
   }, [isEditMode, program?.id, loadExistingCollaborators, updateFormData]);
 
+  // Also load collaborators from program data if available
+  useEffect(() => {
+    if (isEditMode && program?.collaborators && Array.isArray(program.collaborators)) {
+      updateFormData({ collaborators: program.collaborators });
+    }
+  }, [isEditMode, program?.collaborators, updateFormData]);
+
   // Handle form data changes
   const handleFormDataChange = useCallback((updates) => {
     updateFormData(updates);
@@ -102,7 +109,8 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit }) =>
   const handleImageChangeWrapper = useCallback(async (event) => {
     const result = await handleImageChange(event);
     if (result?.file) {
-      updateFormData({ image: result.file });
+      // Store the base64 preview data instead of the File object
+      updateFormData({ image: result.preview });
     } else if (result?.error) {
       updateFormData({ image: null });
       // Handle error display if needed
@@ -112,9 +120,10 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit }) =>
   // Handle additional images changes
   const handleAdditionalImagesChangeWrapper = useCallback(async (event) => {
     const results = await handleAdditionalImagesChange(event);
-    const validFiles = results.filter(result => result.file).map(result => result.file);
-    if (validFiles.length > 0) {
-      updateFormData({ additionalImages: [...formData.additionalImages, ...validFiles] });
+    // Store the base64 preview data instead of File objects
+    const validPreviews = results.filter(result => result.preview).map(result => result.preview);
+    if (validPreviews.length > 0) {
+      updateFormData({ additionalImages: [...formData.additionalImages, ...validPreviews] });
     }
   }, [handleAdditionalImagesChange, updateFormData, formData.additionalImages]);
 

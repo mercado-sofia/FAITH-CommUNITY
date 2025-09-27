@@ -222,7 +222,7 @@ export const getSubmissionsByOrg = async (req, res) => {
     )
 
     // Parse JSON data and add metadata
-    const parsedRows = rows.map((row) => {
+    const parsedRows = await Promise.all(rows.map(async (row) => {
       let previous_data_parsed = {}
       let proposed_data_parsed = {}
       let parse_error = false
@@ -241,6 +241,28 @@ export const getSubmissionsByOrg = async (req, res) => {
         parse_error = true
       }
 
+      // For program submissions, fetch collaborator details
+      if (row.section === 'programs' && proposed_data_parsed.collaborators && Array.isArray(proposed_data_parsed.collaborators)) {
+        try {
+          const collaboratorIds = proposed_data_parsed.collaborators;
+          if (collaboratorIds.length > 0) {
+            const placeholders = collaboratorIds.map(() => '?').join(',');
+            const [collaboratorRows] = await db.execute(`
+              SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
+              FROM admins a
+              LEFT JOIN organizations o ON a.organization_id = o.id
+              WHERE a.id IN (${placeholders})
+            `, collaboratorIds);
+            
+            // Replace collaborator IDs with full collaborator objects
+            proposed_data_parsed.collaborators = collaboratorRows;
+          }
+        } catch (collabError) {
+          console.error('Error fetching collaborator details:', collabError);
+          // Keep original collaborator IDs if fetch fails
+        }
+      }
+
       return {
         ...row,
         previous_data: previous_data_parsed,
@@ -250,7 +272,7 @@ export const getSubmissionsByOrg = async (req, res) => {
         can_cancel: row.status === "pending",
         parse_error: parse_error, // Indicate if any parsing error occurred for this row
       }
-    })
+    }))
 
     // Return success even if some rows have parsing errors, as the query itself was successful
     res.json({
@@ -487,6 +509,28 @@ export const getSubmissionById = async (req, res) => {
       }
       if (submission.proposed_data) {
         submission.proposed_data = JSON.parse(submission.proposed_data)
+        
+        // For program submissions, fetch collaborator details
+        if (submission.section === 'programs' && submission.proposed_data.collaborators && Array.isArray(submission.proposed_data.collaborators)) {
+          try {
+            const collaboratorIds = submission.proposed_data.collaborators;
+            if (collaboratorIds.length > 0) {
+              const placeholders = collaboratorIds.map(() => '?').join(',');
+              const [collaboratorRows] = await db.execute(`
+                SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
+                FROM admins a
+                LEFT JOIN organizations o ON a.organization_id = o.id
+                WHERE a.id IN (${placeholders})
+              `, collaboratorIds);
+              
+              // Replace collaborator IDs with full collaborator objects
+              submission.proposed_data.collaborators = collaboratorRows;
+            }
+          } catch (collabError) {
+            console.error('Error fetching collaborator details:', collabError);
+            // Keep original collaborator IDs if fetch fails
+          }
+        }
       }
     } catch (parseError) {
       console.error("Error parsing JSON data:", parseError)

@@ -28,9 +28,19 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
     if (isEditMode && programId) {
       try {
         const collaborators = await fetchProgramCollaborators(programId);
-        setCollaborators(collaborators);
+        // Normalize the data structure to match what the form expects
+        const normalizedCollaborators = collaborators.map(collab => ({
+          id: collab.admin_id || collab.id,
+          email: collab.email,
+          organization_name: collab.organization_name,
+          organization_acronym: collab.organization_acronym,
+          status: collab.status
+        }));
+        setCollaborators(normalizedCollaborators);
       } catch (error) {
         console.error('Error loading existing collaborators:', error);
+        // Set empty array on error to prevent crashes
+        setCollaborators([]);
       }
     }
   }, [isEditMode, programId]);

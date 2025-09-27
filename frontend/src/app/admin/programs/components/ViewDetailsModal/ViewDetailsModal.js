@@ -2,12 +2,15 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { FaTimes, FaTag, FaCalendar, FaEye } from 'react-icons/fa';
+import { FaTimes, FaTag, FaCalendar, FaEye, FaUsers, FaExclamationTriangle } from 'react-icons/fa';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import { formatProgramDates, formatDateShort } from '@/utils/dateUtils.js';
 import styles from './ViewDetailsModal.module.css';
 
 const ViewDetailsModal = ({ program, onClose }) => {
+  // Debug: Log program data to understand what's being passed
+  console.log('ViewDetailsModal program data:', program);
+  
   // Using centralized date utilities - formatProgramDates is now imported
 
   const getCategoryLabel = (category) => {
@@ -43,13 +46,29 @@ const ViewDetailsModal = ({ program, onClose }) => {
               {/* Left - Program Image */}
               {program.image ? (
                 <div className={styles.imageSection}>
-                  <Image
-                    src={getProgramImageUrl(program.image) || '/defaults/default-profile.png'}
-                    alt={program.title}
-                    className={styles.programImage}
-                    width={600}
-                    height={300}
-                  />
+                  {getProgramImageUrl(program.image) === 'IMAGE_UNAVAILABLE' ? (
+                    <div className={styles.imagePlaceholder}>
+                      <FaExclamationTriangle />
+                      <span>Image unavailable</span>
+                    </div>
+                  ) : (
+                    <Image
+                      src={getProgramImageUrl(program.image)}
+                      alt={program.title}
+                      className={styles.programImage}
+                      width={600}
+                      height={300}
+                      onError={(e) => {
+                        console.error('ViewDetailsModal image failed to load:', program.image, 'Type:', typeof program.image);
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  )}
+                  <div className={styles.imageError} style={{display: 'none'}}>
+                    <FaExclamationTriangle />
+                    <span>Image unavailable</span>
+                  </div>
                 </div>
               ) : (
                 <div className={styles.imageSection}>
@@ -117,6 +136,26 @@ const ViewDetailsModal = ({ program, onClose }) => {
                 {program.description || 'No description provided'}
               </p>
             </div>
+
+            {/* Collaboration Section */}
+            {program.is_collaborative && program.collaborators && program.collaborators.length > 0 && (
+              <div className={styles.collaborationSection}>
+                <h4 className={styles.sectionTitle}>
+                  <FaUsers className={styles.sectionIcon} />
+                  Collaborators ({program.collaborators.length})
+                </h4>
+                <div className={styles.collaboratorsList}>
+                  {program.collaborators.map((collaborator, index) => (
+                    <div key={collaborator.id || index} className={styles.collaboratorItem}>
+                      <div className={styles.collaboratorInfo}>
+                        <span className={styles.collaboratorEmail}>{collaborator.email}</span>
+                        <span className={styles.collaboratorOrg}>({collaborator.organization_acronym})</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Additional Images - Full Width Below */}

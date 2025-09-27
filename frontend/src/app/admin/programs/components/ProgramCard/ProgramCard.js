@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { FaEdit, FaTag, FaCalendar, FaEllipsisH } from 'react-icons/fa';
+import { FaEdit, FaTag, FaCalendar, FaEllipsisH, FaExclamationTriangle } from 'react-icons/fa';
 import { TbListDetails } from 'react-icons/tb';
 import { LuSquareCheckBig } from 'react-icons/lu';
 import { MdOutlineRadioButtonChecked } from 'react-icons/md';
@@ -105,21 +105,28 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
       {/* Program Image */}
       {program.image ? (
         <div className={styles.imageContainer}>
-          <Image
-            src={getProgramImageUrl(program.image) || '/defaults/default-profile.png'}
-            alt={program.title}
-            className={styles.programImage}
-            width={400}
-            height={220}
-            style={{ objectFit: 'cover' }}
-            onError={(e) => {
-              e.target.style.display = 'none';
-              e.target.nextSibling.style.display = 'flex';
-            }}
-          />
+          {getProgramImageUrl(program.image) === 'IMAGE_UNAVAILABLE' ? (
+            <div className={styles.imagePlaceholder}>
+              <FaExclamationTriangle className={styles.placeholderIcon} />
+              <span>Image unavailable</span>
+            </div>
+          ) : (
+            <Image
+              src={getProgramImageUrl(program.image)}
+              alt={program.title}
+              className={styles.programImage}
+              width={400}
+              height={220}
+              style={{ objectFit: 'cover' }}
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+          )}
           <div className={styles.imagePlaceholder} style={{ display: 'none' }}>
-            <FaTag className={styles.placeholderIcon} />
-            <span>Image Failed to Load</span>
+            <FaExclamationTriangle className={styles.placeholderIcon} />
+            <span>Image unavailable</span>
           </div>
           
           {/* Three dots menu */}

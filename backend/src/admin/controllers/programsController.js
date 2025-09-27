@@ -100,7 +100,8 @@ export const getAdminPrograms = async (req, res) => {
           a.id,
           a.email,
           o.orgName as organization_name,
-          o.org as organization_acronym
+          o.org as organization_acronym,
+          pc.status as collaboration_status
         FROM program_collaborations pc
         LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
         LEFT JOIN organizations o ON a.organization_id = o.id

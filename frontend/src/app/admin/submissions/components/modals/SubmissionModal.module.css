@@ -798,6 +798,62 @@
   }
 }
 
+/* Collaboration Section */
+.collaborationSection {
+  background: #f0f9ff;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #bae6fd;
+  margin-top: 16px;
+}
+
+.collaborationLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e40af;
+  margin-bottom: 12px;
+}
+
+.collaborationIcon {
+  font-size: 14px;
+  color: #3b82f6;
+}
+
+.collaboratorsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.collaboratorItem {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.collaboratorInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.collaboratorEmail {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.collaboratorOrg {
+  font-size: 12px;
+  color: #6b7280;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .modalContainer {
@@ -840,5 +896,9 @@
 
   .fieldHeader {
     margin-bottom: 10px;
+  }
+
+  .collaborationSection {
+    padding: 12px;
   }
 }

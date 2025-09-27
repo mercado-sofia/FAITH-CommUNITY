@@ -79,7 +79,7 @@ const CollaboratorSection = ({
             <h5>Selected Collaborators ({collaborators.length})</h5>
             <div className={styles.collaboratorsList}>
               {collaborators.map((collaborator, index) => (
-                <div key={index} className={styles.collaboratorItem}>
+                <div key={collaborator.id || index} className={styles.collaboratorItem}>
                   <span className={styles.collaboratorEmail}>{collaborator.email}</span>
                   <span className={styles.collaboratorOrg}>({collaborator.organization_acronym})</span>
                   <button

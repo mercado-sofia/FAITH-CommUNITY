@@ -246,6 +246,20 @@ export const removeCollaborator = async (req, res) => {
       });
     }
 
+    // Check if collaboration exists before attempting to delete
+    const [existingCollaboration] = await db.execute(`
+      SELECT id, status, collaborator_admin_id, program_id
+      FROM program_collaborations 
+      WHERE program_id = ? AND collaborator_admin_id = ?
+    `, [programId, adminId]);
+
+    if (existingCollaboration.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Collaboration not found - no collaboration exists between this program and admin'
+      });
+    }
+
     // Remove collaboration
     const [result] = await db.execute(`
       DELETE FROM program_collaborations 
@@ -255,7 +269,7 @@ export const removeCollaborator = async (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Collaboration not found'
+        message: 'Collaboration not found - failed to delete collaboration record'
       });
     }
 

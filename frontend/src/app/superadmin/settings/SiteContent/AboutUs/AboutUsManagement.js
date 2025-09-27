@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { FiEdit3, FiXCircle, FiPlus, FiTrash2, FiUpload, FiImage } from 'react-icons/fi';
+import { FiEdit3, FiXCircle, FiPlus, FiTrash2, FiUpload } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import ConfirmationModal from '../../../components/ConfirmationModal';
-import { SkeletonLoader } from '../../../components';
 import { useScrollPosition } from '@/hooks/useScrollPosition';
 import styles from './AboutUsManagement.module.css';
 

@@ -395,28 +395,6 @@
   cursor: not-allowed;
 }
 
-.loadingContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 50vh;
-  gap: 1rem;
-}
-
-.spinner {
-  width: 2rem;
-  height: 2rem;
-  border: 3px solid #e2e8f0;
-  border-top: 3px solid #06100f;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
 
 /* Edit Toggle Button */
 .editToggleBtn {
@@ -701,20 +679,6 @@
   cursor: not-allowed;
 }
 
-.uploadBtn .spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid transparent;
-  border-top: 2px solid currentColor;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 
 /* Remove Button - Following Banner Images Pattern */
 .removeBtn {
@@ -779,26 +743,4 @@
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
-}
-
-.cancelBtn {
-  padding: 0.5rem 1rem;
-  background: #f1f5f9;
-  color: #64748b;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cancelBtn:hover {
-  background: #e2e8f0;
-  border-color: #94a3b8;
-}
-
-.cancelBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }

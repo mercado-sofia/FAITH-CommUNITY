@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { FiTarget, FiEye, FiEdit3 } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
-import { SkeletonLoader } from '../../../components';
 import styles from './MissionVisionManagement.module.css';
 
 export default function MissionVisionManagement({ showSuccessModal }) {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiTrash2, FiPlus, FiX, FiEdit3, FiCheck, FiXCircle } from 'react-icons/fi';
+import { FiTrash2, FiPlus, FiX, FiEdit3 } from 'react-icons/fi';
 import { 
   FaFacebook, 
   FaInstagram, 
@@ -60,7 +60,6 @@ const SOCIAL_PLATFORMS = [
 
 export default function FooterContentManagement({ showSuccessModal }) {
   const [footerData, setFooterData] = useState(null);
-  const [footerLoading, setFooterLoading] = useState(false);
   const [contactInfo, setContactInfo] = useState({ phone: '', email: '' });
   const [socialMedia, setSocialMedia] = useState([]);
   const [copyright, setCopyright] = useState('');
@@ -92,7 +91,6 @@ export default function FooterContentManagement({ showSuccessModal }) {
   useEffect(() => {
     const loadFooterData = async () => {
       try {
-        setFooterLoading(true);
         const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/footer`,
@@ -133,8 +131,6 @@ export default function FooterContentManagement({ showSuccessModal }) {
       } catch (error) {
         console.error('Error loading footer data:', error);
         showAuthError('Failed to load footer data. Please try again.');
-      } finally {
-        setFooterLoading(false);
       }
     };
 
@@ -517,14 +513,6 @@ export default function FooterContentManagement({ showSuccessModal }) {
     }
   };
 
-  if (footerLoading) {
-    return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.spinner}></div>
-        <p>Loading footer settings...</p>
-      </div>
-    );
-  }
 
   return (
     <div className={styles.settingsPanel}>

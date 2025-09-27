@@ -438,6 +438,113 @@ export const updateHeroSectionVideoLink = async (req, res) => {
   }
 };
 
+// Update entire hero section (bulk update)
+export const updateHeroSection = async (req, res) => {
+  try {
+    const { tag, heading, video_url, video_link, video_type, images } = req.body;
+
+    // Validate required fields
+    if (!tag || !heading) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Tag and heading are required' 
+      });
+    }
+
+    // Check if hero section record exists
+    const [existingRows] = await db.query('SELECT * FROM hero_section ORDER BY id DESC LIMIT 1');
+    
+    let heroId;
+    if (existingRows.length === 0) {
+      // Create new hero section record
+      const [insertResult] = await db.query(
+        'INSERT INTO hero_section (tag, heading, video_url, video_link, video_type) VALUES (?, ?, ?, ?, ?)',
+        [tag, heading, video_url || null, video_link || null, video_type || 'upload']
+      );
+      heroId = insertResult.insertId;
+    } else {
+      // Update existing hero section record
+      heroId = existingRows[0].id;
+      await db.query(
+        'UPDATE hero_section SET tag = ?, heading = ?, video_url = ?, video_link = ?, video_type = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [tag, heading, video_url || null, video_link || null, video_type || 'upload', heroId]
+      );
+    }
+
+    // Update images if provided
+    if (images && Array.isArray(images)) {
+      for (const image of images) {
+        if (image.id && (image.heading !== undefined || image.subheading !== undefined)) {
+          // Check if image record exists
+          const [imageRows] = await db.query('SELECT * FROM hero_section_images WHERE image_id = ?', [image.id]);
+          
+          if (imageRows.length === 0) {
+            // Create new image record
+            await db.query(
+              'INSERT INTO hero_section_images (image_id, heading, subheading, display_order) VALUES (?, ?, ?, ?)',
+              [image.id, image.heading || '', image.subheading || '', image.id]
+            );
+          } else {
+            // Update existing image record
+            const updateFields = [];
+            const updateValues = [];
+            
+            if (image.heading !== undefined) {
+              updateFields.push('heading = ?');
+              updateValues.push(image.heading);
+            }
+            if (image.subheading !== undefined) {
+              updateFields.push('subheading = ?');
+              updateValues.push(image.subheading);
+            }
+            
+            if (updateFields.length > 0) {
+              updateFields.push('updated_at = CURRENT_TIMESTAMP');
+              updateValues.push(image.id);
+              
+              await db.query(
+                `UPDATE hero_section_images SET ${updateFields.join(', ')} WHERE image_id = ?`,
+                updateValues
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // Fetch updated hero section data
+    const [updatedHeroRows] = await db.query('SELECT * FROM hero_section WHERE id = ?', [heroId]);
+    const [updatedImageRows] = await db.query('SELECT * FROM hero_section_images ORDER BY display_order ASC');
+    
+    const heroData = updatedHeroRows[0];
+    const formattedImages = updatedImageRows.map(row => ({
+      id: row.image_id,
+      url: row.image_url,
+      heading: row.heading,
+      subheading: row.subheading
+    }));
+
+    res.json({
+      success: true,
+      message: 'Hero section updated successfully',
+      data: {
+        tag: heroData.tag,
+        heading: heroData.heading,
+        video_url: heroData.video_url,
+        video_link: heroData.video_link,
+        video_type: heroData.video_type,
+        images: formattedImages
+      }
+    });
+  } catch (error) {
+    console.error('Error updating hero section:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to update hero section' 
+    });
+  }
+};
+
 // Delete hero section image
 export const deleteHeroSectionImage = async (req, res) => {
   try {

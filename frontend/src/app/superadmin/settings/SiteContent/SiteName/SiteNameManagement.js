@@ -8,7 +8,6 @@ import styles from './SiteNameManagement.module.css';
 
 export default function SiteNameManagement({ showSuccessModal }) {
   const [siteNameData, setSiteNameData] = useState(null);
-  const [siteNameLoading, setSiteNameLoading] = useState(false);
   const [siteName, setSiteName] = useState('');
   const [isUpdatingSiteName, setIsUpdatingSiteName] = useState(false);
   const [showSiteNameModal, setShowSiteNameModal] = useState(false);
@@ -21,7 +20,6 @@ export default function SiteNameManagement({ showSuccessModal }) {
   useEffect(() => {
     const loadSiteNameData = async () => {
       try {
-        setSiteNameLoading(true);
         const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/branding/site-name`,
@@ -38,8 +36,6 @@ export default function SiteNameManagement({ showSuccessModal }) {
       } catch (error) {
         console.error('Error loading site name data:', error);
         showAuthError('Failed to load site name data. Please try again.');
-      } finally {
-        setSiteNameLoading(false);
       }
     };
 
@@ -110,14 +106,6 @@ export default function SiteNameManagement({ showSuccessModal }) {
     setShowSiteNameModal(false);
   };
 
-  if (siteNameLoading) {
-    return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.spinner}></div>
-        <p>Loading site name settings...</p>
-      </div>
-    );
-  }
 
   return (
     <div className={styles.settingsPanel}>

@@ -76,7 +76,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
     loadHeroData();
   }, [showSuccessModal]);
 
-<<<<<<< HEAD
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -164,8 +163,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
       [imageId]: false
     }));
   };
-=======
->>>>>>> 9523d3092b596d8652786a6bc24ed1d1b65eff08
 
   // Helper function to convert YouTube URLs to embed format
   const convertToEmbedUrl = (url) => {

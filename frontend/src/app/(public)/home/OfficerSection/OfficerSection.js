@@ -1,14 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import styles from './OfficerSection.module.css';
 import {
-  FaChevronLeft,
-  FaChevronRight,
-  FaFacebookF,
   FaEnvelope,
-  FaPlus,
   FaPhone,
 } from 'react-icons/fa';
 import { usePublicHeadsFaces } from '../../hooks/usePublicData';
@@ -16,69 +11,17 @@ import Loader from '../../../../components/Loader';
 
 export default function OfficerSection() {
   const { headsFacesData, isLoading, error } = usePublicHeadsFaces();
-  const [startIndex, setStartIndex] = useState(0);
-  const [visibleCount, setVisibleCount] = useState(3);
-  const [cardWidth, setCardWidth] = useState(280);
-  const [cardGap, setCardGap] = useState(24);
 
-  // Use dynamic data or fallback to empty array
-  const officers = headsFacesData || [];
-
-  useEffect(() => {
-    const updateResponsive = () => {
-      const width = window.innerWidth;
-
-      if (width < 640) {
-        setVisibleCount(1);
-        setCardWidth(220);
-        setCardGap(16);
-      } else if (width < 964) {
-        setVisibleCount(2);
-        setCardWidth(240);
-        setCardGap(20);
-      } else if (width < 1160) {
-        setVisibleCount(3);
-        setCardWidth(280);
-        setCardGap(24);
-      } else {
-        setVisibleCount(3);
-        setCardWidth(280);
-        setCardGap(24);
-      }
-    };
-
-    updateResponsive();
-    window.addEventListener('resize', updateResponsive);
-    return () => window.removeEventListener('resize', updateResponsive);
-  }, []);
-
-  const handlePrev = useCallback(() => {
-    setStartIndex((prev) => Math.max(prev - 1, 0));
-  }, []);
-
-  const handleNext = useCallback(() => {
-    setStartIndex((prev) => Math.min(prev + 1, officers.length - visibleCount));
-  }, [visibleCount]);
-
-  useEffect(() => {
-    const handleKey = (e) => {
-      if (e.key === 'ArrowRight') handleNext();
-      else if (e.key === 'ArrowLeft') handlePrev();
-    };
-
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [handleNext, handlePrev]);
-
-  const translateX = startIndex * (cardWidth + cardGap);
+  // Get the primary adviser (first in the list based on display_order)
+  const primaryAdviser = headsFacesData && headsFacesData.length > 0 ? headsFacesData[0] : null;
 
   // Show loading state
   if (isLoading) {
     return (
       <section className={styles.officerSection}>
         <div className={styles.officerHeading}>
-          <p className={styles.officerSubtitle}>Head Advisers & Officers</p>
-          <h2 className={styles.officerTitle}>Meet Our Community Extension Committee</h2>
+          <p className={styles.officerSubtitle}>Community Extension Committee</p>
+          <h2 className={styles.officerTitle}>Meet Our Adviser</h2>
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
           <Loader small />
@@ -89,80 +32,74 @@ export default function OfficerSection() {
 
   // Show error state
   if (error) {
-    console.error('Error loading heads of FACES:', error);
+    console.error('Error loading adviser data:', error);
   }
 
-  // Don't render if no officers
-  if (!officers || officers.length === 0) {
+  // Don't render if no adviser data
+  if (!primaryAdviser) {
     return null;
   }
 
   return (
     <section className={styles.officerSection}>
       <div className={styles.officerHeading}>
-        <p className={styles.officerSubtitle}>Head Advisers & Officers</p>
-        <h2 className={styles.officerTitle}>Meet Our Community Extension Committee</h2>
+        <p className={styles.officerSubtitle}>Community Extension Committee</p>
+        <h2 className={styles.officerTitle}>Meet Our Adviser</h2>
       </div>
 
-      <div className={styles.officerCarousel}>
-        <button
-          className={styles.officerNavBtn}
-          onClick={handlePrev}
-          disabled={startIndex === 0}
-          aria-label="Scroll Left"
-        >
-          <FaChevronLeft />
-        </button>
-
-        <div className={styles.officerSliderWrapper}>
-          <div
-            className={styles.officerSliderTrack}
-            style={{ transform: `translateX(-${translateX}px)` }}
-          >
-            {officers.map((officer, index) => (
-              <div className={styles.officerCard} key={officer.id || index}>
-                <div className={styles.officerPhotoWrapper}>
-                  <Image
-                    src={officer.image_url || "/default-profile.png"}
-                    alt={officer.name}
-                    fill
-                    className={styles.officerImage}
-                    sizes="(max-width: 640px) 220px, (max-width: 964px) 240px, (max-width: 1160px) 280px, 280px"
-                  />
-                  <div className={styles.officerOverlay}>
-                    {officer.email && (
-                      <a href={`mailto:${officer.email}`} className={styles.officerIcon} title="Email">
-                        <FaEnvelope />
-                      </a>
-                    )}
-                    <button className={`${styles.officerIcon} ${styles.officerMainIcon}`} title="View Details">
-                      <FaPlus />
-                    </button>
-                    {officer.phone && (
-                      <a href={`tel:${officer.phone}`} className={styles.officerIcon} title="Phone">
-                        <FaPhone />
-                      </a>
-                    )}
-                  </div>
-                </div>
-                <p className={styles.officerName}>{officer.name}</p>
-                <p className={styles.officerRole}>{officer.position}</p>
-                {officer.description && (
-                  <p className={styles.officerDescription}>{officer.description}</p>
-                )}
+      <div className={styles.portfolioContainer}>
+        <div className={styles.portfolioCard}>
+          {/* Main content */}
+          <div className={styles.portfolioContent}>
+            {/* Left side - Text content */}
+            <div className={styles.textContent}>
+              <div className={styles.greeting}>
+                <span className={styles.greetingText}>Hello, I'm</span>
+                <h1 className={styles.adviserName}>{primaryAdviser.name}</h1>
               </div>
-            ))}
+              
+              <div className={styles.roleContainer}>
+                <span className={styles.roleText}>{primaryAdviser.position}</span>
+              </div>
+
+              {primaryAdviser.description && (
+                <p className={styles.description}>
+                  {primaryAdviser.description}
+                </p>
+              )}
+
+              <div className={styles.contactSection}>
+                <div className={styles.contactButtons}>
+                  {primaryAdviser.email && (
+                    <a href={`mailto:${primaryAdviser.email}`} className={styles.contactBtn}>
+                      <FaEnvelope className={styles.btnIcon} />
+                      Contact Me
+                    </a>
+                  )}
+                  {primaryAdviser.phone && (
+                    <a href={`tel:${primaryAdviser.phone}`} className={styles.phoneBtn}>
+                      <FaPhone className={styles.btnIcon} />
+                      Call Me
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right side - Image */}
+            <div className={styles.imageContainer}>
+              <div className={styles.imageWrapper}>
+                <Image
+                  src={primaryAdviser.image_url || "/default-profile.png"}
+                  alt={primaryAdviser.name}
+                  fill
+                  className={styles.adviserImage}
+                  sizes="(max-width: 768px) 300px, 400px"
+                />
+              </div>
+            </div>
           </div>
         </div>
-
-        <button
-          className={styles.officerNavBtn}
-          onClick={handleNext}
-          disabled={startIndex >= officers.length - visibleCount}
-          aria-label="Scroll Right"
-        >
-          <FaChevronRight />
-        </button>
       </div>
     </section>
   );

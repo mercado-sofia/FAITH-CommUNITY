@@ -269,6 +269,7 @@ import newsRoutes from "./src/admin/routes/newsRoutes.js"
 import notificationsRoutes from "./src/admin/routes/notifications.js"
 import inboxRoutes from "./src/admin/routes/inbox.js"
 import subscribersRoutes from "./src/admin/routes/subscribers.js";
+import collaborationRoutes from "./src/admin/routes/collaborationRoutes.js";
 
 
 app.use("/api/advocacies", advocaciesRoutes)
@@ -285,7 +286,8 @@ app.use("/api/admin/profile", profileRoutes)
 app.use("/api/news", newsRoutes)
 app.use("/api/notifications", notificationsRoutes)
 app.use("/api/inbox", inboxRoutes)
-app.use("/api/subscribers", subscribersRoutes);
+app.use("/api/subscribers", subscribersRoutes)
+app.use("/api/collaborations", collaborationRoutes);
 
 
 
@@ -360,9 +362,7 @@ app.use((req, res) => {
 
 // Start Server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`)
-  console.log(`☁️ Using Cloudinary for file storage`)
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`)
+  console.log(`Server running at http://localhost:${PORT}`)
  
   // Set up daily cleanup job for deleted news (runs every 24 hours)
   setInterval(async () => {
@@ -374,9 +374,7 @@ app.listen(PORT, () => {
   }, 24 * 60 * 60 * 1000); // 24 hours in milliseconds
  
   // Run initial cleanup on server start
-  cleanupDeletedNews().then(() => {
-    console.log('✅ Initial cleanup completed');
-  }).catch((error) => {
-    console.error('❌ Initial cleanup failed:', error);
+  cleanupDeletedNews().catch((error) => {
+    console.error('Initial cleanup failed:', error);
   });
 })

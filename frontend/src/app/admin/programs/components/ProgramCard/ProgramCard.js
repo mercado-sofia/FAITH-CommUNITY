@@ -9,6 +9,7 @@ import { MdOutlineRadioButtonChecked } from 'react-icons/md';
 import { FiTrash2 } from 'react-icons/fi';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import { formatProgramDates, formatDateShort } from '@/utils/dateUtils.js';
+import { CollaborationBadge } from '../Collaboration';
 import styles from './ProgramCard.module.css';
 
 const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted, onMarkActive }) => {
@@ -25,10 +26,6 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
     } finally {
       setIsDeleting(false);
     }
-  };
-
-  const handleMarkCompleted = () => {
-    setShowMarkCompletedModal(true);
   };
 
   const confirmMarkCompleted = async () => {
@@ -225,7 +222,15 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
       {/* Program Content */}
       <div className={styles.programContent}>
         <div className={styles.programHeader}>
-          <h3 className={styles.programTitle}>{program.title}</h3>
+          <div className={styles.titleRow}>
+            <h3 className={styles.programTitle}>{program.title}</h3>
+            <CollaborationBadge 
+              program={program}
+              userRole={program.user_role}
+              isCollaborative={program.is_collaborative}
+              collaboratorCount={program.collaborators?.length || 0}
+            />
+          </div>
         </div>
 
         <p className={styles.programDescription}>

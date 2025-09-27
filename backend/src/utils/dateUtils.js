@@ -14,7 +14,6 @@ export const calculateAge = (birthDate) => {
     
     const birth = new Date(birthDate);
     if (isNaN(birth.getTime())) {
-      console.warn('Invalid birth date provided to calculateAge:', birthDate);
       return null;
     }
     
@@ -124,7 +123,6 @@ export const formatBirthDate = (dateString) => {
     
     const date = new Date(dateString);
     if (isNaN(date.getTime())) {
-      console.warn('Invalid date string provided to formatBirthDate:', dateString);
       return 'Invalid date';
     }
     
@@ -150,7 +148,6 @@ export const formatDateForResponse = (dateString) => {
     
     const date = new Date(dateString);
     if (isNaN(date.getTime())) {
-      console.warn('Invalid date string provided to formatDateForResponse:', dateString);
       return null;
     }
     
@@ -278,7 +275,6 @@ export const formatTimestampForDB = (date) => {
     
     const dateObj = date instanceof Date ? date : new Date(date);
     if (isNaN(dateObj.getTime())) {
-      console.warn('Invalid date provided to formatTimestampForDB:', date);
       return null;
     }
     
@@ -397,7 +393,6 @@ export const formatDateTime = (dateString) => {
     
     const date = new Date(dateString);
     if (isNaN(date.getTime())) {
-      console.warn('Invalid date string provided to formatDateTime:', dateString);
       return 'Invalid date';
     }
     

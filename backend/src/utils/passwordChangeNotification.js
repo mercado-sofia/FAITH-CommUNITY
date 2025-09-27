@@ -70,12 +70,7 @@ export class PasswordChangeNotification {
         text
       });
     } catch (error) {
-      console.warn('Failed to send password change notification:', error.message);
-      // In development mode, log the notification
-      if (process.env.NODE_ENV === 'development' || !process.env.SMTP_HOST) {
-        console.log(`\n🔐 PASSWORD CHANGE NOTIFICATION FOR ${email}: Password changed successfully\n`);
-        console.log('⚠️  SMTP not configured - notification logged to console for development');
-      }
+      // Failed to send password change notification
     }
   }
 }

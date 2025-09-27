@@ -19,7 +19,6 @@ async function notifySubscribers({ type, subject, messageHtml }) {
     });
     try { return await resp.json(); } catch { return null; }
   } catch (e) {
-    console.warn("notifySubscribers failed:", e?.message || e);
     return null;
   }
 }
@@ -145,7 +144,7 @@ export const createNews = async (req, res) => {
         <p>${excerpt}</p>
         <p><a href="${url}">Read more</a></p>
       `,
-    }).catch(e => console.warn("Notify failed:", e?.message || e));
+    }).catch(e => {});
 
     return res.json({
       success: true,
@@ -729,7 +728,6 @@ export const updateNews = async (req, res) => {
           try {
             await deleteFromCloudinary(oldPublicId);
           } catch (deleteError) {
-            console.warn('Failed to delete old featured image from Cloudinary:', deleteError.message);
           }
         }
       }

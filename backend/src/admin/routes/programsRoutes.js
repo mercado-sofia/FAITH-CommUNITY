@@ -2,7 +2,9 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
+import { verifyAdminOrSuperadmin } from '../../superadmin/middleware/verifyAdminOrSuperadmin.js';
 import { 
+  getAdminPrograms,
   getProgramsByOrg, 
   getApprovedPrograms, 
   getApprovedProgramsByOrg,
@@ -26,6 +28,9 @@ import {
 
 const router = express.Router();
 
+// Apply authentication middleware to admin routes
+router.use('/admin', verifyAdminOrSuperadmin);
+
 // Import Cloudinary upload configuration
 import { cloudinaryUploadConfigs } from '../../utils/cloudinaryUpload.js';
 
@@ -33,6 +38,7 @@ import { cloudinaryUploadConfigs } from '../../utils/cloudinaryUpload.js';
 const upload = cloudinaryUploadConfigs.programMain;
 
 // Admin routes
+router.get('/admin/programs', getAdminPrograms);
 router.get('/admin/programs/:orgId', getProgramsByOrg);
 router.get('/admin/programs/single/:id', getProgramById);
 router.put('/admin/programs/:id', updateProgram);

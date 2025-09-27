@@ -149,12 +149,12 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
             </div>
           </div>
 
-          {/* Additional Images - Full Width Below */}
-          <div className={styles.additionalImagesSection}>
-            <h4 className={styles.sectionTitle}>Additional Images</h4>
-            <div className={styles.additionalImagesGrid}>
-              {programData.additional_images && programData.additional_images.length > 0 ? (
-                programData.additional_images.map((imagePath, index) => (
+          {/* Additional Images - Full Width Below - Only show if there are additional images */}
+          {programData.additional_images && programData.additional_images.length > 0 && (
+            <div className={styles.additionalImagesSection}>
+              <h4 className={styles.sectionTitle}>Additional Images</h4>
+              <div className={styles.additionalImagesGrid}>
+                {programData.additional_images.map((imagePath, index) => (
                   <div key={index} className={styles.additionalImageContainer}>
                     <Image
                       src={getProgramImageUrl(imagePath, 'additional')}
@@ -165,14 +165,10 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
                       onError={(e) => e.target.style.display = 'none'}
                     />
                   </div>
-                ))
-              ) : (
-                <p style={{ color: '#6b7280', fontStyle: 'italic' }}>
-                  No additional images available for this program.
-                </p>
-              )}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className={styles.modalFooter}>

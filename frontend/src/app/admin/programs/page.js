@@ -5,15 +5,14 @@ import { useSelector } from 'react-redux';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { useAdminPrograms } from '../hooks/useAdminData';
-import { ProgramCard, AddProgramModal, EditProgramModal, ViewDetailsModal } from './components';
-import { DeleteConfirmationModal } from '../components';
+import { ProgramCard, ViewDetailsModal } from './components';
+import ProgramForm from './components/ProgramForm/ProgramForm';
+import { DeleteConfirmationModal, SuccessModal, SkeletonLoader } from '../components';
 import { SearchAndFilterControls } from './components';
-import { SuccessModal, SkeletonLoader } from '../components';
 import styles from './programs.module.css';
 import { FaPlus } from 'react-icons/fa';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
 
 export default function AdminProgramsPage() {
   const currentAdmin = useSelector(selectCurrentAdmin);
@@ -21,7 +20,7 @@ export default function AdminProgramsPage() {
   const searchParams = useSearchParams();
   
   const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [pageMode, setPageMode] = useState('list'); // 'list', 'create', or 'edit'
   const [editingProgram, setEditingProgram] = useState(null);
   const [viewingProgram, setViewingProgram] = useState(null);
   const [deletingProgram, setDeletingProgram] = useState(null);
@@ -73,12 +72,12 @@ export default function AdminProgramsPage() {
     }
   }, [searchParams]);
 
-
-
   // Handle program submission for approval
   const handleSubmitProgram = async (programData) => {
+    console.log('handleSubmitProgram called with:', programData);
     try {
       if (!currentAdmin?.org || !currentAdmin?.id) {
+        console.log('Missing admin data:', { org: currentAdmin?.org, id: currentAdmin?.id });
         setSuccessModal({ 
           isVisible: true, 
           message: 'Missing organization or admin ID. Please log in again.', 
@@ -103,16 +102,32 @@ export default function AdminProgramsPage() {
         ],
       };
 
+      console.log('Submitting to API:', submissionPayload);
+      
+      // Get admin token for authentication
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        setSuccessModal({ 
+          isVisible: true, 
+          message: 'Authentication token not found. Please log in again.', 
+          type: 'error' 
+        });
+        return;
+      }
+      
       const response = await fetch(`${API_BASE_URL}/api/submissions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(submissionPayload),
       });
 
+      console.log('API response status:', response.status);
       if (!response.ok) {
         const errorText = await response.text();
+        console.log('API error response:', errorText);
         throw new Error(`Failed to submit program: ${errorText}`);
       }
 
@@ -122,7 +137,7 @@ export default function AdminProgramsPage() {
         type: 'success' 
       });
 
-      setShowAddModal(false);
+      setPageMode('list');
       refreshPrograms();
     } catch (error) {
       setSuccessModal({ 
@@ -165,6 +180,7 @@ export default function AdminProgramsPage() {
         message: 'Program updated successfully!', 
         type: 'success' 
       });
+      setPageMode('list');
       setEditingProgram(null);
       refreshPrograms();
     } catch (error) {
@@ -180,6 +196,11 @@ export default function AdminProgramsPage() {
   // Handle program view - show modal
   const handleViewProgram = (program) => {
     setViewingProgram(program);
+  };
+
+  const handleEditProgram = (program) => {
+    setEditingProgram(program);
+    setPageMode('edit');
   };
 
   const handleDeleteProgram = (program) => {
@@ -380,83 +401,97 @@ export default function AdminProgramsPage() {
 
   return (
     <div className={styles.container}>
-      {/* Header Section - Consistent with other admin pages */}
-      <div className={styles.header}>
-        <div className={styles.headerTop}>
-          <h1>Programs</h1>
-          <button 
-            onClick={() => setShowAddModal(true)}
-            className={styles.addButton}
-          >
-            <FaPlus /> Add Program
-          </button>
-        </div>
-      </div>
-
-
-      {/* Search and Filter Controls */}
-      <SearchAndFilterControls
-        searchQuery={searchQuery}
-        sortBy={sortBy}
-        onSearchChange={handleSearchChange}
-        onFilterChange={handleFilterChange}
-        totalCount={programs?.length || 0}
-        filteredCount={filteredAndSortedPrograms()?.length || 0}
-      />
-
-      {/* Status Navigation Tabs */}
-      <div className={styles.statusTabs}>
-        {['Active', 'Upcoming', 'Completed'].map((status) => (
-          <button
-            key={status}
-            className={`${styles.statusTab} ${statusFilter === status ? styles.activeTab : ''}`}
-            onClick={() => handleFilterChange('status', status)}
-          >
-            {status}
-          </button>
-        ))}
-      </div>
-
-      {/* Programs Grid */}
-      <div className={styles.programsSection}>
-        {(filteredAndSortedPrograms()?.length || 0) === 0 ? (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyTitle}>No programs found</div>
-            <div className={styles.emptyText}>No programs match your current filters. Try adjusting your search criteria.</div>
+      {pageMode === 'list' ? (
+        <>
+          {/* Header Section - Consistent with other admin pages */}
+          <div className={styles.header}>
+            <div className={styles.headerTop}>
+              <h1>Programs</h1>
+              <button 
+                onClick={() => setPageMode('create')}
+                className={styles.addButton}
+              >
+                <FaPlus /> Add Program
+              </button>
+            </div>
           </div>
-        ) : (
-          <div className={styles.programsGrid}>
-            {(filteredAndSortedPrograms() || []).map((program) => (
-              <ProgramCard
-                key={program?.id || Math.random()}
-                program={program}
-                onViewDetails={() => handleViewProgram(program)}
-                onEdit={() => setEditingProgram(program)}
-                onDelete={() => handleDeleteProgram(program)}
-                onMarkCompleted={() => handleMarkCompleted(program)}
-                onMarkActive={() => handleMarkActive(program)}
-              />
+
+          {/* Search and Filter Controls */}
+          <SearchAndFilterControls
+            searchQuery={searchQuery}
+            sortBy={sortBy}
+            onSearchChange={handleSearchChange}
+            onFilterChange={handleFilterChange}
+            totalCount={programs?.length || 0}
+            filteredCount={filteredAndSortedPrograms()?.length || 0}
+          />
+
+          {/* Status Navigation Tabs */}
+          <div className={styles.statusTabs}>
+            {['Active', 'Upcoming', 'Completed'].map((status) => (
+              <button
+                key={status}
+                className={`${styles.statusTab} ${statusFilter === status ? styles.activeTab : ''}`}
+                onClick={() => handleFilterChange('status', status)}
+              >
+                {status}
+              </button>
             ))}
           </div>
-        )}
-      </div>
+
+          {/* Programs Grid */}
+          <div className={styles.programsSection}>
+            {(filteredAndSortedPrograms()?.length || 0) === 0 ? (
+              <div className={styles.emptyState}>
+                <div className={styles.emptyTitle}>No programs found</div>
+                <div className={styles.emptyText}>No programs match your current filters. Try adjusting your search criteria.</div>
+              </div>
+            ) : (
+              <div className={styles.programsGrid}>
+                {(filteredAndSortedPrograms() || []).map((program) => (
+                  <ProgramCard
+                    key={program?.id || Math.random()}
+                    program={program}
+                    onViewDetails={() => handleViewProgram(program)}
+                    onEdit={() => handleEditProgram(program)}
+                    onDelete={() => handleDeleteProgram(program)}
+                    onMarkCompleted={() => handleMarkCompleted(program)}
+                    onMarkActive={() => handleMarkActive(program)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      ) : pageMode === 'create' ? (
+        <>
+          <div className={styles.createPostHeader}>
+            <h1>Add New Program</h1>
+          </div>
+          <ProgramForm
+            mode="create"
+            onCancel={() => setPageMode('list')}
+            onSubmit={handleSubmitProgram}
+          />
+        </>
+      ) : pageMode === 'edit' ? (
+        <>
+          <div className={styles.createPostHeader}>
+            <h1>Edit Program</h1>
+          </div>
+          <ProgramForm
+            mode="edit"
+            program={editingProgram}
+            onCancel={() => {
+              setPageMode('list');
+              setEditingProgram(null);
+            }}
+            onSubmit={handleUpdateProgram}
+          />
+        </>
+      ) : null}
 
       {/* Modals */}
-      {showAddModal && (
-        <AddProgramModal
-          onClose={() => setShowAddModal(false)}
-          onSubmit={handleSubmitProgram}
-        />
-      )}
-
-      {editingProgram && (
-        <EditProgramModal
-          program={editingProgram}
-          onClose={() => setEditingProgram(null)}
-          onSubmit={handleUpdateProgram}
-        />
-      )}
-
       {viewingProgram && (
         <ViewDetailsModal
           program={viewingProgram}

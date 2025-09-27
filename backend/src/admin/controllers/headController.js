@@ -169,7 +169,6 @@ export const updateHead = async (req, res) => {
             try {
               await deleteFromCloudinary(oldPublicId);
             } catch (deleteError) {
-              console.warn('Failed to delete old organization head photo from Cloudinary:', deleteError.message);
             }
           }
         }
@@ -404,16 +403,42 @@ export const bulkUpdateHeads = async (req, res) => {
       const priority = head.priority || getRolePriority(head.role);
       const display_order = head.display_order || priority;
 
-      // Clean up photo field - remove base64 data and limit length
+      // Handle photo upload to Cloudinary
       let cleanPhoto = head.photo?.trim() || null;
-      if (cleanPhoto && cleanPhoto.startsWith('data:')) {
-        cleanPhoto = null;
-      }
-      if (cleanPhoto && cleanPhoto.length > 500) {
+      if (cleanPhoto && cleanPhoto.startsWith('data:image/')) {
+        try {
+          const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+          const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
+          
+          // Convert base64 to buffer
+          const base64Data = cleanPhoto.replace(/^data:image\/\w+;base64,/, '');
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Create a file-like object for Cloudinary upload
+          const file = {
+            buffer: buffer,
+            originalname: `org-head-${Date.now()}.jpg`,
+            mimetype: cleanPhoto.match(/data:image\/(\w+);/)[0].replace('data:', '').replace(';', ''),
+            size: buffer.length
+          };
+          
+          // Upload to Cloudinary
+          const uploadResult = await uploadSingleToCloudinary(
+            file, 
+            CLOUDINARY_FOLDERS.ORGANIZATIONS.HEADS,
+            { prefix: 'org_head_' }
+          );
+          
+          cleanPhoto = uploadResult.url;
+        } catch (uploadError) {
+          console.error('❌ Error uploading organization head photo to Cloudinary:', uploadError);
+          // Continue with base64 as fallback
+        }
+      } else if (cleanPhoto && cleanPhoto.length > 500) {
+        // If it's not base64 but still too long, truncate it
         cleanPhoto = cleanPhoto.substring(0, 500);
       }
 
-      
       await db.execute(
         `INSERT INTO organization_heads (organization_id, head_name, role, priority, display_order, facebook, email, photo)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,

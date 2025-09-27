@@ -7,10 +7,7 @@ export const mailer = nodemailer.createTransport({
   auth: {
     user: process.env.SMTP_USER,           // your@gmail.com
     pass: process.env.SMTP_PASS,           // 16-char app password
-  },
-  // keep while debugging
-  logger: true,
-  debug: true,
+  }
 });
 
 export async function sendMail({ to, subject, html, text, attachments } = {}) {

@@ -29,13 +29,11 @@ export const verifyAdminToken = async (req, res, next) => {
       )
 
       if (!sessionCheck.valid) {
-        console.warn('Session verification failed:', sessionCheck.reason);
         // For now, we'll allow the request to continue if JWT is valid
         // This handles cases where sessions might be missing or expired
         // but the JWT token is still valid
       }
     } catch (sessionError) {
-      console.warn('Session verification error:', sessionError.message);
       // Continue with JWT verification only
     }
 

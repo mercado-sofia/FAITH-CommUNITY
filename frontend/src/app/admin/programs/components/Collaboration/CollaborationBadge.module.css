@@ -1,0 +1,53 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.badgeText {
+  font-size: 11px;
+}
+
+.collaboratorCount {
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+.creatorBadge {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fbbf24;
+}
+
+.collaboratorBadge {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #3b82f6;
+}
+
+.collaborativeBadge {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .badge {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+  
+  .badgeText {
+    font-size: 10px;
+  }
+  
+  .collaboratorCount {
+    font-size: 9px;
+  }
+}

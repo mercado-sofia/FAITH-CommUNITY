@@ -109,7 +109,6 @@ export const registerUser = async (req, res) => {
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
 
-
     // Insert new user with verification token
     const [result] = await db.query(
       `INSERT INTO users (
@@ -119,7 +118,6 @@ export const registerUser = async (req, res) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [firstName, lastName, email, contactNumber, gender, address, formattedBirthDate, hashedPassword, verificationToken, verificationExpires]
     );
-
 
     const userId = result.insertId;
 
@@ -431,13 +429,11 @@ export const uploadProfilePhoto = async (req, res) => {
         try {
           await deleteFromCloudinary(oldPublicId);
         } catch (deleteError) {
-          console.warn('Failed to delete old profile photo from Cloudinary:', deleteError.message);
         }
       }
     }
 
     // Upload new profile photo to Cloudinary
-    
     let uploadResult;
     try {
       uploadResult = await uploadSingleToCloudinary(
@@ -477,7 +473,6 @@ export const uploadProfilePhoto = async (req, res) => {
     }
     
     const updatedUser = updatedUsers[0];
-    
     
     res.json({
       message: 'Profile photo uploaded successfully',
@@ -547,7 +542,6 @@ export const removeProfilePhoto = async (req, res) => {
         try {
           await deleteFromCloudinary(publicId);
         } catch (deleteError) {
-          console.warn('Failed to delete profile photo from Cloudinary:', deleteError.message);
         }
       }
     }
@@ -808,7 +802,6 @@ export const changePassword = async (req, res) => {
         'user'
       );
     } catch (notificationError) {
-      console.warn('Failed to send password change notification:', notificationError.message);
       // Continue with success response even if notification fails
     }
 

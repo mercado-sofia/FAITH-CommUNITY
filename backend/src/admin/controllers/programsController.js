@@ -13,6 +13,145 @@ function escapeHtml(str = "") {
     .replaceAll(">", "&gt;");
 }
 
+// Get programs for admin view (including collaboration data)
+export const getAdminPrograms = async (req, res) => {
+  try {
+    // Handle both admin and superadmin tokens
+    const currentAdminId = req.admin?.id || req.superadmin?.id;
+    
+    if (!currentAdminId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Admin ID not found in request'
+      });
+    }
+
+    // Get programs where current admin is creator or collaborator
+    // First, get the admin's organization
+    const [adminRows] = await db.execute(`
+      SELECT organization_id FROM admins WHERE id = ?
+    `, [currentAdminId]);
+    
+    if (adminRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Admin not found'
+      });
+    }
+    
+    const adminOrgId = adminRows[0].organization_id;
+    
+    // Get programs from admin's organization
+    const [programRows] = await db.execute(`
+      SELECT DISTINCT p.*, o.org as orgAcronym, o.orgName as orgName, o.logo as orgLogo
+      FROM programs_projects p
+      LEFT JOIN organizations o ON p.organization_id = o.id
+      WHERE p.organization_id = ?
+      ORDER BY p.created_at DESC
+    `, [adminOrgId]);
+
+    // Get collaboration data for each program
+    const programsWithCollaboration = await Promise.all(programRows.map(async (program) => {
+      // Get multiple dates
+      let multipleDates = [];
+      if (program.event_start_date && program.event_end_date) {
+        if (program.event_start_date === program.event_end_date) {
+          multipleDates = [program.event_start_date];
+        }
+      } else {
+        const [dateRows] = await db.execute(
+          'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
+          [program.id]
+        );
+        multipleDates = dateRows.map(row => row.event_date);
+      }
+
+      // Get additional images
+      const [imageRows] = await db.execute(
+        'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
+        [program.id]
+      );
+      const additionalImages = imageRows.map(row => row.image_data);
+
+      // Get collaboration info
+      const [collaborationRows] = await db.execute(`
+        SELECT 
+          pc.status as collaboration_status,
+          a.email as collaborator_email,
+          o.orgName as collaborator_org
+        FROM program_collaborations pc
+        LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+        LEFT JOIN organizations o ON a.organization_id = o.id
+        WHERE pc.program_id = ? AND pc.collaborator_admin_id = ?
+      `, [program.id, currentAdminId]);
+
+      // Determine user's role in this program
+      let userRole = 'creator';
+      let collaborationStatus = null;
+      
+      if (collaborationRows.length > 0) {
+        userRole = 'collaborator';
+        collaborationStatus = collaborationRows[0].collaboration_status;
+      }
+
+      // Get all collaborators for this program
+      const [allCollaborators] = await db.execute(`
+        SELECT 
+          a.id,
+          a.email,
+          o.orgName as organization_name,
+          o.org as organization_acronym
+        FROM program_collaborations pc
+        LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+        LEFT JOIN organizations o ON a.organization_id = o.id
+        WHERE pc.program_id = ? AND pc.status = 'accepted'
+      `, [program.id]);
+
+      let logoUrl;
+      if (program.orgLogo) {
+        logoUrl = getOrganizationLogoUrl(program.orgLogo);
+      } else {
+        logoUrl = `/logo/faith_community_logo.png`;
+      }
+
+      return {
+        id: program.id,
+        title: program.title,
+        description: program.description,
+        category: program.category,
+        status: program.status || 'active',
+        image: program.image,
+        additional_images: additionalImages,
+        event_start_date: program.event_start_date,
+        event_end_date: program.event_end_date,
+        multiple_dates: multipleDates,
+        created_at: program.created_at,
+        orgID: program.orgAcronym,
+        orgName: program.orgName,
+        orgLogo: logoUrl,
+        slug: program.slug,
+        is_approved: program.is_approved,
+        is_collaborative: program.is_collaborative,
+        user_role: userRole,
+        collaboration_status: collaborationStatus,
+        collaborators: allCollaborators
+      };
+    }));
+
+    res.json({
+      success: true,
+      data: programsWithCollaboration
+    });
+  } catch (error) {
+    console.error("❌ Error fetching admin programs:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch programs",
+      error: error.message,
+    });
+  }
+};
+
 // Get programs for a specific organization (for admin view)
 export const getProgramsByOrg = async (req, res) => {
   const { orgId } = req.params;
@@ -1032,7 +1171,7 @@ export const getOtherProgramsByOrganization = async (req, res) => {
 
 // ---------------- Add new program (from programProjectsController) ----------------
 export const addProgramProject = async (req, res) => {
-  const { title, description } = req.body;
+  const { title, description, collaborators } = req.body;
   let image = '';
 
   if (req.file) {
@@ -1084,12 +1223,27 @@ export const addProgramProject = async (req, res) => {
     }
 
     const [result] = await db.execute(
-      `INSERT INTO programs_projects (title, description, image, status, slug, is_approved)
-       VALUES (?, ?, ?, 'pending', ?, FALSE)`,
-      [title, description ?? null, image ?? null, finalSlug]
+      `INSERT INTO programs_projects (title, description, image, status, slug, is_approved, is_collaborative)
+       VALUES (?, ?, ?, 'pending', ?, FALSE, ?)`,
+      [title, description ?? null, image ?? null, finalSlug, collaborators && collaborators.length > 0]
     );
 
     const newId = result.insertId;
+
+    // Handle collaboration invitations if provided
+    if (collaborators && collaborators.length > 0) {
+      const currentAdminId = req.admin.id;
+      
+      for (const collaboratorId of collaborators) {
+        try {
+          await db.execute(`
+            INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status)
+            VALUES (?, ?, ?, 'accepted')
+          `, [newId, collaboratorId, currentAdminId]);
+        } catch (collabError) {
+        }
+      }
+    }
     const appBase = process.env.APP_BASE_URL || 'http://localhost:3000';
     const programUrl = `${appBase}/programs/${finalSlug}`;
 
@@ -1105,7 +1259,6 @@ export const addProgramProject = async (req, res) => {
         `,
       });
     } catch (mailErr) {
-      console.warn("sendToSubscribers failed:", mailErr?.message || mailErr);
     }
 
     return res
@@ -1121,7 +1274,27 @@ export const addProgramProject = async (req, res) => {
 export const updateProgramProject = async (req, res) => {
   const { id } = req.params;
   const { title, description, status } = req.body;
-  let image = req.file ? req.file.filename : null;
+  let image = null;
+
+  // Handle image upload to Cloudinary if file is provided
+  if (req.file) {
+    try {
+      const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+      const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
+      const uploadResult = await uploadSingleToCloudinary(
+        req.file, 
+        CLOUDINARY_FOLDERS.PROGRAMS.MAIN,
+        { prefix: 'prog_main_' }
+      );
+      image = uploadResult.url;
+    } catch (uploadError) {
+      console.error('❌ Error uploading program image to Cloudinary:', uploadError);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Failed to upload program image' 
+      });
+    }
+  }
 
   try {
     // Generate new slug if title changed
@@ -1186,7 +1359,6 @@ export const updateProgramProject = async (req, res) => {
         `,
       });
     } catch (mailErr) {
-      console.warn("sendToSubscribers failed:", mailErr?.message || mailErr);
     }
 
     return res.json({ message: "Program updated successfully." });

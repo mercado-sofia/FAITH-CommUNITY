@@ -49,6 +49,23 @@ export default function HeroSection() {
     };
   }, [showVideo]);
 
+  // Handle ESC key to close video
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && showVideo) {
+        setShowVideo(false);
+      }
+    };
+
+    if (showVideo) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showVideo]);
+
   return (
     <section className={styles.hero}>
       <div className={styles.wrapper}>
@@ -130,7 +147,15 @@ export default function HeroSection() {
       </div>
 
       {showVideo && mounted && (heroData?.video_url || heroData?.video_link) && createPortal(
-        <div className={styles.videoOverlay}>
+        <div 
+          className={styles.videoOverlay}
+          onClick={(e) => {
+            // Close video when clicking on overlay (not on video itself)
+            if (e.target === e.currentTarget) {
+              setShowVideo(false);
+            }
+          }}
+        >
           <button className={styles.closeButton} onClick={() => setShowVideo(false)}>✖</button>
           {heroData?.video_type === 'link' ? (
             <iframe
@@ -141,7 +166,15 @@ export default function HeroSection() {
               title="Hero Video"
             />
           ) : (
-            <video controls autoPlay className={styles.videoPlayer}>
+            <video 
+              controls 
+              autoPlay 
+              className={styles.videoPlayer}
+              onError={(e) => {
+                console.warn('Hero video failed to load:', e);
+                setShowVideo(false);
+              }}
+            >
               <source src={heroData.video_url} type="video/mp4" />
               Your browser does not support the video tag.
             </video>

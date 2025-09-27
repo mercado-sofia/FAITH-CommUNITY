@@ -313,7 +313,7 @@
   bottom: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.9);
+  background-color: rgba(0, 0, 0, 0.95);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -321,11 +321,14 @@
 }
 
 .videoPlayer {
-  width: 80%;
-  max-width: 880px;
-  border-radius: 10px;
+  width: 90%;
+  max-width: 1200px;
+  height: 80vh;
+  max-height: 800px;
+  border-radius: 12px;
   z-index: 1000;
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+  object-fit: contain;
 }
 
 .closeButton {
@@ -344,6 +347,37 @@
 .closeButton:hover {
   transform: scale(1.2);
   color: #FFAC00;
+}
+
+/* Responsive video player styles */
+@media (max-width: 768px) {
+  .videoPlayer {
+    width: 95%;
+    height: 70vh;
+    max-height: 600px;
+    border-radius: 8px;
+  }
+  
+  .closeButton {
+    top: 1.5rem;
+    right: 2rem;
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .videoPlayer {
+    width: 98%;
+    height: 60vh;
+    max-height: 500px;
+    border-radius: 6px;
+  }
+  
+  .closeButton {
+    top: 1rem;
+    right: 1.5rem;
+    font-size: 1.1rem;
+  }
 }
 
 @media (max-width: 1300px) {

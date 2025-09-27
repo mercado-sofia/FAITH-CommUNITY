@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { FaUpload, FaPlay, FaEdit } from 'react-icons/fa';
 import { FiTrash2, FiEdit3 } from 'react-icons/fi';
 import Image from 'next/image';
+import { createPortal } from 'react-dom';
 import styles from './HeroSectionManagement.module.css';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import ConfirmationModal from '../../../components/ConfirmationModal';
@@ -28,6 +29,8 @@ export default function HeroSectionManagement({ showSuccessModal }) {
   const [deleteType, setDeleteType] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
   
   // Upload loading states
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
@@ -75,6 +78,39 @@ export default function HeroSectionManagement({ showSuccessModal }) {
 
     loadHeroData();
   }, [showSuccessModal]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (showVideoModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showVideoModal]);
+
+  // Handle ESC key to close video
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && showVideoModal) {
+        setShowVideoModal(false);
+      }
+    };
+
+    if (showVideoModal) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showVideoModal]);
 
   // Update text content
   const handleTextUpdate = async (field, value) => {
@@ -579,9 +615,11 @@ export default function HeroSectionManagement({ showSuccessModal }) {
               <div className={styles.videoPreview}>
                 <video 
                   src={heroData.video_url} 
-                  controls
                   style={{ width: '100%', height: '200px', objectFit: 'cover' }}
                 />
+                <div className={styles.videoPlayOverlay} onClick={() => setShowVideoModal(true)}>
+                  <FaPlay size={24} />
+                </div>
               </div>
             ) : heroData.video_link ? (
               <div className={styles.videoPreview}>
@@ -591,6 +629,9 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                   title="Video Preview"
                   allowFullScreen
                 />
+                <div className={styles.videoPlayOverlay} onClick={() => setShowVideoModal(true)}>
+                  <FaPlay size={24} />
+                </div>
               </div>
             ) : (
               <div className={styles.emptyState}>
@@ -855,6 +896,44 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         onCancel={handleHeroCancel}
         isDeleting={isUpdatingHero}
       />
+
+      {/* Full Viewport Video Modal */}
+      {showVideoModal && mounted && (heroData?.video_url || heroData?.video_link) && createPortal(
+        <div 
+          className={styles.videoOverlay}
+          onClick={(e) => {
+            // Close video when clicking on overlay (not on video itself)
+            if (e.target === e.currentTarget) {
+              setShowVideoModal(false);
+            }
+          }}
+        >
+          <button className={styles.closeButton} onClick={() => setShowVideoModal(false)}>✖</button>
+          {heroData?.video_type === 'link' ? (
+            <iframe
+              src={heroData.video_link}
+              className={styles.videoPlayer}
+              frameBorder="0"
+              allowFullScreen
+              title="Hero Video"
+            />
+          ) : (
+            <video 
+              controls 
+              autoPlay 
+              className={styles.videoPlayer}
+              onError={(e) => {
+                console.warn('Hero video failed to load:', e);
+                setShowVideoModal(false);
+              }}
+            >
+              <source src={heroData.video_url} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          )}
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

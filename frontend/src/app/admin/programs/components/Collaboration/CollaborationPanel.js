@@ -330,7 +330,7 @@ const CollaborationPanel = ({
             ) : (
               <div className={styles.collaboratorsList}>
                 {collaborators.map((collaborator) => (
-                  <div key={collaborator.id} className={styles.collaboratorItem}>
+                  <div key={collaborator.id || collaborator.admin_id} className={styles.collaboratorItem}>
                     <div className={styles.collaboratorInfo}>
                       <div className={styles.collaboratorEmail}>
                         {collaborator.email}
@@ -351,7 +351,7 @@ const CollaborationPanel = ({
                       
                       {isCreator && collaborator.status === 'accepted' && (
                         <button
-                          onClick={() => handleRemoveCollaborator(collaborator.admin_id)}
+                          onClick={() => handleRemoveCollaborator(collaborator.admin_id || collaborator.id)}
                           className={styles.removeButton}
                           title="Remove collaborator"
                         >

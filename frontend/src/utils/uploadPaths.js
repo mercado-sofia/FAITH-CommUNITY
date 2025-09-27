@@ -12,8 +12,17 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:808
  */
 export const getImageUrl = (imagePath, type = 'programs', subType = 'main') => {
   try {
+    // Handle null, undefined, or non-string values
+    if (!imagePath || typeof imagePath !== 'string') {
+      return 'IMAGE_UNAVAILABLE';
+    }
+    
+    // Trim whitespace
+    imagePath = imagePath.trim();
+    
+    // If empty after trimming, return fallback
     if (!imagePath) {
-      return '/defaults/default-profile.png';
+      return 'IMAGE_UNAVAILABLE';
     }
     
     // If it's already a full URL or base64, return as is
@@ -28,10 +37,17 @@ export const getImageUrl = (imagePath, type = 'programs', subType = 'main') => {
     }
     
     // If it's not a Cloudinary URL, return fallback
-    return '/defaults/default-profile.png';
+    return 'IMAGE_UNAVAILABLE';
   } catch (error) {
-    logger.error('Error in getImageUrl', error, { imagePath, type, subType });
-    return '/defaults/default-profile.png';
+    // More detailed error logging
+    console.error('Error in getImageUrl:', {
+      error: error.message,
+      imagePath: imagePath,
+      imagePathType: typeof imagePath,
+      type: type,
+      subType: subType
+    });
+    return 'IMAGE_UNAVAILABLE';
   }
 };
 
@@ -43,15 +59,35 @@ export const getImageUrl = (imagePath, type = 'programs', subType = 'main') => {
  */
 export const getProgramImageUrl = (imagePath, subType = 'main') => {
   try {
-    // Handle null, undefined, or empty values
-    if (!imagePath || imagePath === '' || imagePath === null || imagePath === undefined) {
-      return '/defaults/default-profile.png';
+    // Handle null, undefined, empty values, or non-string values
+    if (!imagePath || imagePath === '' || imagePath === null || imagePath === undefined || typeof imagePath !== 'string') {
+      return 'IMAGE_UNAVAILABLE';
     }
     
-    return getImageUrl(imagePath, 'programs', subType === 'additional' ? 'additional-images' : 'main-images');
+    // Trim whitespace
+    imagePath = imagePath.trim();
+    
+    // If empty after trimming, return fallback
+    if (!imagePath) {
+      return 'IMAGE_UNAVAILABLE';
+    }
+    
+    // If it's already a full URL or base64, return as is
+    if (imagePath.startsWith('http') || imagePath.startsWith('data:')) {
+      return imagePath;
+    }
+    
+    // If it's a Cloudinary public_id, construct the URL
+    if (imagePath.includes('faith-community/')) {
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'your-cloud-name';
+      return `https://res.cloudinary.com/${cloudName}/image/upload/${imagePath}`;
+    }
+    
+    // If it's not a Cloudinary URL, return fallback
+    return 'IMAGE_UNAVAILABLE';
   } catch (error) {
     logger.error('Error in getProgramImageUrl', error, { imagePath, subType });
-    return '/defaults/default-profile.png';
+    return 'IMAGE_UNAVAILABLE';
   }
 };
 

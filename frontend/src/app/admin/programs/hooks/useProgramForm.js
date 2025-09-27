@@ -69,6 +69,31 @@ const validateField = (fieldName, value, rules) => {
 const validateImage = (file, rules) => {
   if (!file) return null;
 
+  // Handle base64 data URLs
+  if (typeof file === 'string' && file.startsWith('data:image/')) {
+    // Extract MIME type from base64 data URL
+    const mimeMatch = file.match(/data:image\/(\w+);/);
+    if (!mimeMatch) {
+      return ERROR_MESSAGES.image.invalidType;
+    }
+    
+    const mimeType = `image/${mimeMatch[1]}`;
+    if (!rules.allowedTypes.includes(mimeType)) {
+      return ERROR_MESSAGES.image.invalidType;
+    }
+    
+    // Estimate size from base64 string (base64 is ~4/3 the size of binary)
+    const base64Size = file.length - file.indexOf(',') - 1;
+    const estimatedSize = (base64Size * 3) / 4;
+    
+    if (estimatedSize > rules.maxSize) {
+      return ERROR_MESSAGES.image.maxSize;
+    }
+    
+    return null;
+  }
+
+  // Handle File objects (fallback for existing code)
   if (file.size > rules.maxSize) {
     return ERROR_MESSAGES.image.maxSize;
   }

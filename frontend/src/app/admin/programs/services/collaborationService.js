@@ -88,7 +88,8 @@ export const fetchProgramCollaborators = async (programId) => {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 
     const result = await response.json();
@@ -117,6 +118,11 @@ export const removeCollaboratorFromProgram = async (programId, adminId) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      console.error('Remove collaborator error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorData
+      });
       throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 

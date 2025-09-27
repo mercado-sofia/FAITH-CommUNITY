@@ -22,12 +22,7 @@ export class EmailChangeOTP {
   try {
     await this.sendOTPEmail(newEmail, otp, userName);
   } catch (emailError) {
-    console.warn('Failed to send OTP email:', emailError.message);
-    // In development mode, log the OTP to console
-    if (process.env.NODE_ENV === 'development' || !process.env.SMTP_HOST) {
-      console.log(`\n🔐 EMAIL CHANGE OTP FOR ${newEmail}: ${otp}\n`);
-      console.log('⚠️  SMTP not configured - OTP logged to console for development');
-    }
+    // Failed to send OTP email
     // Continue with the process even if email fails
   }
 
@@ -35,7 +30,6 @@ export class EmailChangeOTP {
   try {
     await this.sendSecurityNotification(currentEmail, newEmail, userName);
   } catch (emailError) {
-    console.warn('Failed to send security notification:', emailError.message);
     // Continue with the process even if email fails
   }
 

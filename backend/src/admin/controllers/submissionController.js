@@ -152,7 +152,6 @@ export const submitChanges = async (req, res) => {
               message = `${orgAcronym} has submitted a new program "${proposedData.title}" for approval.`
             }
           } catch (parseError) {
-            console.warn('Failed to parse program data for notification:', parseError)
           }
         }
 
@@ -231,7 +230,6 @@ export const getSubmissionsByOrg = async (req, res) => {
       try {
         previous_data_parsed = JSON.parse(row.previous_data)
       } catch (e) {
-        console.warn(`Warning: Failed to parse previous_data for submission ID ${row.id}:`, e.message)
         previous_data_parsed = { error: "Invalid JSON data" }
         parse_error = true
       }
@@ -239,7 +237,6 @@ export const getSubmissionsByOrg = async (req, res) => {
       try {
         proposed_data_parsed = JSON.parse(row.proposed_data)
       } catch (e) {
-        console.warn(`Warning: Failed to parse proposed_data for submission ID ${row.id}:`, e.message)
         proposed_data_parsed = { error: "Invalid JSON data" }
         parse_error = true
       }

@@ -425,7 +425,6 @@ export const deleteAboutUsImage = async (req, res) => {
       try {
         await deleteFromCloudinary(publicId);
       } catch (deleteError) {
-        console.warn('Failed to delete image from Cloudinary:', deleteError.message);
       }
     }
 

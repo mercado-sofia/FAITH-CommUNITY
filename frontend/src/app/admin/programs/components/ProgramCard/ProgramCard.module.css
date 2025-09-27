@@ -146,10 +146,18 @@
 
 .programHeader {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: flex-start;
   margin-bottom: 12px;
-  gap: 12px;
+  gap: 8px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
 }
 
 .programTitle {
@@ -362,9 +370,6 @@
     flex-direction: column;
   }
 
-  .viewButton,
-  .editButton,
-  .deleteButton,
   .markActiveButton,
   .markCompletedButton {
     width: 100%;

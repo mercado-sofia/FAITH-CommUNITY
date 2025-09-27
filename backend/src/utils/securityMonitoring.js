@@ -126,7 +126,7 @@ export class SecurityMonitoring {
     })
     
     // In production, this would send notifications (email, Slack, etc.)
-    console.warn(`🚨 SECURITY ALERT: ${alertType}`, details)
+    // Security alert logged
   }
   
   // Get security metrics

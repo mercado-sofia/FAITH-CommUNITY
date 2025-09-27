@@ -25,7 +25,6 @@ export const getImageUrl = (imagePath, fallbackUrl = '/logo/faith_community_logo
   }
 
   // If it's not a Cloudinary URL, return fallback
-  console.warn('Invalid image path detected, using fallback:', imagePath);
   return fallbackUrl;
 };
 

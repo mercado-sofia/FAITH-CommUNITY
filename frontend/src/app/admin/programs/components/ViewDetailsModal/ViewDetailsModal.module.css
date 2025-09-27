@@ -124,14 +124,6 @@
   gap: 16px;
 }
 
-.imageSection {
-  border-radius: 12px;
-  overflow: hidden;
-  background: #f3f4f6;
-  height: 100%;
-  min-height: 300px;
-}
-
 .programImage {
   width: 100%;
   height: 100%;
@@ -160,11 +152,6 @@
   opacity: 0.5;
 }
 
-.infoSection {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
 
 .programTitle {
   font-size: 18px;

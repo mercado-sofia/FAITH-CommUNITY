@@ -167,10 +167,43 @@ export const approveSubmission = async (req, res) => {
     if (section === 'org_heads') {
       await db.execute(`DELETE FROM organization_heads WHERE organization_id = ?`, [orgId]);
       for (let head of data) {
+        // Handle head photo upload to Cloudinary
+        let cloudinaryPhotoUrl = head.photo;
+        if (head.photo && head.photo.startsWith('data:image/')) {
+          try {
+            const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+            const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
+            
+            // Convert base64 to buffer
+            const base64Data = head.photo.replace(/^data:image\/\w+;base64,/, '');
+            const buffer = Buffer.from(base64Data, 'base64');
+            
+            // Create a file-like object for Cloudinary upload
+            const file = {
+              buffer: buffer,
+              originalname: `org-head-${Date.now()}.jpg`,
+              mimetype: head.photo.match(/data:image\/(\w+);/)[0].replace('data:', '').replace(';', ''),
+              size: buffer.length
+            };
+            
+            // Upload to Cloudinary
+            const uploadResult = await uploadSingleToCloudinary(
+              file, 
+              CLOUDINARY_FOLDERS.ORGANIZATIONS.HEADS,
+              { prefix: 'org_head_' }
+            );
+            
+            cloudinaryPhotoUrl = uploadResult.url;
+          } catch (uploadError) {
+            console.error('❌ Error uploading organization head photo to Cloudinary:', uploadError);
+            // Continue with base64 as fallback
+          }
+        }
+        
         await db.execute(
           `INSERT INTO organization_heads (organization_id, head_name, role, facebook, email, photo)
            VALUES (?, ?, ?, ?, ?, ?)`,
-          [orgId, head.name, head.position, head.facebook, head.email, head.photo]
+          [orgId, head.name, head.position, head.facebook, head.email, cloudinaryPhotoUrl]
         );
       }
     }
@@ -202,24 +235,71 @@ export const approveSubmission = async (req, res) => {
           counter++;
         }
 
+        // Handle main image upload to Cloudinary
+        let cloudinaryImageUrl = data.image;
+        if (data.image && data.image.startsWith('data:image/')) {
+          try {
+            const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+            const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
+            
+            // Convert base64 to buffer
+            const base64Data = data.image.replace(/^data:image\/\w+;base64,/, '');
+            const buffer = Buffer.from(base64Data, 'base64');
+            
+            // Create a file-like object for Cloudinary upload
+            const file = {
+              buffer: buffer,
+              originalname: `program-${Date.now()}.jpg`,
+              mimetype: data.image.match(/data:image\/(\w+);/)[0].replace('data:', '').replace(';', ''),
+              size: buffer.length
+            };
+            
+            // Upload to Cloudinary
+            const uploadResult = await uploadSingleToCloudinary(
+              file, 
+              CLOUDINARY_FOLDERS.PROGRAMS.MAIN,
+              { prefix: 'prog_main_' }
+            );
+            
+            cloudinaryImageUrl = uploadResult.url;
+          } catch (uploadError) {
+            console.error('❌ Error uploading main program image to Cloudinary:', uploadError);
+            // Continue with base64 as fallback
+          }
+        }
+
         // Insert new program into programs_projects table
         const [result] = await db.execute(
-          `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
+          `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, ?)`,
           [
             orgId,
             data.title,
             data.description,
             data.category,
             data.status,
-            data.image,
+            cloudinaryImageUrl, // Use Cloudinary URL instead of base64
             data.event_start_date || null,
             data.event_end_date || null,
-            finalSlug
+            finalSlug,
+            data.collaborators && data.collaborators.length > 0
           ]
         );
         
         const programId = result.insertId;
+        
+        // Handle collaboration invitations if provided
+        if (data.collaborators && Array.isArray(data.collaborators) && data.collaborators.length > 0) {
+          for (const collaboratorId of data.collaborators) {
+            try {
+              await db.execute(`
+                INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status)
+                VALUES (?, ?, ?, 'pending')
+              `, [programId, collaboratorId, submission.submitted_by]);
+            } catch (collabError) {
+            }
+          }
+        }
         
         // If multiple dates are provided, insert them into program_event_dates table
         if (data.multiple_dates && Array.isArray(data.multiple_dates) && data.multiple_dates.length > 0) {
@@ -232,15 +312,56 @@ export const approveSubmission = async (req, res) => {
           }
         }
 
-        // If additional images are provided, insert them into program_additional_images table
+        // Handle additional images upload to Cloudinary
         if (data.additionalImages && Array.isArray(data.additionalImages) && data.additionalImages.length > 0) {
+          const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+          const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
           
           for (let i = 0; i < data.additionalImages.length; i++) {
             const imageData = data.additionalImages[i];
-            await db.execute(
-              `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
-              [programId, imageData, i]
-            );
+            
+            if (imageData && imageData.startsWith('data:image/')) {
+              try {
+                // Convert base64 to buffer
+                const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+                const buffer = Buffer.from(base64Data, 'base64');
+                
+                // Create a file-like object for Cloudinary upload
+                const file = {
+                  buffer: buffer,
+                  originalname: `additional-${i}.jpg`,
+                  mimetype: imageData.match(/data:image\/(\w+);/)[1],
+                  size: buffer.length
+                };
+                
+                // Upload to Cloudinary
+                const uploadResult = await uploadSingleToCloudinary(
+                  file, 
+                  CLOUDINARY_FOLDERS.PROGRAMS.ADDITIONAL,
+                  { prefix: 'prog_add_' }
+                );
+                
+                // Store Cloudinary URL in database
+                await db.execute(
+                  `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
+                  [programId, uploadResult.url, i]
+                );
+                
+              } catch (uploadError) {
+                console.error(`❌ Error uploading additional image ${i + 1} to Cloudinary:`, uploadError);
+                // Continue with base64 as fallback
+                await db.execute(
+                  `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
+                  [programId, imageData, i]
+                );
+              }
+            } else {
+              // If it's not base64, store as is (might already be a Cloudinary URL)
+              await db.execute(
+                `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
+                [programId, imageData, i]
+              );
+            }
           }
         }
         
@@ -448,10 +569,43 @@ export const bulkApproveSubmissions = async (req, res) => {
         if (section === 'org_heads') {
           await db.execute(`DELETE FROM organization_heads WHERE organization_id = ?`, [orgId]);
           for (let head of data) {
+            // Handle head photo upload to Cloudinary
+            let cloudinaryPhotoUrl = head.photo;
+            if (head.photo && head.photo.startsWith('data:image/')) {
+              try {
+                const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+                const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
+                
+                // Convert base64 to buffer
+                const base64Data = head.photo.replace(/^data:image\/\w+;base64,/, '');
+                const buffer = Buffer.from(base64Data, 'base64');
+                
+                // Create a file-like object for Cloudinary upload
+                const file = {
+                  buffer: buffer,
+                  originalname: `org-head-${Date.now()}.jpg`,
+                  mimetype: head.photo.match(/data:image\/(\w+);/)[0].replace('data:', '').replace(';', ''),
+                  size: buffer.length
+                };
+                
+                // Upload to Cloudinary
+                const uploadResult = await uploadSingleToCloudinary(
+                  file, 
+                  CLOUDINARY_FOLDERS.ORGANIZATIONS.HEADS,
+                  { prefix: 'org_head_' }
+                );
+                
+                cloudinaryPhotoUrl = uploadResult.url;
+              } catch (uploadError) {
+                console.error('❌ Error uploading organization head photo to Cloudinary:', uploadError);
+                // Continue with base64 as fallback
+              }
+            }
+            
             await db.execute(
               `INSERT INTO organization_heads (organization_id, head_name, role, facebook, email, photo)
                VALUES (?, ?, ?, ?, ?, ?)`,
-              [orgId, head.name, head.position, head.facebook, head.email, head.photo]
+              [orgId, head.name, head.position, head.facebook, head.email, cloudinaryPhotoUrl]
             );
           }
         }
@@ -481,6 +635,39 @@ export const bulkApproveSubmissions = async (req, res) => {
             counter++;
           }
 
+          // Handle main image upload to Cloudinary
+          let cloudinaryImageUrl = data.image;
+          if (data.image && data.image.startsWith('data:image/')) {
+            try {
+              const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+              const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
+              
+              // Convert base64 to buffer
+              const base64Data = data.image.replace(/^data:image\/\w+;base64,/, '');
+              const buffer = Buffer.from(base64Data, 'base64');
+              
+              // Create a file-like object for Cloudinary upload
+              const file = {
+                buffer: buffer,
+                originalname: `program-${Date.now()}.jpg`,
+                mimetype: data.image.match(/data:image\/(\w+);/)[0].replace('data:', '').replace(';', ''),
+                size: buffer.length
+              };
+              
+              // Upload to Cloudinary
+              const uploadResult = await uploadSingleToCloudinary(
+                file, 
+                CLOUDINARY_FOLDERS.PROGRAMS.MAIN,
+                { prefix: 'prog_main_' }
+              );
+              
+              cloudinaryImageUrl = uploadResult.url;
+            } catch (uploadError) {
+              console.error('❌ Error uploading main program image to Cloudinary:', uploadError);
+              // Continue with base64 as fallback
+            }
+          }
+
           const [result] = await db.execute(
             `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
@@ -490,7 +677,7 @@ export const bulkApproveSubmissions = async (req, res) => {
               data.description,
               data.category,
               data.status,
-              data.image,
+              cloudinaryImageUrl, // Use Cloudinary URL instead of base64
               data.event_start_date || null,
               data.event_end_date || null,
               finalSlug
@@ -508,13 +695,56 @@ export const bulkApproveSubmissions = async (req, res) => {
             }
           }
 
+          // Handle additional images upload to Cloudinary
           if (data.additionalImages && Array.isArray(data.additionalImages) && data.additionalImages.length > 0) {
+            const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+            const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
+            
             for (let i = 0; i < data.additionalImages.length; i++) {
               const imageData = data.additionalImages[i];
-              await db.execute(
-                `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
-                [programId, imageData, i]
-              );
+              
+              if (imageData && imageData.startsWith('data:image/')) {
+                try {
+                  // Convert base64 to buffer
+                  const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+                  const buffer = Buffer.from(base64Data, 'base64');
+                  
+                  // Create a file-like object for Cloudinary upload
+                  const file = {
+                    buffer: buffer,
+                    originalname: `additional-${i}.jpg`,
+                    mimetype: imageData.match(/data:image\/(\w+);/)[1],
+                    size: buffer.length
+                  };
+                  
+                  // Upload to Cloudinary
+                  const uploadResult = await uploadSingleToCloudinary(
+                    file, 
+                    CLOUDINARY_FOLDERS.PROGRAMS.ADDITIONAL,
+                    { prefix: 'prog_add_' }
+                  );
+                  
+                  // Store Cloudinary URL in database
+                  await db.execute(
+                    `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
+                    [programId, uploadResult.url, i]
+                  );
+                  
+                } catch (uploadError) {
+                  console.error(`❌ Error uploading additional image ${i + 1} to Cloudinary:`, uploadError);
+                  // Continue with base64 as fallback
+                  await db.execute(
+                    `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
+                    [programId, imageData, i]
+                  );
+                }
+              } else {
+                // If it's not base64, store as is (might already be a Cloudinary URL)
+                await db.execute(
+                  `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
+                  [programId, imageData, i]
+                );
+              }
             }
           }
         }

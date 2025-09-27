@@ -197,7 +197,6 @@ export const uploadHeroSectionVideo = async (req, res) => {
           try {
             await deleteFromCloudinary(oldPublicId);
           } catch (deleteError) {
-            console.warn('Failed to delete old video from Cloudinary:', deleteError.message);
           }
         }
       }
@@ -277,7 +276,6 @@ export const uploadHeroSectionImage = async (req, res) => {
         try {
           await deleteFromCloudinary(oldPublicId);
         } catch (deleteError) {
-          console.warn('Failed to delete old image from Cloudinary:', deleteError.message);
         }
       }
     }
@@ -330,7 +328,6 @@ export const deleteHeroSectionVideo = async (req, res) => {
       try {
         await deleteFromCloudinary(publicId);
       } catch (deleteError) {
-        console.warn('Failed to delete video from Cloudinary:', deleteError.message);
       }
     }
 
@@ -573,7 +570,6 @@ export const deleteHeroSectionImage = async (req, res) => {
         try {
           await deleteFromCloudinary(publicId);
         } catch (deleteError) {
-          console.warn('Failed to delete image from Cloudinary:', deleteError.message);
         }
       }
     }

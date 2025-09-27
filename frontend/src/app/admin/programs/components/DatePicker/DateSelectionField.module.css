@@ -20,19 +20,27 @@
   font-weight: 700;
 }
 
-/* Date Selection Row - Dropdown and Date Picker in Same Row */
-.dateSelectionRow {
+/* Combined Row - Schedule Type Selection and Date Picker */
+.dropdownRow {
   display: flex;
+  align-items: center;
   gap: 12px;
   margin-bottom: 8px;
 }
 
 .dropdownContainer {
-  flex: 0 0 200px;
+  width: 150px;
+  flex-shrink: 0;
+}
+
+/* Date Picker Row - Calendar in same row */
+.datePickerRow {
+  flex: 1;
+  margin-bottom: 0;
 }
 
 .datePickerContainer {
-  flex: 1;
+  width: 100%;
 }
 
 /* Custom Dropdown Styles */
@@ -244,10 +252,10 @@
 }
 
 .selectedDatesHeader {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #969aa8;
+  margin-bottom: 12px;
 }
 
 .selectedDatesGrid {
@@ -259,12 +267,12 @@
 .selectedDateTag {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 12px;
   padding: 6px 10px;
   background: #ffffff;
   border: 1px solid #d1d5db;
   border-radius: 4px;
-  font-size: 0.75rem;
+  font-size: 13px;
   color: #374151;
   font-weight: 500;
 }
@@ -276,20 +284,19 @@
   width: 16px;
   height: 16px;
   border: none;
-  background: #ef4444;
+  background: none;
   color: #ffffff;
   border-radius: 50%;
   cursor: pointer;
-  font-size: 0.625rem;
-  transition: all 0.2s ease;
+  font-size: 13px;
   padding: 0;
   user-select: none;
 }
 
-.removeDateButton:hover:not(:disabled) {
-  background: #dc2626;
-  transform: scale(1.1);
+.removeDateButton svg {
+  stroke: #06100f;
 }
+
 
 .removeDateButton:disabled {
   opacity: 0.5;
@@ -314,18 +321,20 @@
   font-style: italic;
 }
 
-/* Date picker styles are handled by the imported CSS files */
-
 /* Responsive Design */
 @media (max-width: 768px) {
-  .dateSelectionRow {
+  .dropdownRow {
     flex-direction: column;
+    align-items: stretch;
     gap: 8px;
   }
   
   .dropdownContainer {
-    flex: none;
     width: 100%;
+  }
+  
+  .datePickerRow {
+    flex: none;
   }
   
   .selectedDatesGrid {

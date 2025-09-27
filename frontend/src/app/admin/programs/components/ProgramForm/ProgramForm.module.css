@@ -1,0 +1,644 @@
+/* ProgramForm.module.css - Unified form styles for create and edit modes */
+
+/* Form wrapper - no background container */
+.form {
+  width: 100%;
+}
+
+.formLayout {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+  align-items: start;
+}
+
+/* Left Container - Main form container */
+.leftContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #06100f;
+  font-family: var(--font-inter);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.labelIcon {
+  stroke: #06100f;
+  font-size: 16px;
+}
+
+.required {
+  color: #dc2626;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: var(--font-inter);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: #fff;
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.inputError {
+  border-color: #dc2626;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.charCount {
+  text-align: right;
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.errorText {
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Right Panel */
+.rightPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Container for each section */
+.container {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.leftContainer .container {
+  padding: 24px 28px;
+}
+
+.rightPanel .container {
+  padding: 20px;
+}
+
+.containerTitle {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  font-family: var(--font-inter);
+}
+
+/* Image Upload Styles */
+.uploadArea {
+  background: #f8f9fa;
+  border: 2px dashed #e2e8f0;
+  border-radius: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  transition: all 0.2s ease;
+  position: relative;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.uploadArea.dragActive {
+  border-color: #1CBFA4;
+  background: #f0fdfa;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.uploadContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.uploadButton {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #06100f;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.uploadButton:hover {
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  border-color: #06100f;
+}
+
+.uploadIcon {
+  font-size: 16px;
+  color: #06100f;
+}
+
+.uploadText {
+  font-weight: 400;
+  color: #6b7280;
+  margin: 10px 0 0;
+  font-size: 14px;
+}
+
+.uploadSubtext {
+  color: #9ca3af;
+  font-size: 12px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.browseLink {
+  color: #1CBFA4;
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.browseLink:hover {
+  color: #1D9782;
+}
+
+.imagePreview {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.previewImage {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.removeImageButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: white;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.removeImageButton svg {
+  stroke: #06100f;
+}
+
+.removeImageButton:hover {
+  background: #e5e5e7;
+}
+
+/* Uploaded Files List */
+.uploadedFilesList {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.uploadedFileItem {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: #f8f9fa;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  gap: 12px;
+}
+
+.fileIcon {
+  width: 40px;
+  height: 40px;
+  background: #e5e7eb;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.fileType {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca3af;
+}
+
+.fileInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.fileName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fileSize {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.deleteButton {
+  background: none;
+  border: none;
+  color: #06100f;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.deleteButton svg {
+  stroke: #06100f;
+}
+
+.deleteButton:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Collaboration Section */
+.collaborationSection {
+  margin-top: 12px;
+}
+
+.inviteContainer {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.inviteInputContainer {
+  flex: 1;
+  position: relative;
+}
+
+.inviteInput {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.inviteInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.clearButton {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.clearButton svg {
+  stroke: #6b7280;
+}
+
+.clearButton:hover {
+  color: #374151;
+}
+
+.autocompleteDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.autocompleteItem {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s;
+}
+
+.autocompleteItem:hover,
+.autocompleteItem.selected {
+  background: #f3f4f6;
+}
+
+.autocompleteItem:last-child {
+  border-bottom: none;
+}
+
+.adminInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.adminEmail {
+  font-weight: 500;
+  color: #06100f;
+  font-size: 14px;
+}
+
+.adminOrg {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.noResults {
+  padding: 8px 12px;
+  color: #6b7280;
+  font-size: 14px;
+  text-align: center;
+}
+
+.inviteButton {
+  background: #06100f;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.inviteButton:hover:not(:disabled) {
+  background: #142220;
+}
+
+.inviteButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.selectedCollaborators {
+  margin-top: 12px;
+}
+
+.selectedCollaborators h5 {
+  font-size: 13px;
+  font-weight: 500;
+  color: #969aa8;
+  margin: 24px 0 12px;
+}
+
+.collaboratorsList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.collaboratorItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.collaboratorEmail {
+  font-weight: 500;
+  color: #06100f;
+}
+
+.collaboratorOrg {
+  color: #6b7280;
+  margin-left: 8px;
+  font-size: 12px;
+}
+
+.removeCollaboratorButton {
+  background: none;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.removeCollaboratorButton svg {
+  stroke: #06100f;
+}
+
+/* Field Spacing */
+.fieldSpacing {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+/* Form Actions */
+.formActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  justify-content: flex-start;
+}
+
+.cancelButton {
+  padding: 12px 24px;
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.cancelButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.submitButton {
+  padding: 12px 24px;
+  background: #06100f;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: #142220;
+}
+
+.submitButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.submitError {
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+  margin-top: 12px;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .formLayout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .rightPanel {
+    flex-direction: row;
+    gap: 20px;
+  }
+  
+  .container {
+    flex: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .leftContainer {
+    padding: 20px;
+  }
+  
+  .rightPanel {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .formActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .cancelButton,
+  .submitButton {
+    width: 100%;
+  }
+  
+  .inviteContainer {
+    flex-direction: column;
+    gap: 8px;
+  }
+}

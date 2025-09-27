@@ -7,7 +7,6 @@ import Image from 'next/image';
 import styles from './BrandingManagement.module.css';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import ConfirmationModal from '../../../components/ConfirmationModal';
-import { SkeletonLoader } from '../../../components';
 import { useScrollPosition } from '@/hooks/useScrollPosition';
 
 export default function BrandingManagementComponent({ showSuccessModal }) {
@@ -261,18 +260,30 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
           <h2>Site Branding</h2>
           <p>Upload and manage your site logo, logo name, and favicon</p>
         </div>
-        <div className={styles.panelActions}>
+        <div className={styles.headerActions}>
           {isEditingBranding ? (
-            <div className={styles.headerActions}>
-              <button className={styles.cancelBtn} onClick={handleCancelEdit}>
+            <>
+              <button
+                onClick={handleCancelEdit}
+                className={styles.cancelBtn}
+                disabled={isUpdatingBranding}
+              >
                 Cancel
               </button>
-              <button className={styles.saveBtn} onClick={handleBrandingUpdate}>
-                Save Changes
+              <button
+                onClick={handleBrandingUpdate}
+                disabled={isUpdatingBranding}
+                className={styles.saveBtn}
+              >
+                {isUpdatingBranding ? 'Saving...' : 'Save Changes'}
               </button>
-            </div>
+            </>
           ) : (
-            <button className={styles.editToggleBtn} onClick={handleEditToggle}>
+            <button
+              onClick={handleEditToggle}
+              className={styles.editToggleBtn}
+              disabled={isUpdatingBranding}
+            >
               <FiEdit3 size={16} />
               Edit
             </button>

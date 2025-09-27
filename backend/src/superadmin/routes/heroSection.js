@@ -3,6 +3,7 @@ import multer from 'multer';
 import { verifySuperadminToken } from '../controllers/superadminAuthController.js';
 import {
   getHeroSection,
+  updateHeroSection,
   updateHeroSectionText,
   updateHeroSectionImageText,
   uploadHeroSectionVideo,
@@ -36,6 +37,9 @@ router.use(verifySuperadminToken);
 
 // GET /api/superadmin/hero-section - Get hero section data
 router.get('/', getHeroSection);
+
+// PUT /api/superadmin/hero-section - Update entire hero section (bulk update)
+router.put('/', updateHeroSection);
 
 // PUT /api/superadmin/hero-section/text - Update text content (tag/heading)
 router.put('/text', updateHeroSectionText);

@@ -465,7 +465,7 @@ export const usePublicAboutUs = () => {
   };
 };
 
-// Custom hook for heads of FACES data
+// Custom hook for heads of FACES data (single head)
 export const usePublicHeadsFaces = () => {
   const { data, error, isLoading } = useSWR(
     `${API_BASE_URL}/api/superadmin/heads-faces`,
@@ -478,8 +478,8 @@ export const usePublicHeadsFaces = () => {
     }
   );
 
-  // Transform data for public consumption with fallbacks
-  const headsFacesData = data?.data || [];
+  // Transform data for public consumption - now returns single head or null
+  const headsFacesData = data?.data && data.data.length > 0 ? data.data[0] : null;
 
   return {
     headsFacesData,

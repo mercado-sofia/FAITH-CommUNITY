@@ -597,6 +597,21 @@
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   overflow: hidden;
+  position: relative;
+}
+
+/* Fallback Indicator */
+.fallbackIndicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  font-size: 11px;
+  text-align: center;
+  font-family: var(--font-poppins), sans-serif;
 }
 
 .currentImage {

@@ -5,7 +5,7 @@ import {
   createHeadsFaces,
   updateHeadsFaces,
   deleteHeadsFaces,
-  reorderHeadsFaces
+  createOrUpdateHeadFaces
 } from '../controllers/headsFacesController.js';
 import { verifyAdminOrSuperadmin } from '../middleware/verifyAdminOrSuperadmin.js';
 
@@ -19,6 +19,8 @@ router.get('/:id', getHeadsFacesById);
 router.post('/', verifyAdminOrSuperadmin, createHeadsFaces);
 router.put('/:id', verifyAdminOrSuperadmin, updateHeadsFaces);
 router.delete('/:id', verifyAdminOrSuperadmin, deleteHeadsFaces);
-router.put('/reorder/order', verifyAdminOrSuperadmin, reorderHeadsFaces);
+
+// Single head management endpoint
+router.post('/manage', verifyAdminOrSuperadmin, createOrUpdateHeadFaces);
 
 export default router;

@@ -674,31 +674,55 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                 {isEditingHero ? (
                   <>
                     {/* Image Preview */}
-                    {image.url ? (
-                      <div className={styles.preview}>
-                        <Image 
-                          src={image.url} 
-                          alt={`Banner image ${index + 1}`} 
-                          width={200}
-                          height={150}
-                          unoptimized
-                          style={{ maxWidth: '100%', height: 'auto', objectFit: 'cover' }}
-                        />
-                      </div>
-                    ) : selectedImageFiles[image.id] ? (
-                      <div className={styles.preview}>
-                        <Image 
-                          src={URL.createObjectURL(selectedImageFiles[image.id])} 
-                          alt={`Banner image ${index + 1} preview`} 
-                          width={200}
-                          height={150}
-                          unoptimized
-                          style={{ maxWidth: '100%', height: 'auto', objectFit: 'cover' }}
-                        />
-                      </div>
-                    ) : (
-                      <div className={styles.emptyState}>No image</div>
-                    )}
+                    {(() => {
+                      // Use the same fallback logic as the public portal
+                      const isFirst = index === 0;
+                      const defaultImageSrc = isFirst ? "/samples/sample2.jpg" : index === 1 ? "/samples/sample8.jpg" : "/samples/sample3.jpeg";
+                      
+                      if (image.url) {
+                        return (
+                          <div className={styles.preview}>
+                            <Image 
+                              src={image.url} 
+                              alt={`Banner image ${index + 1}`} 
+                              width={200}
+                              height={150}
+                              unoptimized
+                              style={{ maxWidth: '100%', height: 'auto', objectFit: 'cover' }}
+                            />
+                          </div>
+                        );
+                      } else if (selectedImageFiles[image.id]) {
+                        return (
+                          <div className={styles.preview}>
+                            <Image 
+                              src={URL.createObjectURL(selectedImageFiles[image.id])} 
+                              alt={`Banner image ${index + 1} preview`} 
+                              width={200}
+                              height={150}
+                              unoptimized
+                              style={{ maxWidth: '100%', height: 'auto', objectFit: 'cover' }}
+                            />
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <div className={styles.preview}>
+                            <Image 
+                              src={defaultImageSrc} 
+                              alt={`Banner image ${index + 1} (default)`} 
+                              width={200}
+                              height={150}
+                              unoptimized
+                              style={{ maxWidth: '100%', height: 'auto', objectFit: 'cover' }}
+                            />
+                            <div className={styles.fallbackIndicator}>
+                              <span>Using default image</span>
+                            </div>
+                          </div>
+                        );
+                      }
+                    })()}
                     
                     {/* Image Text Content */}
                     <div className={styles.imageTextContent}>
@@ -779,20 +803,29 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                   </>
                 ) : (
                   <div className={styles.readOnlyContent}>
-                    {image.url ? (
-                      <div className={styles.preview}>
-                        <Image 
-                          src={image.url} 
-                          alt={`Banner image ${index + 1}`} 
-                          width={200}
-                          height={150}
-                          unoptimized
-                          style={{ maxWidth: '100%', height: 'auto', objectFit: 'cover' }}
-                        />
-                      </div>
-                    ) : (
-                      <div className={styles.emptyState}>No image</div>
-                    )}
+                    {(() => {
+                      // Use the same fallback logic as the public portal
+                      const isFirst = index === 0;
+                      const imageSrc = image.url || (isFirst ? "/samples/sample2.jpg" : index === 1 ? "/samples/sample8.jpg" : "/samples/sample3.jpeg");
+                      
+                      return (
+                        <div className={styles.preview}>
+                          <Image 
+                            src={imageSrc} 
+                            alt={`Banner image ${index + 1}`} 
+                            width={200}
+                            height={150}
+                            unoptimized
+                            style={{ maxWidth: '100%', height: 'auto', objectFit: 'cover' }}
+                          />
+                          {!image.url && (
+                            <div className={styles.fallbackIndicator}>
+                              <span>Using default image</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <div className={styles.readOnlyItem}>
                       <label className={styles.readOnlyLabel}>Heading:</label>
                       <span className={styles.readOnlyValue}>{image.heading}</span>

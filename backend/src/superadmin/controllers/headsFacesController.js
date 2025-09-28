@@ -3,8 +3,9 @@ import db from '../../database.js';
 
 export const getHeadsFaces = async (req, res) => {
   try {
+    // Get only the primary head (first by display_order)
     const [results] = await db.query(
-      "SELECT * FROM heads_faces WHERE status = 'ACTIVE' ORDER BY display_order ASC, created_at ASC"
+      "SELECT * FROM heads_faces WHERE status = 'ACTIVE' ORDER BY display_order ASC, created_at ASC LIMIT 1"
     );
     res.status(200).json({ success: true, data: results });
   } catch (err) {
@@ -28,6 +29,65 @@ export const getHeadsFacesById = async (req, res) => {
     res.status(200).json({ success: true, data: results[0] });
   } catch (err) {
     console.error('Error fetching head of FACES by ID:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// Create or update the single head of FACES
+export const createOrUpdateHeadFaces = async (req, res) => {
+  try {
+    const { name, description, email, phone, image_url, position } = req.body;
+    
+    // Validate required fields
+    if (!name) {
+      return res.status(400).json({ success: false, error: 'Name is required' });
+    }
+    
+    // Check if a head already exists
+    const [existingHeads] = await db.query(
+      "SELECT * FROM heads_faces WHERE status = 'ACTIVE' ORDER BY display_order ASC, created_at ASC LIMIT 1"
+    );
+    
+    if (existingHeads.length > 0) {
+      // Update existing head
+      const existingHead = existingHeads[0];
+      await db.query(
+        "UPDATE heads_faces SET name = ?, description = ?, email = ?, phone = ?, image_url = ?, position = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [name, description || null, email || null, phone || null, image_url || null, position || 'Head of FACES', existingHead.id]
+      );
+      
+      // Fetch the updated record
+      const [updatedRecord] = await db.query(
+        "SELECT * FROM heads_faces WHERE id = ?",
+        [existingHead.id]
+      );
+      
+      res.status(200).json({ 
+        success: true, 
+        message: 'Head of FACES updated successfully', 
+        data: updatedRecord[0] 
+      });
+    } else {
+      // Create new head
+      const [result] = await db.query(
+        "INSERT INTO heads_faces (name, description, email, phone, image_url, position, display_order) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [name, description || null, email || null, phone || null, image_url || null, position || 'Head of FACES', 1]
+      );
+      
+      // Fetch the created record
+      const [newRecord] = await db.query(
+        "SELECT * FROM heads_faces WHERE id = ?",
+        [result.insertId]
+      );
+      
+      res.status(201).json({ 
+        success: true, 
+        message: 'Head of FACES created successfully', 
+        data: newRecord[0] 
+      });
+    }
+  } catch (err) {
+    console.error('Error creating/updating head of FACES:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 };
@@ -135,28 +195,3 @@ export const deleteHeadsFaces = async (req, res) => {
   }
 };
 
-export const reorderHeadsFaces = async (req, res) => {
-  try {
-    const { heads } = req.body; // Array of {id, display_order}
-    
-    if (!Array.isArray(heads)) {
-      return res.status(400).json({ success: false, error: 'Invalid data format' });
-    }
-    
-    // Update display order for each head
-    for (const head of heads) {
-      await db.query(
-        "UPDATE heads_faces SET display_order = ? WHERE id = ?",
-        [head.display_order, head.id]
-      );
-    }
-    
-    res.status(200).json({ 
-      success: true, 
-      message: 'Display order updated successfully' 
-    });
-  } catch (err) {
-    console.error('Error reordering heads of FACES:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-};

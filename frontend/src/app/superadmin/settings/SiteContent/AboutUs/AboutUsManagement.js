@@ -5,11 +5,9 @@ import Image from 'next/image';
 import { FiEdit3, FiXCircle, FiPlus, FiTrash2, FiUpload } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import ConfirmationModal from '../../../components/ConfirmationModal';
-import { useScrollPosition } from '@/hooks/useScrollPosition';
 import styles from './AboutUsManagement.module.css';
 
 export default function AboutUsManagement({ showSuccessModal }) {
-  const { preserveScrollPositionAsync } = useScrollPosition();
   const [aboutUsData, setAboutUsData] = useState(null);
   const [isUpdatingAboutUs, setIsUpdatingAboutUs] = useState(false);
   const [showAboutUsModal, setShowAboutUsModal] = useState(false);
@@ -149,7 +147,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
 
   // Confirm about us update
   const handleAboutUsConfirm = async () => {
-    await preserveScrollPositionAsync(async () => {
       try {
         setIsUpdatingAboutUs(true);
         
@@ -200,7 +197,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
         setIsUpdatingAboutUs(false);
         setShowAboutUsModal(false);
       }
-    });
   };
 
   // Cancel about us update
@@ -215,15 +211,13 @@ export default function AboutUsManagement({ showSuccessModal }) {
       return;
     }
 
-    preserveScrollPositionAsync(async () => {
-      const updatedCategories = [...tempAboutUs.extension_categories, { ...newCategory }];
-      setTempAboutUs(prev => ({
-        ...prev,
-        extension_categories: updatedCategories
-      }));
-      setNewCategory({ name: '', color: 'green' });
-      setShowAddCategoryModal(false);
-    });
+    const updatedCategories = [...tempAboutUs.extension_categories, { ...newCategory }];
+    setTempAboutUs(prev => ({
+      ...prev,
+      extension_categories: updatedCategories
+    }));
+    setNewCategory({ name: '', color: 'green' });
+    setShowAddCategoryModal(false);
   };
 
   // Edit extension category
@@ -239,16 +233,14 @@ export default function AboutUsManagement({ showSuccessModal }) {
       return;
     }
 
-    preserveScrollPositionAsync(async () => {
-      const updatedCategories = [...tempAboutUs.extension_categories];
-      updatedCategories[editingCategoryIndex] = { ...editingCategory };
-      setTempAboutUs(prev => ({
-        ...prev,
-        extension_categories: updatedCategories
-      }));
-      setEditingCategoryIndex(-1);
-      setEditingCategory({ name: '', color: 'green' });
-    });
+    const updatedCategories = [...tempAboutUs.extension_categories];
+    updatedCategories[editingCategoryIndex] = { ...editingCategory };
+    setTempAboutUs(prev => ({
+      ...prev,
+      extension_categories: updatedCategories
+    }));
+    setEditingCategoryIndex(-1);
+    setEditingCategory({ name: '', color: 'green' });
   };
 
   // Delete extension category
@@ -258,13 +250,11 @@ export default function AboutUsManagement({ showSuccessModal }) {
       return;
     }
 
-    preserveScrollPositionAsync(async () => {
-      const updatedCategories = tempAboutUs.extension_categories.filter((_, i) => i !== index);
-      setTempAboutUs(prev => ({
-        ...prev,
-        extension_categories: updatedCategories
-      }));
-    });
+    const updatedCategories = tempAboutUs.extension_categories.filter((_, i) => i !== index);
+    setTempAboutUs(prev => ({
+      ...prev,
+      extension_categories: updatedCategories
+    }));
   };
 
   // File upload handlers
@@ -348,7 +338,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
   };
 
   const handleDeleteImageConfirm = async () => {
-    await preserveScrollPositionAsync(async () => {
       try {
         setIsDeletingImage(true);
         const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -379,7 +368,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
         setIsDeletingImage(false);
         setShowDeleteImageModal(false);
       }
-    });
   };
 
   const handleDeleteImageCancel = () => {
@@ -427,134 +415,189 @@ export default function AboutUsManagement({ showSuccessModal }) {
 
       <div className={styles.panelContent}>
         <div className={styles.aboutUsSection}>
-          {/* Heading Field */}
-          <div className={styles.inputGroup}>
-            <label htmlFor="heading" className={styles.inputLabel}>
-              Heading
-            </label>
-            <input
-              type="text"
-              id="heading"
-              value={isEditingAboutUs ? tempAboutUs.heading : (aboutUsData?.heading || '')}
-              onChange={(e) => isEditingAboutUs ? 
-                setTempAboutUs(prev => ({ ...prev, heading: e.target.value })) :
-                null
-              }
-              className={styles.textInput}
-              placeholder="Enter heading"
-              maxLength={500}
-              disabled={!isEditingAboutUs}
-            />
-          </div>
-
-          {/* Description Field */}
-          <div className={styles.inputGroup}>
-            <label htmlFor="description" className={styles.inputLabel}>
-              Description
-            </label>
-            <textarea
-              id="description"
-              value={isEditingAboutUs ? tempAboutUs.description : (aboutUsData?.description || '')}
-              onChange={(e) => isEditingAboutUs ? 
-                setTempAboutUs(prev => ({ ...prev, description: e.target.value })) :
-                null
-              }
-              className={styles.textArea}
-              placeholder="Enter description"
-              rows={4}
-              disabled={!isEditingAboutUs}
-            />
-          </div>
-
-          {/* Image Upload Section */}
-          <div className={styles.inputGroup}>
-            <div className={styles.imageSectionHeader}>
-              <label className={styles.inputLabel}>
-                About Us Image
-              </label>
-              {isEditingAboutUs && (isEditingAboutUs ? tempAboutUs.image_url : (aboutUsData?.image_url || '')) && (
-                <div className={styles.imageActions}>
-                  <button
-                    onClick={handleDeleteImage}
-                    className={styles.removeBtn}
-                    title="Remove image"
-                  >
-                    <FiTrash2 color="#dc2626" />
-                  </button>
-                </div>
-              )}
+          {/* Main Content Layout: Image on left, Text content on right */}
+          <div className={styles.mainContentLayout}>
+            {/* Image Section - Left Side */}
+            <div className={styles.imageSection}>
+              <div className={styles.imageSectionHeader}>
+                <label className={styles.inputLabel}>
+                  About Us Image
+                </label>
+                {isEditingAboutUs && (isEditingAboutUs ? tempAboutUs.image_url : (aboutUsData?.image_url || '')) && (
+                  <div className={styles.imageActions}>
+                    <button
+                      onClick={handleDeleteImage}
+                      className={styles.removeBtn}
+                      title="Remove image"
+                    >
+                      <FiTrash2 color="#dc2626" />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className={styles.imageUploadSection}>
+                {/* Current Image Display */}
+                {(() => {
+                  const currentImageUrl = isEditingAboutUs ? tempAboutUs.image_url : (aboutUsData?.image_url || '');
+                  const fallbackImageUrl = '/samples/sample1.jpg';
+                  
+                  if (currentImageUrl) {
+                    return (
+                      <div className={styles.currentImageContainer}>
+                        <Image
+                          src={currentImageUrl}
+                          alt="Current About Us Image"
+                          className={styles.currentImage}
+                          width={400}
+                          height={300}
+                          style={{ objectFit: 'cover' }}
+                        />
+                        {/* Hover Overlay for Edit Mode */}
+                        {isEditingAboutUs && (
+                          <div className={styles.imageOverlay}>
+                            <label htmlFor="imageUpload" className={styles.uploadButton}>
+                              <FiUpload size={16} />
+                              {selectedFile ? 'Change Image' : 'Upload Image'}
+                            </label>
+                            <input
+                              type="file"
+                              id="imageUpload"
+                              accept="image/*"
+                              onChange={handleFileSelect}
+                              className={styles.fileInput}
+                              disabled={uploadingImage}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  } else if (selectedFile) {
+                    return (
+                      <div className={styles.currentImageContainer}>
+                        <Image
+                          src={URL.createObjectURL(selectedFile)}
+                          alt="Selected Image Preview"
+                          className={styles.currentImage}
+                          width={400}
+                          height={300}
+                          style={{ objectFit: 'cover' }}
+                        />
+                        {/* Hover Overlay for Edit Mode */}
+                        {isEditingAboutUs && (
+                          <div className={styles.imageOverlay}>
+                            <label htmlFor="imageUpload" className={styles.uploadButton}>
+                              <FiUpload size={16} />
+                              Change Image
+                            </label>
+                            <input
+                              type="file"
+                              id="imageUpload"
+                              accept="image/*"
+                              onChange={handleFileSelect}
+                              className={styles.fileInput}
+                              disabled={uploadingImage}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className={styles.currentImageContainer}>
+                        <Image
+                          src={fallbackImageUrl}
+                          alt="About Us Image (default)"
+                          className={styles.currentImage}
+                          width={400}
+                          height={300}
+                          style={{ objectFit: 'cover' }}
+                        />
+                        <div className={styles.fallbackIndicator}>
+                          <span>Using default image</span>
+                        </div>
+                        {/* Hover Overlay for Edit Mode */}
+                        {isEditingAboutUs && (
+                          <div className={styles.imageOverlay}>
+                            <label htmlFor="imageUpload" className={styles.uploadButton}>
+                              <FiUpload size={16} />
+                              Upload Image
+                            </label>
+                            <input
+                              type="file"
+                              id="imageUpload"
+                              accept="image/*"
+                              onChange={handleFileSelect}
+                              className={styles.fileInput}
+                              disabled={uploadingImage}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+                })()}
+                
+                {/* Selected File Info - Show below image when file is selected */}
+                {isEditingAboutUs && selectedFile && (
+                  <div className={styles.selectedFileInfo}>
+                    <span className={styles.fileName}>{selectedFile.name}</span>
+                    <span className={styles.fileSize}>
+                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </span>
+                    <span className={styles.uploadNote}>
+                      Image will be uploaded when you save changes
+                    </span>
+                    <button
+                      onClick={() => setSelectedFile(null)}
+                      className={styles.cancelBtn}
+                    >
+                      Remove Selection
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className={styles.imageUploadSection}>
-              {/* Current Image Display */}
-              {(isEditingAboutUs ? tempAboutUs.image_url : (aboutUsData?.image_url || '')) ? (
-                <div className={styles.currentImageContainer}>
-                  <Image
-                    src={isEditingAboutUs ? tempAboutUs.image_url : (aboutUsData?.image_url || '')}
-                    alt="Current About Us Image"
-                    className={styles.currentImage}
-                    width={400}
-                    height={300}
-                    style={{ objectFit: 'cover' }}
-                  />
-                </div>
-              ) : selectedFile ? (
-                <div className={styles.currentImageContainer}>
-                  <Image
-                    src={URL.createObjectURL(selectedFile)}
-                    alt="Selected Image Preview"
-                    className={styles.currentImage}
-                    width={400}
-                    height={300}
-                    style={{ objectFit: 'cover' }}
-                  />
-                </div>
-              ) : (
-                <div className={styles.emptyImageState}>
-                  No image uploaded
-                </div>
-              )}
-              
-              {/* Image Upload Controls - Only show when no image exists and in edit mode */}
-              {isEditingAboutUs && !(isEditingAboutUs ? tempAboutUs.image_url : (aboutUsData?.image_url || '')) && (
-                <div className={styles.imageUploadControls}>
-                  {!selectedFile ? (
-                    <div className={styles.fileInputContainer}>
-                      <input
-                        type="file"
-                        id="imageUpload"
-                        accept="image/*"
-                        onChange={handleFileSelect}
-                        className={styles.fileInput}
-                        disabled={uploadingImage}
-                      />
-                      <label htmlFor="imageUpload" className={styles.fileInputLabel}>
-                        <FiUpload size={16} />
-                        Choose Image
-                      </label>
-                    </div>
-                  ) : (
-                    <div className={styles.uploadActions}>
-                      <div className={styles.selectedFileInfo}>
-                        <span className={styles.fileName}>{selectedFile.name}</span>
-                        <span className={styles.fileSize}>
-                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                        </span>
-                        <span className={styles.uploadNote}>
-                          Image will be uploaded when you save changes
-                        </span>
-                      </div>
-                      <div className={styles.uploadButtons}>
-                        <button
-                          onClick={() => setSelectedFile(null)}
-                          className={styles.cancelBtn}
-                        >
-                          Remove Selection
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+
+            {/* Text Content Section - Right Side */}
+            <div className={styles.textContentSection}>
+              {/* Heading Field */}
+              <div className={styles.inputGroup}>
+                <label htmlFor="heading" className={styles.inputLabel}>
+                  Heading
+                </label>
+                <input
+                  type="text"
+                  id="heading"
+                  value={isEditingAboutUs ? tempAboutUs.heading : (aboutUsData?.heading || '')}
+                  onChange={(e) => isEditingAboutUs ? 
+                    setTempAboutUs(prev => ({ ...prev, heading: e.target.value })) :
+                    null
+                  }
+                  className={styles.textInput}
+                  placeholder="Enter heading"
+                  maxLength={500}
+                  disabled={!isEditingAboutUs}
+                />
+              </div>
+
+              {/* Description Field */}
+              <div className={styles.inputGroup}>
+                <label htmlFor="description" className={styles.inputLabel}>
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  value={isEditingAboutUs ? tempAboutUs.description : (aboutUsData?.description || '')}
+                  onChange={(e) => isEditingAboutUs ? 
+                    setTempAboutUs(prev => ({ ...prev, description: e.target.value })) :
+                    null
+                  }
+                  className={styles.textArea}
+                  placeholder="Enter description"
+                  rows={4}
+                  disabled={!isEditingAboutUs}
+                />
+              </div>
             </div>
           </div>
 

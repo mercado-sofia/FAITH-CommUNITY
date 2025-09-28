@@ -1,6 +1,7 @@
 import Image from 'next/image';
-import { FaTimes, FaTag, FaCalendar, FaEye, FaChartBar, FaExclamationTriangle } from 'react-icons/fa';
+import { FaTimes, FaTag, FaCalendar, FaEye, FaChartBar, FaExclamationTriangle, FaUsers } from 'react-icons/fa';
 import { formatDateShort, formatDateTime } from '@/utils/dateUtils.js';
+import { getProgramImageUrl } from '@/utils/uploadPaths';
 import styles from './SubmissionModal.module.css';
 
 export default function SubmissionModal({ data, onClose }) {
@@ -77,17 +78,25 @@ export default function SubmissionModal({ data, onClose }) {
           {/* Left side - Image */}
           <div className={styles.programImageSection}>
             {dataObj.image ? (
-              <Image 
-                src={dataObj.image} 
-                alt="Program image" 
-                className={styles.programMainImage}
-                width={300}
-                height={200}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'flex';
-                }}
-              />
+              getProgramImageUrl(dataObj.image) === 'IMAGE_UNAVAILABLE' ? (
+                <div className={styles.programImagePlaceholder}>
+                  <FaExclamationTriangle />
+                  <span>Image unavailable</span>
+                </div>
+              ) : (
+                <Image 
+                  src={getProgramImageUrl(dataObj.image)} 
+                  alt="Program image" 
+                  className={styles.programMainImage}
+                  width={300}
+                  height={200}
+                  onError={(e) => {
+                    console.error('Image failed to load:', dataObj.image, 'Processed URL:', getProgramImageUrl(dataObj.image));
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+              )
             ) : (
               <div className={styles.programImagePlaceholder}>
                 <FaEye />
@@ -216,18 +225,50 @@ export default function SubmissionModal({ data, onClose }) {
                 <div className={styles.additionalImagesGrid}>
                   {dataObj.additionalImages.map((image, index) => (
                     <div key={index} className={styles.additionalImagePreview}>
-                      <Image 
-                        src={image} 
-                        alt={`Additional image ${index + 1}`} 
-                        className={styles.additionalImage}
-                        width={120}
-                        height={120}
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'block';
-                        }}
-                      />
-                      <div className={styles.imageError} style={{display: 'none'}}>Image {index + 1} unavailable</div>
+                      {getProgramImageUrl(image, 'additional') === 'IMAGE_UNAVAILABLE' ? (
+                        <div className={styles.imageError}>
+                          <FaExclamationTriangle />
+                          <span>Image {index + 1} unavailable</span>
+                        </div>
+                      ) : (
+                        <Image 
+                          src={getProgramImageUrl(image, 'additional')} 
+                          alt={`Additional image ${index + 1}`} 
+                          className={styles.additionalImage}
+                          width={120}
+                          height={120}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'block';
+                          }}
+                        />
+                      )}
+                      <div className={styles.imageError} style={{display: 'none'}}>
+                        <FaExclamationTriangle />
+                        <span>Image {index + 1} unavailable</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Collaboration Section */}
+            {dataObj.collaborators && Array.isArray(dataObj.collaborators) && dataObj.collaborators.length > 0 && (
+              <div className={styles.collaborationSection}>
+                <div className={styles.collaborationLabel}>
+                  <FaUsers className={styles.collaborationIcon} />
+                  Collaborators ({dataObj.collaborators.length})
+                </div>
+                <div className={styles.collaboratorsList}>
+                  {dataObj.collaborators.map((collaborator, index) => (
+                    <div key={collaborator.id || index} className={styles.collaboratorItem}>
+                      <div className={styles.collaboratorInfo}>
+                        <span className={styles.collaboratorEmail}>{collaborator.email || 'Unknown Email'}</span>
+                        <span className={styles.collaboratorOrg}>
+                          ({collaborator.organization_acronym || collaborator.organization_name || 'Unknown Org'})
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>

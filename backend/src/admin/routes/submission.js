@@ -9,8 +9,12 @@ import {
   getSubmissionById,
   bulkDeleteSubmissions,
 } from "../controllers/submissionController.js"
+import { verifyAdminOrSuperadmin } from "../../superadmin/middleware/verifyAdminOrSuperadmin.js"
 
 const router = express.Router()
+
+// Apply authentication middleware to all submission routes
+router.use(verifyAdminOrSuperadmin)
 
 // ✅ Create a new batch of submissions (used when admin clicks "Submit for Approval")
 router.post("/", submitChanges)

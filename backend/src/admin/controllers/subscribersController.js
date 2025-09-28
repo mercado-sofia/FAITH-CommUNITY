@@ -38,7 +38,6 @@ export async function subscribe(req, res) {
         `,
       });
     } catch (mailErr) {
-      console.warn("sendMail failed:", mailErr?.message || mailErr);
     }
 
     return res.json({

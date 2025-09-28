@@ -17,6 +17,27 @@ export default function HeroSection() {
   // Fetch hero section data
   const { heroData, isLoading, error } = usePublicHeroSection();
 
+  // Helper function to convert YouTube URLs to embed format
+  const convertToEmbedUrl = (url) => {
+    if (url.includes('youtube.com/watch')) {
+      const videoId = url.match(/[?&]v=([^&]+)/);
+      if (videoId) {
+        return `https://www.youtube.com/embed/${videoId[1]}`;
+      }
+    } else if (url.includes('youtu.be/')) {
+      const videoId = url.match(/youtu\.be\/([^?&]+)/);
+      if (videoId) {
+        return `https://www.youtube.com/embed/${videoId[1]}`;
+      }
+    } else if (url.includes('vimeo.com/')) {
+      const videoId = url.match(/vimeo\.com\/(\d+)/);
+      if (videoId) {
+        return `https://player.vimeo.com/video/${videoId[1]}`;
+      }
+    }
+    return url; // Return original if no conversion needed
+  };
+
   // Check user authentication status
   useEffect(() => {
     const token = localStorage.getItem('userToken');
@@ -157,9 +178,9 @@ export default function HeroSection() {
           }}
         >
           <button className={styles.closeButton} onClick={() => setShowVideo(false)}>✖</button>
-          {heroData?.video_type === 'link' ? (
+          {heroData?.video_link ? (
             <iframe
-              src={heroData.video_link}
+              src={convertToEmbedUrl(heroData.video_link)}
               className={styles.videoPlayer}
               frameBorder="0"
               allowFullScreen

@@ -13,6 +13,151 @@ function escapeHtml(str = "") {
     .replaceAll(">", "&gt;");
 }
 
+// Get programs for admin view (including collaboration data)
+export const getAdminPrograms = async (req, res) => {
+  try {
+    // Handle both admin and superadmin tokens
+    const currentAdminId = req.admin?.id || req.superadmin?.id;
+    
+    if (!currentAdminId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Admin ID not found in request'
+      });
+    }
+
+    // Get programs where current admin is creator or collaborator
+    // First, get the admin's organization
+    const [adminRows] = await db.execute(`
+      SELECT organization_id FROM admins WHERE id = ?
+    `, [currentAdminId]);
+    
+    if (adminRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Admin not found'
+      });
+    }
+    
+    const adminOrgId = adminRows[0].organization_id;
+    
+    // Get programs where admin is creator (from their organization) OR collaborator (from other organizations)
+    const [programRows] = await db.execute(`
+      SELECT DISTINCT p.*, o.org as orgAcronym, o.orgName as orgName, o.logo as orgLogo
+      FROM programs_projects p
+      LEFT JOIN organizations o ON p.organization_id = o.id
+      WHERE p.organization_id = ? 
+         OR p.id IN (
+           SELECT program_id FROM program_collaborations 
+           WHERE collaborator_admin_id = ? AND status = 'accepted'
+         )
+      ORDER BY p.created_at DESC
+    `, [adminOrgId, currentAdminId]);
+
+    // Get collaboration data for each program
+    const programsWithCollaboration = await Promise.all(programRows.map(async (program) => {
+      // Get multiple dates
+      let multipleDates = [];
+      if (program.event_start_date && program.event_end_date) {
+        if (program.event_start_date === program.event_end_date) {
+          multipleDates = [program.event_start_date];
+        }
+      } else {
+        const [dateRows] = await db.execute(
+          'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
+          [program.id]
+        );
+        multipleDates = dateRows.map(row => row.event_date);
+      }
+
+      // Get additional images
+      const [imageRows] = await db.execute(
+        'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
+        [program.id]
+      );
+      const additionalImages = imageRows.map(row => row.image_data);
+
+      // Get collaboration info
+      const [collaborationRows] = await db.execute(`
+        SELECT 
+          pc.id as collaboration_id,
+          pc.status as collaboration_status,
+          a.email as collaborator_email,
+          o.orgName as collaborator_org
+        FROM program_collaborations pc
+        LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+        LEFT JOIN organizations o ON a.organization_id = o.id
+        WHERE pc.program_id = ? AND pc.collaborator_admin_id = ?
+      `, [program.id, currentAdminId]);
+
+      // Determine user's role in this program
+      let userRole = 'creator';
+      let collaborationStatus = null;
+      
+      if (collaborationRows.length > 0) {
+        userRole = 'collaborator';
+        collaborationStatus = collaborationRows[0].collaboration_status;
+      }
+
+      // Get all collaborators for this program
+      const [allCollaborators] = await db.execute(`
+        SELECT 
+          a.id,
+          a.email,
+          o.orgName as organization_name,
+          o.org as organization_acronym,
+          pc.status as collaboration_status
+        FROM program_collaborations pc
+        LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+        LEFT JOIN organizations o ON a.organization_id = o.id
+        WHERE pc.program_id = ? AND pc.status = 'accepted'
+      `, [program.id]);
+
+      let logoUrl;
+      if (program.orgLogo) {
+        logoUrl = getOrganizationLogoUrl(program.orgLogo);
+      } else {
+        logoUrl = `/logo/faith_community_logo.png`;
+      }
+
+      return {
+        id: program.id,
+        title: program.title,
+        description: program.description,
+        category: program.category,
+        status: program.status || 'active',
+        image: program.image,
+        additional_images: additionalImages,
+        event_start_date: program.event_start_date,
+        event_end_date: program.event_end_date,
+        multiple_dates: multipleDates,
+        created_at: program.created_at,
+        orgID: program.orgAcronym,
+        orgName: program.orgName,
+        orgLogo: logoUrl,
+        slug: program.slug,
+        is_approved: program.is_approved,
+        is_collaborative: program.is_collaborative,
+        user_role: userRole,
+        collaboration_status: collaborationStatus,
+        collaboration_id: collaborationRows.length > 0 ? collaborationRows[0].collaboration_id : null,
+        collaborators: allCollaborators
+      };
+    }));
+
+    res.json({
+      success: true,
+      data: programsWithCollaboration
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch programs",
+      error: error.message,
+    });
+  }
+};
+
 // Get programs for a specific organization (for admin view)
 export const getProgramsByOrg = async (req, res) => {
   const { orgId } = req.params;
@@ -41,7 +186,6 @@ export const getProgramsByOrg = async (req, res) => {
     }
 
     if (orgRows.length === 0) {
-      console.error(`[ERROR] Organization not found for ID/acronym: ${orgId}`);
       return res.status(404).json({
         success: false,
         message: `Organization not found: ${orgId}`,
@@ -126,7 +270,6 @@ export const getProgramsByOrg = async (req, res) => {
 
     res.json(approvedPrograms);
   } catch (error) {
-    console.error("❌ Error fetching programs:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch programs",
@@ -214,7 +357,6 @@ export const getApprovedPrograms = async (req, res) => {
       data: programs
     });
   } catch (error) {
-    console.error("❌ Error fetching approved programs:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch approved programs",
@@ -250,7 +392,6 @@ export const getApprovedProgramsByOrg = async (req, res) => {
     }
 
     if (orgRows.length === 0) {
-      console.error(`[ERROR] Organization not found for ID/acronym: ${orgId}`);
       return res.status(404).json({
         success: false,
         message: `Organization not found: ${orgId}`,
@@ -341,7 +482,6 @@ export const getApprovedProgramsByOrg = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("❌ Error fetching organization programs:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch organization programs",
@@ -399,7 +539,6 @@ export const deleteProgramSubmission = async (req, res) => {
       message: "Program deleted successfully",
     });
   } catch (error) {
-    console.error("❌ Error deleting program:", error);
     res.status(500).json({
       success: false,
       message: "Failed to delete program",
@@ -563,7 +702,6 @@ export const updateProgram = async (req, res) => {
                 [id, uploadResult.url, i]
               );
             } catch (uploadError) {
-              console.error('Error uploading additional image to Cloudinary:', uploadError);
               // Continue with other images even if one fails
             }
           }
@@ -589,7 +727,6 @@ export const updateProgram = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("❌ Error updating program:", error);
     res.status(500).json({
       success: false,
       message: "Failed to update program",
@@ -640,7 +777,6 @@ export const toggleFeaturedStatus = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("❌ Error toggling featured status:", error);
     res.status(500).json({
       success: false,
       message: "Failed to toggle featured status",
@@ -690,7 +826,6 @@ export const getProgramById = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("❌ Error fetching program by ID:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch program",
@@ -780,7 +915,6 @@ export const getAllFeaturedPrograms = async (req, res) => {
       data: programs
     });
   } catch (error) {
-    console.error("❌ Error fetching featured programs:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch featured programs",
@@ -870,7 +1004,6 @@ export const getFeaturedPrograms = async (req, res) => {
       data: programs
     });
   } catch (error) {
-    console.error("❌ Error fetching featured programs:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch featured programs",
@@ -966,7 +1099,6 @@ export const getProgramBySlug = async (req, res) => {
       data: programWithDates
     });
   } catch (error) {
-    console.error('Error fetching program by slug:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch program',
@@ -1021,7 +1153,6 @@ export const getOtherProgramsByOrganization = async (req, res) => {
       data: programs
     });
   } catch (error) {
-    console.error('Error fetching other programs by organization:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch other programs',
@@ -1032,7 +1163,7 @@ export const getOtherProgramsByOrganization = async (req, res) => {
 
 // ---------------- Add new program (from programProjectsController) ----------------
 export const addProgramProject = async (req, res) => {
-  const { title, description } = req.body;
+  const { title, description, collaborators } = req.body;
   let image = '';
 
   if (req.file) {
@@ -1046,7 +1177,6 @@ export const addProgramProject = async (req, res) => {
       );
       image = uploadResult.url;
     } catch (uploadError) {
-      console.error('Error uploading program image to Cloudinary:', uploadError);
       return res.status(500).json({ 
         success: false, 
         message: 'Failed to upload program image' 
@@ -1084,12 +1214,34 @@ export const addProgramProject = async (req, res) => {
     }
 
     const [result] = await db.execute(
-      `INSERT INTO programs_projects (title, description, image, status, slug, is_approved)
-       VALUES (?, ?, ?, 'pending', ?, FALSE)`,
-      [title, description ?? null, image ?? null, finalSlug]
+      `INSERT INTO programs_projects (title, description, image, status, slug, is_approved, is_collaborative)
+       VALUES (?, ?, ?, 'pending', ?, FALSE, ?)`,
+      [title, description ?? null, image ?? null, finalSlug, collaborators && collaborators.length > 0]
     );
 
     const newId = result.insertId;
+
+    // Handle collaboration invitations if provided
+    if (collaborators && collaborators.length > 0) {
+      const currentAdminId = req.admin.id;
+      
+      // Filter out self-collaboration
+      const validCollaborators = collaborators.filter(collaboratorId => 
+        collaboratorId !== currentAdminId
+      );
+      
+      for (const collaboratorId of validCollaborators) {
+        try {
+          await db.execute(`
+            INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status)
+            VALUES (?, ?, ?, 'accepted')
+          `, [newId, collaboratorId, currentAdminId]);
+        } catch (collabError) {
+          console.error('Failed to add collaborator during program creation:', collabError);
+          // Continue with other collaborators even if one fails
+        }
+      }
+    }
     const appBase = process.env.APP_BASE_URL || 'http://localhost:3000';
     const programUrl = `${appBase}/programs/${finalSlug}`;
 
@@ -1105,14 +1257,12 @@ export const addProgramProject = async (req, res) => {
         `,
       });
     } catch (mailErr) {
-      console.warn("sendToSubscribers failed:", mailErr?.message || mailErr);
     }
 
     return res
       .status(201)
       .json({ message: 'Project submitted for approval', id: newId });
   } catch (error) {
-    console.error('addProgramProject error:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -1121,7 +1271,26 @@ export const addProgramProject = async (req, res) => {
 export const updateProgramProject = async (req, res) => {
   const { id } = req.params;
   const { title, description, status } = req.body;
-  let image = req.file ? req.file.filename : null;
+  let image = null;
+
+  // Handle image upload to Cloudinary if file is provided
+  if (req.file) {
+    try {
+      const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+      const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
+      const uploadResult = await uploadSingleToCloudinary(
+        req.file, 
+        CLOUDINARY_FOLDERS.PROGRAMS.MAIN,
+        { prefix: 'prog_main_' }
+      );
+      image = uploadResult.url;
+    } catch (uploadError) {
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Failed to upload program image' 
+      });
+    }
+  }
 
   try {
     // Generate new slug if title changed
@@ -1186,12 +1355,10 @@ export const updateProgramProject = async (req, res) => {
         `,
       });
     } catch (mailErr) {
-      console.warn("sendToSubscribers failed:", mailErr?.message || mailErr);
     }
 
     return res.json({ message: "Program updated successfully." });
   } catch (error) {
-    console.error('updateProgramProject error:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -1269,7 +1436,6 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
       data: programsWithDates,
     });
   } catch (error) {
-    console.error('Error fetching all programs for superadmin:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch programs',
@@ -1299,7 +1465,6 @@ export const getProgramsStatistics = async (req, res) => {
       data: results[0],
     });
   } catch (error) {
-    console.error('Error fetching programs statistics:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch programs statistics',
@@ -1349,7 +1514,6 @@ export const markProgramAsCompleted = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error marking program as completed:', error);
     res.status(500).json({
       success: false,
       message: "Failed to mark program as completed",
@@ -1399,7 +1563,6 @@ export const markProgramAsActive = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error marking program as active:', error);
     res.status(500).json({
       success: false,
       message: "Failed to mark program as active",

@@ -24,12 +24,6 @@ export const useApiCall = () => {
         ...options
       };
 
-      console.log('Making API call:', {
-        endpoint: getApiUrl(endpoint),
-        method: options.method || 'GET',
-        hasBody: !!options.body,
-        bodyType: options.body instanceof FormData ? 'FormData' : typeof options.body
-      });
 
       const response = await fetch(getApiUrl(endpoint), defaultOptions);
       
@@ -70,17 +64,11 @@ export const useApiCall = () => {
         throw new Error(errorMessage);
       }
 
-      console.log('API call successful:', {
-        endpoint,
-        status: response.status,
-        data: data
-      });
 
       return { data, response };
     } catch (err) {
       if (err.name === 'AbortError') {
         // Request was cancelled, don't set error
-        console.log('API call cancelled:', endpoint);
         return null;
       }
       

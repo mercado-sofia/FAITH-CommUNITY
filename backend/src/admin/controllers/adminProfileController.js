@@ -331,7 +331,6 @@ export const updateAdminPassword = async (req, res) => {
         'admin'
       );
     } catch (notificationError) {
-      console.warn('Failed to send password change notification:', notificationError.message);
       // Continue with success response even if notification fails
     }
 

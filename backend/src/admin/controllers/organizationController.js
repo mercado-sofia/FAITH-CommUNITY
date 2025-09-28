@@ -157,7 +157,6 @@ export const updateOrganizationInfo = async (req, res) => {
           try {
             await deleteFromCloudinary(oldPublicId);
           } catch (deleteError) {
-            console.warn('Failed to delete old organization logo from Cloudinary:', deleteError.message);
           }
         }
       }

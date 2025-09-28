@@ -280,7 +280,6 @@ export const acceptInvitation = async (req, res) => {
         )
       }
     } catch (notificationError) {
-      console.warn('Failed to create superadmin notification for new admin:', notificationError.message)
       // Don't fail the main operation if notification fails
     }
 

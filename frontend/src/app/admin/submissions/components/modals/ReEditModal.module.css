@@ -152,6 +152,30 @@
   margin-bottom: 24px;
 }
 
+/* Validation Error */
+.validationError {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.errorIcon {
+  font-size: 16px;
+  margin-top: 2px;
+}
+
+.errorMessage {
+  font-size: 0.875rem;
+  color: #7f1d1d;
+  margin: 0;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
 .alertIcon {
   font-size: 16px;
   margin-top: 2px;

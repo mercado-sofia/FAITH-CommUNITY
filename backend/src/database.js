@@ -24,8 +24,7 @@ const dbConfig = {
       return (JSON.parse(field.string()));
     }
     return next();
-  },
-  maxPacketSize: 16777216 // 16MB
+  }
 };
 
 // Database configuration loaded
@@ -38,31 +37,23 @@ const promisePool = pool.promise();
 const initializeDatabase = async () => {
   try {
     const connection = await promisePool.getConnection();
-    console.log("✅ Database connected successfully!");
 
     // Note: featured_projects table has been consolidated into programs_projects.is_featured column
     // The old featured_projects table is no longer needed and should be removed if it exists
-    console.log("ℹ️ Featured projects functionality now uses programs_projects.is_featured column");
     
     // Migration: Remove old featured_projects table if it exists (after data migration)
     const [oldFeaturedTables] = await connection.query('SHOW TABLES LIKE "featured_projects"');
     if (oldFeaturedTables.length > 0) {
-      console.log("🔧 Old featured_projects table found. Checking if it can be safely removed...");
       
       // Check if there are any records in the old table
       const [oldRecords] = await connection.query('SELECT COUNT(*) as count FROM featured_projects');
       
       if (oldRecords[0].count > 0) {
-        console.log(`⚠️ Found ${oldRecords[0].count} records in old featured_projects table.`);
-        console.log("ℹ️ Please manually migrate any important data to programs_projects.is_featured before removing the table.");
-        console.log("ℹ️ You can run: UPDATE programs_projects SET is_featured = TRUE WHERE id IN (SELECT program_id FROM featured_projects)");
       } else {
-        console.log("✅ Old featured_projects table is empty. Safe to remove.");
         try {
           await connection.query('DROP TABLE featured_projects');
-          console.log("✅ Old featured_projects table removed successfully!");
         } catch (error) {
-          console.log("⚠️ Could not remove old featured_projects table:", error.message);
+          // Could not remove old featured_projects table
         }
       }
     }
@@ -71,7 +62,6 @@ const initializeDatabase = async () => {
     const [newsTables] = await connection.query('SHOW TABLES LIKE "news"');
     
     if (newsTables.length === 0) {
-      console.log("Creating news table...");
       await connection.query(`
         CREATE TABLE news (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -86,7 +76,6 @@ const initializeDatabase = async () => {
           FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
         )
       `);
-      console.log("✅ News table created successfully!");
     } else {
       // Check if deleted_at column exists, add it if missing
       const [deletedAtColumn] = await connection.query(`
@@ -97,13 +86,11 @@ const initializeDatabase = async () => {
       `);
       
       if (deletedAtColumn.length === 0) {
-        console.log("Adding deleted_at column to news table...");
         await connection.query(`
           ALTER TABLE news 
           ADD COLUMN deleted_at TIMESTAMP NULL,
           ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE
         `);
-        console.log("✅ deleted_at and is_deleted columns added to news table!");
       }
 
       // Check if enhanced news columns exist, add them if missing
@@ -115,7 +102,6 @@ const initializeDatabase = async () => {
       `);
       
       if (enhancedColumns.length < 5) {
-        console.log("Adding enhanced news columns...");
         
         // Add columns one by one to handle existing columns gracefully
         const columnsToAdd = [
@@ -137,17 +123,14 @@ const initializeDatabase = async () => {
             
             if (existingColumn.length === 0) {
               await connection.query(`ALTER TABLE news ADD COLUMN ${column.name} ${column.definition}`);
-              console.log(`✅ Added ${column.name} column to news table`);
             }
           } catch (error) {
             if (error.code !== 'ER_DUP_FIELDNAME') {
-              console.log(`Warning: Could not add ${column.name} column:`, error.message);
             }
           }
         }
 
         // Migrate existing data
-        console.log("Migrating existing news data...");
         
         // Set slug from title for existing records
         await connection.query(`
@@ -196,23 +179,18 @@ const initializeDatabase = async () => {
         // Add indexes for better performance
         try {
           await connection.query('CREATE INDEX idx_news_slug ON news(slug)');
-          console.log("✅ Added slug index to news table");
         } catch (error) {
           if (error.code !== 'ER_DUP_KEYNAME') {
-            console.log("Warning: Could not add slug index:", error.message);
           }
         }
 
         try {
           await connection.query('CREATE INDEX idx_news_published_at ON news(published_at)');
-          console.log("✅ Added published_at index to news table");
         } catch (error) {
           if (error.code !== 'ER_DUP_KEYNAME') {
-            console.log("Warning: Could not add published_at index:", error.message);
           }
         }
 
-        console.log("✅ Enhanced news columns and data migration completed!");
       }
 
       // Check if updated_at column needs to be fixed (set to NULL by default instead of CURRENT_TIMESTAMP)
@@ -224,8 +202,6 @@ const initializeDatabase = async () => {
       `);
       
       if (updatedAtColumn.length > 0 && updatedAtColumn[0].COLUMN_DEFAULT === 'CURRENT_TIMESTAMP') {
-        console.log("Fixing updated_at column to allow NULL by default...");
-        
         // First, set all existing updated_at values to NULL where they equal created_at
         await connection.query(`
           UPDATE news 
@@ -238,8 +214,6 @@ const initializeDatabase = async () => {
           ALTER TABLE news 
           MODIFY COLUMN updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
         `);
-        
-        console.log("✅ Fixed updated_at column to allow NULL by default!");
       }
     }
 
@@ -252,14 +226,12 @@ const initializeDatabase = async () => {
     `);
     
     if (orgIdColumn.length === 0) {
-      console.log("Adding organization_id column to admins table...");
       await connection.query(`
         ALTER TABLE admins 
         ADD COLUMN organization_id INT NULL,
         ADD CONSTRAINT fk_admins_organization 
         FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL
       `);
-      console.log("✅ organization_id column and foreign key added to admins table!");
       
       // Check if there are existing admins that need organization records
       const [existingAdmins] = await connection.query(`
@@ -282,12 +254,10 @@ const initializeDatabase = async () => {
     `);
     
     if (passwordChangedAtColumn.length === 0) {
-      console.log("Adding password_changed_at column to admins table...");
       await connection.query(`
         ALTER TABLE admins 
         ADD COLUMN password_changed_at TIMESTAMP NULL DEFAULT NULL
       `);
-      console.log("✅ password_changed_at column added to admins table!");
     } else {
       // password_changed_at column already exists in admins table
     }
@@ -301,12 +271,10 @@ const initializeDatabase = async () => {
     `);
     
     if (updatedAtColumn.length === 0) {
-      console.log("Adding updated_at column to admins table...");
       await connection.query(`
         ALTER TABLE admins 
         ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
       `);
-      console.log("✅ updated_at column added to admins table!");
     } else {
       // updated_at column already exists in admins table
     }
@@ -320,38 +288,32 @@ const initializeDatabase = async () => {
     `);
     
     if (orgColumns.length < 2) {
-      console.log("Adding org and orgName columns to organizations table...");
       await connection.query(`
         ALTER TABLE organizations 
         ADD COLUMN org VARCHAR(50) NULL UNIQUE,
         ADD COLUMN orgName VARCHAR(255) NULL
       `);
-      console.log("✅ org and orgName columns added to organizations table!");
       
       // Migrate existing data from admins to organizations
-      console.log("Migrating org and orgName data from admins to organizations...");
       await connection.query(`
         UPDATE organizations o
         INNER JOIN admins a ON o.id = a.organization_id
         SET o.org = a.org, o.orgName = a.orgName
         WHERE a.org IS NOT NULL AND a.orgName IS NOT NULL
       `);
-      console.log("✅ Data migration from admins to organizations completed!");
       
       // Remove org and orgName columns from admins table after migration
-      console.log("Removing org and orgName columns from admins table...");
       try {
         await connection.query(`
           ALTER TABLE admins 
           DROP COLUMN org,
           DROP COLUMN orgName
         `);
-        console.log("✅ org and orgName columns removed from admins table!");
       } catch (error) {
         if (error.code === 'ER_CANT_DROP_FIELD_OR_KEY') {
-          console.log("ℹ️ org and orgName columns not found in admins table (already removed)");
+          // org and orgName columns not found in admins table (already removed)
         } else {
-          console.log("⚠️ Could not remove org and orgName columns from admins table:", error.message);
+          // Could not remove org and orgName columns from admins table
         }
       }
     }
@@ -360,7 +322,6 @@ const initializeDatabase = async () => {
     const [invitationTables] = await connection.query('SHOW TABLES LIKE "admin_invitations"');
     
     if (invitationTables.length === 0) {
-      console.log("Creating admin_invitations table...");
       await connection.query(`
         CREATE TABLE admin_invitations (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -376,7 +337,6 @@ const initializeDatabase = async () => {
           INDEX idx_expires_at (expires_at)
         )
       `);
-      console.log("✅ admin_invitations table created successfully!");
     }
 
     // Check if programs_projects table has date fields, add them if missing
@@ -388,13 +348,11 @@ const initializeDatabase = async () => {
     `);
     
     if (dateColumns.length === 0) {
-      console.log("Adding date fields to programs_projects table...");
       await connection.query(`
         ALTER TABLE programs_projects 
         ADD COLUMN event_start_date DATE NULL,
         ADD COLUMN event_end_date DATE NULL
       `);
-      console.log("✅ Date fields added to programs_projects table successfully!");
     }
 
     // Check if programs_projects table has slug field, add it if missing
@@ -406,15 +364,12 @@ const initializeDatabase = async () => {
     `);
     
     if (slugColumns.length === 0) {
-      console.log("Adding slug field to programs_projects table...");
       await connection.query(`
         ALTER TABLE programs_projects 
         ADD COLUMN slug VARCHAR(255) NULL UNIQUE
       `);
-      console.log("✅ Slug field added to programs_projects table successfully!");
       
       // Generate slugs for existing programs
-      console.log("Generating slugs for existing programs...");
       const [existingPrograms] = await connection.query(`
         SELECT id, title FROM programs_projects WHERE slug IS NULL
       `);
@@ -447,15 +402,12 @@ const initializeDatabase = async () => {
         `, [finalSlug, program.id]);
       }
       
-      console.log("✅ Slugs generated for existing programs!");
       
       // Add index for better performance
       try {
         await connection.query('CREATE INDEX idx_programs_slug ON programs_projects(slug)');
-        console.log("✅ Added slug index to programs_projects table");
       } catch (error) {
         if (error.code !== 'ER_DUP_KEYNAME') {
-          console.log("Warning: Could not add slug index:", error.message);
         }
       }
     }
@@ -464,7 +416,6 @@ const initializeDatabase = async () => {
     const [eventDatesTables] = await connection.query('SHOW TABLES LIKE "program_event_dates"');
     
     if (eventDatesTables.length === 0) {
-      console.log("Creating program_event_dates table...");
       await connection.query(`
         CREATE TABLE program_event_dates (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -475,14 +426,12 @@ const initializeDatabase = async () => {
           UNIQUE KEY unique_program_date (program_id, event_date)
         )
       `);
-      console.log("✅ Program_event_dates table created successfully!");
     }
 
     // Check if program_additional_images table exists
     const [additionalImagesTables] = await connection.query('SHOW TABLES LIKE "program_additional_images"');
     
     if (additionalImagesTables.length === 0) {
-      console.log("Creating program_additional_images table...");
       await connection.query(`
         CREATE TABLE program_additional_images (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -493,7 +442,6 @@ const initializeDatabase = async () => {
           FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE CASCADE
         )
       `);
-      console.log("✅ Program_additional_images table created successfully!");
     }
 
     // Add featured column to programs_projects table if it doesn't exist
@@ -503,11 +451,8 @@ const initializeDatabase = async () => {
         ALTER TABLE programs_projects 
         ADD COLUMN is_featured BOOLEAN DEFAULT FALSE
       `);
-      console.log("✅ Added is_featured column to programs_projects table!");
     } catch (error) {
       if (error.code !== 'ER_DUP_FIELDNAME') {
-        console.error('Error adding is_featured column:', error);
-      } else {
         // is_featured column already exists in programs_projects table
       }
     }
@@ -519,11 +464,8 @@ const initializeDatabase = async () => {
         ALTER TABLE programs_projects 
         ADD COLUMN is_approved BOOLEAN DEFAULT TRUE
       `);
-      console.log("✅ Added is_approved column to programs_projects table!");
     } catch (error) {
       if (error.code !== 'ER_DUP_FIELDNAME') {
-        console.error('Error adding is_approved column:', error);
-      } else {
         // is_approved column already exists in programs_projects table
       }
     }
@@ -534,7 +476,6 @@ const initializeDatabase = async () => {
     const [faqsTables] = await connection.query('SHOW TABLES LIKE "faqs"');
     
     if (faqsTables.length === 0) {
-      console.log("Creating faqs table...");
       await connection.query(`
         CREATE TABLE faqs (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -545,14 +486,12 @@ const initializeDatabase = async () => {
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )
       `);
-      console.log("✅ FAQs table created successfully!");
     }
 
     // Check if submissions table exists
     const [submissionsTables] = await connection.query('SHOW TABLES LIKE "submissions"');
     
     if (submissionsTables.length === 0) {
-      console.log("Creating submissions table...");
       await connection.query(`
         CREATE TABLE submissions (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -572,14 +511,65 @@ const initializeDatabase = async () => {
           INDEX idx_section (section)
         )
       `);
-      console.log("✅ Submissions table created successfully!");
+    }
+
+    // Check if program_collaborations table exists
+    const [collaborationsTables] = await connection.query('SHOW TABLES LIKE "program_collaborations"');
+    
+    if (collaborationsTables.length === 0) {
+      await connection.query(`
+        CREATE TABLE program_collaborations (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          program_id INT NOT NULL,
+          collaborator_admin_id INT NOT NULL,
+          invited_by_admin_id INT NOT NULL,
+          status ENUM('accepted', 'declined') DEFAULT 'accepted',
+          invited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          responded_at TIMESTAMP NULL,
+          FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE CASCADE,
+          FOREIGN KEY (collaborator_admin_id) REFERENCES admins(id) ON DELETE CASCADE,
+          FOREIGN KEY (invited_by_admin_id) REFERENCES admins(id) ON DELETE CASCADE,
+          UNIQUE KEY unique_program_collaborator (program_id, collaborator_admin_id),
+          INDEX idx_collaborator_status (collaborator_admin_id, status),
+          INDEX idx_program_status (program_id, status)
+        )
+      `);
+    }
+
+    // Add is_collaborative column to programs_projects table if it doesn't exist
+    try {
+      await connection.query(`
+        ALTER TABLE programs_projects 
+        ADD COLUMN is_collaborative BOOLEAN DEFAULT FALSE
+      `);
+    } catch (error) {
+      if (error.code !== 'ER_DUP_FIELDNAME') {
+        // is_collaborative column already exists in programs_projects table
+      }
+    }
+
+    // Migrate existing program_collaborations table to remove 'pending' status
+    try {
+      // First, update any 'pending' status to 'accepted' (auto-accept model)
+      await connection.query(`
+        UPDATE program_collaborations 
+        SET status = 'accepted' 
+        WHERE status = 'pending'
+      `);
+      
+      // Then modify the column to remove 'pending' from ENUM
+      await connection.query(`
+        ALTER TABLE program_collaborations 
+        MODIFY COLUMN status ENUM('accepted', 'declined') DEFAULT 'accepted'
+      `);
+    } catch (error) {
+      // Migration failed - table might not exist yet or already migrated
     }
 
     // Check if messages table exists
     const [messagesTables] = await connection.query('SHOW TABLES LIKE "messages"');
     
     if (messagesTables.length === 0) {
-      console.log("Creating messages table...");
       await connection.query(`
         CREATE TABLE messages (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -599,7 +589,6 @@ const initializeDatabase = async () => {
           INDEX idx_is_read (is_read)
         )
       `);
-      console.log("Messages table created successfully");
     } else {
       // Messages table already exists
       
@@ -609,24 +598,20 @@ const initializeDatabase = async () => {
       );
       
       if (userIdColumn.length === 0) {
-        console.log("Adding user_id column to messages table...");
         await connection.query(`
           ALTER TABLE messages 
           ADD COLUMN user_id INT NULL,
           ADD FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
           ADD INDEX idx_user_id (user_id)
         `);
-        console.log("user_id column added successfully");
         
         // Link existing messages with users based on email
-        console.log("Linking existing messages with users...");
         await connection.query(`
           UPDATE messages m 
           JOIN users u ON m.sender_email = u.email 
           SET m.user_id = u.id 
           WHERE m.user_id IS NULL
         `);
-        console.log("Existing messages linked successfully");
       }
       
       // Keep sender_email for unauth users, but remove sender_name since we get it from users table
@@ -635,12 +620,10 @@ const initializeDatabase = async () => {
       );
       
       if (senderNameColumn.length > 0) {
-        console.log("Removing sender_name column from messages table...");
         await connection.query(`
           ALTER TABLE messages 
           DROP COLUMN sender_name
         `);
-        console.log("sender_name column removed successfully");
       }
     }
 
@@ -648,12 +631,11 @@ const initializeDatabase = async () => {
     const [adminNotificationsTables] = await connection.query('SHOW TABLES LIKE "admin_notifications"');
     
     if (adminNotificationsTables.length === 0) {
-      console.log("Creating admin_notifications table...");
       await connection.query(`
         CREATE TABLE admin_notifications (
           id INT AUTO_INCREMENT PRIMARY KEY,
           admin_id INT NOT NULL,
-          type ENUM('approval', 'decline', 'system', 'message') NOT NULL,
+          type ENUM('approval', 'decline', 'system', 'message', 'collaboration', 'program_approval') NOT NULL,
           title VARCHAR(255) NOT NULL,
           message TEXT NOT NULL,
           section VARCHAR(100),
@@ -666,7 +648,6 @@ const initializeDatabase = async () => {
           INDEX idx_created_at (created_at)
         )
       `);
-      console.log("✅ Admin notifications table created successfully!");
     } else {
       // Check if 'message' type exists in the ENUM
       const [columnInfo] = await connection.query(`
@@ -679,7 +660,15 @@ const initializeDatabase = async () => {
       if (columnInfo.length > 0 && !columnInfo[0].COLUMN_TYPE.includes("'message'")) {
         await connection.query(`
           ALTER TABLE admin_notifications 
-          MODIFY COLUMN type ENUM('approval', 'decline', 'system', 'message') NOT NULL
+          MODIFY COLUMN type ENUM('approval', 'decline', 'system', 'message', 'collaboration', 'program_approval') NOT NULL
+        `);
+      }
+      
+      // Check if collaboration and program_approval types exist, add them if missing
+      if (columnInfo.length > 0 && (!columnInfo[0].COLUMN_TYPE.includes("'collaboration'") || !columnInfo[0].COLUMN_TYPE.includes("'program_approval'"))) {
+        await connection.query(`
+          ALTER TABLE admin_notifications 
+          MODIFY COLUMN type ENUM('approval', 'decline', 'system', 'message', 'collaboration', 'program_approval') NOT NULL
         `);
       }
     }
@@ -688,7 +677,6 @@ const initializeDatabase = async () => {
     const [superadminNotificationsTables] = await connection.query('SHOW TABLES LIKE "superadmin_notifications"');
     
     if (superadminNotificationsTables.length === 0) {
-      console.log("Creating superadmin_notifications table...");
       await connection.query(`
         CREATE TABLE superadmin_notifications (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -708,7 +696,6 @@ const initializeDatabase = async () => {
           FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL
         )
       `);
-      console.log("✅ Superadmin notifications table created successfully!");
     } else {
       // Check if organization_id column exists, if not add it and migrate data
       const [columnExists] = await connection.query(`
@@ -719,7 +706,6 @@ const initializeDatabase = async () => {
       `);
       
       if (columnExists.length === 0) {
-        console.log("Adding organization_id column to superadmin_notifications table...");
         
         // Add organization_id column
         await connection.query(`
@@ -741,7 +727,6 @@ const initializeDatabase = async () => {
         `);
         
         // Migrate existing data: populate organization_id from organization_acronym
-        console.log("Migrating existing notification data...");
         await connection.query(`
           UPDATE superadmin_notifications sn
           LEFT JOIN organizations o ON LOWER(TRIM(sn.organization_acronym)) = LOWER(TRIM(o.org))
@@ -750,15 +735,12 @@ const initializeDatabase = async () => {
         `);
         
         // Drop old columns after successful migration
-        console.log("Cleaning up old columns...");
         try {
           await connection.query(`
             ALTER TABLE superadmin_notifications 
             DROP COLUMN organization_acronym
           `);
-          console.log("✅ Dropped organization_acronym column");
         } catch (dropError) {
-          console.log("ℹ️ organization_acronym column may not exist:", dropError.message);
         }
         
         try {
@@ -766,12 +748,9 @@ const initializeDatabase = async () => {
             ALTER TABLE superadmin_notifications 
             DROP COLUMN organization_logo
           `);
-          console.log("✅ Dropped organization_logo column");
         } catch (dropError) {
-          console.log("ℹ️ organization_logo column may not exist:", dropError.message);
         }
         
-        console.log("✅ Organization ID column added, data migrated, and old columns cleaned up!");
       } else {
         // organization_id column already exists, check if old columns need cleanup
         const [oldColumns] = await connection.query(`
@@ -782,16 +761,13 @@ const initializeDatabase = async () => {
         `);
         
         if (oldColumns.length > 0) {
-          console.log("Cleaning up old columns from existing table...");
           for (const column of oldColumns) {
             try {
               await connection.query(`
                 ALTER TABLE superadmin_notifications 
                 DROP COLUMN ${column.COLUMN_NAME}
               `);
-              console.log(`✅ Dropped ${column.COLUMN_NAME} column`);
             } catch (dropError) {
-              console.log(`ℹ️ ${column.COLUMN_NAME} column may not exist:`, dropError.message);
             }
           }
         }
@@ -806,7 +782,6 @@ const initializeDatabase = async () => {
       `);
       
       if (messageTemplateColumn.length === 0) {
-        console.log("Adding message_template column for dynamic message generation...");
         
         // Add message_template column
         await connection.query(`
@@ -815,14 +790,12 @@ const initializeDatabase = async () => {
         `);
         
         // Migrate existing messages to templates
-        console.log("Migrating existing messages to templates...");
         await connection.query(`
           UPDATE superadmin_notifications 
           SET message_template = message
           WHERE message_template IS NULL
         `);
         
-        console.log("✅ Message template column added and data migrated!");
       }
     }
 
@@ -830,7 +803,6 @@ const initializeDatabase = async () => {
     const [passwordResetTables] = await connection.query('SHOW TABLES LIKE "password_reset_tokens"');
     
     if (passwordResetTables.length === 0) {
-      console.log("Creating password_reset_tokens table...");
       await connection.query(`
         CREATE TABLE password_reset_tokens (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -843,13 +815,12 @@ const initializeDatabase = async () => {
           INDEX idx_expires_at (expires_at)
         )
       `);
-      console.log("✅ Password reset tokens table created successfully!");
     }
 
     // Check if refresh_tokens table exists
     const [refreshTokensTable] = await connection.query('SHOW TABLES LIKE "refresh_tokens"');
     if (refreshTokensTable.length === 0) {
-      console.log("Creating refresh_tokens table...");
+      // Creating refresh_tokens table...");
       await connection.query(`
         CREATE TABLE refresh_tokens (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -865,14 +836,14 @@ const initializeDatabase = async () => {
           INDEX idx_expires_at (expires_at)
         )
       `);
-      console.log("✅ refresh_tokens table created successfully!");
+      // ✅ refresh_tokens table created successfully!");
     }
 
     // Check if volunteers table exists
     const [volunteersTables] = await connection.query('SHOW TABLES LIKE "volunteers"');
     
     if (volunteersTables.length === 0) {
-      console.log("Creating volunteers table...");
+      // Creating volunteers table...");
       await connection.query(`
         CREATE TABLE volunteers (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -890,7 +861,7 @@ const initializeDatabase = async () => {
           INDEX idx_created_at (created_at)
         )
       `);
-      console.log("✅ Volunteers table created successfully!");
+      // ✅ Volunteers table created successfully!");
     } else {
       // Check if volunteers table needs migration to include 'Completed' status
       const [statusColumn] = await connection.query(`
@@ -899,13 +870,13 @@ const initializeDatabase = async () => {
       `);
       
       if (statusColumn.length > 0 && !statusColumn[0].COLUMN_TYPE.includes('Completed')) {
-        console.log("Updating volunteers table to include 'Completed' status...");
+        // Updating volunteers table to include 'Completed' status...");
         await connection.query(`
           ALTER TABLE volunteers 
           MODIFY COLUMN status ENUM('Pending', 'Approved', 'Declined', 'Cancelled', 'Completed') 
           DEFAULT 'Pending'
         `);
-        console.log("✅ Volunteers table updated with 'Completed' status!");
+        // ✅ Volunteers table updated with 'Completed' status!");
       }
       
       // Check if volunteers table needs migration to new structure
@@ -917,7 +888,7 @@ const initializeDatabase = async () => {
       `);
       
       if (oldStructureColumns.length > 0) {
-        console.log("Migrating volunteers table to new structure...");
+        // Migrating volunteers table to new structure...");
         
         // Create new volunteers table with new structure
         await connection.query(`
@@ -942,7 +913,7 @@ const initializeDatabase = async () => {
         await connection.query('DROP TABLE volunteers');
         await connection.query('RENAME TABLE volunteers_new TO volunteers');
         
-        console.log("✅ Volunteers table migrated to new structure!");
+        // ✅ Volunteers table migrated to new structure!");
       }
       
       // Check if volunteers table needs 'Cancelled' status added
@@ -954,12 +925,12 @@ const initializeDatabase = async () => {
       `);
       
       if (cancelledStatusColumn.length > 0 && !cancelledStatusColumn[0].COLUMN_TYPE.includes('Cancelled')) {
-        console.log("Adding 'Cancelled' status to volunteers table...");
+        // Adding 'Cancelled' status to volunteers table...");
         await connection.query(`
           ALTER TABLE volunteers 
           MODIFY COLUMN status ENUM('Pending', 'Approved', 'Declined', 'Cancelled') DEFAULT 'Pending'
         `);
-        console.log("✅ 'Cancelled' status added to volunteers table!");
+        // ✅ 'Cancelled' status added to volunteers table!");
       }
     }
 
@@ -967,7 +938,7 @@ const initializeDatabase = async () => {
     const [usersTables] = await connection.query('SHOW TABLES LIKE "users"');
     
     if (usersTables.length === 0) {
-      console.log("Creating users table...");
+      // Creating users table...");
       await connection.query(`
         CREATE TABLE users (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -996,7 +967,7 @@ const initializeDatabase = async () => {
           INDEX idx_email_verified (email_verified)
         )
       `);
-      console.log("✅ Users table created successfully!");
+      // ✅ Users table created successfully!");
     } else {
       // Check if password_hash column exists, add it if missing
       const [passwordHashColumn] = await connection.query(`
@@ -1007,12 +978,12 @@ const initializeDatabase = async () => {
       `);
       
       if (passwordHashColumn.length === 0) {
-        console.log("Adding password_hash column to users table...");
+        // Adding password_hash column to users table...");
         await connection.query(`
           ALTER TABLE users 
           ADD COLUMN password_hash VARCHAR(255) NOT NULL AFTER email
         `);
-        console.log("✅ password_hash column added to users table!");
+        // ✅ password_hash column added to users table!");
       }
 
       // Check if is_active column exists, add it if missing
@@ -1024,12 +995,12 @@ const initializeDatabase = async () => {
       `);
       
       if (isActiveColumn.length === 0) {
-        console.log("Adding is_active column to users table...");
+        // Adding is_active column to users table...");
         await connection.query(`
           ALTER TABLE users 
           ADD COLUMN is_active TINYINT(1) DEFAULT 1
         `);
-        console.log("✅ is_active column added to users table!");
+        // ✅ is_active column added to users table!");
       }
 
       // Check if email_verified column exists, add it if missing
@@ -1041,12 +1012,12 @@ const initializeDatabase = async () => {
       `);
       
       if (emailVerifiedColumn.length === 0) {
-        console.log("Adding email_verified column to users table...");
+        // Adding email_verified column to users table...");
         await connection.query(`
           ALTER TABLE users 
           ADD COLUMN email_verified TINYINT(1) DEFAULT 0
         `);
-        console.log("✅ email_verified column added to users table!");
+        // ✅ email_verified column added to users table!");
       }
 
       // Check if verification_token column exists, add it if missing
@@ -1058,13 +1029,13 @@ const initializeDatabase = async () => {
       `);
       
       if (verificationTokenColumn.length === 0) {
-        console.log("Adding verification_token column to users table...");
+        // Adding verification_token column to users table...");
         await connection.query(`
           ALTER TABLE users 
           ADD COLUMN verification_token VARCHAR(255) NULL,
           ADD COLUMN verification_token_expires TIMESTAMP NULL
         `);
-        console.log("✅ verification_token columns added to users table!");
+        // ✅ verification_token columns added to users table!");
       }
 
       // Check if full_name column exists, add it if missing
@@ -1076,12 +1047,12 @@ const initializeDatabase = async () => {
       `);
       
       if (fullNameColumn.length === 0) {
-        console.log("Adding full_name column to users table...");
+        // Adding full_name column to users table...");
         await connection.query(`
           ALTER TABLE users 
           ADD COLUMN full_name VARCHAR(200) GENERATED ALWAYS AS (CONCAT(first_name, ' ', last_name)) STORED
         `);
-        console.log("✅ full_name column added to users table!");
+        // ✅ full_name column added to users table!");
       }
 
       // Check if verification_token index exists, add it if missing
@@ -1093,12 +1064,12 @@ const initializeDatabase = async () => {
       `);
       
       if (verificationTokenIndex.length === 0) {
-        console.log("Adding verification_token index to users table...");
+        // Adding verification_token index to users table...");
         await connection.query(`
           ALTER TABLE users 
           ADD INDEX idx_verification_token (verification_token)
         `);
-        console.log("✅ verification_token index added to users table!");
+        // ✅ verification_token index added to users table!");
       }
 
       // Check if email_verified index exists, add it if missing
@@ -1110,12 +1081,12 @@ const initializeDatabase = async () => {
       `);
       
       if (emailVerifiedIndex.length === 0) {
-        console.log("Adding email_verified index to users table...");
+        // Adding email_verified index to users table...");
         await connection.query(`
           ALTER TABLE users 
           ADD INDEX idx_email_verified (email_verified)
         `);
-        console.log("✅ email_verified index added to users table!");
+        // ✅ email_verified index added to users table!");
       }
 
       // Check if newsletter_subscribed column exists, add it if missing
@@ -1127,12 +1098,12 @@ const initializeDatabase = async () => {
       `);
       
       if (newsletterSubscribedColumn.length === 0) {
-        console.log("Adding newsletter_subscribed column to users table...");
+        // Adding newsletter_subscribed column to users table...");
         await connection.query(`
           ALTER TABLE users 
           ADD COLUMN newsletter_subscribed TINYINT(1) DEFAULT 0
         `);
-        console.log("✅ newsletter_subscribed column added to users table!");
+        // ✅ newsletter_subscribed column added to users table!");
       }
 
       // Check if profile_photo_url column exists, add it if missing
@@ -1144,19 +1115,19 @@ const initializeDatabase = async () => {
       `);
       
       if (profilePhotoUrlColumn.length === 0) {
-        console.log("Adding profile_photo_url column to users table...");
+        // Adding profile_photo_url column to users table...");
         await connection.query(`
           ALTER TABLE users 
           ADD COLUMN profile_photo_url VARCHAR(500)
         `);
-        console.log("✅ profile_photo_url column added to users table!");
+        // ✅ profile_photo_url column added to users table!");
       }
 
       // Check if user_notifications table exists
       const [userNotificationsTable] = await connection.query('SHOW TABLES LIKE "user_notifications"');
       
       if (userNotificationsTable.length === 0) {
-        console.log("Creating user_notifications table...");
+        // Creating user_notifications table...");
         await connection.query(`
           CREATE TABLE user_notifications (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1172,14 +1143,14 @@ const initializeDatabase = async () => {
             INDEX idx_created_at (created_at)
           )
         `);
-        console.log("✅ user_notifications table created successfully!");
+        // ✅ user_notifications table created successfully!");
       }
 
       // Check if subscribers table exists
       const [subscribersTable] = await connection.query('SHOW TABLES LIKE "subscribers"');
       
       if (subscribersTable.length === 0) {
-        console.log("Creating subscribers table...");
+        // Creating subscribers table...");
         await connection.query(`
           CREATE TABLE subscribers (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1195,7 +1166,7 @@ const initializeDatabase = async () => {
             INDEX idx_is_verified (is_verified)
           )
         `);
-        console.log("✅ subscribers table created successfully!");
+        // ✅ subscribers table created successfully!");
       } else {
         // Check and fix the is_verified column default value
         // Checking subscribers table structure...
@@ -1209,12 +1180,12 @@ const initializeDatabase = async () => {
         `);
         
         if (verifiedAtColumn.length === 0) {
-          console.log("Adding missing verified_at column to subscribers table...");
+          // Adding missing verified_at column to subscribers table...");
           await connection.query(`
             ALTER TABLE subscribers 
             ADD COLUMN verified_at TIMESTAMP NULL
           `);
-          console.log("✅ verified_at column added successfully!");
+          // ✅ verified_at column added successfully!");
         }
         
         const [isVerifiedColumn] = await connection.query(`
@@ -1225,12 +1196,12 @@ const initializeDatabase = async () => {
         `);
         
         if (isVerifiedColumn.length > 0 && isVerifiedColumn[0].COLUMN_DEFAULT !== '0') {
-          console.log("Fixing is_verified column default value...");
+          // Fixing is_verified column default value...");
           await connection.query(`
             ALTER TABLE subscribers 
             MODIFY COLUMN is_verified TINYINT(1) DEFAULT 0
           `);
-          console.log("✅ is_verified column default value fixed!");
+          // ✅ is_verified column default value fixed!");
         }
         
         // Check if there are any verified subscriptions that shouldn't be verified
@@ -1240,13 +1211,13 @@ const initializeDatabase = async () => {
         `);
         
         if (verifiedSubs[0].count > 0) {
-          console.log(`Found ${verifiedSubs[0].count} incorrectly verified subscriptions, fixing...`);
+          // Found ${verifiedSubs[0].count} incorrectly verified subscriptions, fixing...`);
           await connection.query(`
             UPDATE subscribers 
             SET is_verified = 0 
             WHERE is_verified = 1 AND verified_at IS NULL
           `);
-          console.log("✅ Incorrectly verified subscriptions fixed!");
+          // ✅ Incorrectly verified subscriptions fixed!");
         }
         
         // Force update the column default value to ensure it's 0
@@ -1258,7 +1229,7 @@ const initializeDatabase = async () => {
           `);
           // is_verified column default value enforced
         } catch (alterError) {
-          console.log("ℹ️ Column modification not needed or failed (this is normal):", alterError.message);
+          // ℹ️ Column modification not needed or failed (this is normal):", alterError.message);
         }
         
         // Also check if there are any existing subscriptions that need fixing
@@ -1269,19 +1240,18 @@ const initializeDatabase = async () => {
         `);
         
         if (allSubs.length > 0) {
-          console.log(`Found ${allSubs.length} subscriptions without verification timestamp, ensuring they are unverified...`);
+          // Found ${allSubs.length} subscriptions without verification timestamp, ensuring they are unverified...`);
           await connection.query(`
             UPDATE subscribers 
             SET is_verified = 0 
             WHERE verified_at IS NULL
           `);
-          console.log("✅ All unverified subscriptions properly marked!");
+          // ✅ All unverified subscriptions properly marked!");
         }
       }
     }
 
     // Migration: Update admins table - replace status column with is_active boolean
-    console.log("Checking admins table structure for status/is_active migration...");
     
     // Check if status column exists and is_active doesn't exist
     const [statusColumn] = await connection.query(`
@@ -1299,7 +1269,7 @@ const initializeDatabase = async () => {
     `);
     
     if (statusColumn.length > 0 && isActiveColumn.length === 0) {
-      console.log("Migrating admins table: replacing status column with is_active boolean...");
+      // Migrating admins table: replacing status column with is_active boolean...");
       
       // Add is_active column first
       await connection.query(`
@@ -1323,11 +1293,11 @@ const initializeDatabase = async () => {
         DROP COLUMN status
       `);
       
-      console.log("✅ Admins table migration completed: status column replaced with is_active boolean!");
+      // ✅ Admins table migration completed: status column replaced with is_active boolean!");
     } else if (isActiveColumn.length > 0) {
-      console.log("✅ Admins table already has is_active column");
+      // ✅ Admins table already has is_active column");
     } else {
-      console.log("ℹ️ Admins table structure check completed");
+      // ℹ️ Admins table structure check completed");
     }
 
 
@@ -1343,7 +1313,7 @@ const initializeDatabase = async () => {
     const [brandingTables] = await connection.query('SHOW TABLES LIKE "branding"');
     
     if (brandingTables.length === 0) {
-      console.log("Creating branding table...");
+      // Creating branding table...");
       await connection.query(`
         CREATE TABLE branding (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1361,22 +1331,21 @@ const initializeDatabase = async () => {
         VALUES (NULL, NULL, NULL)
       `);
       
-      console.log("✅ Branding table created successfully!");
+      // ✅ Branding table created successfully!");
     } else {
-      console.log("✅ Branding table already exists");
+      // ✅ Branding table already exists");
       
       // Check if name_url column exists, if not add it
       try {
         const [columns] = await connection.query("SHOW COLUMNS FROM branding LIKE 'name_url'");
         if (columns.length === 0) {
-          console.log("Adding name_url column to branding table...");
+          // Adding name_url column to branding table...");
           await connection.query("ALTER TABLE branding ADD COLUMN name_url VARCHAR(500) NULL AFTER logo_url");
-          console.log("✅ name_url column added successfully!");
+          // ✅ name_url column added successfully!");
         } else {
-          console.log("✅ name_url column already exists");
+          // ✅ name_url column already exists");
         }
       } catch (e) {
-        console.log("Error checking/adding name_url column:", e.message);
       }
     }
 
@@ -1384,7 +1353,7 @@ const initializeDatabase = async () => {
     const [siteNameTables] = await connection.query('SHOW TABLES LIKE "site_name"');
     
     if (siteNameTables.length === 0) {
-      console.log("Creating site_name table...");
+      // Creating site_name table...");
       await connection.query(`
         CREATE TABLE site_name (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1400,16 +1369,16 @@ const initializeDatabase = async () => {
         VALUES ('FAITH CommUNITY')
       `);
       
-      console.log("✅ Site name table created successfully!");
+      // ✅ Site name table created successfully!");
     } else {
-      console.log("✅ Site name table already exists");
+      // ✅ Site name table already exists");
     }
 
     // Check if footer_content table exists
     const [footerContentTables] = await connection.query('SHOW TABLES LIKE "footer_content"');
     
     if (footerContentTables.length === 0) {
-      console.log("Creating footer_content table...");
+      // Creating footer_content table...");
       await connection.query(`
         CREATE TABLE footer_content (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1436,16 +1405,16 @@ const initializeDatabase = async () => {
         ('copyright', 'copyright', '© Copyright 2025 FAITH CommUNITY. All Rights Reserved.', 1)
       `);
       
-      console.log("✅ Footer content table created successfully!");
+      // ✅ Footer content table created successfully!");
     } else {
-      console.log("✅ Footer content table already exists");
+      // ✅ Footer content table already exists");
     }
 
     // Check if hero_section table exists
     const [heroSectionTables] = await connection.query('SHOW TABLES LIKE "hero_section"');
     
     if (heroSectionTables.length === 0) {
-      console.log("Creating hero_section table...");
+      // Creating hero_section table...");
       await connection.query(`
         CREATE TABLE hero_section (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1465,9 +1434,9 @@ const initializeDatabase = async () => {
         ('Welcome to FAITH CommUNITY', 'A Unified Platform for Community Extension Programs')
       `);
       
-      console.log("✅ Hero section table created successfully!");
+      // ✅ Hero section table created successfully!");
     } else {
-      console.log("✅ Hero section table already exists");
+      // ✅ Hero section table already exists");
       
       // Check if new columns exist and add them if they don't
       const [columns] = await connection.query(`
@@ -1480,7 +1449,7 @@ const initializeDatabase = async () => {
       const columnNames = columns.map(col => col.COLUMN_NAME);
       
       if (!columnNames.includes('video_link')) {
-        console.log("Adding video_link column to hero_section table...");
+        // Adding video_link column to hero_section table...");
         await connection.query(`
           ALTER TABLE hero_section 
           ADD COLUMN video_link VARCHAR(500) NULL AFTER video_url
@@ -1488,7 +1457,7 @@ const initializeDatabase = async () => {
       }
       
       if (!columnNames.includes('video_type')) {
-        console.log("Adding video_type column to hero_section table...");
+        // Adding video_type column to hero_section table...");
         await connection.query(`
           ALTER TABLE hero_section 
           ADD COLUMN video_type ENUM('upload', 'link') DEFAULT 'upload' AFTER video_link
@@ -1500,7 +1469,7 @@ const initializeDatabase = async () => {
     const [heroSectionImagesTables] = await connection.query('SHOW TABLES LIKE "hero_section_images"');
     
     if (heroSectionImagesTables.length === 0) {
-      console.log("Creating hero_section_images table...");
+      // Creating hero_section_images table...");
       await connection.query(`
         CREATE TABLE hero_section_images (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1524,16 +1493,16 @@ const initializeDatabase = async () => {
         (3, 'Innovation', 'Building the Future', 3)
       `);
       
-      console.log("✅ Hero section images table created successfully!");
+      // ✅ Hero section images table created successfully!");
     } else {
-      console.log("✅ Hero section images table already exists");
+      // ✅ Hero section images table already exists");
     }
 
     // Check if about_us table exists
     const [aboutUsTables] = await connection.query('SHOW TABLES LIKE "about_us"');
     
     if (aboutUsTables.length === 0) {
-      console.log("Creating about_us table...");
+      // Creating about_us table...");
       await connection.query(`
         CREATE TABLE about_us (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1557,9 +1526,9 @@ const initializeDatabase = async () => {
         ('We Believe That We Can Help More People With You', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.')
       `);
       
-      console.log("✅ About us table created successfully!");
+      // ✅ About us table created successfully!");
     } else {
-      console.log("✅ About us table already exists");
+      // ✅ About us table already exists");
       
       // Check if tag column exists and remove it (migration)
       try {
@@ -1572,12 +1541,11 @@ const initializeDatabase = async () => {
         `);
         
         if (columns.length > 0) {
-          console.log("Removing tag column from about_us table...");
+          // Removing tag column from about_us table...");
           await connection.query('ALTER TABLE about_us DROP COLUMN tag');
-          console.log("✅ Tag column removed from about_us table!");
+          // ✅ Tag column removed from about_us table!");
         }
       } catch (error) {
-        console.log("Note: Could not check/remove tag column:", error.message);
       }
     }
 
@@ -1585,7 +1553,7 @@ const initializeDatabase = async () => {
     const [headsFacesTables] = await connection.query('SHOW TABLES LIKE "heads_faces"');
     
     if (headsFacesTables.length === 0) {
-      console.log("Creating heads_faces table...");
+      // Creating heads_faces table...");
       await connection.query(`
         CREATE TABLE heads_faces (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1610,9 +1578,9 @@ const initializeDatabase = async () => {
         ('Jana Mae A. Cruz', 'Secretary of the Community Extension Committee', 'jana.cruz@faith.edu.ph', '+63 912 345 6789', 'Secretary', 3)
       `);
       
-      console.log("✅ Heads of FACES table created successfully!");
+      // ✅ Heads of FACES table created successfully!");
     } else {
-      console.log("✅ Heads of FACES table already exists");
+      // ✅ Heads of FACES table already exists");
     }
 
     connection.release();
@@ -1636,9 +1604,9 @@ const getDb = async () => {
 // Initialize the database
 initializeDatabase().then(db => {
   dbInstance = db;
-  console.log("✅ Database initialization completed!");
+  // ✅ Database initialization completed!");
 }).catch(error => {
-  console.error("❌ Database initialization failed:", error);
+  console.error("Database initialization failed:", error);
 });
 
 // Export the promise pool directly for backward compatibility

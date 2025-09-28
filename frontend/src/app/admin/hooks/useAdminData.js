@@ -252,7 +252,7 @@ export const useAdminPrograms = (orgAcronym) => {
   const shouldFetch = orgAcronym && typeof orgAcronym === 'string' && orgAcronym.trim() !== '';
   
   const { data, error, isLoading, mutate } = useSWR(
-    shouldFetch ? `${API_BASE_URL}/api/programs/org/${orgAcronym}` : null,
+    shouldFetch ? `${API_BASE_URL}/api/admin/programs` : null,
     adminFetcher,
     {
       revalidateOnFocus: false,

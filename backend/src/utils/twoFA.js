@@ -53,7 +53,6 @@ export const generateTwoFAQRCode = async (otpauth) => {
     const QRCode = await import('qrcode');
     return await QRCode.toDataURL(otpauth);
   } catch (error) {
-    console.warn('QR code generation failed, continuing without QR code:', error.message);
     return null; // Return null instead of throwing error
   }
 };
@@ -67,7 +66,6 @@ export const generateTwoFAQRCode = async (otpauth) => {
 export const generateSimpleQRCode = (otpauth) => {
   // This is a placeholder - in a real implementation, you might use a different approach
   // For now, we'll just return null to indicate no QR code is available
-  console.log('QR code generation skipped - using manual entry only');
   return null;
 };
 

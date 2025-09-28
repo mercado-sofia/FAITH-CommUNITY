@@ -22,7 +22,6 @@ export const getHeads = async (req, res) => {
       data: rows,
     })
   } catch (error) {
-    console.error("Get heads error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to retrieve organization heads",
@@ -81,7 +80,6 @@ export const addHead = async (req, res) => {
         );
         finalPhoto = uploadResult.url;
       } catch (uploadError) {
-        console.error('Error uploading organization head photo to Cloudinary:', uploadError);
         return res.status(500).json({ 
           success: false, 
           message: 'Failed to upload organization head photo' 
@@ -110,7 +108,6 @@ export const addHead = async (req, res) => {
       data: { id: result.insertId },
     })
   } catch (error) {
-    console.error("Add head error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to add organization head",
@@ -169,7 +166,6 @@ export const updateHead = async (req, res) => {
             try {
               await deleteFromCloudinary(oldPublicId);
             } catch (deleteError) {
-              console.warn('Failed to delete old organization head photo from Cloudinary:', deleteError.message);
             }
           }
         }
@@ -182,7 +178,6 @@ export const updateHead = async (req, res) => {
         );
         finalPhoto = uploadResult.url;
       } catch (uploadError) {
-        console.error('Error uploading organization head photo to Cloudinary:', uploadError);
         return res.status(500).json({ 
           success: false, 
           message: 'Failed to upload organization head photo' 
@@ -219,7 +214,6 @@ export const updateHead = async (req, res) => {
       message: "Organization head updated successfully",
     })
   } catch (error) {
-    console.error("Update head error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to update organization head",
@@ -253,7 +247,6 @@ export const deleteHead = async (req, res) => {
       message: "Organization head deleted successfully",
     })
   } catch (error) {
-    console.error("Delete head error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to delete organization head",
@@ -322,7 +315,6 @@ export const bulkDeleteHeads = async (req, res) => {
       deletedCount: result.affectedRows,
     })
   } catch (error) {
-    console.error("Bulk delete heads error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to delete organization heads",
@@ -404,16 +396,41 @@ export const bulkUpdateHeads = async (req, res) => {
       const priority = head.priority || getRolePriority(head.role);
       const display_order = head.display_order || priority;
 
-      // Clean up photo field - remove base64 data and limit length
+      // Handle photo upload to Cloudinary
       let cleanPhoto = head.photo?.trim() || null;
-      if (cleanPhoto && cleanPhoto.startsWith('data:')) {
-        cleanPhoto = null;
-      }
-      if (cleanPhoto && cleanPhoto.length > 500) {
+      if (cleanPhoto && cleanPhoto.startsWith('data:image/')) {
+        try {
+          const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+          const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
+          
+          // Convert base64 to buffer
+          const base64Data = cleanPhoto.replace(/^data:image\/\w+;base64,/, '');
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Create a file-like object for Cloudinary upload
+          const file = {
+            buffer: buffer,
+            originalname: `org-head-${Date.now()}.jpg`,
+            mimetype: cleanPhoto.match(/data:image\/(\w+);/)[0].replace('data:', '').replace(';', ''),
+            size: buffer.length
+          };
+          
+          // Upload to Cloudinary
+          const uploadResult = await uploadSingleToCloudinary(
+            file, 
+            CLOUDINARY_FOLDERS.ORGANIZATIONS.HEADS,
+            { prefix: 'org_head_' }
+          );
+          
+          cleanPhoto = uploadResult.url;
+        } catch (uploadError) {
+          // Continue with base64 as fallback
+        }
+      } else if (cleanPhoto && cleanPhoto.length > 500) {
+        // If it's not base64 but still too long, truncate it
         cleanPhoto = cleanPhoto.substring(0, 500);
       }
 
-      
       await db.execute(
         `INSERT INTO organization_heads (organization_id, head_name, role, priority, display_order, facebook, email, photo)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -437,7 +454,6 @@ export const bulkUpdateHeads = async (req, res) => {
       count: heads.length,
     })
   } catch (error) {
-    console.error("Bulk update heads error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to update organization heads",
@@ -473,7 +489,6 @@ export const reorderHeads = async (req, res) => {
       message: "Organization heads reordered successfully"
     });
   } catch (error) {
-    console.error("Reorder heads error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to reorder organization heads",

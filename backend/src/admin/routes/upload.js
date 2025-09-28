@@ -61,8 +61,9 @@ router.post('/', verifyAdminOrSuperadmin, cloudinaryUploadConfigs.programMain.si
         prefix = 'org_head_';
         break;
       case 'heads-faces':
-        folder = 'faith-community/heads-faces';
-        prefix = 'head_';
+        // Note: heads-faces uploads should use the dedicated endpoint: /api/superadmin/heads-faces/upload-image
+        folder = 'faith-community/organizations/heads';
+        prefix = 'heads_faces_';
         break;
       default:
         folder = 'faith-community/programs/main';

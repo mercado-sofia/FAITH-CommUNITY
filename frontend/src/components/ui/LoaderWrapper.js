@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import styles from "./Loader.module.css"
+import styles from "./styles/Loader.module.css"
 
 export default function LoaderWrapper({ children }) {
   const [loading, setLoading] = useState(true)

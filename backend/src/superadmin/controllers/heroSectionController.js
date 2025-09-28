@@ -44,7 +44,6 @@ export const getHeroSection = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching hero section:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to fetch hero section data' 
@@ -101,7 +100,6 @@ export const updateHeroSectionText = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error updating hero section text:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to update hero section text' 
@@ -154,7 +152,6 @@ export const updateHeroSectionImageText = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error updating hero section image text:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to update image text' 
@@ -197,7 +194,6 @@ export const uploadHeroSectionVideo = async (req, res) => {
           try {
             await deleteFromCloudinary(oldPublicId);
           } catch (deleteError) {
-            console.warn('Failed to delete old video from Cloudinary:', deleteError.message);
           }
         }
       }
@@ -223,7 +219,6 @@ export const uploadHeroSectionVideo = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error uploading hero section video:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to upload video',
@@ -277,7 +272,6 @@ export const uploadHeroSectionImage = async (req, res) => {
         try {
           await deleteFromCloudinary(oldPublicId);
         } catch (deleteError) {
-          console.warn('Failed to delete old image from Cloudinary:', deleteError.message);
         }
       }
     }
@@ -303,7 +297,6 @@ export const uploadHeroSectionImage = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error uploading hero section image:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to upload image',
@@ -330,7 +323,6 @@ export const deleteHeroSectionVideo = async (req, res) => {
       try {
         await deleteFromCloudinary(publicId);
       } catch (deleteError) {
-        console.warn('Failed to delete video from Cloudinary:', deleteError.message);
       }
     }
 
@@ -345,7 +337,6 @@ export const deleteHeroSectionVideo = async (req, res) => {
       message: 'Video deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting hero section video:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to delete video' 
@@ -430,7 +421,6 @@ export const updateHeroSectionVideoLink = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error updating hero section video link:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to update video link' 
@@ -537,7 +527,6 @@ export const updateHeroSection = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error updating hero section:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to update hero section' 
@@ -573,7 +562,6 @@ export const deleteHeroSectionImage = async (req, res) => {
         try {
           await deleteFromCloudinary(publicId);
         } catch (deleteError) {
-          console.warn('Failed to delete image from Cloudinary:', deleteError.message);
         }
       }
     }
@@ -589,7 +577,6 @@ export const deleteHeroSectionImage = async (req, res) => {
       message: 'Image deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting hero section image:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to delete image' 

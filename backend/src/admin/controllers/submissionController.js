@@ -152,7 +152,6 @@ export const submitChanges = async (req, res) => {
               message = `${orgAcronym} has submitted a new program "${proposedData.title}" for approval.`
             }
           } catch (parseError) {
-            console.warn('Failed to parse program data for notification:', parseError)
           }
         }
 
@@ -179,7 +178,6 @@ export const submitChanges = async (req, res) => {
     })
   } catch (error) {
     await db.query("ROLLBACK")
-    console.error("❌ Error saving submissions:", error)
     res.status(500).json({
       success: false,
       message: "Failed to save submissions",
@@ -223,7 +221,7 @@ export const getSubmissionsByOrg = async (req, res) => {
     )
 
     // Parse JSON data and add metadata
-    const parsedRows = rows.map((row) => {
+    const parsedRows = await Promise.all(rows.map(async (row) => {
       let previous_data_parsed = {}
       let proposed_data_parsed = {}
       let parse_error = false
@@ -231,7 +229,6 @@ export const getSubmissionsByOrg = async (req, res) => {
       try {
         previous_data_parsed = JSON.parse(row.previous_data)
       } catch (e) {
-        console.warn(`Warning: Failed to parse previous_data for submission ID ${row.id}:`, e.message)
         previous_data_parsed = { error: "Invalid JSON data" }
         parse_error = true
       }
@@ -239,9 +236,29 @@ export const getSubmissionsByOrg = async (req, res) => {
       try {
         proposed_data_parsed = JSON.parse(row.proposed_data)
       } catch (e) {
-        console.warn(`Warning: Failed to parse proposed_data for submission ID ${row.id}:`, e.message)
         proposed_data_parsed = { error: "Invalid JSON data" }
         parse_error = true
+      }
+
+      // For program submissions, fetch collaborator details
+      if (row.section === 'programs' && proposed_data_parsed.collaborators && Array.isArray(proposed_data_parsed.collaborators)) {
+        try {
+          const collaboratorIds = proposed_data_parsed.collaborators;
+          if (collaboratorIds.length > 0) {
+            const placeholders = collaboratorIds.map(() => '?').join(',');
+            const [collaboratorRows] = await db.execute(`
+              SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
+              FROM admins a
+              LEFT JOIN organizations o ON a.organization_id = o.id
+              WHERE a.id IN (${placeholders})
+            `, collaboratorIds);
+            
+            // Replace collaborator IDs with full collaborator objects
+            proposed_data_parsed.collaborators = collaboratorRows;
+          }
+        } catch (collabError) {
+          // Keep original collaborator IDs if fetch fails
+        }
       }
 
       return {
@@ -253,7 +270,7 @@ export const getSubmissionsByOrg = async (req, res) => {
         can_cancel: row.status === "pending",
         parse_error: parse_error, // Indicate if any parsing error occurred for this row
       }
-    })
+    }))
 
     // Return success even if some rows have parsing errors, as the query itself was successful
     res.json({
@@ -267,7 +284,6 @@ export const getSubmissionsByOrg = async (req, res) => {
       count: parsedRows.length,
     })
   } catch (error) {
-    console.error("❌ Error fetching submissions:", error)
     res.status(500).json({
       success: false,
       message: "Failed to fetch submissions",
@@ -312,7 +328,6 @@ export const cancelSubmission = async (req, res) => {
       message: `Submission for ${existing[0].section} deleted successfully`,
     })
   } catch (error) {
-    console.error("❌ Error cancelling submission:", error)
     res.status(500).json({
       success: false,
       message: "Failed to cancel submission",
@@ -400,7 +415,6 @@ export const updateSubmission = async (req, res) => {
       message: `Submission for ${section} updated successfully`,
     })
   } catch (error) {
-    console.error("❌ Error updating submission:", error)
     res.status(500).json({
       success: false,
       message: "Failed to update submission",
@@ -445,7 +459,6 @@ export const bulkDeleteSubmissions = async (req, res) => {
   } catch (error) {
     // Rollback transaction on error
     await db.query("ROLLBACK");
-    console.error("Bulk delete error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to delete submissions",
@@ -490,9 +503,37 @@ export const getSubmissionById = async (req, res) => {
       }
       if (submission.proposed_data) {
         submission.proposed_data = JSON.parse(submission.proposed_data)
+        
+        // For program submissions, fetch collaborator details if they are stored as IDs
+        if (submission.section === 'programs' && submission.proposed_data.collaborators && Array.isArray(submission.proposed_data.collaborators)) {
+          try {
+            const collaborators = submission.proposed_data.collaborators;
+            if (collaborators.length > 0) {
+              // Check if collaborators are stored as IDs (numbers) or objects
+              const firstCollaborator = collaborators[0];
+              if (typeof firstCollaborator === 'number' || (typeof firstCollaborator === 'string' && !isNaN(firstCollaborator))) {
+                // Collaborators are stored as IDs, fetch full details
+                const placeholders = collaborators.map(() => '?').join(',');
+                const [collaboratorRows] = await db.execute(`
+                  SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
+                  FROM admins a
+                  LEFT JOIN organizations o ON a.organization_id = o.id
+                  WHERE a.id IN (${placeholders})
+                `, collaborators);
+                
+                // Replace collaborator IDs with full collaborator objects
+                submission.proposed_data.collaborators = collaboratorRows;
+              }
+              // If collaborators are already objects, keep them as is
+            }
+          } catch (collabError) {
+            console.error('Error fetching collaborator details:', collabError);
+            // Keep original collaborator data if fetch fails
+          }
+        }
       }
     } catch (parseError) {
-      console.error("Error parsing JSON data:", parseError)
+      // Error parsing JSON data
     }
 
     res.json({
@@ -500,7 +541,6 @@ export const getSubmissionById = async (req, res) => {
       data: submission,
     })
   } catch (error) {
-    console.error("❌ Error getting submission by ID:", error)
     res.status(500).json({
       success: false,
       message: "Failed to get submission",

@@ -2,20 +2,26 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { FaEdit, FaTag, FaCalendar, FaEllipsisH } from 'react-icons/fa';
+import { FaEdit, FaTag, FaCalendar, FaEllipsisH, FaExclamationTriangle, FaSignOutAlt } from 'react-icons/fa';
 import { TbListDetails } from 'react-icons/tb';
 import { LuSquareCheckBig } from 'react-icons/lu';
 import { MdOutlineRadioButtonChecked } from 'react-icons/md';
 import { FiTrash2 } from 'react-icons/fi';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import { formatProgramDates, formatDateShort } from '@/utils/dateUtils.js';
+import CollaborationBadge from '../Collaboration/CollaborationBadge';
+import { optOutCollaboration } from '../../services/collaborationService';
+import SuccessModal from '@/components/ui/SuccessModal';
 import styles from './ProgramCard.module.css';
 
-const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted, onMarkActive }) => {
+const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted, onMarkActive, onOptOut }) => {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isOptingOut, setIsOptingOut] = useState(false);
   const [showMarkCompletedModal, setShowMarkCompletedModal] = useState(false);
   const [showMarkActiveModal, setShowMarkActiveModal] = useState(false);
+  const [showOptOutModal, setShowOptOutModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
   const dropdownRef = useRef(null);
 
   const handleDelete = async () => {
@@ -25,10 +31,6 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
     } finally {
       setIsDeleting(false);
     }
-  };
-
-  const handleMarkCompleted = () => {
-    setShowMarkCompletedModal(true);
   };
 
   const confirmMarkCompleted = async () => {
@@ -85,6 +87,55 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
     setShowMarkActiveModal(false);
   };
 
+  const handleOptOutClick = () => {
+    setShowDropdown(false);
+    setShowOptOutModal(true);
+  };
+
+  const confirmOptOut = async () => {
+    setIsOptingOut(true);
+    try {
+      // Use the collaboration_id from the program data
+      if (program.collaboration_id) {
+        await optOutCollaboration(program.collaboration_id);
+        
+        // Show success modal
+        setSuccessModal({
+          isVisible: true,
+          message: `You have successfully opted out of "${program.title}". The program will no longer appear in your programs list.`,
+          type: 'success'
+        });
+        
+        // Close the opt-out confirmation modal
+        setShowOptOutModal(false);
+        
+        // Refresh the programs list after a short delay
+        if (onOptOut) {
+          setTimeout(() => {
+            onOptOut();
+          }, 2000); // Wait 2 seconds to let user see the success message
+        }
+      }
+    } catch (error) {
+      console.error('Error opting out of collaboration:', error);
+      
+      // Show error modal
+      setSuccessModal({
+        isVisible: true,
+        message: `Failed to opt out of "${program.title}". Please try again.`,
+        type: 'error'
+      });
+      
+      setShowOptOutModal(false);
+    } finally {
+      setIsOptingOut(false);
+    }
+  };
+
+  const cancelOptOut = () => {
+    setShowOptOutModal(false);
+  };
+
   // Using centralized date utilities - formatProgramDates is now imported
 
   const getCategoryLabel = (category) => {
@@ -108,21 +159,28 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
       {/* Program Image */}
       {program.image ? (
         <div className={styles.imageContainer}>
-          <Image
-            src={getProgramImageUrl(program.image) || '/defaults/default-profile.png'}
-            alt={program.title}
-            className={styles.programImage}
-            width={400}
-            height={220}
-            style={{ objectFit: 'cover' }}
-            onError={(e) => {
-              e.target.style.display = 'none';
-              e.target.nextSibling.style.display = 'flex';
-            }}
-          />
+          {getProgramImageUrl(program.image) === 'IMAGE_UNAVAILABLE' ? (
+            <div className={styles.imagePlaceholder}>
+              <FaExclamationTriangle className={styles.placeholderIcon} />
+              <span>Image unavailable</span>
+            </div>
+          ) : (
+            <Image
+              src={getProgramImageUrl(program.image)}
+              alt={program.title}
+              className={styles.programImage}
+              width={400}
+              height={220}
+              style={{ objectFit: 'cover' }}
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+          )}
           <div className={styles.imagePlaceholder} style={{ display: 'none' }}>
-            <FaTag className={styles.placeholderIcon} />
-            <span>Image Failed to Load</span>
+            <FaExclamationTriangle className={styles.placeholderIcon} />
+            <span>Image unavailable</span>
           </div>
           
           {/* Three dots menu */}
@@ -146,25 +204,38 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
                   >
                     <TbListDetails /> View Details
                   </button>
-                  <button
-                    className={styles.dropdownItem}
-                    onClick={() => {
-                      setShowDropdown(false);
-                      onEdit();
-                    }}
-                  >
-                    <FaEdit /> Edit
-                  </button>
-                  <button
-                    className={styles.dropdownItem}
-                    onClick={() => {
-                      setShowDropdown(false);
-                      handleDelete();
-                    }}
-                    disabled={isDeleting}
-                  >
-                    <FiTrash2 /> {isDeleting ? 'Deleting...' : 'Delete'}
-                  </button>
+                  {/* Show different actions based on user role */}
+                  {program.user_role === 'creator' ? (
+                    <>
+                      <button
+                        className={styles.dropdownItem}
+                        onClick={() => {
+                          setShowDropdown(false);
+                          onEdit();
+                        }}
+                      >
+                        <FaEdit /> Edit
+                      </button>
+                      <button
+                        className={styles.dropdownItem}
+                        onClick={() => {
+                          setShowDropdown(false);
+                          handleDelete();
+                        }}
+                        disabled={isDeleting}
+                      >
+                        <FiTrash2 /> {isDeleting ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      className={styles.dropdownItem}
+                      onClick={handleOptOutClick}
+                      disabled={isOptingOut}
+                    >
+                      <FaSignOutAlt /> {isOptingOut ? 'Opting Out...' : 'Opt Out'}
+                    </button>
+                  )}
                 </div>
               )}
           </div>
@@ -197,25 +268,38 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
                   >
                     <TbListDetails /> View Details
                   </button>
-                  <button
-                    className={styles.dropdownItem}
-                    onClick={() => {
-                      setShowDropdown(false);
-                      onEdit();
-                    }}
-                  >
-                    <FaEdit /> Edit
-                  </button>
-                  <button
-                    className={styles.dropdownItem}
-                    onClick={() => {
-                      setShowDropdown(false);
-                      handleDelete();
-                    }}
-                    disabled={isDeleting}
-                  >
-                    <FiTrash2 /> {isDeleting ? 'Deleting...' : 'Delete'}
-                  </button>
+                  {/* Show different actions based on user role */}
+                  {program.user_role === 'creator' ? (
+                    <>
+                      <button
+                        className={styles.dropdownItem}
+                        onClick={() => {
+                          setShowDropdown(false);
+                          onEdit();
+                        }}
+                      >
+                        <FaEdit /> Edit
+                      </button>
+                      <button
+                        className={styles.dropdownItem}
+                        onClick={() => {
+                          setShowDropdown(false);
+                          handleDelete();
+                        }}
+                        disabled={isDeleting}
+                      >
+                        <FiTrash2 /> {isDeleting ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      className={styles.dropdownItem}
+                      onClick={handleOptOutClick}
+                      disabled={isOptingOut}
+                    >
+                      <FaSignOutAlt /> {isOptingOut ? 'Opting Out...' : 'Opt Out'}
+                    </button>
+                  )}
                 </div>
               )}
           </div>
@@ -225,7 +309,15 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
       {/* Program Content */}
       <div className={styles.programContent}>
         <div className={styles.programHeader}>
-          <h3 className={styles.programTitle}>{program.title}</h3>
+          <div className={styles.titleRow}>
+            <h3 className={styles.programTitle}>{program.title}</h3>
+            <CollaborationBadge 
+              program={program}
+              userRole={program.user_role}
+              isCollaborative={program.is_collaborative}
+              collaboratorCount={program.collaborators?.length || 0}
+            />
+          </div>
         </div>
 
         <p className={styles.programDescription}>
@@ -267,30 +359,32 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
           )}
         </div>
 
-        {/* Action Buttons */}
-        <div className={styles.actionButtons}>
-           {program.status !== 'Active' && (
-             <button
-               onClick={handleMarkActiveClick}
-               className={styles.markActiveButton}
-               disabled={isDeleting}
-               title="Mark program as active"
-             >
-               <MdOutlineRadioButtonChecked /> Mark Active
-             </button>
-           )}
-           
-           {program.status !== 'Completed' && (
-             <button
-               onClick={handleMarkCompletedClick}
-               className={styles.markCompletedButton}
-               disabled={isDeleting}
-               title="Mark program as completed"
-             >
-               <LuSquareCheckBig /> Mark Complete
-             </button>
-           )}
-        </div>
+        {/* Action Buttons - Only show for creators */}
+        {program.user_role === 'creator' && (
+          <div className={styles.actionButtons}>
+             {program.status !== 'Active' && (
+               <button
+                 onClick={handleMarkActiveClick}
+                 className={styles.markActiveButton}
+                 disabled={isDeleting}
+                 title="Mark program as active"
+               >
+                 <MdOutlineRadioButtonChecked /> Mark Active
+               </button>
+             )}
+             
+             {program.status !== 'Completed' && (
+               <button
+                 onClick={handleMarkCompletedClick}
+                 className={styles.markCompletedButton}
+                 disabled={isDeleting}
+                 title="Mark program as completed"
+               >
+                 <LuSquareCheckBig /> Mark Complete
+               </button>
+             )}
+          </div>
+        )}
       </div>
 
       {/* Mark as Completed Confirmation Modal */}
@@ -348,6 +442,45 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
           </div>
         </div>
       )}
+
+      {/* Opt Out Confirmation Modal */}
+      {showOptOutModal && (
+        <div className={styles.modalOverlay} onClick={cancelOptOut}>
+          <div className={`${styles.modalContent} ${styles.optOutModal}`} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Opt Out of Collaboration</h3>
+            </div>
+            <div className={styles.modalBody}>
+              <p>Are you sure you want to opt out of collaborating on &quot;{program.title}&quot;?</p>
+              <p className={styles.warningText}>This action cannot be undone. You will no longer have access to this program.</p>
+            </div>
+            <div className={styles.modalActions}>
+              <button
+                onClick={cancelOptOut}
+                className={styles.cancelButton}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmOptOut}
+                className={styles.confirmButton}
+                disabled={isOptingOut}
+              >
+                {isOptingOut ? 'Opting Out...' : 'Opt Out'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success/Error Modal */}
+      <SuccessModal
+        message={successModal.message}
+        isVisible={successModal.isVisible}
+        onClose={() => setSuccessModal({ isVisible: false, message: '', type: 'success' })}
+        type={successModal.type}
+        autoHideDuration={successModal.type === 'success' ? 3000 : 0}
+      />
     </div>
   );
 };

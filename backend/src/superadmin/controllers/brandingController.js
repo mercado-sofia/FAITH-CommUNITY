@@ -114,7 +114,6 @@ export const uploadLogo = async (req, res) => {
           try {
             await deleteFromCloudinary(oldPublicId);
           } catch (deleteError) {
-            console.warn('Failed to delete old logo from Cloudinary:', deleteError.message);
           }
         }
       }
@@ -187,7 +186,6 @@ export const uploadFavicon = async (req, res) => {
           try {
             await deleteFromCloudinary(oldPublicId);
           } catch (deleteError) {
-            console.warn('Failed to delete old favicon from Cloudinary:', deleteError.message);
           }
         }
       }
@@ -242,7 +240,6 @@ export const deleteLogo = async (req, res) => {
         try {
           await deleteFromCloudinary(publicId);
         } catch (deleteError) {
-          console.warn('Failed to delete logo from Cloudinary:', deleteError.message);
         }
       }
     }
@@ -285,7 +282,6 @@ export const deleteFavicon = async (req, res) => {
         try {
           await deleteFromCloudinary(publicId);
         } catch (deleteError) {
-          console.warn('Failed to delete favicon from Cloudinary:', deleteError.message);
         }
       }
     }
@@ -346,7 +342,6 @@ export const uploadName = async (req, res) => {
           try {
             await deleteFromCloudinary(oldPublicId);
           } catch (deleteError) {
-            console.warn('Failed to delete old name image from Cloudinary:', deleteError.message);
           }
         }
       }
@@ -401,7 +396,6 @@ export const deleteName = async (req, res) => {
         try {
           await deleteFromCloudinary(publicId);
         } catch (deleteError) {
-          console.warn('Failed to delete name image from Cloudinary:', deleteError.message);
         }
       }
     }

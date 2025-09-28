@@ -12,7 +12,6 @@ import pino from "pino"
 import pinoHttp from "pino-http"
 import path from "path"
 import { fileURLToPath } from "url"
-import fs from "fs"
 
 // Import cleanup function for deleted news
 import cleanupDeletedNews from "./src/utils/cleanupDeletedNews.js"
@@ -45,10 +44,6 @@ const logger = pino({
   }
 })
 app.use(pinoHttp({ logger }))
-
-// Upload configuration is now handled by Cloudinary
-
-// No need for local uploads directory - using Cloudinary
 
 // Middleware
 // Security headers
@@ -119,8 +114,6 @@ app.use(cookieParser())
 app.use(bodyParser.json({ limit: "10mb" }))
 app.use(bodyParser.urlencoded({ extended: true }))
 // Static file serving for uploads removed - using Cloudinary now
-
-
 
 // Global rate limiting and burst control
 const globalLimiter = rateLimit({
@@ -202,8 +195,46 @@ if (process.env.NODE_ENV !== "production") {
       res.status(500).json({ success: false, error: error.message })
     }
   })
-}
 
+  app.get("/api/debug/collaborations/:programId", async (req, res) => {
+    try {
+      const { programId } = req.params
+      const db = await import("./src/database.js")
+      const [collaborations] = await db.default.execute(`
+        SELECT 
+          pc.id,
+          pc.program_id,
+          pc.collaborator_admin_id,
+          pc.invited_by_admin_id,
+          pc.status,
+          pc.invited_at,
+          pc.responded_at,
+          a.email as collaborator_email,
+          o.orgName as collaborator_org
+        FROM program_collaborations pc
+        LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+        LEFT JOIN organizations o ON a.organization_id = o.id
+        WHERE pc.program_id = ?
+        ORDER BY pc.invited_at DESC
+      `, [programId])
+      
+      const [program] = await db.default.execute(`
+        SELECT id, title, organization_id, is_collaborative
+        FROM programs_projects 
+        WHERE id = ?
+      `, [programId])
+      
+      res.json({ 
+        success: true, 
+        programId, 
+        program: program[0] || null,
+        collaborations 
+      })
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message })
+    }
+  })
+}
 
 // Public Routes
 import applyRoutes from "./src/(public)/routes/apply.js"
@@ -269,6 +300,7 @@ import newsRoutes from "./src/admin/routes/newsRoutes.js"
 import notificationsRoutes from "./src/admin/routes/notifications.js"
 import inboxRoutes from "./src/admin/routes/inbox.js"
 import subscribersRoutes from "./src/admin/routes/subscribers.js";
+import collaborationRoutes from "./src/admin/routes/collaborationRoutes.js";
 
 
 app.use("/api/advocacies", advocaciesRoutes)
@@ -285,11 +317,8 @@ app.use("/api/admin/profile", profileRoutes)
 app.use("/api/news", newsRoutes)
 app.use("/api/notifications", notificationsRoutes)
 app.use("/api/inbox", inboxRoutes)
-app.use("/api/subscribers", subscribersRoutes);
-
-
-
-
+app.use("/api/subscribers", subscribersRoutes)
+app.use("/api/collaborations", collaborationRoutes);
 
 // SUPERADMIN ROUTES
 import adminsRoutes from "./src/superadmin/routes/admins.js"
@@ -340,7 +369,9 @@ app.post('/api/users/refresh', doubleCsrfProtection)
 // Error Handling
 // General server error handler
 app.use((err, req, res, next) => {
-  console.error("Server error:", err)
+  if (process.env.NODE_ENV === "development") {
+    console.error("Server error:", err)
+  }
   res.status(500).json({
     success: false,
     message: "Server error",
@@ -360,23 +391,21 @@ app.use((req, res) => {
 
 // Start Server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`)
-  console.log(`☁️ Using Cloudinary for file storage`)
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`)
+  if (process.env.NODE_ENV === "development") {
+    console.log(`Server running at http://localhost:${PORT}`)
+  }
  
   // Set up daily cleanup job for deleted news (runs every 24 hours)
   setInterval(async () => {
     try {
       await cleanupDeletedNews();
     } catch (error) {
-      console.error('❌ Error in scheduled cleanup:', error);
+      console.error('Error in scheduled cleanup:', error);
     }
   }, 24 * 60 * 60 * 1000); // 24 hours in milliseconds
  
   // Run initial cleanup on server start
-  cleanupDeletedNews().then(() => {
-    console.log('✅ Initial cleanup completed');
-  }).catch((error) => {
-    console.error('❌ Initial cleanup failed:', error);
+  cleanupDeletedNews().catch((error) => {
+    console.error('Initial cleanup failed:', error);
   });
 })

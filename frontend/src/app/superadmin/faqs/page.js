@@ -13,7 +13,7 @@ import CreateFAQModal from './components/CreateFAQModal';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
 import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowLeftDoubleFill, RiArrowRightDoubleFill } from "react-icons/ri";
 import ConfirmationModal from '../components/ConfirmationModal';
-import SuccessModal from '../components/SuccessModal';
+import { SuccessModal } from '@/components';
 import styles from './faqs.module.css';
 
 export default function ManageFaqs() {

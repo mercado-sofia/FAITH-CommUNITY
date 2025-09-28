@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import MultiDatePicker from 'react-multi-date-picker';
 import { FaCalendar, FaChevronDown } from 'react-icons/fa';
+import { FiTrash2 } from 'react-icons/fi';
 import { formatDateShort, formatDateForAPI } from '@/utils/dateUtils.js';
 import "react-datepicker/dist/react-datepicker.css";
 import './datePickerOverrides.css';
@@ -126,65 +127,75 @@ const DateSelectionField = ({
     if (type === 'single') {
       setDateRange([null, null]);
       setMultipleDates([]);
-      onChange({
-        event_start_date: null,
-        event_end_date: null,
-        multiple_dates: null
-      });
+      if (typeof onChange === 'function') {
+        onChange({
+          event_start_date: null,
+          event_end_date: null,
+          multiple_dates: null
+        });
+      }
     } else if (type === 'range') {
       setMultipleDates([]);
-      onChange({
-        event_start_date: null,
-        event_end_date: null,
-        multiple_dates: null
-      });
+      if (typeof onChange === 'function') {
+        onChange({
+          event_start_date: null,
+          event_end_date: null,
+          multiple_dates: null
+        });
+      }
     } else if (type === 'multiple') {
       setDateRange([null, null]);
-      onChange({
-        event_start_date: null,
-        event_end_date: null,
-        multiple_dates: []
-      });
+      if (typeof onChange === 'function') {
+        onChange({
+          event_start_date: null,
+          event_end_date: null,
+          multiple_dates: []
+        });
+      }
     }
   };
 
   // Handle single date change
   const handleSingleDateChange = (date) => {
     setDateRange([date, null]);
-    if (date) {
-      const dateString = formatDateForAPI(date);
-      onChange({
-        event_start_date: dateString,
-        event_end_date: dateString,
-        multiple_dates: null
-      });
-    } else {
-      onChange({
-        event_start_date: null,
-        event_end_date: null,
-        multiple_dates: null
-      });
+    if (typeof onChange === 'function') {
+      if (date) {
+        const dateString = formatDateForAPI(date);
+        onChange({
+          event_start_date: dateString,
+          event_end_date: dateString,
+          multiple_dates: null
+        });
+      } else {
+        onChange({
+          event_start_date: null,
+          event_end_date: null,
+          multiple_dates: null
+        });
+      }
     }
   };
 
   // Handle date range change
   const handleDateRangeChange = (dates) => {
     setDateRange(dates);
-    if (dates[0] && dates[1]) {
-      const startDate = formatDateForAPI(dates[0]);
-      const endDate = formatDateForAPI(dates[1]);
-      
-      onChange({
-        event_start_date: startDate,
-        event_end_date: endDate,
-        multiple_dates: null
-      });
-    } else {
-      onChange({
-        event_start_date: null,
-        event_end_date: null,
-        multiple_dates: null
-      });
+    if (typeof onChange === 'function') {
+      if (dates[0] && dates[1]) {
+        const startDate = formatDateForAPI(dates[0]);
+        const endDate = formatDateForAPI(dates[1]);
+        
+        onChange({
+          event_start_date: startDate,
+          event_end_date: endDate,
+          multiple_dates: null
+        });
+      } else {
+        onChange({
+          event_start_date: null,
+          event_end_date: null,
+          multiple_dates: null
+        });
+      }
     }
   };
 
@@ -193,11 +204,13 @@ const DateSelectionField = ({
     setMultipleDates(dates);
     const dateStrings = dates.map(formatDateToString).filter(Boolean);  
     
-    onChange({
-      event_start_date: null,
-      event_end_date: null,
-      multiple_dates: dateStrings
-    });
+    if (typeof onChange === 'function') {
+      onChange({
+        event_start_date: null,
+        event_end_date: null,
+        multiple_dates: dateStrings
+      });
+    }
   };
 
   // Remove a specific date from multiple dates
@@ -211,11 +224,13 @@ const DateSelectionField = ({
     setMultipleDates(filteredDates);
     const dateStrings = filteredDates.map(formatDateToString).filter(Boolean);
     
-    onChange({
-      event_start_date: null,
-      event_end_date: null,
-      multiple_dates: dateStrings
-    });
+    if (typeof onChange === 'function') {
+      onChange({
+        event_start_date: null,
+        event_end_date: null,
+        multiple_dates: dateStrings
+      });
+    }
   };
 
   const formatDate = (date) => {
@@ -236,12 +251,14 @@ const DateSelectionField = ({
 
   return (
     <div className={styles.dateSelectionContainer}>
-      <label className={styles.label}>
-        {label} {required && <span className={styles.required}>*</span>}
-      </label>
+      {label && (
+        <label className={styles.label}>
+          {label} {required && <span className={styles.required}></span>}
+        </label>
+      )}
       
       {/* Schedule Type Selection and Date Picker in Same Row */}
-      <div className={styles.dateSelectionRow}>
+      <div className={styles.dropdownRow}>
         <div className={styles.dropdownContainer}>
           <CustomDropdown
             options={scheduleOptions}
@@ -251,8 +268,10 @@ const DateSelectionField = ({
             placeholder="Select schedule type"
           />
         </div>
-
-        <div className={styles.datePickerContainer}>
+        
+        {/* Date Picker in Same Row */}
+        <div className={styles.datePickerRow}>
+          <div className={styles.datePickerContainer}>
           {scheduleType === 'single' && (
             <div className={styles.singleDateContainer}>
               <div className={styles.dateInputWrapper}>
@@ -307,6 +326,7 @@ const DateSelectionField = ({
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
 
@@ -327,7 +347,7 @@ const DateSelectionField = ({
         {scheduleType === 'multiple' && multipleDates.length > 0 && (
           <div className={styles.selectedDatesList}>
             <div className={styles.selectedDatesHeader}>
-              Selected Dates ({multipleDates.length}):
+              Selected Dates ({multipleDates.length})
             </div>
             <div className={styles.selectedDatesGrid}>
               {multipleDates.map((date, index) => (
@@ -340,7 +360,7 @@ const DateSelectionField = ({
                     disabled={disabled}
                     title="Remove date"
                   >
-                    ×
+                    <FiTrash2 />
                   </button>
                 </div>
               ))}

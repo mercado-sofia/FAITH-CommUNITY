@@ -12,7 +12,7 @@ import InvitationsTable from "./components/InvitationsTable"
 import InviteModal from "./components/InviteModal"
 import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowLeftDoubleFill, RiArrowRightDoubleFill } from "react-icons/ri";
 import ConfirmationModal from "../components/ConfirmationModal"
-import SuccessModal from "../components/SuccessModal"
+import { SuccessModal } from '@/components'
 import styles from "./invites.module.css"
 
 const ManageProfiles = () => {

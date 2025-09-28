@@ -193,7 +193,7 @@ export const getProgramCollaborators = async (req, res) => {
       });
     }
 
-    // Get collaborators
+    // Get collaborators (only active/accepted ones)
     const [collaborators] = await db.execute(`
       SELECT 
         pc.id,
@@ -207,7 +207,7 @@ export const getProgramCollaborators = async (req, res) => {
       FROM program_collaborations pc
       LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
       LEFT JOIN organizations o ON a.organization_id = o.id
-      WHERE pc.program_id = ?
+      WHERE pc.program_id = ? AND pc.status = 'accepted'
       ORDER BY pc.invited_at DESC
     `, [programId]);
 

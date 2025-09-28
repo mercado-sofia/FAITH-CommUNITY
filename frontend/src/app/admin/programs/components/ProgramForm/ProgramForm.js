@@ -8,7 +8,7 @@ import { FormFields, ImageUpload, AdditionalImagesUpload, CollaboratorSection } 
 import { UnsaveChangesModal } from '../index';
 import styles from './ProgramForm.module.css';
 
-const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit }) => {
+const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRefreshCollaborators }) => {
   const isEditMode = mode === 'edit';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
@@ -61,7 +61,8 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit }) =>
     clearCollaboratorInput,
     addCollaborator,
     removeCollaborator,
-    loadExistingCollaborators
+    loadExistingCollaborators,
+    refreshCollaborators
   } = useCollaboration(isEditMode, program?.id);
 
   // Initialize existing images in edit mode
@@ -158,6 +159,26 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit }) =>
       // You might want to show an error message to the user here
     }
   }, [removeCollaborator, formData.collaborators, updateFormData]);
+
+  // Function to refresh collaborators (exposed to parent component)
+  const handleRefreshCollaborators = useCallback(async () => {
+    if (isEditMode && program?.id) {
+      try {
+        await refreshCollaborators((newCollaborators) => {
+          updateFormData({ collaborators: newCollaborators });
+        });
+      } catch (error) {
+        console.error('Failed to refresh collaborators:', error);
+      }
+    }
+  }, [refreshCollaborators, isEditMode, program?.id, updateFormData]);
+
+  // Expose refresh function to parent component
+  useEffect(() => {
+    if (onRefreshCollaborators && isEditMode) {
+      onRefreshCollaborators(handleRefreshCollaborators);
+    }
+  }, [onRefreshCollaborators, handleRefreshCollaborators, isEditMode]);
 
   // Handle form submission
   const handleSubmit = useCallback(async (e) => {

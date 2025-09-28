@@ -372,6 +372,20 @@ export const approveSubmission = async (req, res) => {
             }
           }
         }
+
+        // Notify collaborators after all collaborations are set up
+        try {
+          const { notifyCollaboratorsOnApproval } = await import('../../utils/collaboratorNotification.js');
+          const notificationResult = await notifyCollaboratorsOnApproval(programId, data.title);
+          if (notificationResult.notifiedCount > 0) {
+            console.log(`✅ Notified ${notificationResult.notifiedCount} collaborators about program approval`);
+          }
+          if (notificationResult.errors.length > 0) {
+            console.error('❌ Some collaborator notifications failed:', notificationResult.errors);
+          }
+        } catch (error) {
+          console.error('Failed to notify collaborators on program approval:', error);
+        }
         
       } catch (insertError) {
         throw insertError;
@@ -410,21 +424,7 @@ export const approveSubmission = async (req, res) => {
     if (!notificationResult.success) {
     }
 
-    // Notify collaborators if this was a program approval
-    if (section === 'programs' && data.title) {
-      try {
-        const { notifyCollaboratorsOnApproval } = await import('../../utils/collaboratorNotification.js');
-        const notificationResult = await notifyCollaboratorsOnApproval(programId, data.title);
-        if (notificationResult.notifiedCount > 0) {
-          console.log(`✅ Notified ${notificationResult.notifiedCount} collaborators about program approval`);
-        }
-        if (notificationResult.errors.length > 0) {
-          console.error('❌ Some collaborator notifications failed:', notificationResult.errors);
-        }
-      } catch (error) {
-        console.error('Failed to notify collaborators on program approval:', error);
-      }
-    }
+    // Note: Collaborator notifications are handled within the section-specific blocks
 
     res.json({ success: true, message: 'Submission approved and applied.' });
   } catch (err) {
@@ -728,19 +728,7 @@ export const bulkApproveSubmissions = async (req, res) => {
                   VALUES (?, ?, ?, 'accepted')
                 `, [programId, collaboratorId, submission.submitted_by]);
                 
-                // Notify collaborator about program approval
-                try {
-                  await NotificationController.createNotification(
-                    collaboratorId,
-                    'program_approval',
-                    'Program Approved - Collaboration Active',
-                    `The program "${data.title}" you're collaborating on has been approved and is now live. You can now view and manage this program.`,
-                    'programs',
-                    programId
-                  );
-                } catch (notificationError) {
-                  console.error('Failed to send approval notification to collaborator:', notificationError);
-                }
+                // Note: Collaborators will be notified after all collaborations are set up
               } catch (collabError) {
                 console.error('Failed to add collaborator during bulk approval:', collabError);
               }
@@ -810,6 +798,21 @@ export const bulkApproveSubmissions = async (req, res) => {
           }
         }
 
+        // Notify collaborators after all collaborations are set up (for programs)
+        if (section === 'programs' && data.title) {
+          try {
+            const { notifyCollaboratorsOnApproval } = await import('../../utils/collaboratorNotification.js');
+            const collaboratorNotificationResult = await notifyCollaboratorsOnApproval(programId, data.title);
+            if (collaboratorNotificationResult.notifiedCount > 0) {
+              console.log(`✅ Notified ${collaboratorNotificationResult.notifiedCount} collaborators about program approval (bulk)`);
+            }
+            if (collaboratorNotificationResult.errors.length > 0) {
+              console.error('❌ Some collaborator notifications failed (bulk):', collaboratorNotificationResult.errors);
+            }
+          } catch (error) {
+            console.error('Failed to notify collaborators on program approval (bulk):', error);
+          }
+        }
 
         // Update submission status
         await db.execute(`UPDATE submissions SET status = 'approved' WHERE id = ?`, [id]);
@@ -844,21 +847,6 @@ export const bulkApproveSubmissions = async (req, res) => {
           // Failed to create notification
         }
 
-        // Notify collaborators if this was a program approval
-        if (section === 'programs' && data.title) {
-          try {
-            const { notifyCollaboratorsOnApproval } = await import('../../utils/collaboratorNotification.js');
-            const collaboratorNotificationResult = await notifyCollaboratorsOnApproval(programId, data.title);
-            if (collaboratorNotificationResult.notifiedCount > 0) {
-              console.log(`✅ Notified ${collaboratorNotificationResult.notifiedCount} collaborators about program approval (bulk)`);
-            }
-            if (collaboratorNotificationResult.errors.length > 0) {
-              console.error('❌ Some collaborator notifications failed (bulk):', collaboratorNotificationResult.errors);
-            }
-          } catch (error) {
-            console.error('Failed to notify collaborators on program approval (bulk):', error);
-          }
-        }
 
         successCount++;
       } catch (error) {

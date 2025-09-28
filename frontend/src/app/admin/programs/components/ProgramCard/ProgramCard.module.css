@@ -438,6 +438,12 @@
   font-size: 14px;
 }
 
+.warningText {
+  color: #dc2626 !important;
+  font-weight: 500;
+  font-size: 13px !important;
+}
+
 .modalActions {
   display: flex;
   flex-direction: column;
@@ -504,6 +510,19 @@
 .markActiveModal .confirmButton:hover {
   background: #2648b8;
   border-color: #1e40af;
+  color: white;
+}
+
+/* Opt Out Modal Confirm Button - red theme */
+.optOutModal .confirmButton {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.optOutModal .confirmButton:hover {
+  background: #dc2626;
+  border-color: #dc2626;
   color: white;
 }
 

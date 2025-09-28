@@ -26,6 +26,7 @@ export default function AdminProgramsPage() {
   const [viewingProgram, setViewingProgram] = useState(null);
   const [deletingProgram, setDeletingProgram] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [refreshCollaboratorsFn, setRefreshCollaboratorsFn] = useState(null);
 
   // Use SWR hook for programs data
   const { programs = [], isLoading, error, mutate: refreshPrograms } = useAdminPrograms(currentAdmin?.org);
@@ -190,6 +191,7 @@ export default function AdminProgramsPage() {
       });
       setPageMode('list');
       setEditingProgram(null);
+      setRefreshCollaboratorsFn(null);
       refreshPrograms();
     } catch (error) {
       console.error('Update program error:', error);
@@ -363,6 +365,21 @@ export default function AdminProgramsPage() {
     setViewingProgram(null);
   };
 
+  // Handle opt-out callback - refresh both programs and collaborators
+  const handleOptOut = useCallback(async () => {
+    // Refresh the programs list
+    await refreshPrograms();
+    
+    // If we're in edit mode and have a refresh function, also refresh collaborators
+    if (pageMode === 'edit' && refreshCollaboratorsFn) {
+      try {
+        await refreshCollaboratorsFn();
+      } catch (error) {
+        console.error('Failed to refresh collaborators after opt-out:', error);
+      }
+    }
+  }, [refreshPrograms, pageMode, refreshCollaboratorsFn]);
+
   // Filter and sort programs
   const filteredAndSortedPrograms = useCallback(() => {
     let filtered = (programs || []).filter((program) => {
@@ -503,6 +520,7 @@ export default function AdminProgramsPage() {
                     onDelete={() => handleDeleteProgram(program)}
                     onMarkCompleted={() => handleMarkCompleted(program)}
                     onMarkActive={() => handleMarkActive(program)}
+                    onOptOut={handleOptOut}
                   />
                 ))}
               </div>
@@ -531,8 +549,10 @@ export default function AdminProgramsPage() {
             onCancel={() => {
               setPageMode('list');
               setEditingProgram(null);
+              setRefreshCollaboratorsFn(null);
             }}
             onSubmit={handleUpdateProgram}
+            onRefreshCollaborators={setRefreshCollaboratorsFn}
           />
         </>
       ) : null}

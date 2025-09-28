@@ -77,6 +77,12 @@ const ViewDetailsModal = ({ program, onClose }) => {
 
               {/* Right - Program Title, Status, Program Details */}
               <div className={styles.programInfoSection}>
+                {/* Category at the top */}
+                {program.category && (
+                  <div className={styles.categoryBadge}>
+                    {getCategoryLabel(program.category)}
+                  </div>
+                )}
                 <h3 className={styles.programTitle}>{program.title}</h3>
                 
                 {/* Status Badge */}
@@ -89,16 +95,6 @@ const ViewDetailsModal = ({ program, onClose }) => {
                 {/* Program Details */}
                 <div className={styles.detailsSection}>
                   <div className={styles.detailsGrid}>
-                    <div className={styles.detailItem}>
-                      <FaTag className={styles.detailIcon} />
-                      <div className={styles.detailContent}>
-                        <span className={styles.detailLabel}>Category</span>
-                        <span className={styles.detailValue}>
-                          {getCategoryLabel(program.category)}
-                        </span>
-                      </div>
-                    </div>
-
                     <div className={styles.detailItem}>
                       <FaCalendar className={styles.detailIcon} />
                       <div className={styles.detailContent}>
@@ -134,24 +130,59 @@ const ViewDetailsModal = ({ program, onClose }) => {
             </div>
 
             {/* Collaboration Section */}
-            {program.is_collaborative && program.collaborators && program.collaborators.length > 0 && (
-              <div className={styles.collaborationSection}>
-                <h4 className={styles.sectionTitle}>
-                  <FaUsers className={styles.sectionIcon} />
-                  Collaborators ({program.collaborators.length})
-                </h4>
-                <div className={styles.collaboratorsList}>
-                  {program.collaborators.map((collaborator, index) => (
-                    <div key={collaborator.id || index} className={styles.collaboratorItem}>
-                      <div className={styles.collaboratorInfo}>
-                        <span className={styles.collaboratorEmail}>{collaborator.email}</span>
-                        <span className={styles.collaboratorOrg}>({collaborator.organization_acronym})</span>
+            {(() => {
+              // Check if program is collaborative and has valid collaborators
+              const hasCollaborators = program.is_collaborative && 
+                                     program.collaborators && 
+                                     Array.isArray(program.collaborators) && 
+                                     program.collaborators.length > 0 &&
+                                     program.collaborators.some(collab => 
+                                       collab && 
+                                       typeof collab === 'object' && 
+                                       collab.email && 
+                                       collab.email.trim() !== ''
+                                     );
+
+              if (!hasCollaborators) {
+                return null;
+              }
+
+              // Filter out invalid collaborators
+              const validCollaborators = program.collaborators.filter(collab => 
+                collab && 
+                typeof collab === 'object' && 
+                collab.email && 
+                collab.email.trim() !== ''
+              );
+
+              if (validCollaborators.length === 0) {
+                return null;
+              }
+
+              return (
+                <div className={styles.collaborationSection}>
+                  <h4 className={styles.sectionTitle}>
+                    <FaUsers className={styles.sectionIcon} />
+                    Collaborators
+                  </h4>
+                  <div className={styles.collaboratorsList}>
+                    {validCollaborators.map((collaborator, index) => (
+                      <div key={collaborator.id || `collab-${index}`} className={styles.collaboratorItem}>
+                        <div className={styles.collaboratorInfo}>
+                          <span className={styles.collaboratorEmail}>{collaborator.email}</span>
+                          {collaborator.organization_acronym && 
+                           collaborator.organization_acronym.trim() !== '' && (
+                            <span className={styles.collaboratorOrg}>
+                              ({collaborator.organization_acronym})
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* Additional Images - Full Width Below */}

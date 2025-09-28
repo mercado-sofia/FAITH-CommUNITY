@@ -41,14 +41,18 @@ export const getAdminPrograms = async (req, res) => {
     
     const adminOrgId = adminRows[0].organization_id;
     
-    // Get programs from admin's organization
+    // Get programs where admin is creator (from their organization) OR collaborator (from other organizations)
     const [programRows] = await db.execute(`
       SELECT DISTINCT p.*, o.org as orgAcronym, o.orgName as orgName, o.logo as orgLogo
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
-      WHERE p.organization_id = ?
+      WHERE p.organization_id = ? 
+         OR p.id IN (
+           SELECT program_id FROM program_collaborations 
+           WHERE collaborator_admin_id = ? AND status = 'accepted'
+         )
       ORDER BY p.created_at DESC
-    `, [adminOrgId]);
+    `, [adminOrgId, currentAdminId]);
 
     // Get collaboration data for each program
     const programsWithCollaboration = await Promise.all(programRows.map(async (program) => {
@@ -76,6 +80,7 @@ export const getAdminPrograms = async (req, res) => {
       // Get collaboration info
       const [collaborationRows] = await db.execute(`
         SELECT 
+          pc.id as collaboration_id,
           pc.status as collaboration_status,
           a.email as collaborator_email,
           o.orgName as collaborator_org
@@ -135,6 +140,7 @@ export const getAdminPrograms = async (req, res) => {
         is_collaborative: program.is_collaborative,
         user_role: userRole,
         collaboration_status: collaborationStatus,
+        collaboration_id: collaborationRows.length > 0 ? collaborationRows[0].collaboration_id : null,
         collaborators: allCollaborators
       };
     }));

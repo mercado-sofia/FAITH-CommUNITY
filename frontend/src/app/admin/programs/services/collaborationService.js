@@ -129,7 +129,39 @@ export const removeCollaboratorFromProgram = async (programId, adminId) => {
     const result = await response.json();
     return result;
   } catch (error) {
-    console.error('Error removing collaborator:', error);
+    throw error;
+  }
+};
+
+// Opt out of collaboration (for collaborators)
+export const optOutCollaboration = async (collaborationId) => {
+  try {
+    const token = getAdminToken();
+    if (!token) {
+      throw new Error('No admin token found. Please log in again.');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/collaborations/collaborations/${collaborationId}/opt-out`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Opt out collaboration error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorData
+      });
+      throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
     throw error;
   }
 };

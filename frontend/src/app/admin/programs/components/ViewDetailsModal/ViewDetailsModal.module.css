@@ -121,7 +121,7 @@
 .programInfoSection {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 
 .programImage {
@@ -152,12 +152,19 @@
   opacity: 0.5;
 }
 
+/* Category badge */
+.categoryBadge {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #22c55e;
+}
 
 .programTitle {
   font-size: 18px;
   font-weight: 700;
   color: #06100f;
-  margin: 0;
+  margin: 0 0 10px;
   line-height: 1.3;
 }
 

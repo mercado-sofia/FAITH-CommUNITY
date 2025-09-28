@@ -45,6 +45,29 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
     }
   }, [isEditMode, programId]);
 
+  // Refresh collaborators (useful when someone opts out)
+  const refreshCollaborators = useCallback(async (setCollaborators) => {
+    if (isEditMode && programId) {
+      try {
+        const collaborators = await fetchProgramCollaborators(programId);
+        // Normalize the data structure to match what the form expects
+        const normalizedCollaborators = collaborators.map(collab => ({
+          id: collab.admin_id || collab.id,
+          email: collab.email,
+          organization_name: collab.organization_name,
+          organization_acronym: collab.organization_acronym,
+          status: collab.status
+        }));
+        setCollaborators(normalizedCollaborators);
+        console.log('Collaborators refreshed:', normalizedCollaborators);
+      } catch (error) {
+        console.error('Error refreshing collaborators:', error);
+        // Set empty array on error to prevent crashes
+        setCollaborators([]);
+      }
+    }
+  }, [isEditMode, programId]);
+
   // Select admin from autocomplete
   const selectAdmin = useCallback((admin) => {
     setSelectedAdminForInvite(admin);
@@ -190,6 +213,7 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
     removeCollaborator,
     loadAvailableAdmins,
     loadExistingCollaborators,
+    refreshCollaborators,
     
     // Setters
     setCollaboratorInput,

@@ -160,6 +160,14 @@
   cursor: default;
 }
 
+.orgAdviserOrg {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0.25rem 0 0 0;
+  cursor: default;
+  font-style: italic;
+}
+
 /* Responsive Adjustments */
 @media (max-width: 1160px) {
   .orgAdviserSliderWrapper {

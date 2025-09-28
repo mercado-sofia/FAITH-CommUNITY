@@ -1549,6 +1549,36 @@ const initializeDatabase = async () => {
       }
     }
 
+    // Check if organization_heads table exists
+    const [organizationHeadsTables] = await connection.query('SHOW TABLES LIKE "organization_heads"');
+    
+    if (organizationHeadsTables.length === 0) {
+      // Creating organization_heads table...");
+      await connection.query(`
+        CREATE TABLE organization_heads (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          organization_id INT NOT NULL,
+          head_name VARCHAR(255) NOT NULL,
+          role VARCHAR(100) NOT NULL,
+          priority INT DEFAULT 999,
+          display_order INT DEFAULT 999,
+          facebook VARCHAR(500),
+          email VARCHAR(255),
+          photo VARCHAR(500),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+          INDEX idx_organization_id (organization_id),
+          INDEX idx_priority (priority),
+          INDEX idx_display_order (display_order)
+        )
+      `);
+      
+      // ✅ Organization heads table created successfully!");
+    } else {
+      // ✅ Organization heads table already exists");
+    }
+
     // Check if heads_faces table exists
     const [headsFacesTables] = await connection.query('SHOW TABLES LIKE "heads_faces"');
     

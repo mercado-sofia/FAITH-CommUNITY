@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAllOrganizations, getHeroSection } from '../controllers/organizationsController.js';
+import { getAllOrganizations, getHeroSection, getApprovedOrganizationAdvisers } from '../controllers/organizationsController.js';
 
 const router = express.Router();
 
@@ -8,5 +8,8 @@ router.get('/organizations', getAllOrganizations);
 
 // GET hero section data for public interface
 router.get('/hero-section', getHeroSection);
+
+// GET approved organization advisers
+router.get('/organization-advisers', getApprovedOrganizationAdvisers);
 
 export default router;

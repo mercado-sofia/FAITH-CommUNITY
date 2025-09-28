@@ -4,19 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import styles from './OrgAdviserSection.module.css';
 import { FaChevronLeft, FaChevronRight, FaFacebookF, FaEnvelope, FaPlus } from 'react-icons/fa';
-
-const orgAdvisers = [
-  { name: 'Jana Mae A. Cruz', role: 'Dean', image: '/id/id5.jpg', facebook: '#', email: 'org1@email.com' },
-  { name: 'Jana Mae A. Cruz', role: 'Chair', image: '/id/id1.jpg', facebook: '#', email: 'org2@email.com' },
-  { name: 'Jana Mae A. Cruz', role: 'Org Adviser', image: '/id/id2.jpg', facebook: '#', email: 'org3@email.com' },
-  { name: 'Jana Mae A. Cruz', role: 'Org Adviser', image: '/id/id3.jpg', facebook: '#', email: 'org4@email.com' },
-  { name: 'Jana Mae A. Cruz', role: 'Dean', image: '/id/id5.jpg', facebook: '#', email: 'org1@email.com' },
-  { name: 'Jana Mae A. Cruz', role: 'Chair', image: '/id/id1.jpg', facebook: '#', email: 'org2@email.com' },
-  { name: 'Jana Mae A. Cruz', role: 'Org Adviser', image: '/id/id2.jpg', facebook: '#', email: 'org3@email.com' },
-  { name: 'Jana Mae A. Cruz', role: 'Org Adviser', image: '/id/id3.jpg', facebook: '#', email: 'org4@email.com' },
-];
+import { usePublicOrganizationAdvisers } from '../../hooks/usePublicData';
+import Loader from '../../../../components/ui/Loader';
 
 export default function OrgAdviserSection() {
+  const { organizationAdvisers, isLoading, error } = usePublicOrganizationAdvisers();
   const [startIndex, setStartIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(4);
   const [cardWidth, setCardWidth] = useState(240);
@@ -58,9 +50,9 @@ export default function OrgAdviserSection() {
 
   const handleNext = useCallback(() => {
     setStartIndex((prev) =>
-      Math.min(prev + 1, orgAdvisers.length - visibleCount)
+      Math.min(prev + 1, organizationAdvisers.length - visibleCount)
     );
-  }, [visibleCount]);
+  }, [visibleCount, organizationAdvisers.length]);
 
   // Keyboard nav effect
   useEffect(() => {
@@ -74,10 +66,51 @@ export default function OrgAdviserSection() {
 
   const translateX = startIndex * (cardWidth + cardGap);
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <section className={styles.orgAdviserSection}>
+        <div className={styles.orgAdviserHeading}>
+          <h2 className={styles.orgAdviserTitle}>Meet Our Organization Advisers</h2>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+          <Loader small />
+        </div>
+      </section>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    console.error('Error loading organization advisers:', error);
+  }
+
+  // Show placeholder if no advisers data
+  if (!organizationAdvisers || organizationAdvisers.length === 0) {
+    return (
+      <section className={styles.orgAdviserSection}>
+        <div className={styles.orgAdviserHeading}>
+          <h2 className={styles.orgAdviserTitle}>Meet Our Organization Advisers</h2>
+        </div>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          padding: '4rem 2rem',
+          textAlign: 'center',
+          color: '#666',
+          fontSize: '1.1rem'
+        }}>
+          <p>Organization advisers will be displayed here once they are added and approved.</p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className={styles.orgAdviserSection}>
       <div className={styles.orgAdviserHeading}>
-        <h2 className={styles.orgAdviserTitle}>Meet Our Department Advisers</h2>
+        <h2 className={styles.orgAdviserTitle}>Meet Our Organization Advisers</h2>
       </div>
 
       <div className={styles.orgAdviserCarousel}>
@@ -95,35 +128,45 @@ export default function OrgAdviserSection() {
             className={styles.orgAdviserSliderTrack}
             style={{ transform: `translateX(-${translateX}px)` }}
           >
-            {orgAdvisers.map((adviser, index) => (
-              <div className={styles.orgAdviserCard} key={index}>
+            {organizationAdvisers.map((adviser, index) => (
+              <div className={styles.orgAdviserCard} key={adviser.id || index}>
                 <div className={styles.orgAdviserPhotoWrapper} style={{ position: 'relative' }}>
                   <Image
-                    src={adviser.image}
+                    src={adviser.photo || '/defaults/default-profile.png'}
                     alt={adviser.name}
                     className={styles.orgAdviserImage}
                     fill
                     sizes="(max-width: 640px) 220px, 240px"
+                    onError={(e) => {
+                      e.target.src = '/defaults/default-profile.png';
+                    }}
                   />
                   <div className={styles.orgAdviserOverlay}>
-                    <a
-                      href={adviser.facebook}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={styles.orgAdviserIcon}
-                    >
-                      <FaFacebookF />
-                    </a>
+                    {adviser.facebook && (
+                      <a
+                        href={adviser.facebook}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.orgAdviserIcon}
+                      >
+                        <FaFacebookF />
+                      </a>
+                    )}
                     <button className={`${styles.orgAdviserIcon} ${styles.orgAdviserMainIcon}`}>
                       <FaPlus />
                     </button>
-                    <a href={`mailto:${adviser.email}`} className={styles.orgAdviserIcon}>
-                      <FaEnvelope />
-                    </a>
+                    {adviser.email && (
+                      <a href={`mailto:${adviser.email}`} className={styles.orgAdviserIcon}>
+                        <FaEnvelope />
+                      </a>
+                    )}
                   </div>
                 </div>
                 <p className={styles.orgAdviserName}>{adviser.name}</p>
                 <p className={styles.orgAdviserRole}>{adviser.role}</p>
+                {adviser.organization_name && (
+                  <p className={styles.orgAdviserOrg}>{adviser.organization_name}</p>
+                )}
               </div>
             ))}
           </div>
@@ -132,7 +175,7 @@ export default function OrgAdviserSection() {
         <button
           className={styles.orgAdviserNavBtn}
           onClick={handleNext}
-          disabled={startIndex >= orgAdvisers.length - visibleCount}
+          disabled={startIndex >= organizationAdvisers.length - visibleCount}
           aria-label="Scroll Right"
         >
           <FaChevronRight />

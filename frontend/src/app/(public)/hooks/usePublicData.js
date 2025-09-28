@@ -487,3 +487,23 @@ export const usePublicHeadsFaces = () => {
     error,
   };
 };
+
+// Custom hook for approved organization advisers
+export const usePublicOrganizationAdvisers = () => {
+  const { data, error, isLoading } = useSWR(
+    `${API_BASE_URL}/api/organization-advisers`,
+    fetcher,
+    {
+      dedupingInterval: 300000, // Cache for 5 minutes
+      onError: (error) => {
+        logger.swrError(`${API_BASE_URL}/api/organization-advisers`, error);
+      }
+    }
+  );
+
+  return {
+    organizationAdvisers: data?.data || [],
+    isLoading,
+    error,
+  };
+};

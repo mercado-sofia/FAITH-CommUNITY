@@ -29,6 +29,7 @@ export default function ReEditModal({ submission, onClose, onSave }) {
   const [formData, setFormData] = useState(() => initializeFormData(submission));
   const [originalData] = useState(() => initializeFormData(submission));
   const [isLoading, setIsLoading] = useState(false);
+  const [validationError, setValidationError] = useState('');
 
   const handleInputChange = (field, value) => {
     // Sanitize input to prevent XSS
@@ -109,10 +110,13 @@ export default function ReEditModal({ submission, onClose, onSave }) {
   };
 
   const handleSave = async () => {
+    // Clear previous validation errors
+    setValidationError('');
+    
     // Validate form data before saving
     const validation = validateFormData();
     if (!validation.isValid) {
-      // Let the parent component handle the error message
+      setValidationError(validation.message);
       return;
     }
 
@@ -260,6 +264,14 @@ export default function ReEditModal({ submission, onClose, onSave }) {
                 <h4 className={styles.alertTitle}>Rejection Feedback</h4>
                 <p className={styles.alertMessage}>{submission.rejection_reason}</p>
               </div>
+            </div>
+          )}
+
+          {/* Validation Error */}
+          {validationError && (
+            <div className={styles.validationError}>
+              <div className={styles.errorIcon}>⚠️</div>
+              <div className={styles.errorMessage}>{validationError}</div>
             </div>
           )}
 

@@ -59,9 +59,17 @@ const AdditionalImagesUpload = ({
       {additionalImagePreviews.length > 0 && (
         <div className={styles.uploadedFilesList}>
           {additionalImagePreviews.map((preview, index) => {
-            const file = formData.additionalImages[index];
-            const fileSize = file ? (file.size / (1024 * 1024)).toFixed(1) + ' MB' : 'Unknown size';
-            const fileName = file ? file.name : preview.name || `Image ${index + 1}`;
+            // Since we now store base64 strings in formData.additionalImages, 
+            // we need to estimate size from the base64 string
+            const base64Image = formData.additionalImages[index];
+            let fileSize = 'Unknown size';
+            if (base64Image && typeof base64Image === 'string' && base64Image.startsWith('data:image/')) {
+              // Estimate size from base64 string (base64 is ~4/3 the size of binary)
+              const base64Size = base64Image.length - base64Image.indexOf(',') - 1;
+              const estimatedSize = (base64Size * 3) / 4;
+              fileSize = (estimatedSize / (1024 * 1024)).toFixed(1) + ' MB';
+            }
+            const fileName = preview.name || `Image ${index + 1}`;
             
             return (
               <div key={preview.id || index} className={styles.uploadedFileItem}>

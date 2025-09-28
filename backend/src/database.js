@@ -453,8 +453,6 @@ const initializeDatabase = async () => {
       `);
     } catch (error) {
       if (error.code !== 'ER_DUP_FIELDNAME') {
-        console.error('Error adding is_featured column:', error);
-      } else {
         // is_featured column already exists in programs_projects table
       }
     }
@@ -468,8 +466,6 @@ const initializeDatabase = async () => {
       `);
     } catch (error) {
       if (error.code !== 'ER_DUP_FIELDNAME') {
-        console.error('Error adding is_approved column:', error);
-      } else {
         // is_approved column already exists in programs_projects table
       }
     }
@@ -527,7 +523,7 @@ const initializeDatabase = async () => {
           program_id INT NOT NULL,
           collaborator_admin_id INT NOT NULL,
           invited_by_admin_id INT NOT NULL,
-          status ENUM('pending', 'accepted', 'declined') DEFAULT 'pending',
+          status ENUM('accepted', 'declined') DEFAULT 'accepted',
           invited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           responded_at TIMESTAMP NULL,
           FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE CASCADE,
@@ -548,10 +544,26 @@ const initializeDatabase = async () => {
       `);
     } catch (error) {
       if (error.code !== 'ER_DUP_FIELDNAME') {
-        console.error('Error adding is_collaborative column:', error);
-      } else {
         // is_collaborative column already exists in programs_projects table
       }
+    }
+
+    // Migrate existing program_collaborations table to remove 'pending' status
+    try {
+      // First, update any 'pending' status to 'accepted' (auto-accept model)
+      await connection.query(`
+        UPDATE program_collaborations 
+        SET status = 'accepted' 
+        WHERE status = 'pending'
+      `);
+      
+      // Then modify the column to remove 'pending' from ENUM
+      await connection.query(`
+        ALTER TABLE program_collaborations 
+        MODIFY COLUMN status ENUM('accepted', 'declined') DEFAULT 'accepted'
+      `);
+    } catch (error) {
+      // Migration failed - table might not exist yet or already migrated
     }
 
     // Check if messages table exists
@@ -623,7 +635,7 @@ const initializeDatabase = async () => {
         CREATE TABLE admin_notifications (
           id INT AUTO_INCREMENT PRIMARY KEY,
           admin_id INT NOT NULL,
-          type ENUM('approval', 'decline', 'system', 'message') NOT NULL,
+          type ENUM('approval', 'decline', 'system', 'message', 'collaboration', 'program_approval') NOT NULL,
           title VARCHAR(255) NOT NULL,
           message TEXT NOT NULL,
           section VARCHAR(100),
@@ -648,7 +660,15 @@ const initializeDatabase = async () => {
       if (columnInfo.length > 0 && !columnInfo[0].COLUMN_TYPE.includes("'message'")) {
         await connection.query(`
           ALTER TABLE admin_notifications 
-          MODIFY COLUMN type ENUM('approval', 'decline', 'system', 'message') NOT NULL
+          MODIFY COLUMN type ENUM('approval', 'decline', 'system', 'message', 'collaboration', 'program_approval') NOT NULL
+        `);
+      }
+      
+      // Check if collaboration and program_approval types exist, add them if missing
+      if (columnInfo.length > 0 && (!columnInfo[0].COLUMN_TYPE.includes("'collaboration'") || !columnInfo[0].COLUMN_TYPE.includes("'program_approval'"))) {
+        await connection.query(`
+          ALTER TABLE admin_notifications 
+          MODIFY COLUMN type ENUM('approval', 'decline', 'system', 'message', 'collaboration', 'program_approval') NOT NULL
         `);
       }
     }
@@ -1586,7 +1606,7 @@ initializeDatabase().then(db => {
   dbInstance = db;
   // ✅ Database initialization completed!");
 }).catch(error => {
-  console.error("❌ Database initialization failed:", error);
+  console.error("Database initialization failed:", error);
 });
 
 // Export the promise pool directly for backward compatibility

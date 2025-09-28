@@ -27,7 +27,6 @@ export const calculateAge = (birthDate) => {
     
     return age;
   } catch (error) {
-    console.error('Error in calculateAge:', error, { birthDate });
     return null;
   }
 };
@@ -74,7 +73,6 @@ export const validateBirthDate = (dateString) => {
     
     return { isValid: false, error: 'Invalid birth date format' };
   } catch (error) {
-    console.error('Error in validateBirthDate:', error, { dateString });
     return { isValid: false, error: 'Invalid birth date format' };
   }
 };
@@ -107,7 +105,6 @@ export const formatBirthDateForDB = (dateString) => {
     
     return null;
   } catch (error) {
-    console.error('Error in formatBirthDateForDB:', error, { dateString });
     return null;
   }
 };
@@ -132,7 +129,6 @@ export const formatBirthDate = (dateString) => {
       day: 'numeric'
     });
   } catch (error) {
-    console.error('Error in formatBirthDate:', error, { dateString });
     return 'Invalid date';
   }
 };
@@ -153,7 +149,6 @@ export const formatDateForResponse = (dateString) => {
     
     return date.toISOString();
   } catch (error) {
-    console.error('Error in formatDateForResponse:', error, { dateString });
     return null;
   }
 };
@@ -176,7 +171,6 @@ export const isDateInPast = (dateString) => {
     
     return date < today;
   } catch (error) {
-    console.error('Error in isDateInPast:', error, { dateString });
     return false;
   }
 };
@@ -199,7 +193,6 @@ export const isDateInFuture = (dateString) => {
     
     return date > today;
   } catch (error) {
-    console.error('Error in isDateInFuture:', error, { dateString });
     return false;
   }
 };
@@ -213,7 +206,6 @@ export const getCurrentDateISO = () => {
     const today = new Date();
     return today.toISOString().split('T')[0];
   } catch (error) {
-    console.error('Error in getCurrentDateISO:', error);
     return '';
   }
 };
@@ -229,7 +221,6 @@ export const getDateFromNow = (days) => {
     date.setDate(date.getDate() + days);
     return date.toISOString().split('T')[0];
   } catch (error) {
-    console.error('Error in getDateFromNow:', error, { days });
     return '';
   }
 };

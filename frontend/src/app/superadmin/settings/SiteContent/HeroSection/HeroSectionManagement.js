@@ -1,17 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FaUpload, FaPlay } from 'react-icons/fa';
-import { FiTrash2, FiEdit3 } from 'react-icons/fi';
+import { FaPlay } from 'react-icons/fa';
+import { FiTrash2, FiEdit3, FiUpload } from 'react-icons/fi';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
 import styles from './HeroSectionManagement.module.css';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import ConfirmationModal from '../../../components/ConfirmationModal';
-import { useScrollPosition } from '@/hooks/useScrollPosition';
 
 export default function HeroSectionManagement({ showSuccessModal }) {
-  const { preserveScrollPositionAsync } = useScrollPosition();
   const [heroData, setHeroData] = useState({
     tag: 'Welcome to FAITH CommUNITY',
     heading: 'A Unified Platform for Community Extension Programs',
@@ -141,25 +139,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
     }
   };
 
-  // Edit state handlers
-  const toggleTextEdit = () => setIsEditingText(!isEditingText);
-  const toggleVideoEdit = () => setIsEditingVideo(!isEditingVideo);
-  const toggleImageEdit = (imageId) => {
-    setIsEditingImages(prev => ({
-      ...prev,
-      [imageId]: !prev[imageId]
-    }));
-  };
-
-  // Cancel edit handlers
-  const cancelTextEdit = () => setIsEditingText(false);
-  const cancelVideoEdit = () => setIsEditingVideo(false);
-  const cancelImageEdit = (imageId) => {
-    setIsEditingImages(prev => ({
-      ...prev,
-      [imageId]: false
-    }));
-  };
 
   // Helper function to convert YouTube URLs to embed format
   const convertToEmbedUrl = (url) => {
@@ -366,7 +345,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
 
   // Confirm hero update with batch file uploads
   const handleHeroConfirm = async () => {
-    await preserveScrollPositionAsync(async () => {
       try {
         setIsUpdatingHero(true);
         
@@ -384,6 +362,13 @@ export default function HeroSectionManagement({ showSuccessModal }) {
             showSuccessModal('Failed to upload video. Please try again.');
             return;
           }
+        }
+        
+        // Set video_type based on what's being used
+        if (finalHeroData.video_link && !finalHeroData.video_url) {
+          finalHeroData.video_type = 'link';
+        } else if (finalHeroData.video_url && !finalHeroData.video_link) {
+          finalHeroData.video_type = 'upload';
         }
         
         // Upload images if selected
@@ -430,7 +415,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         setIsUpdatingHero(false);
         setShowHeroModal(false);
       }
-    });
   };
 
   // Cancel hero update
@@ -529,125 +513,122 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           <div className={styles.sectionHeader}>
             <h3>Video Content</h3>
           </div>
-          {/* Video Preview - Always Visible */}
-          <div className={styles.mediaItem}>
-            <div className={styles.itemHeader}>
-              <span className={styles.itemLabel}>Hero Video</span>
-              {isEditingHero && (heroData.video_url || heroData.video_link) && (
-                <button 
-                  className={styles.removeBtn}
-                  onClick={() => handleFileDelete('video')}
-                  title="Remove video"
-                >
-                  <FiTrash2 color="#dc2626" />
-                </button>
-              )}
-            </div>
-            
-            {heroData.video_url ? (
-              <div className={styles.videoPreview}>
-                <video 
-                  src={heroData.video_url} 
-                  style={{ width: '100%', height: '200px', objectFit: 'cover' }}
-                />
-                <div className={styles.videoPlayOverlay} onClick={() => setShowVideoModal(true)}>
-                  <FaPlay size={24} />
-                </div>
-              </div>
-            ) : heroData.video_link ? (
-              <div className={styles.videoPreview}>
-                <iframe
-                  src={convertToEmbedUrl(heroData.video_link)}
-                  style={{ width: '100%', height: '200px', border: 'none' }}
-                  title="Video Preview"
-                  allowFullScreen
-                />
-                <div className={styles.videoPlayOverlay} onClick={() => setShowVideoModal(true)}>
-                  <FaPlay size={24} />
-                </div>
-              </div>
-            ) : (
-              <div className={styles.emptyState}>
-                <FaPlay size={24} />
-                <span>No video uploaded or linked</span>
-              </div>
-            )}
-          </div>
-
-          {isEditingHero ? (
-            <div className={styles.mediaItem}>
-              {/* Video Link Input */}
-              <div className={styles.inputGroup}>
-                <label className={styles.inputLabel}>Video Link (YouTube, Vimeo, etc.)</label>
-                <input
-                  type="url"
-                  className={styles.textInput}
-                  value={tempHeroData.video_link || ''}
-                  onChange={(e) => setTempHeroData(prev => ({ ...prev, video_link: e.target.value }))}
-                  placeholder="https://www.youtube.com/watch?v=..."
-                />
+          {/* Main Video Layout: Video container on left, fields on right */}
+          <div className={styles.videoMainLayout}>
+            {/* Video Container - Left Side */}
+            <div className={styles.videoContainer}>
+              <div className={styles.itemHeader}>
+                <span className={styles.itemLabel}>Hero Video</span>
               </div>
               
-              <div className={styles.orSeparator}>
-                <span className={styles.orText}>OR</span>
-              </div>
-              
-              {/* Video Upload */}
-              {!selectedVideoFile ? (
-                <div className={styles.fileInputContainer}>
-              <input
-                type="file"
-                id="video-upload"
-                accept="video/*"
-                onChange={(e) => {
-                  if (e.target.files[0]) {
-                        setSelectedVideoFile(e.target.files[0]);
-                  }
-                }}
-                style={{ display: 'none' }}
-              />
-                  <label htmlFor="video-upload" className={styles.uploadBtn}>
-                    <FaUpload /> Choose Video File
-              </label>
+              {heroData.video_url ? (
+                <div className={styles.videoPreview}>
+                  <video 
+                    src={heroData.video_url} 
+                    style={{ width: '100%', height: '200px', objectFit: 'cover' }}
+                  />
+                  <div className={styles.videoPlayOverlay} onClick={() => setShowVideoModal(true)}>
+                    <FaPlay size={24} />
+                  </div>
+                </div>
+              ) : heroData.video_link ? (
+                <div className={styles.videoPreview}>
+                  <iframe
+                    src={convertToEmbedUrl(heroData.video_link)}
+                    style={{ width: '100%', height: '200px', border: 'none' }}
+                    title="Video Preview"
+                    allowFullScreen
+                  />
+                  <div className={styles.videoPlayOverlay} onClick={() => setShowVideoModal(true)}>
+                    <FaPlay size={24} />
+                  </div>
                 </div>
               ) : (
-                <div className={styles.uploadActions}>
-                  <div className={styles.selectedFileInfo}>
-                    <span className={styles.fileName}>{selectedVideoFile.name}</span>
-                    <span className={styles.fileSize}>
-                      {(selectedVideoFile.size / 1024 / 1024).toFixed(2)} MB
-                    </span>
-                    <span className={styles.uploadNote}>
-                      Video will be uploaded when you save changes
-                    </span>
-                  </div>
-                  <div className={styles.uploadButtons}>
-                    <button
-                      onClick={() => setSelectedVideoFile(null)}
-                      className={styles.cancelBtn}
-                    >
-                      Remove Selection
-                    </button>
-                  </div>
+                <div className={styles.emptyState}>
+                  <FaPlay size={24} />
+                  <span>No video uploaded or linked</span>
                 </div>
               )}
             </div>
-          ) : (
-            <div className={styles.readOnlyContent}>
-              <div className={styles.readOnlyItem}>
-                <label className={styles.readOnlyLabel}>Video Status:</label>
-                <span className={styles.readOnlyValue}>
-                  {heroData.video_url ? 'Uploaded Video' : heroData.video_link ? 'Video Link' : 'No Video'}
-                </span>
-              </div>
-              {heroData.video_link && (
-                <div className={styles.readOnlyItem}>
-                  <label className={styles.readOnlyLabel}>Video Link:</label>
-                  <span className={styles.readOnlyValue}>{heroData.video_link}</span>
+
+            {/* Video Fields - Right Side */}
+            <div className={styles.videoFieldsSection}>
+              {isEditingHero ? (
+                <>
+                  {/* Video Link Input */}
+                  <div className={styles.inputGroup}>
+                    <label className={styles.inputLabel}>Video Link (YouTube, Vimeo, etc.)</label>
+                    <input
+                      type="url"
+                      className={styles.textInput}
+                      value={tempHeroData.video_link || ''}
+                      onChange={(e) => setTempHeroData(prev => ({ ...prev, video_link: e.target.value }))}
+                      placeholder="https://www.youtube.com/watch?v=..."
+                    />
+                  </div>
+                  
+                  <div className={styles.orSeparator}>
+                    <span className={styles.orText}>OR</span>
+                  </div>
+                  
+                  {/* Video Upload */}
+                  {!selectedVideoFile ? (
+                    <div className={styles.fileInputContainer}>
+                  <input
+                    type="file"
+                    id="video-upload"
+                    accept="video/*"
+                    onChange={(e) => {
+                      if (e.target.files[0]) {
+                            setSelectedVideoFile(e.target.files[0]);
+                      }
+                    }}
+                    style={{ display: 'none' }}
+                  />
+                      <label htmlFor="video-upload" className={styles.uploadBtn}>
+                        <FiUpload /> Choose Video File
+                      </label>
+                    </div>
+                  ) : (
+                    <div className={styles.uploadActions}>
+                      <div className={styles.selectedFileInfo}>
+                        <span className={styles.fileName}>{selectedVideoFile.name}</span>
+                        <span className={styles.fileSize}>
+                          {(selectedVideoFile.size / 1024 / 1024).toFixed(2)} MB
+                        </span>
+                        <span className={styles.uploadNote}>
+                          Video will be uploaded when you save changes
+                        </span>
+                      </div>
+                      <div className={styles.uploadButtons}>
+                        <button
+                          onClick={() => setSelectedVideoFile(null)}
+                          className={styles.cancelBtn}
+                        >
+                          Remove Selection
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className={styles.readOnlyContent}>
+                  <div className={styles.readOnlyItem}>
+                    <label className={styles.readOnlyLabel}>Video Status:</label>
+                    <span className={styles.readOnlyValue}>
+                      {heroData.video_url ? 'Uploaded Video' : heroData.video_link ? 'Video Link' : 'No Video'}
+                    </span>
+                  </div>
+                  {heroData.video_link && (
+                    <div className={styles.readOnlyItem}>
+                      <label className={styles.readOnlyLabel}>Video Link:</label>
+                      <span className={styles.readOnlyValue}>{heroData.video_link}</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Images Section */}
@@ -690,6 +671,25 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                               unoptimized
                               style={{ maxWidth: '100%', height: 'auto', objectFit: 'cover' }}
                             />
+                            {/* Hover Overlay for Upload */}
+                            <div className={styles.imageOverlay}>
+                              <label htmlFor={`image-upload-${image.id}`} className={styles.uploadButton}>
+                                <FiUpload size={14} />
+                                {selectedImageFiles[image.id] ? 'Change Image' : 'Upload Image'}
+                              </label>
+                              <input
+                                type="file"
+                                id={`image-upload-${image.id}`}
+                                accept="image/*"
+                                onChange={(e) => {
+                                  if (e.target.files[0]) {
+                                    setSelectedImageFiles(prev => ({ ...prev, [image.id]: e.target.files[0] }));
+                                  }
+                                }}
+                                className={styles.fileInput}
+                                style={{ display: 'none' }}
+                              />
+                            </div>
                           </div>
                         );
                       } else if (selectedImageFiles[image.id]) {
@@ -703,6 +703,25 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                               unoptimized
                               style={{ maxWidth: '100%', height: 'auto', objectFit: 'cover' }}
                             />
+                            {/* Hover Overlay for Upload */}
+                            <div className={styles.imageOverlay}>
+                              <label htmlFor={`image-upload-${image.id}`} className={styles.uploadButton}>
+                                <FiUpload size={14} />
+                                Change Image
+                              </label>
+                              <input
+                                type="file"
+                                id={`image-upload-${image.id}`}
+                                accept="image/*"
+                                onChange={(e) => {
+                                  if (e.target.files[0]) {
+                                    setSelectedImageFiles(prev => ({ ...prev, [image.id]: e.target.files[0] }));
+                                  }
+                                }}
+                                className={styles.fileInput}
+                                style={{ display: 'none' }}
+                              />
+                            </div>
                           </div>
                         );
                       } else {
@@ -718,6 +737,25 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                             />
                             <div className={styles.fallbackIndicator}>
                               <span>Using default image</span>
+                            </div>
+                            {/* Hover Overlay for Upload */}
+                            <div className={styles.imageOverlay}>
+                              <label htmlFor={`image-upload-${image.id}`} className={styles.uploadButton}>
+                                <FiUpload size={14} />
+                                Upload Image
+                              </label>
+                              <input
+                                type="file"
+                                id={`image-upload-${image.id}`}
+                                accept="image/*"
+                                onChange={(e) => {
+                                  if (e.target.files[0]) {
+                                    setSelectedImageFiles(prev => ({ ...prev, [image.id]: e.target.files[0] }));
+                                  }
+                                }}
+                                className={styles.fileInput}
+                                style={{ display: 'none' }}
+                              />
                             </div>
                           </div>
                         );
@@ -757,47 +795,26 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                       </div>
                     </div>
                     
-                    {/* Image Upload */}
-                    {!selectedImageFiles[image.id] ? (
-                      <div className={styles.fileInputContainer}>
-                    <input
-                      type="file"
-                      id={`image-upload-${image.id}`}
-                      accept="image/*"
-                      onChange={(e) => {
-                        if (e.target.files[0]) {
-                              setSelectedImageFiles(prev => ({ ...prev, [image.id]: e.target.files[0] }));
-                        }
-                      }}
-                      style={{ display: 'none' }}
-                    />
-                        <label htmlFor={`image-upload-${image.id}`} className={styles.uploadBtn}>
-                          <FaUpload /> Choose Image
-                        </label>
-                      </div>
-                    ) : (
-                      <div className={styles.uploadActions}>
-                        <div className={styles.selectedFileInfo}>
-                          <span className={styles.fileName}>{selectedImageFiles[image.id].name}</span>
-                          <span className={styles.fileSize}>
-                            {(selectedImageFiles[image.id].size / 1024 / 1024).toFixed(2)} MB
-                          </span>
-                          <span className={styles.uploadNote}>
-                            Image will be uploaded when you save changes
-                          </span>
-                        </div>
-                        <div className={styles.uploadButtons}>
-                          <button
-                            onClick={() => setSelectedImageFiles(prev => {
-                              const newFiles = { ...prev };
-                              delete newFiles[image.id];
-                              return newFiles;
-                            })}
-                            className={styles.cancelBtn}
-                          >
-                            Remove Selection
-                          </button>
-                        </div>
+                    {/* Selected File Info - Show below image when file is selected */}
+                    {selectedImageFiles[image.id] && (
+                      <div className={styles.selectedFileInfo}>
+                        <span className={styles.fileName}>{selectedImageFiles[image.id].name}</span>
+                        <span className={styles.fileSize}>
+                          {(selectedImageFiles[image.id].size / 1024 / 1024).toFixed(2)} MB
+                        </span>
+                        <span className={styles.uploadNote}>
+                          Image will be uploaded when you save changes
+                        </span>
+                        <button
+                          onClick={() => setSelectedImageFiles(prev => {
+                            const newFiles = { ...prev };
+                            delete newFiles[image.id];
+                            return newFiles;
+                          })}
+                          className={styles.cancelBtn}
+                        >
+                          Remove Selection
+                        </button>
                       </div>
                     )}
                   </>
@@ -876,9 +893,9 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           }}
         >
           <button className={styles.closeButton} onClick={() => setShowVideoModal(false)}>✖</button>
-          {heroData?.video_type === 'link' ? (
+          {heroData?.video_link ? (
             <iframe
-              src={heroData.video_link}
+              src={convertToEmbedUrl(heroData.video_link)}
               className={styles.videoPlayer}
               frameBorder="0"
               allowFullScreen

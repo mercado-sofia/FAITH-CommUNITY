@@ -7,7 +7,7 @@ import { IoCloseOutline } from 'react-icons/io5';
 import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowLeftDoubleFill, RiArrowRightDoubleFill } from "react-icons/ri";
 import BulkActionConfirmationModal from './components/BulkActionConfirmationModal';
 import ConfirmationModal from '../components/ConfirmationModal';
-import SuccessModal from '../components/SuccessModal';
+import { SuccessModal } from '@/components';
 import ApprovalsTable from './components/ApprovalsTable';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
 import styles from './approvals.module.css';
@@ -392,7 +392,7 @@ export default function PendingApprovalsPage() {
       showSuccessModal('Changes have been approved and applied.');
       fetchApprovals(); // Refresh the list
     } catch (err) {
-      console.error('❌ Approve error:', err);
+      console.error('Approve error:', err);
       showSuccessModal('Failed to approve changes: ' + err.message);
     }
   }, [showSuccessModal, fetchApprovals]);
@@ -414,7 +414,7 @@ export default function PendingApprovalsPage() {
       showSuccessModal('Submission has been rejected.');
       fetchApprovals();
     } catch (err) {
-      console.error('❌ Reject error:', err);
+      console.error('Reject error:', err);
       showSuccessModal('Failed to reject submission: ' + err.message);
     }
   }, [showSuccessModal, fetchApprovals]);
@@ -437,7 +437,7 @@ export default function PendingApprovalsPage() {
       showSuccessModal(`Bulk approval completed: ${result.details.successCount} approved`);
       fetchApprovals();
     } catch (err) {
-      console.error('❌ Bulk approve error:', err);
+      console.error('Bulk approve error:', err);
       showSuccessModal('Failed to bulk approve approvals: ' + err.message);
     }
   }, [showSuccessModal, fetchApprovals]);
@@ -459,7 +459,7 @@ export default function PendingApprovalsPage() {
       showSuccessModal(`Bulk rejection completed: ${result.details.successCount} rejected`);
       fetchApprovals();
     } catch (err) {
-      console.error('❌ Bulk reject error:', err);
+      console.error('Bulk reject error:', err);
       showSuccessModal('Failed to bulk reject approvals: ' + err.message);
     }
   }, [showSuccessModal, fetchApprovals]);
@@ -481,7 +481,7 @@ export default function PendingApprovalsPage() {
       showSuccessModal(`Bulk deletion completed: ${result.details.successCount} deleted`);
       fetchApprovals();
     } catch (err) {
-      console.error('❌ Bulk delete error:', err);
+      console.error('Bulk delete error:', err);
       showSuccessModal('Failed to bulk delete approvals: ' + err.message);
     }
   }, [showSuccessModal, fetchApprovals]);

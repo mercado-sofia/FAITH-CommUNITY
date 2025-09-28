@@ -369,7 +369,9 @@ app.post('/api/users/refresh', doubleCsrfProtection)
 // Error Handling
 // General server error handler
 app.use((err, req, res, next) => {
-  console.error("Server error:", err)
+  if (process.env.NODE_ENV === "development") {
+    console.error("Server error:", err)
+  }
   res.status(500).json({
     success: false,
     message: "Server error",
@@ -389,14 +391,16 @@ app.use((req, res) => {
 
 // Start Server
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`)
+  if (process.env.NODE_ENV === "development") {
+    console.log(`Server running at http://localhost:${PORT}`)
+  }
  
   // Set up daily cleanup job for deleted news (runs every 24 hours)
   setInterval(async () => {
     try {
       await cleanupDeletedNews();
     } catch (error) {
-      console.error('❌ Error in scheduled cleanup:', error);
+      console.error('Error in scheduled cleanup:', error);
     }
   }, 24 * 60 * 60 * 1000); // 24 hours in milliseconds
  

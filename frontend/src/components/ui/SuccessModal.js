@@ -1,5 +1,8 @@
+'use client';
+
 import { useEffect, useRef } from 'react';
 import { FaCircleCheck } from "react-icons/fa6";
+import { TiDelete } from "react-icons/ti";
 import { FiX } from 'react-icons/fi';
 import styles from './styles/SuccessModal.module.css';
 
@@ -11,7 +14,9 @@ export default function SuccessModal({
   autoHideDuration = 0 
 }) {
   const scrollPositionRef = useRef(0);
+  const isError = type === 'error' || type === 'failed';
 
+  // Auto-hide functionality
   useEffect(() => {
     if (isVisible && autoHideDuration > 0) {
       const timer = setTimeout(() => {
@@ -22,7 +27,7 @@ export default function SuccessModal({
     }
   }, [isVisible, autoHideDuration, onClose]);
 
-  // Preserve scroll position when modal opens/closes
+  // Preserve scroll position and lock body scroll when modal opens/closes
   useEffect(() => {
     if (isVisible) {
       // Save current scroll position when modal opens
@@ -65,9 +70,9 @@ export default function SuccessModal({
     <div className={styles.overlay}>
       <div className={styles.modal}>
         <div className={styles.topRow}>
-          <div className={styles.successIconContainer}>
-            <div className={styles.successIconInner}>
-              <FaCircleCheck />
+          <div className={`${styles.successIconContainer} ${isError ? styles.errorIconContainer : ''}`}>
+            <div className={`${styles.successIconInner} ${isError ? styles.errorIconInner : ''}`}>
+              {isError ? <TiDelete /> : <FaCircleCheck />}
             </div>
           </div>
           
@@ -80,7 +85,7 @@ export default function SuccessModal({
         </div>
         
         <div className={styles.content}>
-          <h3>Success</h3>
+          <h3>{isError ? 'Error' : 'Success'}</h3>
           
           <p>{message}</p>
         </div>
@@ -88,9 +93,9 @@ export default function SuccessModal({
         <div className={styles.actions}>
           <button
             onClick={onClose}
-            className={styles.confirmBtn}
+            className={`${styles.confirmBtn} ${isError ? styles.errorBtn : ''}`}
           >
-            Confirm
+            {isError ? 'Close' : 'Confirm'}
           </button>
         </div>
       </div>

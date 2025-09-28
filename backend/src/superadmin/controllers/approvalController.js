@@ -39,7 +39,6 @@ export const getPendingSubmissions = async (req, res) => {
       data: submissions
     });
   } catch (error) {
-    console.error('❌ Error fetching pending submissions:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch pending submissions',
@@ -84,7 +83,6 @@ export const getAllSubmissions = async (req, res) => {
       data: submissions
     });
   } catch (error) {
-    console.error('❌ Error fetching all submissions:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch submissions',
@@ -195,7 +193,6 @@ export const approveSubmission = async (req, res) => {
             
             cloudinaryPhotoUrl = uploadResult.url;
           } catch (uploadError) {
-            console.error('❌ Error uploading organization head photo to Cloudinary:', uploadError);
             // Continue with base64 as fallback
           }
         }
@@ -263,7 +260,6 @@ export const approveSubmission = async (req, res) => {
             
             cloudinaryImageUrl = uploadResult.url;
           } catch (uploadError) {
-            console.error('❌ Error uploading main program image to Cloudinary:', uploadError);
             // Continue with base64 as fallback
           }
         }
@@ -290,13 +286,26 @@ export const approveSubmission = async (req, res) => {
         
         // Handle collaboration invitations if provided
         if (data.collaborators && Array.isArray(data.collaborators) && data.collaborators.length > 0) {
-          for (const collaboratorId of data.collaborators) {
+          // Extract collaborator IDs (handle both object format and ID format)
+          const collaboratorIds = data.collaborators.map(collab => {
+            // If collaborator is an object with id property, extract the id
+            if (typeof collab === 'object' && collab.id) {
+              return collab.id;
+            }
+            // If collaborator is already just an ID, use it directly
+            return collab;
+          }).filter(id => id && id !== submission.submitted_by);
+          
+          for (const collaboratorId of collaboratorIds) {
             try {
               await db.execute(`
                 INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status)
-                VALUES (?, ?, ?, 'pending')
+                VALUES (?, ?, ?, 'accepted')
               `, [programId, collaboratorId, submission.submitted_by]);
+              
+              // Note: Collaborators will be notified after all collaborations are set up
             } catch (collabError) {
+              console.error('Failed to add collaborator during approval:', collabError);
             }
           }
         }
@@ -348,7 +357,6 @@ export const approveSubmission = async (req, res) => {
                 );
                 
               } catch (uploadError) {
-                console.error(`❌ Error uploading additional image ${i + 1} to Cloudinary:`, uploadError);
                 // Continue with base64 as fallback
                 await db.execute(
                   `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
@@ -402,9 +410,24 @@ export const approveSubmission = async (req, res) => {
     if (!notificationResult.success) {
     }
 
+    // Notify collaborators if this was a program approval
+    if (section === 'programs' && data.title) {
+      try {
+        const { notifyCollaboratorsOnApproval } = await import('../../utils/collaboratorNotification.js');
+        const notificationResult = await notifyCollaboratorsOnApproval(programId, data.title);
+        if (notificationResult.notifiedCount > 0) {
+          console.log(`✅ Notified ${notificationResult.notifiedCount} collaborators about program approval`);
+        }
+        if (notificationResult.errors.length > 0) {
+          console.error('❌ Some collaborator notifications failed:', notificationResult.errors);
+        }
+      } catch (error) {
+        console.error('Failed to notify collaborators on program approval:', error);
+      }
+    }
+
     res.json({ success: true, message: 'Submission approved and applied.' });
   } catch (err) {
-    console.error('Approval error:', err);
     res.status(500).json({ success: false, message: 'Failed to apply submission', error: err.message });
   }
 };
@@ -468,7 +491,6 @@ export const rejectSubmission = async (req, res) => {
       message: 'Submission rejected successfully' 
     });
   } catch (err) {
-    console.error('Rejection error:', err);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to reject submission', 
@@ -669,8 +691,8 @@ export const bulkApproveSubmissions = async (req, res) => {
           }
 
           const [result] = await db.execute(
-            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
+            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, ?)`,
             [
               orgId,
               data.title,
@@ -680,11 +702,50 @@ export const bulkApproveSubmissions = async (req, res) => {
               cloudinaryImageUrl, // Use Cloudinary URL instead of base64
               data.event_start_date || null,
               data.event_end_date || null,
-              finalSlug
+              finalSlug,
+              data.collaborators && data.collaborators.length > 0
             ]
           );
           
           const programId = result.insertId;
+          
+          // Handle collaboration invitations if provided
+          if (data.collaborators && Array.isArray(data.collaborators) && data.collaborators.length > 0) {
+            // Extract collaborator IDs (handle both object format and ID format)
+            const collaboratorIds = data.collaborators.map(collab => {
+              // If collaborator is an object with id property, extract the id
+              if (typeof collab === 'object' && collab.id) {
+                return collab.id;
+              }
+              // If collaborator is already just an ID, use it directly
+              return collab;
+            }).filter(id => id && id !== submission.submitted_by);
+            
+            for (const collaboratorId of collaboratorIds) {
+              try {
+                await db.execute(`
+                  INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status)
+                  VALUES (?, ?, ?, 'accepted')
+                `, [programId, collaboratorId, submission.submitted_by]);
+                
+                // Notify collaborator about program approval
+                try {
+                  await NotificationController.createNotification(
+                    collaboratorId,
+                    'program_approval',
+                    'Program Approved - Collaboration Active',
+                    `The program "${data.title}" you're collaborating on has been approved and is now live. You can now view and manage this program.`,
+                    'programs',
+                    programId
+                  );
+                } catch (notificationError) {
+                  console.error('Failed to send approval notification to collaborator:', notificationError);
+                }
+              } catch (collabError) {
+                console.error('Failed to add collaborator during bulk approval:', collabError);
+              }
+            }
+          }
           
           if (data.multiple_dates && Array.isArray(data.multiple_dates) && data.multiple_dates.length > 0) {
             for (const date of data.multiple_dates) {
@@ -780,12 +841,27 @@ export const bulkApproveSubmissions = async (req, res) => {
         );
 
         if (!notificationResult.success) {
-          console.error(`Failed to create notification for submission ${id}:`, notificationResult.error);
+          // Failed to create notification
+        }
+
+        // Notify collaborators if this was a program approval
+        if (section === 'programs' && data.title) {
+          try {
+            const { notifyCollaboratorsOnApproval } = await import('../../utils/collaboratorNotification.js');
+            const collaboratorNotificationResult = await notifyCollaboratorsOnApproval(programId, data.title);
+            if (collaboratorNotificationResult.notifiedCount > 0) {
+              console.log(`✅ Notified ${collaboratorNotificationResult.notifiedCount} collaborators about program approval (bulk)`);
+            }
+            if (collaboratorNotificationResult.errors.length > 0) {
+              console.error('❌ Some collaborator notifications failed (bulk):', collaboratorNotificationResult.errors);
+            }
+          } catch (error) {
+            console.error('Failed to notify collaborators on program approval (bulk):', error);
+          }
         }
 
         successCount++;
       } catch (error) {
-        console.error(`Error approving submission ${id}:`, error);
         errors.push(`Failed to approve submission ${id}: ${error.message}`);
         errorCount++;
       }
@@ -801,7 +877,6 @@ export const bulkApproveSubmissions = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Bulk approve error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to bulk approve submissions',
@@ -867,7 +942,6 @@ export const bulkRejectSubmissions = async (req, res) => {
           }
         } catch (parseError) {
           // Keep the generic message if parsing fails
-          console.error(`Error parsing proposed data for submission ${id}:`, parseError);
         }
 
         // Create notification for the admin
@@ -881,12 +955,11 @@ export const bulkRejectSubmissions = async (req, res) => {
         );
 
         if (!notificationResult.success) {
-          console.error(`Failed to create notification for submission ${id}:`, notificationResult.error);
+          // Failed to create notification
         }
 
         successCount++;
       } catch (error) {
-        console.error(`Error rejecting submission ${id}:`, error);
         errors.push(`Failed to reject submission ${id}: ${error.message}`);
         errorCount++;
       }
@@ -902,7 +975,6 @@ export const bulkRejectSubmissions = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Bulk reject error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to bulk reject submissions',
@@ -930,7 +1002,6 @@ export const deleteSubmission = async (req, res) => {
       message: 'Submission deleted successfully'
     });
   } catch (error) {
-    console.error('❌ Delete submission error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to delete submission',
@@ -966,7 +1037,6 @@ export const bulkDeleteSubmissions = async (req, res) => {
           successCount++;
         }
       } catch (error) {
-        console.error(`Error deleting submission ${id}:`, error);
         errors.push(`Failed to delete submission ${id}: ${error.message}`);
         errorCount++;
       }
@@ -982,7 +1052,6 @@ export const bulkDeleteSubmissions = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Bulk delete error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to bulk delete submissions',

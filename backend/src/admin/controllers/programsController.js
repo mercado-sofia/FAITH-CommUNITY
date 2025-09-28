@@ -144,7 +144,6 @@ export const getAdminPrograms = async (req, res) => {
       data: programsWithCollaboration
     });
   } catch (error) {
-    console.error("❌ Error fetching admin programs:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch programs",
@@ -181,7 +180,6 @@ export const getProgramsByOrg = async (req, res) => {
     }
 
     if (orgRows.length === 0) {
-      console.error(`[ERROR] Organization not found for ID/acronym: ${orgId}`);
       return res.status(404).json({
         success: false,
         message: `Organization not found: ${orgId}`,
@@ -266,7 +264,6 @@ export const getProgramsByOrg = async (req, res) => {
 
     res.json(approvedPrograms);
   } catch (error) {
-    console.error("❌ Error fetching programs:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch programs",
@@ -354,7 +351,6 @@ export const getApprovedPrograms = async (req, res) => {
       data: programs
     });
   } catch (error) {
-    console.error("❌ Error fetching approved programs:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch approved programs",
@@ -390,7 +386,6 @@ export const getApprovedProgramsByOrg = async (req, res) => {
     }
 
     if (orgRows.length === 0) {
-      console.error(`[ERROR] Organization not found for ID/acronym: ${orgId}`);
       return res.status(404).json({
         success: false,
         message: `Organization not found: ${orgId}`,
@@ -481,7 +476,6 @@ export const getApprovedProgramsByOrg = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("❌ Error fetching organization programs:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch organization programs",
@@ -539,7 +533,6 @@ export const deleteProgramSubmission = async (req, res) => {
       message: "Program deleted successfully",
     });
   } catch (error) {
-    console.error("❌ Error deleting program:", error);
     res.status(500).json({
       success: false,
       message: "Failed to delete program",
@@ -703,7 +696,6 @@ export const updateProgram = async (req, res) => {
                 [id, uploadResult.url, i]
               );
             } catch (uploadError) {
-              console.error('Error uploading additional image to Cloudinary:', uploadError);
               // Continue with other images even if one fails
             }
           }
@@ -729,7 +721,6 @@ export const updateProgram = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("❌ Error updating program:", error);
     res.status(500).json({
       success: false,
       message: "Failed to update program",
@@ -780,7 +771,6 @@ export const toggleFeaturedStatus = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("❌ Error toggling featured status:", error);
     res.status(500).json({
       success: false,
       message: "Failed to toggle featured status",
@@ -830,7 +820,6 @@ export const getProgramById = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("❌ Error fetching program by ID:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch program",
@@ -920,7 +909,6 @@ export const getAllFeaturedPrograms = async (req, res) => {
       data: programs
     });
   } catch (error) {
-    console.error("❌ Error fetching featured programs:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch featured programs",
@@ -1010,7 +998,6 @@ export const getFeaturedPrograms = async (req, res) => {
       data: programs
     });
   } catch (error) {
-    console.error("❌ Error fetching featured programs:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch featured programs",
@@ -1106,7 +1093,6 @@ export const getProgramBySlug = async (req, res) => {
       data: programWithDates
     });
   } catch (error) {
-    console.error('Error fetching program by slug:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch program',
@@ -1161,7 +1147,6 @@ export const getOtherProgramsByOrganization = async (req, res) => {
       data: programs
     });
   } catch (error) {
-    console.error('Error fetching other programs by organization:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch other programs',
@@ -1186,7 +1171,6 @@ export const addProgramProject = async (req, res) => {
       );
       image = uploadResult.url;
     } catch (uploadError) {
-      console.error('Error uploading program image to Cloudinary:', uploadError);
       return res.status(500).json({ 
         success: false, 
         message: 'Failed to upload program image' 
@@ -1235,13 +1219,20 @@ export const addProgramProject = async (req, res) => {
     if (collaborators && collaborators.length > 0) {
       const currentAdminId = req.admin.id;
       
-      for (const collaboratorId of collaborators) {
+      // Filter out self-collaboration
+      const validCollaborators = collaborators.filter(collaboratorId => 
+        collaboratorId !== currentAdminId
+      );
+      
+      for (const collaboratorId of validCollaborators) {
         try {
           await db.execute(`
             INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status)
             VALUES (?, ?, ?, 'accepted')
           `, [newId, collaboratorId, currentAdminId]);
         } catch (collabError) {
+          console.error('Failed to add collaborator during program creation:', collabError);
+          // Continue with other collaborators even if one fails
         }
       }
     }
@@ -1266,7 +1257,6 @@ export const addProgramProject = async (req, res) => {
       .status(201)
       .json({ message: 'Project submitted for approval', id: newId });
   } catch (error) {
-    console.error('addProgramProject error:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -1289,7 +1279,6 @@ export const updateProgramProject = async (req, res) => {
       );
       image = uploadResult.url;
     } catch (uploadError) {
-      console.error('❌ Error uploading program image to Cloudinary:', uploadError);
       return res.status(500).json({ 
         success: false, 
         message: 'Failed to upload program image' 
@@ -1364,7 +1353,6 @@ export const updateProgramProject = async (req, res) => {
 
     return res.json({ message: "Program updated successfully." });
   } catch (error) {
-    console.error('updateProgramProject error:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -1442,7 +1430,6 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
       data: programsWithDates,
     });
   } catch (error) {
-    console.error('Error fetching all programs for superadmin:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch programs',
@@ -1472,7 +1459,6 @@ export const getProgramsStatistics = async (req, res) => {
       data: results[0],
     });
   } catch (error) {
-    console.error('Error fetching programs statistics:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch programs statistics',
@@ -1522,7 +1508,6 @@ export const markProgramAsCompleted = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error marking program as completed:', error);
     res.status(500).json({
       success: false,
       message: "Failed to mark program as completed",
@@ -1572,7 +1557,6 @@ export const markProgramAsActive = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error marking program as active:', error);
     res.status(500).json({
       success: false,
       message: "Failed to mark program as active",

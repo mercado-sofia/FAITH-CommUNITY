@@ -50,6 +50,16 @@
   font-size: 1.4rem;
 }
 
+/* Error state styles */
+.errorIconContainer {
+  background-color: #FEF2F2;
+}
+
+.errorIconInner {
+  background-color: #FEE2E2;
+  color: #DC2626;
+}
+
 .closeBtn {
   background: none;
   border: none;
@@ -112,6 +122,17 @@
 .confirmBtn:hover {
   background-color: #20b39b;
   border-color: #20b39b;
+}
+
+/* Error button styles */
+.errorBtn {
+  background-color: #DC2626;
+  border-color: #DC2626;
+}
+
+.errorBtn:hover {
+  background-color: #B91C1C;
+  border-color: #B91C1C;
 }
 
 @keyframes fadeIn {

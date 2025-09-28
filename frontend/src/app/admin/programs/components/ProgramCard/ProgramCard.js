@@ -9,7 +9,7 @@ import { MdOutlineRadioButtonChecked } from 'react-icons/md';
 import { FiTrash2 } from 'react-icons/fi';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import { formatProgramDates, formatDateShort } from '@/utils/dateUtils.js';
-import { CollaborationBadge } from '../Collaboration';
+import CollaborationBadge from '../Collaboration/CollaborationBadge';
 import styles from './ProgramCard.module.css';
 
 const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted, onMarkActive }) => {

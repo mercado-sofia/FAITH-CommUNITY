@@ -30,15 +30,8 @@ export const applyApi = createApi({
       invalidatesTags: ["Volunteers"],
     }),
 
-    // Test endpoint
-    testConnection: builder.mutation({
-      query: () => ({
-        url: "/test-post",
-        method: "POST",
-      }),
-    }),
   }),
 })
 
 // Export hooks for usage in components
-export const { useGetVolunteersQuery, useSubmitApplicationMutation, useTestConnectionMutation } = applyApi
+export const { useGetVolunteersQuery, useSubmitApplicationMutation } = applyApi

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FaLock, FaEye, FaEyeSlash, FaTimes, FaCheck, FaSpinner } from 'react-icons/fa';
 import styles from './PasswordChange.module.css';
-import { SuccessModal } from '../../../app/admin/components';
+import { SuccessModal } from '@/components';
 
 // Utility functions
 const sanitizePassword = (password) => {
@@ -352,13 +352,6 @@ export default function PasswordChange({
 
         const apiEndpoint = getApiEndpoint();
         const headers = getAuthHeaders();
-        
-        console.log('Password Change Request:', {
-          userType,
-          endpoint: apiEndpoint,
-          headers: { ...headers, Authorization: headers.Authorization ? 'Bearer [REDACTED]' : 'None' },
-          body: { ...requestBody, currentPassword: '[REDACTED]', newPassword: '[REDACTED]' }
-        });
 
         // Update password
         const updateResponse = await fetch(apiEndpoint, {
@@ -463,7 +456,6 @@ export default function PasswordChange({
     setShowSuccessModalState(false);
     if (showSuccessModal) {
       // For public users, you might want to show a toast or other notification
-      console.log('Password changed successfully!');
     }
   };
 

@@ -157,12 +157,26 @@ export const useProgramForm = (mode = 'create', program = null) => {
     // Validate text fields
     Object.keys(VALIDATION_RULES).forEach(field => {
       if (field !== 'image' && field !== 'additionalImages') {
+        // Skip date validation if we have multiple_dates with values
+        if (field === 'event_start_date' && formData.multiple_dates && Array.isArray(formData.multiple_dates) && formData.multiple_dates.length > 0) {
+          return; // Skip validation for event_start_date if multiple_dates has values
+        }
+        
         const error = validateField(field, formData[field], VALIDATION_RULES);
         if (error) {
           newErrors[field] = error;
         }
       }
     });
+
+    // Special validation for dates - check if at least one date field has a value
+    const hasAnyDate = (formData.event_start_date && formData.event_start_date.trim() !== '') ||
+                      (formData.event_end_date && formData.event_end_date.trim() !== '') ||
+                      (formData.multiple_dates && Array.isArray(formData.multiple_dates) && formData.multiple_dates.length > 0);
+    
+    if (!hasAnyDate && VALIDATION_RULES.event_start_date.required) {
+      newErrors.event_start_date = ERROR_MESSAGES.event_start_date.required;
+    }
 
     // Validate main image
     if (formData.image) {

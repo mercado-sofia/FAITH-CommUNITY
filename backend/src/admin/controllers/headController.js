@@ -22,7 +22,6 @@ export const getHeads = async (req, res) => {
       data: rows,
     })
   } catch (error) {
-    console.error("Get heads error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to retrieve organization heads",
@@ -81,7 +80,6 @@ export const addHead = async (req, res) => {
         );
         finalPhoto = uploadResult.url;
       } catch (uploadError) {
-        console.error('Error uploading organization head photo to Cloudinary:', uploadError);
         return res.status(500).json({ 
           success: false, 
           message: 'Failed to upload organization head photo' 
@@ -110,7 +108,6 @@ export const addHead = async (req, res) => {
       data: { id: result.insertId },
     })
   } catch (error) {
-    console.error("Add head error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to add organization head",
@@ -181,7 +178,6 @@ export const updateHead = async (req, res) => {
         );
         finalPhoto = uploadResult.url;
       } catch (uploadError) {
-        console.error('Error uploading organization head photo to Cloudinary:', uploadError);
         return res.status(500).json({ 
           success: false, 
           message: 'Failed to upload organization head photo' 
@@ -218,7 +214,6 @@ export const updateHead = async (req, res) => {
       message: "Organization head updated successfully",
     })
   } catch (error) {
-    console.error("Update head error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to update organization head",
@@ -252,7 +247,6 @@ export const deleteHead = async (req, res) => {
       message: "Organization head deleted successfully",
     })
   } catch (error) {
-    console.error("Delete head error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to delete organization head",
@@ -321,7 +315,6 @@ export const bulkDeleteHeads = async (req, res) => {
       deletedCount: result.affectedRows,
     })
   } catch (error) {
-    console.error("Bulk delete heads error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to delete organization heads",
@@ -431,7 +424,6 @@ export const bulkUpdateHeads = async (req, res) => {
           
           cleanPhoto = uploadResult.url;
         } catch (uploadError) {
-          console.error('❌ Error uploading organization head photo to Cloudinary:', uploadError);
           // Continue with base64 as fallback
         }
       } else if (cleanPhoto && cleanPhoto.length > 500) {
@@ -462,7 +454,6 @@ export const bulkUpdateHeads = async (req, res) => {
       count: heads.length,
     })
   } catch (error) {
-    console.error("Bulk update heads error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to update organization heads",
@@ -498,7 +489,6 @@ export const reorderHeads = async (req, res) => {
       message: "Organization heads reordered successfully"
     });
   } catch (error) {
-    console.error("Reorder heads error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to reorder organization heads",

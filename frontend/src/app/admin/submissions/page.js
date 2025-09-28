@@ -6,7 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAdminSubmissions } from '../hooks/useAdminData';
 import { formatDateShort } from '@/utils/dateUtils.js';
 import { SearchAndFilterControls, SubmissionTable, BulkActionsBar } from './components';
-import { PaginationControls, SuccessModal, SkeletonLoader } from '../components';
+import { PaginationControls, SkeletonLoader } from '../components';
+import { SuccessModal } from '@/components';
 import styles from './submissions.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';

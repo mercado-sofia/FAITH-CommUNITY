@@ -8,9 +8,6 @@ import { formatProgramDates, formatDateShort } from '@/utils/dateUtils.js';
 import styles from './ViewDetailsModal.module.css';
 
 const ViewDetailsModal = ({ program, onClose }) => {
-  // Debug: Log program data to understand what's being passed
-  console.log('ViewDetailsModal program data:', program);
-  
   // Using centralized date utilities - formatProgramDates is now imported
 
   const getCategoryLabel = (category) => {
@@ -59,7 +56,6 @@ const ViewDetailsModal = ({ program, onClose }) => {
                       width={600}
                       height={300}
                       onError={(e) => {
-                        console.error('ViewDetailsModal image failed to load:', program.image, 'Type:', typeof program.image);
                         e.target.style.display = 'none';
                         e.target.nextSibling.style.display = 'flex';
                       }}

@@ -190,13 +190,11 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
 
       // Handle photo operations
       if (selectedPhotoFile) {
-        console.log('Starting photo upload...', selectedPhotoFile);
         setIsUploadingPhoto(true);
         setPhotoError('');
         
         try {
           const response = await uploadProfilePhoto(selectedPhotoFile);
-          console.log('Photo upload response:', response);
           
           // Handle different response structures
           const photoUrl = response.data?.profilePhotoUrl || response.data?.profile_photo_url || response.profilePhotoUrl;
@@ -206,7 +204,6 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
           }
           
           updatedUserData.profile_photo_url = photoUrl;
-          console.log('Photo uploaded successfully:', photoUrl);
         } catch (error) {
           console.error('Photo upload error:', error);
           const errorMessage = error.message || 'Failed to upload photo';
@@ -217,14 +214,12 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
         }
         setIsUploadingPhoto(false);
       } else if (photoToRemove) {
-        console.log('Removing profile photo...');
         setIsUploadingPhoto(true);
         setPhotoError('');
         
         try {
           await removeProfilePhoto();
           updatedUserData.profile_photo_url = null;
-          console.log('Photo removed successfully');
         } catch (error) {
           console.error('Photo removal error:', error);
           const errorMessage = error.message || 'Failed to remove photo';
@@ -237,7 +232,6 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
       }
 
       // Update profile data
-      console.log('Updating profile data...', editData);
       await updateProfile(editData);
 
       // Update user data in localStorage

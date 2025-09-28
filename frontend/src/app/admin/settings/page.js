@@ -5,7 +5,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { FaLock, FaBuilding } from 'react-icons/fa';
 import { useAdminProfile } from '../hooks/useAdminProfile';
 import { selectCurrentAdmin, updateAdminEmail } from '@/rtk/superadmin/adminSlice';
-import { SkeletonLoader, SuccessModal } from '../components';
+import { SkeletonLoader } from '../components';
+import { SuccessModal } from '@/components';
 import { EmailChange, PasswordChange } from '@/components';
 import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError } from '@/utils/adminAuth';
 import styles from './AdminSettings.module.css';
@@ -65,6 +66,7 @@ export default function SettingsPage() {
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [successModalType, setSuccessModalType] = useState('success');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showSecureEmailModal, setShowSecureEmailModal] = useState(false);
   
@@ -75,6 +77,7 @@ export default function SettingsPage() {
 
   const handlePasswordSuccess = () => {
     setSuccessMessage('Password changed successfully!');
+    setSuccessModalType('success');
     setShowSuccessModal(true);
     refreshAdmin();
   };
@@ -83,6 +86,7 @@ export default function SettingsPage() {
     setEmailEditData({ email: newEmail });
     setShowSecureEmailModal(false);
     setSuccessMessage('Email has been successfully changed.');
+    setSuccessModalType('success');
     setShowSuccessModal(true);
     
     // Update Redux store to keep sidebar in sync
@@ -151,6 +155,7 @@ export default function SettingsPage() {
       }
 
       setSuccessMessage('Email address updated successfully!');
+      setSuccessModalType('success');
       setShowSuccessModal(true);
       refreshAdmin();
     } catch (error) {
@@ -166,6 +171,11 @@ export default function SettingsPage() {
       setEmailErrors({ 
         general: error.message || 'Failed to update email address. Please try again.' 
       });
+      
+      // Show error modal for general errors
+      setSuccessMessage(error.message || 'Failed to update email address. Please try again.');
+      setSuccessModalType('error');
+      setShowSuccessModal(true);
     } finally {
       setEmailSaving(false);
     }
@@ -288,7 +298,7 @@ export default function SettingsPage() {
         message={successMessage}
         isVisible={showSuccessModal}
         onClose={() => setShowSuccessModal(false)}
-        type="success"
+        type={successModalType}
       />
     </div>
   );

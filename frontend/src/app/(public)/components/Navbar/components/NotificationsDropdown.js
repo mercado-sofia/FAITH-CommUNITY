@@ -66,8 +66,6 @@ export default function NotificationsDropdown({ isAuthenticated, profileDropdown
               </div>
             ) : (
               notifications.notifications.map((notification) => {
-                // Debug: log the notification data
-                console.log('Notification:', notification.id, 'isRead:', notification.isRead, 'type:', typeof notification.isRead);
                 
                 return (
                   <div 

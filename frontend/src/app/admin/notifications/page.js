@@ -59,7 +59,9 @@ export default function NotificationsPage() {
       
       switch (tabType) {
         case 'submissions':
-          return notification.type === 'approval' || notification.type === 'decline';
+          return notification.type === 'approval' || notification.type === 'decline' || notification.type === 'program_approval';
+        case 'collaborations':
+          return notification.type === 'collaboration';
         case 'messages':
           return notification.type === 'message';
         case 'all':
@@ -163,6 +165,30 @@ export default function NotificationsPage() {
             <polyline points="22,6 12,13 2,6" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         );
+      case 'collaboration':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="9" cy="7" r="4" stroke="#8b5cf6" strokeWidth="2" />
+            <path d="M23 21V19C23 18.1645 22.7155 17.3541 22.2094 16.6977C21.7033 16.0413 20.9999 15.5754 20.2 15.366" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89317 18.7122 8.75608 18.1676 9.45768C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        );
+      case 'program_approval':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M9 12L11 14L15 10" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="12" cy="12" r="9" stroke="#059669" strokeWidth="2" />
+            <path d="M12 1V3" stroke="#059669" strokeWidth="2" strokeLinecap="round" />
+            <path d="M12 21V23" stroke="#059669" strokeWidth="2" strokeLinecap="round" />
+            <path d="M4.22 4.22L5.64 5.64" stroke="#059669" strokeWidth="2" strokeLinecap="round" />
+            <path d="M18.36 18.36L19.78 19.78" stroke="#059669" strokeWidth="2" strokeLinecap="round" />
+            <path d="M1 12H3" stroke="#059669" strokeWidth="2" strokeLinecap="round" />
+            <path d="M21 12H23" stroke="#059669" strokeWidth="2" strokeLinecap="round" />
+            <path d="M4.22 19.78L5.64 18.36" stroke="#059669" strokeWidth="2" strokeLinecap="round" />
+            <path d="M18.36 5.64L19.78 4.22" stroke="#059669" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        );
       default:
         return (
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -245,6 +271,14 @@ export default function NotificationsPage() {
         >
           <span>Submissions</span>
           <span className={styles.tabCount}>{getUnreadCount('submissions')}</span>
+        </button>
+
+        <button 
+          className={`${styles.navTab} ${currentTab === 'collaborations' ? styles.active : ''}`}
+          onClick={() => handleTabChange('collaborations')}
+        >
+          <span>Collaborations</span>
+          <span className={styles.tabCount}>{getUnreadCount('collaborations')}</span>
         </button>
 
         <button 

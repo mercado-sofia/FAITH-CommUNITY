@@ -162,8 +162,6 @@ export const registerUser = async (req, res) => {
       });
 
     } catch (emailError) {
-      console.error('Email sending error:', emailError);
-      
       // If email fails, still return success but inform user to contact support
       res.status(201).json({
         message: 'Registration successful! However, we could not send the verification email. Please contact support to verify your account.',
@@ -183,8 +181,6 @@ export const registerUser = async (req, res) => {
     }
 
   } catch (error) {
-    console.error('User registration error:', error);
-    
     // Handle specific database errors
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(400).json({ error: 'User with this email already exists' });
@@ -285,7 +281,6 @@ export const loginUser = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('User login error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -326,7 +321,6 @@ export const getUserProfile = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get user profile error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -359,7 +353,6 @@ export const updateUserProfile = async (req, res) => {
     res.json({ message: 'Profile updated successfully' });
 
   } catch (error) {
-    console.error('Update user profile error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -372,27 +365,23 @@ export const uploadProfilePhoto = async (req, res) => {
 
     // Check if file exists
     if (!req.file) {
-      console.error('No file provided in request');
       return res.status(400).json({ error: 'No file provided' });
     }
 
     // Check if file buffer exists
     if (!req.file.buffer) {
-      console.error('No file buffer found');
       return res.status(400).json({ error: 'File buffer not found' });
     }
 
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/avif'];
     if (!allowedTypes.includes(req.file.mimetype)) {
-      console.error('Invalid file type:', req.file.mimetype);
       return res.status(400).json({ error: 'Invalid file type. Only JPEG, PNG, GIF, WebP, AVIF, and SVG images are allowed' });
     }
 
     // Validate file size (3MB limit)
     const maxSize = 3 * 1024 * 1024; // 3MB
     if (req.file.size > maxSize) {
-      console.error('File too large:', req.file.size, 'bytes');
       return res.status(400).json({ error: 'File too large. Maximum size is 3MB' });
     }
 
@@ -412,7 +401,6 @@ export const uploadProfilePhoto = async (req, res) => {
         [userId]
       );
     } catch (dbError) {
-      console.error('❌ Database query failed:', dbError);
       throw new Error(`Database query failed: ${dbError.message}`);
     }
     
@@ -442,7 +430,6 @@ export const uploadProfilePhoto = async (req, res) => {
         { prefix: 'profile_' }
       );
     } catch (cloudinaryError) {
-      console.error('Cloudinary upload failed:', cloudinaryError);
       throw new Error(`Cloudinary upload failed: ${cloudinaryError.message}`);
     }
 
@@ -456,7 +443,6 @@ export const uploadProfilePhoto = async (req, res) => {
         [profilePhotoUrl, userId]
       );
     } catch (dbError) {
-      console.error('❌ Database update failed:', dbError);
       throw new Error(`Database update failed: ${dbError.message}`);
     }
     
@@ -468,7 +454,6 @@ export const uploadProfilePhoto = async (req, res) => {
         [userId]
       );
     } catch (dbError) {
-      console.error('Final database query failed:', dbError);
       throw new Error(`Final database query failed: ${dbError.message}`);
     }
     
@@ -500,8 +485,6 @@ export const uploadProfilePhoto = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Upload profile photo error:', error.message);
-    
     // Provide more specific error messages
     let errorMessage = 'Internal server error';
     if (error.message.includes('Cloudinary')) {
@@ -578,7 +561,6 @@ export const removeProfilePhoto = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Remove profile photo error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -652,7 +634,6 @@ export const requestEmailChange = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Request email change error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -725,7 +706,6 @@ export const verifyEmailChangeOTP = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Verify email change OTP error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -808,7 +788,6 @@ export const changePassword = async (req, res) => {
     res.json({ message: 'Password changed successfully' });
 
   } catch (error) {
-    console.error('Change password error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -861,7 +840,6 @@ export const subscribeToNewsletter = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Newsletter subscription error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -905,7 +883,6 @@ export const unsubscribeFromNewsletter = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Newsletter unsubscription error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -929,7 +906,6 @@ export const getNewsletterStatus = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get newsletter status error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -959,7 +935,6 @@ export const logoutUser = async (req, res) => {
 
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
-    console.error('User logout error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -985,7 +960,6 @@ export const refreshAccessToken = async (req, res) => {
     res.cookie('refresh_token', newRefresh, getRefreshCookieOptions())
     res.json({ token: accessToken })
   } catch (e) {
-    console.error('Refresh token error:', e)
     res.status(500).json({ error: 'Internal server error' })
   }
 }
@@ -1029,7 +1003,6 @@ export const verifyEmail = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Email verification error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -1100,12 +1073,10 @@ export const resendVerificationEmail = async (req, res) => {
       });
 
     } catch (emailError) {
-      console.error('Email sending error:', emailError);
       res.status(500).json({ error: 'Failed to send verification email. Please try again later.' });
     }
 
   } catch (error) {
-    console.error('Resend verification error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -1126,8 +1097,6 @@ export const verifyToken = async (req, res, next) => {
     next();
 
   } catch (error) {
-    console.error('Token verification error:', error);
-    
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({ error: 'Invalid token format' });
     } else if (error.name === 'TokenExpiredError') {
@@ -1168,7 +1137,6 @@ export const getUserNotifications = async (req, res) => {
       notifications: transformedNotifications
     });
   } catch (error) {
-    console.error('Error fetching user notifications:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch notifications'
@@ -1192,7 +1160,6 @@ export const getUnreadNotificationCount = async (req, res) => {
       count: result[0].count
     });
   } catch (error) {
-    console.error('Error fetching unread notification count:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch unread count'
@@ -1224,7 +1191,6 @@ export const markNotificationAsRead = async (req, res) => {
       message: 'Notification marked as read'
     });
   } catch (error) {
-    console.error('Error marking notification as read:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to mark notification as read'
@@ -1249,7 +1215,6 @@ export const markAllNotificationsAsRead = async (req, res) => {
       affectedRows: result.affectedRows
     });
   } catch (error) {
-    console.error('Error marking all notifications as read:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to mark notifications as read'
@@ -1280,7 +1245,6 @@ export const deleteNotification = async (req, res) => {
       message: 'Notification deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting notification:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to delete notification'
@@ -1297,7 +1261,7 @@ export const createUserNotification = async (userId, type, title, message) => {
       [userId, type, title, message]
     );
   } catch (error) {
-    console.error('Error creating user notification:', error);
+    // Error creating user notification
   }
 };
 
@@ -1356,7 +1320,6 @@ export const forgotPasswordUser = async (req, res) => {
 
     res.json({ message: "If an account with that email exists, a password reset link has been sent." })
   } catch (err) {
-    console.error("User forgot password error:", err)
     res.status(500).json({ error: "Internal server error while processing password reset request" })
   }
 }
@@ -1435,7 +1398,6 @@ export const resetPasswordUser = async (req, res) => {
 
     res.json({ message: "Password has been successfully reset" })
   } catch (err) {
-    console.error("User reset password error:", err)
     res.status(500).json({ error: "Internal server error while resetting password" })
   }
 }
@@ -1461,7 +1423,6 @@ export const validateResetToken = async (req, res) => {
 
     res.json({ message: "Token is valid" })
   } catch (err) {
-    console.error("Validate reset token error:", err)
     res.status(500).json({ error: "Internal server error while validating token" })
   }
 }
@@ -1486,7 +1447,6 @@ export const checkEmailUser = async (req, res) => {
       res.status(404).json({ exists: false })
     }
   } catch (err) {
-    console.error("User check email error:", err)
     res.status(500).json({ error: "Internal server error" })
   }
 }
@@ -1536,7 +1496,6 @@ export const deleteAccount = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Delete account error:', error);
     res.status(500).json({ error: 'An error occurred while deleting your account' });
   }
 };
@@ -1638,13 +1597,7 @@ export const getUserApplications = async (req, res) => {
       applications: transformedApplications
     });
   } catch (error) {
-    console.error('Error fetching user applications:', error);
-    console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      errno: error.errno,
-      sqlState: error.sqlState
-    });
+    // Error fetching user applications
     res.status(500).json({
       success: false,
       message: 'Failed to fetch applications',
@@ -1756,7 +1709,6 @@ export const getApplicationDetails = async (req, res) => {
       application: transformedApplication
     });
   } catch (error) {
-    console.error('Error fetching application details:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch application details',
@@ -1819,7 +1771,6 @@ export const cancelApplication = async (req, res) => {
       message: 'Application cancelled successfully'
     });
   } catch (error) {
-    console.error('Error cancelling application:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to cancel application',
@@ -1889,7 +1840,6 @@ export const deleteApplication = async (req, res) => {
       message: 'Application deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting application:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to delete application',
@@ -1945,7 +1895,6 @@ export const completeApplication = async (req, res) => {
       message: 'Application marked as completed successfully'
     });
   } catch (error) {
-    console.error('Error completing application:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to mark application as completed',

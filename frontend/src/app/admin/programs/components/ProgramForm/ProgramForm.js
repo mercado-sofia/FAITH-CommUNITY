@@ -123,7 +123,9 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit }) =>
     // Store the base64 preview data instead of File objects
     const validPreviews = results.filter(result => result.preview).map(result => result.preview);
     if (validPreviews.length > 0) {
-      updateFormData({ additionalImages: [...formData.additionalImages, ...validPreviews] });
+      // Extract just the base64 URLs from preview objects for form data
+      const base64Images = validPreviews.map(preview => preview.url);
+      updateFormData({ additionalImages: [...formData.additionalImages, ...base64Images] });
     }
   }, [handleAdditionalImagesChange, updateFormData, formData.additionalImages]);
 
@@ -173,9 +175,13 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit }) =>
       const submissionData = {
         ...formData,
         status: formData.status, // Status is calculated automatically
-        // Transform collaborators from objects to just IDs for backend
+        // Keep full collaborator objects for display in submission modal, but also include IDs for backend processing
         collaborators: Array.isArray(formData.collaborators) 
-          ? formData.collaborators.map(collab => collab.id).filter(id => id)
+          ? formData.collaborators.filter(collab => collab && collab.id)
+          : [],
+        // Ensure additionalImages contains only base64 strings
+        additionalImages: Array.isArray(formData.additionalImages) 
+          ? formData.additionalImages.filter(img => typeof img === 'string' && img.startsWith('data:image/'))
           : []
       };
 
@@ -188,6 +194,12 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit }) =>
         // Keep existing additional images if no new ones are uploaded
         if (formData.additionalImages.length === 0 && program.additional_images) {
           submissionData.additionalImages = program.additional_images;
+        } else if (formData.additionalImages.length > 0) {
+          // In edit mode, we might have a mix of existing and new images
+          // Filter to ensure we only send base64 strings
+          submissionData.additionalImages = formData.additionalImages.filter(img => 
+            typeof img === 'string' && img.startsWith('data:image/')
+          );
         }
       }
 
@@ -282,7 +294,7 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit }) =>
               disabled={isSubmitting}
             >
               {isSubmitting ? <FaSpinner className={styles.spinner} /> : null}
-              {isEditMode ? "Update Program" : "Submit for Approval"}
+              {isEditMode ? "Save Changes" : "Submit for Approval"}
             </button>
           </div>
               

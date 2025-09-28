@@ -240,6 +240,35 @@
   transform: none !important;
 }
 
+/* Spinner for loading states */
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.deleteBtn .spinner {
+  border: 2px solid rgba(220, 38, 38, 0.3);
+  border-top: 2px solid #dc2626;
+}
+
+.cancelBtn .spinner {
+  border: 2px solid rgba(220, 38, 38, 0.3);
+  border-top: 2px solid #dc2626;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Rejection Indicators */
 .rejectionHint {
   background-color: #fef3f3;

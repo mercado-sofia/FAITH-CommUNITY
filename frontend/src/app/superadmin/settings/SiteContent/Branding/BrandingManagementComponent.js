@@ -7,10 +7,8 @@ import Image from 'next/image';
 import styles from './BrandingManagement.module.css';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import ConfirmationModal from '../../../components/ConfirmationModal';
-import { useScrollPosition } from '@/hooks/useScrollPosition';
 
 export default function BrandingManagementComponent({ showSuccessModal }) {
-  const { preserveScrollPositionAsync } = useScrollPosition();
   const [brandingData, setBrandingData] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteType, setDeleteType] = useState(null);
@@ -196,7 +194,6 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
 
   // Confirm branding update with batch file uploads
   const handleBrandingConfirm = async () => {
-    await preserveScrollPositionAsync(async () => {
       try {
         setIsUpdatingBranding(true);
         
@@ -244,7 +241,6 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
         setIsUpdatingBranding(false);
         setShowBrandingModal(false);
       }
-    });
   };
 
   // Cancel branding update

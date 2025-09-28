@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiEdit3, FiXCircle } from 'react-icons/fi';
+import { FiEdit3 } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import ConfirmationModal from '../../../components/ConfirmationModal';
 import styles from './SiteNameManagement.module.css';

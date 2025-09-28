@@ -4,7 +4,8 @@ import { formatDateShort } from '@/utils/dateUtils.js';
 import SubmissionModal from '../modals/SubmissionModal';
 import ReEditModal from '../modals/ReEditModal';
 import CancelConfirmationModal from '../modals/CancelConfirmationModal';
-import { DeleteConfirmationModal, SuccessModal } from '../../../components';
+import { DeleteConfirmationModal } from '../../../components';
+import { SuccessModal } from '@/components';
 import styles from './SubmissionTable.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -27,6 +28,7 @@ export default function SubmissionTable({
   const [confirmId, setConfirmId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
+  const [loadingStates, setLoadingStates] = useState({});
   
   const showToast = (message, type = 'success') => {
     setSuccessModal({ isVisible: true, message, type });
@@ -62,16 +64,25 @@ export default function SubmissionTable({
   const currentSubmissions = submissions;
 
   const handleCancel = async (id) => {
+    setLoadingStates(prev => ({ ...prev, [`cancel-${id}`]: true }));
     try {
-      const response = await fetch(`${API_BASE_URL}/api/submissions/${id}`, { method: 'DELETE' });
+      const response = await fetch(`${API_BASE_URL}/api/submissions/${id}`, { 
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
+      });
       if (!response.ok) {
-        throw new Error(`Failed to cancel submission: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to cancel submission: ${response.status}`);
       }
       if (onRefresh) onRefresh();
       setConfirmId(null);
       showToast('Submission cancelled successfully!', 'success');
     } catch (err) {
       showToast(`Failed to cancel submission: ${err.message}`, 'error');
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [`cancel-${id}`]: false }));
     }
   };
 
@@ -102,6 +113,7 @@ export default function SubmissionTable({
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         },
         body: JSON.stringify({
           proposed_data: formattedData,
@@ -110,7 +122,8 @@ export default function SubmissionTable({
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to update submission: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to update submission: ${response.status}`);
       }
 
       const result = await response.json();
@@ -129,11 +142,13 @@ export default function SubmissionTable({
 
   // Delete handler (hard delete)
   const handleDelete = async (id) => {
+    setLoadingStates(prev => ({ ...prev, [`delete-${id}`]: true }));
     try {
       const response = await fetch(`${API_BASE_URL}/api/submissions/${id}`, {
         method: 'DELETE',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         }
       });
       
@@ -147,13 +162,15 @@ export default function SubmissionTable({
         onShowBulkActions(newSelected.size > 0);
         showToast('Submission deleted successfully!', 'success');
       } else {
-        const errorData = await response.text();
+        const errorData = await response.json().catch(() => ({}));
         console.error(`Delete failed for ID ${id}:`, errorData);
-        throw new Error(`Failed to delete submission: ${response.status} ${response.statusText}`);
+        throw new Error(errorData.message || `Failed to delete submission: ${response.status} ${response.statusText}`);
       }
     } catch (err) {
       console.error('Delete error:', err);
       showToast('Failed to delete submission', 'error');
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [`delete-${id}`]: false }));
     }
   };
 
@@ -172,7 +189,12 @@ export default function SubmissionTable({
       }
       
       const promises = pendingIds.map(id => 
-        fetch(`${API_BASE_URL}/api/submissions/${id}`, { method: 'DELETE' })
+        fetch(`${API_BASE_URL}/api/submissions/${id}`, { 
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          }
+        })
       );
       await Promise.all(promises);
       if (onRefresh) onRefresh();
@@ -188,7 +210,12 @@ export default function SubmissionTable({
   const handleBulkDelete = async () => {
     try {
       const promises = Array.from(selectedItems).map(id => 
-        fetch(`${API_BASE_URL}/api/submissions/${id}`, { method: 'DELETE' })
+        fetch(`${API_BASE_URL}/api/submissions/${id}`, { 
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          }
+        })
       );
       
       const responses = await Promise.all(promises);
@@ -286,17 +313,37 @@ export default function SubmissionTable({
                       className={`${styles.editBtn} ${s.status !== 'pending' ? styles.disabledBtn : ''}`}
                       onClick={s.status === 'pending' ? () => handleReEdit(s) : undefined}
                       disabled={s.status !== 'pending'}
-                      title={s.status === 'pending' ? "Edit submission" : "Cannot edit - submission already processed"}
+                      title={
+                        s.status === 'pending' 
+                          ? "Edit submission" 
+                          : s.status === 'approved' 
+                            ? "Cannot edit - submission already approved" 
+                            : s.status === 'rejected' 
+                              ? "Cannot edit - submission was rejected" 
+                              : "Cannot edit - submission already processed"
+                      }
                     >
                       <FiEdit size={14} />
                     </button>
                     <button 
                       className={`${styles.cancelBtn} ${s.status !== 'pending' ? styles.disabledBtn : ''}`}
                       onClick={s.status === 'pending' ? () => setConfirmId(s.id) : undefined}
-                      disabled={s.status !== 'pending'}
-                      title={s.status === 'pending' ? "Cancel submission" : "Cannot cancel - submission already processed"}
+                      disabled={s.status !== 'pending' || loadingStates[`cancel-${s.id}`]}
+                      title={
+                        s.status === 'pending' 
+                          ? "Cancel submission" 
+                          : s.status === 'approved' 
+                            ? "Cannot cancel - submission already approved" 
+                            : s.status === 'rejected' 
+                              ? "Cannot cancel - submission was rejected" 
+                              : "Cannot cancel - submission already processed"
+                      }
                     >
-                      <FiX size={14} />
+                      {loadingStates[`cancel-${s.id}`] ? (
+                        <span className={styles.spinner}></span>
+                      ) : (
+                        <FiX size={14} />
+                      )}
                     </button>
                   </div>
                 </td>
@@ -304,9 +351,14 @@ export default function SubmissionTable({
                   <button 
                     className={styles.deleteBtn} 
                     onClick={() => setDeleteId(s.id)}
+                    disabled={loadingStates[`delete-${s.id}`]}
                     title="Delete submission from history"
                   >
-                    <FiTrash2 size={14} />
+                    {loadingStates[`delete-${s.id}`] ? (
+                      <span className={styles.spinner}></span>
+                    ) : (
+                      <FiTrash2 size={14} />
+                    )}
                   </button>
                 </td>
               </tr>

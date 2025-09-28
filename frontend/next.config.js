@@ -6,7 +6,7 @@ const nextConfig = {
   // Enable experimental features for better performance
   experimental: {
     optimizePackageImports: ['react-icons'],
-    optimizeCss: false, // Temporarily disable CSS optimization to fix critters error
+    optimizeCss: false
   },
   
   // Turbopack configuration (now stable)

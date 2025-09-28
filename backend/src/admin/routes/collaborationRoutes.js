@@ -6,10 +6,7 @@ import {
   inviteCollaborator,
   getProgramCollaborators,
   removeCollaborator,
-  acceptCollaboration,
-  declineCollaboration,
-  optOutCollaboration,
-  getCollaborationInvitations
+  optOutCollaboration
 } from '../controllers/collaborationController.js';
 
 const router = express.Router();
@@ -32,16 +29,7 @@ router.get('/programs/:programId/collaborators', getProgramCollaborators);
 // Remove collaborator from program
 router.delete('/programs/:programId/collaborators/:adminId', removeCollaborator);
 
-// Accept collaboration invitation (legacy - for pending invitations)
-router.put('/collaborations/:collaborationId/accept', acceptCollaboration);
-
-// Decline collaboration invitation (legacy - for pending invitations)
-router.put('/collaborations/:collaborationId/decline', declineCollaboration);
-
 // Opt out of collaboration (for auto-accepted collaborations)
 router.put('/collaborations/:collaborationId/opt-out', optOutCollaboration);
-
-// Get collaboration invitations for current admin
-router.get('/collaboration-invitations', getCollaborationInvitations);
 
 export default router;

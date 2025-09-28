@@ -81,7 +81,6 @@ export default function FooterContentManagement({ showSuccessModal }) {
   const [isEditingServices, setIsEditingServices] = useState(false);
   const [isEditingCopyright, setIsEditingCopyright] = useState(false);
   
-  // Temporary states for editing
   const [tempContactInfo, setTempContactInfo] = useState({ phone: '', email: '' });
   const [tempSocialMedia, setTempSocialMedia] = useState([]);
   const [tempCopyright, setTempCopyright] = useState('');

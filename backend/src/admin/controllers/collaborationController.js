@@ -22,7 +22,6 @@ export const getAllAvailableAdmins = async (req, res) => {
       data: availableAdmins
     });
   } catch (error) {
-    console.error('Error fetching available admins:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch available admins',
@@ -51,7 +50,7 @@ export const getAvailableAdmins = async (req, res) => {
         AND a.id NOT IN (
           SELECT collaborator_admin_id 
           FROM program_collaborations 
-          WHERE program_id = ? AND status IN ('pending', 'accepted')
+          WHERE program_id = ? AND status IN ('accepted', 'declined')
         )
         ORDER BY o.orgName ASC, a.email ASC
       `;
@@ -76,7 +75,6 @@ export const getAvailableAdmins = async (req, res) => {
       data: availableAdmins
     });
   } catch (error) {
-    console.error('Error fetching available admins:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch available admins',
@@ -109,6 +107,14 @@ export const inviteCollaborator = async (req, res) => {
 
     const program = programRows[0];
 
+    // Prevent self-collaboration
+    if (collaboratorAdminId === currentAdminId) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot add yourself as a collaborator'
+      });
+    }
+
     // Check if collaboration already exists
     const [existingCollaboration] = await db.execute(`
       SELECT id, status FROM program_collaborations 
@@ -117,15 +123,15 @@ export const inviteCollaborator = async (req, res) => {
 
     if (existingCollaboration.length > 0) {
       const collaboration = existingCollaboration[0];
-      if (collaboration.status === 'pending') {
-        return res.status(409).json({
-          success: false,
-          message: 'Collaboration invitation already pending'
-        });
-      } else if (collaboration.status === 'accepted') {
+      if (collaboration.status === 'accepted') {
         return res.status(409).json({
           success: false,
           message: 'Admin is already a collaborator'
+        });
+      } else if (collaboration.status === 'declined') {
+        return res.status(409).json({
+          success: false,
+          message: 'Admin has previously opted out of this collaboration'
         });
       }
     }
@@ -141,17 +147,13 @@ export const inviteCollaborator = async (req, res) => {
       UPDATE programs_projects SET is_collaborative = TRUE WHERE id = ?
     `, [programId]);
 
-    // Create notification for the auto-accepted collaborator
+    // Notify collaborator only if the program is already approved
     try {
-      await NotificationController.createNotification(
-        collaboratorAdminId,
-        'collaboration',
-        'Added as Program Collaborator',
-        `You've been added as a collaborator on "${program.title}". You can now view and manage this program. If you don't want to participate, you can opt out from the program details.`,
-        'programs',
-        programId
-      );
+      const { notifyCollaboratorOnAddition } = await import('../../utils/collaboratorNotification.js');
+      await notifyCollaboratorOnAddition(programId, program.title, collaboratorAdminId);
     } catch (notificationError) {
+      console.error('Failed to send collaboration notification:', notificationError);
+      // Don't fail the main operation if notification fails
     }
 
     res.status(201).json({
@@ -160,7 +162,6 @@ export const inviteCollaborator = async (req, res) => {
       collaborationId: result.insertId
     });
   } catch (error) {
-    console.error('Error inviting collaborator:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to invite collaborator',
@@ -215,7 +216,6 @@ export const getProgramCollaborators = async (req, res) => {
       data: collaborators
     });
   } catch (error) {
-    console.error('Error fetching program collaborators:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch collaborators',
@@ -291,7 +291,6 @@ export const removeCollaborator = async (req, res) => {
       message: 'Collaborator removed successfully'
     });
   } catch (error) {
-    console.error('Error removing collaborator:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to remove collaborator',
@@ -300,64 +299,7 @@ export const removeCollaborator = async (req, res) => {
   }
 };
 
-// Accept collaboration invitation
-export const acceptCollaboration = async (req, res) => {
-  try {
-    const { collaborationId } = req.params;
-    const currentAdminId = req.admin?.id || req.superadmin?.id;
-
-    // Update collaboration status
-    const [result] = await db.execute(`
-      UPDATE program_collaborations 
-      SET status = 'accepted', responded_at = NOW()
-      WHERE id = ? AND collaborator_admin_id = ? AND status = 'pending'
-    `, [collaborationId, currentAdminId]);
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Collaboration invitation not found or already responded'
-      });
-    }
-
-    // Get program details for notification
-    const [programDetails] = await db.execute(`
-      SELECT pp.title, pp.id, a.email as inviter_email
-      FROM program_collaborations pc
-      LEFT JOIN programs_projects pp ON pc.program_id = pp.id
-      LEFT JOIN admins a ON pc.invited_by_admin_id = a.id
-      WHERE pc.id = ?
-    `, [collaborationId]);
-
-    // Notify the inviter
-    if (programDetails.length > 0) {
-      const program = programDetails[0];
-      try {
-        await NotificationController.createNotification(
-          req.admin.id, // This should be the inviter's ID, but we need to get it from the collaboration
-          'collaboration',
-          'Collaboration Accepted',
-          `Your collaboration invitation for "${program.title}" has been accepted`,
-          'programs',
-          program.id
-        );
-      } catch (notificationError) {
-      }
-    }
-
-    res.json({
-      success: true,
-      message: 'Collaboration invitation accepted'
-    });
-  } catch (error) {
-    console.error('Error accepting collaboration:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to accept collaboration',
-      error: error.message
-    });
-  }
-};
+// Note: acceptCollaboration function removed - not needed in auto-accept model
 
 // Opt out of collaboration (for auto-accepted collaborations)
 export const optOutCollaboration = async (req, res) => {
@@ -414,7 +356,6 @@ export const optOutCollaboration = async (req, res) => {
       message: `You have opted out of collaborating on "${collaboration.program_title}"`
     });
   } catch (error) {
-    console.error('Error opting out of collaboration:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to opt out of collaboration',
@@ -423,73 +364,6 @@ export const optOutCollaboration = async (req, res) => {
   }
 };
 
-// Decline collaboration invitation (legacy - for pending invitations)
-export const declineCollaboration = async (req, res) => {
-  try {
-    const { collaborationId } = req.params;
-    const currentAdminId = req.admin?.id || req.superadmin?.id;
+// Note: declineCollaboration function removed - not needed in auto-accept model
 
-    // Update collaboration status
-    const [result] = await db.execute(`
-      UPDATE program_collaborations 
-      SET status = 'declined', responded_at = NOW()
-      WHERE id = ? AND collaborator_admin_id = ? AND status = 'pending'
-    `, [collaborationId, currentAdminId]);
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Collaboration invitation not found or already responded'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Collaboration invitation declined'
-    });
-  } catch (error) {
-    console.error('Error declining collaboration:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to decline collaboration',
-      error: error.message
-    });
-  }
-};
-
-// Get collaboration invitations for current admin
-export const getCollaborationInvitations = async (req, res) => {
-  try {
-    const currentAdminId = req.admin?.id || req.superadmin?.id;
-
-    const [invitations] = await db.execute(`
-      SELECT 
-        pc.id,
-        pc.status,
-        pc.invited_at,
-        pp.id as program_id,
-        pp.title as program_title,
-        pp.description as program_description,
-        a.email as inviter_email,
-        o.orgName as inviter_organization
-      FROM program_collaborations pc
-      LEFT JOIN programs_projects pp ON pc.program_id = pp.id
-      LEFT JOIN admins a ON pc.invited_by_admin_id = a.id
-      LEFT JOIN organizations o ON a.organization_id = o.id
-      WHERE pc.collaborator_admin_id = ? AND pc.status = 'pending'
-      ORDER BY pc.invited_at DESC
-    `, [currentAdminId]);
-
-    res.json({
-      success: true,
-      data: invitations
-    });
-  } catch (error) {
-    console.error('Error fetching collaboration invitations:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch collaboration invitations',
-      error: error.message
-    });
-  }
-};
+// Note: getCollaborationInvitations function removed - no pending invitations in auto-accept model

@@ -27,7 +27,6 @@ export function useApplyFormPersistence(key, initialData) {
           if (savedData) {
             const parsedData = JSON.parse(savedData);
             setFormData(parsedData);
-            console.log('Form data restored from page refresh:', parsedData);
           }
         } catch (error) {
           console.error('Error loading saved form data:', error);
@@ -36,7 +35,6 @@ export function useApplyFormPersistence(key, initialData) {
       } else if (!isPageRefresh && isInitialLoad.current) {
         // This is initial navigation to apply section, clear any existing data
         localStorage.removeItem(key);
-        console.log('Form data cleared on initial navigation to apply section');
       }
       
       isInitialLoad.current = false;
@@ -55,7 +53,6 @@ export function useApplyFormPersistence(key, initialData) {
         
         if (hasData) {
           localStorage.setItem(key, JSON.stringify(formData));
-          console.log('Form data saved:', formData);
         }
       } catch (error) {
         console.error('Error saving form data:', error);
@@ -72,7 +69,6 @@ export function useApplyFormPersistence(key, initialData) {
     setFormData(initialData);
     if (typeof window !== 'undefined') {
       localStorage.removeItem(key);
-      console.log('Form data manually cleared');
     }
   };
 

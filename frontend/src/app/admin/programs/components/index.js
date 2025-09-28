@@ -9,4 +9,4 @@ export { default as UnsaveChangesModal } from './UnsaveChangesModal/UnsaveChange
 export * from './ProgramForm/components'
 
 // Collaboration components
-export * from './Collaboration'
+export { default as CollaborationBadge } from './Collaboration/CollaborationBadge'

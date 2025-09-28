@@ -5,7 +5,7 @@ import { FaEnvelope, FaLock, FaShieldAlt } from 'react-icons/fa';
 import styles from './settings.module.css';
 import TwoFAModal from './TwoFAModal/TwoFAModal';
 import { EmailChange, PasswordChange } from '@/components';
-import SuccessModal from '../components/SuccessModal';
+import { SuccessModal } from '@/components';
 import { SiteNameManagement, FooterContentManagement, BrandingManagement, HeroSectionManagement, MissionVisionManagement, AboutUsManagement, HeadManagement } from './SiteContent';
 import brandingStyles from './SiteContent/Branding/BrandingManagement.module.css';
 import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError, checkAuthStatus } from '@/utils/adminAuth';

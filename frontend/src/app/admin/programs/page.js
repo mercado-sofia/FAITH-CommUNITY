@@ -7,7 +7,8 @@ import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { useAdminPrograms } from '../hooks/useAdminData';
 import { ProgramCard, ViewDetailsModal } from './components';
 import ProgramForm from './components/ProgramForm/ProgramForm';
-import { DeleteConfirmationModal, SuccessModal, SkeletonLoader } from '../components';
+import { DeleteConfirmationModal, SkeletonLoader } from '../components';
+import { SuccessModal } from '@/components';
 import { SearchAndFilterControls } from './components';
 import styles from './programs.module.css';
 import { FaPlus } from 'react-icons/fa';
@@ -74,10 +75,8 @@ export default function AdminProgramsPage() {
 
   // Handle program submission for approval
   const handleSubmitProgram = async (programData) => {
-    console.log('handleSubmitProgram called with:', programData);
     try {
       if (!currentAdmin?.org || !currentAdmin?.id) {
-        console.log('Missing admin data:', { org: currentAdmin?.org, id: currentAdmin?.id });
         setSuccessModal({ 
           isVisible: true, 
           message: 'Missing organization or admin ID. Please log in again.', 
@@ -102,7 +101,6 @@ export default function AdminProgramsPage() {
         ],
       };
 
-      console.log('Submitting to API:', submissionPayload);
       
       // Get admin token for authentication
       const token = localStorage.getItem('adminToken');
@@ -124,10 +122,8 @@ export default function AdminProgramsPage() {
         body: JSON.stringify(submissionPayload),
       });
 
-      console.log('API response status:', response.status);
       if (!response.ok) {
         const errorText = await response.text();
-        console.log('API error response:', errorText);
         throw new Error(`Failed to submit program: ${errorText}`);
       }
 
@@ -160,10 +156,22 @@ export default function AdminProgramsPage() {
         return;
       }
 
+      // Get admin token for authentication
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        setSuccessModal({ 
+          isVisible: true, 
+          message: 'Authentication token not found. Please log in again.', 
+          type: 'error' 
+        });
+        return;
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/admin/programs/${editingProgram.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(programData),
       });
@@ -210,10 +218,22 @@ export default function AdminProgramsPage() {
   // Handle mark program as completed
   const handleMarkCompleted = async (program) => {
     try {
+      // Get admin token for authentication
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        setSuccessModal({ 
+          isVisible: true, 
+          message: 'Authentication token not found. Please log in again.', 
+          type: 'error' 
+        });
+        return;
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/admin/programs/${program.id}/mark-completed`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -241,10 +261,22 @@ export default function AdminProgramsPage() {
   // Handle mark program as active
   const handleMarkActive = async (program) => {
     try {
+      // Get admin token for authentication
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        setSuccessModal({ 
+          isVisible: true, 
+          message: 'Authentication token not found. Please log in again.', 
+          type: 'error' 
+        });
+        return;
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/admin/programs/${program.id}/mark-active`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -275,8 +307,22 @@ export default function AdminProgramsPage() {
     
     setIsDeleting(true);
     try {
+      // Get admin token for authentication
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        setSuccessModal({ 
+          isVisible: true, 
+          message: 'Authentication token not found. Please log in again.', 
+          type: 'error' 
+        });
+        return;
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/admin/programs/${deletingProgram.id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {

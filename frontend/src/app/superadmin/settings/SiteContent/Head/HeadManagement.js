@@ -1,12 +1,461 @@
 'use client';
 
-import HeadsOfFacesManagement from './HeadsOfFacesManagement';
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import { FiEdit3, FiUpload, FiTrash2 } from 'react-icons/fi';
+import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
+import ConfirmationModal from '../../../components/ConfirmationModal';
 import styles from './HeadManagement.module.css';
 
 export default function HeadManagement({ showSuccessModal }) {
+  const [headData, setHeadData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    email: '',
+    phone: '',
+    position: 'Head of FACES',
+    image_url: ''
+  });
+
+  // File upload state
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Load head data
+  useEffect(() => {
+    const loadHeadData = async () => {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const response = await makeAuthenticatedRequest(
+          `${baseUrl}/api/superadmin/heads-faces`,
+          { method: 'GET' },
+          'superadmin'
+        );
+
+        if (response && response.ok) {
+          const data = await response.json();
+          if (data.data && data.data.length > 0) {
+            const head = data.data[0];
+            setHeadData(head);
+            setFormData({
+              name: head.name || '',
+              description: head.description || '',
+              email: head.email || '',
+              phone: head.phone || '',
+              position: head.position || 'Head of FACES',
+              image_url: head.image_url || ''
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading head data:', error);
+        showAuthError('Failed to load head data. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadHeadData();
+  }, [showSuccessModal]);
+
+  // Handle file selection
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setFormData(prev => ({
+        ...prev,
+        image_url: previewUrl
+      }));
+    }
+  };
+
+  // Upload image to Cloudinary
+  const uploadImage = async (file) => {
+    try {
+      setUploadingImage(true);
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const token = localStorage.getItem('superAdminToken');
+      
+      const response = await fetch(`${baseUrl}/api/superadmin/heads-faces/upload-image`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.data.url;
+      } else {
+        throw new Error('Failed to upload image');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // Handle save
+  const handleSave = async () => {
+    try {
+      setIsUpdating(true);
+      
+      let imageUrl = formData.image_url;
+      
+      // Upload image if a new file is selected
+      if (selectedFile) {
+        imageUrl = await uploadImage(selectedFile);
+      }
+      
+      const submitData = {
+        ...formData,
+        image_url: imageUrl
+      };
+      
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const response = await makeAuthenticatedRequest(
+        `${baseUrl}/api/superadmin/heads-faces/manage`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(submitData),
+        },
+        'superadmin'
+      );
+
+      if (response && response.ok) {
+        const data = await response.json();
+        setHeadData(data.data);
+        setFormData({
+          name: data.data.name || '',
+          description: data.data.description || '',
+          email: data.data.email || '',
+          phone: data.data.phone || '',
+          position: data.data.position || 'Head of FACES',
+          image_url: data.data.image_url || ''
+        });
+        setSelectedFile(null);
+        setIsEditing(false);
+        showSuccessModal('Head of FACES updated successfully!');
+      } else {
+        const errorData = await response.json();
+        showSuccessModal(errorData.message || 'Failed to update head of FACES');
+      }
+    } catch (error) {
+      console.error('Error saving head data:', error);
+      showSuccessModal('Failed to save head data. Please try again.');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Handle delete
+  const handleDelete = async () => {
+    if (!headData) return;
+    
+    try {
+      setIsDeleting(true);
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const response = await makeAuthenticatedRequest(
+        `${baseUrl}/api/superadmin/heads-faces/${headData.id}`,
+        { method: 'DELETE' },
+        'superadmin'
+      );
+
+      if (response && response.ok) {
+        setHeadData(null);
+        setFormData({
+          name: '',
+          description: '',
+          email: '',
+          phone: '',
+          position: 'Head of FACES',
+          image_url: ''
+        });
+        setSelectedFile(null);
+        setIsEditing(false);
+        showSuccessModal('Head of FACES deleted successfully!');
+      } else {
+        const errorData = await response.json();
+        showSuccessModal(errorData.message || 'Failed to delete head of FACES');
+      }
+    } catch (error) {
+      console.error('Error deleting head data:', error);
+      showSuccessModal('Failed to delete head data. Please try again.');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
+  // Handle cancel
+  const handleCancel = () => {
+    if (headData) {
+      setFormData({
+        name: headData.name || '',
+        description: headData.description || '',
+        email: headData.email || '',
+        phone: headData.phone || '',
+        position: headData.position || 'Head of FACES',
+        image_url: headData.image_url || ''
+      });
+    } else {
+      setFormData({
+        name: '',
+        description: '',
+        email: '',
+        phone: '',
+        position: 'Head of FACES',
+        image_url: ''
+      });
+    }
+    setSelectedFile(null);
+    setIsEditing(false);
+  };
+
+  if (isLoading) {
+    return (
+      <div className={styles.settingsPanel}>
+        <div className={styles.panelHeader}>
+          <div className={styles.panelTitle}>
+            <h2>Head Of FACES</h2>
+            <p>Manage the head of FACES displayed on the public interface</p>
+          </div>
+        </div>
+        <div className={styles.panelContent}>
+          <div className={styles.loadingState}>
+            <div className={styles.loadingSpinner}></div>
+            <p>Loading head data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={styles.container}>
-      <HeadsOfFacesManagement showSuccessModal={showSuccessModal} />
+    <div className={styles.settingsPanel}>
+      <div className={styles.panelHeader}>
+        <div className={styles.panelTitle}>
+          <h2>Head Of FACES</h2>
+          <p>Manage the head of FACES displayed on the public interface</p>
+        </div>
+        <div className={styles.headerActions}>
+          {!isEditing ? (
+            <button
+              className={styles.editBtn}
+              onClick={() => setIsEditing(true)}
+              disabled={isUpdating}
+            >
+              <FiEdit3 size={16} />
+              {headData ? 'Edit' : 'Add Head'}
+            </button>
+          ) : (
+            <div className={styles.editActions}>
+              <button
+                className={styles.cancelBtn}
+                onClick={handleCancel}
+                disabled={isUpdating}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.saveBtn}
+                onClick={handleSave}
+                disabled={isUpdating || uploadingImage}
+              >
+                {isUpdating ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className={styles.panelContent}>
+        {!headData && !isEditing ? (
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}>👤</div>
+            <h3>No Head of FACES</h3>
+            <p>Add a head of FACES to display on the public interface</p>
+            <button
+              className={styles.addButton}
+              onClick={() => setIsEditing(true)}
+            >
+              Add Head of FACES
+            </button>
+          </div>
+        ) : (
+          <div className={styles.headCard}>
+            {/* Profile Image Section */}
+            <div className={styles.imageSection}>
+              <div className={styles.imageContainer}>
+                {formData.image_url ? (
+                  <Image
+                    src={formData.image_url}
+                    alt="Head of FACES"
+                    width={200}
+                    height={200}
+                    className={styles.profileImage}
+                  />
+                ) : (
+                  <div className={styles.placeholderImage}>
+                    <span>{formData.name.charAt(0).toUpperCase() || 'H'}</span>
+                  </div>
+                )}
+                {isEditing && (
+                  <div className={styles.imageOverlay}>
+                    <label htmlFor="image-upload" className={styles.uploadButton}>
+                      <FiUpload />
+                      {selectedFile ? 'Change Image' : 'Upload Image'}
+                    </label>
+                    <input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileSelect}
+                      className={styles.fileInput}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Profile Information Section */}
+            <div className={styles.infoSection}>
+              {isEditing ? (
+                <div className={styles.editForm}>
+                  <div className={styles.inputGroup}>
+                    <label className={styles.inputLabel}>Name *</label>
+                    <input
+                      type="text"
+                      className={styles.textInput}
+                      value={formData.name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Enter full name"
+                      required
+                    />
+                  </div>
+
+                  <div className={styles.inputGroup}>
+                    <label className={styles.inputLabel}>Position</label>
+                    <input
+                      type="text"
+                      className={styles.textInput}
+                      value={formData.position}
+                      onChange={(e) => setFormData(prev => ({ ...prev, position: e.target.value }))}
+                      placeholder="e.g., Head of FACES"
+                    />
+                  </div>
+
+                  <div className={styles.inputGroup}>
+                    <label className={styles.inputLabel}>Description</label>
+                    <textarea
+                      className={styles.textArea}
+                      value={formData.description}
+                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Enter description"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className={styles.inputGroup}>
+                    <label className={styles.inputLabel}>Email</label>
+                    <input
+                      type="email"
+                      className={styles.textInput}
+                      value={formData.email}
+                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="Enter email address"
+                    />
+                  </div>
+
+                  <div className={styles.inputGroup}>
+                    <label className={styles.inputLabel}>Phone</label>
+                    <input
+                      type="tel"
+                      className={styles.textInput}
+                      value={formData.phone}
+                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="Enter phone number"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.readOnlyInfo}>
+                  <div className={styles.nameSection}>
+                    <h3 className={styles.name}>{headData?.name || 'No Name'}</h3>
+                    <span className={styles.position}>{headData?.position || 'Head of FACES'}</span>
+                  </div>
+                  
+                  {headData?.description && (
+                    <p className={styles.description}>{headData.description}</p>
+                  )}
+                  
+                  <div className={styles.contactInfo}>
+                    {headData?.email && (
+                      <div className={styles.contactItem}>
+                        <span className={styles.contactLabel}>Email:</span>
+                        <span className={styles.contactValue}>{headData.email}</span>
+                      </div>
+                    )}
+                    {headData?.phone && (
+                      <div className={styles.contactItem}>
+                        <span className={styles.contactLabel}>Phone:</span>
+                        <span className={styles.contactValue}>{headData.phone}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons - Only show in edit mode */}
+            {isEditing && headData && (
+              <div className={styles.actionButtons}>
+                <button
+                  className={styles.deleteBtn}
+                  onClick={() => setShowDeleteModal(true)}
+                  disabled={isDeleting}
+                >
+                  <FiTrash2 />
+                  Delete Head
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDelete}
+        title="Delete Head of FACES"
+        message="Are you sure you want to delete this head of FACES? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={isDeleting}
+        isDestructive={true}
+      />
     </div>
   );
 }

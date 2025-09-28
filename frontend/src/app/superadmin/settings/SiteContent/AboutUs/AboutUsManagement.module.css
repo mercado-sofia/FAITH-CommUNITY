@@ -60,6 +60,28 @@
   gap: 1.5rem;
 }
 
+/* Main Content Layout - Image on left, Text on right */
+.mainContentLayout {
+  display: flex;
+  gap: 2rem;
+  align-items: center; /* Center align items vertically */
+}
+
+/* Image Section - Left Side */
+.imageSection {
+  flex: 0 0 300px; /* Fixed width for image section */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Text Content Section - Right Side */
+.textContentSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem; /* Reduced gap between input groups */
+}
+
 .inputGroup {
   display: flex;
   flex-direction: column;
@@ -316,8 +338,8 @@
 }
 
 .categoriesList {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
 }
 
@@ -592,12 +614,56 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 200px;
+  height: 250px; /* Increased height to span heading + description */
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   overflow: hidden;
   position: relative;
+  cursor: pointer;
+}
+
+/* Image Overlay for Hover Effect */
+.imageOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.currentImageContainer:hover .imageOverlay {
+  opacity: 1;
+}
+
+/* Upload Button in Overlay */
+.uploadButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: white;
+  color: #374151;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-poppins), sans-serif;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.uploadButton:hover {
+  background: #f3f4f6;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Fallback Indicator */
@@ -704,18 +770,27 @@
   padding: 0.5rem;
   border-radius: 8px;
   font-size: 14px;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   min-width: 40px;
   height: 40px;
+  transform: scale(1);
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.1);
 }
 
 .removeBtn:hover {
-  background: #ffe1e1;
-  color: #dc2626;
-  border-color: #dc2626;
+  background: #fecaca;
+  color: #b91c1c;
+  border-color: #b91c1c;
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.2);
+}
+
+.removeBtn:active {
+  transform: scale(0.95);
+  box-shadow: 0 1px 2px rgba(220, 38, 38, 0.3);
 }
 
 /* Upload Actions Styles */
@@ -729,11 +804,12 @@
 .selectedFileInfo {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.75rem;
+  gap: 0.5rem;
+  padding: 1rem;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 6px;
+  border-radius: 8px;
+  margin-top: 0.5rem;
 }
 
 .fileName {
@@ -758,4 +834,44 @@
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .mainContentLayout {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .imageSection {
+    flex: none;
+    width: 100%;
+  }
+  
+  .textContentSection {
+    flex: none;
+    width: 100%;
+  }
+  
+  .currentImageContainer {
+    height: 200px; /* Reduce height on mobile */
+  }
+  
+  .categoriesList {
+    grid-template-columns: 1fr; /* Single column on tablet and mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  .mainContentLayout {
+    gap: 1rem;
+  }
+  
+  .currentImageContainer {
+    height: 180px; /* Further reduce height on small mobile */
+  }
+  
+  .categoriesList {
+    grid-template-columns: 1fr; /* Single column on small mobile */
+  }
 }

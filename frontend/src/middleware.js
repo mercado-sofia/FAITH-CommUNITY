@@ -6,14 +6,6 @@ export function middleware(request) {
 
   const role = request.cookies.get("userRole")?.value
 
-  if (process.env.NODE_ENV !== "production") {
-    console.log("🛡️ Middleware Check:", {
-      path: pathname,
-      role: role,
-      timestamp: new Date().toISOString(),
-      isInvitationPath: pathname.startsWith("/admin/invitation/accept"),
-    })
-  }
 
   // Allow login page for everyone
   if (pathname === "/login") {
@@ -23,7 +15,6 @@ export function middleware(request) {
 
   // Allow admin invitation acceptance page for everyone (no authentication required)
   if (pathname.startsWith("/admin/invitation/accept")) {
-    console.log("✅ Invitation acceptance page - allowing access")
     return NextResponse.next()
   }
 

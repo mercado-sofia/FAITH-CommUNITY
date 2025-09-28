@@ -8,7 +8,8 @@ import { applyRoleHierarchyOrdering } from "./utils";
 import { EditModal, OrgInfoSection, SummaryModal } from "./OrgInfo";
 import { Section, SectionEditModal, SectionSummaryModal } from "./AdvocacyCompetency";
 import { OrgHeadsSection, AddOrgHeadModal, OrgHeadsEditModal } from "./OrgHeads";
-import { DeleteConfirmationModal, SuccessModal, SkeletonLoader } from "../components";
+import { DeleteConfirmationModal, SkeletonLoader } from "../components";
+import { SuccessModal } from '@/components';
 import pageStyles from "./page.module.css";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -116,7 +117,6 @@ export default function OrganizationPage() {
   // Modal-specific message state
   const [modalMessage, setModalMessage] = useState({ text: "", type: "" });
 
-  // Temporary state for editing advocacy/competency without affecting main display
   const [tempEditData, setTempEditData] = useState({});
   const [reEditSubmissionId, setReEditSubmissionId] = useState(null);
 

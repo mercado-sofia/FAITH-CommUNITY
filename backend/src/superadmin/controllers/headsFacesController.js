@@ -1,5 +1,7 @@
 // db table: heads_faces
 import db from '../../database.js';
+import { uploadSingleToCloudinary } from '../../utils/cloudinaryUpload.js';
+import { CLOUDINARY_FOLDERS } from '../../utils/cloudinaryConfig.js';
 
 export const getHeadsFaces = async (req, res) => {
   try {
@@ -9,7 +11,6 @@ export const getHeadsFaces = async (req, res) => {
     );
     res.status(200).json({ success: true, data: results });
   } catch (err) {
-    console.error('Error fetching heads of FACES:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 };
@@ -28,7 +29,6 @@ export const getHeadsFacesById = async (req, res) => {
     
     res.status(200).json({ success: true, data: results[0] });
   } catch (err) {
-    console.error('Error fetching head of FACES by ID:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 };
@@ -87,7 +87,6 @@ export const createOrUpdateHeadFaces = async (req, res) => {
       });
     }
   } catch (err) {
-    console.error('Error creating/updating head of FACES:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 };
@@ -118,7 +117,6 @@ export const createHeadsFaces = async (req, res) => {
       data: newRecord[0] 
     });
   } catch (err) {
-    console.error('Error creating head of FACES:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 };
@@ -160,7 +158,6 @@ export const updateHeadsFaces = async (req, res) => {
       data: updatedRecord[0] 
     });
   } catch (err) {
-    console.error('Error updating head of FACES:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 };
@@ -190,8 +187,78 @@ export const deleteHeadsFaces = async (req, res) => {
       message: 'Head of FACES deleted successfully' 
     });
   } catch (err) {
-    console.error('Error deleting head of FACES:', err);
     res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// Upload image for heads of FACES
+export const uploadHeadsFacesImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No image file uploaded'
+      });
+    }
+
+    // Upload to Cloudinary
+    const uploadResult = await uploadSingleToCloudinary(
+      req.file,
+      CLOUDINARY_FOLDERS.ORGANIZATIONS.HEADS,
+      {
+        prefix: 'heads_faces_',
+        transformation: {
+          width: 400,
+          height: 400,
+          crop: 'fill',
+          gravity: 'face',
+          quality: 'auto',
+          format: 'auto'
+        }
+      }
+    );
+
+    const imageUrl = uploadResult.url;
+
+    // Check if a head already exists
+    const [existingHeads] = await db.query(
+      "SELECT * FROM heads_faces WHERE status = 'ACTIVE' ORDER BY display_order ASC, created_at ASC LIMIT 1"
+    );
+
+    if (existingHeads.length > 0) {
+      // Update existing head with new image
+      await db.query(
+        "UPDATE heads_faces SET image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [imageUrl, existingHeads[0].id]
+      );
+    } else {
+      // Create new head with uploaded image
+      await db.query(
+        "INSERT INTO heads_faces (name, image_url, position, display_order) VALUES (?, ?, ?, ?)",
+        ['Head of FACES', imageUrl, 'Head of FACES', 1]
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Head of FACES image uploaded successfully',
+      data: {
+        url: imageUrl,
+        public_id: uploadResult.public_id,
+        cloudinary_info: {
+          format: uploadResult.format,
+          width: uploadResult.width,
+          height: uploadResult.height,
+          size: uploadResult.size
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error uploading heads of FACES image:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload heads of FACES image: ' + error.message
+    });
   }
 };
 

@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSelector } from 'react-redux'
 import { SearchAndFilterControls, VolunteerTable } from './components'
-import { DeleteConfirmationModal, SuccessModal } from '../components'
+import { DeleteConfirmationModal } from '../components'
+import { SuccessModal } from '@/components'
 import { useAdminVolunteers, useAdminPrograms } from '../hooks/useAdminData'
 import { selectCurrentAdmin, selectIsAuthenticated } from '@/rtk/superadmin/adminSlice'
 import { SkeletonLoader } from '../components'
@@ -197,7 +198,9 @@ export default function VolunteersPage() {
       refreshVolunteers();
     } catch (error) {
       console.error('Status update error:', error);
-      alert(error.message || 'Failed to update status. Please try again.');
+      setSuccessMessage(error.message || 'Failed to update status. Please try again.');
+      setSuccessModalType('error');
+      setShowSuccessModal(true);
     }
   }, [refreshVolunteers, currentAdmin?.id])
 
@@ -263,13 +266,16 @@ export default function VolunteersPage() {
       
       // Show success message
       setSuccessMessage(`${volunteer.name} has been successfully deleted from the volunteer list.`);
+      setSuccessModalType('success');
       setShowSuccessModal(true);
       
       // Refresh data after successful deletion
       refreshVolunteers();
     } catch (error) {
       console.error('Soft delete error:', error);
-      alert(error.message || 'Failed to delete volunteer. Please try again.');
+      setSuccessMessage(error.message || 'Failed to delete volunteer. Please try again.');
+      setSuccessModalType('error');
+      setShowSuccessModal(true);
     } finally {
       setIsDeleting(false);
     }
@@ -329,13 +335,16 @@ export default function VolunteersPage() {
       
       // Show success message
       setSuccessMessage(`${volunteerIds.length} volunteer${volunteerIds.length !== 1 ? 's' : ''} have been successfully deleted from the volunteer list.`);
+      setSuccessModalType('success');
       setShowSuccessModal(true);
       
       // Refresh data after successful deletion
       refreshVolunteers();
     } catch (error) {
       console.error('Bulk delete error:', error);
-      alert(error.message || 'Failed to delete volunteers. Please try again.');
+      setSuccessMessage(error.message || 'Failed to delete volunteers. Please try again.');
+      setSuccessModalType('error');
+      setShowSuccessModal(true);
     } finally {
       setIsDeleting(false);
     }
@@ -369,6 +378,7 @@ export default function VolunteersPage() {
   const [bulkDeleteCount, setBulkDeleteCount] = useState(0)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+  const [successModalType, setSuccessModalType] = useState('success')
   const [isDeleting, setIsDeleting] = useState(false)
   
   // Use ref to store volunteer to delete to avoid dependency issues
@@ -569,7 +579,7 @@ export default function VolunteersPage() {
         message={successMessage}
         isVisible={showSuccessModal}
         onClose={() => setShowSuccessModal(false)}
-        type="success"
+        type={successModalType}
         autoHideDuration={4000}
       />
     </div>

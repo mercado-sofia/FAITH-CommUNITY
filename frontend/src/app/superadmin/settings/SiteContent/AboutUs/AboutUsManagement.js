@@ -486,33 +486,54 @@ export default function AboutUsManagement({ showSuccessModal }) {
             </div>
             <div className={styles.imageUploadSection}>
               {/* Current Image Display */}
-              {(isEditingAboutUs ? tempAboutUs.image_url : (aboutUsData?.image_url || '')) ? (
-                <div className={styles.currentImageContainer}>
-                  <Image
-                    src={isEditingAboutUs ? tempAboutUs.image_url : (aboutUsData?.image_url || '')}
-                    alt="Current About Us Image"
-                    className={styles.currentImage}
-                    width={400}
-                    height={300}
-                    style={{ objectFit: 'cover' }}
-                  />
-                </div>
-              ) : selectedFile ? (
-                <div className={styles.currentImageContainer}>
-                  <Image
-                    src={URL.createObjectURL(selectedFile)}
-                    alt="Selected Image Preview"
-                    className={styles.currentImage}
-                    width={400}
-                    height={300}
-                    style={{ objectFit: 'cover' }}
-                  />
-                </div>
-              ) : (
-                <div className={styles.emptyImageState}>
-                  No image uploaded
-                </div>
-              )}
+              {(() => {
+                const currentImageUrl = isEditingAboutUs ? tempAboutUs.image_url : (aboutUsData?.image_url || '');
+                const fallbackImageUrl = '/samples/sample1.jpg';
+                
+                if (currentImageUrl) {
+                  return (
+                    <div className={styles.currentImageContainer}>
+                      <Image
+                        src={currentImageUrl}
+                        alt="Current About Us Image"
+                        className={styles.currentImage}
+                        width={400}
+                        height={300}
+                        style={{ objectFit: 'cover' }}
+                      />
+                    </div>
+                  );
+                } else if (selectedFile) {
+                  return (
+                    <div className={styles.currentImageContainer}>
+                      <Image
+                        src={URL.createObjectURL(selectedFile)}
+                        alt="Selected Image Preview"
+                        className={styles.currentImage}
+                        width={400}
+                        height={300}
+                        style={{ objectFit: 'cover' }}
+                      />
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className={styles.currentImageContainer}>
+                      <Image
+                        src={fallbackImageUrl}
+                        alt="About Us Image (default)"
+                        className={styles.currentImage}
+                        width={400}
+                        height={300}
+                        style={{ objectFit: 'cover' }}
+                      />
+                      <div className={styles.fallbackIndicator}>
+                        <span>Using default image</span>
+                      </div>
+                    </div>
+                  );
+                }
+              })()}
               
               {/* Image Upload Controls - Only show when no image exists and in edit mode */}
               {isEditingAboutUs && !(isEditingAboutUs ? tempAboutUs.image_url : (aboutUsData?.image_url || '')) && (

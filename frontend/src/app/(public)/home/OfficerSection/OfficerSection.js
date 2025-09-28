@@ -12,8 +12,8 @@ import Loader from '../../../../components/ui/Loader';
 export default function OfficerSection() {
   const { headsFacesData, isLoading, error } = usePublicHeadsFaces();
 
-  // Get the primary adviser (first in the list based on display_order)
-  const primaryAdviser = headsFacesData && headsFacesData.length > 0 ? headsFacesData[0] : null;
+  // headsFacesData is now a single head object or null
+  const primaryAdviser = headsFacesData;
 
   // Show loading state
   if (isLoading) {

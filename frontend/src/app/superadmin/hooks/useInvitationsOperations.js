@@ -39,7 +39,7 @@ export const useInvitationsOperations = () => {
   // Invitation operations
   const handleSendInvitation = useCallback(async (email, refetchCallback) => {
     try {
-      await sendInvitation(email).unwrap()
+      await sendInvitation({ email }).unwrap()
       showSuccessModal('Invitation sent successfully!')
       if (refetchCallback) refetchCallback()
     } catch (error) {

@@ -49,6 +49,75 @@ export const getAllOrganizations = async (req, res) => {
   }
 };
 
+// Get approved organization advisers
+export const getApprovedOrganizationAdvisers = async (req, res) => {
+  try {
+    // Fetch all approved organization advisers with role containing "organization adviser"
+    const [rows] = await db.execute(`
+      SELECT 
+        oh.id,
+        oh.head_name as name,
+        oh.role,
+        oh.email,
+        oh.facebook,
+        oh.photo,
+        oh.display_order,
+        oh.priority,
+        o.orgName as organization_name,
+        o.org as organization_acronym
+      FROM organization_heads oh
+      JOIN organizations o ON o.id = oh.organization_id
+      WHERE o.status = 'ACTIVE' 
+        AND LOWER(oh.role) LIKE '%organization adviser%'
+        AND oh.photo IS NOT NULL
+        AND oh.photo != ''
+      ORDER BY oh.priority ASC, oh.display_order ASC, oh.id ASC
+    `);
+
+    // Format the data for the frontend
+    const formattedData = rows.map(row => {
+      let photoUrl;
+      if (row.photo) {
+        // If photo is a Cloudinary URL, use it directly
+        if (row.photo.startsWith('http')) {
+          photoUrl = row.photo;
+        } else {
+          // If it's a filename, construct the proper URL
+          photoUrl = getOrganizationLogoUrl(row.photo);
+        }
+      } else {
+        // Fallback to default photo
+        photoUrl = '/defaults/default-profile.png';
+      }
+      
+      return {
+        id: row.id,
+        name: row.name,
+        role: row.role,
+        email: row.email,
+        facebook: row.facebook,
+        photo: photoUrl,
+        organization_name: row.organization_name,
+        organization_acronym: row.organization_acronym,
+        display_order: row.display_order,
+        priority: row.priority
+      };
+    });
+
+    res.json({
+      success: true,
+      data: formattedData
+    });
+  } catch (error) {
+    console.error('❌ Error fetching approved organization advisers:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch approved organization advisers',
+      error: error.message
+    });
+  }
+};
+
 // Get hero section data for public interface
 export const getHeroSection = async (req, res) => {
   try {

@@ -30,7 +30,7 @@ export const invitationsApi = createApi({
   endpoints: (builder) => ({
     // Send invitation
     sendInvitation: builder.mutation({
-      query: (email) => ({
+      query: ({ email }) => ({
         url: "/send",
         method: "POST",
         body: { email },

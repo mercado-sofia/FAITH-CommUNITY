@@ -55,8 +55,8 @@ const getDateInfo = (project) => {
 };
 
 // Date Badge Component
-const DateBadge = ({ dateInfo }) => {
-  if (!dateInfo) return null;
+const DateBadge = ({ dateInfo, status }) => {
+  if (!dateInfo || status !== 'Upcoming') return null;
   
   const { type, startDate, endDate } = dateInfo;
   
@@ -233,7 +233,7 @@ export default function ProgramCard({ project }) {
         </div>
         
         {/* Date Badge */}
-        <DateBadge dateInfo={dateInfo} />
+        <DateBadge dateInfo={dateInfo} status={project.status} />
       </div>
 
       <div className={styles.cardContent}>

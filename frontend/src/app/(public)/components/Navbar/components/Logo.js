@@ -10,7 +10,7 @@ export default function Logo() {
 
   const logoSrc = brandingData?.logo_url
     ? brandingData.logo_url
-    : '/assets/logos/faith_community_logo.png';
+    : '/assets/icons/placeholder.svg';
 
   // name image priority:
   // 1) uploaded brandingData.name_url

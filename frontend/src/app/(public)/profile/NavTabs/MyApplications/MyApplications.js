@@ -7,7 +7,7 @@ import { FaRegClock } from 'react-icons/fa6';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
-import { formatDateShort, formatProgramDates } from '@/utils/dateUtils';
+import { formatDateShort, formatApplicationProgramDates } from '@/utils/dateUtils';
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
 import ApplicationDetailsModal from './ApplicationDetailsModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -91,7 +91,9 @@ export default function MyApplications() {
 
   const canDeleteApplication = (status) => {
     const lowerStatus = status.toLowerCase();
-    return lowerStatus !== 'completed'; // Completed applications cannot be deleted
+    // Only pending and declined applications can be deleted
+    // Cancelled and completed applications are kept for historical records
+    return lowerStatus === 'pending' || lowerStatus === 'declined';
   };
 
 
@@ -108,7 +110,6 @@ export default function MyApplications() {
       setSelectedApplicationId(applicationId);
       setIsModalOpen(true);
     } catch (error) {
-      console.error('Error opening application details:', error);
       setFeedbackMessage({
         type: 'error',
         text: 'Failed to open application details'
@@ -498,7 +499,7 @@ export default function MyApplications() {
                         <div className={styles.dateSection}>
                           <FiCalendar className={styles.calendarIcon} />
                           <span className={styles.dateText}>
-                            {formatProgramDates(application)}
+                            {formatApplicationProgramDates(application)}
                           </span>
                         </div>
                         {application.programStartTime && application.programEndTime && (
@@ -644,6 +645,8 @@ export default function MyApplications() {
             ? "Are you sure you want to cancel your approved application? This will change the status to 'Cancelled' and the admin will be notified."
             : applicationToDelete?.status?.toLowerCase() === 'completed'
             ? "Completed applications cannot be deleted as they are kept for historical records."
+            : applicationToDelete?.status?.toLowerCase() === 'cancelled'
+            ? "Cancelled applications cannot be deleted as they are kept for historical records."
             : "Are you sure you want to permanently delete your application? This will remove all application data and cannot be undone."
         }
       />

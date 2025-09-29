@@ -28,7 +28,7 @@ import {
 } from 'react-icons/fa';
 import { FaXTwitter } from 'react-icons/fa6';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
-import ConfirmationModal from '../../../components/ConfirmationModal';
+import { ConfirmationModal } from '@/components';
 import styles from './FooterContentManagement.module.css';
 
 // Social media platform mapping with icons
@@ -128,7 +128,6 @@ export default function FooterContentManagement({ showSuccessModal }) {
           setTempServices(servicesData);
         }
       } catch (error) {
-        console.error('Error loading footer data:', error);
         showAuthError('Failed to load footer data. Please try again.');
       }
     };
@@ -230,7 +229,6 @@ export default function FooterContentManagement({ showSuccessModal }) {
         showSuccessModal(errorData.message || 'Failed to add service');
       }
     } catch (error) {
-      console.error('Error adding service:', error);
       showSuccessModal('Failed to add service. Please try again.');
     } finally {
       setIsUpdatingFooter(false);
@@ -262,7 +260,6 @@ export default function FooterContentManagement({ showSuccessModal }) {
         showSuccessModal(errorData.message || 'Failed to delete service');
       }
     } catch (error) {
-      console.error('Error deleting service:', error);
       showSuccessModal('Failed to delete service. Please try again.');
     } finally {
       setIsDeleting(false);
@@ -319,7 +316,6 @@ export default function FooterContentManagement({ showSuccessModal }) {
         showSuccessModal(errorData.message || 'Failed to update footer content');
       }
     } catch (error) {
-      console.error('Error updating footer content:', error);
       showSuccessModal('Failed to update footer content. Please try again.');
     } finally {
       setIsUpdatingFooter(false);
@@ -437,7 +433,6 @@ export default function FooterContentManagement({ showSuccessModal }) {
       setIsEditingServices(false);
       showSuccessModal('Services updated successfully! The changes will be visible on the public site immediately.');
     } catch (error) {
-      console.error('Error updating services:', error);
       showSuccessModal('Failed to update services. Please try again.');
     }
   };
@@ -505,7 +500,6 @@ export default function FooterContentManagement({ showSuccessModal }) {
         showSuccessModal(errorData.message || 'Failed to update footer content');
       }
     } catch (error) {
-      console.error('Error updating footer content:', error);
       showSuccessModal('Failed to update footer content. Please try again.');
     } finally {
       setIsUpdatingFooter(false);

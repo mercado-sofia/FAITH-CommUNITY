@@ -1,6 +1,6 @@
 "use client"
 
-import Loader from '../../components/ui/Loader';
+import Loader from '../../components/ui/Loader/Loader';
 import { HeroSection, AboutSection, ImpactSection, NewsSection, BannerSection, OfficerSection, OrgAdviserSection } from './home';
 import { usePublicPageLoader } from './hooks/usePublicPageLoader';
 

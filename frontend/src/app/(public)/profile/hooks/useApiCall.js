@@ -37,14 +37,7 @@ export const useApiCall = () => {
       }
 
       if (!response.ok) {
-        console.error('API Error Details:', {
-          status: response.status,
-          statusText: response.statusText,
-          data: data,
-          endpoint: endpoint,
-          options: options,
-          contentType: contentType
-        });
+        // Log error details for debugging
         
         // Handle different error response formats
         let errorMessage;
@@ -72,11 +65,7 @@ export const useApiCall = () => {
         return null;
       }
       
-      console.error('API call failed:', {
-        endpoint,
-        error: err.message,
-        stack: err.stack
-      });
+      // Handle API call failure
       
       const errorMessage = err.message || 'An error occurred while making the request';
       setError(errorMessage);

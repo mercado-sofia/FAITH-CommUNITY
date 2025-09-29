@@ -211,7 +211,7 @@ export default function NewsSection() {
                     className={styles.orgLogo}
                     onError={(e) => {
                       // Use a default logo if the specific one doesn't exist
-                      e.target.src = '/assets/logos/faith_community_logo.png';
+                      e.target.src = '/assets/icons/placeholder.svg';
                     }}
                   />
                   <span>{orgObj.acronym || orgObj.name}</span>

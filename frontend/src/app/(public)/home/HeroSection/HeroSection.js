@@ -192,7 +192,6 @@ export default function HeroSection() {
               autoPlay 
               className={styles.videoPlayer}
               onError={(e) => {
-                console.warn('Hero video failed to load:', e);
                 setShowVideo(false);
               }}
             >

@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PersonalInfo, EmailandPassword, Notifications, MyApplications } from './NavTabs';
-import ErrorBoundary from './components/ErrorBoundary';
-import Loader from '../../../components/ui/Loader';
+import { ErrorBoundary, Loader } from '@/components';
 import { ToastContainer, useToast } from './components/Toast';
 import { usePublicPageLoader } from '../hooks/usePublicPageLoader';
 import styles from './profile.module.css';
@@ -75,7 +74,6 @@ export default function ProfilePage() {
       const user = JSON.parse(storedUserData);
       setUserData(user);
     } catch (error) {
-      console.error('Error parsing user data:', error);
       showError('Invalid user data. Please log in again.');
       router.push('/login');
       return;
@@ -103,7 +101,7 @@ export default function ProfilePage() {
 
   return (
     <div className={styles.container}>
-      <ErrorBoundary>
+      <ErrorBoundary compact>
         <div className={styles.profileLayout}>
           {/* Side Navigation */}
           <div className={styles.sideNavigation}>

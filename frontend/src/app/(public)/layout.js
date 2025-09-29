@@ -31,7 +31,7 @@ export default function PublicLayout({ children }) {
     const preloadCriticalResources = () => {
       // Preload critical images
       const criticalImages = [
-        '/assets/logos/faith_community_logo.png',
+        '/assets/icons/placeholder.svg',
         '/samples/sample2.jpg',
         '/samples/sample8.jpg',
         '/samples/sample3.jpeg'

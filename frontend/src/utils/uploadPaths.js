@@ -32,7 +32,7 @@ export const getImageUrl = (imagePath, type = 'programs', subType = 'main') => {
     
     // If it's a Cloudinary public_id, construct the URL
     if (imagePath.includes('faith-community/')) {
-      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'your-cloud-name';
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'djty9l7zw';
       return `https://res.cloudinary.com/${cloudName}/image/upload/${imagePath}`;
     }
     
@@ -79,7 +79,7 @@ export const getProgramImageUrl = (imagePath, subType = 'main') => {
     
     // If it's a Cloudinary public_id, construct the URL
     if (imagePath.includes('faith-community/')) {
-      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'your-cloud-name';
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'djty9l7zw';
       return `https://res.cloudinary.com/${cloudName}/image/upload/${imagePath}`;
     }
     
@@ -111,7 +111,7 @@ export const getOrganizationImageUrl = (imagePath, subType = 'logo') => {
     
     // If it's a Cloudinary public_id, construct the URL
     if (imagePath.includes('faith-community/')) {
-      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'your-cloud-name';
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'djty9l7zw';
       return `https://res.cloudinary.com/${cloudName}/image/upload/${imagePath}`;
     }
     
@@ -150,7 +150,7 @@ export const getProfilePhotoUrl = (imagePath) => {
     
     // If it's a Cloudinary public_id, construct the URL
     if (imagePath.includes('faith-community/')) {
-      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'your-cloud-name';
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'djty9l7zw';
       return `https://res.cloudinary.com/${cloudName}/image/upload/${imagePath}`;
     }
     
@@ -197,5 +197,3 @@ export const getFallbackImageUrl = (type = 'default') => {
   
   return fallbackImages[type] || fallbackImages.default;
 };
-
-

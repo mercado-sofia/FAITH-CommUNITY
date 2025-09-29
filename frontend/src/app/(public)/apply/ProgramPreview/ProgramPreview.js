@@ -90,7 +90,18 @@ export default function ProgramPreview({ selectedProgram, isLoading }) {
                   className={styles.organizationIcon}
                   onError={(e) => {
                     e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'flex';
+                    // Show the fallback icon
+                    const fallback = e.target.nextSibling;
+                    if (fallback) {
+                      fallback.style.display = 'flex';
+                    }
+                  }}
+                  onLoad={(e) => {
+                    // Hide the fallback icon when image loads successfully
+                    const fallback = e.target.nextSibling;
+                    if (fallback) {
+                      fallback.style.display = 'none';
+                    }
                   }}
                 />
               ) : null}

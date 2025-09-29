@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { useGetNotificationsQuery } from '@/rtk/admin/notificationsApi';
 import { FiTrash2, FiEye } from 'react-icons/fi';
-import SkeletonLoader from '../../components/SkeletonLoader';
+import SkeletonLoader from '../../components/SkeletonLoader/SkeletonLoader';
 import styles from '../notifications.module.css';
 
 export default function InfiniteScrollNotifications({ 
@@ -111,6 +111,8 @@ export default function InfiniteScrollNotifications({
     switch (currentTab) {
       case 'submissions':
         return notification.type === 'approval' || notification.type === 'decline';
+      case 'collaborations':
+        return notification.type === 'collaboration' || notification.type === 'program_approval';
       case 'messages':
         return notification.type === 'message';
       default:

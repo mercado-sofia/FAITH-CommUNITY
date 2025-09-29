@@ -69,7 +69,7 @@ export default function OrgPage() {
       description: 'No data available for this organization.',
       facebook: '',
       email: '',
-      logo: '/assets/logos/faith_community_logo.png',
+      logo: '/assets/icons/placeholder.svg',
       advocacies: [],
       competencies: [],
       heads: [],

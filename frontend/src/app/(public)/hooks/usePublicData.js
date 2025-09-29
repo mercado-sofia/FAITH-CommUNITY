@@ -43,7 +43,7 @@ export const usePublicOrganizationData = (orgID) => {
     description: data.data.description || '',
     facebook: data.data.facebook || '',
     email: data.data.email || '',
-    logo: data.data.logo || '/assets/logos/faith_community_logo.png',
+    logo: data.data.logo || '/assets/icons/placeholder.svg',
     advocacies: data.data.advocacies || '', // Backend returns string, not array
     competencies: data.data.competencies || '', // Backend returns string, not array
     heads: sortHeadsByOrder(data.data.heads || []), // Apply same sorting as admin section

@@ -6,7 +6,7 @@ import { FiTrash2, FiEdit3 } from 'react-icons/fi';
 import Image from 'next/image';
 import styles from './BrandingManagement.module.css';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
-import ConfirmationModal from '../../../components/ConfirmationModal';
+import { ConfirmationModal } from '@/components';
 
 export default function BrandingManagementComponent({ showSuccessModal }) {
   const [brandingData, setBrandingData] = useState(null);
@@ -39,7 +39,6 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
           setBrandingData(data.data);
         }
       } catch (error) {
-        console.error('Error loading branding data:', error);
         showAuthError('Failed to load branding data. Please try again.');
       } finally {
       }
@@ -100,7 +99,6 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
         showSuccessModal(errorMessage);
       }
     } catch (error) {
-      console.error(`Error uploading ${type}:`, error);
       showSuccessModal(`Failed to upload ${type}. Please try again.`);
     }
   };
@@ -150,7 +148,6 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
         showSuccessModal(errorData.message || `Failed to delete ${deleteType}`);
       }
     } catch (error) {
-      console.error(`Error deleting ${deleteType}:`, error);
       showSuccessModal(`Failed to delete ${deleteType}. Please try again.`);
     } finally {
       setIsDeleting(false);
@@ -235,7 +232,6 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
           showSuccessModal(errorData.message || 'Failed to update branding');
         }
       } catch (error) {
-        console.error('Error updating branding:', error);
         showSuccessModal('Failed to update branding. Please try again.');
       } finally {
         setIsUpdatingBranding(false);

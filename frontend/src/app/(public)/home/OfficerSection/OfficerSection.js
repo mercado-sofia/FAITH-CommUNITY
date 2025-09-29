@@ -7,7 +7,7 @@ import {
   FaPhone,
 } from 'react-icons/fa';
 import { usePublicHeadsFaces } from '../../hooks/usePublicData';
-import Loader from '../../../../components/ui/Loader';
+import Loader from '../../../../components/ui/Loader/Loader';
 
 export default function OfficerSection() {
   const { headsFacesData, isLoading, error } = usePublicHeadsFaces();
@@ -32,7 +32,7 @@ export default function OfficerSection() {
 
   // Show error state
   if (error) {
-    console.error('Error loading adviser data:', error);
+    // Handle error silently in production
   }
 
   // Don't render if no adviser data

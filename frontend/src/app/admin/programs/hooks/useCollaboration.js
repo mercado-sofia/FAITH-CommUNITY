@@ -14,7 +14,7 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
       const admins = await fetchAvailableAdmins(isEditMode, programId);
       setAvailableAdmins(admins);
     } catch (error) {
-      console.error('Error loading available admins:', error);
+      // Handle error silently in production
     }
   }, [isEditMode, programId]);
 
@@ -38,7 +38,6 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
         }));
         setCollaborators(normalizedCollaborators);
       } catch (error) {
-        console.error('Error loading existing collaborators:', error);
         // Set empty array on error to prevent crashes
         setCollaborators([]);
       }
@@ -59,9 +58,7 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
           status: collab.status
         }));
         setCollaborators(normalizedCollaborators);
-        console.log('Collaborators refreshed:', normalizedCollaborators);
       } catch (error) {
-        console.error('Error refreshing collaborators:', error);
         // Set empty array on error to prevent crashes
         setCollaborators([]);
       }
@@ -157,8 +154,6 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
         const newCollaborators = [...collaboratorsArray, selectedAdminForInvite];
         setCollaborators(newCollaborators);
       } catch (error) {
-        console.error('Failed to add collaborator:', error);
-        // You might want to show an error message to the user here
         throw error;
       }
     } else {
@@ -185,8 +180,6 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
         const newCollaborators = collaboratorsArray.filter((_, i) => i !== index);
         setCollaborators(newCollaborators);
       } catch (error) {
-        console.error('Failed to remove collaborator:', error);
-        // You might want to show an error message to the user here
         throw error;
       }
     } else {

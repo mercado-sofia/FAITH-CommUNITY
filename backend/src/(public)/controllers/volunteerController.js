@@ -598,33 +598,15 @@ export const getApprovedUpcomingPrograms = async (req, res) => {
     
     let query, params;
     
-    if (user_id) {
-      // If user is authenticated, exclude programs they've already applied to
-      query = `
-        SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
-        FROM programs_projects p
-        LEFT JOIN organizations o ON p.organization_id = o.id
-        WHERE p.status = 'Upcoming' 
-        AND p.is_approved = 1
-        AND p.id NOT IN (
-          SELECT program_id 
-          FROM volunteers 
-          WHERE user_id = ?
-        )
-        ORDER BY p.title ASC
-      `;
-      params = [user_id];
-    } else {
-      // If user is not authenticated, show all available programs
-      query = `
-        SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
-        FROM programs_projects p
-        LEFT JOIN organizations o ON p.organization_id = o.id
-        WHERE p.status = 'Upcoming' AND p.is_approved = 1
-        ORDER BY p.title ASC
-      `;
-      params = [];
-    }
+    // Show all upcoming approved programs regardless of user application history
+    query = `
+      SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
+      FROM programs_projects p
+      LEFT JOIN organizations o ON p.organization_id = o.id
+      WHERE p.status = 'Upcoming' AND p.is_approved = 1
+      ORDER BY p.title ASC
+    `;
+    params = [];
 
     const [rows] = await db.execute(query, params);
 

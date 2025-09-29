@@ -43,7 +43,6 @@ export const useInvitationsOperations = () => {
       showSuccessModal('Invitation sent successfully!')
       if (refetchCallback) refetchCallback()
     } catch (error) {
-      console.error('Send invitation failed:', error)
       const errorMessage = error?.data?.error || error?.message || 'Failed to send invitation'
       throw new Error(errorMessage)
     }
@@ -55,7 +54,6 @@ export const useInvitationsOperations = () => {
       showSuccessModal('Invitation cancelled successfully!')
       if (refetchCallback) refetchCallback()
     } catch (error) {
-      console.error('Cancel invitation failed:', error)
       showSuccessModal('Failed to cancel invitation')
     }
   }, [cancelInvitation, showSuccessModal])
@@ -66,7 +64,6 @@ export const useInvitationsOperations = () => {
       showSuccessModal(result.message || 'Invitation deleted successfully!')
       if (refetchCallback) refetchCallback()
     } catch (error) {
-      console.error('Delete invitation failed:', error)
       showSuccessModal('Failed to delete invitation')
     }
   }, [deleteInvitation, showSuccessModal])
@@ -77,7 +74,6 @@ export const useInvitationsOperations = () => {
       showSuccessModal(result.message || 'Admin deactivated successfully!')
       if (refetchCallback) refetchCallback()
     } catch (error) {
-      console.error('Deactivate admin from invitation failed:', error)
       showSuccessModal('Failed to deactivate admin')
     }
   }, [deactivateAdminFromInvitation, showSuccessModal])
@@ -89,7 +85,6 @@ export const useInvitationsOperations = () => {
       showSuccessModal(result.message)
       if (refetchCallback) refetchCallback()
     } catch (error) {
-      console.error('Toggle admin status failed:', error)
       showSuccessModal('Failed to update admin account status')
     }
   }, [deactivateAdmin, showSuccessModal])
@@ -100,7 +95,6 @@ export const useInvitationsOperations = () => {
       showSuccessModal('Admin updated successfully!')
       if (refetchCallback) refetchCallback()
     } catch (error) {
-      console.error('Update admin failed:', error)
       showSuccessModal('Failed to update admin')
       throw error
     }
@@ -112,7 +106,6 @@ export const useInvitationsOperations = () => {
       showSuccessModal('Admin deleted successfully!')
       if (refetchCallback) refetchCallback()
     } catch (error) {
-      console.error('Delete admin failed:', error)
       showSuccessModal('Failed to delete admin')
     }
   }, [deleteAdmin, showSuccessModal])

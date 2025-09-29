@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { NavigationProvider } from "../../contexts/NavigationContext";
-import Sidebar from "./components/Sidebar"
-import TopBar from "./components/TopBar"
+import Sidebar from "./components/Sidebar/Sidebar"
+import TopBar from "./components/TopBar/TopBar"
 import { Loader } from "@/components";
 import styles from "./styles/layout.module.css"
 import { Poppins, Inter, Urbanist } from 'next/font/google';
@@ -48,7 +48,6 @@ function SuperAdminLayoutContent({ children }) {
 
         setIsInitialLoading(false);
       } catch (error) {
-        console.error('Error initializing super admin:', error);
         localStorage.removeItem('superAdminToken');
         localStorage.removeItem('superAdminData');
         document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';

@@ -33,7 +33,6 @@ export default function Notifications() {
         setError('Failed to load notifications');
       }
     } catch (error) {
-      console.error('Error fetching notifications:', error);
       setError('Failed to load notifications');
     } finally {
       setIsLoading(false);

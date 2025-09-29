@@ -8,6 +8,7 @@ import { CgOptions } from "react-icons/cg";
 import { FaUser } from "react-icons/fa";
 import Image from "next/image";
 import { formatDateForAPI } from '@/utils/dateUtils';
+import { getProfilePhotoUrl } from '@/utils/uploadPaths';
 import styles from './styles/RecentTables.module.css';
 
 // Helper function to safely parse dates for sorting
@@ -22,7 +23,6 @@ const parseDateForSorting = (dateString) => {
     // Return epoch if date is invalid
     return isNaN(parsedDate.getTime()) ? new Date(0) : parsedDate;
   } catch (error) {
-    console.warn('Failed to parse date for sorting:', dateString, error);
     return new Date(0); // Fallback to epoch
   }
 };
@@ -31,7 +31,16 @@ const parseDateForSorting = (dateString) => {
 const VolunteerAvatar = ({ volunteer, size = 32 }) => {
   const [imageError, setImageError] = useState(false);
   
-  if (!volunteer.profile_photo_url || imageError) {
+  // Get the proper profile photo URL using the utility function
+  const profilePhotoUrl = getProfilePhotoUrl(volunteer.profile_photo_url);
+  
+  // Check if we have a valid profile photo URL (not the fallback)
+  const hasValidProfilePhoto = profilePhotoUrl && 
+    profilePhotoUrl !== '/defaults/default-profile.png' && 
+    profilePhotoUrl !== 'IMAGE_UNAVAILABLE' &&
+    !imageError;
+  
+  if (!hasValidProfilePhoto) {
     return (
       <div 
         className={styles.avatarFallback}
@@ -45,8 +54,8 @@ const VolunteerAvatar = ({ volunteer, size = 32 }) => {
   return (
     <div className={styles.avatarContainer} style={{ width: size, height: size }}>
       <Image
-        src={volunteer.profile_photo_url}
-        alt={`${volunteer.name}'s profile`}
+        src={profilePhotoUrl}
+        alt={`${volunteer.name || 'Volunteer'}'s profile`}
         width={size}
         height={size}
         className={styles.avatarImage}

@@ -71,7 +71,6 @@ export default function SubmissionsPage() {
   // Handle error display
   useEffect(() => {
     if (error) {
-      console.error('Submissions error:', error);
       showToast('Failed to load submissions. Please try again.', 'error');
     }
   }, [error, showToast]);
@@ -182,7 +181,6 @@ export default function SubmissionsPage() {
       setShowBulkActions(false);
       showToast('Submissions cancelled successfully!', 'success');
     } catch (err) {
-      console.error('Bulk cancel error:', err);
       showToast('Failed to cancel some submissions', 'error');
     }
   }, [selectedItems, filteredSubmissions, refreshSubmissions, showToast]);
@@ -207,7 +205,6 @@ export default function SubmissionsPage() {
       setShowBulkActions(false);
       showToast('Submissions deleted successfully!', 'success');
     } catch (err) {
-      console.error('Bulk delete error:', err);
       showToast(`Failed to delete some submissions: ${err.message}`, 'error');
     }
   }, [selectedItems, refreshSubmissions, showToast]);

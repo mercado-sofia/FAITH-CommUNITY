@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { createPortal } from 'react-dom';
 import styles from './HeroSectionManagement.module.css';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
-import ConfirmationModal from '../../../components/ConfirmationModal';
+import { ConfirmationModal } from '@/components';
 
 export default function HeroSectionManagement({ showSuccessModal }) {
   const [heroData, setHeroData] = useState({
@@ -62,7 +62,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           }
         }
       } catch (error) {
-        console.error('Error loading hero data:', error);
         showAuthError('Failed to load hero section data. Please try again.');
       } finally {
       }
@@ -132,7 +131,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         showSuccessModal(errorData.message || `Failed to update ${field}`);
       }
     } catch (error) {
-      console.error(`Error updating ${field}:`, error);
       showSuccessModal(`Failed to update ${field}. Please try again.`);
     } finally {
       setIsUpdating(false);
@@ -237,7 +235,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         showSuccessModal(errorMessage);
       }
     } catch (error) {
-      console.error(`Error uploading ${type}:`, error);
       showSuccessModal(`Failed to upload ${type}. Please try again.`);
     } finally {
       // Clear loading state
@@ -293,7 +290,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         showSuccessModal(errorData.message || `Failed to delete ${deleteType.type}`);
       }
     } catch (error) {
-      console.error(`Error deleting ${deleteType.type}:`, error);
       showSuccessModal(`Failed to delete ${deleteType.type}. Please try again.`);
     } finally {
       setIsDeleting(false);
@@ -409,7 +405,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           showSuccessModal(errorData.message || 'Failed to update hero section');
         }
       } catch (error) {
-        console.error('Error updating hero section:', error);
         showSuccessModal('Failed to update hero section. Please try again.');
       } finally {
         setIsUpdatingHero(false);
@@ -907,7 +902,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
               autoPlay 
               className={styles.videoPlayer}
               onError={(e) => {
-                console.warn('Hero video failed to load:', e);
                 setShowVideoModal(false);
               }}
             >

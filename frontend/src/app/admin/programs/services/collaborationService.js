@@ -6,7 +6,6 @@ const getAdminToken = () => {
   try {
     return localStorage.getItem('adminToken');
   } catch (error) {
-    console.error('Failed to access localStorage', error);
     return null;
   }
 };
@@ -37,7 +36,6 @@ export const fetchAvailableAdmins = async (isEditMode = false, programId = null)
     const result = await response.json();
     return result.data || [];
   } catch (error) {
-    console.error('Error fetching available admins:', error);
     throw error;
   }
 };
@@ -67,7 +65,6 @@ export const addCollaboratorToProgram = async (programId, collaboratorAdminId) =
     const result = await response.json();
     return result;
   } catch (error) {
-    console.error('Error adding collaborator:', error);
     throw error;
   }
 };
@@ -95,7 +92,6 @@ export const fetchProgramCollaborators = async (programId) => {
     const result = await response.json();
     return result.data || [];
   } catch (error) {
-    console.error('Error fetching program collaborators:', error);
     throw error;
   }
 };
@@ -118,11 +114,7 @@ export const removeCollaboratorFromProgram = async (programId, adminId) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('Remove collaborator error response:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorData
-      });
+      // Log error details for debugging
       throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 
@@ -151,11 +143,7 @@ export const optOutCollaboration = async (collaborationId) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('Opt out collaboration error response:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorData
-      });
+      // Log error details for debugging
       throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 

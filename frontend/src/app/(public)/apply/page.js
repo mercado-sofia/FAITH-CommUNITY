@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Loader from '../../../components/ui/Loader';
+import Loader from '../../../components/ui/Loader/Loader';
 import { PageBanner } from '../components';
 import SimplifiedVolunteerForm from './VolunteerApplication/VolunteerForm';
 import ProgramPreview from './ProgramPreview/ProgramPreview';

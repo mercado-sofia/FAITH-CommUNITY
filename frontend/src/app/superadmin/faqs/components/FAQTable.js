@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { FiEdit2, FiTrash2, FiClipboard } from 'react-icons/fi';
 import { IoCloseOutline } from "react-icons/io5";
 import { formatDateTime } from '../../../../utils/dateUtils';
-import ConfirmationModal from '../../components/ConfirmationModal';
+import { ConfirmationModal } from '@/components';
 import styles from './styles/FAQTable.module.css';
 
 export default function FAQTable({ 
@@ -223,6 +223,7 @@ export default function FAQTable({
         isOpen={showDeleteModal}
         itemName={selectedItemForDelete?.question}
         itemType="FAQ"
+        actionType="delete"
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
         isDeleting={isDeleting}

@@ -13,7 +13,8 @@ import {
 import { FiX, FiXCircle, FiTrash2 } from 'react-icons/fi';
 import { PiChecksBold } from 'react-icons/pi';
 import { MdCancel } from 'react-icons/md';
-import { DeleteConfirmationModal, SkeletonLoader } from '../components';
+import { SkeletonLoader } from '../components';
+import { ConfirmationModal } from '@/components';
 import InfiniteScrollNotifications from './components/InfiniteScrollNotifications';
 import styles from './notifications.module.css';
 
@@ -59,9 +60,9 @@ export default function NotificationsPage() {
       
       switch (tabType) {
         case 'submissions':
-          return notification.type === 'approval' || notification.type === 'decline' || notification.type === 'program_approval';
+          return notification.type === 'approval' || notification.type === 'decline';
         case 'collaborations':
-          return notification.type === 'collaboration';
+          return notification.type === 'collaboration' || notification.type === 'program_approval';
         case 'messages':
           return notification.type === 'message';
         case 'all':
@@ -100,7 +101,7 @@ export default function NotificationsPage() {
       await markAsRead({ notificationId, adminId: currentAdmin?.id });
       // The mutation will automatically invalidate the cache and refresh the data
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      // Handle error silently in production
     }
   };
 
@@ -110,7 +111,7 @@ export default function NotificationsPage() {
       await markAllAsRead(currentAdmin?.id);
       // The mutation will automatically invalidate the cache and refresh the data
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
+      // Handle error silently in production
     }
   };
 
@@ -122,7 +123,7 @@ export default function NotificationsPage() {
       setShowIndividualDeleteModal(false);
       setNotificationToDelete(null);
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      // Handle error silently in production
     }
   };
 
@@ -142,7 +143,7 @@ export default function NotificationsPage() {
       setShowDeleteModal(false);
       // The mutation will automatically invalidate the cache and refresh the data
     } catch (error) {
-      console.error('Error bulk deleting notifications:', error);
+      // Handle error silently in production
     }
   };
 
@@ -302,7 +303,7 @@ export default function NotificationsPage() {
       </div>
 
       {/* Bulk Delete Confirmation Modal */}
-      <DeleteConfirmationModal
+      <ConfirmationModal
         isOpen={showDeleteModal}
         itemName={`${selectedNotifications.length} notification${selectedNotifications.length > 1 ? 's' : ''}`}
         itemType="notification"
@@ -312,7 +313,7 @@ export default function NotificationsPage() {
       />
 
       {/* Individual Delete Confirmation Modal */}
-      <DeleteConfirmationModal
+      <ConfirmationModal
         isOpen={showIndividualDeleteModal}
         itemName={notificationToDelete?.title || 'this notification'}
         itemType="notification"

@@ -1604,7 +1604,7 @@ const initializeDatabase = async () => {
       await connection.query(`
         INSERT INTO heads_faces (name, description, email, phone, position, display_order) VALUES
         ('Jana Mae A. Cruz', 'Chair of the Community Extension Committee', 'jana.cruz@faith.edu.ph', '+63 912 345 6789', 'Chair', 1),
-        ('Jana Mae A. Cruz', 'Organization Adviser for Community Extension', 'jana.cruz@faith.edu.ph', '+63 912 345 6789', 'Org Adviser', 2),
+        ('Jana Mae A. Cruz', 'Organization Adviser for Community Extension', 'jana.cruz@faith.edu.ph', '+63 912 345 6789', 'Organization Adviser', 2),
         ('Jana Mae A. Cruz', 'Secretary of the Community Extension Committee', 'jana.cruz@faith.edu.ph', '+63 912 345 6789', 'Secretary', 3)
       `);
       

@@ -5,7 +5,7 @@ import { FiTrash2, FiMoreHorizontal, FiUserX, FiX, FiUserCheck, FiXCircle } from
 import { TbListDetails } from 'react-icons/tb';
 import { IoCloseOutline } from "react-icons/io5";
 import { formatDateTime } from '../../../../utils/dateUtils';
-import ConfirmationModal from '../../components/ConfirmationModal';
+import { ConfirmationModal } from '@/components';
 import AdminDetailsModal from './AdminDetailsModal';
 import styles from './styles/InvitationsTable.module.css';
 

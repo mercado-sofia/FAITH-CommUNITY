@@ -144,8 +144,7 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
         updateFormData({ collaborators: newCollaborators });
       });
     } catch (error) {
-      console.error('Failed to add collaborator:', error);
-      // You might want to show an error message to the user here
+      // Handle error silently in production
     }
   }, [addCollaborator, formData.collaborators, updateFormData]);
 
@@ -155,8 +154,7 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
         updateFormData({ collaborators: newCollaborators });
       });
     } catch (error) {
-      console.error('Failed to remove collaborator:', error);
-      // You might want to show an error message to the user here
+      // Handle error silently in production
     }
   }, [removeCollaborator, formData.collaborators, updateFormData]);
 
@@ -168,7 +166,7 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
           updateFormData({ collaborators: newCollaborators });
         });
       } catch (error) {
-        console.error('Failed to refresh collaborators:', error);
+        // Handle error silently in production
       }
     }
   }, [refreshCollaborators, isEditMode, program?.id, updateFormData]);
@@ -226,7 +224,6 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
 
       await onSubmit(submissionData);
     } catch (error) {
-      console.error('Form submission error:', error);
       updateFormData({ submit: error.message || 'Failed to submit form' });
     } finally {
       setIsSubmitting(false);

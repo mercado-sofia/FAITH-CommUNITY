@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePublicNewsArticle } from "../../hooks/usePublicData";
 import { formatDateLong } from "@/utils/dateUtils";
-import Loader from "../../../../components/ui/Loader";
+import Loader from "../../../../components/ui/Loader/Loader";
 import { usePublicPageLoader } from "../../hooks/usePublicPageLoader";
 import styles from "../news.module.css";
 

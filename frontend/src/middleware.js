@@ -6,7 +6,6 @@ export function middleware(request) {
 
   const role = request.cookies.get("userRole")?.value
 
-
   // Allow login page for everyone
   if (pathname === "/login") {
     // Login page - allowing access

@@ -41,7 +41,6 @@ export default function MissionVisionManagement({ showSuccessModal }) {
           setTempVision(visionItem?.content || '');
         }
       } catch (error) {
-        console.error('Error loading mission and vision data:', error);
         showAuthError('Failed to load mission and vision data. Please try again.');
       } finally {
       }
@@ -142,7 +141,6 @@ export default function MissionVisionManagement({ showSuccessModal }) {
         setIsEditing(false);
       }
     } catch (error) {
-      console.error('Error updating mission and vision:', error);
       showAuthError('Failed to update mission and vision. Please try again.');
     } finally {
       setIsUpdating(false);

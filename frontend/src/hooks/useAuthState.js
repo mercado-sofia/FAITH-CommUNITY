@@ -76,7 +76,7 @@ export const useAuthState = () => {
             'Content-Type': 'application/json'
           }
         }).catch(error => {
-          console.warn('Logout API call failed, but continuing with client-side logout');
+          // Logout API call failed, but continuing with client-side logout
         });
       }
 

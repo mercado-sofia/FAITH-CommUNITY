@@ -7,7 +7,8 @@ import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { useAdminPrograms } from '../hooks/useAdminData';
 import { ProgramCard, ViewDetailsModal } from './components';
 import ProgramForm from './components/ProgramForm/ProgramForm';
-import { DeleteConfirmationModal, SkeletonLoader } from '../components';
+import { SkeletonLoader } from '../components';
+import { ConfirmationModal } from '@/components';
 import { SuccessModal } from '@/components';
 import { SearchAndFilterControls } from './components';
 import styles from './programs.module.css';
@@ -194,7 +195,6 @@ export default function AdminProgramsPage() {
       setRefreshCollaboratorsFn(null);
       refreshPrograms();
     } catch (error) {
-      console.error('Update program error:', error);
       setSuccessModal({ 
         isVisible: true, 
         message: `Failed to update program: ${error.message}`, 
@@ -251,7 +251,6 @@ export default function AdminProgramsPage() {
       });
       refreshPrograms();
     } catch (error) {
-      console.error('Mark completed error:', error);
       setSuccessModal({ 
         isVisible: true, 
         message: `Failed to mark program as completed: ${error.message}`, 
@@ -294,7 +293,6 @@ export default function AdminProgramsPage() {
       });
       refreshPrograms();
     } catch (error) {
-      console.error('Mark active error:', error);
       setSuccessModal({ 
         isVisible: true, 
         message: `Failed to mark program as active: ${error.message}`, 
@@ -375,7 +373,7 @@ export default function AdminProgramsPage() {
       try {
         await refreshCollaboratorsFn();
       } catch (error) {
-        console.error('Failed to refresh collaborators after opt-out:', error);
+        // Handle error silently in production
       }
     }
   }, [refreshPrograms, pageMode, refreshCollaboratorsFn]);
@@ -565,7 +563,7 @@ export default function AdminProgramsPage() {
         />
       )}
 
-      <DeleteConfirmationModal
+      <ConfirmationModal
         isOpen={!!deletingProgram}
         itemName={deletingProgram?.title || 'this program'}
         itemType="program"

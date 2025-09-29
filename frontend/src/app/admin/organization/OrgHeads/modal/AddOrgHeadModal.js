@@ -5,7 +5,7 @@ import { FaCamera, FaTimes, FaCheckCircle, FaExclamationTriangle, FaSpinner } fr
 import { FiImage } from 'react-icons/fi'
 import { getOrganizationImageUrl } from '@/utils/uploadPaths'
 import styles from './OrgHeadModal.module.css'
-import { PhotoUtils, applyRoleHierarchyOrdering } from '../../utils'
+import { PhotoUtils, applyRoleHierarchyOrdering, ROLE_OPTIONS } from '../../utils'
 import LazyImage from '../components/LazyImage/LazyImage'
 
 export default function AddOrgHeadModal({
@@ -22,6 +22,7 @@ export default function AddOrgHeadModal({
     facebook: '',
     email: ''
   })
+  const [customRole, setCustomRole] = useState('')
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [validationErrors, setValidationErrors] = useState({})
@@ -39,6 +40,7 @@ export default function AddOrgHeadModal({
         facebook: '',
         email: ''
       })
+      setCustomRole('')
       setValidationErrors({})
       setFieldErrors({})
       setUploadProgress(0)
@@ -56,6 +58,40 @@ export default function AddOrgHeadModal({
       setFieldErrors(prev => {
         const newErrors = { ...prev }
         delete newErrors[field]
+        return newErrors
+      })
+    }
+  }
+
+  const handleRoleChange = (selectedRole) => {
+    if (selectedRole === 'Others') {
+      setNewHead(prev => ({ ...prev, role: 'Others' }))
+      setCustomRole('')
+    } else {
+      setNewHead(prev => ({ ...prev, role: selectedRole }))
+      setCustomRole('')
+    }
+    
+    // Clear role error when user selects a role
+    if (fieldErrors.role) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors.role
+        return newErrors
+      })
+    }
+  }
+
+  const handleCustomRoleChange = (value) => {
+    setCustomRole(value)
+    // Don't change the role state - keep it as "Others" so the dropdown stays selected
+    // The actual role value will be set during save
+    
+    // Clear role error when user starts typing
+    if (fieldErrors.role) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors.role
         return newErrors
       })
     }
@@ -177,6 +213,9 @@ export default function AddOrgHeadModal({
     if (!newHead.role?.trim()) {
       newFieldErrors.role = 'Role is required'
       isValid = false
+    } else if (newHead.role === 'Others' && !customRole?.trim()) {
+      newFieldErrors.role = 'Please specify the custom role'
+      isValid = false
     }
     
     // Validate email
@@ -212,8 +251,17 @@ export default function AddOrgHeadModal({
     if (validateForm()) {
       try {
         // Create new head with temporary display_order
+        const finalRole = newHead.role === 'Others' ? customRole : newHead.role
+        
+        // Safety check: ensure role is not empty
+        if (!finalRole?.trim()) {
+          setFieldErrors({ role: 'Role is required' })
+          return
+        }
+        
         const newHeadWithTempOrder = {
           ...newHead,
+          role: finalRole, // Use custom role text if "Others" is selected
           display_order: existingHeads.length + 1
         }
         
@@ -224,7 +272,7 @@ export default function AddOrgHeadModal({
         // Find the new head in the reordered list and get its final display_order
         const finalNewHead = reorderedHeads.find(head => 
           head.head_name === newHead.head_name && 
-          head.role === newHead.role && 
+          head.role === finalRole && 
           head.email === newHead.email
         )
         
@@ -254,6 +302,7 @@ export default function AddOrgHeadModal({
       facebook: '',
       email: ''
     })
+    setCustomRole('')
     setValidationErrors({})
     setFieldErrors({})
     setUploadProgress(0)
@@ -279,7 +328,7 @@ export default function AddOrgHeadModal({
             {/* Top row: Photo on left, Name and Role on right */}
             <div className={styles.topRow}>
               <div className={styles.photoSection}>
-                <label className={styles.photoLabel}>Profile Photo *</label>
+                <label className={styles.photoLabel}>Profile Photo</label>
                 <div className={styles.headPhoto}>
                   <div className={styles.photoContainer}>
                     {newHead.photo ? (
@@ -368,7 +417,7 @@ export default function AddOrgHeadModal({
 
               <div className={styles.nameRoleFields}>
                 <div className={`${styles.formGroup} ${fieldErrors.head_name ? styles.formGroupError : ''}`}>
-                  <label className={styles.label}>Name *</label>
+                  <label className={styles.label}>Name</label>
                   <input
                     type="text"
                     value={newHead.head_name || ''}
@@ -386,16 +435,36 @@ export default function AddOrgHeadModal({
                 </div>
 
                 <div className={`${styles.formGroup} ${fieldErrors.role ? styles.formGroupError : ''}`}>
-                  <label className={styles.label}>Role *</label>
-                  <input
-                    type="text"
-                    value={newHead.role || ''}
-                    onChange={(e) => handleInputChange('role', e.target.value)}
+                  <label className={styles.label}>Role</label>
+                  <select
+                    value={ROLE_OPTIONS.find(option => option.value === newHead.role) ? newHead.role : (newHead.role && !ROLE_OPTIONS.find(option => option.value === newHead.role) ? 'Others' : '')}
+                    onChange={(e) => handleRoleChange(e.target.value)}
                     className={`${styles.input} ${fieldErrors.role ? styles.inputError : ''}`}
-                    placeholder="Enter role (e.g., President, Secretary, PRO)"
                     disabled={saving}
                     required
-                  />
+                  >
+                    <option value="">Select a role</option>
+                    {ROLE_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  
+                  {/* Custom role input - only show when "Others" is selected or when role is not in predefined options */}
+                  {(newHead.role === 'Others' || (newHead.role && !ROLE_OPTIONS.find(option => option.value === newHead.role))) && (
+                    <input
+                      type="text"
+                      value={customRole}
+                      onChange={(e) => handleCustomRoleChange(e.target.value)}
+                      className={`${styles.input} ${styles.customRoleInput} ${fieldErrors.role ? styles.inputError : ''}`}
+                      placeholder="Enter custom role"
+                      disabled={saving}
+                      required
+                      style={{ marginTop: '8px' }}
+                    />
+                  )}
+                  
                   {fieldErrors.role && (
                     <div className={styles.fieldError}>
                       {fieldErrors.role}
@@ -408,7 +477,7 @@ export default function AddOrgHeadModal({
             {/* Bottom row: Email and Facebook full width */}
             <div className={styles.bottomRow}>
               <div className={`${styles.formGroup} ${fieldErrors.email ? styles.formGroupError : ''}`}>
-                <label className={styles.label}>Email *</label>
+                <label className={styles.label}>Email</label>
                 <input
                   type="email"
                   value={newHead.email || ''}

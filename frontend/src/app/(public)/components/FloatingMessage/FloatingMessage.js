@@ -35,7 +35,6 @@ export default function FloatingMessage() {
         setIsLoggedIn(true);
         setEmail(user.email); // Pre-fill email for logged-in users
       } catch (error) {
-        console.error('Error parsing user data:', error);
         localStorage.removeItem('userToken');
         localStorage.removeItem('userData');
       }
@@ -152,13 +151,13 @@ export default function FloatingMessage() {
 
     // Validate organization selection
     if (!org) {
-      alert("Please select an organization");
+      setEmailError("Please select an organization");
       return;
     }
 
     // Validate message
     if (!message.trim()) {
-      alert("Please enter a message");
+      setEmailError("Please enter a message");
       return;
     }
 
@@ -185,7 +184,7 @@ export default function FloatingMessage() {
       if (typeof window !== 'undefined' && window.showToast) {
         window.showToast("Message sent successfully!", "success", 4000);
       } else {
-        alert("Message sent successfully!");
+        // Message sent successfully - handled by success state
       }
 
       // Clear message field and organization selection after successful submission
@@ -198,14 +197,12 @@ export default function FloatingMessage() {
         setEmail("");
       }
     } catch (error) {
-      console.error("Error submitting message:", error);
-      
       // Show error message
       const errorMessage = error?.data?.message || "Failed to send message. Please try again.";
       if (typeof window !== 'undefined' && window.showToast) {
         window.showToast(errorMessage, "error", 4000);
       } else {
-        alert(errorMessage);
+        setEmailError(errorMessage);
       }
     } finally {
       setIsSubmitting(false);

@@ -1829,7 +1829,14 @@ export const deleteApplication = async (req, res) => {
       });
     }
 
-    // Delete the application (for pending, cancelled, or declined applications)
+    if (application.status === 'Cancelled') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete cancelled applications. They are kept for historical records.'
+      });
+    }
+
+    // Delete the application (for pending or declined applications only)
     await db.query(
       'DELETE FROM volunteers WHERE id = ? AND user_id = ?',
       [id, userId]

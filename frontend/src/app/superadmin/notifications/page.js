@@ -12,8 +12,8 @@ import {
 } from '../../../rtk/superadmin/superadminNotificationsApi';
 import { FiX, FiTrash2 } from 'react-icons/fi';
 import { PiChecksBold } from 'react-icons/pi';
-import ConfirmationModal from '../components/ConfirmationModal';
-import SkeletonLoader from '../../admin/components/SkeletonLoader';
+import { ConfirmationModal } from '@/components';
+import SkeletonLoader from '../../admin/components/SkeletonLoader/SkeletonLoader';
 import InfiniteScrollSuperAdminNotifications from './components/InfiniteScrollSuperAdminNotifications';
 import styles from './notifications.module.css';
 
@@ -43,7 +43,7 @@ export default function SuperAdminNotificationsPage() {
           const parsedData = JSON.parse(superAdminData);
           setSuperAdminId(parsedData.id);
         } catch (error) {
-          console.error('Error parsing superadmin data:', error);
+          // Handle error silently in production
         }
       }
     }
@@ -111,7 +111,7 @@ export default function SuperAdminNotificationsPage() {
       await markAsRead({ notificationId, superAdminId: superAdminId });
       // The mutation will automatically invalidate the cache and refresh the data
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      // Handle error silently in production
     }
   };
 
@@ -121,7 +121,7 @@ export default function SuperAdminNotificationsPage() {
       await markAllAsRead(superAdminId);
       // The mutation will automatically invalidate the cache and refresh the data
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
+      // Handle error silently in production
     }
   };
 
@@ -133,7 +133,7 @@ export default function SuperAdminNotificationsPage() {
       setShowIndividualDeleteModal(false);
       setNotificationToDelete(null);
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      // Handle error silently in production
     }
   };
 
@@ -153,7 +153,7 @@ export default function SuperAdminNotificationsPage() {
       setShowDeleteModal(false);
       // The mutation will automatically invalidate the cache and refresh the data
     } catch (error) {
-      console.error('Error bulk deleting notifications:', error);
+      // Handle error silently in production
     }
   };
 

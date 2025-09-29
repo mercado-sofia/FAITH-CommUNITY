@@ -1,4 +1,3 @@
-export { default as SkeletonLoader } from './SkeletonLoader';
-export { default as ConfirmationModal } from './ConfirmationModal';
-export { default as Sidebar } from './Sidebar';
-export { default as TopBar } from './TopBar';
+export { default as SkeletonLoader } from './SkeletonLoader/SkeletonLoader';
+export { default as Sidebar } from './Sidebar/Sidebar';
+export { default as TopBar } from './TopBar/TopBar';

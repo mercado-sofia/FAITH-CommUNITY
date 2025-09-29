@@ -28,6 +28,18 @@ const ProgramSelect = forwardRef(function ProgramSelect(
     return userApplications.some(application => application.programId === programId);
   };
 
+  // Helper function to get application status for a program
+  const getApplicationStatus = (programId) => {
+    const application = userApplications.find(app => app.programId === programId);
+    return application ? application.status : null;
+  };
+
+  // Helper function to get status display text
+  const getStatusDisplayText = (status) => {
+    // Show "Already Applied" for any existing application regardless of status
+    return status ? ' (Already Applied)' : '';
+  };
+
   // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -92,7 +104,16 @@ const ProgramSelect = forwardRef(function ProgramSelect(
               }
             }}
           >
-            {isLoading ? "Loading programs..." : error ? "Error loading programs" : formData.program?.title || <span className={errorMessage ? styles.placeholderError : ""}>Select Program</span>}
+            {isLoading ? "Loading programs..." : error ? "Error loading programs" : formData.program ? (
+              <>
+                {formData.program.title}
+                {(formData.program.orgAcronym || formData.program.orgName) && (
+                  <span className={styles.orgName}> ({formData.program.orgAcronym || formData.program.orgName})</span>
+                )}
+              </>
+            ) : (
+              <span className={errorMessage ? styles.placeholderError : ""}>Select Program</span>
+            )}
             <FaChevronDown className={`${styles.dropdownIcon} ${dropdownOpen ? styles.arrowDown : styles.arrowRight} ${errorMessage ? styles.iconError : ""}`} />
           </div>
 
@@ -106,6 +127,9 @@ const ProgramSelect = forwardRef(function ProgramSelect(
               {programOptions.length > 0 ? (
                 programOptions.map((option) => {
                   const isAlreadyApplied = isProgramAlreadyApplied(option.id);
+                  const applicationStatus = getApplicationStatus(option.id);
+                  const statusText = getStatusDisplayText(applicationStatus);
+                  
                   return (
                     <li
                       key={option.id}
@@ -130,8 +154,11 @@ const ProgramSelect = forwardRef(function ProgramSelect(
                     >
                       <div>
                         <strong>{option.title}</strong>
-                        {isAlreadyApplied && (
-                          <span className={styles.alreadyAppliedText}> (Already Applied)</span>
+                        {(option.orgAcronym || option.orgName) && (
+                          <span className={styles.orgName}> ({option.orgAcronym || option.orgName})</span>
+                        )}
+                        {statusText && (
+                          <span className={styles.alreadyAppliedText}>{statusText}</span>
                         )}
                       </div>
                     </li>

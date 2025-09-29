@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useState, useRef, useEffect } from 'react';
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
 import { formatDateLong } from '@/utils/dateUtils';
 import styles from './ProgramCard.module.css';
@@ -194,8 +195,52 @@ const DateBadge = ({ dateInfo, status }) => {
   return null;
 };
 
+// Helper function to format collaboration badge text
+const formatCollaborationBadgeText = (collaborators) => {
+  if (!collaborators || collaborators.length === 0) {
+    return 'Collaborative';
+  }
+
+  if (collaborators.length === 1) {
+    return collaborators[0].organization_name;
+  }
+
+  if (collaborators.length === 2) {
+    return `${collaborators[0].organization_name} & ${collaborators[1].organization_name}`;
+  }
+
+  // For 3+ organizations, show first two and count
+  const remainingCount = collaborators.length - 2;
+  return `${collaborators[0].organization_name}, ${collaborators[1].organization_name} +${remainingCount}`;
+};
+
 export default function ProgramCard({ project }) {
   const dateInfo = getDateInfo(project);
+  const [isHovering, setIsHovering] = useState(false);
+  const containerRef = useRef(null);
+
+  const handleMouseEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (containerRef.current) {
+      setIsHovering(true);
+    }
+  };
+
+  const handleMouseLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (containerRef.current) {
+      setIsHovering(false);
+    }
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      setIsHovering(false);
+    };
+  }, []);
 
   return (
     <div className={styles.card}>
@@ -237,7 +282,61 @@ export default function ProgramCard({ project }) {
       </div>
 
       <div className={styles.cardContent}>
-        <p className={styles.cardCategory}>{project.category}</p>
+        <div className={styles.cardHeader}>
+          <p className={styles.cardCategory}>{project.category}</p>
+          {(project.is_collaborative === true || project.is_collaborative === 1) && project.collaborators && project.collaborators.length > 0 && (
+            <div 
+              ref={containerRef}
+              className={styles.collaborationBadgeContainer}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+            >
+              {/* Floating organization name */}
+              {isHovering && project.collaborators && project.collaborators.length > 0 && (
+                <div className={styles.floatingLabel}>
+                  {formatCollaborationBadgeText(project.collaborators)}
+                </div>
+              )}
+              
+              {/* Clickable Badge */}
+              <Link href={`/programs/${project.slug || project.id}`} className={styles.collaborationBadgeLink}>
+                <div className={styles.collaborationBadge}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path 
+                      d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    />
+                    <path 
+                      d="M9 11C11.2091 11 13 9.20914 13 7C13 4.79086 11.2091 3 9 3C6.79086 3 5 4.79086 5 7C5 9.20914 6.79086 11 9 11Z" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    />
+                    <path 
+                      d="M23 21V19C23 18.1645 22.7155 17.3541 22.2094 16.6977C21.7033 16.0413 20.9999 15.5754 20.2 15.366" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    />
+                    <path 
+                      d="M16 3.36603C16.7999 3.57538 17.5033 4.04131 18.0094 4.69767C18.5155 5.35403 18.8 6.16448 18.8 7C18.8 7.83552 18.5155 8.64597 18.0094 9.30233C17.5033 9.95869 16.7999 10.4246 16 10.634" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <span>Collaborative</span>
+                </div>
+              </Link>
+            </div>
+          )}
+        </div>
 
         <Link href={`/programs/${project.slug || project.id}`} className={styles.cardTitle}>
           {project.title}

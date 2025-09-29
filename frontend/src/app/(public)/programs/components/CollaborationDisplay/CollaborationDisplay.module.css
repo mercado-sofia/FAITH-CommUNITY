@@ -1,0 +1,176 @@
+/* Collaboration Display Styles - Adapted to Site's Design System */
+.collaborationSection {
+  margin: 2rem 0;
+  padding-top: 2rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.collaborationHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.collaborationIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border-radius: 12px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.collaborationTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.collaborationDescription {
+  margin-bottom: 1.5rem;
+}
+
+.collaborationDescription p {
+  color: #475569;
+  font-size: 1rem;
+  line-height: 1.7;
+  margin: 0;
+  text-align: justify;
+}
+
+.collaboratorsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.collaboratorItem {
+  background: #f8fafc;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.collaboratorItem:hover {
+  background: #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.collaboratorLink {
+  display: block;
+  padding: 1rem;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+.collaboratorLink:hover {
+  text-decoration: none;
+  color: inherit;
+}
+
+.collaboratorInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.collaboratorLogo {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #e2e8f0;
+}
+
+.logoImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.collaboratorDetails {
+  flex: 1;
+  min-width: 0;
+}
+
+.collaboratorName {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+  line-height: 1.3;
+  transition: all 0.2s ease;
+}
+
+.collaboratorItem:hover .collaboratorName::after {
+  content: " →";
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.collaboratorAcronym {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .collaborationSection {
+    margin: 1.5rem 0;
+    padding-top: 1.5rem;
+  }
+  
+  .collaborationHeader {
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .collaborationIcon {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .collaborationTitle {
+    font-size: 1.25rem;
+  }
+  
+  .collaborationDescription {
+    margin-bottom: 1.25rem;
+  }
+  
+  .collaboratorLink {
+    padding: 0.875rem;
+  }
+  
+  .collaboratorInfo {
+    gap: 0.75rem;
+  }
+  
+  .collaboratorLogo {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .collaboratorName {
+    font-size: 1rem;
+  }
+  
+  .collaboratorAcronym {
+    font-size: 0.8rem;
+  }
+}

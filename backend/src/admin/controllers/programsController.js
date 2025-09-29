@@ -289,7 +289,7 @@ export const getApprovedPrograms = async (req, res) => {
       ORDER BY p.created_at DESC
     `);
 
-    // Get multiple dates and additional images for each program
+    // Get multiple dates, additional images, and collaboration data for each program
     const programsWithDates = await Promise.all(rows.map(async (program) => {
       let multipleDates = [];
       
@@ -315,10 +315,33 @@ export const getApprovedPrograms = async (req, res) => {
       );
       const additionalImages = imageRows.map(row => row.image_data);
 
+      // Get collaboration data if program is collaborative
+      let collaborators = [];
+      if (program.is_collaborative) {
+        const [collaborationRows] = await db.execute(`
+          SELECT 
+            o.orgName as organization_name,
+            o.org as organization_acronym,
+            o.logo as organization_logo
+          FROM program_collaborations pc
+          LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+          LEFT JOIN organizations o ON a.organization_id = o.id
+          WHERE pc.program_id = ? AND pc.status = 'accepted'
+          ORDER BY o.orgName ASC
+        `, [program.id]);
+        
+        collaborators = collaborationRows.map(collab => ({
+          organization_name: collab.organization_name,
+          organization_acronym: collab.organization_acronym,
+          organization_logo: collab.organization_logo ? getOrganizationLogoUrl(collab.organization_logo) : null
+        }));
+      }
+
       return {
         ...program,
         multiple_dates: multipleDates,
-        additional_images: additionalImages
+        additional_images: additionalImages,
+        collaborators: collaborators
       };
     }));
 
@@ -348,7 +371,9 @@ export const getApprovedPrograms = async (req, res) => {
         orgName: program.orgName,
         orgLogo: logoUrl,
         created_at: program.created_at,
-        slug: program.slug
+        slug: program.slug,
+        is_collaborative: program.is_collaborative,
+        collaborators: program.collaborators
       };
     });
 
@@ -1031,6 +1056,7 @@ export const getProgramBySlug = async (req, res) => {
         pp.updated_at,
         pp.organization_id,
         pp.slug,
+        pp.is_collaborative,
         o.orgName as organization_name,
         o.org as organization_acronym,
         o.logo as orgLogo,
@@ -1076,6 +1102,28 @@ export const getProgramBySlug = async (req, res) => {
     );
     const additionalImages = imageRows.map(row => row.image_data);
 
+    // Get collaboration data if program is collaborative
+    let collaborators = [];
+    if (program.is_collaborative) {
+      const [collaborationRows] = await db.execute(`
+        SELECT 
+          o.orgName as organization_name,
+          o.org as organization_acronym,
+          o.logo as organization_logo
+        FROM program_collaborations pc
+        LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+        LEFT JOIN organizations o ON a.organization_id = o.id
+        WHERE pc.program_id = ? AND pc.status = 'accepted'
+        ORDER BY o.orgName ASC
+      `, [program.id]);
+      
+      collaborators = collaborationRows.map(collab => ({
+        organization_name: collab.organization_name,
+        organization_acronym: collab.organization_acronym,
+        organization_logo: collab.organization_logo ? getOrganizationLogoUrl(collab.organization_logo) : null
+      }));
+    }
+
     // Construct proper logo URL
     let logoUrl;
     if (program.orgLogo) {
@@ -1091,7 +1139,8 @@ export const getProgramBySlug = async (req, res) => {
       ...program,
       orgLogo: logoUrl,
       multiple_dates: multipleDates,
-      additional_images: additionalImages
+      additional_images: additionalImages,
+      collaborators: collaborators
     };
     
     res.json({

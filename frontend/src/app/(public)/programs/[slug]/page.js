@@ -8,6 +8,7 @@ import styles from './programDetails.module.css';
 import Loader from '../../../../components/ui/Loader/Loader';
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
 import OtherProgramsCarousel from '../components/OtherProgramsCarousel/OtherProgramsCarousel';
+import CollaborationDisplay from '../components/CollaborationDisplay/CollaborationDisplay';
 import { usePublicPageLoader } from '../../hooks/usePublicPageLoader';
 
 // Custom functions to preserve exact date formatting for program details
@@ -372,6 +373,14 @@ export default function ProgramDetailsPage() {
                   <h3 className={styles.descriptionTitle}>About This Program</h3>
                   <p className={styles.descriptionText}>{program.description}</p>
                 </div>
+                
+                {/* Collaboration Display */}
+                {(program.is_collaborative === 1 || program.is_collaborative === true) && program.collaborators && program.collaborators.length > 0 && (
+                  <CollaborationDisplay 
+                    collaborators={program.collaborators}
+                    programTitle={program.title}
+                  />
+                )}
                 
                 {/* Additional Images Gallery */}
                 {program.additional_images && program.additional_images.length > 0 && (

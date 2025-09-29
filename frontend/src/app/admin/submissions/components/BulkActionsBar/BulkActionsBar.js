@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FiX, FiTrash2 } from 'react-icons/fi';
-import DeleteConfirmationModal from '../../../components/DeleteConfirmationModal';
+import { ConfirmationModal } from '@/components';
 import CancelConfirmationModal from '../modals/CancelConfirmationModal';
 import styles from './BulkActionsBar.module.css';
 
@@ -86,7 +86,7 @@ export default function BulkActionsBar({ selectedCount, selectedItems, submissio
       />
 
       {/* Delete Confirmation Modal */}
-      <DeleteConfirmationModal
+      <ConfirmationModal
         isOpen={showDeleteConfirm}
         itemName={`${selectedCount} submission${selectedCount !== 1 ? 's' : ''}`}
         itemType="submission"

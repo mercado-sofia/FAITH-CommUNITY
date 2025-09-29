@@ -107,7 +107,6 @@ export default function SuperAdminSettings() {
           showSuccessModal(data.error || 'Failed to load user data');
         }
       } catch (error) {
-        console.error('Error loading user data:', error);
         showAuthError('Failed to load user data. Please try again.');
       } finally {
         setLoading(false);
@@ -177,7 +176,6 @@ export default function SuperAdminSettings() {
             setTwofaEnabled(data.twofa_enabled || false);
           }
         } catch (error) {
-          console.error('Failed to reload user data:', error);
           showAuthError('Failed to reload user data. Please refresh the page.');
         }
       };

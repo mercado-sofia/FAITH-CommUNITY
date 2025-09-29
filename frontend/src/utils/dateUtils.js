@@ -266,6 +266,83 @@ export const formatProgramDates = (program) => {
 };
 
 /**
+ * Format program dates for application details modal with support for different property naming conventions
+ * Handles three types of program dates:
+ * 1. Single date: programStartDate only or same start/end dates
+ * 2. Date range: programStartDate + programEndDate (different dates)
+ * 3. Multiple dates: multiple_dates array
+ * @param {Object} application - Application object with program date properties
+ * @returns {string} Formatted program dates
+ */
+export const formatApplicationProgramDates = (application) => {
+  try {
+    if (!application) return 'Not specified';
+    
+    // 1. Handle multiple dates array (Multiple type)
+    if (application.multiple_dates && Array.isArray(application.multiple_dates) && application.multiple_dates.length > 0) {
+      if (application.multiple_dates.length === 1) {
+        // Single date in multiple_dates array
+        return formatDateShort(application.multiple_dates[0]);
+      } else if (application.multiple_dates.length === 2) {
+        // Check if both dates are the same (single date case)
+        const date1 = new Date(application.multiple_dates[0]);
+        const date2 = new Date(application.multiple_dates[1]);
+        
+        // Normalize dates to compare only the date part (remove time components)
+        const date1Only = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
+        const date2Only = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
+        
+        if (date1Only.getTime() === date2Only.getTime()) {
+          // Same date, show as single date
+          return formatDateShort(application.multiple_dates[0]);
+        } else {
+          // Two different dates: "Dec 14, 2025 and Dec 20, 2025"
+          return `${formatDateShort(application.multiple_dates[0])} and ${formatDateShort(application.multiple_dates[1])}`;
+        }
+      } else {
+        // Multiple dates: "Dec 14, 2025, Dec 24, 2025, Jan 1, 2026, and Jan 20, 2026"
+        const formattedDates = application.multiple_dates.map(date => formatDateShort(date));
+        const lastDate = formattedDates.pop();
+        return `${formattedDates.join(', ')}, and ${lastDate}`;
+      }
+    }
+    
+    // 2. Handle date range (Range type: programStartDate + programEndDate)
+    if (application.programStartDate && application.programEndDate) {
+      const startDate = new Date(application.programStartDate);
+      const endDate = new Date(application.programEndDate);
+      
+      // Check if dates are valid
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return 'Invalid date range';
+      }
+      
+      // Normalize dates to compare only the date part (remove time components)
+      const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+      const endDateOnly = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+      
+      // If same day, show single date (Single type)
+      if (startDateOnly.getTime() === endDateOnly.getTime()) {
+        return formatDateShort(application.programStartDate);
+      } else {
+        // Different dates: "Dec 14, 2025 - Dec 20, 2025" (Range type)
+        return `${formatDateShort(application.programStartDate)} - ${formatDateShort(application.programEndDate)}`;
+      }
+    }
+    
+    // 3. Handle single date (Single type: programStartDate only)
+    if (application.programStartDate) {
+      return formatDateShort(application.programStartDate);
+    }
+    
+    return 'Not specified';
+  } catch (error) {
+    logger.error('Error in formatApplicationProgramDates', error, { application });
+    return 'Invalid date';
+  }
+};
+
+/**
  * Validate if a date string is valid
  * @param {string} dateString - Date string to validate
  * @returns {boolean} True if valid date

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import styles from './OrgAdviserSection.module.css';
 import { FaChevronLeft, FaChevronRight, FaFacebookF, FaEnvelope, FaPlus } from 'react-icons/fa';
 import { usePublicOrganizationAdvisers } from '../../hooks/usePublicData';
-import Loader from '../../../../components/ui/Loader';
+import Loader from '../../../../components/ui/Loader/Loader';
 
 export default function OrgAdviserSection() {
   const { organizationAdvisers, isLoading, error } = usePublicOrganizationAdvisers();
@@ -82,29 +82,12 @@ export default function OrgAdviserSection() {
 
   // Show error state
   if (error) {
-    console.error('Error loading organization advisers:', error);
+    // Handle error silently in production
   }
 
-  // Show placeholder if no advisers data
+  // Hide section if no advisers data
   if (!organizationAdvisers || organizationAdvisers.length === 0) {
-    return (
-      <section className={styles.orgAdviserSection}>
-        <div className={styles.orgAdviserHeading}>
-          <h2 className={styles.orgAdviserTitle}>Meet Our Organization Advisers</h2>
-        </div>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center',
-          padding: '4rem 2rem',
-          textAlign: 'center',
-          color: '#666',
-          fontSize: '1.1rem'
-        }}>
-          <p>Organization advisers will be displayed here once they are added and approved.</p>
-        </div>
-      </section>
-    );
+    return null;
   }
 
   return (
@@ -142,11 +125,11 @@ export default function OrgAdviserSection() {
                     }}
                   />
                   <div className={styles.orgAdviserOverlay}>
-                    {adviser.facebook && (
+                    {adviser.facebook && adviser.facebook.startsWith('http') && (
                       <a
                         href={adviser.facebook}
                         target="_blank"
-                        rel="noreferrer"
+                        rel="noreferrer noopener"
                         className={styles.orgAdviserIcon}
                       >
                         <FaFacebookF />

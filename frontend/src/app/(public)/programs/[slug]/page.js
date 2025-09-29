@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import styles from './programDetails.module.css';
-import Loader from '../../../../components/ui/Loader';
+import Loader from '../../../../components/ui/Loader/Loader';
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
 import OtherProgramsCarousel from '../components/OtherProgramsCarousel/OtherProgramsCarousel';
 import { usePublicPageLoader } from '../../hooks/usePublicPageLoader';
@@ -92,7 +92,6 @@ export default function ProgramDetailsPage() {
         setUserApplications([]);
       }
     } catch (error) {
-      console.error('Error fetching user applications:', error);
       setUserApplications([]);
     }
   };
@@ -149,7 +148,6 @@ export default function ProgramDetailsPage() {
             }
           } catch (err) {
             // Silently fail for other programs - not critical
-            console.warn('Failed to fetch other programs:', err);
           }
         }
       } catch (err) {
@@ -411,7 +409,7 @@ export default function ProgramDetailsPage() {
                             height={48}
                             className={styles.orgLogo}
                             onError={(e) => {
-                              e.target.src = '/assets/logos/faith_community_logo.png';
+                              e.target.src = '/assets/icons/placeholder.svg';
                             }}
                           />
                         )}

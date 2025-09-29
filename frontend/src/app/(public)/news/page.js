@@ -8,7 +8,7 @@ import { usePublicOrganizations, usePublicNews } from "../hooks/usePublicData";
 import { formatDateLong } from "@/utils/dateUtils";
 import styles from "./news.module.css";
 import { Pagination } from "../components";
-import Loader from "../../../components/ui/Loader";
+import Loader from "../../../components/ui/Loader/Loader";
 import { usePublicPageLoader } from "../hooks/usePublicPageLoader";
 
 export default function AllNewsPage() {

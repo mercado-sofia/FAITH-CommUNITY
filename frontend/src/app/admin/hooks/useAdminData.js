@@ -142,7 +142,8 @@ export const useAdminVolunteers = (adminId) => {
     reason: volunteer.reason || '',
     validIdFilename: volunteer.valid_id ? volunteer.valid_id.split('/').pop() : null,
     program_id: volunteer.program_id,
-    organization_name: volunteer.organization_name || 'Unknown Organization'
+    organization_name: volunteer.organization_name || 'Unknown Organization',
+    profile_photo_url: volunteer.profile_photo_url || null
   }));
 
   return {

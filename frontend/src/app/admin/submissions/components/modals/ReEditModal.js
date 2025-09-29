@@ -133,7 +133,6 @@ export default function ReEditModal({ submission, onClose, onSave }) {
       await onSave(submission.id, trimmedFormData);
       onClose();
     } catch (error) {
-      console.error('Error saving changes:', error);
       // Let the parent component handle the error message
     } finally {
       setIsLoading(false);

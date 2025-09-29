@@ -16,7 +16,6 @@ export default function Section({
   const config = sectionConfigs[type]
 
   if (!config) {
-    console.error(`Invalid section type: ${type}`)
     return null
   }
 

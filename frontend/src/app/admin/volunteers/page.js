@@ -4,15 +4,11 @@ import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSelector } from 'react-redux'
 import { SearchAndFilterControls, VolunteerTable } from './components'
-import { DeleteConfirmationModal } from '../components'
-import { SuccessModal } from '@/components'
+import { SuccessModal, ConfirmationModal } from '@/components'
 import { useAdminVolunteers, useAdminPrograms } from '../hooks/useAdminData'
 import { selectCurrentAdmin, selectIsAuthenticated } from '@/rtk/superadmin/adminSlice'
 import { SkeletonLoader } from '../components'
 import styles from './volunteers.module.css'
-
-// Track if volunteers page has been visited
-let hasVisitedVolunteers = false;
 
 // Essential security utilities
 const sanitizeInput = (input) => {
@@ -155,18 +151,25 @@ export default function VolunteersPage() {
     return programsFromVolunteers
   }, [programsData, programsFromVolunteers])
   
+  // Toast notification function
+  const showToast = useCallback((message, type = 'success') => {
+    setSuccessMessage(message);
+    setSuccessModalType(type);
+    setShowSuccessModal(true);
+  }, []);
+
   // Enhanced status update with rate limiting and validation
   const handleStatusUpdate = useCallback(async (id, newStatus) => {
     // Validate status
     if (!validateStatus(newStatus)) {
-      alert('Invalid status provided');
+      showToast('Invalid status provided', 'error');
       return;
     }
 
     // Check rate limiting
     const rateLimitKey = `status_update_${currentAdmin?.id}`;
     if (!rateLimiter.current.isAllowed(rateLimitKey)) {
-      alert('Too many status updates. Please wait a moment and try again.');
+      showToast('Too many status updates. Please wait a moment and try again.', 'error');
       return;
     }
 
@@ -197,12 +200,11 @@ export default function VolunteersPage() {
       // Refresh data after successful update
       refreshVolunteers();
     } catch (error) {
-      console.error('Status update error:', error);
       setSuccessMessage(error.message || 'Failed to update status. Please try again.');
       setSuccessModalType('error');
       setShowSuccessModal(true);
     }
-  }, [refreshVolunteers, currentAdmin?.id])
+  }, [refreshVolunteers, currentAdmin?.id, showToast])
 
   // Enhanced soft delete with rate limiting
   const handleSoftDelete = useCallback(async (id, volunteerName) => {
@@ -226,7 +228,7 @@ export default function VolunteersPage() {
     // Check rate limiting
     const rateLimitKey = `soft_delete_${currentAdmin?.id}`;
     if (!rateLimiter.current.isAllowed(rateLimitKey)) {
-      alert('Too many delete operations. Please wait a moment and try again.');
+      showToast('Too many delete operations. Please wait a moment and try again.', 'error');
       setIsDeleting(false);
       setShowDeleteModal(false);
       setVolunteerToDelete(null);
@@ -272,14 +274,13 @@ export default function VolunteersPage() {
       // Refresh data after successful deletion
       refreshVolunteers();
     } catch (error) {
-      console.error('Soft delete error:', error);
       setSuccessMessage(error.message || 'Failed to delete volunteer. Please try again.');
       setSuccessModalType('error');
       setShowSuccessModal(true);
     } finally {
       setIsDeleting(false);
     }
-  }, [refreshVolunteers, currentAdmin?.id])
+  }, [refreshVolunteers, currentAdmin?.id, showToast])
 
   // Handle delete cancellation
   const handleCancelDelete = useCallback(() => {
@@ -341,7 +342,6 @@ export default function VolunteersPage() {
       // Refresh data after successful deletion
       refreshVolunteers();
     } catch (error) {
-      console.error('Bulk delete error:', error);
       setSuccessMessage(error.message || 'Failed to delete volunteers. Please try again.');
       setSuccessModalType('error');
       setShowSuccessModal(true);
@@ -349,7 +349,6 @@ export default function VolunteersPage() {
       setIsDeleting(false);
     }
   }, [refreshVolunteers])
-
 
 
   function capitalizeFirstLetter(str) {
@@ -393,11 +392,9 @@ export default function VolunteersPage() {
   // Handle error display with enhanced error handling
   useEffect(() => {
     if (volunteersError) {
-      console.error('Volunteers error:', volunteersError);
       handleApiError(volunteersError, 'volunteers_fetch');
     }
     if (programsError) {
-      console.error('Programs error:', programsError);
       handleApiError(programsError, 'programs_fetch');
     }
   }, [volunteersError, programsError]);
@@ -550,7 +547,7 @@ export default function VolunteersPage() {
       />
 
       {/* Delete Confirmation Modal */}
-      <DeleteConfirmationModal
+      <ConfirmationModal
         isOpen={showDeleteModal}
         itemName={volunteerToDelete?.name || ''}
         itemType="volunteer"
@@ -560,7 +557,7 @@ export default function VolunteersPage() {
       />
 
       {/* Bulk Delete Confirmation Modal */}
-      <DeleteConfirmationModal
+      <ConfirmationModal
         isOpen={showBulkDeleteModal}
         itemName={`${bulkDeleteCount} volunteer${bulkDeleteCount !== 1 ? 's' : ''}`}
         itemType="volunteer"

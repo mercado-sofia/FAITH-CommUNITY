@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { FaEnvelope, FaLock } from 'react-icons/fa';
 import { createPortal } from 'react-dom';
 import { EmailChange, PasswordChange } from '@/components';
-import ChangeSuccessModal from './ChangeSuccessModal';
+import ChangeSuccessModal from '../../components/ChangeSuccessModal';
 import styles from './EmailandPassword.module.css';
 
 export default function EmailandPassword({ userData, setUserData }) {

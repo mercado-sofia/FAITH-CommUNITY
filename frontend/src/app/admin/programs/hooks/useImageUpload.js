@@ -44,7 +44,6 @@ export const useImageUpload = () => {
       setImagePreview(preview);
       return { file, preview };
     } catch (error) {
-      console.error('Error creating image preview:', error);
       return { error: 'Failed to process image' };
     }
   }, [validateImageFile, createImagePreview]);
@@ -74,7 +73,6 @@ export const useImageUpload = () => {
         newPreviews.push(previewObj);
         results.push({ file, preview: previewObj });
       } catch (error) {
-        console.error('Error creating image preview:', error);
         results.push({ error: 'Failed to process image' });
       }
     }

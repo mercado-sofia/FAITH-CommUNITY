@@ -87,7 +87,7 @@ export default function Navbar() {
       // Best-effort API call
       if (userToken) {
         try {
-          await fetch('http://localhost:8080/api/users/logout', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/users/logout`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${userToken}`,
@@ -119,7 +119,6 @@ export default function Navbar() {
       }, 1000); // Give time for cleanup and smooth transition
       
     } catch (e) {
-      console.error('Logout error:', e);
       setShowLogoutConfirm(false);
       window.dispatchEvent(new CustomEvent('hideLogoutLoader'));
       // Fallback to homepage redirect even on error

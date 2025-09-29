@@ -72,7 +72,6 @@ export const makeAuthenticatedRequest = async (url, options = {}, userType = 'ad
   
   // Check if token is expired
   if (isTokenExpired(token)) {
-    console.warn('Token is expired, redirecting to login');
     clearAuthAndRedirect(userType);
     return null;
   }
@@ -89,7 +88,6 @@ export const makeAuthenticatedRequest = async (url, options = {}, userType = 'ad
   
   // Handle 401 responses (token invalid/expired)
   if (response.status === 401) {
-    console.warn('Received 401 response, token may be invalid or expired');
     clearAuthAndRedirect(userType);
     return null;
   }
@@ -120,7 +118,6 @@ export const validateTokenAndGetUser = async (userType = 'admin') => {
   
   // Check if token is expired
   if (isTokenExpired(token)) {
-    console.warn('Token is expired, redirecting to login');
     clearAuthAndRedirect(userType);
     return null;
   }
@@ -130,7 +127,7 @@ export const validateTokenAndGetUser = async (userType = 'admin') => {
     try {
       return JSON.parse(userData);
     } catch (error) {
-      console.warn('Invalid user data in localStorage');
+      // Invalid user data, will be refetched
     }
   }
   
@@ -161,7 +158,33 @@ export const validateTokenAndGetUser = async (userType = 'admin') => {
  */
 export const showAuthError = (message = 'Your session has expired. Please log in again.') => {
   // You can customize this to show a modal, toast, or other UI element
-  alert(message);
+  // For now, using a more user-friendly approach
+  if (typeof window !== 'undefined') {
+    // Create a temporary notification element
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #f44336;
+      color: white;
+      padding: 16px 24px;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 10000;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 400px;
+    `;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 5000);
+  }
 };
 
 /**

@@ -59,7 +59,6 @@ export const useBulkActions = () => {
       setShowBulkCancelModal(false)
       setSelectedItems(new Set())
     } catch (error) {
-      console.error('Bulk cancel failed:', error)
       showSuccessModal('Failed to cancel selected invitations')
     } finally {
       setIsBulkCancelling(false)
@@ -76,7 +75,6 @@ export const useBulkActions = () => {
       setShowBulkDeleteModal(false)
       setSelectedItems(new Set())
     } catch (error) {
-      console.error('Bulk delete failed:', error)
       showSuccessModal('Failed to delete selected invitations')
     } finally {
       setIsBulkDeleting(false)

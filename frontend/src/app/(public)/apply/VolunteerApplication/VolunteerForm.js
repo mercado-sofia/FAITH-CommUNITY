@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import styles from "./volunteerForm.module.css";
 import ProgramSelect from "./ProgramSelect";
 import SuccessModal from "../components/SuccessModal";
-import { usePublicPrograms } from "../../hooks/usePublicData";
+import { usePublicApprovedPrograms } from "../../hooks/usePublicData";
 import FormErrorBoundary from "../components/FormErrorBoundary";
 import { useApplyFormPersistence } from "../../hooks/useApplyFormPersistence";
 import logger from "@/utils/logger";
@@ -24,15 +24,12 @@ function SubmitStatus({ status }) {
 }
 
 export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSelect, onFormReset }) {
-  // Fetch all approved programs from the API (including already applied ones)
+  // Fetch all approved upcoming programs from the API (including already applied ones)
   const {
-    programs: allPrograms = [],
+    programs: programOptions = [],
     isLoading: programsLoading,
     error: programsError
-  } = usePublicPrograms();
-
-  // Filter to only show upcoming programs
-  const programOptions = allPrograms.filter(program => program.status === 'Upcoming');
+  } = usePublicApprovedPrograms();
 
   // State for user applications
   const [userApplications, setUserApplications] = useState([]);
@@ -78,7 +75,6 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
         setUserApplications([]);
       }
     } catch (error) {
-      console.error('Error fetching user applications:', error);
       setUserApplications([]);
     } finally {
       setApplicationsLoading(false);
@@ -267,6 +263,13 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
           // Clear form data using the hook's clear function
           clearFormData();
           
+          // Reset dropdown state
+          setDropdownOpen(false);
+          
+          // Clear any field errors
+          setFieldErrors({});
+          setValidationErrors({});
+          
           // Refresh user applications to update the dropdown
           fetchUserApplications();
           
@@ -325,6 +328,13 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
 
       // Clear form data using the hook's clear function
       clearFormData();
+
+      // Reset dropdown state
+      setDropdownOpen(false);
+      
+      // Clear any field errors
+      setFieldErrors({});
+      setValidationErrors({});
 
       // Refresh user applications to update the dropdown
       fetchUserApplications();

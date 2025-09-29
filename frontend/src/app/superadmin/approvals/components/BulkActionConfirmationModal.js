@@ -92,7 +92,7 @@ export default function BulkActionConfirmationModal({
 
   const handleConfirm = () => {
     if (actionType === 'reject' && !rejectComment.trim()) {
-      alert('Please provide a reason for rejection.');
+      // Validation handled by form state
       return;
     }
     onConfirm(actionType === 'reject' ? rejectComment : undefined);

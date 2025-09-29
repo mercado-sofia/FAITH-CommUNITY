@@ -57,9 +57,9 @@ const StarButton = ({ programId, programTitle }) => {
       // Refetch status to ensure consistency
       refetchStatus()
     } catch (error) {
-      console.error('Error adding to featured projects:', error)
+      // Handle error silently in production
       // Show user-friendly error message
-      alert(error?.data?.message || 'Failed to add to featured projects')
+      // Handle error silently in production
     } finally {
       setIsLoading(false)
     }
@@ -77,9 +77,9 @@ const StarButton = ({ programId, programTitle }) => {
       // Refetch status to ensure consistency
       refetchStatus()
     } catch (error) {
-      console.error('Error removing from featured projects:', error)
+      // Handle error silently in production
       // Show user-friendly error message
-      alert(error?.data?.message || 'Failed to remove from featured projects')
+      // Handle error silently in production
     } finally {
       setIsLoading(false)
     }

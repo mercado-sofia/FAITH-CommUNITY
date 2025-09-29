@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FiEdit3 } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
-import ConfirmationModal from '../../../components/ConfirmationModal';
+import { ConfirmationModal } from '@/components';
 import styles from './SiteNameManagement.module.css';
 
 export default function SiteNameManagement({ showSuccessModal }) {
@@ -34,7 +34,6 @@ export default function SiteNameManagement({ showSuccessModal }) {
           setTempSiteName(data.data.site_name || '');
         }
       } catch (error) {
-        console.error('Error loading site name data:', error);
         showAuthError('Failed to load site name data. Please try again.');
       }
     };
@@ -93,7 +92,6 @@ export default function SiteNameManagement({ showSuccessModal }) {
         showSuccessModal(errorData.message || 'Failed to update site name');
       }
     } catch (error) {
-      console.error('Error updating site name:', error);
       showSuccessModal('Failed to update site name. Please try again.');
     } finally {
       setIsUpdatingSiteName(false);

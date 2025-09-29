@@ -1,6 +1,6 @@
 'use client';
 
-import Loader from '../../../components/ui/Loader';
+import Loader from '../../../components/ui/Loader/Loader';
 import { PageBanner } from '../components';
 import { MissionAndVision, AboutMore, OrgBanner } from './Sections';
 import OfficerSection from '../home/OfficerSection/OfficerSection';

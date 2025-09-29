@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FiEdit3, FiUpload, FiTrash2 } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
-import ConfirmationModal from '../../../components/ConfirmationModal';
+import { ConfirmationModal } from '@/components';
 import styles from './HeadManagement.module.css';
 
 export default function HeadManagement({ showSuccessModal }) {
@@ -56,7 +56,6 @@ export default function HeadManagement({ showSuccessModal }) {
           }
         }
       } catch (error) {
-        console.error('Error loading head data:', error);
         showAuthError('Failed to load head data. Please try again.');
       } finally {
         setIsLoading(false);
@@ -105,7 +104,6 @@ export default function HeadManagement({ showSuccessModal }) {
         throw new Error('Failed to upload image');
       }
     } catch (error) {
-      console.error('Error uploading image:', error);
       throw error;
     } finally {
       setUploadingImage(false);
@@ -161,7 +159,6 @@ export default function HeadManagement({ showSuccessModal }) {
         showSuccessModal(errorData.message || 'Failed to update head of FACES');
       }
     } catch (error) {
-      console.error('Error saving head data:', error);
       showSuccessModal('Failed to save head data. Please try again.');
     } finally {
       setIsUpdating(false);
@@ -199,7 +196,6 @@ export default function HeadManagement({ showSuccessModal }) {
         showSuccessModal(errorData.message || 'Failed to delete head of FACES');
       }
     } catch (error) {
-      console.error('Error deleting head data:', error);
       showSuccessModal('Failed to delete head data. Please try again.');
     } finally {
       setIsDeleting(false);

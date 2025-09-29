@@ -12,7 +12,7 @@ import FAQTable from './components/FAQTable';
 import CreateFAQModal from './components/CreateFAQModal';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
 import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowLeftDoubleFill, RiArrowRightDoubleFill } from "react-icons/ri";
-import ConfirmationModal from '../components/ConfirmationModal';
+import { ConfirmationModal } from '@/components';
 import { SuccessModal } from '@/components';
 import styles from './faqs.module.css';
 
@@ -150,7 +150,6 @@ export default function ManageFaqs() {
       setShowCreateModal(false);
       refetch();
     } catch (error) {
-      console.error('Create failed:', error);
       showSuccessModal('Failed to create FAQ');
     }
   };
@@ -162,7 +161,6 @@ export default function ManageFaqs() {
       setEditingFaq(null);
       refetch();
     } catch (error) {
-      console.error('Update failed:', error);
       showSuccessModal('Failed to update FAQ');
     }
   };
@@ -173,7 +171,6 @@ export default function ManageFaqs() {
       showSuccessModal('FAQ deleted successfully!');
       refetch();
     } catch (error) {
-      console.error('Delete failed:', error);
       showSuccessModal('Failed to delete FAQ');
     }
   };
@@ -196,7 +193,6 @@ export default function ManageFaqs() {
       setSelectedItems(new Set());
       refetch();
     } catch (error) {
-      console.error('Bulk delete failed:', error);
       showSuccessModal('Failed to delete selected FAQs');
     } finally {
       setIsBulkDeleting(false);

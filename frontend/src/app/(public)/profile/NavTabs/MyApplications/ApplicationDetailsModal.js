@@ -7,7 +7,7 @@ import { FiCalendar, FiClock } from 'react-icons/fi';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
-import { formatDateLong, formatProgramDates } from '@/utils/dateUtils';
+import { formatDateLong, formatApplicationProgramDates } from '@/utils/dateUtils';
 import { getOrganizationImageUrl } from '@/utils/uploadPaths';
 import styles from './ApplicationDetailsModal.module.css';
 import sharedStyles from './MyApplications.module.css';
@@ -31,11 +31,9 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
         setApplication(data.application);
       } else {
         const errorData = await response.json();
-        console.error('API Error:', errorData);
         setError(errorData.message || 'Failed to fetch application details');
       }
     } catch (err) {
-      console.error('Network Error:', err);
       setError('Network error. Please try again.');
     } finally {
       setIsLoading(false);
@@ -87,7 +85,6 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
   const formatDate = (dateString) => {
     return formatDateLong(dateString);
   };
-
 
   const getStatusText = (status) => {
     switch (status?.toLowerCase()) {
@@ -187,7 +184,7 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
                     <div className={styles.scheduleItem}>
                       <span className={styles.scheduleLabel}>Date:</span>
                       <span className={styles.scheduleValue}>
-                        {formatProgramDates(application)}
+                        {formatApplicationProgramDates(application)}
                       </span>
                     </div>
                     {application.programStartTime && application.programEndTime && (

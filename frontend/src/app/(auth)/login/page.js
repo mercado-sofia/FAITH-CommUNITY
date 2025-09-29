@@ -7,7 +7,7 @@ import { loginAdmin, loginSuperAdmin, logoutAdmin } from "../../../rtk/superadmi
 import styles from "./login.module.css"
 import { FaUser, FaSpinner } from "react-icons/fa"
 import Image from "next/image"
-import { AuthLeftPanel, ForgotPasswordModal, OtpInput, PasswordField } from "../components"
+import { AuthLeftPanel, DynamicLogo, ForgotPasswordModal, OtpInput, PasswordField } from "../components"
 import { postJson } from "../api/authClient"
 
 export default function LoginPage() {
@@ -271,7 +271,7 @@ export default function LoginPage() {
       <AuthLeftPanel labelText="Log In" />
       <div className={styles.rightPane}>
         <div className={styles.logoWrapper}>
-          <Image src="/assets/logos/faith_community_logo.png" alt="Logo" width={80} height={80} />
+          <DynamicLogo width={80} height={80} alt="Logo" />
         </div>
         <form onSubmit={handleLogin} className={styles.form} noValidate>
           <h2 className={styles.title}>Log In</h2>

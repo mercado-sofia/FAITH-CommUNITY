@@ -29,7 +29,6 @@ export function useApplyFormPersistence(key, initialData) {
             setFormData(parsedData);
           }
         } catch (error) {
-          console.error('Error loading saved form data:', error);
           localStorage.removeItem(key);
         }
       } else if (!isPageRefresh && isInitialLoad.current) {
@@ -55,7 +54,7 @@ export function useApplyFormPersistence(key, initialData) {
           localStorage.setItem(key, JSON.stringify(formData));
         }
       } catch (error) {
-        console.error('Error saving form data:', error);
+        // Handle error silently in production
       }
     }
   }, [formData, key, isApplySection]);

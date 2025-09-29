@@ -21,7 +21,7 @@ export default function AboutMore() {
   }
 
   if (error) {
-    console.error('Error loading about us data:', error);
+    // Handle error silently in production
   }
 
   return (

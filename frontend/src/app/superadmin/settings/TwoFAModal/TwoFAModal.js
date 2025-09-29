@@ -37,7 +37,7 @@ export default function TwoFAModal({
         }
       }
     } catch (error) {
-      console.error('Error checking 2FA status:', error);
+      // Handle error silently in production
     }
   }, [currentUser.id]);
 

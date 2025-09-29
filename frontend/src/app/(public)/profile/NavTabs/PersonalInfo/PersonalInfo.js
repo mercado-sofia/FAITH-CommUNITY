@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, memo } from 'react';
 import Image from 'next/image';
-import { FaEdit, FaSave, FaUndo } from 'react-icons/fa';
+import { FaEdit, FaSave, FaUndo, FaUser } from 'react-icons/fa';
+import { OptimizedImage } from '@/components';
 import CustomSelect from './CustomSelect/CustomSelect';
 import DeleteAccount from './DeleteAccount/DeleteAccount';
 import { useFormValidation } from '../../hooks/useFormValidation';
@@ -205,7 +206,6 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
           
           updatedUserData.profile_photo_url = photoUrl;
         } catch (error) {
-          console.error('Photo upload error:', error);
           const errorMessage = error.message || 'Failed to upload photo';
           setPhotoError(errorMessage);
           showError(`Photo upload failed: ${errorMessage}`);
@@ -221,7 +221,6 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
           await removeProfilePhoto();
           updatedUserData.profile_photo_url = null;
         } catch (error) {
-          console.error('Photo removal error:', error);
           const errorMessage = error.message || 'Failed to remove photo';
           setPhotoError(errorMessage);
           showError(`Photo removal failed: ${errorMessage}`);
@@ -248,7 +247,6 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
       }, 1000);
       
     } catch (error) {
-      console.error('Profile update error:', error);
       const errorMessage = error.message || 'An error occurred while updating profile';
       showError(errorMessage);
     }
@@ -306,35 +304,18 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
                   priority
                 />
               ) : photoToRemove ? (
-                <Image
-                  src="/defaults/default-profile.png"
-                  alt="Default Profile"
-                  width={60}
-                  height={60}
-                  className={styles.image}
-                  priority
-                />
+                <FaUser className={styles.profileIconDefault} />
               ) : userData?.profile_photo_url ? (
-                <Image
+                <OptimizedImage
                   src={getProfilePhotoUrl(userData.profile_photo_url)}
                   alt="Profile"
                   width={60}
                   height={60}
                   className={styles.image}
-                  priority
-                  onError={(e) => {
-                    e.target.src = '/defaults/default-profile.png';
-                  }}
+                  fallbackIcon={FaUser}
                 />
               ) : (
-                <Image
-                  src="/defaults/default-profile.png"
-                  alt="Default Profile"
-                  width={60}
-                  height={60}
-                  className={styles.image}
-                  priority
-                />
+                <FaUser className={styles.profileIconDefault} />
               )}
             </div>
             {isUploadingPhoto && (

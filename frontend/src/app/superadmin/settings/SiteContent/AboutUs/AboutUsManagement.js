@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FiEdit3, FiXCircle, FiPlus, FiTrash2, FiUpload } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
-import ConfirmationModal from '../../../components/ConfirmationModal';
+import { ConfirmationModal } from '@/components';
 import styles from './AboutUsManagement.module.css';
 
 export default function AboutUsManagement({ showSuccessModal }) {
@@ -94,7 +94,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
           });
         }
       } catch (error) {
-        console.error('Error loading about us data:', error);
         showAuthError('Failed to load about us data. Please try again.');
       } finally {
       }
@@ -191,7 +190,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
           showSuccessModal(errorData.message || 'Failed to update about us content');
         }
       } catch (error) {
-        console.error('Error updating about us content:', error);
         showSuccessModal('Failed to update about us content. Please try again.');
       } finally {
         setIsUpdatingAboutUs(false);
@@ -310,11 +308,9 @@ export default function AboutUsManagement({ showSuccessModal }) {
         return data.imageUrl; // Return the Cloudinary URL from the response
       } else {
         const errorData = await response.json();
-        console.error('Upload failed:', errorData);
         throw new Error(errorData.message || 'Failed to upload image');
       }
     } catch (error) {
-      console.error('Error uploading image:', error);
       throw error;
     } finally {
       setUploadingImage(false);
@@ -327,7 +323,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
       const imageUrl = await uploadImage(file);
       return imageUrl;
     } catch (error) {
-      console.error('Error uploading image:', error);
       throw error;
     }
   };
@@ -362,7 +357,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
           showSuccessModal(errorData.message || 'Failed to delete image');
         }
       } catch (error) {
-        console.error('Error deleting image:', error);
         showSuccessModal('Failed to delete image. Please try again.');
       } finally {
         setIsDeletingImage(false);

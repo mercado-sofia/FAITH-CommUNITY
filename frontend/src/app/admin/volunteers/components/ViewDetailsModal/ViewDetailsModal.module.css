@@ -1,0 +1,177 @@
+/* Modal Overlay */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 3rem 0 2rem;
+  overflow-y: auto;
+}
+
+/* Modal Content */
+.modalContentScrollable {
+  background-color: #fff;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 768px;
+  padding: 2rem;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Close Button */
+.closeIcon {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.2rem;
+  background: none;
+  border: none;
+  font-size: 16px;
+  font-family: var(--font-inter);
+  color: #333;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Modal Header */
+.modalHeading {
+  font-size: 18px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  margin: 0 0 2rem 0;
+  color: #2e3136;
+  text-align: center;
+}
+
+/* Layout Container */
+.contentContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Section Styling */
+.section {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #e9ecef;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  color: #495057;
+  margin: 0 0 1.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #dee2e6;
+  padding-bottom: 0.5rem;
+}
+
+/* Grid Layout */
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 0;
+}
+
+/* Field Group Styling */
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin: 0;
+}
+
+.fieldValue {
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  color: #212529;
+  line-height: 1.5;
+  word-break: break-word;
+  padding: 0.5rem 0;
+  min-height: 1.5rem;
+}
+
+/* Full-width field styling */
+.section .fieldGroup:not(.fieldGrid .fieldGroup) {
+  margin-top: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modalContentScrollable {
+    width: 95%;
+    padding: 1.5rem;
+  }
+  
+  .fieldGrid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  
+  .section {
+    padding: 1.25rem;
+  }
+  
+  .contentContainer {
+    gap: 1.25rem;
+  }
+  
+  .sectionTitle {
+    margin-bottom: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .modalContentScrollable {
+    width: 98%;
+    padding: 1rem;
+  }
+  
+  .modalHeading {
+    font-size: 16px;
+    margin-bottom: 1.25rem;
+  }
+  
+  .section {
+    padding: 1rem;
+  }
+  
+  .sectionTitle {
+    font-size: 13px;
+    margin-bottom: 1rem;
+  }
+  
+  .fieldLabel {
+    font-size: 11px;
+  }
+  
+  .fieldValue {
+    font-size: 13px;
+  }
+  
+  .fieldGrid {
+    gap: 1rem;
+  }
+  
+  .contentContainer {
+    gap: 1rem;
+  }
+}

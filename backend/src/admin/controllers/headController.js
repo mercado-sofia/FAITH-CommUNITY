@@ -381,15 +381,12 @@ export const bulkUpdateHeads = async (req, res) => {
       // Auto-assign priority based on role if not provided
       const getRolePriority = (role) => {
         const roleStr = role.toLowerCase();
-        if (roleStr.includes('org adviser') || roleStr.includes('adviser')) return 1;
+        if (roleStr.includes('organization adviser') || roleStr.includes('adviser')) return 1;
         if (roleStr.includes('president') && !roleStr.includes('vice')) return 2;
         if (roleStr.includes('vice') && roleStr.includes('president')) return 3;
         if (roleStr.includes('secretary')) return 4;
         if (roleStr.includes('treasurer')) return 5;
-        if (roleStr.includes('director')) return 6;
-        if (roleStr.includes('manager')) return 7;
-        if (roleStr.includes('coordinator')) return 8;
-        if (roleStr.includes('member')) return 9;
+        if (roleStr.includes('member')) return 6;
         return 999;
       };
 

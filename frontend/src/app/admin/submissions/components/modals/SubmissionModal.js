@@ -91,7 +91,6 @@ export default function SubmissionModal({ data, onClose }) {
                   width={300}
                   height={200}
                   onError={(e) => {
-                    console.error('Image failed to load:', dataObj.image, 'Processed URL:', getProgramImageUrl(dataObj.image));
                     e.target.style.display = 'none';
                     e.target.nextSibling.style.display = 'flex';
                   }}

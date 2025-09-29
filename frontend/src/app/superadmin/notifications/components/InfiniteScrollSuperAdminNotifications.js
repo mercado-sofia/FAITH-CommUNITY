@@ -8,7 +8,7 @@ import { useGetSuperAdminNotificationsQuery } from '../../../../rtk/superadmin/s
 import { FiTrash2, FiEye, FiClock, FiUser } from 'react-icons/fi';
 import Image from 'next/image';
 import { getOrganizationImageUrl } from '@/utils/uploadPaths';
-import SkeletonLoader from '../../../admin/components/SkeletonLoader';
+import SkeletonLoader from '../../../admin/components/SkeletonLoader/SkeletonLoader';
 import styles from '../notifications.module.css';
 
 export default function InfiniteScrollSuperAdminNotifications({ 
@@ -53,7 +53,7 @@ export default function InfiniteScrollSuperAdminNotifications({
           const parsedData = JSON.parse(superAdminData);
           setSuperAdminId(parsedData.id);
         } catch (error) {
-          console.error('Error parsing superadmin data:', error);
+          // Handle error silently in production
         }
       }
     }

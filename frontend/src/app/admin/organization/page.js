@@ -8,7 +8,8 @@ import { applyRoleHierarchyOrdering } from "./utils";
 import { EditModal, OrgInfoSection, SummaryModal } from "./OrgInfo";
 import { Section, SectionEditModal, SectionSummaryModal } from "./AdvocacyCompetency";
 import { OrgHeadsSection, AddOrgHeadModal, OrgHeadsEditModal } from "./OrgHeads";
-import { DeleteConfirmationModal, SkeletonLoader } from "../components";
+import { SkeletonLoader } from "../components";
+import { ConfirmationModal } from '@/components';
 import { SuccessModal } from '@/components';
 import pageStyles from "./page.module.css";
 
@@ -261,18 +262,9 @@ export default function OrganizationPage() {
   // Handle error display
   useEffect(() => {
     if (orgError && admin?.organization_id) {
-      console.error("Error fetching organization data:", orgError);
       showMessage("Failed to load organization data", "error");
     }
-    if (advocaciesError) {
-      console.error("Error fetching advocacy data:", advocaciesError);
-    }
-    if (competenciesError) {
-      console.error("Error fetching competency data:", competenciesError);
-    }
-    if (headsError) {
-      console.error("Error fetching heads data:", headsError);
-    }
+    // Handle other errors silently in production
   }, [orgError, advocaciesError, competenciesError, headsError, admin?.organization_id]);
 
   // Handle re-edit from submissions page
@@ -304,7 +296,6 @@ export default function OrganizationPage() {
           showMessage(`Re-editing ${submission.section} submission`, "info", submission.section);
           
         } catch (error) {
-          console.error('Error parsing re-edit data:', error);
           showMessage('Error loading submission for re-edit', "error");
         }
       }
@@ -391,7 +382,6 @@ export default function OrganizationPage() {
         throw new Error(`Upload failed: ${response.status} - ${errorText}`);
       }
     } catch (error) {
-      console.error("Upload error:", error);
       setModalMessage({ text: `Failed to upload logo: ${error.message}`, type: "error" });
     } finally {
       updateUiState({ uploading: false });
@@ -532,7 +522,6 @@ export default function OrganizationPage() {
         throw new Error(result.message || "Failed to save organization information");
       }
     } catch (error) {
-      console.error('Full error details:', error);
       showMessage(error.message || "Failed to save organization information", "error");
       updateUiState({ showSummaryModal: true });
     } finally {
@@ -713,7 +702,6 @@ export default function OrganizationPage() {
         throw new Error(result.message || 'Failed to add organization head');
       }
     } catch (error) {
-      console.error('Error in handleAddOrgHead:', error);
       showMessage(error.message || 'Failed to add organization head', 'error', 'orgHeads');
       updateUiState({ showAddOrgHeadModal: true });
     } finally {
@@ -792,7 +780,6 @@ export default function OrganizationPage() {
         throw new Error(result.message || 'Failed to update organization head');
       }
     } catch (error) {
-      console.error('Error in handleIndividualHeadSave:', error);
       showMessage(error.message || 'Failed to update organization head', 'error', 'orgHeads');
       updateUiState({ showIndividualHeadEditModal: true });
     } finally {
@@ -862,7 +849,6 @@ export default function OrganizationPage() {
         throw new Error(result.message || 'Failed to delete organization head');
       }
     } catch (error) {
-      console.error('Error in handleConfirmDelete:', error);
       showMessage(error.message || 'Failed to delete organization head', 'error', 'orgHeads');
     } finally {
       updateUiState({ saving: false });
@@ -915,7 +901,6 @@ export default function OrganizationPage() {
         throw new Error(result.message || 'Failed to reorder organization heads');
       }
     } catch (error) {
-      console.error('Error in handleReorderHeads:', error);
       showMessage(error.message || 'Failed to reorder organization heads', 'error', 'orgHeads');
       throw error;
     } finally {
@@ -1101,7 +1086,7 @@ export default function OrganizationPage() {
         />
       )}
 
-      <DeleteConfirmationModal
+      <ConfirmationModal
         isOpen={uiState.showDeleteConfirmationModal}
         itemName={selectedHeadForDelete?.head_name || selectedHeadForDelete?.name || 'this organization head'}
         itemType="organization head"

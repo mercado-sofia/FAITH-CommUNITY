@@ -4,7 +4,7 @@ import { formatDateShort } from '@/utils/dateUtils.js';
 import SubmissionModal from '../modals/SubmissionModal';
 import ReEditModal from '../modals/ReEditModal';
 import CancelConfirmationModal from '../modals/CancelConfirmationModal';
-import { DeleteConfirmationModal } from '../../../components';
+import { ConfirmationModal } from '@/components';
 import { SuccessModal } from '@/components';
 import styles from './SubmissionTable.module.css';
 
@@ -132,7 +132,6 @@ export default function SubmissionTable({
       setReEditSubmission(null);
       showToast('Submission updated successfully!', 'success');
     } catch (error) {
-      console.error('Error updating submission:', error);
       showToast(`Failed to save changes: ${error.message}`, 'error');
       // Don't throw the error to prevent the modal from closing
     }
@@ -163,11 +162,9 @@ export default function SubmissionTable({
         showToast('Submission deleted successfully!', 'success');
       } else {
         const errorData = await response.json().catch(() => ({}));
-        console.error(`Delete failed for ID ${id}:`, errorData);
         throw new Error(errorData.message || `Failed to delete submission: ${response.status} ${response.statusText}`);
       }
     } catch (err) {
-      console.error('Delete error:', err);
       showToast('Failed to delete submission', 'error');
     } finally {
       setLoadingStates(prev => ({ ...prev, [`delete-${id}`]: false }));
@@ -202,7 +199,6 @@ export default function SubmissionTable({
       onShowBulkActions(false);
       showToast('Submissions cancelled successfully!', 'success');
     } catch (err) {
-      console.error('Bulk cancel error:', err);
       showToast('Failed to cancel some submissions', 'error');
     }
   };
@@ -377,7 +373,7 @@ export default function SubmissionTable({
       )}
       {confirmId && <CancelConfirmationModal isOpen={!!confirmId} onConfirm={() => handleCancel(confirmId)} onCancel={() => setConfirmId(null)} />}
       {deleteId && (
-        <DeleteConfirmationModal
+        <ConfirmationModal
           isOpen={!!deleteId}
           itemType="submission"
           onConfirm={() => handleDelete(deleteId)}

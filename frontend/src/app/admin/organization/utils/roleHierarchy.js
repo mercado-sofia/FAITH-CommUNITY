@@ -1,15 +1,9 @@
 // Organization heads utility functions
 // Role options with proper hierarchy
 export const ROLE_OPTIONS = [
-  { value: 'Org Adviser', label: 'Org Adviser' },
+  { value: 'Organization Adviser', label: 'Organization Adviser' },
   { value: 'President', label: 'President' },
   { value: 'Vice President', label: 'Vice President' },
-  { value: 'Secretary', label: 'Secretary' },
-  { value: 'Assistant Secretary', label: 'Assistant Secretary' },
-  { value: 'Treasurer', label: 'Treasurer' },
-  { value: 'Assistant Treasurer', label: 'Assistant Treasurer' },
-  { value: 'PRO', label: 'PRO' },
-  { value: 'Class Representative', label: 'Class Representative' },
   { value: 'Others', label: 'Others' }
 ];
 

@@ -21,7 +21,7 @@ export default function MissionAndVision() {
   }
 
   if (error) {
-    console.error('Error loading mission and vision:', error);
+    // Handle error silently in production
   }
 
   return (

@@ -21,7 +21,7 @@ export default function PagePreloader() {
         await router.prefetch(path);
         preloadedPages.current.add(path);
       } catch (error) {
-        console.warn(`Failed to preload ${path}:`, error);
+        // Failed to preload page, continue silently
       }
     };
 

@@ -13,7 +13,8 @@ import {
 } from '@/rtk/admin/inboxApi';
 import { FiMail, FiTrash2, FiEye, FiCheck, FiX } from 'react-icons/fi';
 import { FaSpinner } from 'react-icons/fa';
-import { DeleteConfirmationModal, SkeletonLoader } from '../components';
+import { SkeletonLoader } from '../components';
+import { ConfirmationModal } from '@/components';
 import styles from './inbox.module.css';
 
 export default function InboxPage() {
@@ -99,7 +100,6 @@ export default function InboxPage() {
       refetchMessages();
       refetchUnreadCount();
     } catch (error) {
-      console.error('Error marking message as read:', error);
       setErrorMessage('Failed to mark message as read. Please try again.');
     }
   };
@@ -113,7 +113,6 @@ export default function InboxPage() {
       refetchMessages();
       refetchUnreadCount();
     } catch (error) {
-      console.error('Error marking all messages as read:', error);
       setErrorMessage('Failed to mark all messages as read. Please try again.');
     }
   };
@@ -132,7 +131,6 @@ export default function InboxPage() {
       refetchMessages();
       refetchUnreadCount();
     } catch (error) {
-      console.error('Error deleting message:', error);
       setErrorMessage('Failed to delete message. Please try again.');
     }
   };
@@ -194,7 +192,6 @@ export default function InboxPage() {
       refetchMessages();
       refetchUnreadCount();
     } catch (error) {
-      console.error('Error bulk deleting messages:', error);
       setErrorMessage('Failed to delete some messages. Please try again.');
     }
   };
@@ -433,7 +430,7 @@ export default function InboxPage() {
       </div>
 
       {/* Individual Delete Confirmation Modal */}
-      <DeleteConfirmationModal
+      <ConfirmationModal
         isOpen={showDeleteModal}
         itemName={messageToDelete?.sender_email || 'this message'}
         itemType="message"
@@ -446,7 +443,7 @@ export default function InboxPage() {
       />
 
       {/* Bulk Delete Confirmation Modal */}
-      <DeleteConfirmationModal
+      <ConfirmationModal
         isOpen={showBulkDeleteModal}
         itemName={`${selectedMessages.length} message${selectedMessages.length > 1 ? 's' : ''}`}
         itemType="message"

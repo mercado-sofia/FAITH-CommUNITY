@@ -11,7 +11,7 @@ import SearchAndFilterControls from "./components/SearchAndFilterControls"
 import InvitationsTable from "./components/InvitationsTable"
 import InviteModal from "./components/InviteModal"
 import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowLeftDoubleFill, RiArrowRightDoubleFill } from "react-icons/ri";
-import ConfirmationModal from "../components/ConfirmationModal"
+import { ConfirmationModal } from '@/components'
 import { SuccessModal } from '@/components'
 import styles from "./invites.module.css"
 

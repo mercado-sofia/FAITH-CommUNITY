@@ -6,7 +6,7 @@ import { FiCheck, FiX, FiTrash2 } from 'react-icons/fi';
 import { IoCloseOutline } from 'react-icons/io5';
 import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowLeftDoubleFill, RiArrowRightDoubleFill } from "react-icons/ri";
 import BulkActionConfirmationModal from './components/BulkActionConfirmationModal';
-import ConfirmationModal from '../components/ConfirmationModal';
+import { ConfirmationModal } from '@/components';
 import { SuccessModal } from '@/components';
 import ApprovalsTable from './components/ApprovalsTable';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
@@ -156,7 +156,6 @@ export default function PendingApprovalsPage() {
       setApprovals(formatted);
       setError(null);
     } catch (err) {
-      console.error('Error fetching approvals:', err);
       setError(err.message || 'Failed to load approvals');
       setApprovals([]);
     } finally {
@@ -179,7 +178,7 @@ export default function PendingApprovalsPage() {
 
       setOrganizations(result.data);
     } catch (err) {
-      console.error('Error fetching organizations:', err);
+      // Handle error silently in production
     } finally {
       setOrgsLoading(false);
     }
@@ -392,7 +391,6 @@ export default function PendingApprovalsPage() {
       showSuccessModal('Changes have been approved and applied.');
       fetchApprovals(); // Refresh the list
     } catch (err) {
-      console.error('Approve error:', err);
       showSuccessModal('Failed to approve changes: ' + err.message);
     }
   }, [showSuccessModal, fetchApprovals]);
@@ -414,7 +412,6 @@ export default function PendingApprovalsPage() {
       showSuccessModal('Submission has been rejected.');
       fetchApprovals();
     } catch (err) {
-      console.error('Reject error:', err);
       showSuccessModal('Failed to reject submission: ' + err.message);
     }
   }, [showSuccessModal, fetchApprovals]);
@@ -437,7 +434,6 @@ export default function PendingApprovalsPage() {
       showSuccessModal(`Bulk approval completed: ${result.details.successCount} approved`);
       fetchApprovals();
     } catch (err) {
-      console.error('Bulk approve error:', err);
       showSuccessModal('Failed to bulk approve approvals: ' + err.message);
     }
   }, [showSuccessModal, fetchApprovals]);
@@ -459,7 +455,6 @@ export default function PendingApprovalsPage() {
       showSuccessModal(`Bulk rejection completed: ${result.details.successCount} rejected`);
       fetchApprovals();
     } catch (err) {
-      console.error('Bulk reject error:', err);
       showSuccessModal('Failed to bulk reject approvals: ' + err.message);
     }
   }, [showSuccessModal, fetchApprovals]);
@@ -481,7 +476,6 @@ export default function PendingApprovalsPage() {
       showSuccessModal(`Bulk deletion completed: ${result.details.successCount} deleted`);
       fetchApprovals();
     } catch (err) {
-      console.error('Bulk delete error:', err);
       showSuccessModal('Failed to bulk delete approvals: ' + err.message);
     }
   }, [showSuccessModal, fetchApprovals]);
@@ -521,7 +515,7 @@ export default function PendingApprovalsPage() {
       setSelectedItemForAction(null);
       setPendingIndividualAction(null);
     } catch (error) {
-      console.error('Individual action failed:', error);
+      // Handle error silently in production
     } finally {
       setIsProcessing(false);
     }
@@ -555,7 +549,7 @@ export default function PendingApprovalsPage() {
       setShowBulkDeleteModal(false);
       setSelectedItems(new Set());
     } catch (error) {
-      console.error('Bulk delete failed:', error);
+      // Handle error silently in production
     } finally {
       setIsBulkDeleting(false);
     }
@@ -587,7 +581,6 @@ export default function PendingApprovalsPage() {
       setShowIndividualDeleteModal(false);
       setSelectedItemForAction(null);
     } catch (error) {
-      console.error('Individual delete failed:', error);
       showSuccessModal('Failed to delete submission: ' + error.message);
     } finally {
       setIsIndividualDeleting(false);
@@ -681,7 +674,6 @@ export default function PendingApprovalsPage() {
       
       setSelectedItems(new Set());
     } catch (error) {
-      console.error('Bulk action error:', error);
       // Error handling is already done in the individual handlers
     } finally {
       setIsBulkActionLoading(false);

@@ -21,7 +21,8 @@ export const getImageUrl = (imagePath, fallbackUrl = '/logo/faith_community_logo
 
   // If it's a Cloudinary public_id, construct the URL
   if (imagePath.includes('faith-community/')) {
-    return `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/${imagePath}`;
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME || 'djty9l7zw';
+    return `https://res.cloudinary.com/${cloudName}/image/upload/${imagePath}`;
   }
 
   // If it's not a Cloudinary URL, return fallback

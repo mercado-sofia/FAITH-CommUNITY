@@ -6,8 +6,7 @@ import { FaLock, FaBuilding } from 'react-icons/fa';
 import { useAdminProfile } from '../hooks/useAdminProfile';
 import { selectCurrentAdmin, updateAdminEmail } from '@/rtk/superadmin/adminSlice';
 import { SkeletonLoader } from '../components';
-import { SuccessModal } from '@/components';
-import { EmailChange, PasswordChange } from '@/components';
+import { EmailChange, PasswordChange, SuccessModal } from '@/components';
 import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError } from '@/utils/adminAuth';
 import styles from './AdminSettings.module.css';
 
@@ -159,7 +158,6 @@ export default function SettingsPage() {
       setShowSuccessModal(true);
       refreshAdmin();
     } catch (error) {
-      console.error('Error updating email address:', error);
       
       // Show user-friendly error message
       if (error.message.includes('session has expired') || error.message.includes('token')) {

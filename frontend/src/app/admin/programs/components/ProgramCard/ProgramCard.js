@@ -11,7 +11,7 @@ import { getProgramImageUrl } from '@/utils/uploadPaths';
 import { formatProgramDates, formatDateShort } from '@/utils/dateUtils.js';
 import CollaborationBadge from '../Collaboration/CollaborationBadge';
 import { optOutCollaboration } from '../../services/collaborationService';
-import SuccessModal from '@/components/ui/SuccessModal';
+import { SuccessModal } from '@/components';
 import styles from './ProgramCard.module.css';
 
 const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted, onMarkActive, onOptOut }) => {
@@ -38,7 +38,7 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
       await onMarkCompleted();
       setShowMarkCompletedModal(false);
     } catch (error) {
-      console.error('Error marking program as completed:', error);
+      // Handle error silently in production
     }
   };
 
@@ -79,7 +79,7 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
       await onMarkActive();
       setShowMarkActiveModal(false);
     } catch (error) {
-      console.error('Error marking program as active:', error);
+      // Handle error silently in production
     }
   };
 
@@ -117,8 +117,6 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
         }
       }
     } catch (error) {
-      console.error('Error opting out of collaboration:', error);
-      
       // Show error modal
       setSuccessModal({
         isVisible: true,

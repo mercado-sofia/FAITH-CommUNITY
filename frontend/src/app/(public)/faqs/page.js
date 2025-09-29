@@ -4,7 +4,7 @@ import { useState } from "react"
 import { FaChevronDown, FaChevronUp } from "react-icons/fa"
 import { usePublicFAQs, usePublicSiteName } from "../hooks/usePublicData"
 import { PageBanner } from "../components"
-import Loader from "../../../components/ui/Loader"
+import Loader from "../../../components/ui/Loader/Loader"
 import { usePublicPageLoader } from "../hooks/usePublicPageLoader"
 import styles from "./faqs.module.css"
 

@@ -118,7 +118,6 @@ export default function OrgHeadsSection({
       }
       
     } catch (error) {
-      console.error('Failed to reorder heads:', error)
       // Revert local state on error
       setLocalReorderedData(null)
     }

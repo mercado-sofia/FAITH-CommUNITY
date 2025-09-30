@@ -54,7 +54,6 @@ export default function OfficerSection() {
             {/* Left side - Text content */}
             <div className={styles.textContent}>
               <div className={styles.greeting}>
-                <span className={styles.greetingText}>Hello, I&apos;m</span>
                 <h1 className={styles.adviserName}>{primaryAdviser.name}</h1>
               </div>
               

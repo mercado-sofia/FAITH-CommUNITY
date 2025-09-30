@@ -281,7 +281,7 @@ app.use("/api", organizationsRoutes)
 app.use("/api/subscription", subscriptionRoutes)
 app.use("/api", applyRoutes)
 app.use("/api", messagesRoutes)
-// app.use(["/api/users/login", "/api/users/forgot-password", "/api/users/reset-password", "/api/users/verify-email"], authSpeedLimiter, authLimiter) // DISABLED FOR NOW
+app.use(["/api/users/login", "/api/users/forgot-password", "/api/users/reset-password", "/api/users/verify-email"], authSpeedLimiter, authLimiter)
 app.use("/api/users", usersRoutes)
 
 // ADMIN ROUTES
@@ -336,8 +336,8 @@ import heroSectionRoutes from "./src/superadmin/routes/heroSection.js"
 import aboutUsRoutes from "./src/superadmin/routes/aboutUs.js"
 import headsFacesRoutes from "./src/superadmin/routes/headsFaces.js"
 
-// Add rate limits around admin/superadmin auth endpoints - DISABLED FOR NOW
-// app.use(["/api/admins/login", "/api/admins/forgot-password", "/api/admins/reset-password"], authSpeedLimiter, authLimiter)
+// Add rate limits around admin/superadmin auth endpoints
+app.use(["/api/admins/login", "/api/admins/forgot-password", "/api/admins/reset-password"], authSpeedLimiter, authLimiter)
 app.use("/api/admins", adminsRoutes)
 app.use("/api/approvals", approvalRoutes)
 app.use("/api/faqs", faqRoutes)
@@ -345,7 +345,7 @@ app.use("/api/mission-vision", missionVisionRoutes)
 app.use("/api/superadmin/footer", footerRoutes)
 app.use("/api/subscriptions", subscriptionsRoutes)
 app.use("/api/projects/superadmin", superadminProgramsRoutes)
-// app.use(["/api/superadmin/auth/login", "/api/superadmin/auth/forgot-password", "/api/superadmin/auth/reset-password"], authSpeedLimiter, authLimiter) // DISABLED FOR NOW
+app.use(["/api/superadmin/auth/login", "/api/superadmin/auth/forgot-password", "/api/superadmin/auth/reset-password"], authSpeedLimiter, authLimiter)
 app.use("/api/superadmin/auth", superadminAuthRoutes)
 app.use("/api/superadmin/notifications", superadminNotificationsRoutes)
 app.use("/api/superadmin/branding", brandingRoutes)

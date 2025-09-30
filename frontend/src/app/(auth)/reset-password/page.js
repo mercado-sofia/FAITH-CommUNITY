@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import styles from "./reset-password.module.css"
 import { FaSpinner } from "react-icons/fa"
 import { LuCircleCheck } from "react-icons/lu"
-import { AuthLeftPanel, PasswordField, DynamicLogo } from "../components"
+import { AuthLeftPanel, PasswordField } from "../components"
 import { postJson } from "../api/authClient"
 
 export default function ResetPasswordPage() {
@@ -124,9 +124,6 @@ export default function ResetPasswordPage() {
       <div className={styles.container}>
         <AuthLeftPanel labelText="Reset Password" />
         <div className={styles.rightPane}>
-          <div className={styles.logoWrapper}>
-            <DynamicLogo width={80} height={80} alt="Logo" />
-          </div>
           <div className={styles.contentContainer}>
             <div className={styles.loadingContainer}>
               <FaSpinner className={styles.spinner} />
@@ -144,9 +141,6 @@ export default function ResetPasswordPage() {
       <div className={styles.container}>
         <AuthLeftPanel labelText="Reset Password" />
         <div className={styles.rightPane}>
-          <div className={styles.logoWrapper}>
-            <DynamicLogo width={80} height={80} alt="Logo" />
-          </div>
           <div className={styles.contentContainer}>
             <div className={styles.errorContainer}>
               <h2 className={styles.title}>Invalid Reset Link</h2>
@@ -163,9 +157,6 @@ export default function ResetPasswordPage() {
     <div className={styles.container}>
       <AuthLeftPanel labelText="Reset Password" />
       <div className={styles.rightPane}>
-        <div className={styles.logoWrapper}>
-          <DynamicLogo width={80} height={80} alt="Logo" />
-        </div>
         <div className={styles.contentContainer}>
           {!isSuccess ? (
             <form onSubmit={handleSubmit} className={styles.form}>

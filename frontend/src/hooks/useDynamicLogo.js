@@ -35,12 +35,16 @@ export const useDynamicLogo = () => {
         } else {
           // If no branding data, don't set any logo
           setLogoUrl(null)
+          setLogoNameUrl(null)
+          setFaviconUrl(null)
         }
       } catch (err) {
         console.error('Error fetching dynamic logo:', err)
         setError(err.message)
         // Don't set any logo on error
         setLogoUrl(null)
+        setLogoNameUrl(null)
+        setFaviconUrl(null)
       } finally {
         setIsLoading(false)
       }

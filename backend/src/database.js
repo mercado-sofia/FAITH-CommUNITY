@@ -34,571 +34,228 @@ const promisePool = pool.promise();
 // Incremental migrations for existing databases
 const runIncrementalMigrations = async (connection) => {
   try {
-    console.log('🔄 Running incremental migrations...');
 
-    // Check if organizations table has org and orgName columns
-    const [orgColumns] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_SCHEMA = DATABASE() 
-      AND TABLE_NAME = 'organizations' 
-      AND COLUMN_NAME IN ('org', 'orgName')
+
+    // Migrate existing news data
+    await connection.query(`
+      UPDATE news 
+      SET slug = LOWER(REPLACE(REPLACE(REPLACE(REPLACE(title, ' ', '-'), '&', 'and'), '?', ''), '!', ''))
+      WHERE slug IS NULL OR slug = ''
     `);
     
-    if (orgColumns.length < 2) {
-      console.log('🔄 Adding org and orgName columns to organizations table...');
-      await connection.query(`
-        ALTER TABLE organizations 
-        ADD COLUMN org VARCHAR(50) NULL UNIQUE,
-        ADD COLUMN orgName VARCHAR(255) NULL
-      `);
-      
-      // Migrate existing data from admins to organizations if needed
-      await connection.query(`
-        UPDATE organizations o
-        INNER JOIN admins a ON o.id = a.organization_id
-        SET o.org = a.org, o.orgName = a.orgName
-        WHERE a.org IS NOT NULL AND a.orgName IS NOT NULL
-      `);
-    }
-
-    // Check if organizations table has status column
-    const [statusColumn] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_SCHEMA = DATABASE() 
-      AND TABLE_NAME = 'organizations' 
-      AND COLUMN_NAME = 'status'
+    // Generate excerpt from content
+    await connection.query(`
+      UPDATE news 
+      SET excerpt = CASE 
+          WHEN LENGTH(content) > 180 
+          THEN CONCAT(LEFT(content, 177), '...')
+          ELSE content
+      END
+      WHERE excerpt IS NULL OR excerpt = ''
     `);
     
-    if (statusColumn.length === 0) {
-      console.log('🔄 Adding status column to organizations table...');
-      await connection.query(`
-        ALTER TABLE organizations 
-        ADD COLUMN status ENUM('ACTIVE', 'INACTIVE') DEFAULT 'ACTIVE'
-      `);
-    }
+    await connection.query(`
+      UPDATE news 
+      SET published_at = COALESCE(date, created_at)
+      WHERE published_at IS NULL
+    `);
 
-    // Check if admins table has organization_id column
-    const [orgIdColumn] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_SCHEMA = DATABASE() 
-      AND TABLE_NAME = 'admins' 
-      AND COLUMN_NAME = 'organization_id'
+
+    // Generate slugs for existing programs
+    const [existingPrograms] = await connection.query(`
+      SELECT id, title FROM programs_projects WHERE slug IS NULL
     `);
     
-    if (orgIdColumn.length === 0) {
-      console.log('🔄 Adding organization_id column to admins table...');
-      await connection.query(`
-        ALTER TABLE admins 
-        ADD COLUMN organization_id INT NULL,
-        ADD CONSTRAINT fk_admins_organization 
-        FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL
-      `);
-    }
-
-    // Check if admins table has is_active column
-    const [isActiveColumn] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'admins' 
-      AND COLUMN_NAME = 'is_active'
-    `);
-    
-    if (isActiveColumn.length === 0) {
-      console.log('🔄 Adding is_active column to admins table...');
-      await connection.query(`
-        ALTER TABLE admins 
-        ADD COLUMN is_active BOOLEAN DEFAULT TRUE
-      `);
-    }
-
-    // Check if admins table has password_changed_at column
-    const [passwordChangedAtColumn] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'admins' 
-      AND COLUMN_NAME = 'password_changed_at'
-    `);
-    
-    if (passwordChangedAtColumn.length === 0) {
-      console.log('🔄 Adding password_changed_at column to admins table...');
-      await connection.query(`
-        ALTER TABLE admins 
-        ADD COLUMN password_changed_at TIMESTAMP NULL DEFAULT NULL
-      `);
-    }
-
-    // Check if news table has enhanced columns
-    const [enhancedColumns] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'news' 
-      AND COLUMN_NAME IN ('slug', 'content', 'excerpt', 'featured_image', 'published_at')
-    `);
-    
-    if (enhancedColumns.length < 5) {
-      console.log('🔄 Adding enhanced columns to news table...');
+    for (const program of existingPrograms) {
+      const slug = program.title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim('-');
       
-      const columnsToAdd = [
-        { name: 'slug', definition: 'VARCHAR(255) UNIQUE AFTER title' },
-        { name: 'content', definition: 'LONGTEXT AFTER description' },
-        { name: 'excerpt', definition: 'TEXT AFTER content' },
-        { name: 'featured_image', definition: 'VARCHAR(500) AFTER excerpt' },
-        { name: 'published_at', definition: 'DATETIME AFTER featured_image' }
-      ];
-
-      for (const column of columnsToAdd) {
-        try {
-          const [existingColumn] = await connection.query(`
-            SELECT COLUMN_NAME 
-            FROM INFORMATION_SCHEMA.COLUMNS 
-            WHERE TABLE_NAME = 'news' 
-            AND COLUMN_NAME = '${column.name}'
-          `);
-          
-          if (existingColumn.length === 0) {
-            await connection.query(`ALTER TABLE news ADD COLUMN ${column.name} ${column.definition}`);
-          }
-        } catch (error) {
-          if (error.code !== 'ER_DUP_FIELDNAME') {
-            console.error(`Error adding ${column.name} column:`, error.message);
-          }
-        }
-      }
-
-      // Migrate existing data
-      await connection.query(`
-        UPDATE news 
-        SET slug = LOWER(REPLACE(REPLACE(REPLACE(REPLACE(title, ' ', '-'), '&', 'and'), '?', ''), '!', ''))
-        WHERE slug IS NULL OR slug = ''
-      `);
-      
-      await connection.query(`
-        UPDATE news 
-        SET content = description
-        WHERE content IS NULL OR content = ''
-      `);
-      
-      await connection.query(`
-        UPDATE news 
-        SET excerpt = CASE 
-            WHEN LENGTH(description) > 180 
-            THEN CONCAT(LEFT(description, 177), '...')
-            ELSE description
-        END
-        WHERE excerpt IS NULL OR excerpt = ''
-      `);
-      
-      await connection.query(`
-        UPDATE news 
-        SET published_at = COALESCE(date, created_at)
-        WHERE published_at IS NULL
-      `);
-    }
-
-    // Check if programs_projects table has slug field
-    const [slugColumns] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'programs_projects' 
-      AND COLUMN_NAME = 'slug'
-    `);
-    
-    if (slugColumns.length === 0) {
-      console.log('🔄 Adding slug column to programs_projects table...');
-      await connection.query(`
-        ALTER TABLE programs_projects 
-        ADD COLUMN slug VARCHAR(255) NULL UNIQUE
-      `);
-      
-      // Generate slugs for existing programs
-      const [existingPrograms] = await connection.query(`
-        SELECT id, title FROM programs_projects WHERE slug IS NULL
-      `);
-      
-      for (const program of existingPrograms) {
-        const slug = program.title
-          .toLowerCase()
-          .replace(/[^a-z0-9\s-]/g, '')
-          .replace(/\s+/g, '-')
-          .replace(/-+/g, '-')
-          .trim('-');
-        
-        let finalSlug = slug;
-        let counter = 1;
-        while (true) {
-          const [existingSlug] = await connection.query(`
-            SELECT id FROM programs_projects WHERE slug = ? AND id != ?
-          `, [finalSlug, program.id]);
-          
-          if (existingSlug.length === 0) {
-            break;
-          }
-          finalSlug = `${slug}-${counter}`;
-          counter++;
-        }
-        
-        await connection.query(`
-          UPDATE programs_projects SET slug = ? WHERE id = ?
+      let finalSlug = slug;
+      let counter = 1;
+      while (true) {
+        const [existingSlug] = await connection.query(`
+          SELECT id FROM programs_projects WHERE slug = ? AND id != ?
         `, [finalSlug, program.id]);
-      }
-    }
-
-    // Check if programs_projects table has is_featured column
-    const [featuredColumn] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'programs_projects' 
-      AND COLUMN_NAME = 'is_featured'
-    `);
-    
-    if (featuredColumn.length === 0) {
-      console.log('🔄 Adding is_featured column to programs_projects table...');
-      await connection.query(`
-        ALTER TABLE programs_projects 
-        ADD COLUMN is_featured BOOLEAN DEFAULT FALSE
-      `);
-    }
-
-    // Check if programs_projects table has is_approved column
-    const [approvedColumn] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'programs_projects' 
-      AND COLUMN_NAME = 'is_approved'
-    `);
-    
-    if (approvedColumn.length === 0) {
-      console.log('🔄 Adding is_approved column to programs_projects table...');
-      await connection.query(`
-        ALTER TABLE programs_projects 
-        ADD COLUMN is_approved BOOLEAN DEFAULT TRUE
-      `);
-    }
-
-    // Check if programs_projects table has is_collaborative column
-    const [collaborativeColumn] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'programs_projects' 
-      AND COLUMN_NAME = 'is_collaborative'
-    `);
-    
-    if (collaborativeColumn.length === 0) {
-      console.log('🔄 Adding is_collaborative column to programs_projects table...');
-      await connection.query(`
-        ALTER TABLE programs_projects 
-        ADD COLUMN is_collaborative BOOLEAN DEFAULT FALSE
-      `);
-    }
-
-    // Check if programs_projects table has event date fields
-    const [dateColumns] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'programs_projects' 
-      AND COLUMN_NAME IN ('event_start_date', 'event_end_date')
-    `);
-    
-    if (dateColumns.length === 0) {
-      console.log('🔄 Adding event date columns to programs_projects table...');
-      await connection.query(`
-        ALTER TABLE programs_projects 
-        ADD COLUMN event_start_date DATE NULL,
-        ADD COLUMN event_end_date DATE NULL
-      `);
-    }
-
-    // Check if users table has required columns
-    const [userColumns] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'users' 
-      AND COLUMN_NAME IN ('password_hash', 'is_active', 'email_verified', 'verification_token', 'newsletter_subscribed', 'profile_photo_url')
-    `);
-    
-    if (userColumns.length < 6) {
-      console.log('🔄 Adding missing columns to users table...');
-      
-      const userColumnsToAdd = [
-        { name: 'password_hash', definition: 'VARCHAR(255) NOT NULL AFTER email' },
-        { name: 'is_active', definition: 'TINYINT(1) DEFAULT 1' },
-        { name: 'email_verified', definition: 'TINYINT(1) DEFAULT 0' },
-        { name: 'verification_token', definition: 'VARCHAR(255) NULL' },
-        { name: 'verification_token_expires', definition: 'TIMESTAMP NULL' },
-        { name: 'newsletter_subscribed', definition: 'TINYINT(1) DEFAULT 0' },
-        { name: 'profile_photo_url', definition: 'VARCHAR(500)' }
-      ];
-
-      for (const column of userColumnsToAdd) {
-        try {
-          const [existingColumn] = await connection.query(`
-            SELECT COLUMN_NAME 
-            FROM INFORMATION_SCHEMA.COLUMNS 
-            WHERE TABLE_NAME = 'users' 
-            AND COLUMN_NAME = '${column.name}'
-          `);
-          
-          if (existingColumn.length === 0) {
-            await connection.query(`ALTER TABLE users ADD COLUMN ${column.name} ${column.definition}`);
-          }
-        } catch (error) {
-          if (error.code !== 'ER_DUP_FIELDNAME') {
-            console.error(`Error adding ${column.name} column:`, error.message);
-          }
+        
+        if (existingSlug.length === 0) {
+          break;
         }
+        finalSlug = `${slug}-${counter}`;
+        counter++;
       }
-    }
-
-    // Check if full_name column exists in users table
-    const [fullNameColumn] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'users' 
-      AND COLUMN_NAME = 'full_name'
-    `);
-    
-    if (fullNameColumn.length === 0) {
-      console.log('🔄 Adding full_name column to users table...');
-      await connection.query(`
-        ALTER TABLE users 
-        ADD COLUMN full_name VARCHAR(200) GENERATED ALWAYS AS (CONCAT(first_name, ' ', last_name)) STORED
-      `);
-    }
-
-    // Check if messages table has user_id column
-    const [messagesUserIdColumn] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'messages' 
-      AND COLUMN_NAME = 'user_id'
-    `);
-    
-    if (messagesUserIdColumn.length === 0) {
-      console.log('🔄 Adding user_id column to messages table...');
-      await connection.query(`
-        ALTER TABLE messages 
-        ADD COLUMN user_id INT NULL,
-        ADD FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-        ADD INDEX idx_user_id (user_id)
-      `);
-      
-      // Link existing messages with users based on email
-      await connection.query(`
-        UPDATE messages m 
-        JOIN users u ON m.sender_email = u.email 
-        SET m.user_id = u.id 
-        WHERE m.user_id IS NULL
-      `);
-    }
-
-    // Check if subscribers table has verified_at column
-    const [subscribersVerifiedAtColumn] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'subscribers' 
-      AND COLUMN_NAME = 'verified_at'
-    `);
-    
-    if (subscribersVerifiedAtColumn.length === 0) {
-      console.log('🔄 Adding verified_at column to subscribers table...');
-      await connection.query(`
-        ALTER TABLE subscribers 
-        ADD COLUMN verified_at TIMESTAMP NULL
-      `);
-    }
-
-    // Fix subscribers is_verified column default value
-    const [isVerifiedColumn] = await connection.query(`
-      SELECT COLUMN_DEFAULT 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'subscribers' 
-      AND COLUMN_NAME = 'is_verified'
-    `);
-    
-    if (isVerifiedColumn.length > 0 && isVerifiedColumn[0].COLUMN_DEFAULT !== '0') {
-      console.log('🔄 Fixing is_verified column default value in subscribers table...');
-      await connection.query(`
-        ALTER TABLE subscribers 
-        MODIFY COLUMN is_verified TINYINT(1) DEFAULT 0
-      `);
-      
-      // Fix any incorrectly verified subscriptions
-      await connection.query(`
-        UPDATE subscribers 
-        SET is_verified = 0 
-        WHERE is_verified = 1 AND verified_at IS NULL
-      `);
-    }
-
-    // Check if volunteers table has 'Completed' status
-    const [volunteersStatusColumn] = await connection.query(`
-      SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'volunteers' AND COLUMN_NAME = 'status' AND TABLE_SCHEMA = DATABASE()
-    `);
-    
-    if (volunteersStatusColumn.length > 0 && !volunteersStatusColumn[0].COLUMN_TYPE.includes('Completed')) {
-      console.log('🔄 Adding Completed status to volunteers table...');
-      await connection.query(`
-        ALTER TABLE volunteers 
-        MODIFY COLUMN status ENUM('Pending', 'Approved', 'Declined', 'Cancelled', 'Completed') 
-        DEFAULT 'Pending'
-      `);
-    }
-
-    // Check if volunteers table has 'Cancelled' status
-    if (volunteersStatusColumn.length > 0 && !volunteersStatusColumn[0].COLUMN_TYPE.includes('Cancelled')) {
-      console.log('🔄 Adding Cancelled status to volunteers table...');
-      await connection.query(`
-        ALTER TABLE volunteers 
-        MODIFY COLUMN status ENUM('Pending', 'Approved', 'Declined', 'Cancelled') DEFAULT 'Pending'
-      `);
-    }
-
-    // Check if admin_notifications table has required types
-    const [adminNotificationsTypeColumn] = await connection.query(`
-      SELECT COLUMN_TYPE 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'admin_notifications' 
-      AND COLUMN_NAME = 'type'
-    `);
-    
-    if (adminNotificationsTypeColumn.length > 0 && !adminNotificationsTypeColumn[0].COLUMN_TYPE.includes("'message'")) {
-      console.log('🔄 Adding message type to admin_notifications table...');
-      await connection.query(`
-        ALTER TABLE admin_notifications 
-        MODIFY COLUMN type ENUM('approval', 'decline', 'system', 'message', 'collaboration', 'program_approval') NOT NULL
-      `);
-    }
-
-    // Check if superadmin_notifications table has organization_id column
-    const [superadminNotificationsOrgColumn] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'superadmin_notifications' 
-      AND COLUMN_NAME = 'organization_id'
-    `);
-    
-    if (superadminNotificationsOrgColumn.length === 0) {
-      console.log('🔄 Adding organization_id column to superadmin_notifications table...');
-      await connection.query(`
-        ALTER TABLE superadmin_notifications 
-        ADD COLUMN organization_id INT AFTER submission_id
-      `);
       
       await connection.query(`
-        ALTER TABLE superadmin_notifications 
-        ADD CONSTRAINT fk_notifications_organization 
-        FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL
-      `);
-      
-      await connection.query(`
-        ALTER TABLE superadmin_notifications 
-        ADD INDEX idx_organization (organization_id)
-      `);
+        UPDATE programs_projects SET slug = ? WHERE id = ?
+      `, [finalSlug, program.id]);
     }
 
-    // Check if superadmin_notifications table has message_template column
-    const [messageTemplateColumn] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'superadmin_notifications' 
-      AND COLUMN_NAME = 'message_template'
+
+    // Link existing messages with users based on email
+    await connection.query(`
+      UPDATE messages m 
+      JOIN users u ON m.sender_email = u.email 
+      SET m.user_id = u.id 
+      WHERE m.user_id IS NULL
     `);
-    
-    if (messageTemplateColumn.length === 0) {
-      console.log('🔄 Adding message_template column to superadmin_notifications table...');
-      await connection.query(`
-        ALTER TABLE superadmin_notifications 
-        ADD COLUMN message_template TEXT AFTER message
-      `);
-      
-      await connection.query(`
-        UPDATE superadmin_notifications 
-        SET message_template = message
-        WHERE message_template IS NULL
-      `);
-    }
 
-    // Check if superadmin table has 2FA columns
-    const [superadmin2FAColumns] = await connection.query(`
+    // Fix any incorrectly verified subscriptions
+    await connection.query(`
+      UPDATE subscribers 
+      SET is_verified = 0 
+      WHERE is_verified = 1 AND verified_at IS NULL
+    `);
+
+
+    // Update superadmin_notifications message_template
+    await connection.query(`
+      UPDATE superadmin_notifications 
+      SET message_template = message
+      WHERE message_template IS NULL
+    `);
+
+    // Handle superadmin password column migration
+    const [oldPasswordHashColumn] = await connection.query(`
       SELECT COLUMN_NAME 
       FROM INFORMATION_SCHEMA.COLUMNS 
       WHERE TABLE_NAME = 'superadmin' 
-      AND COLUMN_NAME IN ('twofa_enabled', 'twofa_secret')
+      AND COLUMN_NAME = 'password_hash'
     `);
     
-    if (superadmin2FAColumns.length < 2) {
-      console.log('🔄 Adding 2FA columns to superadmin table...');
+    if (oldPasswordHashColumn.length > 0) {
+      // Copy data from password_hash to password
+      await connection.query(`UPDATE superadmin SET password = password_hash WHERE password_hash IS NOT NULL`);
       
-      if (!superadmin2FAColumns.some(col => col.COLUMN_NAME === 'twofa_enabled')) {
-        await connection.query(`ALTER TABLE superadmin ADD COLUMN twofa_enabled TINYINT(1) DEFAULT 0`);
-      }
-      
-      if (!superadmin2FAColumns.some(col => col.COLUMN_NAME === 'twofa_secret')) {
-        await connection.query(`ALTER TABLE superadmin ADD COLUMN twofa_secret VARCHAR(255) NULL`);
-      }
+      // Drop the old password_hash column
+      await connection.query(`ALTER TABLE superadmin DROP COLUMN password_hash`);
     }
 
-    // Check if branding table has name_url column
-    const [brandingNameUrlColumn] = await connection.query(`
+    // Handle admins table password column migration
+    const [adminsColumns] = await connection.query(`
       SELECT COLUMN_NAME 
       FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'branding' 
-      AND COLUMN_NAME = 'name_url'
+      WHERE TABLE_NAME = 'admins' 
+      AND TABLE_SCHEMA = DATABASE()
     `);
     
-    if (brandingNameUrlColumn.length === 0) {
-      console.log('🔄 Adding name_url column to branding table...');
+    const hasPassword = adminsColumns.some(col => col.COLUMN_NAME === 'password');
+    const hasPasswordHash = adminsColumns.some(col => col.COLUMN_NAME === 'password_hash');
+    const hasRole = adminsColumns.some(col => col.COLUMN_NAME === 'role');
+    
+    if (hasPasswordHash && !hasPassword) {
+      // Copy data from password_hash to password
+      await connection.query(`UPDATE admins SET password = password_hash WHERE password_hash IS NOT NULL`);
+      
+      // Drop the old password_hash column
+      await connection.query(`ALTER TABLE admins DROP COLUMN password_hash`);
+    }
+
+    // Remove role column from admins table if it exists
+    if (hasRole) {
+      await connection.query(`ALTER TABLE admins DROP COLUMN role`);
+    }
+
+    // Handle login_attempts table schema migration
+    const [oldColumns] = await connection.query(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'login_attempts' 
+      AND COLUMN_NAME = 'email'
+    `);
+    
+    if (oldColumns.length > 0) {
+      // Drop the old table and recreate with new schema
+      await connection.query(`DROP TABLE IF EXISTS login_attempts`);
       await connection.query(`
-        ALTER TABLE branding 
-        ADD COLUMN name_url VARCHAR(500) NULL AFTER logo_url
+        CREATE TABLE login_attempts (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          identifier VARCHAR(255) NOT NULL,
+          ip_address VARCHAR(45) NULL,
+          attempt_type ENUM('failed', 'success') NOT NULL,
+          user_type ENUM('user', 'admin', 'superadmin') NOT NULL DEFAULT 'user',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_identifier (identifier),
+          INDEX idx_ip (ip_address),
+          INDEX idx_created (created_at),
+          INDEX idx_user_type (user_type),
+          INDEX idx_combined (identifier, ip_address, user_type, attempt_type)
+        )
       `);
     }
 
-    // Check if hero_section table has new columns
-    const [heroSectionColumns] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'hero_section' 
-      AND COLUMN_NAME IN ('video_link', 'video_type')
+
+    // Update about_us extension_categories with proper structure
+    const [aboutUsRows] = await connection.query(`
+      SELECT id, extension_categories 
+      FROM about_us 
+      WHERE extension_categories IS NOT NULL
     `);
     
-    if (heroSectionColumns.length < 2) {
-      console.log('🔄 Adding new columns to hero_section table...');
-      
-      if (!heroSectionColumns.some(col => col.COLUMN_NAME === 'video_link')) {
-        await connection.query(`
-          ALTER TABLE hero_section 
-          ADD COLUMN video_link VARCHAR(500) NULL AFTER video_url
-        `);
-      }
-      
-      if (!heroSectionColumns.some(col => col.COLUMN_NAME === 'video_type')) {
-        await connection.query(`
-          ALTER TABLE hero_section 
-          ADD COLUMN video_type ENUM('upload', 'link') DEFAULT 'upload' AFTER video_link
-        `);
+    if (aboutUsRows.length > 0) {
+      for (const row of aboutUsRows) {
+        const categories = JSON.parse(row.extension_categories);
+        const needsUpdate = categories.some(cat => !cat.icon);
+        
+        if (needsUpdate) {
+          const updatedCategories = [
+            {"name": "Extension For Education", "icon": "education", "color": "green"},
+            {"name": "Extension For Medical", "icon": "medical", "color": "red"},
+            {"name": "Extension For Community", "icon": "community", "color": "orange"},
+            {"name": "Extension For Foods", "icon": "food", "color": "green"}
+          ];
+          
+          await connection.query(`
+            UPDATE about_us 
+            SET extension_categories = ? 
+            WHERE id = ?
+          `, [JSON.stringify(updatedCategories), row.id]);
+        }
       }
     }
 
-    // Check if about_us table has tag column (should be removed)
-    const [aboutUsTagColumn] = await connection.query(`
+
+
+    // Handle security_logs event_type to action column migration
+    const [securityLogsColumns] = await connection.query(`
       SELECT COLUMN_NAME 
       FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_SCHEMA = DATABASE() 
-      AND TABLE_NAME = 'about_us' 
-      AND COLUMN_NAME = 'tag'
+      WHERE TABLE_NAME = 'security_logs' 
+      AND TABLE_SCHEMA = DATABASE()
+      AND COLUMN_NAME IN ('event_type', 'action')
     `);
     
-    if (aboutUsTagColumn.length > 0) {
-      console.log('🔄 Removing tag column from about_us table...');
-      await connection.query('ALTER TABLE about_us DROP COLUMN tag');
+    const hasEventType = securityLogsColumns.some(col => col.COLUMN_NAME === 'event_type');
+    const hasAction = securityLogsColumns.some(col => col.COLUMN_NAME === 'action');
+    
+    if (hasEventType && !hasAction) {
+      // Rename event_type column to action
+      await connection.query(`ALTER TABLE security_logs CHANGE COLUMN event_type action VARCHAR(100) NOT NULL`);
+      await connection.query(`ALTER TABLE security_logs DROP INDEX idx_event_type`);
+      await connection.query(`ALTER TABLE security_logs ADD INDEX idx_action (action)`);
     }
 
-    console.log('✅ Incremental migrations completed successfully!');
+    // Handle submissions comment_reject to rejection_reason column migration
+    const [submissionsColumns] = await connection.query(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'submissions' 
+      AND TABLE_SCHEMA = DATABASE()
+      AND COLUMN_NAME IN ('comment_reject', 'rejection_reason')
+    `);
+    
+    const hasCommentReject = submissionsColumns.some(col => col.COLUMN_NAME === 'comment_reject');
+    const hasRejectionReason = submissionsColumns.some(col => col.COLUMN_NAME === 'rejection_reason');
+    
+    if (hasCommentReject && !hasRejectionReason) {
+      // Rename comment_reject column to rejection_reason
+      await connection.query(`ALTER TABLE submissions CHANGE COLUMN comment_reject rejection_reason TEXT`);
+    }
+
+
+
   } catch (error) {
     console.error('❌ Incremental migrations failed:', error);
     throw error;
@@ -610,7 +267,6 @@ const initializeDatabase = async () => {
   const connection = await promisePool.getConnection();
 
   try {
-    console.log('🔄 Starting database initialization...');
 
     // Create migrations table if it doesn't exist
     await connection.query(`
@@ -628,7 +284,6 @@ const initializeDatabase = async () => {
     );
 
     if (executedMigrations.length === 0) {
-      console.log('🔄 Running initial database migrations...');
 
       // 1. Core Tables
       await connection.query(`
@@ -639,6 +294,7 @@ const initializeDatabase = async () => {
           logo VARCHAR(500) NULL,
           facebook VARCHAR(500) NULL,
           description TEXT NULL,
+          org_color VARCHAR(7) DEFAULT '#444444',
           status ENUM('ACTIVE', 'INACTIVE') DEFAULT 'ACTIVE',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -681,10 +337,8 @@ const initializeDatabase = async () => {
       await connection.query(`
         CREATE TABLE IF NOT EXISTS admins (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          first_name VARCHAR(100) NOT NULL,
-          last_name VARCHAR(100) NOT NULL,
           email VARCHAR(255) NOT NULL UNIQUE,
-          password_hash VARCHAR(255) NOT NULL,
+          password VARCHAR(255) NOT NULL,
           organization_id INT NULL,
           is_active BOOLEAN DEFAULT TRUE,
           password_changed_at TIMESTAMP NULL DEFAULT NULL,
@@ -709,6 +363,7 @@ const initializeDatabase = async () => {
           image VARCHAR(500),
           event_start_date DATE NULL,
           event_end_date DATE NULL,
+          date_completed DATE NULL,
           is_featured BOOLEAN DEFAULT FALSE,
           is_approved BOOLEAN DEFAULT TRUE,
           is_collaborative BOOLEAN DEFAULT FALSE,
@@ -729,7 +384,6 @@ const initializeDatabase = async () => {
           organization_id INT NOT NULL,
           title VARCHAR(255) NOT NULL,
           slug VARCHAR(255) UNIQUE,
-          description TEXT NOT NULL,
           content LONGTEXT,
           excerpt TEXT,
           featured_image VARCHAR(500),
@@ -797,7 +451,7 @@ const initializeDatabase = async () => {
           section VARCHAR(100),
           submission_id INT,
           organization_id INT,
-          is_read BOOLEAN DEFAULT FALSE,
+          is_read TINYINT(1) DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL,
@@ -884,12 +538,14 @@ const initializeDatabase = async () => {
             verify_token VARCHAR(255) NOT NULL,
             unsubscribe_token VARCHAR(255) NOT NULL,
             is_verified TINYINT(1) DEFAULT 0,
+            verify_expires TIMESTAMP NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             verified_at TIMESTAMP NULL,
             INDEX idx_email (email),
             INDEX idx_verify_token (verify_token),
             INDEX idx_unsubscribe_token (unsubscribe_token),
-            INDEX idx_is_verified (is_verified)
+            INDEX idx_is_verified (is_verified),
+            INDEX idx_verify_expires (verify_expires)
           )
         `);
 
@@ -928,6 +584,7 @@ const initializeDatabase = async () => {
           program_id INT NOT NULL,
           event_date DATE NOT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE CASCADE,
           UNIQUE KEY unique_program_date (program_id, event_date)
         )
@@ -1075,13 +732,13 @@ const initializeDatabase = async () => {
       await connection.query(`
         CREATE TABLE IF NOT EXISTS about_us (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          heading TEXT DEFAULT 'We Believe That We Can Help More People With You',
-          description TEXT DEFAULT 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.',
+          heading TEXT DEFAULT NULL,
+          description TEXT DEFAULT NULL,
           extension_categories JSON DEFAULT '[
-            {"name": "Extension For Education", "color": "green"},
-            {"name": "Extension For Medical", "color": "red"},
-            {"name": "Extension For Community", "color": "orange"},
-            {"name": "Extension For Foods", "color": "green"}
+            {"name": "Extension For Education", "icon": "education", "color": "green"},
+            {"name": "Extension For Medical", "icon": "medical", "color": "red"},
+            {"name": "Extension For Community", "icon": "community", "color": "orange"},
+            {"name": "Extension For Foods", "icon": "food", "color": "green"}
           ]',
           image_url VARCHAR(500) DEFAULT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1186,19 +843,37 @@ const initializeDatabase = async () => {
       await connection.query(`
         CREATE TABLE IF NOT EXISTS login_attempts (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          email VARCHAR(255) NOT NULL,
-          ip_address VARCHAR(45) NOT NULL,
-          user_agent VARCHAR(255) NULL,
-          success BOOLEAN NOT NULL,
-          failure_reason VARCHAR(100) NULL,
+          identifier VARCHAR(255) NOT NULL,
+          ip_address VARCHAR(45) NULL,
+          attempt_type ENUM('failed', 'success') NOT NULL,
+          user_type ENUM('user', 'admin', 'superadmin') NOT NULL DEFAULT 'user',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          INDEX idx_email (email),
-          INDEX idx_ip_address (ip_address),
-          INDEX idx_success (success),
-          INDEX idx_created_at (created_at)
+          INDEX idx_identifier (identifier),
+          INDEX idx_ip (ip_address),
+          INDEX idx_created (created_at),
+          INDEX idx_user_type (user_type),
+          INDEX idx_combined (identifier, ip_address, user_type, attempt_type)
         )
       `);
       
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS admin_sessions (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          admin_id INT NOT NULL,
+          token_hash VARCHAR(64) NOT NULL,
+          fingerprint VARCHAR(64) NOT NULL,
+          ip_address VARCHAR(45) NOT NULL,
+          user_agent VARCHAR(500) NULL,
+          expires_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE,
+          INDEX idx_admin_id (admin_id),
+          INDEX idx_token_hash (token_hash),
+          INDEX idx_fingerprint (fingerprint),
+          INDEX idx_expires_at (expires_at)
+        )
+      `);
+
       await connection.query(`
         CREATE TABLE IF NOT EXISTS security_logs (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1248,10 +923,6 @@ const initializeDatabase = async () => {
         (3, 'Innovation', 'Building the Future', 3)
       `);
 
-      await connection.query(`
-        INSERT IGNORE INTO about_us (heading, description) VALUES
-        ('We Believe That We Can Help More People With You', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.')
-      `);
 
       await connection.query(`
         INSERT IGNORE INTO mission_vision (type, content) VALUES
@@ -1276,7 +947,7 @@ const initializeDatabase = async () => {
         await connection.query(`
           UPDATE news 
           SET content = description
-          WHERE content IS NULL OR content = ''
+          WHERE (content IS NULL OR content = '') AND description IS NOT NULL
         `);
         
         // Generate basic excerpt from description for existing records
@@ -1308,6 +979,9 @@ const initializeDatabase = async () => {
               SELECT MIN(id) FROM (SELECT id, slug FROM news) n3 GROUP BY slug
           )
         `);
+
+        // Remove description column after data migration
+        await connection.query(`ALTER TABLE news DROP COLUMN description`);
       }
 
       // Handle existing programs slug generation
@@ -1364,9 +1038,7 @@ const initializeDatabase = async () => {
         ['database_initialized']
       );
 
-      console.log('✅ Database initialization completed successfully!');
     } else {
-      console.log('⏭️  Database already initialized, running incremental migrations...');
       
       // Run incremental migrations for existing databases
       await runIncrementalMigrations(connection);
@@ -1383,7 +1055,6 @@ const initializeDatabase = async () => {
 
 // Initialize database immediately
 initializeDatabase().then(() => {
-  console.log('✅ Database connection established successfully!');
 }).catch(error => {
   console.error('❌ Database initialization failed:', error);
   process.exit(1);

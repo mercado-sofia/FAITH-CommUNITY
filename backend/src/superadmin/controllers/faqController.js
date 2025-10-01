@@ -63,7 +63,7 @@ export const createFaq = async (req, res) => {
 
   try {
     const [result] = await db.execute(
-      "INSERT INTO faqs (question, answer, status, created_at) VALUES (?, ?, ?, NOW())",
+      "INSERT INTO faqs (question, answer, status) VALUES (?, ?, ?)",
       [question.trim(), answer.trim(), status],
     )
 

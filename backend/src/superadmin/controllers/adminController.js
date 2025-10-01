@@ -31,7 +31,7 @@ export const loginAdmin = async (req, res) => {
       });
     }
     const [adminRows] = await db.execute(
-      `SELECT a.id, a.email, a.password, a.role, a.is_active, a.organization_id,
+      `SELECT a.id, a.email, a.password, a.is_active, a.organization_id,
               o.org, o.orgName, o.logo
        FROM admins a
        LEFT JOIN organizations o ON a.organization_id = o.id
@@ -60,7 +60,7 @@ export const loginAdmin = async (req, res) => {
       {
         id: admin.id,
         email: admin.email,
-        role: admin.role,
+        role: 'admin', // Fixed role for all admins
         organization_id: admin.organization_id,
         org: admin.org,
         orgName: admin.orgName,
@@ -95,7 +95,7 @@ export const loginAdmin = async (req, res) => {
         orgName: admin.orgName,
         logo: admin.logo,
         email: admin.email,
-        role: admin.role,
+        role: 'admin', // Fixed role for all admins
         status: admin.is_active ? "ACTIVE" : "INACTIVE",
       },
     })
@@ -135,7 +135,7 @@ export const verifyAdminToken = (req, res, next) => {
 export const getAllAdmins = async (req, res) => {
   try {
     const [rows] = await db.execute(
-      `SELECT a.id, a.email, a.role, a.is_active, a.organization_id, a.created_at, a.password_changed_at,
+      `SELECT a.id, a.email, a.is_active, a.organization_id, a.created_at, a.password_changed_at,
               o.org, o.orgName, o.logo
        FROM admins a
        LEFT JOIN organizations o ON a.organization_id = o.id
@@ -157,7 +157,7 @@ export const getAdminById = async (req, res) => {
 
   try {
     const [rows] = await db.execute(
-      `SELECT a.id, a.email, a.role, a.is_active, a.organization_id, a.created_at, a.password_changed_at,
+      `SELECT a.id, a.email, a.is_active, a.organization_id, a.created_at, a.password_changed_at,
               o.org, o.orgName, o.logo
        FROM admins a
        LEFT JOIN organizations o ON a.organization_id = o.id
@@ -236,11 +236,11 @@ export const updateAdmin = async (req, res) => {
       const saltRounds = 10
       const hashedPassword = await bcrypt.hash(password, saltRounds)
       
-      adminQuery = "UPDATE admins SET email = ?, password = ?, role = ?, is_active = ? WHERE id = ?"
-      adminParams = [updateData.email, hashedPassword, updateData.role, updateData.is_active, id]
+      adminQuery = "UPDATE admins SET email = ?, password = ?, is_active = ? WHERE id = ?"
+      adminParams = [updateData.email, hashedPassword, updateData.is_active, id]
     } else {
-      adminQuery = "UPDATE admins SET email = ?, role = ?, is_active = ? WHERE id = ?"
-      adminParams = [updateData.email, updateData.role, updateData.is_active, id]
+      adminQuery = "UPDATE admins SET email = ?, is_active = ? WHERE id = ?"
+      adminParams = [updateData.email, updateData.is_active, id]
     }
 
     await connection.execute(adminQuery, adminParams)
@@ -261,7 +261,7 @@ export const updateAdmin = async (req, res) => {
 
     // Get updated admin data with organization info
     const [updatedAdmin] = await db.execute(
-      `SELECT a.id, a.email, a.role, a.is_active, a.organization_id, a.created_at,
+      `SELECT a.id, a.email, a.is_active, a.organization_id, a.created_at,
               o.org, o.orgName
        FROM admins a
        LEFT JOIN organizations o ON a.organization_id = o.id
@@ -607,7 +607,7 @@ export const resetPassword = async (req, res) => {
 
     // Also update user password if email exists there
     await db.execute(
-      'UPDATE users SET password_hash = ? WHERE email = ?',
+      'UPDATE users SET password = ? WHERE email = ?',
       [hashedPassword, tokenData.email]
     )
 

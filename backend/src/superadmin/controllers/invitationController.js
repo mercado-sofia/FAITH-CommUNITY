@@ -244,7 +244,7 @@ export const acceptInvitation = async (req, res) => {
 
     // Create admin record
     const [adminResult] = await connection.execute(
-      `INSERT INTO admins (email, password_hash, is_active, organization_id, created_at) 
+      `INSERT INTO admins (email, password, is_active, organization_id, created_at) 
        VALUES (?, ?, TRUE, ?, NOW())`,
       [invitation.email, hashedPassword, organizationId]
     )

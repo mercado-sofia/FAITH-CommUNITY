@@ -227,7 +227,7 @@ export default function ProgramDetailsPage() {
       return formatEventDateWithWeekday(program.event_start_date);
     }
     
-    return 'Date not specified';
+    return 'Coming Soon';
   };
 
   const getApplicationContent = () => {

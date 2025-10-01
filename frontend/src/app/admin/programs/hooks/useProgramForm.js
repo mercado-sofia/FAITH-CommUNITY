@@ -169,14 +169,7 @@ export const useProgramForm = (mode = 'create', program = null) => {
       }
     });
 
-    // Special validation for dates - check if at least one date field has a value
-    const hasAnyDate = (formData.event_start_date && formData.event_start_date.trim() !== '') ||
-                      (formData.event_end_date && formData.event_end_date.trim() !== '') ||
-                      (formData.multiple_dates && Array.isArray(formData.multiple_dates) && formData.multiple_dates.length > 0);
-    
-    if (!hasAnyDate && VALIDATION_RULES.event_start_date.required) {
-      newErrors.event_start_date = ERROR_MESSAGES.event_start_date.required;
-    }
+    // Date validation is now optional - no special validation needed
 
     // Validate main image
     if (formData.image) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { FaCheckCircle, FaTimes } from 'react-icons/fa';
+import { FaCheckCircle, FaTimes, FaShieldAlt, FaLock, FaExclamationTriangle } from 'react-icons/fa';
 import { createPortal } from 'react-dom';
 
 /**
@@ -199,29 +199,167 @@ export default function ChangeSuccessModal({
               </div>
             </div>
           )}
+
+          {isPasswordChange && (
+            <div 
+              style={{
+                background: '#f8f9fa',
+                borderRadius: '8px',
+                padding: '1rem',
+                margin: '1rem 0',
+                border: '1px solid #e9ecef'
+              }}
+            >
+              <div 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  marginBottom: '0.75rem'
+                }}
+              >
+                <FaShieldAlt 
+                  style={{
+                    color: '#28a745',
+                    marginRight: '0.5rem',
+                    fontSize: '1.1rem'
+                  }}
+                />
+                <span 
+                  style={{
+                    fontWeight: 600,
+                    color: '#495057',
+                    fontSize: '0.95rem'
+                  }}
+                >
+                  Security Update Complete
+                </span>
+              </div>
+              
+              <div 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '0.5rem 0',
+                  borderBottom: '1px solid #e9ecef'
+                }}
+              >
+                <FaLock 
+                  style={{
+                    color: '#1A685B',
+                    marginRight: '0.5rem',
+                    fontSize: '0.9rem'
+                  }}
+                />
+                <span 
+                  style={{
+                    color: '#495057',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  Your password has been securely updated
+                </span>
+              </div>
+              
+              <div 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '0.5rem 0'
+                }}
+              >
+                <FaCheckCircle 
+                  style={{
+                    color: '#28a745',
+                    marginRight: '0.5rem',
+                    fontSize: '0.9rem'
+                  }}
+                />
+                <span 
+                  style={{
+                    color: '#495057',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  All active sessions have been updated
+                </span>
+              </div>
+            </div>
+          )}
           
           <div 
             style={{
-              background: '#e7f3ff',
-              border: '1px solid #b3d9ff',
+              background: isPasswordChange ? '#fff3cd' : '#e7f3ff',
+              border: isPasswordChange ? '1px solid #ffeaa7' : '1px solid #b3d9ff',
               borderRadius: '8px',
               padding: '1rem',
               margin: '1rem 0'
             }}
           >
-            <p 
-              style={{
-                margin: 0,
-                color: '#0066cc',
-                fontSize: '0.9rem',
-                textAlign: 'left'
-              }}
-            >
-              {isEmailChange 
-                ? 'Please use your new email address for future logins and communications.'
-                : 'Please use your new password for future logins. Keep it secure and don\'t share it with anyone.'
-              }
-            </p>
+            {isEmailChange ? (
+              <p 
+                style={{
+                  margin: 0,
+                  color: '#0066cc',
+                  fontSize: '0.9rem',
+                  textAlign: 'left'
+                }}
+              >
+                Please use your new email address for future logins and communications.
+              </p>
+            ) : (
+              <div>
+                <div 
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    marginBottom: '0.75rem'
+                  }}
+                >
+                  <FaExclamationTriangle 
+                    style={{
+                      color: '#856404',
+                      marginRight: '0.5rem',
+                      fontSize: '1rem'
+                    }}
+                  />
+                  <span 
+                    style={{
+                      fontWeight: 600,
+                      color: '#856404',
+                      fontSize: '0.95rem'
+                    }}
+                  >
+                    Important Security Information
+                  </span>
+                </div>
+                
+                <div 
+                  style={{
+                    color: '#856404',
+                    fontSize: '0.9rem',
+                    lineHeight: 1.5
+                  }}
+                >
+                  <p style={{ margin: '0 0 0.5rem 0' }}>
+                    <strong>Next Steps:</strong>
+                  </p>
+                  <ul style={{ margin: '0.5rem 0', paddingLeft: '1.2rem' }}>
+                    <li style={{ marginBottom: '0.25rem' }}>
+                      Use your new password for all future logins
+                    </li>
+                    <li style={{ marginBottom: '0.25rem' }}>
+                      Update your password in any password managers
+                    </li>
+                    <li style={{ marginBottom: '0.25rem' }}>
+                      Consider enabling two-factor authentication for extra security
+                    </li>
+                    <li>
+                      Never share your password with anyone
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         
@@ -256,7 +394,7 @@ export default function ChangeSuccessModal({
               e.target.style.transform = 'translateY(0)';
             }}
           >
-            Got it!
+            {isPasswordChange ? 'Understood' : 'Got it!'}
           </button>
         </div>
       </div>

@@ -21,7 +21,7 @@ export class SecurityMonitoring {
     
     try {
       await db.execute(
-        `INSERT INTO security_logs (event_type, severity, details, user_id, user_type, ip_address, user_agent) 
+        `INSERT INTO security_logs (action, severity, details, user_id, user_type, ip_address, user_agent) 
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [type, severity, JSON.stringify(details), userId, userType, ipAddress, userAgent]
       )
@@ -56,7 +56,7 @@ export class SecurityMonitoring {
     if (eventType === 'failed_login') {
       const [count] = await db.execute(
         `SELECT COUNT(*) as count FROM security_logs 
-         WHERE event_type = 'failed_login' AND created_at > ? AND ip_address = ?`,
+         WHERE action = 'failed_login' AND created_at > ? AND ip_address = ?`,
         [fifteenMin, ipAddress]
       )
       
@@ -73,7 +73,7 @@ export class SecurityMonitoring {
     if (eventType === 'password_reset_request') {
       const [count] = await db.execute(
         `SELECT COUNT(*) as count FROM security_logs 
-         WHERE event_type = 'password_reset_request' AND created_at > ? AND ip_address = ?`,
+         WHERE action = 'password_reset_request' AND created_at > ? AND ip_address = ?`,
         [oneHour, ipAddress]
       )
       
@@ -142,10 +142,10 @@ export class SecurityMonitoring {
     const since = new Date(Date.now() - hours * 60 * 60 * 1000)
     
     const [events] = await db.execute(
-      `SELECT event_type, severity, COUNT(*) as count 
+      `SELECT action, severity, COUNT(*) as count 
        FROM security_logs 
        WHERE created_at > ? 
-       GROUP BY event_type, severity`,
+       GROUP BY action, severity`,
       [since]
     )
     
@@ -170,7 +170,7 @@ export class SecurityMonitoring {
       await db.execute(`
         CREATE TABLE IF NOT EXISTS security_logs (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          event_type VARCHAR(100) NOT NULL,
+          action VARCHAR(100) NOT NULL,
           severity ENUM('info', 'warn', 'error', 'fatal') NOT NULL,
           details JSON NULL,
           user_id INT NULL,
@@ -178,7 +178,7 @@ export class SecurityMonitoring {
           ip_address VARCHAR(45) NULL,
           user_agent VARCHAR(500) NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          INDEX idx_event_type (event_type),
+          INDEX idx_action (action),
           INDEX idx_severity (severity),
           INDEX idx_created (created_at),
           INDEX idx_ip (ip_address)

@@ -3,7 +3,7 @@ import db from "../../database.js"
 import * as bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import { authenticator } from "otplib"
-import { logAdminAction } from "../../utils/audit.js"
+import { logAdminAction, logSuperadminAction } from "../../utils/audit.js"
 import { SessionSecurity } from "../../utils/sessionSecurity.js"
 import { LoginAttemptTracker } from "../../utils/loginAttemptTracker.js"
 
@@ -256,6 +256,9 @@ export const updateAdmin = async (req, res) => {
 
     await connection.commit()
 
+    // Log superadmin action
+    await logSuperadminAction(req.superadmin?.id, 'update_admin', `Updated admin ${id}: ${JSON.stringify(updateData)}`, req)
+
     // Get updated admin data with organization info
     const [updatedAdmin] = await db.execute(
       `SELECT a.id, a.email, a.role, a.is_active, a.organization_id, a.created_at,
@@ -326,6 +329,9 @@ export const deactivateAdmin = async (req, res) => {
 
     await connection.commit()
 
+    // Log superadmin action
+    await logSuperadminAction(req.superadmin?.id, 'deactivate_admin', `${action} admin ${id} (org: ${organizationId})`, req)
+
     res.json({ 
       message: `Admin ${action} successfully`,
       is_active: newStatus,
@@ -390,6 +396,9 @@ export const deleteAdmin = async (req, res) => {
     }
 
     await connection.commit()
+
+    // Log superadmin action
+    await logSuperadminAction(req.superadmin?.id, 'delete_admin', `Deleted admin ${id} (org: ${organizationId})`, req)
 
     res.json({ 
       message: "Admin deleted successfully",

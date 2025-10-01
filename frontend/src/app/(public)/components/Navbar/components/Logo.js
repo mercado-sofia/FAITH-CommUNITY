@@ -8,9 +8,10 @@ import styles from './styles/Logo.module.css';
 export default function Logo() {
   const { brandingData, isLoading } = usePublicBranding();
 
-  const logoSrc = brandingData?.logo_url
-    ? brandingData.logo_url
-    : '/assets/icons/placeholder.svg';
+  // Only show logo if brandingData.logo_url exists
+  if (!brandingData?.logo_url) {
+    return null;
+  }
 
   // name image priority:
   // 1) uploaded brandingData.name_url
@@ -22,7 +23,7 @@ export default function Logo() {
     <Link href="/" className={styles.logoContainer}>
       {/* Logo Image */}
       <Image
-        src={logoSrc}
+        src={brandingData.logo_url}
         alt="FAITH CommUNITY Logo"
         width={45}
         height={45}

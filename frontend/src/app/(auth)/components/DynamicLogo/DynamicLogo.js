@@ -22,9 +22,14 @@ export default function DynamicLogo({
     )
   }
 
+  // Only show logo if logoUrl exists
+  if (!logoUrl) {
+    return null
+  }
+
   return (
     <Image 
-      src={logoUrl || "/assets/logos/faith_logo.png"} 
+      src={logoUrl} 
       alt={alt} 
       width={width} 
       height={height}

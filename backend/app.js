@@ -390,9 +390,17 @@ app.use((req, res) => {
 })
 
 // Start Server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   if (process.env.NODE_ENV === "development") {
     console.log(`Server running at http://localhost:${PORT}`)
+  }
+
+  // Initialize database first
+  try {
+    const db = await import("./src/database.js");
+    console.log('✅ Database initialized successfully');
+  } catch (error) {
+    console.error('❌ Database initialization failed:', error);
   }
  
   // Set up daily cleanup job for deleted news (runs every 24 hours)
@@ -404,8 +412,13 @@ app.listen(PORT, () => {
     }
   }, 24 * 60 * 60 * 1000); // 24 hours in milliseconds
  
-  // Run initial cleanup on server start
-  cleanupDeletedNews().catch((error) => {
-    console.error('Initial cleanup failed:', error);
-  });
+  // Run initial cleanup on server start (with delay to ensure DB is ready)
+  setTimeout(async () => {
+    try {
+      await cleanupDeletedNews();
+      console.log('✅ Initial cleanup completed successfully');
+    } catch (error) {
+      console.error('Initial cleanup failed:', error);
+    }
+  }, 2000); // 2 second delay to ensure database is fully initialized
 })

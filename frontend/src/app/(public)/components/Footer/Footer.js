@@ -131,12 +131,13 @@ export default function Footer() {
       { threshold: 0.3 }
     );
 
+    // Only observe refs that have current elements
     [quickLinksRef, servicesRef, newsletterRef].forEach(ref => {
       if (ref.current) observer.observe(ref.current);
     });
 
     return () => observer.disconnect();
-  }, []);
+  }, [footerData?.services]); // Re-run when services data changes
 
   const isValidEmail = (val) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(val).trim());
@@ -360,28 +361,22 @@ export default function Footer() {
           </ul>
         </div>
 
-        <div className={styles.servicesSection}>
-          <h4
-            ref={servicesRef}
-            data-id="services"
-            className={`${styles.sectionHeading} ${visible.services ? styles.visible : ""}`}
-          >
-            Our Service
-          </h4>
-          <ul>
-            {footerData?.services?.map((service, index) => (
-              <li key={index}>{service.name || service}</li>
-            )) || (
-              <>
-                <li>Give Donation</li>
-                <li>Education Support</li>
-                <li>Food Support</li>
-                <li>Health Support</li>
-                <li>Our Campaign</li>
-              </>
-            )}
-          </ul>
-        </div>
+        {footerData?.services && Array.isArray(footerData.services) && footerData.services.length > 0 && (
+          <div className={styles.servicesSection}>
+            <h4
+              ref={servicesRef}
+              data-id="services"
+              className={`${styles.sectionHeading} ${visible.services ? styles.visible : ""}`}
+            >
+              Our Service
+            </h4>
+            <ul>
+              {footerData.services.map((service, index) => (
+                <li key={index}>{service.name || service}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className={styles.newsletter}>
           <h4

@@ -407,8 +407,10 @@ export default function PasswordChange({
           if (setShowModal) setShowModal(false);
           document.body.classList.remove('modalOpen');
           
-          // Show success modal
-          setShowSuccessModalState(true);
+          // Call the onSuccess callback to trigger the parent's success modal
+          if (onSuccess) {
+            onSuccess();
+          }
         } else {
           // For admin/superadmin, show success modal and close
           setShowSuccessModalState(true);

@@ -18,9 +18,12 @@ export const getBranding = async (req, res) => {
     const [rows] = await db.query('SELECT * FROM branding ORDER BY id DESC LIMIT 1');
     
     if (rows.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Branding settings not found' 
+      // For public endpoint, return success with null data instead of 404
+      // This allows the frontend to handle the case gracefully
+      return res.json({ 
+        success: true, 
+        data: null,
+        message: 'No branding settings found' 
       });
     }
 

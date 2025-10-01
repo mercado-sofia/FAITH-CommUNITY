@@ -37,7 +37,7 @@ export const VALIDATION_RULES = {
     maxLength: 50
   },
   event_start_date: {
-    required: true
+    required: false
   },
   image: {
     required: true,

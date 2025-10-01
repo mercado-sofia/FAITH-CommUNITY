@@ -57,7 +57,41 @@ const getDateInfo = (project) => {
 
 // Date Badge Component
 const DateBadge = ({ dateInfo, status }) => {
-  if (!dateInfo || status !== 'Upcoming') return null;
+  if (status !== 'Upcoming') return null;
+  
+  // If no date info, show TBA badge
+  if (!dateInfo) {
+    return (
+      <div className={styles.dateBadge} style={{ left: '-15px' }}>
+        <svg 
+          width="80" 
+          height="60" 
+          viewBox="0 0 80 60" 
+          className={styles.dateBadgeSvg}
+        >
+          {/* Use the short badge SVG */}
+          <image 
+            href="/assets/icons/BadgeShort.svg" 
+            width="80" 
+            height="60" 
+            preserveAspectRatio="xMidYMid slice"
+          />
+          {/* TBA text - centered */}
+          <text 
+            x="40" 
+            y="35"
+            textAnchor="middle" 
+            fill="white" 
+            fontSize="14" 
+            fontWeight="700"
+            className={styles.dateBadgeDay}
+          >
+            TBA
+          </text>
+        </svg>
+      </div>
+    );
+  }
   
   const { type, startDate, endDate } = dateInfo;
   

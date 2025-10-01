@@ -35,7 +35,6 @@ export default function EmailChange({
   setUserData,
   setShowModal
 }) {
-  const [showSuccessModalState, setShowSuccessModalState] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [otpToken, setOtpToken] = useState(null);
@@ -62,13 +61,6 @@ export default function EmailChange({
     return currentEmail || '';
   };
 
-  // Handle success modal close (for public users)
-  const handleSuccessModalClose = () => {
-    setShowSuccessModalState(false);
-    if (showSuccessModal) {
-      showSuccess('Your email has been successfully changed.');
-    }
-  };
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -253,8 +245,10 @@ export default function EmailChange({
         if (setShowModal) setShowModal(false);
         document.body.classList.remove('modalOpen');
         
-        // Show success modal
-        setShowSuccessModalState(true);
+        // Call the onSuccess callback to trigger the parent's success modal
+        if (onSuccess) {
+          onSuccess(newEmail, getCurrentEmail());
+        }
       } else {
         // Admin/Superadmin - handle new token if provided
         if (response.data?.token) {

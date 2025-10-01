@@ -258,7 +258,7 @@ export const formatProgramDates = (program) => {
       return formatDateShort(program.startDate);
     }
     
-    return 'Not specified';
+    return 'Coming Soon';
   } catch (error) {
     logger.error('Error in formatProgramDates', error, { program });
     return 'Invalid date';

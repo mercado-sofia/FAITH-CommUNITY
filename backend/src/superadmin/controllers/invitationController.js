@@ -2,6 +2,7 @@ import db from "../../database.js"
 import crypto from "crypto"
 import * as bcrypt from "bcrypt"
 import nodemailer from "nodemailer"
+import { logSuperadminAction } from "../../utils/audit.js"
 
 // Email configuration
 const createTransporter = () => {
@@ -123,6 +124,9 @@ export const sendInvitation = async (req, res) => {
       return res.status(500).json({ error: "Failed to send invitation email" })
     }
 
+    // Log superadmin action
+    await logSuperadminAction(req.superadmin?.id, 'send_invitation', `Sent admin invitation to ${email}`, req)
+
     res.status(201).json({
       message: "Invitation sent successfully",
       email: email
@@ -231,8 +235,8 @@ export const acceptInvitation = async (req, res) => {
 
     // Create organization record
     const [orgResult] = await connection.execute(
-      `INSERT INTO organizations (org, orgName, logo, status, org_color) 
-       VALUES (?, ?, ?, 'ACTIVE', '#444444')`,
+      `INSERT INTO organizations (org, orgName, logo, status) 
+       VALUES (?, ?, ?, 'ACTIVE')`,
       [org, orgName, logo]
     )
 
@@ -240,8 +244,8 @@ export const acceptInvitation = async (req, res) => {
 
     // Create admin record
     const [adminResult] = await connection.execute(
-      `INSERT INTO admins (email, password, role, is_active, organization_id, created_at) 
-       VALUES (?, ?, 'admin', TRUE, ?, NOW())`,
+      `INSERT INTO admins (email, password_hash, is_active, organization_id, created_at) 
+       VALUES (?, ?, TRUE, ?, NOW())`,
       [invitation.email, hashedPassword, organizationId]
     )
 
@@ -255,7 +259,7 @@ export const acceptInvitation = async (req, res) => {
 
     // Fetch the complete admin data with organization info
     const [adminWithOrg] = await connection.execute(
-      `SELECT a.id, a.email, a.role, a.is_active, a.organization_id, o.org, o.orgName
+      `SELECT a.id, a.email, a.is_active, a.organization_id, o.org, o.orgName
        FROM admins a
        LEFT JOIN organizations o ON a.organization_id = o.id
        WHERE a.id = ?`,
@@ -288,8 +292,7 @@ export const acceptInvitation = async (req, res) => {
       admin: {
         id: adminWithOrg[0].id,
         email: adminWithOrg[0].email,
-        role: adminWithOrg[0].role,
-        status: adminWithOrg[0].status,
+        is_active: adminWithOrg[0].is_active,
         organization_id: adminWithOrg[0].organization_id,
         org: adminWithOrg[0].org,
         orgName: adminWithOrg[0].orgName

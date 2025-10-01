@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import styles from './Tooltip.module.css';
 
 export default function Tooltip({ 
@@ -32,7 +32,7 @@ export default function Tooltip({
     setIsVisible(false);
   };
 
-  const calculatePosition = () => {
+  const calculatePosition = useCallback(() => {
     if (!triggerRef.current || !tooltipRef.current) return;
 
     const triggerRect = triggerRef.current.getBoundingClientRect();
@@ -81,7 +81,7 @@ export default function Tooltip({
     }
 
     setTooltipPosition({ top, left });
-  };
+  }, [position]);
 
   useEffect(() => {
     if (isVisible) {
@@ -98,7 +98,7 @@ export default function Tooltip({
         window.removeEventListener('scroll', handleScroll, true);
       };
     }
-  }, [isVisible]);
+  }, [isVisible, calculatePosition]);
 
   useEffect(() => {
     return () => {

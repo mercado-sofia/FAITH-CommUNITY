@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken"
 import crypto from "crypto"
 import { LoginAttemptTracker } from "../../utils/loginAttemptTracker.js"
 import { generateTwoFASecret, verifyTwoFAToken, generateTwoFAQRCode, generateSimpleQRCode, validateTwoFATokenFormat } from "../../utils/twoFA.js"
+import { logSuperadminAction } from "../../utils/audit.js"
 
 // JWT secret via env
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
@@ -79,6 +80,9 @@ export const loginSuperadmin = async (req, res) => {
 
     // Clear failed login attempts on successful login
     await LoginAttemptTracker.clearFailedAttempts(email, ipAddress, 'superadmin');
+    
+    // Log superadmin login action
+    await logSuperadminAction(superadmin.id, 'login', 'Superadmin logged in', req)
     
     res.json({
       message: "Login successful",

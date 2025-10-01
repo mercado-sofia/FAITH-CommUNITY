@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Set the correct workspace root to avoid lockfile detection warnings
+  outputFileTracingRoot: __dirname,
+  
   // Image optimization
   images: {
     remotePatterns: [

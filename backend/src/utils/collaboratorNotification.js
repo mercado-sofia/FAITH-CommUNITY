@@ -46,7 +46,7 @@ export const notifyCollaboratorsOnApproval = async (programId, programTitle) => 
           'programs',
           programId
         );
-        console.log(`✅ Notification result for ${collaborator.collaborator_admin_id}:`, result);
+        // Notification sent successfully
         notifiedCount++;
       } catch (notificationError) {
         console.error(`❌ Failed to send approval notification to collaborator ${collaborator.collaborator_admin_id}:`, notificationError);

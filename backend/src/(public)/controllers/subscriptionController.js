@@ -206,21 +206,6 @@ export const getAllSubscriptions = async (_req, res) => {
   }
 };
 
-/** Optional debug + fixer */
-export const debugSubscribers = async (_req, res) => {
-  try {
-    const [columns] = await db.execute('DESCRIBE subscribers');
-    const [countRows] = await db.execute('SELECT COUNT(*) AS total FROM subscribers');
-    const [sample] = await db.execute('SELECT * FROM subscribers ORDER BY id DESC LIMIT 5');
-    res.json({
-      structure: columns,
-      total: countRows[0]?.total ?? 0,
-      sample,
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
 
 export const fixSubscriptions = async (_req, res) => {
   try {

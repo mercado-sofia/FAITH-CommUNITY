@@ -1,6 +1,7 @@
 //db table: submissions
 import db from '../../database.js';
 import NotificationController from '../../admin/controllers/notificationController.js';
+import { logSuperadminAction } from '../../utils/audit.js';
 
 export const getPendingSubmissions = async (req, res) => {
   try {
@@ -377,9 +378,7 @@ export const approveSubmission = async (req, res) => {
         try {
           const { notifyCollaboratorsOnApproval } = await import('../../utils/collaboratorNotification.js');
           const notificationResult = await notifyCollaboratorsOnApproval(programId, data.title);
-          if (notificationResult.notifiedCount > 0) {
-            console.log(`✅ Notified ${notificationResult.notifiedCount} collaborators about program approval`);
-          }
+          // Collaborators notified successfully
           if (notificationResult.errors.length > 0) {
             console.error('❌ Some collaborator notifications failed:', notificationResult.errors);
           }
@@ -425,6 +424,9 @@ export const approveSubmission = async (req, res) => {
     }
 
     // Note: Collaborator notifications are handled within the section-specific blocks
+
+    // Log superadmin action
+    await logSuperadminAction(req.superadmin?.id, 'approve_submission', `Approved submission ${id} (${section}) for org ${orgId}`, req)
 
     res.json({ success: true, message: 'Submission approved and applied.' });
   } catch (err) {
@@ -485,6 +487,9 @@ export const rejectSubmission = async (req, res) => {
 
     if (!notificationResult.success) {
     }
+
+    // Log superadmin action
+    await logSuperadminAction(req.superadmin?.id, 'reject_submission', `Rejected submission ${id} (${submission.section}) for org ${submission.organization_id}`, req)
 
     res.json({ 
       success: true, 
@@ -803,9 +808,7 @@ export const bulkApproveSubmissions = async (req, res) => {
           try {
             const { notifyCollaboratorsOnApproval } = await import('../../utils/collaboratorNotification.js');
             const collaboratorNotificationResult = await notifyCollaboratorsOnApproval(programId, data.title);
-            if (collaboratorNotificationResult.notifiedCount > 0) {
-              console.log(`✅ Notified ${collaboratorNotificationResult.notifiedCount} collaborators about program approval (bulk)`);
-            }
+            // Collaborators notified successfully (bulk)
             if (collaboratorNotificationResult.errors.length > 0) {
               console.error('❌ Some collaborator notifications failed (bulk):', collaboratorNotificationResult.errors);
             }

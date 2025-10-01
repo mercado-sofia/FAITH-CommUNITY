@@ -33,14 +33,14 @@ export const useDynamicLogo = () => {
           setLogoNameUrl(data.data.name_url)
           setFaviconUrl(data.data.favicon_url)
         } else {
-          // If no branding data, use default logo
-          setLogoUrl('/assets/logos/faith_logo.png')
+          // If no branding data, don't set any logo
+          setLogoUrl(null)
         }
       } catch (err) {
         console.error('Error fetching dynamic logo:', err)
         setError(err.message)
-        // Fallback to default logo on error
-        setLogoUrl('/assets/logos/faith_logo.png')
+        // Don't set any logo on error
+        setLogoUrl(null)
       } finally {
         setIsLoading(false)
       }

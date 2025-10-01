@@ -30,7 +30,7 @@ export default function OrgBanner() {
       <section className={styles.orgSection}>
         <h2 className={styles.orgHeading}>Error Loading Organizations</h2>
         <div className={styles.errorWrapper}>
-          <p>Failed to load organizations: {error}</p>
+          <p>Failed to load organizations: {error?.message || String(error)}</p>
           <button onClick={() => window.location.reload()} className={styles.retryButton}>
             Try Again
           </button>

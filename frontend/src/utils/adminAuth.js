@@ -3,23 +3,18 @@
  * Handles token validation, refresh attempts, and secure redirects for both admin and superadmin users
  */
 
+import { clearAuthImmediate, USER_TYPES } from './authService';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 /**
  * Clear all authentication data and redirect to login
+ * Now uses centralized cleanup for security
  */
 export const clearAuthAndRedirect = (userType = 'admin') => {
-  if (userType === 'admin') {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminData');
-  } else if (userType === 'superadmin') {
-    localStorage.removeItem('superAdminToken');
-    localStorage.removeItem('superAdminData');
-    localStorage.removeItem('token');
-  }
-  
-  localStorage.removeItem('userRole');
-  document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  // Use centralized immediate cleanup for security
+  const userTypeEnum = userType === 'admin' ? USER_TYPES.ADMIN : USER_TYPES.SUPERADMIN;
+  clearAuthImmediate(userTypeEnum);
   window.location.href = '/login';
 };
 
@@ -147,7 +142,6 @@ export const validateTokenAndGetUser = async (userType = 'admin') => {
       return data;
     }
   } catch (error) {
-    console.error('Error fetching user data:', error);
   }
   
   return null;

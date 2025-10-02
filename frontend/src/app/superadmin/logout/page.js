@@ -2,15 +2,19 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FiLogOut } from 'react-icons/fi'
+import { logout, USER_TYPES } from '@/utils/authService'
 import styles from '../components/Sidebar/Sidebar.module.css'
 
 export default function LogoutModalTrigger() {
   const [showModal, setShowModal] = useState(false)
   const router = useRouter()
 
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    window.location.href = '/login'
+  const handleLogout = async () => {
+    await logout(USER_TYPES.SUPERADMIN, {
+      showLoader: false,
+      redirect: true,
+      redirectPath: '/login'
+    })
   }
 
   return (

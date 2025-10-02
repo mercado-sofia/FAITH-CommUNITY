@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { FiEdit3, FiUpload, FiTrash2 } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import { ConfirmationModal } from '@/components';
+import { getOrganizationImageUrl } from '@/utils/uploadPaths';
 import styles from './HeadManagement.module.css';
 
 export default function HeadManagement({ showSuccessModal }) {
@@ -305,7 +306,7 @@ export default function HeadManagement({ showSuccessModal }) {
               <div className={styles.imageContainer}>
                 {formData.image_url ? (
                   <Image
-                    src={formData.image_url}
+                    src={getOrganizationImageUrl(formData.image_url, 'head')}
                     alt="Head of FACES"
                     width={200}
                     height={200}

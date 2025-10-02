@@ -97,7 +97,6 @@ export default function LoginPage() {
         setForgotPasswordMessage("Failed to send reset emails. Please try again.")
       }
     } catch (error) {
-      console.error("Forgot password error:", error)
       setForgotPasswordMessage("Network error. Please try again.")
     }
 
@@ -257,7 +256,6 @@ export default function LoginPage() {
         setFieldErrors({ email: "Invalid email or password", password: "Invalid email or password" })
       }
     } catch (error) {
-      console.error("Login error:", error)
       setErrorMessage("Network error. Please check your connection and try again.")
       setShowError(true)
       setFieldErrors({ email: "Network error", password: "Network error" })

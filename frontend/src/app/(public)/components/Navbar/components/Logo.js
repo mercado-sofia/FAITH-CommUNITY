@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePublicBranding } from '../../../hooks/usePublicData';
+import { getBrandingImageUrl } from '@/utils/uploadPaths';
 import styles from './styles/Logo.module.css';
 
 export default function Logo() {
@@ -17,13 +18,13 @@ export default function Logo() {
   // 1) uploaded brandingData.name_url
   // 2) local /assets/logos/text-logo.png (public folder)
   // 3) fallback text
-  const nameImageSrc = brandingData?.name_url ? brandingData.name_url : '/assets/logos/text-logo.png';
+  const nameImageSrc = getBrandingImageUrl(brandingData?.name_url, 'name');
 
   return (
     <Link href="/" className={styles.logoContainer}>
       {/* Logo Image */}
       <Image
-        src={brandingData.logo_url}
+        src={getBrandingImageUrl(brandingData.logo_url, 'logo')}
         alt="FAITH CommUNITY Logo"
         width={45}
         height={45}

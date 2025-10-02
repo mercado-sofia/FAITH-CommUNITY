@@ -1,4 +1,4 @@
-export { default as BrandingManagement } from './Branding/BrandingManagementComponent';
+export { default as BrandingManagement } from './Branding/BrandingManagement';
 export { default as SiteNameManagement } from './SiteName/SiteNameManagement';
 export { default as FooterContentManagement } from './FooterContent/FooterContentManagement';
 export { default as AboutUsManagement } from './AboutUs/AboutUsManagement';

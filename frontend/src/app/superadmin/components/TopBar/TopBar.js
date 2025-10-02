@@ -208,11 +208,13 @@ export default function TopBar() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('superAdminToken');
-    localStorage.removeItem('superAdminData');
-    document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    window.location.href = '/login';
+  const handleLogout = async () => {
+    const { logout, USER_TYPES } = await import('@/utils/authService');
+    await logout(USER_TYPES.SUPERADMIN, {
+      showLoader: false,
+      redirect: true,
+      redirectPath: '/login'
+    });
   };
 
   const toggleNotifications = (e) => {

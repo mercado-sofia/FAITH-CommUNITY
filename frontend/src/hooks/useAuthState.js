@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { logout as authServiceLogout, USER_TYPES } from '@/utils/authService';
 
 export const useAuthState = () => {
   const [user, setUser] = useState(null);
@@ -12,13 +13,12 @@ export const useAuthState = () => {
       const payload = JSON.parse(atob(token.split('.')[1]));
       return payload.exp * 1000 > Date.now();
     } catch (error) {
-      console.error('Token validation error:', error);
       return false;
     }
   }, []);
 
   // Initialize auth state from localStorage
-  const initializeAuth = useCallback(() => {
+  const initializeAuth = useCallback(async () => {
     try {
       const token = localStorage.getItem('userToken');
       const storedUserData = localStorage.getItem('userData');
@@ -30,22 +30,16 @@ export const useAuthState = () => {
       } else {
         // Clear invalid data only if we have user-related data
         if (token || (storedUserData && storedUserData !== 'undefined' && storedUserData !== 'null')) {
-          localStorage.removeItem('userToken');
-          localStorage.removeItem('userData');
-          localStorage.removeItem('token');
-          localStorage.removeItem('userRole');
-          localStorage.removeItem('userEmail');
-          localStorage.removeItem('userName');
-          document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-          document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          // Use centralized immediate cleanup for security
+          const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
+          clearAuthImmediate(USER_TYPES.PUBLIC);
         }
         setUser(null);
       }
     } catch (error) {
-      console.error('Auth initialization error:', error);
-      // Clear corrupted data
-      localStorage.removeItem('userToken');
-      localStorage.removeItem('userData');
+      // Clear corrupted data using centralized cleanup
+      const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
+      clearAuthImmediate(USER_TYPES.PUBLIC);
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -62,54 +56,14 @@ export const useAuthState = () => {
     return localStorage.getItem('userToken');
   }, []);
 
-  // Logout function
-  const logout = useCallback(async () => {
-    try {
-      const token = localStorage.getItem('userToken');
-      
-      if (token) {
-        // Call logout API in background
-        fetch('http://localhost:8080/api/users/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }).catch(error => {
-          // Logout API call failed, but continuing with client-side logout
-        });
-      }
-
-      // Clear all auth data
-      localStorage.removeItem('userToken');
-      localStorage.removeItem('userData');
-      localStorage.removeItem('token');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('userEmail');
-      localStorage.removeItem('userName');
-      document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      
-      // Don't update user state here - let the page refresh handle it
-      // This prevents the navbar from showing changes before the refresh
-      
-      // Refresh page immediately
-      window.location.href = '/';
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Even if there's an error, clear data and refresh
-      localStorage.removeItem('userToken');
-      localStorage.removeItem('userData');
-      localStorage.removeItem('token');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('userEmail');
-      localStorage.removeItem('userName');
-      document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      
-      // Don't update user state here - let the page refresh handle it
-      window.location.href = '/';
-    }
+  // Logout function - now uses centralized auth service
+  const logout = useCallback(async (options = {}) => {
+    await authServiceLogout(USER_TYPES.PUBLIC, {
+      showLoader: true,
+      redirect: true,
+      redirectPath: '/',
+      ...options
+    });
   }, []);
 
   // Initialize auth on mount

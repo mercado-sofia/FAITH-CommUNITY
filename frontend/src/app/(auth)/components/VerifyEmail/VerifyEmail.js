@@ -45,7 +45,6 @@ export default function VerifyEmail({ token }) {
         setMessage(data.error || 'Verification failed')
       }
     } catch (error) {
-      console.error('Verification error:', error)
       setVerificationStatus('error')
       setMessage('Network error. Please try again.')
     }
@@ -75,7 +74,6 @@ export default function VerifyEmail({ token }) {
         setResendMessage(data.error || 'Failed to resend verification email')
       }
     } catch (error) {
-      console.error('Resend error:', error)
       setResendMessage('Network error. Please try again.')
     }
 

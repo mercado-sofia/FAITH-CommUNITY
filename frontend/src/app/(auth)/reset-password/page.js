@@ -44,7 +44,6 @@ export default function ResetPasswordPage() {
         setMessage(data?.error || "Invalid or expired reset link. Please request a new password reset.")
       }
     } catch (error) {
-      console.error("Token validation error:", error)
       setIsTokenValid(false)
       setMessage("Network error. Please try again.")
     } finally {
@@ -100,7 +99,6 @@ export default function ResetPasswordPage() {
         setMessage(data?.error || "Failed to reset password")
       }
     } catch (error) {
-      console.error("Reset password error:", error)
       setMessage("Network error. Please try again.")
     }
     setIsLoading(false)

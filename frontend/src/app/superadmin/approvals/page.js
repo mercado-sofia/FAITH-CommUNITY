@@ -18,12 +18,9 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 const makeAuthenticatedRequest = async (url, options = {}) => {
   const token = localStorage.getItem('superAdminToken');
   if (!token) {
-    // Clear invalid data and redirect to login
-    localStorage.removeItem('superAdminToken');
-    localStorage.removeItem('superAdminData');
-    localStorage.removeItem('token');
-    localStorage.removeItem('userRole');
-    document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    // Use centralized immediate cleanup for security
+    const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
+    clearAuthImmediate(USER_TYPES.SUPERADMIN);
     window.location.href = '/login';
     return null;
   }
@@ -44,12 +41,9 @@ const makeAuthenticatedRequest = async (url, options = {}) => {
   }
 
   if (response.status === 401) {
-    // Token expired or invalid - redirect to login
-    localStorage.removeItem('superAdminToken');
-    localStorage.removeItem('superAdminData');
-    localStorage.removeItem('token');
-    localStorage.removeItem('userRole');
-    document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    // Token expired or invalid - use centralized cleanup
+    const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
+    clearAuthImmediate(USER_TYPES.SUPERADMIN);
     window.location.href = '/login';
     return null;
   }

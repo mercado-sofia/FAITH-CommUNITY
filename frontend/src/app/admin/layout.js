@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { initializeAuth } from "../../rtk/superadmin/adminSlice";
 import { NavigationProvider } from "../../contexts/NavigationContext";
+import { clearAuthImmediate, USER_TYPES } from "../../utils/authService";
 import Sidebar from "./components/Sidebar/Sidebar";
 import TopBar from "./components/TopBar/TopBar";
 import { ErrorBoundary, Loader } from "@/components";
@@ -36,6 +37,7 @@ let adminInitialized = false;
 function AdminLayoutContent({ children }) {
   const dispatch = useDispatch();
   const router = useRouter();
+  const adminError = useSelector(state => state.admin.error);
   const [isInitialLoading, setIsInitialLoading] = useState(!adminInitialized);
 
   useEffect(() => {
@@ -58,9 +60,8 @@ function AdminLayoutContent({ children }) {
         const userRole = document.cookie.includes('userRole=admin');
         
         if (!token || !adminData || !userRole) {
-          localStorage.removeItem('adminToken');
-          localStorage.removeItem('adminData');
-          document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          // Use centralized immediate cleanup for security
+          clearAuthImmediate(USER_TYPES.ADMIN);
           window.location.href = '/login';
           return;
         }
@@ -72,15 +73,23 @@ function AdminLayoutContent({ children }) {
         setIsInitialLoading(false);
       } catch (error) {
         logger.error('Error initializing admin', error, { context: 'admin_initialization' });
-        localStorage.removeItem('adminToken');
-        localStorage.removeItem('adminData');
-        document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        // Use centralized immediate cleanup for security
+        clearAuthImmediate(USER_TYPES.ADMIN);
         window.location.href = '/login';
       }
     };
 
     initializeAdmin();
   }, [dispatch, router]);
+
+  // Handle authentication errors from Redux
+  useEffect(() => {
+    if (adminError === "Invalid authentication data") {
+      // Use centralized immediate cleanup for security
+      clearAuthImmediate(USER_TYPES.ADMIN);
+      window.location.href = '/login';
+    }
+  }, [adminError]);
 
   // Show full-screen loader only on initial page load/reload
   if (isInitialLoading) {

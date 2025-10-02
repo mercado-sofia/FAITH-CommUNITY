@@ -97,9 +97,9 @@ export const useEmailChange = (userType) => {
       
       if (errorMessage.includes('session has expired') || errorMessage.includes('token')) {
         if (userType === 'public') {
-          // For public users, just clear localStorage
-          localStorage.removeItem('userToken');
-          localStorage.removeItem('userData');
+          // For public users, use centralized cleanup
+          const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
+          clearAuthImmediate(USER_TYPES.PUBLIC);
           window.location.href = '/login';
         } else {
           showAuthError('Your session has expired. Please log in again.');
@@ -166,9 +166,9 @@ export const useEmailChange = (userType) => {
       
       if (errorMessage.includes('session has expired') || errorMessage.includes('token')) {
         if (userType === 'public') {
-          // For public users, just clear localStorage
-          localStorage.removeItem('userToken');
-          localStorage.removeItem('userData');
+          // For public users, use centralized cleanup
+          const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
+          clearAuthImmediate(USER_TYPES.PUBLIC);
           window.location.href = '/login';
         } else {
           showAuthError('Your session has expired. Please log in again.');

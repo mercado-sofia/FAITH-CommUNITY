@@ -40,13 +40,6 @@ export const getImageUrl = (imagePath, type = 'programs', subType = 'main') => {
     return 'IMAGE_UNAVAILABLE';
   } catch (error) {
     // More detailed error logging
-    console.error('Error in getImageUrl:', {
-      error: error.message,
-      imagePath: imagePath,
-      imagePathType: typeof imagePath,
-      type: type,
-      subType: subType
-    });
     return 'IMAGE_UNAVAILABLE';
   }
 };
@@ -159,6 +152,56 @@ export const getProfilePhotoUrl = (imagePath) => {
   } catch (error) {
     logger.error('Error in getProfilePhotoUrl', error, { imagePath });
     return '/defaults/default-profile.png';
+  }
+};
+
+/**
+ * Get branding image URL (logo, name, favicon)
+ * @param {string} imagePath - Image path from database
+ * @param {string} type - 'logo', 'name', or 'favicon'
+ * @returns {string} Full URL
+ */
+export const getBrandingImageUrl = (imagePath, type = 'logo') => {
+  try {
+    if (!imagePath) {
+      // Return appropriate fallback based on type
+      switch (type) {
+        case 'logo':
+          return '/assets/logos/faith_logo.png';
+        case 'name':
+          return '/assets/logos/text-logo.png';
+        case 'favicon':
+          return '/favicon.ico';
+        default:
+          return '/assets/logos/faith_logo.png';
+      }
+    }
+    
+    // If it's already a full URL or base64, return as is
+    if (imagePath.startsWith('http') || imagePath.startsWith('data:')) {
+      return imagePath;
+    }
+    
+    // If it's a Cloudinary public_id, construct the URL
+    if (imagePath.includes('faith-community/')) {
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'djty9l7zw';
+      return `https://res.cloudinary.com/${cloudName}/image/upload/${imagePath}`;
+    }
+    
+    // If it's not a Cloudinary URL, return fallback
+    switch (type) {
+      case 'logo':
+        return '/assets/logos/faith_logo.png';
+      case 'name':
+        return '/assets/logos/text-logo.png';
+      case 'favicon':
+        return '/favicon.ico';
+      default:
+        return '/assets/logos/faith_logo.png';
+    }
+  } catch (error) {
+    logger.error('Error in getBrandingImageUrl', error, { imagePath, type });
+    return '/assets/logos/faith_logo.png';
   }
 };
 

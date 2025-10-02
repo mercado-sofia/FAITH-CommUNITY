@@ -156,7 +156,6 @@ export default function EmailChange({
       }
       
     } catch (error) {
-      console.error('Email change request failed:', error);
       
       // Handle server error by showing field-specific error
       let errorMessage = 'Failed to request email change';

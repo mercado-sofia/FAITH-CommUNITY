@@ -106,8 +106,8 @@ export const uploadLogo = async (req, res) => {
     
     if (existingRows.length === 0) {
       await db.query(
-        'INSERT INTO branding (logo_url, favicon_url) VALUES (?, ?)',
-        [logoUrl, null]
+        'INSERT INTO branding (logo_url, name_url, favicon_url) VALUES (?, ?, ?)',
+        [logoUrl, null, null]
       );
     } else {
       // Delete old logo from Cloudinary if it exists
@@ -178,8 +178,8 @@ export const uploadFavicon = async (req, res) => {
     
     if (existingRows.length === 0) {
       await db.query(
-        'INSERT INTO branding (logo_url, favicon_url) VALUES (?, ?)',
-        [null, faviconUrl]
+        'INSERT INTO branding (logo_url, name_url, favicon_url) VALUES (?, ?, ?)',
+        [null, null, faviconUrl]
       );
     } else {
       // Delete old favicon from Cloudinary if it exists

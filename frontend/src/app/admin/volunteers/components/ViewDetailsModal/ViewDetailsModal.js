@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import { formatDateShort } from '@/utils/dateUtils.js'
 
 import styles from './ViewDetailsModal.module.css'
-import { IoClose } from "react-icons/io5"
+import { IoClose, IoPerson, IoMail, IoDocumentText } from "react-icons/io5"
 
 export default function VolunteerDetailModal({ app, onClose }) {
   const reasonTextareaRef = useRef(null)
@@ -17,86 +17,105 @@ export default function VolunteerDetailModal({ app, onClose }) {
       textarea.style.height = textarea.scrollHeight + 'px'
     }
   }, [app.reason])
+
   return (
     <div className={styles.modal}>
-      <div className={styles.modalContentScrollable}>
-        <button className={styles.closeIcon} onClick={onClose}>
-          <IoClose />
-        </button>
+      <div className={styles.modalContent}>
+        <div className={styles.modalHeader}>
+          <h2 className={styles.modalTitle}>Volunteer Application Details</h2>
+          <button className={styles.closeButton} onClick={onClose}>
+            <IoClose />
+          </button>
+        </div>
 
-        <h3 className={styles.modalHeading}>{app.name}&apos;s Application</h3>
+        <div className={styles.applicantHeader}>
+          <div className={styles.applicantName}>{app.name}</div>
+          <div className={styles.applicantProgram}>{app.program}</div>
+        </div>
 
-        <div className={styles.contentContainer}>
-          {/* Personal Information Section */}
-          <section className={styles.section}>
-            <h4 className={styles.sectionTitle}>Personal Information</h4>
-            <div className={styles.fieldGrid}>
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Full Name</label>
-                <div className={styles.fieldValue}>{app.name}</div>
+        <div className={styles.contentWrapper}>
+          <div className={styles.contentGrid}>
+          {/* Personal Information */}
+          <div className={styles.infoCard}>
+            <div className={styles.cardHeader}>
+              <IoPerson className={styles.cardIcon} />
+              <h3 className={styles.cardTitle}>Personal Information</h3>
+            </div>
+            <div className={styles.infoItem}>
+              <span className={styles.infoLabel}>Full Name</span>
+              <span className={styles.infoValue}>{app.name}</span>
+            </div>
+            <div className={styles.infoRow}>
+              <div className={styles.infoItem}>
+                <span className={styles.infoLabel}>Gender</span>
+                <span className={styles.infoValue}>{app.gender}</span>
               </div>
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Gender</label>
-                <div className={styles.fieldValue}>{app.gender}</div>
-              </div>
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Age</label>
-                <div className={styles.fieldValue}>{app.age}</div>
-              </div>
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Citizenship</label>
-                <div className={styles.fieldValue}>{app.citizenship}</div>
-              </div>
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Occupation</label>
-                <div className={styles.fieldValue}>{app.occupation}</div>
+              <div className={styles.infoItem}>
+                <span className={styles.infoLabel}>Age</span>
+                <span className={styles.infoValue}>{app.age}</span>
               </div>
             </div>
-          </section>
-
-          {/* Contact Information Section */}
-          <section className={styles.section}>
-            <h4 className={styles.sectionTitle}>Contact Information</h4>
-            <div className={styles.fieldGrid}>
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Email</label>
-                <div className={styles.fieldValue}>{app.email}</div>
+            <div className={styles.infoGrid}>
+              <div className={styles.infoItem}>
+                <span className={styles.infoLabel}>Citizenship</span>
+                <span className={styles.infoValue}>{app.citizenship}</span>
               </div>
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Contact Number</label>
-                <div className={styles.fieldValue}>{app.contact}</div>
-              </div>
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Address</label>
-                <div className={styles.fieldValue}>{app.address}</div>
+              <div className={styles.infoItem}>
+                <span className={styles.infoLabel}>Occupation</span>
+                <span className={styles.infoValue}>{app.occupation}</span>
               </div>
             </div>
-          </section>
+          </div>
 
-          {/* Application Details Section */}
-          <section className={styles.section}>
-            <h4 className={styles.sectionTitle}>Application Details</h4>
-            <div className={styles.fieldGrid}>
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Program</label>
-                <div className={styles.fieldValue}>{app.program}</div>
+          {/* Contact Information */}
+          <div className={styles.infoCard}>
+            <div className={styles.cardHeader}>
+              <IoMail className={styles.cardIcon} />
+              <h3 className={styles.cardTitle}>Contact Information</h3>
+            </div>
+            <div className={styles.infoGrid}>
+              <div className={styles.infoItem}>
+                <span className={styles.infoLabel}>Email Address</span>
+                <span className={styles.infoValue}>{app.email}</span>
               </div>
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Submitted on</label>
-                <div className={styles.fieldValue}>
+              <div className={styles.infoItem}>
+                <span className={styles.infoLabel}>Contact Number</span>
+                <span className={styles.infoValue}>{app.contact}</span>
+              </div>
+              <div className={styles.infoItem}>
+                <span className={styles.infoLabel}>Address</span>
+                <span className={styles.infoValue}>{app.address}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Application Details */}
+          <div className={styles.infoCard}>
+            <div className={styles.cardHeader}>
+              <IoDocumentText className={styles.cardIcon} />
+              <h3 className={styles.cardTitle}>Application Details</h3>
+            </div>
+            <div className={styles.infoGrid}>
+              <div className={styles.infoItem}>
+                <span className={styles.infoLabel}>Program Applied</span>
+                <span className={styles.infoValue}>{app.program}</span>
+              </div>
+              <div className={styles.infoItem}>
+                <span className={styles.infoLabel}>Application Date</span>
+                <span className={styles.infoValue}>
                   {app.date ? formatDateShort(app.date) : 'N/A'}
-                </div>
+                </span>
               </div>
             </div>
-            <div className={styles.fieldGroup}>
-              <label className={styles.fieldLabel}>Reason for Application</label>
-              <div className={styles.fieldValue} ref={reasonTextareaRef}>
+            <div className={styles.reasonSection}>
+              <span className={styles.infoLabel}>Reason for Application</span>
+              <div className={styles.reasonText} ref={reasonTextareaRef}>
                 {app.reason}
               </div>
             </div>
-          </section>
+          </div>
+          </div>
         </div>
-
       </div>
     </div>
   )

@@ -7,6 +7,7 @@ import Image from 'next/image';
 import styles from './BrandingManagement.module.css';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import { ConfirmationModal } from '@/components';
+import { getBrandingImageUrl } from '@/utils/uploadPaths';
 
 export default function BrandingManagementComponent({ showSuccessModal }) {
   const [brandingData, setBrandingData] = useState(null);
@@ -60,9 +61,8 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
       const token = localStorage.getItem('superAdminToken');
       if (!token) {
         showSuccessModal('Authentication required. Please log in again.');
-        return;
+        return null;
       }
-
 
       const response = await fetch(`${baseUrl}/api/superadmin/branding/upload-${type}`, {
         method: 'POST',
@@ -73,19 +73,23 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
         body: formData,
       });
 
-
       if (response.ok) {
         const data = await response.json();
+        const fileUrl = data.data[`${type}_url`];
+        
+        // Update state immediately for individual uploads
         setBrandingData(prev => ({
           ...prev,
-          [`${type}_url`]: data.data[`${type}_url`]
+          [`${type}_url`]: fileUrl
         }));
-        showSuccessModal(`${type === 'logo' ? 'Logo' : 'Favicon'} uploaded successfully!`);
+        
+        // Return the URL for batch uploads
+        return fileUrl;
       } else {
         // Handle 401 responses
         if (response.status === 401) {
           showSuccessModal('Authentication expired. Please log in again.');
-          return;
+          return null;
         }
         
         let errorMessage = `Failed to upload ${type}`;
@@ -97,9 +101,11 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
           errorMessage = response.statusText || errorMessage;
         }
         showSuccessModal(errorMessage);
+        return null;
       }
     } catch (error) {
       showSuccessModal(`Failed to upload ${type}. Please try again.`);
+      return null;
     }
   };
 
@@ -166,7 +172,7 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
     if (!isEditingBranding) {
       setTempBrandingData({
         logo_url: brandingData?.logo_url || '',
-        logo_name: brandingData?.logo_name || '',
+        name_url: brandingData?.name_url || '',
         favicon_url: brandingData?.favicon_url || ''
       });
     }
@@ -182,8 +188,10 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
 
   // Branding update handler
   const handleBrandingUpdate = () => {
-    if (!tempBrandingData.logo_name?.trim()) {
-      showSuccessModal('Logo name cannot be empty');
+    // Check if there's either an existing logo name image or a selected file for upload
+    const hasLogoName = brandingData?.name_url || selectedFiles.name;
+    if (!hasLogoName) {
+      showSuccessModal('Logo name image is required. Please upload a logo name image.');
       return;
     }
     setShowBrandingModal(true);
@@ -200,7 +208,18 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
         for (const [fileType, file] of Object.entries(selectedFiles)) {
           try {
             const fileUrl = await handleFileUpload(file, fileType);
-            finalBrandingData[`${fileType}_url`] = fileUrl;
+            if (!fileUrl) {
+              showSuccessModal(`Failed to upload ${fileType}. Please try again.`);
+              return;
+            }
+            // Map file type to correct field name
+            const fieldMap = {
+              'logo': 'logo_url',
+              'name': 'name_url',
+              'favicon': 'favicon_url'
+            };
+            const fieldName = fieldMap[fileType] || `${fileType}_url`;
+            finalBrandingData[fieldName] = fileUrl;
           } catch (error) {
             showSuccessModal(`Failed to upload ${fileType}. Please try again.`);
             return;
@@ -243,7 +262,6 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
   const handleBrandingCancel = () => {
     setShowBrandingModal(false);
   };
-
 
   return (
     <div className={styles.settingsPanel}>
@@ -303,7 +321,7 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
             {brandingData?.logo_url ? (
               <div className={styles.preview}>
                 <Image 
-                  src={brandingData.logo_url} 
+                  src={getBrandingImageUrl(brandingData.logo_url, 'logo')} 
                   alt="Logo" 
                   width={100}
                   height={100}
@@ -392,7 +410,7 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
             {brandingData?.name_url ? (
               <div className={styles.preview}>
                 <Image 
-                  src={brandingData.name_url} 
+                  src={getBrandingImageUrl(brandingData.name_url, 'name')} 
                   alt="Logo Name" 
                   width={100}
                   height={100}
@@ -481,7 +499,7 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
             {brandingData?.favicon_url ? (
               <div className={styles.preview}>
                 <Image 
-                  src={brandingData.favicon_url} 
+                  src={getBrandingImageUrl(brandingData.favicon_url, 'favicon')} 
                   alt="Favicon" 
                   width={64}
                   height={64}
@@ -569,7 +587,7 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
         isOpen={showBrandingModal}
         itemName="Branding"
         itemType="all changes"
-        actionType="save"
+        actionType="update"
         onConfirm={handleBrandingConfirm}
         onCancel={handleBrandingCancel}
         isDeleting={isUpdatingBranding}

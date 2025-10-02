@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthState } from '@/hooks/useAuthState';
+import { logout, USER_TYPES } from '@/utils/authService';
 import { useDropdown } from '@/hooks/useDropdown';
 import { Logo, NavigationLinks, NotificationsDropdown, ProfileDropdown, LogoutModal, MobileSidebar } from './components';
 import styles from './Navbar.module.css';
@@ -78,52 +79,14 @@ export default function Navbar() {
   };
 
   const handleConfirmLogout = async () => {
-    try {
-      // Show logout loader
-      window.dispatchEvent(new CustomEvent('showLogoutLoader'));
-      
-      const userToken = localStorage.getItem('userToken');
-
-      // Best-effort API call
-      if (userToken) {
-        try {
-          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/users/logout`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${userToken}`,
-              'Content-Type': 'application/json',
-            },
-          });
-        } catch {
-          // ignore network errors, continue cleanup
-        }
-      }
-
-      // Client-side cleanup
-      localStorage.removeItem('userToken');
-      localStorage.removeItem('userData');
-      localStorage.removeItem('token');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('userEmail');
-      localStorage.removeItem('userName');
-
-      document.cookie = 'userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
-      document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
-
-      setShowLogoutConfirm(false);
-      
-      // Smooth redirect to homepage
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('hideLogoutLoader'));
-        router.push('/');
-      }, 1000); // Give time for cleanup and smooth transition
-      
-    } catch (e) {
-      setShowLogoutConfirm(false);
-      window.dispatchEvent(new CustomEvent('hideLogoutLoader'));
-      // Fallback to homepage redirect even on error
-      router.push('/');
-    }
+    setShowLogoutConfirm(false);
+    
+    // Use centralized logout service
+    await logout(USER_TYPES.PUBLIC, {
+      showLoader: true,
+      redirect: true,
+      redirectPath: '/'
+    });
   };
 
 

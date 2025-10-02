@@ -52,15 +52,10 @@ export default function DeleteAccount() {
 
       if (response.ok) {
         setDeleteSuccess('Your account has been permanently deleted');
-        setTimeout(() => {
-          localStorage.removeItem('userToken');
-          localStorage.removeItem('userData');
-          localStorage.removeItem('token');
-          localStorage.removeItem('userRole');
-          localStorage.removeItem('userEmail');
-          localStorage.removeItem('userName');
-          document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-          document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        setTimeout(async () => {
+          // Use centralized immediate cleanup for security
+          const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
+          clearAuthImmediate(USER_TYPES.PUBLIC);
           window.location.href = '/';
         }, 2000);
       } else {

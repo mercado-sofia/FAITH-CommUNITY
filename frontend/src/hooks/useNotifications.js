@@ -40,7 +40,6 @@ export const useNotifications = (isAuthenticated) => {
         refetchNotifications();
         refetchUnreadCount();
       } catch (error) {
-        console.error('Error marking notification as read:', error);
       }
     }
   }, [markAsRead, refetchNotifications, refetchUnreadCount]);

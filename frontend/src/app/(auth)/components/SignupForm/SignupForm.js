@@ -377,7 +377,6 @@ export default function SignupForm({ onRegistrationSuccess }) {
         setShowError(true)
       }
     } catch (error) {
-      console.error("Registration error:", error)
       setErrorMessage("Network error. Please try again.")
       setShowError(true)
     } finally {

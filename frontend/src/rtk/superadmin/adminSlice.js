@@ -38,14 +38,7 @@ const adminSlice = createSlice({
       state.admin = null
       state.userType = null
       state.error = null
-      // Clear localStorage
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("adminToken")
-        localStorage.removeItem("adminData")
-        localStorage.removeItem("token")
-        localStorage.removeItem("userRole")
-        document.cookie = "userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT"
-      }
+      // Note: localStorage cleanup is now handled by authService
     },
     setLoading: (state, action) => {
       state.loading = action.payload
@@ -69,7 +62,6 @@ const adminSlice = createSlice({
               parsedData.email = action.payload.email
               localStorage.setItem("adminData", JSON.stringify(parsedData))
             } catch (error) {
-              console.error("Error updating localStorage:", error)
             }
           }
         }
@@ -90,7 +82,6 @@ const adminSlice = createSlice({
               parsedData.orgName = action.payload.orgName
               localStorage.setItem("adminData", JSON.stringify(parsedData))
             } catch (error) {
-              console.error("Error updating localStorage:", error)
             }
           }
         }
@@ -109,7 +100,6 @@ const adminSlice = createSlice({
               parsedData.logo = action.payload.logo
               localStorage.setItem("adminData", JSON.stringify(parsedData))
             } catch (error) {
-              console.error("Error updating localStorage:", error)
             }
           }
         }
@@ -140,10 +130,12 @@ const adminSlice = createSlice({
             state.admin = JSON.parse(adminData)
             state.userType = "admin"
           } catch (error) {
-            console.error("Error parsing admin data:", error)
-            // Clear invalid data
-            localStorage.removeItem("adminToken")
-            localStorage.removeItem("adminData")
+            // Reset state to unauthenticated - cleanup will be handled by layout
+            state.isAuthenticated = false;
+            state.token = null;
+            state.admin = null;
+            state.userType = null;
+            state.error = "Invalid authentication data";
           }
         }
       }

@@ -341,10 +341,9 @@ export default function OrganizationPage() {
       
       const adminToken = localStorage.getItem("adminToken");
       if (!adminToken) {
-        // Clear invalid data and redirect to login
-        localStorage.removeItem('adminToken');
-        localStorage.removeItem('adminData');
-        document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        // Use centralized immediate cleanup for security
+        const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
+        clearAuthImmediate(USER_TYPES.ADMIN);
         window.location.href = '/login';
         return;
       }
@@ -371,10 +370,9 @@ export default function OrganizationPage() {
         }, 3000);
       } else {
         if (response.status === 401) {
-          // Token expired or invalid - redirect to login
-          localStorage.removeItem('adminToken');
-          localStorage.removeItem('adminData');
-          document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          // Token expired or invalid - use centralized cleanup
+          const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
+          clearAuthImmediate(USER_TYPES.ADMIN);
           window.location.href = '/login';
           return;
         }

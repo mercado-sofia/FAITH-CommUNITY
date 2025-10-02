@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { NavigationProvider } from "../../contexts/NavigationContext";
+import { clearAuthImmediate, USER_TYPES } from "../../utils/authService";
 import Sidebar from "./components/Sidebar/Sidebar"
 import TopBar from "./components/TopBar/TopBar"
 import { Loader } from "@/components";
@@ -39,18 +40,16 @@ function SuperAdminLayoutContent({ children }) {
         const userRole = document.cookie.includes('userRole=superadmin');
         
         if (!token || !superAdminData || !userRole) {
-          localStorage.removeItem('superAdminToken');
-          localStorage.removeItem('superAdminData');
-          document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          // Use centralized immediate cleanup for security
+          clearAuthImmediate(USER_TYPES.SUPERADMIN);
           window.location.href = '/login';
           return;
         }
 
         setIsInitialLoading(false);
       } catch (error) {
-        localStorage.removeItem('superAdminToken');
-        localStorage.removeItem('superAdminData');
-        document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        // Use centralized immediate cleanup for security
+        clearAuthImmediate(USER_TYPES.SUPERADMIN);
         window.location.href = '/login';
       }
     };

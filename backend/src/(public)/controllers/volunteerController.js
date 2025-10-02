@@ -8,7 +8,7 @@ import { calculateAge } from '../../utils/dateUtils.js';
 const VALID_STATUSES = ['Pending', 'Approved', 'Declined', 'Cancelled', 'Completed'];
 const STATUS_TRANSITIONS = {
   'Pending': ['Approved', 'Declined', 'Cancelled'],
-  'Approved': ['Cancelled', 'Completed'],
+  'Approved': ['Declined', 'Cancelled', 'Completed'],
   'Declined': [], // Cannot transition from declined
   'Cancelled': [], // Cannot transition from cancelled
   'Completed': [] // Cannot transition from completed

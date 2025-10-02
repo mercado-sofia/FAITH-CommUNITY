@@ -8,6 +8,7 @@ import { createPortal } from 'react-dom';
 import styles from './HeroSectionManagement.module.css';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import { ConfirmationModal } from '@/components';
+import { getImageUrl } from '@/utils/uploadPaths';
 
 export default function HeroSectionManagement({ showSuccessModal }) {
   const [heroData, setHeroData] = useState({
@@ -183,7 +184,7 @@ export default function HeroSectionManagement({ showSuccessModal }) {
       const token = localStorage.getItem('superAdminToken');
       if (!token) {
         showSuccessModal('Authentication required. Please log in again.');
-        return;
+        return null;
       }
 
       const endpoint = imageId 
@@ -210,6 +211,7 @@ export default function HeroSectionManagement({ showSuccessModal }) {
             )
           }));
           showSuccessModal('Image uploaded successfully!');
+          return data.data.url;
         } else {
           setHeroData(prev => ({
             ...prev,
@@ -218,11 +220,12 @@ export default function HeroSectionManagement({ showSuccessModal }) {
             video_type: type === 'video' ? 'upload' : prev.video_type
           }));
           showSuccessModal(`${type === 'video' ? 'Video' : 'File'} uploaded successfully!`);
+          return data.data[`${type}_url`];
         }
       } else {
         if (response.status === 401) {
           showSuccessModal('Authentication expired. Please log in again.');
-          return;
+          return null;
         }
         
         let errorMessage = `Failed to upload ${type}`;
@@ -233,9 +236,11 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           errorMessage = response.statusText || errorMessage;
         }
         showSuccessModal(errorMessage);
+        return null;
       }
     } catch (error) {
       showSuccessModal(`Failed to upload ${type}. Please try again.`);
+      return null;
     } finally {
       // Clear loading state
       if (type === 'video') {
@@ -243,6 +248,32 @@ export default function HeroSectionManagement({ showSuccessModal }) {
       } else if (type === 'image' && imageId) {
         setIsUploadingImages(prev => ({ ...prev, [imageId]: false }));
       }
+    }
+  };
+
+  // Handle immediate video upload when file is selected
+  const handleVideoFileSelect = async (file) => {
+    if (!file) return;
+    
+    setSelectedVideoFile(file);
+    
+    // Upload video immediately
+    try {
+      const videoUrl = await handleFileUpload(file, 'video');
+      if (videoUrl) {
+        // Update temp data with the uploaded video URL
+        setTempHeroData(prev => ({
+          ...prev,
+          video_url: videoUrl,
+          video_link: null,
+          video_type: 'upload'
+        }));
+        setSelectedVideoFile(null); // Clear selected file since it's now uploaded
+      } else {
+        setSelectedVideoFile(null); // Clear on failure
+      }
+    } catch (error) {
+      setSelectedVideoFile(null); // Clear on error
     }
   };
 
@@ -324,6 +355,7 @@ export default function HeroSectionManagement({ showSuccessModal }) {
     setTempHeroData({});
     setSelectedVideoFile(null);
     setSelectedImageFiles({});
+    setIsUploadingVideo(false);
   };
 
   // Hero update handler
@@ -345,20 +377,6 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         setIsUpdatingHero(true);
         
         let finalHeroData = { ...tempHeroData };
-        
-        // Upload video if selected
-        if (selectedVideoFile) {
-          try {
-            const videoUrl = await handleFileUpload(selectedVideoFile, 'video');
-            finalHeroData.video_url = videoUrl;
-            finalHeroData.video_link = null;
-            finalHeroData.video_type = 'upload';
-            setSelectedVideoFile(null);
-          } catch (error) {
-            showSuccessModal('Failed to upload video. Please try again.');
-            return;
-          }
-        }
         
         // Set video_type based on what's being used
         if (finalHeroData.video_link && !finalHeroData.video_url) {
@@ -567,44 +585,62 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                   </div>
                   
                   {/* Video Upload */}
-                  {!selectedVideoFile ? (
+                  {!selectedVideoFile && !isUploadingVideo ? (
                     <div className={styles.fileInputContainer}>
-                  <input
-                    type="file"
-                    id="video-upload"
-                    accept="video/*"
-                    onChange={(e) => {
-                      if (e.target.files[0]) {
-                            setSelectedVideoFile(e.target.files[0]);
-                      }
-                    }}
-                    style={{ display: 'none' }}
-                  />
+                      <input
+                        type="file"
+                        id="video-upload"
+                        accept="video/*"
+                        onChange={(e) => {
+                          if (e.target.files[0]) {
+                            handleVideoFileSelect(e.target.files[0]);
+                          }
+                        }}
+                        style={{ display: 'none' }}
+                      />
                       <label htmlFor="video-upload" className={styles.uploadBtn}>
                         <FiUpload /> Choose Video File
                       </label>
                     </div>
-                  ) : (
+                  ) : selectedVideoFile && isUploadingVideo ? (
                     <div className={styles.uploadActions}>
                       <div className={styles.selectedFileInfo}>
+                        <div className={styles.uploadingIndicator}>
+                          <div className={styles.spinner}></div>
+                          <span>Uploading video...</span>
+                        </div>
                         <span className={styles.fileName}>{selectedVideoFile.name}</span>
                         <span className={styles.fileSize}>
                           {(selectedVideoFile.size / 1024 / 1024).toFixed(2)} MB
                         </span>
-                        <span className={styles.uploadNote}>
-                          Video will be uploaded when you save changes
-                        </span>
-                      </div>
-                      <div className={styles.uploadButtons}>
-                        <button
-                          onClick={() => setSelectedVideoFile(null)}
-                          className={styles.cancelBtn}
-                        >
-                          Remove Selection
-                        </button>
                       </div>
                     </div>
-                  )}
+                  ) : tempHeroData.video_url ? (
+                    <div className={styles.uploadActions}>
+                      <div className={styles.videoPreviewContainer}>
+                        <video 
+                          src={tempHeroData.video_url} 
+                          style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px' }}
+                          controls
+                        />
+                        <div className={styles.videoOverlay}>
+                          <button
+                            onClick={() => handleFileDelete('video')}
+                            className={styles.deleteVideoBtn}
+                            title="Delete uploaded video"
+                          >
+                            <FiTrash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                      <div className={styles.uploadedVideoInfo}>
+                        <span className={styles.uploadSuccess}>✓ Video uploaded successfully</span>
+                        <span className={styles.uploadNote}>
+                          Video is ready and will be saved with your changes
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
                 </>
               ) : (
                 <div className={styles.readOnlyContent}>
@@ -659,7 +695,7 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                         return (
                           <div className={styles.preview}>
                             <Image 
-                              src={image.url} 
+                              src={getImageUrl(image.url, 'hero', 'images')} 
                               alt={`Banner image ${index + 1}`} 
                               width={200}
                               height={150}
@@ -818,12 +854,16 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                     {(() => {
                       // Use the same fallback logic as the public portal
                       const isFirst = index === 0;
-                      const imageSrc = image.url || (isFirst ? "/samples/sample2.jpg" : index === 1 ? "/samples/sample8.jpg" : "/samples/sample3.jpeg");
+                      const fallbackImageSrc = isFirst ? "/samples/sample2.jpg" : index === 1 ? "/samples/sample8.jpg" : "/samples/sample3.jpeg";
+                      const imageSrc = image.url || fallbackImageSrc;
+                      
+                      // Use getImageUrl for uploaded images, direct path for fallbacks
+                      const finalImageSrc = image.url ? getImageUrl(image.url, 'hero', 'images') : fallbackImageSrc;
                       
                       return (
                         <div className={styles.preview}>
                           <Image 
-                            src={imageSrc} 
+                            src={finalImageSrc} 
                             alt={`Banner image ${index + 1}`} 
                             width={200}
                             height={150}

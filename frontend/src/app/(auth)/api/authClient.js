@@ -23,7 +23,6 @@ export async function postJson(path, body, options = {}) {
 		}
 		return { ok: res.ok, status: res.status, data }
 	} catch (error) {
-		console.error('API request failed:', error)
 		return { ok: false, status: 0, data: null, error: error.message }
 	}
 }

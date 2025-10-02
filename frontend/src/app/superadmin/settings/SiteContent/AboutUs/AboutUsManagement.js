@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { FiEdit3, FiXCircle, FiPlus, FiTrash2, FiUpload } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import { ConfirmationModal } from '@/components';
+import { getImageUrl } from '@/utils/uploadPaths';
 import styles from './AboutUsManagement.module.css';
 
 export default function AboutUsManagement({ showSuccessModal }) {
@@ -439,7 +440,7 @@ export default function AboutUsManagement({ showSuccessModal }) {
                     return (
                       <div className={styles.currentImageContainer}>
                         <Image
-                          src={currentImageUrl}
+                          src={getImageUrl(currentImageUrl, 'aboutus', 'images')}
                           alt="Current About Us Image"
                           className={styles.currentImage}
                           width={400}

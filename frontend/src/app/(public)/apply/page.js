@@ -38,22 +38,27 @@ export default function ApplyPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
-    const token = localStorage.getItem('userToken');
-    const storedUserData = localStorage.getItem('userData');
-    
-    if (token && storedUserData) {
-      try {
-        JSON.parse(storedUserData);
-        setIsLoggedIn(true);
-      } catch (error) {
-        localStorage.removeItem('userToken');
-        localStorage.removeItem('userData');
+    const checkAuth = async () => {
+      const token = localStorage.getItem('userToken');
+      const storedUserData = localStorage.getItem('userData');
+      
+      if (token && storedUserData) {
+        try {
+          JSON.parse(storedUserData);
+          setIsLoggedIn(true);
+        } catch (error) {
+          // Clear corrupted data using centralized cleanup
+          const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
+          clearAuthImmediate(USER_TYPES.PUBLIC);
+          setShowLoginModal(true);
+        }
+      } else {
+        // Show login modal for non-authenticated users
         setShowLoginModal(true);
       }
-    } else {
-      // Show login modal for non-authenticated users
-      setShowLoginModal(true);
-    }
+    };
+    
+    checkAuth();
   }, []);
 
   // Show login modal when needed

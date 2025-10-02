@@ -180,7 +180,6 @@ export default function PasswordChange({
       // Use the currentUser data to check 2FA status
       setTwofaEnabled(currentUser.twofa_enabled || false);
     } catch (error) {
-      console.error('Error checking 2FA status:', error);
       setTwofaEnabled(false);
     } finally {
       setIsLoading2FAStatus(false);
@@ -362,13 +361,6 @@ export default function PasswordChange({
 
         if (!updateResponse.ok) {
           const errorData = await updateResponse.json().catch(() => ({}));
-          console.error('Password Change Error:', {
-            status: updateResponse.status,
-            statusText: updateResponse.statusText,
-            errorData,
-            userType,
-            endpoint: apiEndpoint
-          });
           
           const errorInfo = handleApiError({ status: updateResponse.status, message: errorData.message }, 'password_update');
           

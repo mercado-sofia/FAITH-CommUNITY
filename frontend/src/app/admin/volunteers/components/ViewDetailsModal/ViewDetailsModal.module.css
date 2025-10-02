@@ -3,175 +3,303 @@
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  padding: 3rem 0 2rem;
+  padding: 2rem;
   overflow-y: auto;
 }
 
 /* Modal Content */
-.modalContentScrollable {
-  background-color: #fff;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 768px;
-  padding: 2rem;
+.modalContent {
+  background-color: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
   position: relative;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-}
-
-/* Close Button */
-.closeIcon {
-  position: absolute;
-  top: 1.2rem;
-  right: 1.2rem;
-  background: none;
-  border: none;
-  font-size: 16px;
-  font-family: var(--font-inter);
-  color: #333;
-  cursor: pointer;
-  user-select: none;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Modal Header */
-.modalHeading {
-  font-size: 18px;
-  font-weight: 600;
-  font-family: var(--font-inter);
-  margin: 0 0 2rem 0;
-  color: #2e3136;
-  text-align: center;
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 2rem 0.75rem 2rem;
+  border-bottom: 1px solid #f1f3f4;
 }
 
-/* Layout Container */
-.contentContainer {
-  display: flex;
-  flex-direction: column;
+.modalTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: var(--font-inter);
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+}
+
+
+/* Applicant Header */
+.applicantHeader {
+  padding: 1.5rem 2rem;
+  background-color: #f8f9fa;
+  color: #1a1a1a;
+  text-align: center;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.applicantName {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: var(--font-inter);
+  margin-bottom: 0.5rem;
+}
+
+.applicantProgram {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+/* Scrollable Content Wrapper */
+.contentWrapper {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
+}
+
+/* Content Grid */
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 1.5rem;
 }
 
-/* Section Styling */
-.section {
-  background-color: #f8f9fa;
-  border-radius: 8px;
+/* Info Cards */
+.infoCard {
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
   padding: 1.5rem;
-  border: 1px solid #e9ecef;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.sectionTitle {
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.cardIcon {
+  font-size: 16px;
+  color: #6b7280;
+}
+
+.cardTitle {
   font-size: 14px;
   font-weight: 600;
   font-family: var(--font-inter);
-  color: #495057;
-  margin: 0 0 1.5rem 0;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 2px solid #dee2e6;
-  padding-bottom: 0.5rem;
+  color: #374151;
+  margin: 0;
 }
 
-/* Grid Layout */
-.fieldGrid {
+/* Info Grid */
+.infoGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-  margin-bottom: 0;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.25rem;
 }
 
-/* Field Group Styling */
-.fieldGroup {
+/* Info Row - for side-by-side items */
+.infoRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.infoItem {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.fieldLabel {
-  font-size: 12px;
+.infoLabel {
+  font-size: 13.5px;
   font-weight: 600;
   font-family: var(--font-inter);
-  color: #6c757d;
+  color: #6b7280;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
-  margin: 0;
+  letter-spacing: 0.025em;
 }
 
-.fieldValue {
-  font-size: 14px;
+.infoValue {
+  font-size: 13.5px;
   font-weight: 500;
   font-family: var(--font-inter);
-  color: #212529;
+  color: #111827;
   line-height: 1.5;
   word-break: break-word;
-  padding: 0.5rem 0;
-  min-height: 1.5rem;
+  padding: 0.75rem 1rem;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
 }
 
-/* Full-width field styling */
-.section .fieldGroup:not(.fieldGrid .fieldGroup) {
-  margin-top: 1rem;
+/* Reason Section */
+.reasonSection {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.reasonText {
+  font-size: 13.5px;
+  font-weight: 400;
+  font-family: var(--font-inter);
+  color: #374151;
+  line-height: 1.6;
+  padding: 1rem 1.25rem;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  min-height: 80px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* Responsive Design */
+@media (min-width: 768px) {
+  .contentGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .infoCard:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 768px) {
-  .modalContentScrollable {
-    width: 95%;
+  .modal {
+    padding: 1rem;
+  }
+  
+  .modalContent {
+    max-height: 95vh;
+  }
+  
+  .modalHeader {
+    padding: 1.25rem 1.5rem 0.75rem 1.5rem;
+  }
+  
+  .modalTitle {
+    font-size: 1.125rem;
+  }
+  
+  .applicantHeader {
+    padding: 1.25rem 1.5rem;
+  }
+  
+  .applicantName {
+    font-size: 1.5rem;
+  }
+  
+  .contentWrapper {
     padding: 1.5rem;
   }
   
-  .fieldGrid {
-    grid-template-columns: 1fr;
+  .contentGrid {
     gap: 1.25rem;
   }
   
-  .section {
+  .infoCard {
     padding: 1.25rem;
   }
   
-  .contentContainer {
-    gap: 1.25rem;
+  .infoGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
   
-  .sectionTitle {
-    margin-bottom: 1.25rem;
+  .infoRow {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
   }
 }
 
 @media (max-width: 480px) {
-  .modalContentScrollable {
-    width: 98%;
+  .modal {
+    padding: 0.5rem;
+  }
+  
+  .modalHeader {
+    padding: 1rem 1rem 0.5rem 1rem;
+  }
+  
+  .modalTitle {
+    font-size: 1rem;
+  }
+  
+  .applicantHeader {
     padding: 1rem;
   }
   
-  .modalHeading {
-    font-size: 16px;
+  .applicantName {
+    font-size: 1.375rem;
+  }
+  
+  .applicantProgram {
+    font-size: 0.875rem;
+  }
+  
+  .contentWrapper {
+    padding: 1rem;
+  }
+  
+  .contentGrid {
+    gap: 1rem;
+  }
+  
+  .infoCard {
+    padding: 1rem;
+  }
+  
+  .cardHeader {
     margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
   }
   
-  .section {
-    padding: 1rem;
+  .cardTitle {
+    font-size: 14px;
   }
   
-  .sectionTitle {
-    font-size: 13px;
-    margin-bottom: 1rem;
+  .infoValue {
+    font-size: 13.5px;
+    padding: 0.625rem 0.875rem;
   }
   
-  .fieldLabel {
-    font-size: 11px;
-  }
-  
-  .fieldValue {
-    font-size: 13px;
-  }
-  
-  .fieldGrid {
-    gap: 1rem;
-  }
-  
-  .contentContainer {
-    gap: 1rem;
+  .reasonText {
+    font-size: 13.5px;
+    padding: 0.875rem 1rem;
   }
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { getBrandingImageUrl } from '@/utils/uploadPaths'
 
 /**
  * Custom hook to fetch and manage dynamic logo from branding API
@@ -29,9 +30,9 @@ export const useDynamicLogo = () => {
         const data = await response.json()
         
         if (data.success && data.data) {
-          setLogoUrl(data.data.logo_url)
-          setLogoNameUrl(data.data.name_url)
-          setFaviconUrl(data.data.favicon_url)
+          setLogoUrl(getBrandingImageUrl(data.data.logo_url, 'logo'))
+          setLogoNameUrl(getBrandingImageUrl(data.data.name_url, 'name'))
+          setFaviconUrl(getBrandingImageUrl(data.data.favicon_url, 'favicon'))
         } else {
           // If no branding data, don't set any logo
           setLogoUrl(null)
@@ -39,7 +40,6 @@ export const useDynamicLogo = () => {
           setFaviconUrl(null)
         }
       } catch (err) {
-        console.error('Error fetching dynamic logo:', err)
         setError(err.message)
         // Don't set any logo on error
         setLogoUrl(null)

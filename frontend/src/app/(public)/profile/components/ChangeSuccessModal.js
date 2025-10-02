@@ -32,7 +32,7 @@ export default function ChangeSuccessModal({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 1000,
+        zIndex: 9999,
         padding: '1rem'
       }} 
       onClick={onClose}
@@ -54,26 +54,32 @@ export default function ChangeSuccessModal({
           style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '1.5rem 1.5rem 0'
+            justifyContent: 'center',
+            padding: '1.5rem 1.5rem 0',
+            position: 'relative'
           }}
         >
           <div 
             style={{
               color: '#28a745',
-              fontSize: '2rem',
+              fontSize: '3.5rem',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              marginTop: '1rem',
+              marginBottom: '1rem'
             }}
           >
             <FaCheckCircle />
           </div>
           <button 
             style={{
+              position: 'absolute',
+              top: '1.5rem',
+              right: '1.5rem',
               background: 'none',
               border: 'none',
-              color: '#6c757d',
+              color: '#d1d5db',
               fontSize: '1.2rem',
               cursor: 'pointer',
               padding: '0.5rem',
@@ -88,12 +94,12 @@ export default function ChangeSuccessModal({
             onClick={onClose}
             type="button"
             onMouseEnter={(e) => {
-              e.target.style.background = '#f8f9fa';
-              e.target.style.color = '#495057';
+              e.target.style.background = '#f3f4f6';
+              e.target.style.color = '#9ca3af';
             }}
             onMouseLeave={(e) => {
               e.target.style.background = 'none';
-              e.target.style.color = '#6c757d';
+              e.target.style.color = '#d1d5db';
             }}
           >
             <FaTimes />
@@ -119,6 +125,7 @@ export default function ChangeSuccessModal({
           <p 
             style={{
               margin: '0 0 1.5rem 0',
+              fontSize: '15px',
               color: '#6c757d',
               textAlign: 'center',
               lineHeight: 1.5
@@ -307,58 +314,16 @@ export default function ChangeSuccessModal({
                 Please use your new email address for future logins and communications.
               </p>
             ) : (
-              <div>
-                <div 
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    marginBottom: '0.75rem'
-                  }}
-                >
-                  <FaExclamationTriangle 
-                    style={{
-                      color: '#856404',
-                      marginRight: '0.5rem',
-                      fontSize: '1rem'
-                    }}
-                  />
-                  <span 
-                    style={{
-                      fontWeight: 600,
-                      color: '#856404',
-                      fontSize: '0.95rem'
-                    }}
-                  >
-                    Important Security Information
-                  </span>
-                </div>
-                
-                <div 
-                  style={{
-                    color: '#856404',
-                    fontSize: '0.9rem',
-                    lineHeight: 1.5
-                  }}
-                >
-                  <p style={{ margin: '0 0 0.5rem 0' }}>
-                    <strong>Next Steps:</strong>
-                  </p>
-                  <ul style={{ margin: '0.5rem 0', paddingLeft: '1.2rem' }}>
-                    <li style={{ marginBottom: '0.25rem' }}>
-                      Use your new password for all future logins
-                    </li>
-                    <li style={{ marginBottom: '0.25rem' }}>
-                      Update your password in any password managers
-                    </li>
-                    <li style={{ marginBottom: '0.25rem' }}>
-                      Consider enabling two-factor authentication for extra security
-                    </li>
-                    <li>
-                      Never share your password with anyone
-                    </li>
-                  </ul>
-                </div>
-              </div>
+              <p 
+                style={{
+                  margin: 0,
+                  color: '#856404',
+                  fontSize: '0.9rem',
+                  textAlign: 'left'
+                }}
+              >
+                Please use your new password for future logins.
+              </p>
             )}
           </div>
         </div>

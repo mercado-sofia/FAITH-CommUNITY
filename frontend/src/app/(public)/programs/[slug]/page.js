@@ -379,34 +379,7 @@ export default function ProgramDetailsPage() {
                   <p className={styles.descriptionText}>{program.description}</p>
                 </div>
                 
-                {/* Collaboration Display */}
-                {(program.is_collaborative === 1 || program.is_collaborative === true) && program.collaborators && program.collaborators.length > 0 && (
-                  <CollaborationDisplay 
-                    collaborators={program.collaborators}
-                    programTitle={program.title}
-                  />
-                )}
-                
-                {/* Additional Images Gallery */}
-                {program.additional_images && program.additional_images.length > 0 && (
-                  <div className={styles.additionalImagesSection}>
-                    <h3 className={styles.additionalImagesTitle}>Program Gallery</h3>
-                    <div className={styles.additionalImagesGrid}>
-                      {program.additional_images.map((imagePath, index) => (
-                        <div key={index} className={styles.additionalImageContainer}>
-                          <Image 
-                            src={getProgramImageUrl(imagePath, 'additional')} 
-                            alt={`${program.title} - Image ${index + 1}`}
-                            width={200} 
-                            height={150}
-                            className={styles.additionalImage}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
+                {/* Host Organization */}
                 {(program.organization_name || program.organization_acronym) && (
                   <div className={styles.organizationSection}>
                     <h3 className={styles.orgTitle}>Host Organization</h3>
@@ -435,6 +408,34 @@ export default function ProgramDetailsPage() {
                         </div>
                       </div>
                     </Link>
+                  </div>
+                )}
+                
+                {/* Collaboration Display */}
+                {(program.is_collaborative === 1 || program.is_collaborative === true) && program.collaborators && program.collaborators.length > 0 && (
+                  <CollaborationDisplay 
+                    collaborators={program.collaborators}
+                    programTitle={program.title}
+                  />
+                )}
+                
+                {/* Additional Images Gallery */}
+                {program.additional_images && program.additional_images.length > 0 && (
+                  <div className={styles.additionalImagesSection}>
+                    <h3 className={styles.additionalImagesTitle}>Program Gallery</h3>
+                    <div className={styles.additionalImagesGrid}>
+                      {program.additional_images.map((imagePath, index) => (
+                        <div key={index} className={styles.additionalImageContainer}>
+                          <Image 
+                            src={getProgramImageUrl(imagePath, 'additional')} 
+                            alt={`${program.title} - Image ${index + 1}`}
+                            width={200} 
+                            height={150}
+                            className={styles.additionalImage}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

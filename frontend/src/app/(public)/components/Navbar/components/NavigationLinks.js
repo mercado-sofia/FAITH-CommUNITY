@@ -56,7 +56,7 @@ export default function NavigationLinks() {
         className={`${styles.navLink} ${isLinkActive('/faithree') ? styles.active : ''}`}
         onMouseEnter={() => handleLinkHover('/faithree')}
       >
-        FAIThree
+        FAITHree
       </Link>
       <Link 
         href="/faqs" 

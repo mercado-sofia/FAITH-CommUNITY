@@ -59,34 +59,35 @@ const getDateInfo = (project) => {
 const DateBadge = ({ dateInfo, status }) => {
   if (status !== 'Upcoming') return null;
   
-  // If no date info, show TBA badge
+  // If no date info, show Upcoming badge
   if (!dateInfo) {
     return (
       <div className={styles.dateBadge} style={{ left: '-15px' }}>
         <svg 
-          width="80" 
+          width="120" 
           height="60" 
-          viewBox="0 0 80 60" 
+          viewBox="0 0 120 60" 
           className={styles.dateBadgeSvg}
         >
-          {/* Use the short badge SVG */}
+          {/* Use the long badge SVG */}
           <image 
-            href="/assets/icons/BadgeShort.svg" 
-            width="80" 
+            href="/assets/icons/BadgeLong.svg" 
+            width="120" 
             height="60" 
             preserveAspectRatio="xMidYMid slice"
           />
-          {/* TBA text - centered */}
+          {/* Upcoming text - centered */}
           <text 
-            x="40" 
-            y="35"
+            x="60" 
+            y="38"
             textAnchor="middle" 
             fill="white" 
-            fontSize="14" 
-            fontWeight="700"
+            fontSize="15" 
+            fontWeight="600"
+            letterSpacing="0.5px"
             className={styles.dateBadgeDay}
           >
-            TBA
+            Upcoming
           </text>
         </svg>
       </div>

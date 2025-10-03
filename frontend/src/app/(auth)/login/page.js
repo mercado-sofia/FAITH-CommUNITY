@@ -6,8 +6,7 @@ import { useDispatch } from "react-redux"
 import { loginAdmin, loginSuperAdmin, logoutAdmin } from "../../../rtk/superadmin/adminSlice"
 import styles from "./login.module.css"
 import { FaUser, FaSpinner } from "react-icons/fa"
-import Image from "next/image"
-import { AuthLeftPanel, DynamicLogo, ForgotPasswordModal, OtpInput, PasswordField } from "../components"
+import { AuthLeftPanel, ForgotPasswordModal, OtpInput, PasswordField } from "../components"
 import { postJson } from "../api/authClient"
 
 export default function LoginPage() {
@@ -268,9 +267,6 @@ export default function LoginPage() {
     <div className={styles.container}>
       <AuthLeftPanel labelText="Log In" />
       <div className={styles.rightPane}>
-        <div className={styles.logoWrapper}>
-          <DynamicLogo width={80} height={80} alt="Logo" />
-        </div>
         <form onSubmit={handleLogin} className={styles.form} noValidate>
           <h2 className={styles.title}>Log In</h2>
 

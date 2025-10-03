@@ -275,11 +275,11 @@ export default function SubmissionModal({ data, onClose }) {
             )}
 
             {/* Rejection Comment for Programs */}
-            {data.status === 'rejected' && data.comment_reject && (
+            {data.status === 'rejected' && data.rejection_reason && (
               <div className={styles.rejectionSection}>
                 <div className={styles.rejectionLabel}>Rejection Reason</div>
                 <div className={styles.rejectionComment}>
-                  {data.comment_reject}
+                  {data.rejection_reason}
                 </div>
               </div>
             )}
@@ -339,14 +339,14 @@ export default function SubmissionModal({ data, onClose }) {
           </div>
 
           {/* Rejection Feedback */}
-          {data.status === 'rejected' && data.comment_reject && (
+          {data.status === 'rejected' && data.rejection_reason && (
             <div className={styles.rejectionAlert}>
               <div className={styles.alertIcon}>
                 <FaExclamationTriangle />
               </div>
               <div className={styles.alertContent}>
                 <h4 className={styles.alertTitle}>Rejection Feedback</h4>
-                <p className={styles.alertMessage}>{data.comment_reject}</p>
+                <p className={styles.alertMessage}>{data.rejection_reason}</p>
               </div>
             </div>
           )}

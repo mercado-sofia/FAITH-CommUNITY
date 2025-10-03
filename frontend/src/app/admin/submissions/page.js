@@ -271,7 +271,7 @@ export default function SubmissionsPage() {
       <div className={styles.tableContainer}>
         <SubmissionTable 
           orgAcronym={orgAcronym} 
-          submissions={filteredSubmissions}
+          submissions={paginatedSubmissions}
           loading={loading}
           onRefresh={refreshSubmissions}
           currentPage={currentPage}

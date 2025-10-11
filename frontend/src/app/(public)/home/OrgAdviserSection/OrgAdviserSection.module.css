@@ -25,6 +25,11 @@
   position: relative;
 }
 
+
+.orgAdviserCarousel.withoutNavigation {
+  gap: 0;
+}
+
 .orgAdviserNavBtn {
   background: #1A685B;
   color: white;
@@ -54,6 +59,13 @@
   width: calc((240px + 24px) * 4 - 24px);
 }
 
+
+.orgAdviserSliderWrapper.withoutNavigation {
+  overflow: visible;
+  width: auto;
+  max-width: 100%;
+}
+
 .orgAdviserSliderTrack {
   display: flex;
   transition: transform 0.3s ease;
@@ -61,9 +73,11 @@
   will-change: transform;
 }
 
-.orgAdviserSliderTrack::-webkit-scrollbar {
-  display: none;
+.orgAdviserSliderTrack.withoutNavigation {
+  justify-content: center;
+  flex-wrap: wrap;
 }
+
 
 .orgAdviserCard {
   flex: 0 0 auto;
@@ -194,7 +208,11 @@
   .orgAdviserSliderWrapper {
     width: auto;
     max-width: calc((240px * 2) + 20px);
-    overflow: hidden;
+  }
+
+  .orgAdviserSliderWrapper.withoutNavigation {
+    max-width: 100%;
+    overflow: visible;
   }
 
   .orgAdviserSliderTrack {
@@ -218,14 +236,24 @@
     padding: 1rem 1rem 3rem;
   }
 
-  .orgAdviserCarousel {
+  .orgAdviserCarousel.withNavigation {
     justify-content: space-between;
+  }
+
+  .orgAdviserCarousel.withoutNavigation {
+    justify-content: center;
   }
 
   .orgAdviserSliderWrapper {
     max-width: 220px;
     width: 100%;
     margin: 0 auto;
+  }
+
+  .orgAdviserSliderWrapper.withoutNavigation {
+    max-width: 100%;
+    width: auto;
+    margin: 0;
   }
 
   .orgAdviserSliderTrack {

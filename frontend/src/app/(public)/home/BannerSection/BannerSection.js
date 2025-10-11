@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './BannerSection.module.css';
 
 export default function BannerSection() {
   const router = useRouter();
-  const imageRef = useRef(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // Check user authentication status
@@ -30,31 +29,10 @@ export default function BannerSection() {
     checkAuth();
   }, []);
 
-useEffect(() => {
-  const handleScroll = () => {
-    const section = document.querySelector(`.${styles.inviteSection}`);
-    if (!imageRef.current || !section) return;
-
-    const sectionTop = section.getBoundingClientRect().top;
-    const sectionHeight = section.offsetHeight;
-
-    if (sectionTop < window.innerHeight && sectionTop + sectionHeight > 0) {
-      const scrollY = window.scrollY;
-      const translateY = scrollY * 0.5;
-      imageRef.current.style.transform = `translateY(${translateY}px)`;
-    }
-  };
-
-  window.addEventListener('scroll', handleScroll);
-  return () => window.removeEventListener('scroll', handleScroll);
-}, []);
 
 
   return (
-    <section
-      className={styles.inviteSection}
-      style={{ backgroundImage: "url('/samples/sample4.jpg')" }}
-    >
+    <section className={styles.inviteSection}>
       <div className={styles.overlay} />
 
       <div className={styles.wrapper}>

@@ -146,10 +146,13 @@
     gap: 2rem;
   }
 
-  .aboutContent,
-  .aboutImageWrapper {
+  .aboutContent {
     width: 100%;
     text-align: center;
+  }
+
+  .aboutImageWrapper {
+    width: 100%;
   }
 
   .aboutHeading,
@@ -184,7 +187,6 @@
   .missionbox,
   .visionbox {
     width: 420px;
-    height: auto;
   }
 }
 
@@ -228,7 +230,6 @@
   .missionbox,
   .visionbox {
     width: 90%;
-    height: auto;
     padding: 1.5rem;
   }
 
@@ -240,6 +241,5 @@
   .missionbox p,
   .visionbox p {
     font-size: 13px;
-    width: 100%;
   }
 }

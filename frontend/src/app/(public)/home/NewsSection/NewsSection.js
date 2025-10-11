@@ -18,8 +18,8 @@ export default function NewsSection() {
   const [isDragging, setIsDragging] = useState(false);
 
   // Use SWR hooks for data fetching
-  const { organizations: orgsData, isLoading: orgLoading, error: orgError } = usePublicOrganizations();
-  const { news, isLoading: newsLoading, error: newsError } = usePublicNews();
+  const { organizations: orgsData, isLoading: orgLoading } = usePublicOrganizations();
+  const { news, isLoading: newsLoading } = usePublicNews();
 
   // Process organizations with latest news dates
   const organizations = useMemo(() => {
@@ -72,7 +72,7 @@ export default function NewsSection() {
   }, [organizations]);
 
 
-  const handleOrgClick = (orgObj, index) => {
+  const handleOrgClick = (orgObj) => {
     setSelectedOrg(orgObj);
   };
 
@@ -156,7 +156,7 @@ export default function NewsSection() {
             <h2 className={styles.heading}>Latest News & Announcements</h2>
             <Link href="/news" className={styles.seeAllLink}>See All</Link>
           </div>
-          <div style={{ textAlign: 'center', padding: '2rem' }}>
+          <div className={styles.loadingContainer}>
             <div className={styles.spinner}></div>
             <p>Loading news...</p>
           </div>
@@ -188,19 +188,19 @@ export default function NewsSection() {
             onTouchEnd={handleTouchEnd}
             onWheel={handleWheel}
           >
-            {organizations.map((orgObj, index) => {
+            {organizations.map((orgObj) => {
                // Check if this organization is active by comparing with selectedOrg
                const isActive = selectedOrg && selectedOrg.id === orgObj.id;
                
                return (
                 <div
-                  key={`${orgObj.id}-${index}`}
+                  key={orgObj.id}
                   role="button"
                   tabIndex={0}
                   aria-pressed={isActive}
                   data-org-id={orgObj.id}
-                  onClick={() => handleOrgClick(orgObj, index)}
-                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && handleOrgClick(orgObj, index)}
+                  onClick={() => handleOrgClick(orgObj)}
+                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && handleOrgClick(orgObj)}
                   className={`${styles.orgItem} ${isActive ? styles.active : ""}`}
                 >
                   <Image
@@ -225,31 +225,12 @@ export default function NewsSection() {
       <div className={styles.newsContainer}>
         <div className={styles.newsList}>
                      {newsLoading ? (
-             <div style={{ 
-               gridColumn: '1 / -1', 
-               textAlign: 'center', 
-               padding: '2rem',
-               color: '#6b7280'
-             }}>
+             <div className={styles.statusContainer}>
                <div className={styles.spinner}></div>
                <p>Loading news...</p>
              </div>
-           ) : newsError ? (
-            <div style={{ 
-              gridColumn: '1 / -1', 
-              textAlign: 'center', 
-              padding: '2rem',
-              color: '#dc3545'
-            }}>
-                             <p>{newsError?.message || 'An error occurred while loading news'}</p>
-            </div>
-          ) : filteredNews.length === 0 ? (
-            <div style={{ 
-              gridColumn: '1 / -1', 
-              textAlign: 'center', 
-              padding: '2rem',
-              color: '#6b7280'
-            }}>
+           ) : filteredNews.length === 0 ? (
+            <div className={styles.statusContainer}>
               <p>No announcements yet</p>
             </div>
           ) : (

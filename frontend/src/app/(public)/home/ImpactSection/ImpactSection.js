@@ -28,14 +28,12 @@ const TruncatedDescription = ({ description, maxChars = 150 }) => {
 export default function ImpactSection() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isClient, setIsClient] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef(null);
 
   // Fetch featured projects from API
   const { 
     data: featuredProjects = [], 
-    isLoading, 
-    error 
+    isLoading 
   } = useGetPublicFeaturedProjectsQuery();
 
   // Carousel configuration - memoized to prevent recalculation
@@ -70,29 +68,6 @@ export default function ImpactSection() {
     []
   );
 
-  // Intersection Observer for better scroll performance
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsVisible(entry.isIntersecting);
-      },
-      {
-        threshold: 0.1,
-        rootMargin: '50px 0px'
-      }
-    );
-
-    const currentSectionRef = sectionRef.current;
-    if (currentSectionRef) {
-      observer.observe(currentSectionRef);
-    }
-
-    return () => {
-      if (currentSectionRef) {
-        observer.unobserve(currentSectionRef);
-      }
-    };
-  }, []);
 
 
   // Memoize data transformation to prevent unnecessary recalculations
@@ -174,14 +149,6 @@ export default function ImpactSection() {
     return currentIndex * itemWidth;
   }, [currentIndex, carouselConfig, dataToDisplay.length, slideSize]);
 
-  // Calculate centering offset for fewer than 3 projects
-  const centeringOffset = useMemo(() => {
-    if (!shouldCenter) return 0;
-    
-    const totalWidth = dataToDisplay.length * (carouselConfig.cardWidth + carouselConfig.gap) - carouselConfig.gap;
-    const containerWidth = typeof window !== 'undefined' ? Math.min(window.innerWidth - 80, 1210) : 1210; // Reduced padding for better centering
-    return Math.max(0, (containerWidth - totalWidth) / 2);
-  }, [shouldCenter, dataToDisplay.length, carouselConfig]);
 
   if (!isClient || isLoading) {
     return (
@@ -194,7 +161,7 @@ export default function ImpactSection() {
   }
 
   // If there are no featured projects, don't render the section
-  if (error || dataToDisplay.length === 0) {
+  if (dataToDisplay.length === 0) {
     return null;
   }
 
@@ -243,7 +210,7 @@ export default function ImpactSection() {
                       src={card.image}
                       alt={card.title}
                       className={styles.cardImage}
-                      loading={isVisible ? 'eager' : 'lazy'}
+                      loading="lazy"
                     />
                   ) : (
                     <Image
@@ -252,7 +219,7 @@ export default function ImpactSection() {
                       fill
                       className={styles.cardImage}
                       sizes={`(max-width: 768px) 280px, (max-width: 1024px) 320px, 400px`}
-                      loading={isVisible ? 'eager' : 'lazy'}
+                      loading="lazy"
                       priority={index < 2}
                     />
                   )}

@@ -100,7 +100,6 @@
 /* Centered container for fewer than 3 projects */
 .centeredContainer {
   justify-content: center;
-  padding: 12px 2rem 0 2rem;
 }
 
 /* Centered track for fewer than 3 projects */
@@ -245,9 +244,6 @@
     padding: 12px 1.5rem 0 1.5rem;
   }
   
-  .centeredContainer {
-    padding: 12px 1.5rem 0 1.5rem;
-  }
   
   .carouselWrapper {
     height: 460px;
@@ -289,9 +285,6 @@
     padding: 12px 1rem 0 1rem;
   }
   
-  .centeredContainer {
-    padding: 12px 1rem 0 1rem;
-  }
   
   .carouselWrapper {
     height: 420px;
@@ -342,9 +335,6 @@
     padding: 12px 0.5rem 0 0.5rem;
   }
   
-  .centeredContainer {
-    padding: 12px 0.5rem 0 0.5rem;
-  }
   
   .carouselWrapper {
     height: 400px;

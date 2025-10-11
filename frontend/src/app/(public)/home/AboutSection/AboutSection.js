@@ -1,6 +1,5 @@
 'use client';
 
-import { memo } from 'react';
 import styles from './AboutSection.module.css';
 import Image from 'next/image';
 import { FaHeart, FaCube } from 'react-icons/fa';
@@ -9,12 +8,11 @@ import { usePublicSiteName, usePublicMissionVision, usePublicAboutUs } from '../
 function AboutSection() {
   const { siteNameData } = usePublicSiteName();
   const { missionVisionData, isLoading: missionVisionLoading, error: missionVisionError } = usePublicMissionVision();
-  const { aboutUsData, isLoading: aboutUsLoading, error: aboutUsError } = usePublicAboutUs();
+  const { aboutUsData, isLoading: aboutUsLoading } = usePublicAboutUs();
 
   return (
     <section className={styles.aboutSection}>
-      <div className={styles.wrapper}>
-        <div className={styles.aboutWrapper}>
+      <div className={styles.aboutWrapper}>
           <div className={styles.aboutImageWrapper}>
             <Image
               src={aboutUsLoading ? "/samples/sample1.jpg" : (aboutUsData?.image_url || "/samples/sample1.jpg")}
@@ -61,9 +59,8 @@ function AboutSection() {
             </div>
           </div>
         </div>
-      </div>
     </section>
   );
 }
 
-export default memo(AboutSection);
+export default AboutSection;

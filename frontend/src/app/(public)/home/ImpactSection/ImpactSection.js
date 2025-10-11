@@ -219,7 +219,7 @@ export default function ImpactSection() {
                       fill
                       className={styles.cardImage}
                       sizes={`(max-width: 768px) 280px, (max-width: 1024px) 320px, 400px`}
-                      loading="lazy"
+                      loading={index < 2 ? "eager" : "lazy"}
                       priority={index < 2}
                     />
                   )}

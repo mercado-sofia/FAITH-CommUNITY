@@ -1,0 +1,140 @@
+/* Layout & Structure */
+.container {
+  padding: 0;
+  margin: 0 auto 2rem;
+}
+
+/* Header - Consistent with other admin pages */
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: var(--font-poppins), sans-serif;
+  color: #06100f;
+  user-select: none;
+  margin: 0;
+}
+
+.headerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.2rem;
+}
+
+.addButton {
+  background: #06100f;
+  color: white;
+  border: none;
+  padding: 0.65rem 1.2rem;
+  border-radius: 0.375rem;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  user-select: none;
+}
+
+.addButton:hover {
+  background: #142220;
+  border-color: #0b1b19;
+}
+
+.addButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Highlights Section */
+.programsSection {
+  margin-top: 2.4rem;
+}
+
+.programsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 80px 20px;
+  margin: 40px 0;
+}
+
+.emptyTitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: #374151;
+  margin: 0 0 8px 0;
+  font-family: var(--font-inter);
+}
+
+.emptyDescription {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 24px 0;
+  font-family: var(--font-inter);
+}
+
+.emptyActionButton {
+  background: #06100f;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.375rem;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.emptyActionButton:hover {
+  background: #142220;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .headerTop {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .programsGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .emptyState {
+    padding: 40px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header h1 {
+    font-size: 1.2rem;
+  }
+
+  .addButton {
+    padding: 0.5rem 1rem;
+    font-size: 11px;
+  }
+
+  .emptyActionButton {
+    padding: 0.65rem 1.2rem;
+    font-size: 13px;
+  }
+}

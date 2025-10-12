@@ -105,7 +105,7 @@ export default function Sidebar() {
           </Link>
 
           <Link
-            href="/superadmin/faithree"
+            href="/superadmin/faithree/highlights"
             className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith('/superadmin/faithree') ? styles.active : ''}`}
           >
             <RiTreeFill className={styles.icon} />

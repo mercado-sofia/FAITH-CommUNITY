@@ -1,13 +1,14 @@
 'use client';
 
 import styles from './styles/StatCard.module.css';
-import { FiUsers, FiFileText, FiCheckCircle, FiCalendar, FiClock } from 'react-icons/fi';
+import { FiUsers, FiFileText, FiCheckCircle, FiCalendar, FiClock, FiStar } from 'react-icons/fi';
 
 const icons = {
   organizations: <FiCalendar className={styles.icon} />,
   pending: <FiFileText className={styles.icon} />,
   upcoming: <FiClock className={styles.icon} />,
   programs: <FiCheckCircle className={styles.icon} />,
+  highlights: <FiStar className={styles.icon} />,
 };
 
 export default function StatCard({ label, count, iconKey, isLoading = false }) {

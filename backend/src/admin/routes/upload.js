@@ -2,6 +2,7 @@
 
 import express from 'express';
 import { cloudinaryUploadConfigs } from '../../utils/cloudinaryUpload.js';
+import { CLOUDINARY_FOLDERS } from '../../utils/cloudinaryConfig.js';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
@@ -65,6 +66,10 @@ router.post('/', verifyAdminOrSuperadmin, cloudinaryUploadConfigs.programMain.si
         folder = 'faith-community/organizations/heads';
         prefix = 'heads_faces_';
         break;
+      case 'highlight':
+        folder = CLOUDINARY_FOLDERS.HIGHLIGHTS;
+        prefix = 'highlight_';
+        break;
       default:
         folder = 'faith-community/programs/main';
         prefix = 'prog_main_';
@@ -72,7 +77,6 @@ router.post('/', verifyAdminOrSuperadmin, cloudinaryUploadConfigs.programMain.si
     }
     
     try {
-      const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
       const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
       
       // Upload to Cloudinary
@@ -138,7 +142,6 @@ router.post('/public/organization-logo', cloudinaryUploadConfigs.organizationLog
     }
     
     try {
-      const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
       const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
       
       // Upload to Cloudinary

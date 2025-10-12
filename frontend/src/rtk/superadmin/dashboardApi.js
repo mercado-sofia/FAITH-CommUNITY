@@ -153,6 +153,16 @@ export const dashboardApi = createApi({
         }));
       },
     }),
+
+    // Get pending highlights count
+    getPendingHighlightsCount: builder.query({
+      query: () => "/admin/highlights/approval/all?status=pending",
+      providesTags: ["Dashboard"],
+      transformResponse: (response) => {
+        const highlights = response.success ? response.data : response;
+        return Array.isArray(highlights) ? highlights.length : 0;
+      },
+    }),
   }),
 })
 
@@ -166,4 +176,5 @@ export const {
   useGetRecentPendingApprovalsQuery,
   useGetRecentApprovalsQuery,
   useGetOrganizationsForFilterQuery,
+  useGetPendingHighlightsCountQuery,
 } = dashboardApi

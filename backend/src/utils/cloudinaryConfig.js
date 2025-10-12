@@ -132,6 +132,7 @@ export const CLOUDINARY_FOLDERS = {
   BRANDING: 'faith-community/branding',
   USER_PROFILES: 'faith-community/user-profiles',
   NEWS: 'faith-community/news',
+  HIGHLIGHTS: 'faith-community/highlights',
   ORGANIZATIONS: {
     LOGOS: 'faith-community/organizations/logos',
     HEADS: 'faith-community/organizations/heads'

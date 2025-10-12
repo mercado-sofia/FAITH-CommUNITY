@@ -277,10 +277,22 @@ const publicLimiter = rateLimit({
 // Public Routes with per-route protection
 app.use("/api/organizations", publicLimiter) // Apply public limiter to organizations
 app.use("/api/news", publicLimiter) // Apply public limiter to news
+app.use("/api/highlights", publicLimiter) // Apply public limiter to highlights
 app.use("/api", organizationsRoutes)
 app.use("/api/subscription", subscriptionRoutes)
 app.use("/api", applyRoutes)
 app.use("/api", messagesRoutes)
+
+// Direct public route for highlights (no authentication required)
+app.get("/api/highlights/public/approved", async (req, res) => {
+  try {
+    const { getApprovedHighlights } = await import("./src/admin/controllers/highlightsController.js");
+    await getApprovedHighlights(req, res);
+  } catch (error) {
+    console.error('Error in public highlights route:', error);
+    res.status(500).json({ error: 'Failed to fetch highlights' });
+  }
+});
 app.use(["/api/users/login", "/api/users/forgot-password", "/api/users/reset-password", "/api/users/verify-email"], authSpeedLimiter, authLimiter)
 app.use("/api/users", usersRoutes)
 
@@ -301,6 +313,7 @@ import notificationsRoutes from "./src/admin/routes/notifications.js"
 import inboxRoutes from "./src/admin/routes/inbox.js"
 import subscribersRoutes from "./src/admin/routes/subscribers.js";
 import collaborationRoutes from "./src/admin/routes/collaborationRoutes.js";
+import highlightsRoutes from "./src/admin/routes/highlights.js";
 
 
 app.use("/api/advocacies", advocaciesRoutes)
@@ -319,6 +332,7 @@ app.use("/api/notifications", notificationsRoutes)
 app.use("/api/inbox", inboxRoutes)
 app.use("/api/subscribers", subscribersRoutes)
 app.use("/api/collaborations", collaborationRoutes);
+app.use("/api/admin/highlights", highlightsRoutes);
 
 // SUPERADMIN ROUTES
 import adminsRoutes from "./src/superadmin/routes/admins.js"

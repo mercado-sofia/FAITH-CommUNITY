@@ -1,0 +1,878 @@
+/* Main Area Layout - Updated to match other superadmin pages */
+.mainArea {
+  padding: 0 3rem 2rem 3rem;
+  min-height: calc(100vh - 55px);
+  background: #F0F4F7;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Header Section */
+.header {
+  margin-bottom: 2rem;
+  padding-top: 2rem;
+}
+
+.pageTitle {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: var(--font-poppins), sans-serif;
+  color: #06100f;
+  user-select: none;
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* Filters */
+.filtersContainer {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.searchContainer {
+  position: relative;
+  flex: 1;
+  min-width: 300px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  font-size: 16px;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.75rem 0.75rem 0.75rem 2.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 14px;
+  font-family: var(--font-inter);
+  background-color: white;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filterLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  font-family: var(--font-inter);
+  white-space: nowrap;
+}
+
+.filterSelect {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 14px;
+  font-family: var(--font-inter);
+  background-color: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+/* Table */
+.tableContainer {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  background-color: #f9fafb;
+  padding: 1rem;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  font-family: var(--font-inter);
+  border-bottom: 1px solid #e5e7eb;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table td {
+  padding: 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 14px;
+  font-family: var(--font-inter);
+}
+
+.table tr:hover {
+  background-color: #f9fafb;
+}
+
+/* Table Cells */
+.titleCell {
+  max-width: 300px;
+}
+
+.titleContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.titleText {
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.descriptionText {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.organizationCell {
+  min-width: 200px;
+}
+
+.organizationInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.orgName {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.orgAcronym {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.creatorCell {
+  min-width: 180px;
+}
+
+.creatorInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.creatorName {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.creatorEmail {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.dateCell {
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.statusCell {
+  white-space: nowrap;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.statusPending {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.statusApproved {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+.statusRejected {
+  background-color: #fecaca;
+  color: #dc2626;
+}
+
+.actionsCell {
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.viewButton,
+.approveButton,
+.rejectButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.viewButton {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.viewButton:hover {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.approveButton {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+.approveButton:hover {
+  background-color: #bbf7d0;
+}
+
+.rejectButton {
+  background-color: #fecaca;
+  color: #dc2626;
+}
+
+.rejectButton:hover {
+  background-color: #fca5a5;
+}
+
+.viewButton:disabled,
+.approveButton:disabled,
+.rejectButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* No Data */
+.noData {
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+  padding: 3rem 1rem;
+}
+
+/* Loading */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: #6b7280;
+}
+
+.spinner {
+  font-size: 2rem;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Error */
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.errorText {
+  color: #dc2626;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.retryButton {
+  padding: 0.75rem 1.5rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.retryButton:hover {
+  background-color: #2563eb;
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 16px;
+  max-width: 800px;
+  max-height: 90vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from { 
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 32px;
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+.modalTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+}
+
+.closeButton:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.modalBody {
+  flex: 1;
+  padding: 32px;
+  overflow-y: auto;
+  background-color: #fafafa;
+}
+
+.modalSection {
+  background: white;
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.sectionTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.75rem 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.sectionContent {
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.95rem;
+}
+
+.mediaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.mediaItem {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background-color: #f9fafb;
+}
+
+.mediaImage {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.mediaVideo {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.mediaFile {
+  padding: 1rem;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.modalFooter {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  justify-content: flex-end;
+}
+
+.modalApproveButton,
+.modalRejectButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-inter);
+}
+
+.modalApproveButton {
+  background-color: #10b981;
+  color: white;
+}
+
+.modalApproveButton:hover {
+  background-color: #059669;
+}
+
+.modalRejectButton {
+  background-color: #ef4444;
+  color: white;
+}
+
+.modalRejectButton:hover {
+  background-color: #dc2626;
+}
+
+.modalApproveButton:disabled,
+.modalRejectButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .container {
+    padding: 1.5rem;
+  }
+  
+  .filtersContainer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .searchContainer {
+    min-width: auto;
+  }
+  
+  .filterGroup {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+  
+  .title {
+    font-size: 1.5rem;
+  }
+  
+  .tableContainer {
+    overflow-x: auto;
+  }
+  
+  .table {
+    min-width: 600px;
+  }
+  
+  .modalContent {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+  }
+  
+  .modalHeader,
+  .modalBody,
+  .modalFooter {
+    padding: 1rem;
+  }
+  
+  .mediaGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .filtersContainer {
+    gap: 0.75rem;
+  }
+  
+  .searchInput {
+    padding: 0.65rem 0.65rem 0.65rem 2.5rem;
+    font-size: 13px;
+  }
+  
+  .filterSelect {
+    padding: 0.65rem;
+    font-size: 13px;
+  }
+  
+  .table th,
+  .table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 13px;
+  }
+  
+  .modalFooter {
+    flex-direction: column;
+  }
+  
+  .modalApproveButton,
+  .modalRejectButton {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Rejection Confirmation Modal - Matching Superadmin Design */
+.rejectModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.rejectModal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.rejectModalHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  position: relative;
+}
+
+.rejectModalTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  flex: 1;
+}
+
+.rejectModalCloseBtn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: #6b7280;
+  transition: all 0.2s ease;
+}
+
+.rejectModalCloseBtn:hover:not(:disabled) {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.rejectModalCloseBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rejectModalContent {
+  padding: 1.5rem;
+}
+
+.rejectWarningSection {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+}
+
+.rejectWarningIcon {
+  color: #dc2626;
+  font-size: 1.5rem;
+  margin-top: 0.25rem;
+}
+
+.rejectWarningText {
+  flex: 1;
+}
+
+.rejectMessage {
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+}
+
+.rejectDetails {
+  color: #6b7280;
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.rejectCommentSection {
+  margin-bottom: 1.5rem;
+}
+
+.rejectCommentLabel {
+  display: block;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.rejectCommentInput {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color 0.2s ease;
+}
+
+.rejectCommentInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.rejectCommentInput:disabled {
+  background-color: #f9fafb;
+  cursor: not-allowed;
+}
+
+.rejectDestructiveWarning {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 1rem;
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+
+.rejectModalActions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding: 1rem 1.5rem 1.5rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.rejectCancelBtn {
+  padding: 0.75rem 1.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rejectCancelBtn:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.rejectCancelBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rejectConfirmBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: white;
+}
+
+.rejectConfirmBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.rejectBtn {
+  background: #ef4444;
+}
+
+.rejectBtn:hover:not(:disabled) {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.rejectSpinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Design for Rejection Modal */
+@media (max-width: 768px) {
+  .rejectModalActions {
+    flex-direction: column;
+  }
+  
+  .rejectCancelBtn,
+  .rejectConfirmBtn {
+    width: 100%;
+  }
+}

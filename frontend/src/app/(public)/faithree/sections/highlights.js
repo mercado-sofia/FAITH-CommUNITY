@@ -1,69 +1,59 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './highlights.module.css';
 
-// Mock data for FAITHree Stories Highlights
-const storiesData = [
-  {
-    id: 1,
-    title: "Community Tree Planting Initiative",
-    organization: "Green Earth Foundation",
-    description: "Join us in our mission to plant 1000 trees across the community this year. This initiative aims to combat climate change and create a greener environment for future generations.",
-    status: "active",
-    date: "Dec 2024",
-    isHighlighted: false
-  },
-  {
-    id: 2,
-    title: "Ocean Cleanup Campaign",
-    organization: "Blue Wave Alliance",
-    description: "Our volunteers have successfully removed over 500kg of plastic waste from local beaches. This ongoing campaign helps protect marine life and preserve our coastal ecosystems.",
-    status: "completed",
-    date: "Nov 2024",
-    isHighlighted: false
-  },
-  {
-    id: 3,
-    title: "Renewable Energy Workshop",
-    organization: "Solar Future Initiative",
-    description: "Educational workshop teaching families how to implement solar energy solutions at home. Over 200 participants learned about sustainable energy alternatives and cost savings.",
-    status: "upcoming",
-    date: "Jan 2025",
-    isHighlighted: false
-  },
-  {
-    id: 4,
-    title: "Urban Garden Project",
-    organization: "City Green Collective",
-    description: "Transforming empty city lots into productive urban gardens. This project provides fresh produce to local communities while promoting sustainable agriculture practices.",
-    status: "active",
-    date: "Dec 2024",
-    isHighlighted: false
-  },
-  {
-    id: 5,
-    title: "Wildlife Conservation Program",
-    organization: "Nature Protectors",
-    description: "Protecting endangered species through habitat restoration and community education. Our efforts have helped increase local wildlife populations by 30% this year.",
-    status: "active",
-    date: "Dec 2024",
-    isHighlighted: false
-  },
-  {
-    id: 6,
-    title: "Zero Waste Challenge",
-    organization: "Eco Warriors",
-    description: "A month-long challenge encouraging families to reduce their waste output. Participants achieved an average 60% reduction in household waste through creative recycling and composting.",
-    status: "completed",
-    date: "Oct 2024",
-    isHighlighted: false
-  }
-];
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
+// No mock data - using real API data only
 
 export default function Highlights({ onClose }) {
-  const [stories, setStories] = useState(storiesData);
+  const [stories, setStories] = useState([]);
   const [selectedStory, setSelectedStory] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch approved highlights from API
+  useEffect(() => {
+    const fetchHighlights = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`${API_BASE_URL}/api/highlights/public/approved`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch highlights');
+        }
+        
+        const data = await response.json();
+        const highlights = data.highlights || [];
+        
+        // Transform API data to match expected format
+        const transformedHighlights = highlights.map(highlight => ({
+          id: highlight.id,
+          title: highlight.title,
+          organization: highlight.organization_name || 'Unknown Organization',
+          organization_acronym: highlight.organization_acronym || '',
+          description: highlight.description,
+          date: new Date(highlight.created_at).toLocaleDateString('en-US', { 
+            month: 'short', 
+            year: 'numeric' 
+          }),
+          media: highlight.media || [],
+          isHighlighted: false
+        }));
+        
+        setStories(transformedHighlights);
+      } catch (error) {
+        console.error('Error fetching highlights:', error);
+        setError('Failed to load highlights');
+        setStories([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHighlights();
+  }, []);
 
   const handleStarClick = (storyId, event) => {
     event.stopPropagation(); // Prevent card click when clicking star
@@ -117,7 +107,31 @@ export default function Highlights({ onClose }) {
       <div className={styles.contentSection}>
         <div className={styles.mainContent}>
           <div className={styles.storiesGrid}>
-          {stories.map((story) => (
+          {isLoading ? (
+            // Loading skeleton
+            Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className={styles.storyCard}>
+                <div className={styles.cardImageContainer}>
+                  <div className={styles.skeletonImage}></div>
+                </div>
+                <div className={styles.cardContent}>
+                  <div className={styles.skeletonTitle}></div>
+                  <div className={styles.skeletonOrganization}></div>
+                  <div className={styles.skeletonDescription}></div>
+                  <div className={styles.skeletonDescription}></div>
+                  <div className={styles.cardFooter}>
+                    <div className={styles.skeletonBadge}></div>
+                    <div className={styles.skeletonDate}></div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : error ? (
+            <div className={styles.errorMessage}>
+              <p>{error}</p>
+            </div>
+          ) : null}
+          {!isLoading && stories.map((story) => (
             <div 
               key={story.id} 
               className={styles.storyCard}
@@ -146,8 +160,8 @@ export default function Highlights({ onClose }) {
                   {story.description}
                 </p>
                 <div className={styles.cardFooter}>
-                  <span className={`${styles.statusBadge} ${styles[story.status]}`}>
-                    {story.status.charAt(0).toUpperCase() + story.status.slice(1)}
+                  <span className={styles.organizationBadge}>
+                    {story.organization_acronym || story.organization}
                   </span>
                   <span className={styles.cardDate}>{story.date}</span>
                 </div>

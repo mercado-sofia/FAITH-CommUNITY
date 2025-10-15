@@ -23,7 +23,7 @@ export default function StatCardSection() {
     programs: programsData = [], 
     isLoading: programsLoading,
     error: programsError
-  } = useAdminPrograms(currentAdmin?.org);
+  } = useAdminPrograms();
 
   // Calculate counts from real data
   const activeProgramsCount = programsData.filter(program => 

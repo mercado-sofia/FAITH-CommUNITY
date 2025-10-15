@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { FaTimes, FaTag, FaCalendar, FaEye, FaUsers, FaExclamationTriangle } from 'react-icons/fa';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import { formatProgramDates, formatDateShort } from '@/utils/dateUtils.js';
+import { getStatusDisplayText } from '@/utils/collaborationStatusUtils';
 import styles from './ViewDetailsModal.module.css';
 
 const ViewDetailsModal = ({ program, onClose }) => {
@@ -78,17 +79,21 @@ const ViewDetailsModal = ({ program, onClose }) => {
               {/* Right - Program Title, Status, Program Details */}
               <div className={styles.programInfoSection}>
                 {/* Category at the top */}
-                {program.category && (
-                  <div className={styles.categoryBadge}>
-                    {getCategoryLabel(program.category)}
-                  </div>
-                )}
+                <div className={styles.categoryBadge}>
+                  {getCategoryLabel(program.category)}
+                </div>
                 <h3 className={styles.programTitle}>{program.title}</h3>
                 
                 {/* Status Badge */}
                 {program.status && (
                   <div className={`${styles.statusBadge} ${styles[program.status]}`}>
-                    {program.status.charAt(0).toUpperCase() + program.status.slice(1)}
+                    {(() => {
+                      // Handle special status display for collaborative programs
+                      if (program.is_collaborative) {
+                        return getStatusDisplayText(program.status);
+                      }
+                      return program.status.charAt(0).toUpperCase() + program.status.slice(1);
+                    })()}
                   </div>
                 )}
 

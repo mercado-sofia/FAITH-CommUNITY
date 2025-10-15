@@ -58,7 +58,7 @@ export default function PendingApprovalsPage() {
   const [approvals, setApprovals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [successModal, setSuccessModal] = useState({ isVisible: false, message: '' });
+  const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
   const [organizations, setOrganizations] = useState([]);
   const [orgsLoading, setOrgsLoading] = useState(false);
   
@@ -133,21 +133,68 @@ export default function PendingApprovalsPage() {
     try {
       setIsLoading(true);
       
-      const res = await makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals`);
-      if (!res) return; // Helper function handled redirect
+      // Fetch both submissions and collaborative programs
+      const [submissionsRes, collaborativeRes] = await Promise.all([
+        makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals`),
+        makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals/collaborative-programs`)
+      ]);
       
-      const result = await res.json();
+      if (!submissionsRes || !collaborativeRes) return; // Helper function handled redirect
+      
+      const [submissionsResult, collaborativeResult] = await Promise.all([
+        submissionsRes.json(),
+        collaborativeRes.json()
+      ]);
 
-      if (!res.ok || !result.success) {
-        throw new Error(result.message || 'Failed to fetch approvals');
+      if (!submissionsRes.ok || !submissionsResult.success) {
+        throw new Error(submissionsResult.message || 'Failed to fetch submissions');
       }
 
-      const formatted = result.data.map((item) => ({
+      if (!collaborativeRes.ok || !collaborativeResult.success) {
+        throw new Error(collaborativeResult.message || 'Failed to fetch collaborative programs');
+      }
+
+      // Format submissions
+      const formattedSubmissions = submissionsResult.data.map((item) => ({
         ...item,
-        submitted_at: new Date(item.submitted_at)
+        submitted_at: new Date(item.submitted_at),
+        type: 'submission',
+        uniqueKey: `submission-${item.id}` // Create unique key
       }));
 
-      setApprovals(formatted);
+      // Format collaborative programs
+      const formattedCollaborative = collaborativeResult.data.map((item) => {
+        // Debug logging for collaborative programs in superadmin
+        if (item.title === 'Collab test') {
+          console.log('🔍 Superadmin - Collab test data:', {
+            id: item.id,
+            title: item.title,
+            status: item.status,
+            organization_acronym: item.organization_acronym
+          });
+        }
+        
+        return {
+          ...item,
+          submitted_at: new Date(item.created_at), // Use created_at as submitted_at for consistency
+          type: 'collaborative_program',
+          section: 'collaborative_programs',
+          organization_acronym: item.organization_acronym,
+          status: item.status, // Use actual status from backend
+          title: item.title,
+          org: item.organization_acronym,
+          orgName: item.organization_name,
+          uniqueKey: `collaborative-${item.id}` // Create unique key
+        };
+      });
+
+      // Combine both types
+      const allApprovals = [...formattedSubmissions, ...formattedCollaborative];
+      
+      // Sort by date (newest first)
+      allApprovals.sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at));
+
+      setApprovals(allApprovals);
       setError(null);
     } catch (err) {
       setError(err.message || 'Failed to load approvals');
@@ -179,12 +226,12 @@ export default function PendingApprovalsPage() {
   };
 
   // Success modal handlers
-  const showSuccessModal = useCallback((message) => {
-    setSuccessModal({ isVisible: true, message });
+  const showSuccessModal = useCallback((message, type = 'success') => {
+    setSuccessModal({ isVisible: true, message, type });
   }, []);
 
   const closeSuccessModal = () => {
-    setSuccessModal({ isVisible: false, message: '' });
+    setSuccessModal({ isVisible: false, message: '', type: 'success' });
   };
 
   useEffect(() => {
@@ -349,7 +396,10 @@ export default function PendingApprovalsPage() {
       filtered = filtered.filter(approval => 
         approval.org?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         approval.orgName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        approval.organization_acronym?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        approval.organization_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         approval.section?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        approval.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         approval.id?.toString().includes(searchTerm) ||
         approval.submission_id?.toString().includes(searchTerm)
       );
@@ -369,12 +419,23 @@ export default function PendingApprovalsPage() {
     setCurrentPage(1); // Reset to first page when filters change
   }, [approvals, selectedOrganization, selectedSection, selectedStatus, searchTerm, sortBy]);
 
-  const handleApprove = useCallback(async (id) => {
+  const handleApprove = useCallback(async (item) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/approvals/${id}/approve`, {
+      let url;
+      
+      // Determine the correct endpoint based on item type
+      if (item.type === 'collaborative_program') {
+        url = `${API_BASE_URL}/api/approvals/collaborative-programs/${item.id}/approve`;
+      } else {
+        url = `${API_BASE_URL}/api/approvals/${item.id}/approve`;
+      }
+
+      const res = await makeAuthenticatedRequest(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
       });
+
+      if (!res) return; // Helper function handled redirect
 
       const result = await res.json();
 
@@ -385,17 +446,28 @@ export default function PendingApprovalsPage() {
       showSuccessModal('Changes have been approved and applied.');
       fetchApprovals(); // Refresh the list
     } catch (err) {
-      showSuccessModal('Failed to approve changes: ' + err.message);
+      showSuccessModal('Failed to approve changes: ' + err.message, 'error');
     }
   }, [showSuccessModal, fetchApprovals]);
 
-  const handleReject = useCallback(async (id, rejectComment = '') => {
+  const handleReject = useCallback(async (item, rejectComment = '') => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/approvals/${id}/reject`, {
+      let url;
+      
+      // Determine the correct endpoint based on item type
+      if (item.type === 'collaborative_program') {
+        url = `${API_BASE_URL}/api/approvals/collaborative-programs/${item.id}/reject`;
+      } else {
+        url = `${API_BASE_URL}/api/approvals/${item.id}/reject`;
+      }
+
+      const res = await makeAuthenticatedRequest(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rejection_comment: rejectComment })
       });
+
+      if (!res) return; // Helper function handled redirect
 
       const result = await res.json();
 
@@ -403,20 +475,30 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Rejection failed');
       }
 
-      showSuccessModal('Submission has been rejected.');
+      showSuccessModal('Item has been rejected.');
       fetchApprovals();
     } catch (err) {
-      showSuccessModal('Failed to reject submission: ' + err.message);
+      showSuccessModal('Failed to reject item: ' + err.message, 'error');
     }
   }, [showSuccessModal, fetchApprovals]);
 
   // Bulk action handlers
-  const handleBulkApprove = useCallback(async (ids) => {
+  const handleBulkApprove = useCallback(async (uniqueKeys) => {
     try {
+      // Extract original IDs from unique keys
+      const originalIds = uniqueKeys.map(key => {
+        if (key.startsWith('submission-')) {
+          return key.replace('submission-', '');
+        } else if (key.startsWith('collaborative-')) {
+          return key.replace('collaborative-', '');
+        }
+        return key; // fallback for items without unique keys
+      });
+
       const res = await fetch(`${API_BASE_URL}/api/approvals/bulk/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids })
+        body: JSON.stringify({ ids: originalIds })
       });
 
       const result = await res.json();
@@ -428,16 +510,26 @@ export default function PendingApprovalsPage() {
       showSuccessModal(`Bulk approval completed: ${result.details.successCount} approved`);
       fetchApprovals();
     } catch (err) {
-      showSuccessModal('Failed to bulk approve approvals: ' + err.message);
+      showSuccessModal('Failed to bulk approve approvals: ' + err.message, 'error');
     }
   }, [showSuccessModal, fetchApprovals]);
 
-  const handleBulkReject = useCallback(async (ids, rejectComment = '') => {
+  const handleBulkReject = useCallback(async (uniqueKeys, rejectComment = '') => {
     try {
+      // Extract original IDs from unique keys
+      const originalIds = uniqueKeys.map(key => {
+        if (key.startsWith('submission-')) {
+          return key.replace('submission-', '');
+        } else if (key.startsWith('collaborative-')) {
+          return key.replace('collaborative-', '');
+        }
+        return key; // fallback for items without unique keys
+      });
+
       const res = await fetch(`${API_BASE_URL}/api/approvals/bulk/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids, rejection_comment: rejectComment })
+        body: JSON.stringify({ ids: originalIds, rejection_comment: rejectComment })
       });
 
       const result = await res.json();
@@ -449,16 +541,26 @@ export default function PendingApprovalsPage() {
       showSuccessModal(`Bulk rejection completed: ${result.details.successCount} rejected`);
       fetchApprovals();
     } catch (err) {
-      showSuccessModal('Failed to bulk reject approvals: ' + err.message);
+      showSuccessModal('Failed to bulk reject approvals: ' + err.message, 'error');
     }
   }, [showSuccessModal, fetchApprovals]);
 
-  const handleBulkDelete = useCallback(async (ids) => {
+  const handleBulkDelete = useCallback(async (uniqueKeys) => {
     try {
+      // Extract original IDs from unique keys
+      const originalIds = uniqueKeys.map(key => {
+        if (key.startsWith('submission-')) {
+          return key.replace('submission-', '');
+        } else if (key.startsWith('collaborative-')) {
+          return key.replace('collaborative-', '');
+        }
+        return key; // fallback for items without unique keys
+      });
+
       const res = await fetch(`${API_BASE_URL}/api/approvals/bulk/delete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids })
+        body: JSON.stringify({ ids: originalIds })
       });
 
       const result = await res.json();
@@ -470,7 +572,7 @@ export default function PendingApprovalsPage() {
       showSuccessModal(`Bulk deletion completed: ${result.details.successCount} deleted`);
       fetchApprovals();
     } catch (err) {
-      showSuccessModal('Failed to bulk delete approvals: ' + err.message);
+      showSuccessModal('Failed to bulk delete approvals: ' + err.message, 'error');
     }
   }, [showSuccessModal, fetchApprovals]);
 
@@ -575,7 +677,7 @@ export default function PendingApprovalsPage() {
       setShowIndividualDeleteModal(false);
       setSelectedItemForAction(null);
     } catch (error) {
-      showSuccessModal('Failed to delete submission: ' + error.message);
+      showSuccessModal('Failed to delete submission: ' + error.message, 'error');
     } finally {
       setIsIndividualDeleting(false);
     }
@@ -596,7 +698,7 @@ export default function PendingApprovalsPage() {
   // Bulk action handlers - optimized with useCallback
   const handleSelectAll = useCallback((e) => {
     if (e.target.checked) {
-      setSelectedItems(new Set(currentApprovals.map(item => item.id)));
+      setSelectedItems(new Set(currentApprovals.map(item => item.uniqueKey || item.id)));
     } else {
       setSelectedItems(new Set());
     }
@@ -739,6 +841,7 @@ export default function PendingApprovalsPage() {
         message={successModal.message}
         isVisible={successModal.isVisible}
         onClose={closeSuccessModal}
+        type={successModal.type}
       />
 
       {/* Header Section */}

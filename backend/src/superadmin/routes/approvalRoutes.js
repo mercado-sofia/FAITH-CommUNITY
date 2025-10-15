@@ -1,4 +1,5 @@
 import express from 'express';
+import { verifyAdminOrSuperadmin } from '../middleware/verifyAdminOrSuperadmin.js';
 import { 
   approveSubmission, 
   getPendingSubmissions, 
@@ -7,10 +8,16 @@ import {
   deleteSubmission,
   bulkApproveSubmissions,
   bulkRejectSubmissions,
-  bulkDeleteSubmissions
+  bulkDeleteSubmissions,
+  getPendingCollaborativePrograms,
+  approveCollaborativeProgram,
+  rejectCollaborativeProgram
 } from '../controllers/approvalController.js';
 
 const router = express.Router();
+
+// All routes require admin or superadmin authentication
+router.use(verifyAdminOrSuperadmin);
 
 // GET all submissions
 router.get('/', getAllSubmissions);
@@ -35,5 +42,14 @@ router.post('/bulk/reject', bulkRejectSubmissions);
 
 // POST bulk delete submissions
 router.post('/bulk/delete', bulkDeleteSubmissions);
+
+// GET pending collaborative programs
+router.get('/collaborative-programs', getPendingCollaborativePrograms);
+
+// PUT approve collaborative program
+router.put('/collaborative-programs/:programId/approve', approveCollaborativeProgram);
+
+// PUT reject collaborative program
+router.put('/collaborative-programs/:programId/reject', rejectCollaborativeProgram);
 
 export default router;

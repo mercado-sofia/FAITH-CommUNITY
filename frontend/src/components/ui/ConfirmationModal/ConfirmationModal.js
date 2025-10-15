@@ -85,6 +85,13 @@ export default function ConfirmationModal({
           })()}? This action cannot be undone.`,
           buttonText: 'Cancel'
         }
+      case 'decline':
+        return {
+          icon: <FiX />,
+          title: `Decline ${capitalizedItemType}${itemName ? `: "${itemName}"` : ''}`,
+          message: customMessage || `Are you sure you want to decline this ${itemType}?`,
+          buttonText: 'Decline'
+        }
       default: // 'delete'
         return {
           icon: <FiTrash2 />,
@@ -181,6 +188,7 @@ export default function ConfirmationModal({
             className={
               actionType === 'activate' ? styles.activateBtn : 
               actionType === 'update' ? styles.updateBtn : 
+              actionType === 'decline' ? styles.declineBtn :
               styles.deleteBtn
             }
             disabled={isDeleting}

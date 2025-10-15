@@ -11,6 +11,9 @@ export const volunteersApi = createApi({
       const token = getState().admin?.token || localStorage.getItem("adminToken")
       if (token) {
         headers.set("Authorization", `Bearer ${token}`)
+        console.log('VolunteersApi: Using token for authentication')
+      } else {
+        console.warn('VolunteersApi: No admin token found')
       }
 
       return headers
@@ -104,6 +107,41 @@ export const volunteersApi = createApi({
       },
     }),
 
+    // Get volunteers by program ID
+    getVolunteersByProgram: builder.query({
+      query: (programId) => `/volunteers/program/${programId}`,
+      providesTags: (result, error, programId) => [
+        { type: "Volunteer", id: `program-${programId}` },
+        "Volunteer"
+      ],
+      transformResponse: (response) => {
+        const volunteers = Array.isArray(response?.data) ? response.data : response?.data || []
+        return {
+          program: response.program,
+          count: response.count,
+          volunteers: volunteers.map(volunteer => ({
+            id: volunteer.id,
+            name: volunteer.full_name,
+            age: volunteer.age,
+            gender: volunteer.gender,
+            email: volunteer.email,
+            contact: volunteer.contact_number,
+            address: volunteer.address,
+            occupation: volunteer.occupation,
+            citizenship: volunteer.citizenship,
+            program: volunteer.program_name || volunteer.program_title || 'Unknown Program',
+            date: volunteer.created_at ? new Date(volunteer.created_at).toISOString().split('T')[0] : '',
+            status: volunteer.status || 'Pending',
+            reason: volunteer.reason,
+            profile_photo_url: volunteer.profile_photo_url,
+            program_id: volunteer.program_id,
+            user_id: volunteer.user_id,
+            organization_name: volunteer.organization_name
+          }))
+        }
+      },
+    }),
+
     // Get volunteer by ID for detailed view
     getVolunteerById: builder.query({
       query: (id) => `/volunteers/${id}`,
@@ -135,6 +173,7 @@ export const {
   useGetAllVolunteersQuery,
   useGetVolunteersByOrganizationQuery,
   useGetVolunteersByAdminOrgQuery,
+  useGetVolunteersByProgramQuery,
   useGetVolunteerByIdQuery,
   useUpdateVolunteerStatusMutation,
   useSoftDeleteVolunteerMutation,

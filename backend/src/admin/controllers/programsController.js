@@ -42,6 +42,7 @@ export const getAdminPrograms = async (req, res) => {
     const adminOrgId = adminRows[0].organization_id;
     
     // Get programs where admin is creator (from their organization) OR collaborator (from other organizations)
+    // Include ALL collaboration statuses to ensure visibility throughout the workflow
     const [programRows] = await db.execute(`
       SELECT DISTINCT p.*, o.org as orgAcronym, o.orgName as orgName, o.logo as orgLogo
       FROM programs_projects p
@@ -49,7 +50,7 @@ export const getAdminPrograms = async (req, res) => {
       WHERE p.organization_id = ? 
          OR p.id IN (
            SELECT program_id FROM program_collaborations 
-           WHERE collaborator_admin_id = ? AND status = 'accepted'
+           WHERE collaborator_admin_id = ? AND status IN ('accepted', 'pending', 'declined')
          )
       ORDER BY p.created_at DESC
     `, [adminOrgId, currentAdminId]);
@@ -77,7 +78,7 @@ export const getAdminPrograms = async (req, res) => {
       );
       const additionalImages = imageRows.map(row => row.image_data);
 
-      // Get collaboration info
+      // Get collaboration info for current admin
       const [collaborationRows] = await db.execute(`
         SELECT 
           pc.id as collaboration_id,
@@ -99,7 +100,7 @@ export const getAdminPrograms = async (req, res) => {
         collaborationStatus = collaborationRows[0].collaboration_status;
       }
 
-      // Get all collaborators for this program
+      // Get all collaborators for this program (including all statuses for visibility)
       const [allCollaborators] = await db.execute(`
         SELECT 
           a.id,
@@ -110,7 +111,7 @@ export const getAdminPrograms = async (req, res) => {
         FROM program_collaborations pc
         LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
         LEFT JOIN organizations o ON a.organization_id = o.id
-        WHERE pc.program_id = ? AND pc.status = 'accepted'
+        WHERE pc.program_id = ? AND pc.status IN ('accepted', 'pending', 'declined')
       `, [program.id]);
 
       let logoUrl;
@@ -1212,8 +1213,54 @@ export const getOtherProgramsByOrganization = async (req, res) => {
 
 // ---------------- Add new program (from programProjectsController) ----------------
 export const addProgramProject = async (req, res) => {
-  const { title, description, collaborators } = req.body;
+  const { 
+    title, 
+    description, 
+    category,
+    event_start_date,
+    event_end_date,
+    collaborators: collaboratorsRaw 
+  } = req.body;
   let image = '';
+  
+  // Parse collaborators if it's a string (from FormData)
+  let collaborators = [];
+  if (collaboratorsRaw) {
+    try {
+      if (typeof collaboratorsRaw === 'string') {
+        collaborators = JSON.parse(collaboratorsRaw);
+      } else if (Array.isArray(collaboratorsRaw)) {
+        collaborators = collaboratorsRaw;
+      }
+    } catch (error) {
+      console.error('Error parsing collaborators:', error);
+      collaborators = [];
+    }
+  }
+
+  // Get the current admin ID
+  const currentAdminId = req.admin?.id || req.superadmin?.id;
+  
+  if (!currentAdminId) {
+    return res.status(401).json({
+      success: false,
+      message: 'Admin ID not found in request'
+    });
+  }
+
+  // Get the admin's organization ID
+  const [adminRows] = await db.execute(`
+    SELECT organization_id FROM admins WHERE id = ?
+  `, [currentAdminId]);
+  
+  if (adminRows.length === 0) {
+    return res.status(404).json({
+      success: false,
+      message: 'Admin not found'
+    });
+  }
+  
+  const adminOrgId = adminRows[0].organization_id;
 
   if (req.file) {
     try {
@@ -1263,16 +1310,27 @@ export const addProgramProject = async (req, res) => {
     }
 
     const [result] = await db.execute(
-      `INSERT INTO programs_projects (title, description, image, status, slug, is_approved, is_collaborative)
-       VALUES (?, ?, ?, 'pending', ?, FALSE, ?)`,
-      [title, description ?? null, image ?? null, finalSlug, collaborators && collaborators.length > 0]
+      `INSERT INTO programs_projects (organization_id, title, description, category, event_start_date, event_end_date, image, status, slug, is_approved, is_collaborative)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        adminOrgId, 
+        title, 
+        description ?? null, 
+        category ?? null,
+        event_start_date ?? null,
+        event_end_date ?? null,
+        image ?? null, 
+        collaborators && collaborators.length > 0 ? 'pending_collaboration' : 'pending', 
+        finalSlug, 
+        collaborators && collaborators.length > 0 ? false : true, 
+        collaborators && collaborators.length > 0
+      ]
     );
 
     const newId = result.insertId;
 
     // Handle collaboration invitations if provided
     if (collaborators && collaborators.length > 0) {
-      const currentAdminId = req.admin.id;
       
       // Filter out self-collaboration
       const validCollaborators = collaborators.filter(collaboratorId => 
@@ -1283,8 +1341,23 @@ export const addProgramProject = async (req, res) => {
         try {
           await db.execute(`
             INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status)
-            VALUES (?, ?, ?, 'accepted')
+            VALUES (?, ?, ?, 'pending')
           `, [newId, collaboratorId, currentAdminId]);
+
+          // Notify collaborator about the collaboration request
+          try {
+            const NotificationController = (await import('./notificationController.js')).default;
+            await NotificationController.createNotification({
+              admin_id: collaboratorId,
+              title: 'New Collaboration Request',
+              message: `You have received a collaboration request for "${title}". Please review and respond.`,
+              type: 'collaboration_request',
+              submission_id: newId
+            });
+          } catch (notificationError) {
+            console.error('Failed to send collaboration request notification:', notificationError);
+            // Don't fail the main operation if notification fails
+          }
         } catch (collabError) {
           console.error('Failed to add collaborator during program creation:', collabError);
           // Continue with other collaborators even if one fails

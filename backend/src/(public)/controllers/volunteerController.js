@@ -590,6 +590,104 @@ export const testAuth = (req, res) => {
   });
 };
 
+// Get volunteers by program ID
+export const getVolunteersByProgram = async (req, res) => {
+  try {
+    const { programId } = req.params;
+    const currentAdminId = req.admin?.id || req.superadmin?.id;
+
+    if (!programId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Program ID is required'
+      });
+    }
+
+    // Verify the program exists and current admin has access
+    const [programRows] = await db.execute(`
+      SELECT p.id, p.title, p.organization_id, o.orgName, o.org
+      FROM programs_projects p
+      LEFT JOIN organizations o ON p.organization_id = o.id
+      WHERE p.id = ? AND (
+        p.organization_id = (SELECT organization_id FROM admins WHERE id = ?)
+        OR p.id IN (SELECT program_id FROM program_collaborations WHERE collaborator_admin_id = ? AND status = 'accepted')
+      )
+    `, [programId, currentAdminId, currentAdminId]);
+
+    if (programRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Program not found or you do not have access'
+      });
+    }
+
+    const program = programRows[0];
+
+    // Get volunteers for this program
+    const [volunteers] = await db.execute(`
+      SELECT 
+        v.id,
+        v.program_id,
+        v.reason,
+        v.status,
+        v.created_at,
+        v.updated_at,
+        u.id as user_id,
+        u.first_name,
+        u.last_name,
+        u.full_name,
+        u.email,
+        u.contact_number,
+        u.gender,
+        u.address,
+        u.occupation,
+        u.citizenship,
+        u.birth_date,
+        u.profile_photo_url,
+        p.title as program_name,
+        p.title as program_title,
+        o.orgName as organization_name
+      FROM volunteers v
+      JOIN users u ON v.user_id = u.id
+      LEFT JOIN programs_projects p ON v.program_id = p.id
+      LEFT JOIN organizations o ON o.id = p.organization_id
+      WHERE v.program_id = ? AND u.is_active = 1
+      ORDER BY v.created_at DESC
+    `, [programId]);
+
+    // Calculate age from birth_date using centralized utility
+    const volunteersWithAge = volunteers.map(volunteer => {
+      const age = calculateAge(volunteer.birth_date);
+      
+      return {
+        ...volunteer,
+        age,
+        created_at: volunteer.created_at ? new Date(volunteer.created_at).toISOString() : null,
+        updated_at: volunteer.updated_at ? new Date(volunteer.updated_at).toISOString() : null
+      };
+    });
+
+    res.json({
+      success: true,
+      program: {
+        id: program.id,
+        title: program.title,
+        organization_name: program.orgName,
+        organization_acronym: program.org
+      },
+      count: volunteersWithAge.length,
+      data: volunteersWithAge
+    });
+  } catch (error) {
+    console.error('Error in getVolunteersByProgram:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch volunteers for program',
+      error: error.message
+    });
+  }
+};
+
 // Get approved programs with status "Upcoming" for volunteer application dropdown
 export const getApprovedUpcomingPrograms = async (req, res) => {
   try {

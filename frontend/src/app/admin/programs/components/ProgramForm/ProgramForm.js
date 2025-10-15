@@ -110,13 +110,15 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
   const handleImageChangeWrapper = useCallback(async (event) => {
     const result = await handleImageChange(event);
     if (result?.file) {
-      // Store the base64 preview data instead of the File object
-      updateFormData({ image: result.preview });
+      // Store the File object for backend submission
+      updateFormData({ image: result.file });
+      // The preview is already set by the handleImageChange hook
     } else if (result?.error) {
       updateFormData({ image: null });
+      setImagePreview(null);
       // Handle error display if needed
     }
-  }, [handleImageChange, updateFormData]);
+  }, [handleImageChange, updateFormData, setImagePreview]);
 
   // Handle additional images changes
   const handleAdditionalImagesChangeWrapper = useCallback(async (event) => {
@@ -198,7 +200,9 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
         collaborators: Array.isArray(formData.collaborators) 
           ? formData.collaborators.filter(collab => collab && collab.id)
           : [],
-        // Ensure additionalImages contains only base64 strings
+        // Keep the File object for the main image
+        image: formData.image instanceof File ? formData.image : null,
+        // Ensure additionalImages contains only base64 strings (for now, as backend doesn't handle additional images yet)
         additionalImages: Array.isArray(formData.additionalImages) 
           ? formData.additionalImages.filter(img => typeof img === 'string' && img.startsWith('data:image/'))
           : []

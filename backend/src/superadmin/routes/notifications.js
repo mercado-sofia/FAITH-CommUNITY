@@ -1,6 +1,5 @@
 import express from 'express';
 import SuperAdminNotificationController from '../controllers/superadminNotificationController.js';
-import { migrateMissingNotifications } from '../controllers/notificationMigrationController.js';
 
 const router = express.Router();
 
@@ -25,7 +24,5 @@ router.put('/:superAdminId/mark-all-read', SuperAdminNotificationController.mark
 // Delete notification
 router.delete('/:notificationId', SuperAdminNotificationController.deleteNotification);
 
-// Migration endpoint
-router.post('/migrate-missing', migrateMissingNotifications);
 
 export default router;

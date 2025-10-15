@@ -2,59 +2,29 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { FaEdit, FaTag, FaCalendar, FaEllipsisH, FaExclamationTriangle, FaSignOutAlt, FaUsers } from 'react-icons/fa';
+import { FaEdit, FaTag, FaCalendar, FaEllipsisH, FaExclamationTriangle, FaSignOutAlt, FaUsers, FaCheck, FaTimes, FaClock, FaCrown } from 'react-icons/fa';
 import { TbListDetails } from 'react-icons/tb';
-import { LuSquareCheckBig } from 'react-icons/lu';
-import { MdOutlineRadioButtonChecked } from 'react-icons/md';
 import { FiTrash2 } from 'react-icons/fi';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
-import { formatProgramDates, formatDateShort } from '@/utils/dateUtils.js';
-import CollaborationBadge from '../Collaboration/CollaborationBadge';
+import { formatDateShort, formatProgramDates } from '@/utils/dateUtils';
+import { getStatusColor, getStatusDisplayText, getEffectiveStatus } from '@/utils/collaborationStatusUtils';
 import { optOutCollaboration } from '../../services/collaborationService';
 import { SuccessModal } from '@/components';
-import styles from './ProgramCard.module.css';
+import styles from './CollaborationCard.module.css';
 
-const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteers, onMarkCompleted, onMarkActive, onOptOut }) => {
+export function CollaborationCard({ collaboration, onViewDetails, onEdit, onDelete, onViewVolunteers, onOptOut }) {
+  const [imageError, setImageError] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isOptingOut, setIsOptingOut] = useState(false);
-  const [showMarkCompletedModal, setShowMarkCompletedModal] = useState(false);
-  const [showMarkActiveModal, setShowMarkActiveModal] = useState(false);
   const [showOptOutModal, setShowOptOutModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
   const dropdownRef = useRef(null);
 
-  // Helper function to determine program status based on dates
-  const getProgramStatusByDates = (program) => {
-    if (!program.event_start_date) {
-      // If no start date, use the database status
-      return program.status || 'Active';
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time to start of day
-    
-    const startDate = new Date(program.event_start_date);
-    startDate.setHours(0, 0, 0, 0);
-    
-    const endDate = program.event_end_date ? new Date(program.event_end_date) : null;
-    if (endDate) {
-      endDate.setHours(23, 59, 59, 999); // Set to end of day
-    }
-
-    // If start date is in the future, it's upcoming
-    if (startDate > today) {
-      return 'Upcoming';
-    }
-    
-    // If end date exists and is in the past, it's completed
-    if (endDate && endDate < today) {
-      return 'Completed';
-    }
-    
-    // If start date is today or in the past, and either no end date or end date is today or in the future, it's active
-    return 'Active';
-  };
+  // Safety check for collaboration data
+  if (!collaboration) {
+    return null;
+  }
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -65,18 +35,6 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
     }
   };
 
-  const confirmMarkCompleted = async () => {
-    try {
-      await onMarkCompleted();
-      setShowMarkCompletedModal(false);
-    } catch (error) {
-      // Handle error silently in production
-    }
-  };
-
-  const cancelMarkCompleted = () => {
-    setShowMarkCompletedModal(false);
-  };
 
   // Handle clicks outside dropdown to close it
   useEffect(() => {
@@ -96,28 +54,6 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
     setShowDropdown(!showDropdown);
   };
 
-  const handleMarkCompletedClick = () => {
-    setShowDropdown(false);
-    setShowMarkCompletedModal(true);
-  };
-
-  const handleMarkActiveClick = () => {
-    setShowDropdown(false);
-    setShowMarkActiveModal(true);
-  };
-
-  const confirmMarkActive = async () => {
-    try {
-      await onMarkActive();
-      setShowMarkActiveModal(false);
-    } catch (error) {
-      // Handle error silently in production
-    }
-  };
-
-  const cancelMarkActive = () => {
-    setShowMarkActiveModal(false);
-  };
 
   const handleOptOutClick = () => {
     setShowDropdown(false);
@@ -127,14 +63,14 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
   const confirmOptOut = async () => {
     setIsOptingOut(true);
     try {
-      // Use the collaboration_id from the program data
-      if (program.collaboration_id) {
-        await optOutCollaboration(program.collaboration_id);
+      // Use the collaboration_id from the collaboration data
+      if (collaboration.collaboration_id) {
+        await optOutCollaboration(collaboration.collaboration_id);
         
         // Show success modal
         setSuccessModal({
           isVisible: true,
-          message: `You have successfully opted out of "${program.title}". The program will no longer appear in your programs list.`,
+          message: `You have successfully opted out of "${collaboration.program_title}". The program will no longer appear in your programs list.`,
           type: 'success'
         });
         
@@ -152,7 +88,7 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
       // Show error modal
       setSuccessModal({
         isVisible: true,
-        message: `Failed to opt out of "${program.title}". Please try again.`,
+        message: `Failed to opt out of "${collaboration.program_title}". Please try again.`,
         type: 'error'
       });
       
@@ -166,7 +102,29 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
     setShowOptOutModal(false);
   };
 
-  // Using centralized date utilities - formatProgramDates is now imported
+  // Calculate the effective status for display
+  const effectiveStatus = getEffectiveStatus(collaboration.status, collaboration.program_status);
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'pending':
+        return <FaClock />;
+      case 'accepted':
+        return <FaCheck />;
+      case 'declined':
+        return <FaTimes />;
+      case 'pending_collaboration':
+        return <FaClock />;
+      case 'pending_superadmin_approval':
+        return <FaClock />;
+      case 'approved':
+        return <FaCheck />;
+      case 'rejected':
+        return <FaTimes />;
+      default:
+        return <FaClock />;
+    }
+  };
 
   const getCategoryLabel = (category) => {
     const categoryMap = {
@@ -184,20 +142,31 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
     return categoryMap[category] || category || 'Uncategorized';
   };
 
+  const getRoleBadge = () => {
+    const isCreator = collaboration.request_type === 'sent';
+    return {
+      icon: isCreator ? <FaCrown /> : <FaUsers />,
+      text: isCreator ? 'Creator' : 'Collaborator',
+      className: isCreator ? styles.creatorBadge : styles.collaboratorBadge
+    };
+  };
+
+  const roleBadge = getRoleBadge();
+
   return (
-    <div className={styles.programCard}>
+    <div className={styles.card}>
       {/* Program Image */}
-      {program.image ? (
+      {collaboration.program_image ? (
         <div className={styles.imageContainer}>
-          {getProgramImageUrl(program.image) === 'IMAGE_UNAVAILABLE' ? (
+          {getProgramImageUrl(collaboration.program_image) === 'IMAGE_UNAVAILABLE' ? (
             <div className={styles.imagePlaceholder}>
               <FaExclamationTriangle className={styles.placeholderIcon} />
               <span>Image unavailable</span>
             </div>
           ) : (
             <Image
-              src={getProgramImageUrl(program.image)}
-              alt={program.title}
+              src={getProgramImageUrl(collaboration.program_image)}
+              alt={collaboration.program_title}
               className={styles.programImage}
               width={400}
               height={220}
@@ -244,7 +213,7 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
                     <FaUsers /> View Volunteers
                   </button>
                   {/* Show different actions based on user role */}
-                  {program.user_role === 'creator' ? (
+                  {collaboration.request_type === 'sent' ? (
                     <>
                       <button
                         className={styles.dropdownItem}
@@ -317,7 +286,7 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
                     <FaUsers /> View Volunteers
                   </button>
                   {/* Show different actions based on user role */}
-                  {program.user_role === 'creator' ? (
+                  {collaboration.request_type === 'sent' ? (
                     <>
                       <button
                         className={styles.dropdownItem}
@@ -358,50 +327,23 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
       <div className={styles.programContent}>
         <div className={styles.programHeader}>
           <div className={styles.titleRow}>
-            <h3 className={styles.programTitle}>{program.title}</h3>
-            <CollaborationBadge 
-              program={program}
-              userRole={program.user_role}
-              isCollaborative={program.is_collaborative}
-              collaboratorCount={program.collaborators?.length || 0}
-            />
+            <h3 className={styles.programTitle}>{collaboration.program_title}</h3>
+            <div className={`${styles.roleBadge} ${roleBadge.className}`}>
+              {roleBadge.icon}
+              <span className={styles.badgeText}>{roleBadge.text}</span>
+            </div>
           </div>
         </div>
 
         <p className={styles.programDescription}>
-          {program.description || 'No description provided'}
+          {collaboration.program_description || 'No description provided'}
         </p>
 
         {/* Program Status Badge */}
-        {(() => {
-          const displayStatus = getProgramStatusByDates(program);
-          return (
-            <div className={`${styles.statusBadge} ${styles[displayStatus]}`}>
-              {(() => {
-                // Handle special status display for collaborative programs
-                if (program.is_collaborative) {
-                  switch (program.status) {
-                    case 'pending_collaboration':
-                      return 'Pending Collab Approval';
-                    case 'accepted':
-                      return 'Collaborators Accepted';
-                    case 'pending_superadmin_approval':
-                      return 'Pending Superadmin Approval';
-                    case 'declined':
-                      return 'Collaboration Declined';
-                    case 'approved':
-                      return 'Approved';
-                    case 'rejected':
-                      return 'Rejected';
-                    default:
-                      return displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1);
-                  }
-                }
-                return displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1);
-              })()}
-            </div>
-          );
-        })()}
+        <div className={`${styles.statusBadge} ${styles[effectiveStatus]}`}>
+          {getStatusIcon(effectiveStatus)}
+          <span>{getStatusDisplayText(effectiveStatus)}</span>
+        </div>
 
         {/* Program Meta Information */}
         <div className={styles.programMeta}>
@@ -409,114 +351,30 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
             <div className={styles.metaItem}>
               <FaTag className={styles.metaIcon} />
               <span className={styles.metaText}>
-                {getCategoryLabel(program.category)}
+                {getCategoryLabel(collaboration.program_category)}
               </span>
             </div>
 
             <div className={styles.metaItem}>
               <FaCalendar className={styles.metaIcon} />
               <span className={styles.metaText}>
-                {formatProgramDates(program)}
+                {formatProgramDates(collaboration)}
               </span>
             </div>
           </div>
 
-          {program.created_at && (
+          {collaboration.invited_at && (
             <div className={styles.metaItem}>
               <FaCalendar className={styles.metaIcon} />
               <span className={styles.metaText}>
-                Created: {formatDateShort(program.created_at)}
+                Created: {formatDateShort(collaboration.invited_at)}
               </span>
             </div>
           )}
         </div>
 
-        {/* Action Buttons - Only show for creators */}
-        {program.user_role === 'creator' && (() => {
-          const displayStatus = getProgramStatusByDates(program);
-          return (
-            <div className={styles.actionButtons}>
-               {displayStatus !== 'Active' && (
-                 <button
-                   onClick={handleMarkActiveClick}
-                   className={styles.markActiveButton}
-                   disabled={isDeleting}
-                   title="Mark program as active"
-                 >
-                   <MdOutlineRadioButtonChecked /> Mark Active
-                 </button>
-               )}
-               
-               {displayStatus !== 'Completed' && (
-                 <button
-                   onClick={handleMarkCompletedClick}
-                   className={styles.markCompletedButton}
-                   disabled={isDeleting}
-                   title="Mark program as completed"
-                 >
-                   <LuSquareCheckBig /> Mark Complete
-                 </button>
-               )}
-            </div>
-          );
-        })()}
       </div>
 
-      {/* Mark as Completed Confirmation Modal */}
-      {showMarkCompletedModal && (
-        <div className={styles.modalOverlay} onClick={cancelMarkCompleted}>
-          <div className={`${styles.modalContent} ${styles.markCompletedModal}`} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Mark as Completed</h3>
-            </div>
-            <div className={styles.modalBody}>
-              <p>Are you sure you want to mark &quot;{program.title}&quot; as completed?</p>
-            </div>
-            <div className={styles.modalActions}>
-              <button
-                onClick={cancelMarkCompleted}
-                className={styles.cancelButton}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmMarkCompleted}
-                className={styles.confirmButton}
-              >
-                Mark as Completed
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Mark as Active Confirmation Modal */}
-      {showMarkActiveModal && (
-        <div className={styles.modalOverlay} onClick={cancelMarkActive}>
-          <div className={`${styles.modalContent} ${styles.markActiveModal}`} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Mark as Active</h3>
-            </div>
-            <div className={styles.modalBody}>
-              <p>Are you sure you want to mark &quot;{program.title}&quot; as active?</p>
-            </div>
-            <div className={styles.modalActions}>
-              <button
-                onClick={cancelMarkActive}
-                className={styles.cancelButton}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmMarkActive}
-                className={styles.confirmButton}
-              >
-                Mark as Active
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Opt Out Confirmation Modal */}
       {showOptOutModal && (
@@ -526,7 +384,7 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
               <h3 className={styles.modalTitle}>Opt Out of Collaboration</h3>
             </div>
             <div className={styles.modalBody}>
-              <p>Are you sure you want to opt out of collaborating on &quot;{program.title}&quot;?</p>
+              <p>Are you sure you want to opt out of collaborating on &quot;{collaboration.program_title}&quot;?</p>
               <p className={styles.warningText}>This action cannot be undone. You will no longer have access to this program.</p>
             </div>
             <div className={styles.modalActions}>
@@ -558,6 +416,4 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
       />
     </div>
   );
-};
-
-export default ProgramCard;
+}

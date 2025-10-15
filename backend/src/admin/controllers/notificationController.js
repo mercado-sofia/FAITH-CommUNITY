@@ -189,6 +189,29 @@ class NotificationController {
     }
   }
 
+  // Static method to create notification with object parameter (used by other controllers)
+  static async createNotification({ admin_id, type, title, message, section = null, related_id = null }) {
+    try {
+      const query = `
+        INSERT INTO admin_notifications (admin_id, type, title, message, section, submission_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `;
+
+      const [result] = await db.execute(query, [admin_id, type, title, message, section, related_id]);
+
+      return {
+        success: true,
+        notificationId: result.insertId
+      };
+    } catch (error) {
+      console.error('Error creating notification:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
   // Helper method to format time ago
   static getTimeAgo(createdAt) {
     const now = new Date();

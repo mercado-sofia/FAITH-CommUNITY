@@ -1,4 +1,4 @@
-.programCard {
+.card {
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -12,7 +12,7 @@
   margin-bottom: 20px;
 }
 
-.programCard:hover {
+.card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   border-color: #d1d5db;
@@ -125,23 +125,38 @@
   border-radius: 0 0 8px 8px;
 }
 
+.imagePlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9ca3af;
+  font-size: 14px;
+  gap: 8px;
+}
+
+.placeholderIcon {
+  font-size: 24px;
+  color: #d1d5db;
+}
+
 .programImage {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
+  transition: transform 0.2s ease;
 }
 
-.programCard:hover .programImage {
+.card:hover .programImage {
   transform: scale(1.05);
 }
 
 .programContent {
-  padding: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-height: 0; /* Allow content to shrink */
 }
 
 .programHeader {
@@ -189,12 +204,56 @@
   flex-shrink: 0;
 }
 
+.statusBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+  width: fit-content;
+  min-width: 80px;
+  text-align: center;
+}
+
+
+/* Role Badge */
+.roleBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.creatorBadge {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.collaboratorBadge {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.badgeText {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Program Meta Information */
 .programMeta {
   display: flex;
   flex-direction: column;
   gap: 6px;
   margin-bottom: 12px;
-  flex-shrink: 0; /* Prevent meta from shrinking */
+  flex-shrink: 0;
 }
 
 .metaRow {
@@ -221,58 +280,8 @@
   line-height: 1.4;
 }
 
-/* Image placeholder */
-.imagePlaceholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 220px;
-  background: #f9fafb;
-  border: 2px dashed #d1d5db;
-  border-radius: 0.5rem;
-  color: #6b7280;
-  font-size: 0.875rem;
-}
-
-.placeholderIcon {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-  opacity: 0.5;
-}
-
-/* Status badge */
-.statusBadge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.75rem;
-  width: fit-content; /* Only take the width it needs */
-  min-width: 80px; /* Minimum width for consistency */
-  text-align: center; /* Center the text within the badge */
-}
-
-.statusBadge.Upcoming {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.statusBadge.Active {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.statusBadge.Completed {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-/* Collaborative Program Status Styles */
-.statusBadge.pending_collaboration {
+/* Status Badge Colors */
+.statusBadge.pending {
   background: #fef3c7;
   color: #92400e;
 }
@@ -282,14 +291,19 @@
   color: #065f46;
 }
 
-.statusBadge.pending_superadmin_approval {
-  background: #e0e7ff;
-  color: #3730a3;
-}
-
 .statusBadge.declined {
   background: #fee2e2;
   color: #991b1b;
+}
+
+.statusBadge.pending_collaboration {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusBadge.pending_superadmin_approval {
+  background: #e0e7ff;
+  color: #3730a3;
 }
 
 .statusBadge.approved {
@@ -302,11 +316,12 @@
   color: #991b1b;
 }
 
+/* Action Buttons */
 .actionButtons {
   display: flex;
   gap: 8px;
   margin-top: auto;
-  flex-shrink: 0; /* Keep buttons at bottom */
+  flex-shrink: 0;
 }
 
 .markActiveButton,
@@ -359,44 +374,24 @@
   transform: none;
 }
 
+/* Responsive Design */
 @media (max-width: 768px) {
-  .programCard {
-    margin-bottom: 20px;
-    height: 450px; /* Slightly smaller height on mobile */
-  }
-
-  .imageContainer {
-    height: 180px;
-  }
-
-  .programContent {
-    padding: 16px;
-  }
-
-  .programHeader {
+  .titleRow {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 8px;
   }
-
-  .programTitle {
-    font-size: 16px;
+  
+  .roleBadge {
+    align-self: flex-start;
   }
-
-  .programMeta {
-    gap: 6px;
-  }
-
+  
   .metaRow {
     flex-direction: column;
-    gap: 8px;
     align-items: flex-start;
+    gap: 8px;
   }
-
-  .metaItem {
-    font-size: 12px;
-  }
-
+  
   .actionButtons {
     flex-direction: column;
   }
@@ -407,7 +402,25 @@
   }
 }
 
-/* Mark as Completed Modal Styles */
+@media (max-width: 480px) {
+  .programTitle {
+    font-size: 14px;
+  }
+  
+  .programContent {
+    padding: 16px;
+  }
+  
+  .programDescription {
+    font-size: 12px;
+  }
+  
+  .metaItem {
+    font-size: 12px;
+  }
+}
+
+/* Modal Styles */
 .modalOverlay {
   position: absolute;
   top: 0;
@@ -555,22 +568,4 @@
   background: #dc2626;
   border-color: #dc2626;
   color: white;
-}
-
-@media (max-width: 480px) {
-  .programCard {
-    height: 400px; /* Even smaller height on very small screens */
-  }
-  
-  .programContent {
-    padding: 12px;
-  }
-
-  .programTitle {
-    font-size: 15px;
-  }
-
-  .programDescription {
-    font-size: 13px;
-  }
 }

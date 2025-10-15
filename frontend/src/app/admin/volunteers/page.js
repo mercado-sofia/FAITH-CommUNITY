@@ -123,7 +123,7 @@ export default function VolunteersPage() {
     programs: programsData = [], 
     isLoading: programsLoading,
     error: programsError 
-  } = useAdminPrograms(currentAdmin?.org)
+  } = useAdminPrograms()
 
   // Extract unique programs from volunteers data as fallback
   const programsFromVolunteers = useMemo(() => {

@@ -53,8 +53,8 @@ const CollaboratorSection = ({
                     onClick={() => onSelectAdmin(admin)}
                   >
                     <div className={styles.adminInfo}>
-                      <span className={styles.adminEmail}>{admin.email}</span>
-                      <span className={styles.adminOrg}>({admin.organization_acronym})</span>
+                      <span className={styles.adminEmail}>{admin.email || 'No email'}</span>
+                      <span className={styles.adminOrg}>({admin.organization_acronym || 'Unknown Org'})</span>
                     </div>
                   </div>
                 ))}
@@ -80,8 +80,8 @@ const CollaboratorSection = ({
             <div className={styles.collaboratorsList}>
               {collaborators.map((collaborator, index) => (
                 <div key={collaborator.id || index} className={styles.collaboratorItem}>
-                  <span className={styles.collaboratorEmail}>{collaborator.email}</span>
-                  <span className={styles.collaboratorOrg}>({collaborator.organization_acronym})</span>
+                  <span className={styles.collaboratorEmail}>{collaborator.email || 'No email'}</span>
+                  <span className={styles.collaboratorOrg}>({collaborator.organization_acronym || 'Unknown Org'})</span>
                   <button
                     type="button"
                     onClick={() => onRemoveCollaborator(index)}

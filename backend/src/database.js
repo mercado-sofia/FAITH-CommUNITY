@@ -685,6 +685,24 @@ const initializeDatabase = async () => {
         )
       `);
 
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS admin_highlights (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          title VARCHAR(255) NOT NULL,
+          description TEXT NOT NULL,
+          media_files JSON,
+          organization_id INT NOT NULL,
+          created_by INT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+          FOREIGN KEY (created_by) REFERENCES admins(id) ON DELETE CASCADE,
+          INDEX idx_organization_id (organization_id),
+          INDEX idx_created_by (created_by),
+          INDEX idx_created_at (created_at)
+        )
+      `);
+
       // 5. UI Tables
       await connection.query(`
         CREATE TABLE IF NOT EXISTS branding (

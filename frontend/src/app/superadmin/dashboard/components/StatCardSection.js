@@ -7,7 +7,8 @@ import {
   useGetOrganizationsCountQuery,
   useGetPendingApprovalsCountQuery,
   useGetUpcomingProgramsCountQuery,
-  useGetActiveProgramsCountQuery
+  useGetActiveProgramsCountQuery,
+  useGetPendingHighlightsCountQuery
 } from '../../../../rtk/superadmin/dashboardApi';
 
 export default function StatCardSection() {
@@ -32,8 +33,13 @@ export default function StatCardSection() {
     isLoading: programsLoading 
   } = useGetActiveProgramsCountQuery();
 
+  const { 
+    data: pendingHighlightsCount = 0, 
+    isLoading: highlightsLoading 
+  } = useGetPendingHighlightsCountQuery();
+
   // Show loading state if any data is still loading
-  const isLoading = organizationsLoading || pendingLoading || upcomingProgramsLoading || programsLoading;
+  const isLoading = organizationsLoading || pendingLoading || upcomingProgramsLoading || programsLoading || highlightsLoading;
 
   return (
     <div className={styles.cardGrid}>
@@ -67,6 +73,14 @@ export default function StatCardSection() {
           count={isLoading ? "—" : activeProgramsCount}
           isLoading={programsLoading}
           iconKey="programs"
+        />
+      </Link>
+      <Link href="/superadmin/faithree/highlights?status=pending" className={styles.cardWrapper}>
+        <StatCard
+          label="Pending Highlights"
+          count={isLoading ? "—" : pendingHighlightsCount}
+          isLoading={highlightsLoading}
+          iconKey="highlights"
         />
       </Link>
     </div>

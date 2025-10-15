@@ -10,7 +10,7 @@ import { usePublicHeadsFaces } from '../../hooks/usePublicData';
 import Loader from '../../../../components/ui/Loader/Loader';
 
 export default function OfficerSection() {
-  const { headsFacesData, isLoading, error } = usePublicHeadsFaces();
+  const { headsFacesData, isLoading } = usePublicHeadsFaces();
 
   // headsFacesData is now a single head object or null
   const primaryAdviser = headsFacesData;
@@ -23,17 +23,13 @@ export default function OfficerSection() {
           <p className={styles.officerSubtitle}>Community Extension Committee</p>
           <h2 className={styles.officerTitle}>Meet Our Adviser</h2>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+        <div className={styles.loaderContainer}>
           <Loader small />
         </div>
       </section>
     );
   }
 
-  // Show error state
-  if (error) {
-    // Handle error silently in production
-  }
 
   // Don't render if no adviser data
   if (!primaryAdviser) {

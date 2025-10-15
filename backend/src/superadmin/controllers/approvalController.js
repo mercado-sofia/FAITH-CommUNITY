@@ -539,6 +539,21 @@ export const rejectSubmission = async (req, res) => {
 
     const submission = rows[0];
 
+    // Handle highlights rejection by updating highlight status
+    if (submission.section === 'highlights') {
+      try {
+        const data = JSON.parse(submission.proposed_data);
+        if (data.highlight_id) {
+          await db.execute(
+            'UPDATE admin_highlights SET status = ? WHERE id = ?',
+            ['rejected', data.highlight_id]
+          );
+        }
+      } catch (parseError) {
+        // Continue with submission rejection even if highlight update fails
+      }
+    }
+
     // Update submission status to rejected
     await db.execute(
       'UPDATE submissions SET status = "rejected", rejection_reason = ? WHERE id = ?',
@@ -559,6 +574,10 @@ export const rejectSubmission = async (req, res) => {
       // Add specific details for organization
       else if (submission.section === 'organization' && data.orgName) {
         notificationMessage = `Your organization "${data.orgName}" has been declined by SuperAdmin`;
+      }
+      // Add specific details for highlights
+      else if (submission.section === 'highlights' && data.title) {
+        notificationMessage = `Your highlight "${data.title}" has been declined by SuperAdmin`;
       }
     } catch (parseError) {
       // Keep the generic message if parsing fails
@@ -912,6 +931,27 @@ export const bulkApproveSubmissions = async (req, res) => {
         // and will only be approved by superadmin after collaborators accept
         // Collaborators are notified individually when collaboration requests are created
 
+    if (section === 'highlights') {
+      const action = data.action;
+      
+      if (action === 'create') {
+        // For new highlights, update the status to approved
+        await db.execute(
+          'UPDATE admin_highlights SET status = ? WHERE id = ?',
+          ['approved', data.highlight_id]
+        );
+      } else if (action === 'update') {
+        // For updates, the highlight is already updated, just change status to approved
+        await db.execute(
+          'UPDATE admin_highlights SET status = ? WHERE id = ?',
+          ['approved', data.highlight_id]
+        );
+      } else if (action === 'delete') {
+        // For deletions, the highlight is already deleted, no additional action needed
+        // The submission record will show the deletion was approved
+      }
+    }
+
         // Update submission status
         await db.execute(`UPDATE submissions SET status = 'approved' WHERE id = ?`, [id]);
 
@@ -933,6 +973,10 @@ export const bulkApproveSubmissions = async (req, res) => {
         // Add specific details for organization
         else if (section === 'organization' && data.orgName) {
           notificationMessage = `Your organization "${data.orgName}" has been approved by SuperAdmin`;
+        }
+        // Add specific details for highlights
+        else if (section === 'highlights' && data.title) {
+          notificationMessage = `Your highlight "${data.title}" has been approved by SuperAdmin`;
         }
         
         // Create notification for the admin
@@ -1010,6 +1054,21 @@ export const bulkRejectSubmissions = async (req, res) => {
           continue;
         }
 
+        // Handle highlights rejection by updating highlight status
+        if (submission.section === 'highlights') {
+          try {
+            const data = JSON.parse(submission.proposed_data);
+            if (data.highlight_id) {
+              await db.execute(
+                'UPDATE admin_highlights SET status = ? WHERE id = ?',
+                ['rejected', data.highlight_id]
+              );
+            }
+          } catch (parseError) {
+            // Continue with submission rejection even if highlight update fails
+          }
+        }
+
         // Update submission status to rejected
         await db.execute(
           'UPDATE submissions SET status = ?, rejection_reason = ? WHERE id = ?',
@@ -1030,6 +1089,10 @@ export const bulkRejectSubmissions = async (req, res) => {
           // Add specific details for organization
           else if (submission.section === 'organization' && data.orgName) {
             notificationMessage = `Your organization "${data.orgName}" has been declined by SuperAdmin`;
+          }
+          // Add specific details for highlights
+          else if (submission.section === 'highlights' && data.title) {
+            notificationMessage = `Your highlight "${data.title}" has been declined by SuperAdmin`;
           }
         } catch (parseError) {
           // Keep the generic message if parsing fails

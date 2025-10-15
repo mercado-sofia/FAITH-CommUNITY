@@ -14,6 +14,7 @@ import { FaUserCheck } from "react-icons/fa"
 import { HiOutlineNewspaper, HiOutlineCog } from "react-icons/hi2"
 import { HiViewGrid, HiOfficeBuilding } from "react-icons/hi"
 import { TbChecklist } from "react-icons/tb"
+import { HiOutlineStar } from "react-icons/hi"
 import { FaRegFolderOpen } from "react-icons/fa6"
 
 export default function Sidebar() {
@@ -106,6 +107,16 @@ export default function Sidebar() {
           >
             <TbChecklist className={styles.icon} />
             <span>Programs</span>
+          </Link>
+
+          <Link
+            href="/admin/faithree/highlights"
+            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith("/admin/faithree/highlights") ? styles.active : ""}`}
+            onClick={() => handleNavigation("/admin/faithree/highlights")}
+            prefetch={true}
+          >
+            <HiOutlineStar className={styles.icon} />
+            <span>Highlights</span>
           </Link>
 
           <Link

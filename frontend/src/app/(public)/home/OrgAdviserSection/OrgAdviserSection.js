@@ -8,7 +8,7 @@ import { usePublicOrganizationAdvisers } from '../../hooks/usePublicData';
 import Loader from '../../../../components/ui/Loader/Loader';
 
 export default function OrgAdviserSection() {
-  const { organizationAdvisers, isLoading, error } = usePublicOrganizationAdvisers();
+  const { organizationAdvisers, isLoading } = usePublicOrganizationAdvisers();
   const [startIndex, setStartIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(4);
   const [cardWidth, setCardWidth] = useState(240);
@@ -43,7 +43,7 @@ export default function OrgAdviserSection() {
     return () => window.removeEventListener('resize', updateResponsiveValues);
   }, []);
 
-  // Navigation handlers using useCallback
+  // Navigation handlers using useCallback - move 1 card at a time
   const handlePrev = useCallback(() => {
     setStartIndex((prev) => Math.max(prev - 1, 0));
   }, []);
@@ -54,15 +54,25 @@ export default function OrgAdviserSection() {
     );
   }, [visibleCount, organizationAdvisers.length]);
 
-  // Keyboard nav effect
+  // Determine if navigation should be shown (5+ cards)
+  const shouldShowNavigation = organizationAdvisers.length >= 5;
+
+  // Reset startIndex when navigation state changes
   useEffect(() => {
+    setStartIndex(0);
+  }, [shouldShowNavigation]);
+
+  // Keyboard nav effect (only when navigation is shown)
+  useEffect(() => {
+    if (!shouldShowNavigation) return;
+    
     const handleKey = (e) => {
       if (e.key === 'ArrowRight') handleNext();
       else if (e.key === 'ArrowLeft') handlePrev();
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [handleNext, handlePrev]);
+  }, [handleNext, handlePrev, shouldShowNavigation]);
 
   const translateX = startIndex * (cardWidth + cardGap);
 
@@ -80,10 +90,6 @@ export default function OrgAdviserSection() {
     );
   }
 
-  // Show error state
-  if (error) {
-    // Handle error silently in production
-  }
 
   // Hide section if no advisers data
   if (!organizationAdvisers || organizationAdvisers.length === 0) {
@@ -96,24 +102,29 @@ export default function OrgAdviserSection() {
         <h2 className={styles.orgAdviserTitle}>Meet Our Organization Advisers</h2>
       </div>
 
-      <div className={styles.orgAdviserCarousel}>
-        <button
-          className={styles.orgAdviserNavBtn}
-          onClick={handlePrev}
-          disabled={startIndex === 0}
-          aria-label="Scroll Left"
-        >
-          <FaChevronLeft />
-        </button>
+      <div className={`${styles.orgAdviserCarousel} ${shouldShowNavigation ? styles.withNavigation : styles.withoutNavigation}`}>
+        {shouldShowNavigation && (
+          <button
+            className={styles.orgAdviserNavBtn}
+            onClick={handlePrev}
+            disabled={startIndex === 0}
+            aria-label="Scroll Left"
+          >
+            <FaChevronLeft />
+          </button>
+        )}
 
-        <div className={styles.orgAdviserSliderWrapper}>
+        <div className={`${styles.orgAdviserSliderWrapper} ${shouldShowNavigation ? styles.withNavigation : styles.withoutNavigation}`}>
           <div
             className={styles.orgAdviserSliderTrack}
-            style={{ transform: `translateX(-${translateX}px)` }}
+            style={{ 
+              transform: shouldShowNavigation ? `translateX(-${translateX}px)` : 'none',
+              justifyContent: shouldShowNavigation ? 'flex-start' : 'center'
+            }}
           >
-            {organizationAdvisers.map((adviser, index) => (
-              <div className={styles.orgAdviserCard} key={adviser.id || index}>
-                <div className={styles.orgAdviserPhotoWrapper} style={{ position: 'relative' }}>
+            {organizationAdvisers.map((adviser) => (
+              <div className={styles.orgAdviserCard} key={adviser.id}>
+                <div className={styles.orgAdviserPhotoWrapper}>
                   <Image
                     src={adviser.photo || '/defaults/default-profile.png'}
                     alt={adviser.name}
@@ -155,14 +166,16 @@ export default function OrgAdviserSection() {
           </div>
         </div>
 
-        <button
-          className={styles.orgAdviserNavBtn}
-          onClick={handleNext}
-          disabled={startIndex >= organizationAdvisers.length - visibleCount}
-          aria-label="Scroll Right"
-        >
-          <FaChevronRight />
-        </button>
+        {shouldShowNavigation && (
+          <button
+            className={styles.orgAdviserNavBtn}
+            onClick={handleNext}
+            disabled={startIndex >= organizationAdvisers.length - visibleCount}
+            aria-label="Scroll Right"
+          >
+            <FaChevronRight />
+          </button>
+        )}
       </div>
     </section>
   );

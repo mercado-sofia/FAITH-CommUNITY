@@ -90,40 +90,12 @@
   border-radius: 8px;
 }
 
-.orgItem:focus {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-.orgItem:focus-visible {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-.orgItem:active {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* Additional rules to ensure no outline appears */
-.orgItem[role="button"] {
-  outline: none !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-.orgItem[role="button"]:focus {
-  outline: none !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-.orgItem[role="button"]:active {
-  outline: none !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
+.orgItem:focus,
+.orgItem:focus-visible,
+.orgItem:active,
+.orgItem[role="button"],
+.orgItem[role="button"]:focus,
+.orgItem[role="button"]:active,
 .orgItem[role="button"]:focus-visible {
   outline: none !important;
   border: none !important;
@@ -271,6 +243,18 @@
   background-color: #f3f7f5;
 }
 
+.loadingContainer {
+  text-align: center;
+  padding: 2rem;
+}
+
+.statusContainer {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+}
+
 .spinner {
   width: 40px;
   height: 40px;
@@ -306,7 +290,4 @@
     font-size: 0.9rem;
   }
 
-  .orgNavInner {
-    grid-template-columns: repeat(3, 1fr);
-  }
 }

@@ -443,11 +443,16 @@ function showHelp() {
   console.log('  debug-collaborations Debug collaboration data and relationships');
   console.log('  help                 Show this help message');
   console.log('');
+  console.log('Database Management:');
+  console.log('  node scripts/mergeDatabases.js    Interactive database merger tool');
+  console.log('  node scripts/databaseMerger.js    Programmatic database merger');
+  console.log('');
   console.log('Examples:');
   console.log('  node scripts/utilities.js create-superadmin');
   console.log('  node scripts/utilities.js check-data');
   console.log('  node scripts/utilities.js fix-missing-data');
   console.log('  node scripts/utilities.js debug-collaborations');
+  console.log('  node scripts/mergeDatabases.js');
 }
 
 // Main execution

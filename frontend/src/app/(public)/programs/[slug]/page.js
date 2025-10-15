@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import styles from './programDetails.module.css';
 import Loader from '../../../../components/ui/Loader/Loader';
+import { ContactFormModal } from '../../../../components/ui';
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
 import OtherProgramsCarousel from '../components/OtherProgramsCarousel/OtherProgramsCarousel';
 import CollaborationDisplay from '../components/CollaborationDisplay/CollaborationDisplay';
@@ -48,9 +49,42 @@ export default function ProgramDetailsPage() {
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
   const [isFetchingProgram, setIsFetchingProgram] = useState(false);
   const [userApplications, setUserApplications] = useState([]);
+  const [showContactModal, setShowContactModal] = useState(false);
   
   // Use centralized page loader hook
   const { loading: pageLoading, pageReady } = usePublicPageLoader(`program-${slug}`);
+
+  // Helper function to determine program status based on dates
+  const getProgramStatusByDates = (program) => {
+    if (!program || !program.event_start_date) {
+      // If no start date, use the database status
+      return program?.status || 'Active';
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day
+    
+    const startDate = new Date(program.event_start_date);
+    startDate.setHours(0, 0, 0, 0);
+    
+    const endDate = program.event_end_date ? new Date(program.event_end_date) : null;
+    if (endDate) {
+      endDate.setHours(23, 59, 59, 999); // Set to end of day
+    }
+
+    // If start date is in the future, it's upcoming
+    if (startDate > today) {
+      return 'Upcoming';
+    }
+    
+    // If end date exists and is in the past, it's completed
+    if (endDate && endDate < today) {
+      return 'Completed';
+    }
+    
+    // If start date is today or in the past, and either no end date or end date is today or in the future, it's active
+    return 'Active';
+  };
 
   // Check user authentication status and fetch applications
   useEffect(() => {
@@ -171,22 +205,33 @@ export default function ProgramDetailsPage() {
 
 
   const handleApplyClick = () => {
-    if (program && program.status === 'Upcoming') {
-      // Check if user has already applied
-      const hasApplied = isLoggedIn && userApplications.some(app => app.programId === program.id);
+    if (program) {
+      const programStatus = getProgramStatusByDates(program);
       
-      if (hasApplied) {
-        // Do nothing - button is disabled
-        return;
-      }
-      
-      if (!isLoggedIn) {
-        // Show login modal for non-authenticated users
-        window.dispatchEvent(new CustomEvent('showLoginModal'));
-      } else {
-        router.push(`/apply?program=${program.id}`);
+      if (programStatus === 'Upcoming') {
+        // Check if user has already applied
+        const hasApplied = isLoggedIn && userApplications.some(app => app.programId === program.id);
+        
+        if (hasApplied) {
+          // Do nothing - button is disabled
+          return;
+        }
+        
+        if (!isLoggedIn) {
+          // Show login modal for non-authenticated users
+          window.dispatchEvent(new CustomEvent('showLoginModal'));
+        } else {
+          router.push(`/apply?program=${program.id}`);
+        }
+      } else if (programStatus !== 'Upcoming' && programStatus !== 'Active' && programStatus !== 'Completed') {
+        // Handle Contact Organization button click
+        handleContactOrganization();
       }
     }
+  };
+
+  const handleContactOrganization = () => {
+    setShowContactModal(true);
   };
 
   const getStatusClass = (status) => {
@@ -246,8 +291,11 @@ export default function ProgramDetailsPage() {
 
     // Check if user has already applied to this program
     const hasApplied = isLoggedIn && userApplications.some(app => app.programId === program.id);
+    
+    // Use date-based status instead of database status
+    const programStatus = getProgramStatusByDates(program);
 
-    switch (program.status) {
+    switch (programStatus) {
       case 'Upcoming':
         if (hasApplied) {
           return {
@@ -287,7 +335,7 @@ export default function ProgramDetailsPage() {
           text: 'The current status of this program is unclear. Please contact the organization for more information.',
           buttonText: 'Contact Organization',
           icon: '❓',
-          isDisabled: true
+          isDisabled: false
         };
     }
   };
@@ -362,8 +410,8 @@ export default function ProgramDetailsPage() {
                   </div>
                   <div className={styles.metaItem}>
                     <span className={styles.metaLabel}>Status</span>
-                    <span className={`${styles.statusBadge} ${getStatusClass(program.status)}`}>
-                      {program.status}
+                    <span className={`${styles.statusBadge} ${getStatusClass(getProgramStatusByDates(program))}`}>
+                      {getProgramStatusByDates(program)}
                     </span>
                   </div>
                   <div className={styles.metaItem}>
@@ -480,6 +528,15 @@ export default function ProgramDetailsPage() {
           </div>
         </div>
       </div>
+
+      {/* Contact Organization Modal */}
+      <ContactFormModal
+        isOpen={showContactModal}
+        onClose={() => setShowContactModal(false)}
+        organizationName={program?.organization_name || program?.organization_acronym || 'the organization'}
+        organizationId={program?.organization_id}
+        programTitle={program?.title}
+      />
     </div>
   );
 }

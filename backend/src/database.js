@@ -254,6 +254,29 @@ const runIncrementalMigrations = async (connection) => {
       await connection.query(`ALTER TABLE submissions CHANGE COLUMN comment_reject rejection_reason TEXT`);
     }
 
+    // Update admin_notifications type enum to include new notification types
+    try {
+      await connection.query(`
+        ALTER TABLE admin_notifications 
+        MODIFY COLUMN type ENUM('approval', 'decline', 'system', 'message', 'collaboration', 'program_approval', 'program_declined', 'collaboration_request', 'collaboration_accepted') NOT NULL
+      `);
+    } catch (enumError) {
+      // If the enum update fails, it might already be updated or there might be existing data
+      console.log('Admin notifications enum update skipped (may already be updated)');
+    }
+
+    // Update programs_projects status enum to include new status values
+    try {
+      await connection.query(`
+        ALTER TABLE programs_projects 
+        MODIFY COLUMN status ENUM('pending', 'approved', 'rejected', 'pending_superadmin_approval', 'pending_collaboration', 'declined', 'Upcoming', 'Active', 'Completed', 'Cancelled') DEFAULT 'pending'
+      `);
+      // Programs status enum updated successfully
+    } catch (enumError) {
+      // If the enum update fails, it might already be updated or there might be existing data
+      console.log('Programs status enum update skipped (may already be updated)');
+    }
+
 
 
   } catch (error) {
@@ -359,7 +382,7 @@ const initializeDatabase = async () => {
           slug VARCHAR(255) UNIQUE,
           description TEXT NOT NULL,
           category VARCHAR(100),
-          status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+          status ENUM('pending', 'approved', 'rejected', 'pending_superadmin_approval', 'pending_collaboration', 'declined') DEFAULT 'pending',
           image VARCHAR(500),
           event_start_date DATE NULL,
           event_end_date DATE NULL,
@@ -426,7 +449,7 @@ const initializeDatabase = async () => {
         CREATE TABLE IF NOT EXISTS admin_notifications (
           id INT AUTO_INCREMENT PRIMARY KEY,
           admin_id INT NOT NULL,
-          type ENUM('approval', 'decline', 'system', 'message', 'collaboration', 'program_approval') NOT NULL,
+          type ENUM('approval', 'decline', 'system', 'message', 'collaboration', 'program_approval', 'program_declined', 'collaboration_request', 'collaboration_accepted') NOT NULL,
           title VARCHAR(255) NOT NULL,
           message TEXT NOT NULL,
           section VARCHAR(100),
@@ -566,7 +589,7 @@ const initializeDatabase = async () => {
           program_id INT NOT NULL,
           collaborator_admin_id INT NOT NULL,
           invited_by_admin_id INT NOT NULL,
-          status ENUM('accepted', 'declined') DEFAULT 'accepted',
+          status ENUM('pending', 'accepted', 'declined') DEFAULT 'pending',
           invited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           responded_at TIMESTAMP NULL,
           FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE CASCADE,

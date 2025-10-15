@@ -179,6 +179,16 @@
   color: #c00d0d;
 }
 
+.statusAccepted {
+  background: #deffee;
+  color: #058964;
+}
+
+.statusDeclined {
+  background: #ffebeb;
+  color: #c00d0d;
+}
+
 
 /* Action Dropdown - Updated to match volunteer applications */
 .actionDropdownWrapper {

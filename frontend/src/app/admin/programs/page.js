@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { useAdminPrograms } from '../hooks/useAdminData';
 import { ProgramCard, ViewDetailsModal } from './components';
+import ViewVolunteersModal from './components/ViewVolunteersModal';
+import { CollaborationsSection } from './components/CollaborationsSection';
 import ProgramForm from './components/ProgramForm/ProgramForm';
 import { SkeletonLoader } from '../components';
 import { ConfirmationModal } from '@/components';
@@ -25,12 +27,14 @@ export default function AdminProgramsPage() {
   const [pageMode, setPageMode] = useState('list'); // 'list', 'create', or 'edit'
   const [editingProgram, setEditingProgram] = useState(null);
   const [viewingProgram, setViewingProgram] = useState(null);
+  const [viewingVolunteersProgram, setViewingVolunteersProgram] = useState(null);
   const [deletingProgram, setDeletingProgram] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [refreshCollaboratorsFn, setRefreshCollaboratorsFn] = useState(null);
 
   // Use SWR hook for programs data
-  const { programs = [], isLoading, error, mutate: refreshPrograms } = useAdminPrograms(currentAdmin?.org);
+  const { programs = [], isLoading, error, mutate: refreshPrograms } = useAdminPrograms();
   
   // Filter and search states
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
@@ -77,6 +81,14 @@ export default function AdminProgramsPage() {
 
   // Handle program submission for approval
   const handleSubmitProgram = async (programData) => {
+    // Prevent duplicate submissions
+    if (isSubmitting) {
+      console.log('Submission already in progress, ignoring duplicate request');
+      return;
+    }
+
+    setIsSubmitting(true);
+    
     try {
       if (!currentAdmin?.org || !currentAdmin?.id) {
         setSuccessModal({ 
@@ -86,23 +98,6 @@ export default function AdminProgramsPage() {
         });
         return;
       }
-      
-      const orgAcronym = currentAdmin.org;
-      const adminId = currentAdmin.id;
-
-      // Wrap data inside a `submissions` array as required by backend
-      const submissionPayload = {
-        submissions: [
-          {
-            organization_id: orgAcronym, // Send org acronym - backend will convert to numeric ID
-            section: 'programs',
-            previous_data: {}, // no previous data since it's new
-            proposed_data: programData,
-            submitted_by: adminId,
-          },
-        ],
-      };
-
       
       // Get admin token for authentication
       const token = localStorage.getItem('adminToken');
@@ -114,14 +109,32 @@ export default function AdminProgramsPage() {
         });
         return;
       }
+
+      // Use FormData for file uploads
+      const formData = new FormData();
+      formData.append('title', programData.title);
+      formData.append('description', programData.description || '');
+      formData.append('category', programData.category || '');
+      formData.append('event_start_date', programData.event_start_date || '');
+      formData.append('event_end_date', programData.event_end_date || '');
       
-      const response = await fetch(`${API_BASE_URL}/api/submissions`, {
+      // Add collaborators if any
+      if (programData.collaborators && programData.collaborators.length > 0) {
+        const collaboratorIds = programData.collaborators.map(collaborator => collaborator.id);
+        formData.append('collaborators', JSON.stringify(collaboratorIds));
+      }
+      
+      // Add image if provided
+      if (programData.image && programData.image instanceof File) {
+        formData.append('image', programData.image);
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/program-projects`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(submissionPayload),
+        body: formData,
       });
 
       if (!response.ok) {
@@ -129,11 +142,22 @@ export default function AdminProgramsPage() {
         throw new Error(`Failed to submit program: ${errorText}`);
       }
 
-      setSuccessModal({ 
-        isVisible: true, 
-        message: 'Program submitted for approval! You can track its status in the submissions page.', 
-        type: 'success' 
-      });
+      const responseData = await response.json();
+      
+      // Check if it's a collaborative program
+      if (programData.collaborators && programData.collaborators.length > 0) {
+        setSuccessModal({ 
+          isVisible: true, 
+          message: 'Collaborative program created successfully! Collaboration requests have been sent to the invited organizations.', 
+          type: 'success' 
+        });
+      } else {
+        setSuccessModal({ 
+          isVisible: true, 
+          message: 'Program created successfully!', 
+          type: 'success' 
+        });
+      }
 
       setPageMode('list');
       refreshPrograms();
@@ -143,6 +167,8 @@ export default function AdminProgramsPage() {
         message: `Failed to submit program: ${error.message}`, 
         type: 'error' 
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -206,6 +232,11 @@ export default function AdminProgramsPage() {
   // Handle program view - show modal
   const handleViewProgram = (program) => {
     setViewingProgram(program);
+  };
+
+  // Handle volunteers view - show modal
+  const handleViewVolunteers = (program) => {
+    setViewingVolunteersProgram(program);
   };
 
   const handleEditProgram = (program) => {
@@ -378,6 +409,38 @@ export default function AdminProgramsPage() {
     }
   }, [refreshPrograms, pageMode, refreshCollaboratorsFn]);
 
+  // Helper function to determine program status based on dates
+  const getProgramStatusByDates = (program) => {
+    if (!program.event_start_date) {
+      // If no start date, use the database status
+      return program.status || 'Active';
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day
+    
+    const startDate = new Date(program.event_start_date);
+    startDate.setHours(0, 0, 0, 0);
+    
+    const endDate = program.event_end_date ? new Date(program.event_end_date) : null;
+    if (endDate) {
+      endDate.setHours(23, 59, 59, 999); // Set to end of day
+    }
+
+    // If start date is in the future, it's upcoming
+    if (startDate > today) {
+      return 'Upcoming';
+    }
+    
+    // If end date exists and is in the past, it's completed
+    if (endDate && endDate < today) {
+      return 'Completed';
+    }
+    
+    // If start date is today or in the past, and either no end date or end date is today or in the future, it's active
+    return 'Active';
+  };
+
   // Filter and sort programs
   const filteredAndSortedPrograms = useCallback(() => {
     let filtered = (programs || []).filter((program) => {
@@ -388,7 +451,9 @@ export default function AdminProgramsPage() {
         (program.description && program.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (program.category && program.category.toLowerCase().includes(searchQuery.toLowerCase()));
       
-      const matchesStatus = program.status?.toLowerCase() === statusFilter.toLowerCase();
+      // Use date-based status instead of database status
+      const programStatus = getProgramStatusByDates(program);
+      const matchesStatus = programStatus.toLowerCase() === statusFilter.toLowerCase();
 
       return matchesSearch && matchesStatus;
     });
@@ -477,19 +542,21 @@ export default function AdminProgramsPage() {
             </div>
           </div>
 
-          {/* Search and Filter Controls */}
-          <SearchAndFilterControls
-            searchQuery={searchQuery}
-            sortBy={sortBy}
-            onSearchChange={handleSearchChange}
-            onFilterChange={handleFilterChange}
-            totalCount={programs?.length || 0}
-            filteredCount={filteredAndSortedPrograms()?.length || 0}
-          />
+          {/* Search and Filter Controls - Hide for Collaborations tab */}
+          {statusFilter !== 'Collaborations' && (
+            <SearchAndFilterControls
+              searchQuery={searchQuery}
+              sortBy={sortBy}
+              onSearchChange={handleSearchChange}
+              onFilterChange={handleFilterChange}
+              totalCount={programs?.length || 0}
+              filteredCount={filteredAndSortedPrograms()?.length || 0}
+            />
+          )}
 
           {/* Status Navigation Tabs */}
           <div className={styles.statusTabs}>
-            {['Active', 'Upcoming', 'Completed'].map((status) => (
+            {['Active', 'Upcoming', 'Completed', 'Collaborations'].map((status) => (
               <button
                 key={status}
                 className={`${styles.statusTab} ${statusFilter === status ? styles.activeTab : ''}`}
@@ -500,30 +567,35 @@ export default function AdminProgramsPage() {
             ))}
           </div>
 
-          {/* Programs Grid */}
-          <div className={styles.programsSection}>
-            {(filteredAndSortedPrograms()?.length || 0) === 0 ? (
-              <div className={styles.emptyState}>
-                <div className={styles.emptyTitle}>No programs found</div>
-                <div className={styles.emptyText}>No programs match your current filters. Try adjusting your search criteria.</div>
-              </div>
-            ) : (
-              <div className={styles.programsGrid}>
-                {(filteredAndSortedPrograms() || []).map((program) => (
-                  <ProgramCard
-                    key={program?.id || Math.random()}
-                    program={program}
-                    onViewDetails={() => handleViewProgram(program)}
-                    onEdit={() => handleEditProgram(program)}
-                    onDelete={() => handleDeleteProgram(program)}
-                    onMarkCompleted={() => handleMarkCompleted(program)}
-                    onMarkActive={() => handleMarkActive(program)}
-                    onOptOut={handleOptOut}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Programs Grid or Collaborations Section */}
+          {statusFilter === 'Collaborations' ? (
+            <CollaborationsSection onRefresh={refreshPrograms} />
+          ) : (
+            <div className={styles.programsSection}>
+              {(filteredAndSortedPrograms()?.length || 0) === 0 ? (
+                <div className={styles.emptyState}>
+                  <div className={styles.emptyTitle}>No programs found</div>
+                  <div className={styles.emptyText}>No programs match your current filters. Try adjusting your search criteria.</div>
+                </div>
+              ) : (
+                <div className={styles.programsGrid}>
+                  {(filteredAndSortedPrograms() || []).map((program) => (
+                    <ProgramCard
+                      key={program?.id || Math.random()}
+                      program={program}
+                      onViewDetails={() => handleViewProgram(program)}
+                      onViewVolunteers={() => handleViewVolunteers(program)}
+                      onEdit={() => handleEditProgram(program)}
+                      onDelete={() => handleDeleteProgram(program)}
+                      onMarkCompleted={() => handleMarkCompleted(program)}
+                      onMarkActive={() => handleMarkActive(program)}
+                      onOptOut={handleOptOut}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </>
       ) : pageMode === 'create' ? (
         <>
@@ -560,6 +632,14 @@ export default function AdminProgramsPage() {
         <ViewDetailsModal
           program={viewingProgram}
           onClose={closeViewModal}
+        />
+      )}
+
+      {viewingVolunteersProgram && (
+        <ViewVolunteersModal
+          program={viewingVolunteersProgram}
+          isOpen={!!viewingVolunteersProgram}
+          onClose={() => setViewingVolunteersProgram(null)}
         />
       )}
 

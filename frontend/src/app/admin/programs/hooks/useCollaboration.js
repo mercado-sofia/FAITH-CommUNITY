@@ -14,7 +14,7 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
       const admins = await fetchAvailableAdmins(isEditMode, programId);
       setAvailableAdmins(admins);
     } catch (error) {
-      // Handle error silently in production
+      setAvailableAdmins([]); // Set empty array on error
     }
   }, [isEditMode, programId]);
 
@@ -68,7 +68,9 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
   // Select admin from autocomplete
   const selectAdmin = useCallback((admin) => {
     setSelectedAdminForInvite(admin);
-    setCollaboratorInput(`${admin.email} (${admin.organization_acronym})`);
+    const email = admin.email || '';
+    const orgAcronym = admin.organization_acronym || 'Unknown Org';
+    setCollaboratorInput(`${email} (${orgAcronym})`);
     setFilteredAdmins([]);
     setSelectedAdminIndex(-1);
   }, []);
@@ -81,10 +83,13 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
     setSelectedAdminForInvite(null);
 
     if (value.trim()) {
-      const filtered = availableAdmins.filter(admin => 
-        admin.email.toLowerCase().includes(value.toLowerCase()) ||
-        admin.organization_acronym.toLowerCase().includes(value.toLowerCase())
-      );
+      const filtered = availableAdmins.filter(admin => {
+        const email = admin.email?.toLowerCase() || '';
+        const orgAcronym = admin.organization_acronym?.toLowerCase() || '';
+        const searchValue = value.toLowerCase();
+        
+        return email.includes(searchValue) || orgAcronym.includes(searchValue);
+      });
       setFilteredAdmins(filtered);
     } else {
       setFilteredAdmins([]);

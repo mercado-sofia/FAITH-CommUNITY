@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { FaTimes, FaCheck, FaEye, FaExpand, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import { formatDateTime } from '../../../../utils/dateUtils';
+import { getStatusBadgeConfig, getStatusDisplayText } from '@/utils/collaborationStatusUtils';
 import styles from './styles/ViewDetailsModal.module.css';
 
 const ViewDetailsModal = ({ 
@@ -32,15 +33,9 @@ const ViewDetailsModal = ({
   };
 
   const getStatusBadge = (status) => {
-    const statusConfig = {
-      'pending': { text: 'Pending', className: styles.statusPending },
-      'approved': { text: 'Approved', className: styles.statusApproved },
-      'rejected': { text: 'Rejected', className: styles.statusRejected }
-    };
-    
-    const config = statusConfig[status] || statusConfig['pending'];
+    const config = getStatusBadgeConfig(status);
     return (
-      <span className={`${styles.statusBadge} ${config.className}`}>
+      <span className={`${styles.statusBadge} ${styles[config.className]}`}>
         {config.text}
       </span>
     );
@@ -257,6 +252,32 @@ const ViewDetailsModal = ({
                   })()}
                 </div>
               </div>
+
+              {/* Collaborators Section */}
+              {programData.collaborators && Array.isArray(programData.collaborators) && programData.collaborators.length > 0 && (
+                <div className={styles.contentSection}>
+                  <h4 className={styles.sectionTitle}>COLLABORATORS ({programData.collaborators.length}):</h4>
+                  <div className={styles.collaboratorsContainer}>
+                    {programData.collaborators.map((collaborator, index) => (
+                      <div key={index} className={styles.collaboratorItem}>
+                        <div className={styles.collaboratorInfo}>
+                          <div className={styles.collaboratorName}>
+                            {collaborator.organization_name || collaborator.organization_acronym || 'Unknown Organization'}
+                          </div>
+                          <div className={styles.collaboratorEmail}>
+                            {collaborator.email || 'No email provided'}
+                          </div>
+                          {collaborator.organization_acronym && (
+                            <div className={styles.collaboratorAcronym}>
+                              ({collaborator.organization_acronym})
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
             </div>
           ) : (

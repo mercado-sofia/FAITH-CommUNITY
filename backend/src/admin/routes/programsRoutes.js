@@ -51,13 +51,13 @@ router.get('/superadmin/featured-projects', getAllFeaturedPrograms);
 router.put('/superadmin/programs/:id/featured', toggleFeaturedStatus);
 
 // ===================== Program Projects routes (from programProjects.js) =====================
-router.post('/program-projects', upload.single('image'), addProgramProject);
-router.put('/program-projects/:id', upload.single('image'), updateProgramProject);
-router.get('/program-projects', getProgramProjects);
+router.post('/program-projects', verifyAdminOrSuperadmin, upload.single('image'), addProgramProject);
+router.put('/program-projects/:id', verifyAdminOrSuperadmin, upload.single('image'), updateProgramProject);
+router.get('/program-projects', verifyAdminOrSuperadmin, getProgramProjects);
 
 // ================= Superadmin routes for program projects =====================
-router.get('/program-projects/superadmin/all', getAllProgramsForSuperadmin);
-router.get('/program-projects/superadmin/statistics', getProgramsStatistics);
+router.get('/program-projects/superadmin/all', verifyAdminOrSuperadmin, getAllProgramsForSuperadmin);
+router.get('/program-projects/superadmin/statistics', verifyAdminOrSuperadmin, getProgramsStatistics);
 
 // Public routes
 router.get('/programs', getApprovedPrograms);

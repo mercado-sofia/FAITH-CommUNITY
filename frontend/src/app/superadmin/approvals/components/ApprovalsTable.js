@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { HiOutlineDotsHorizontal } from 'react-icons/hi';
 import { formatDateShort } from '../../../../utils/dateUtils';
+import { getStatusBadgeConfig } from '@/utils/collaborationStatusUtils';
 import ViewDetailsModal from './ViewDetailsModal';
 import styles from './styles/ApprovalsTable.module.css';
 
@@ -25,13 +26,10 @@ export default function ApprovalsTable({
   const [selectedItemForDetails, setSelectedItemForDetails] = useState(null);
 
   const getStatusBadge = (status) => {
-    const statusClass = status === 'pending' ? styles.statusPending : 
-                       status === 'approved' ? styles.statusApproved : 
-                       styles.statusRejected;
-    
+    const config = getStatusBadgeConfig(status);
     return (
-      <span className={`${styles.statusBadge} ${statusClass}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+      <span className={`${styles.statusBadge} ${styles[config.className]}`}>
+        {config.text}
       </span>
     );
   };
@@ -94,12 +92,12 @@ export default function ApprovalsTable({
               </tr>
             ) : (
               approvals.map((item) => (
-                <tr key={item.id} className={styles.tableRow}>
+                <tr key={item.uniqueKey || item.id} className={styles.tableRow}>
                   <td className={styles.selectCell}>
                     <input
                       type="checkbox"
-                      checked={selectedItems.has(item.id)}
-                      onChange={() => onSelectItem(item.id)}
+                      checked={selectedItems.has(item.uniqueKey || item.id)}
+                      onChange={() => onSelectItem(item.uniqueKey || item.id)}
                       className={styles.checkbox}
                     />
                   </td>
@@ -124,7 +122,8 @@ export default function ApprovalsTable({
                           <div
                             className={styles.actionDropdown}
                             onClick={(e) => {
-                              const dropdownId = `action-${item.id}`;
+                              const uniqueId = item.uniqueKey || item.id;
+                              const dropdownId = `action-${uniqueId}`;
                               if (showDropdown === dropdownId) {
                                 setShowDropdown(null);
                               } else {
@@ -139,12 +138,12 @@ export default function ApprovalsTable({
                           >
                             <HiOutlineDotsHorizontal className={styles.actionDropdownIcon} />
                           </div>
-                          {showDropdown === `action-${item.id}` && (
+                          {showDropdown === `action-${item.uniqueKey || item.id}` && (
                             <ul 
-                              className={`${styles.actionDropdownOptions} ${dropdownPosition[`action-${item.id}`]?.position === 'above' ? styles.above : ''}`}
+                              className={`${styles.actionDropdownOptions} ${dropdownPosition[`action-${item.uniqueKey || item.id}`]?.position === 'above' ? styles.above : ''}`}
                               style={{
-                                top: `${dropdownPosition[`action-${item.id}`]?.top || 0}px`,
-                                right: `${dropdownPosition[`action-${item.id}`]?.right || 0}px`
+                                top: `${dropdownPosition[`action-${item.uniqueKey || item.id}`]?.top || 0}px`,
+                                right: `${dropdownPosition[`action-${item.uniqueKey || item.id}`]?.right || 0}px`
                               }}
                             >
                               <li 
@@ -159,13 +158,13 @@ export default function ApprovalsTable({
                               >
                                 View Details
                               </li>
-                              {item.status === 'pending' && (
+                              {(item.status === 'pending' || item.status === 'pending_superadmin_approval') && (
                                 <>
                                   <li 
                                     onMouseDown={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      onApprove(item.id);
+                                      onApprove(item);
                                       setShowDropdown(null);
                                       setDropdownPosition({});
                                     }}

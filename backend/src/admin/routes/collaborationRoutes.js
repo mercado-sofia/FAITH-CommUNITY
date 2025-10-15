@@ -6,7 +6,10 @@ import {
   inviteCollaborator,
   getProgramCollaborators,
   removeCollaborator,
-  optOutCollaboration
+  optOutCollaboration,
+  getCollaborationRequests,
+  acceptCollaborationRequest,
+  declineCollaborationRequest
 } from '../controllers/collaborationController.js';
 
 const router = express.Router();
@@ -31,5 +34,14 @@ router.delete('/programs/:programId/collaborators/:adminId', removeCollaborator)
 
 // Opt out of collaboration (for auto-accepted collaborations)
 router.put('/collaborations/:collaborationId/opt-out', optOutCollaboration);
+
+// Get collaboration requests (both sent and received)
+router.get('/collaboration-requests', getCollaborationRequests);
+
+// Accept collaboration request
+router.put('/collaborations/:collaborationId/accept', acceptCollaborationRequest);
+
+// Decline collaboration request
+router.put('/collaborations/:collaborationId/decline', declineCollaborationRequest);
 
 export default router;

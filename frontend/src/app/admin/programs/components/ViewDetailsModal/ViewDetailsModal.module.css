@@ -196,6 +196,37 @@
   color: #374151;
 }
 
+/* Collaborative Program Status Styles */
+.statusBadge.pending_collaboration {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusBadge.accepted {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusBadge.pending_superadmin_approval {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.statusBadge.declined {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.statusBadge.approved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusBadge.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .descriptionSection {
   background: #f9fafb;
   padding: 20px;

@@ -16,6 +16,41 @@ const getAdminToken = () => {
   }
 };
 
+// Check if JWT token is expired
+const isTokenExpired = (token) => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentTime = Date.now() / 1000;
+    return payload.exp < currentTime;
+  } catch (error) {
+    return true; // If we can't parse the token, consider it expired
+  }
+};
+
+// Check if user is authenticated (has valid token and data)
+const isAuthenticated = () => {
+  if (typeof window === 'undefined') return false;
+  try {
+    const token = localStorage.getItem("adminToken");
+    const adminData = localStorage.getItem("adminData");
+    
+    // Check for token and admin data
+    if (!token || !adminData) return false;
+    
+    // Check if token is expired
+    if (isTokenExpired(token)) {
+      // Clear expired token
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminData');
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
 // Fetcher function for SWR with admin authentication and SSR safety
 const adminFetcher = async (url) => {
   try {
@@ -26,8 +61,20 @@ const adminFetcher = async (url) => {
 
     const adminToken = getAdminToken();
     
+    
     if (!adminToken) {
-      throw new Error('No admin token found. Please log in again.');
+      const error = new Error('No admin token found. Please log in again.');
+      // Don't log this error as it's expected for unauthenticated users
+      throw error;
+    }
+    
+    // Check if token is expired
+    if (isTokenExpired(adminToken)) {
+      // Clear expired token
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminData');
+      const error = new Error('Your session has expired. Please log in again.');
+      throw error;
     }
     
     const response = await fetch(url, {
@@ -39,8 +86,32 @@ const adminFetcher = async (url) => {
     });
 
     if (!response.ok) {
-      const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
-      logger.apiError(url, error, { status: response.status });
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      
+      // Handle specific error cases
+      if (response.status === 401) {
+        errorMessage = 'Your session has expired. Please log in again.';
+        // Clear invalid token
+        try {
+          localStorage.removeItem('adminToken');
+          localStorage.removeItem('adminData');
+          // Redirect to login page
+          window.location.href = '/login';
+        } catch (e) {
+          // Ignore localStorage errors
+        }
+      } else if (response.status === 403) {
+        errorMessage = 'Access denied. You do not have permission to access this resource.';
+      } else if (response.status === 404) {
+        errorMessage = 'Resource not found.';
+      }
+      
+      const error = new Error(errorMessage);
+      logger.apiError(url, error, { 
+        status: response.status, 
+        statusText: response.statusText,
+        type: response.status === 401 ? 'auth_error' : 'api_error'
+      });
       throw error;
     }
 
@@ -48,20 +119,26 @@ const adminFetcher = async (url) => {
     
     // Validate response structure
     if (!data || typeof data !== 'object') {
-      throw new Error('Invalid response format from server');
+      const error = new Error('Invalid response format from server');
+      logger.apiError(url, error, { type: 'response_format_error', data });
+      throw error;
     }
 
     return data;
   } catch (error) {
-    logger.apiError(url, error);
+    // Only log if it's not already logged (to avoid duplicate logs)
+    if (!error.logged && !error.message.includes('No admin token found')) {
+      logger.apiError(url, error, { type: 'fetch_error' });
+      error.logged = true;
+    }
     throw error;
   }
 };
 
 // Custom hook for admin submissions data
 export const useAdminSubmissions = (orgAcronym) => {
-  // Guard clause: only make API call if orgAcronym is valid
-  const shouldFetch = orgAcronym && typeof orgAcronym === 'string' && orgAcronym.trim() !== '';
+  // Guard clause: only make API call if orgAcronym is valid and user is authenticated
+  const shouldFetch = orgAcronym && typeof orgAcronym === 'string' && orgAcronym.trim() !== '' && isAuthenticated();
   
   const { data, error, isLoading, mutate } = useSWR(
     shouldFetch ? `${API_BASE_URL}/api/submissions/${orgAcronym}` : null,
@@ -98,9 +175,9 @@ export const useAdminSubmissions = (orgAcronym) => {
 
 // Custom hook for admin volunteers data
 export const useAdminVolunteers = (adminId) => {
-  // Guard clause: only make API call if adminId is valid (convert to string if needed)
+  // Guard clause: only make API call if adminId is valid and user is authenticated
   const adminIdStr = adminId ? String(adminId) : null;
-  const shouldFetch = adminIdStr && adminIdStr.trim() !== '';
+  const shouldFetch = adminIdStr && adminIdStr.trim() !== '' && isAuthenticated();
   
   const { data, error, isLoading, mutate } = useSWR(
     shouldFetch ? `${API_BASE_URL}/api/volunteers/admin/${adminIdStr}` : null,
@@ -166,7 +243,9 @@ const organizationFetcher = async (url) => {
     const adminToken = getAdminToken();
     
     if (!adminToken) {
-      throw new Error('No admin token found. Please log in again.');
+      const error = new Error('No admin token found. Please log in again.');
+      logger.apiError(url, error, { type: 'auth_error', message: 'Missing admin token' });
+      throw error;
     }
     
     const response = await fetch(url, {
@@ -178,8 +257,30 @@ const organizationFetcher = async (url) => {
     });
 
     if (!response.ok) {
-      const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
-      logger.apiError(url, error, { status: response.status });
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      
+      // Handle specific error cases
+      if (response.status === 401) {
+        errorMessage = 'Authentication failed. Please log in again.';
+        // Clear invalid token
+        try {
+          localStorage.removeItem('adminToken');
+          localStorage.removeItem('adminData');
+        } catch (e) {
+          // Ignore localStorage errors
+        }
+      } else if (response.status === 403) {
+        errorMessage = 'Access denied. You do not have permission to access this resource.';
+      } else if (response.status === 404) {
+        errorMessage = 'Resource not found.';
+      }
+      
+      const error = new Error(errorMessage);
+      logger.apiError(url, error, { 
+        status: response.status, 
+        statusText: response.statusText,
+        type: response.status === 401 ? 'auth_error' : 'api_error'
+      });
       throw error;
     }
 
@@ -188,15 +289,19 @@ const organizationFetcher = async (url) => {
     // Don't modify the response data - let the backend handle logo properly
     return data;
   } catch (error) {
-    logger.apiError(url, error);
+    // Only log if it's not already logged (to avoid duplicate logs)
+    if (!error.logged) {
+      logger.apiError(url, error, { type: 'fetch_error' });
+      error.logged = true;
+    }
     throw error;
   }
 };
 
 // Custom hook for admin organization data by organization ID
 export const useAdminOrganization = (organizationId) => {
-  // Guard clause: only make API call if organizationId is valid
-  const shouldFetch = organizationId && (typeof organizationId === 'number' || (typeof organizationId === 'string' && !isNaN(organizationId)));
+  // Guard clause: only make API call if organizationId is valid and user is authenticated
+  const shouldFetch = organizationId && (typeof organizationId === 'number' || (typeof organizationId === 'string' && !isNaN(organizationId))) && isAuthenticated();
   
   const { data, error, isLoading, mutate } = useSWR(
     shouldFetch ? `${API_BASE_URL}/api/organization/${organizationId}` : null,
@@ -248,9 +353,10 @@ export const useAdminOrganization = (organizationId) => {
 };
 
 // Custom hook for admin programs data
-export const useAdminPrograms = (orgAcronym) => {
-  // Guard clause: only make API call if orgAcronym is valid
-  const shouldFetch = orgAcronym && typeof orgAcronym === 'string' && orgAcronym.trim() !== '';
+export const useAdminPrograms = () => {
+  // Guard clause: only make API call if user is authenticated
+  const shouldFetch = isAuthenticated();
+  
   
   const { data, error, isLoading, mutate } = useSWR(
     shouldFetch ? `${API_BASE_URL}/api/admin/programs` : null,
@@ -266,8 +372,9 @@ export const useAdminPrograms = (orgAcronym) => {
         return error.status !== 401 && error.status !== 404;
       },
       onError: (error) => {
-        if (orgAcronym) {
-          logger.swrError(`${API_BASE_URL}/api/programs/org/${orgAcronym}`, error, { orgAcronym });
+        // Only log if user is authenticated (to avoid spam from unauthenticated users)
+        if (isAuthenticated()) {
+          logger.swrError(`${API_BASE_URL}/api/admin/programs`, error);
         }
       }
     }
@@ -287,8 +394,8 @@ export const useAdminPrograms = (orgAcronym) => {
 
 // Custom hook for admin news data
 export const useAdminNews = (orgAcronym) => {
-  // Guard clause: only make API call if orgAcronym is valid
-  const shouldFetch = orgAcronym && typeof orgAcronym === 'string' && orgAcronym.trim() !== '';
+  // Guard clause: only make API call if orgAcronym is valid and user is authenticated
+  const shouldFetch = orgAcronym && typeof orgAcronym === 'string' && orgAcronym.trim() !== '' && isAuthenticated();
   
   const { data, error, isLoading, mutate } = useSWR(
     shouldFetch ? `${API_BASE_URL}/api/news/org/${orgAcronym}` : null,
@@ -342,8 +449,11 @@ export const useAdminNews = (orgAcronym) => {
 
 // Custom hook for admin advocacies data
 export const useAdminAdvocacies = (orgId) => {
+  // Guard clause: only make API call if orgId is valid and user is authenticated
+  const shouldFetch = orgId && isAuthenticated();
+  
   const { data, error, isLoading, mutate } = useSWR(
-    orgId ? `${API_BASE_URL}/api/advocacies/${orgId}` : null,
+    shouldFetch ? `${API_BASE_URL}/api/advocacies/${orgId}` : null,
     adminFetcher,
     {
       revalidateOnFocus: false,
@@ -377,8 +487,11 @@ export const useAdminAdvocacies = (orgId) => {
 
 // Custom hook for admin competencies data
 export const useAdminCompetencies = (orgId) => {
+  // Guard clause: only make API call if orgId is valid and user is authenticated
+  const shouldFetch = orgId && isAuthenticated();
+  
   const { data, error, isLoading, mutate } = useSWR(
-    orgId ? `${API_BASE_URL}/api/competencies/${orgId}` : null,
+    shouldFetch ? `${API_BASE_URL}/api/competencies/${orgId}` : null,
     adminFetcher,
     {
       revalidateOnFocus: false,
@@ -412,8 +525,11 @@ export const useAdminCompetencies = (orgId) => {
 
 // Custom hook for admin heads data
 export const useAdminHeads = (orgId) => {
+  // Guard clause: only make API call if orgId is valid and user is authenticated
+  const shouldFetch = orgId && isAuthenticated();
+  
   const { data, error, isLoading, mutate } = useSWR(
-    orgId ? `${API_BASE_URL}/api/heads/${orgId}` : null,
+    shouldFetch ? `${API_BASE_URL}/api/heads/${orgId}` : null,
     adminFetcher,
     {
       revalidateOnFocus: false,
@@ -447,8 +563,11 @@ export const useAdminHeads = (orgId) => {
 
 // Custom hook for admin data by ID
 export const useAdminById = (adminId) => {
+  // Guard clause: only make API call if adminId is valid and user is authenticated
+  const shouldFetch = adminId && isAuthenticated();
+  
   const { data, error, isLoading, mutate } = useSWR(
-    adminId ? `${API_BASE_URL}/api/admins/${adminId}` : null,
+    shouldFetch ? `${API_BASE_URL}/api/admins/${adminId}` : null,
     adminFetcher,
     {
       revalidateOnFocus: false,

@@ -18,13 +18,11 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
     formData,
     errors,
     hasChanges,
-    isEditMode: formIsEditMode,
     updateFormData,
     validateForm,
     clearError,
     clearAllErrors,
-    setFormData,
-    setHasChanges
+    resetForm
   } = useProgramForm(mode, program);
 
   const {
@@ -47,7 +45,8 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
     handleAdditionalDragOver,
     handleAdditionalDrop,
     setImagePreview,
-    setAdditionalImagePreviews
+    setAdditionalImagePreviews,
+    resetImageUploads
   } = useImageUpload();
 
   const {
@@ -62,7 +61,8 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
     addCollaborator,
     removeCollaborator,
     loadExistingCollaborators,
-    refreshCollaborators
+    refreshCollaborators,
+    resetCollaboration
   } = useCollaboration(isEditMode, program?.id);
 
   // Initialize existing images in edit mode
@@ -192,47 +192,56 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
     clearAllErrors();
 
     try {
-      // Prepare form data for submission
+      // Prepare form data for submission - simplified and more reliable
       const submissionData = {
-        ...formData,
-        status: formData.status, // Status is calculated automatically
-        // Keep full collaborator objects for display in submission modal, but also include IDs for backend processing
+        title: formData.title?.trim() || '',
+        description: formData.description?.trim() || '',
+        category: formData.category?.trim() || '',
+        event_start_date: formData.event_start_date || null,
+        event_end_date: formData.event_end_date || null,
+        multiple_dates: formData.multiple_dates || null,
+        status: isEditMode ? (formData.status || 'active') : 'pending',
+        accepts_volunteers: formData.accepts_volunteers !== undefined ? formData.accepts_volunteers : true,
+        // Extract collaborator IDs from collaborator objects
         collaborators: Array.isArray(formData.collaborators) 
-          ? formData.collaborators.filter(collab => collab && collab.id)
+          ? formData.collaborators.map(collab => collab.id).filter(id => id && typeof id === 'number')
           : [],
-        // Keep the File object for the main image
-        image: formData.image instanceof File ? formData.image : null,
-        // Ensure additionalImages contains only base64 strings (for now, as backend doesn't handle additional images yet)
-        additionalImages: Array.isArray(formData.additionalImages) 
-          ? formData.additionalImages.filter(img => typeof img === 'string' && img.startsWith('data:image/'))
-          : []
+        // Handle image properly for both create and edit modes
+        image: null,
+        // Skip additional images for now as backend doesn't support them yet
+        additionalImages: []
       };
 
-      // Handle existing images in edit mode
-      if (isEditMode && program) {
-        // Keep existing image if no new one is uploaded
-        if (!formData.image && program.image) {
-          submissionData.image = program.image;
-        }
-        // Keep existing additional images if no new ones are uploaded
-        if (formData.additionalImages.length === 0 && program.additional_images) {
-          submissionData.additionalImages = program.additional_images;
-        } else if (formData.additionalImages.length > 0) {
-          // In edit mode, we might have a mix of existing and new images
-          // Filter to ensure we only send base64 strings
-          submissionData.additionalImages = formData.additionalImages.filter(img => 
-            typeof img === 'string' && img.startsWith('data:image/')
-          );
-        }
+      // Handle image data properly
+      if (formData.image instanceof File) {
+        // For File objects, we'll let the parent component handle upload
+        submissionData.image = formData.image;
+      } else if (typeof formData.image === 'string' && formData.image.startsWith('data:image/')) {
+        // For base64 strings, send as is
+        submissionData.image = formData.image;
+      } else if (isEditMode && program && program.image) {
+        // In edit mode, if no new image is provided, send undefined to keep existing
+        submissionData.image = undefined;
+      } else {
+        // No image provided
+        submissionData.image = null;
       }
 
+
       await onSubmit(submissionData);
+      
+      // Reset form after successful submission (only for create mode)
+      if (!isEditMode) {
+        resetForm();
+        resetImageUploads();
+        resetCollaboration();
+      }
     } catch (error) {
       updateFormData({ submit: error.message || 'Failed to submit form' });
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateForm, formData, isEditMode, program, onSubmit, clearAllErrors, updateFormData]);
+  }, [validateForm, formData, isEditMode, program, onSubmit, clearAllErrors, updateFormData, resetForm, resetImageUploads, resetCollaboration]);
 
   // Handle form key down
   const handleFormKeyDown = useCallback((e) => {
@@ -315,8 +324,8 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
               className={styles.submitButton}
               disabled={isSubmitting}
             >
-              {isSubmitting ? <FaSpinner className={styles.spinner} /> : null}
               {isEditMode ? "Save Changes" : "Submit for Approval"}
+              {isSubmitting ? <FaSpinner className={styles.spinner} /> : null}
             </button>
           </div>
               

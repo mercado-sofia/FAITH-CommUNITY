@@ -1,12 +1,15 @@
 import express from "express"
 import { getAllFaqs, getActiveFaqs, getFaqById, createFaq, updateFaq, deleteFaq } from "../controllers/faqController.js"
+import { verifySuperadminToken } from '../controllers/superadminAuthController.js';
 
 const router = express.Router()
 
 // Public routes
 router.get("/active", getActiveFaqs)
 
-// Admin routes (you can add JWT middleware here if needed)
+// SECURITY FIX: Admin routes require superadmin authentication
+router.use(verifySuperadminToken);
+
 router.get("/", getAllFaqs)
 router.get("/:id", getFaqById)
 router.post("/", createFaq)

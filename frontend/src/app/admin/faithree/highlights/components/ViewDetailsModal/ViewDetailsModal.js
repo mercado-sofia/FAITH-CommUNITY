@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { FiX, FiCalendar, FiImage, FiVideo, FiFile } from 'react-icons/fi';
 import { formatDistanceToNow } from 'date-fns';
 import styles from './ViewDetailsModal.module.css';
@@ -101,10 +102,13 @@ export default function ViewDetailsModal({ highlight, onClose }) {
                 <div className={styles.imageGallery}>
                   <div className={styles.mainImage}>
                     {imageItems[selectedImageIndex] && (
-                      <img
+                      <Image
                         src={imageItems[selectedImageIndex].url || imageItems[selectedImageIndex].filename}
                         alt={`Highlight image ${selectedImageIndex + 1}`}
                         className={styles.mainImageContent}
+                        width={600}
+                        height={400}
+                        style={{ objectFit: 'cover' }}
                       />
                     )}
                   </div>
@@ -117,10 +121,13 @@ export default function ViewDetailsModal({ highlight, onClose }) {
                           className={`${styles.thumbnail} ${selectedImageIndex === index ? styles.activeThumbnail : ''}`}
                           onClick={() => setSelectedImageIndex(index)}
                         >
-                          <img
+                          <Image
                             src={item.url || item.filename}
                             alt={`Thumbnail ${index + 1}`}
                             className={styles.thumbnailImage}
+                            width={80}
+                            height={60}
+                            style={{ objectFit: 'cover' }}
                           />
                         </button>
                       ))}

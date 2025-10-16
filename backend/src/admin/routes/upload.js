@@ -10,7 +10,7 @@ import jwt from 'jsonwebtoken';
 import { verifyAdminOrSuperadmin } from '../../superadmin/middleware/verifyAdminOrSuperadmin.js';
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Authentication middleware for upload routes
 const authenticateAdmin = (req, res, next) => {
@@ -41,7 +41,6 @@ const authenticateAdmin = (req, res, next) => {
 router.post('/', verifyAdminOrSuperadmin, cloudinaryUploadConfigs.programMain.single('file'), async (req, res, next) => {
   try {
     if (!req.file) {
-      console.error('❌ No file in request');
       return res.status(400).json({ error: 'No file uploaded' });
     }
     
@@ -101,7 +100,6 @@ router.post('/', verifyAdminOrSuperadmin, cloudinaryUploadConfigs.programMain.si
         }
       });
     } catch (uploadError) {
-      console.error('❌ Cloudinary upload error:', uploadError);
       res.status(500).json({ error: 'Failed to upload file to Cloudinary: ' + uploadError.message });
     }
   } catch (error) {
@@ -113,7 +111,6 @@ router.post('/', verifyAdminOrSuperadmin, cloudinaryUploadConfigs.programMain.si
 // Error handling middleware for multer errors
 router.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
-    console.error('❌ Multer error:', error);
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({ error: 'File too large. Maximum size is 5MB.' });
     }
@@ -124,7 +121,6 @@ router.use((error, req, res, next) => {
   }
   
   if (error) {
-    console.error('❌ Upload route error:', error);
     return res.status(500).json({ error: 'Upload failed: ' + error.message });
   }
   
@@ -165,7 +161,6 @@ router.post('/public/organization-logo', cloudinaryUploadConfigs.organizationLog
         }
       });
     } catch (uploadError) {
-      console.error('❌ Cloudinary upload error:', uploadError);
       res.status(500).json({ 
         success: false, 
         error: 'Failed to upload file to Cloudinary: ' + uploadError.message 
@@ -183,7 +178,6 @@ router.post('/public/organization-logo', cloudinaryUploadConfigs.organizationLog
 // Error handling middleware for public upload multer errors
 router.use('/public', (error, req, res, next) => {
   if (error instanceof multer.MulterError) {
-    console.error('Public upload Multer error:', error);
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({ 
         success: false, 
@@ -197,9 +191,8 @@ router.use('/public', (error, req, res, next) => {
   }
   
   if (error) {
-    console.error('Public upload route error:', error);
     return res.status(500).json({ 
-      success: false, 
+      success: false,
       error: 'Upload failed: ' + error.message 
     });
   }
@@ -207,4 +200,4 @@ router.use('/public', (error, req, res, next) => {
   next();
 });
 
-export default router; 
+export default router;

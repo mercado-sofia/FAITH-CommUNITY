@@ -4,7 +4,7 @@ import * as bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 
 // JWT secret for admin (should match the one used in admin login)
-const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
+const JWT_SECRET = process.env.JWT_SECRET
 
 // Get admin's own profile
 export const getAdminProfile = async (req, res) => {
@@ -377,4 +377,3 @@ export const verifyPasswordForEmailChange = async (req, res) => {
     res.status(500).json({ error: "Internal server error" })
   }
 }
-

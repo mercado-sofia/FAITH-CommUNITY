@@ -42,7 +42,7 @@ export const getAdminPrograms = async (req, res) => {
     const adminOrgId = adminRows[0].organization_id;
     
     // Get programs where admin is creator (from their organization) OR collaborator (from other organizations)
-    // Include ALL collaboration statuses to ensure visibility throughout the workflow
+    // Exclude programs where admin has opted out (status = 'declined')
     const [programRows] = await db.execute(`
       SELECT DISTINCT p.*, o.org as orgAcronym, o.orgName as orgName, o.logo as orgLogo
       FROM programs_projects p
@@ -50,7 +50,7 @@ export const getAdminPrograms = async (req, res) => {
       WHERE p.organization_id = ? 
          OR p.id IN (
            SELECT program_id FROM program_collaborations 
-           WHERE collaborator_admin_id = ? AND status IN ('accepted', 'pending', 'declined')
+           WHERE collaborator_admin_id = ? AND status IN ('accepted', 'pending')
          )
       ORDER BY p.created_at DESC
     `, [adminOrgId, currentAdminId]);
@@ -126,7 +126,7 @@ export const getAdminPrograms = async (req, res) => {
         title: program.title,
         description: program.description,
         category: program.category,
-        status: program.status || 'active',
+        status: program.status || 'Upcoming',
         image: program.image,
         additional_images: additionalImages,
         event_start_date: program.event_start_date,
@@ -139,6 +139,7 @@ export const getAdminPrograms = async (req, res) => {
         slug: program.slug,
         is_approved: program.is_approved,
         is_collaborative: program.is_collaborative,
+        accepts_volunteers: program.accepts_volunteers !== undefined ? program.accepts_volunteers : true,
         user_role: userRole,
         collaboration_status: collaborationStatus,
         collaboration_id: collaborationRows.length > 0 ? collaborationRows[0].collaboration_id : null,
@@ -196,11 +197,19 @@ export const getProgramsByOrg = async (req, res) => {
     const organization = orgRows[0];
 
     // Get only approved programs from programs_projects table
+    // Exclude programs that have pending collaboration requests (they should appear in Collaborations tab)
     const [approvedRows] = await db.execute(
       `SELECT p.*, 'approved' as source_type, o.org as orgAcronym, o.orgName as orgName, o.logo as orgLogo
        FROM programs_projects p
        LEFT JOIN organizations o ON p.organization_id = o.id
-       WHERE p.organization_id = ? AND p.is_approved = TRUE
+       WHERE p.organization_id = ? 
+       AND p.is_approved = TRUE
+       AND p.id NOT IN (
+         SELECT DISTINCT program_id 
+         FROM program_collaborations 
+         WHERE program_id IS NOT NULL 
+         AND status = 'pending'
+       )
        ORDER BY p.created_at DESC`,
       [organization.id]
     );
@@ -254,7 +263,7 @@ export const getProgramsByOrg = async (req, res) => {
         title: program.title,
         description: program.description,
         category: program.category,
-        status: program.status || 'active',
+        status: program.status || 'Upcoming',
         date: program.date || program.date_completed || program.date_created || program.created_at,
         image: program.image,
         additional_images: program.additional_images,
@@ -576,7 +585,7 @@ export const deleteProgramSubmission = async (req, res) => {
 // Update an approved program (admin only)
 export const updateProgram = async (req, res) => {
   const { id } = req.params;
-  const { title, description, category, status, image, additionalImages, event_start_date, event_end_date, multiple_dates } = req.body;
+  const { title, description, category, status, image, additionalImages, event_start_date, event_end_date, multiple_dates, collaborators, accepts_volunteers } = req.body;
 
   // Update program request received
 
@@ -654,9 +663,9 @@ export const updateProgram = async (req, res) => {
     // Update the program
     const [result] = await db.execute(
       `UPDATE programs_projects 
-       SET title = ?, description = ?, category = ?, status = ?, image = ?, event_start_date = ?, event_end_date = ?
+       SET title = ?, description = ?, category = ?, status = ?, image = ?, event_start_date = ?, event_end_date = ?, accepts_volunteers = ?
        WHERE id = ?`,
-      [title, description, category, status || 'active', imagePath, event_start_date || null, event_end_date || null, id]
+      [title, description, category, status || 'active', imagePath, event_start_date || null, event_end_date || null, accepts_volunteers !== undefined ? accepts_volunteers : true, id]
     );
 
     if (result.affectedRows === 0) {
@@ -734,6 +743,36 @@ export const updateProgram = async (req, res) => {
         }
       }
       // Additional images updated
+    }
+
+    // Handle collaborators if provided
+    if (collaborators !== undefined) {
+      // Processing collaborators update
+      // First, delete existing collaborators for this program
+      await db.execute('DELETE FROM program_collaborations WHERE program_id = ?', [id]);
+      
+      // Then insert new collaborators if any
+      if (collaborators && Array.isArray(collaborators) && collaborators.length > 0) {
+        // Get the current admin ID from the request (assuming it's available in req.user)
+        const currentAdminId = req.user?.id || req.user?.admin_id;
+        
+        if (!currentAdminId) {
+          return res.status(400).json({
+            success: false,
+            message: "Admin ID is required for collaboration updates",
+          });
+        }
+        
+        for (const collaboratorId of collaborators) {
+          if (collaboratorId && typeof collaboratorId === 'number') {
+            await db.execute(
+              'INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status, program_title) VALUES (?, ?, ?, ?, ?)',
+              [id, collaboratorId, currentAdminId, 'pending', title]
+            );
+          }
+        }
+      }
+      // Collaborators updated
     }
 
     // Program update completed successfully
@@ -1058,6 +1097,7 @@ export const getProgramBySlug = async (req, res) => {
         pp.organization_id,
         pp.slug,
         pp.is_collaborative,
+        pp.accepts_volunteers,
         o.orgName as organization_name,
         o.org as organization_acronym,
         o.logo as orgLogo,
@@ -1172,6 +1212,7 @@ export const getOtherProgramsByOrganization = async (req, res) => {
         pp.image,
         pp.slug,
         pp.created_at,
+        pp.accepts_volunteers,
         o.orgName as organization_name,
         o.org as organization_acronym,
         o.logo as orgLogo
@@ -1212,6 +1253,8 @@ export const getOtherProgramsByOrganization = async (req, res) => {
 };
 
 // ---------------- Add new program (from programProjectsController) ----------------
+// SECURITY NOTE: This function should only be used by superadmins or through the approval process
+// The direct route has been removed to enforce submission workflow
 export const addProgramProject = async (req, res) => {
   const { 
     title, 
@@ -1320,9 +1363,9 @@ export const addProgramProject = async (req, res) => {
         event_start_date ?? null,
         event_end_date ?? null,
         image ?? null, 
-        collaborators && collaborators.length > 0 ? 'pending_collaboration' : 'pending', 
+        'Upcoming', // Default status for new programs 
         finalSlug, 
-        collaborators && collaborators.length > 0 ? false : true, 
+        false, // SECURITY FIX: Always require superadmin approval - never auto-approve
         collaborators && collaborators.length > 0
       ]
     );
@@ -1364,7 +1407,7 @@ export const addProgramProject = async (req, res) => {
         }
       }
     }
-    const appBase = process.env.APP_BASE_URL || 'http://localhost:3000';
+    const appBase = process.env.APP_BASE_URL;
     const programUrl = `${appBase}/programs/${finalSlug}`;
 
     // 🔔 Email subscribers (non-blocking but awaited here for logs)
@@ -1385,6 +1428,7 @@ export const addProgramProject = async (req, res) => {
       .status(201)
       .json({ message: 'Project submitted for approval', id: newId });
   } catch (error) {
+    console.error('Program submission error:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -1462,7 +1506,7 @@ export const updateProgramProject = async (req, res) => {
     );
     const currentSlug = programRows[0]?.slug || id;
 
-    const appBase = process.env.APP_BASE_URL || 'http://localhost:3000';
+    const appBase = process.env.APP_BASE_URL;
     const programUrl = `${appBase}/programs/${currentSlug}`;
 
     // 🔔 Email subscribers about the update
@@ -1688,6 +1732,60 @@ export const markProgramAsActive = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to mark program as active",
+      error: error.message
+    });
+  }
+};
+
+// Toggle volunteer acceptance for a program
+export const toggleVolunteerAcceptance = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { accepts_volunteers } = req.body;
+
+    // Validate input
+    if (typeof accepts_volunteers !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: "accepts_volunteers must be a boolean value"
+      });
+    }
+
+    // Check if program exists and admin has permission
+    const [programRows] = await db.execute(`
+      SELECT p.*, o.orgName 
+      FROM programs_projects p
+      LEFT JOIN organizations o ON p.organization_id = o.id
+      WHERE p.id = ? AND p.organization_id = ?
+    `, [id, req.admin.organization_id]);
+
+    if (programRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Program not found or you don't have permission to modify it"
+      });
+    }
+
+    // Update volunteer acceptance status
+    await db.execute(
+      "UPDATE programs_projects SET accepts_volunteers = ? WHERE id = ?",
+      [accepts_volunteers, id]
+    );
+
+    const action = accepts_volunteers ? 'accepting' : 'not accepting';
+    res.json({
+      success: true,
+      message: `Program is now ${action} volunteer applications`,
+      data: {
+        id: id,
+        title: programRows[0].title,
+        accepts_volunteers: accepts_volunteers
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to update volunteer acceptance status",
       error: error.message
     });
   }

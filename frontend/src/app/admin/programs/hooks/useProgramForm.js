@@ -125,7 +125,8 @@ export const useProgramForm = (mode = 'create', program = null) => {
         multiple_dates: program.multiple_dates || [],
         image: null, // Will be handled separately for existing images
         additionalImages: [], // Will be handled separately for existing images
-        collaborators: Array.isArray(program.collaborators) ? program.collaborators : []
+        collaborators: Array.isArray(program.collaborators) ? program.collaborators : [],
+        accepts_volunteers: program.accepts_volunteers !== undefined ? program.accepts_volunteers : true
       });
     }
   }, [isEditMode, program]);
@@ -154,38 +155,29 @@ export const useProgramForm = (mode = 'create', program = null) => {
   const validateForm = useCallback(() => {
     const newErrors = {};
     
-    // Validate text fields
-    Object.keys(VALIDATION_RULES).forEach(field => {
-      if (field !== 'image' && field !== 'additionalImages') {
-        // Skip date validation if we have multiple_dates with values
-        if (field === 'event_start_date' && formData.multiple_dates && Array.isArray(formData.multiple_dates) && formData.multiple_dates.length > 0) {
-          return; // Skip validation for event_start_date if multiple_dates has values
-        }
-        
-        const error = validateField(field, formData[field], VALIDATION_RULES);
-        if (error) {
-          newErrors[field] = error;
-        }
+    // Validate required text fields
+    const requiredFields = ['title', 'description', 'category'];
+    requiredFields.forEach(field => {
+      const error = validateField(field, formData[field], VALIDATION_RULES);
+      if (error) {
+        newErrors[field] = error;
       }
     });
 
-    // Date validation is now optional - no special validation needed
-
-    // Validate main image
-    if (formData.image) {
+    // Validate main image - required for new programs
+    if (!isEditMode && !formData.image) {
+      newErrors.image = ERROR_MESSAGES.image.required;
+    } else if (formData.image) {
       const imageError = validateImage(formData.image, VALIDATION_RULES.image);
       if (imageError) {
         newErrors.image = imageError;
       }
-    } else if (!isEditMode) {
-      // Main image is required for new programs
-      newErrors.image = ERROR_MESSAGES.image.required;
     }
 
-    // Validate additional images
-    if (formData.additionalImages.length > VALIDATION_RULES.additionalImages.maxCount) {
+    // Validate additional images (optional)
+    if (formData.additionalImages && formData.additionalImages.length > VALIDATION_RULES.additionalImages.maxCount) {
       newErrors.additionalImages = ERROR_MESSAGES.additionalImages.maxCount;
-    } else {
+    } else if (formData.additionalImages && formData.additionalImages.length > 0) {
       formData.additionalImages.forEach((file, index) => {
         const imageError = validateImage(file, VALIDATION_RULES.additionalImages);
         if (imageError) {
@@ -212,6 +204,13 @@ export const useProgramForm = (mode = 'create', program = null) => {
     setErrors({});
   }, []);
 
+  // Reset form to default state
+  const resetForm = useCallback(() => {
+    setFormData(DEFAULT_FORM_DATA);
+    setErrors({});
+    setHasChanges(false);
+  }, []);
+
   return {
     formData,
     errors,
@@ -222,6 +221,7 @@ export const useProgramForm = (mode = 'create', program = null) => {
     clearError,
     clearAllErrors,
     setFormData,
-    setHasChanges
+    setHasChanges,
+    resetForm
   };
 };

@@ -40,7 +40,6 @@ export const getAllOrganizations = async (req, res) => {
       data: formattedData
     });
   } catch (error) {
-    console.error('❌ Error fetching organizations:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch organizations',
@@ -109,7 +108,6 @@ export const getApprovedOrganizationAdvisers = async (req, res) => {
       data: formattedData
     });
   } catch (error) {
-    console.error('❌ Error fetching approved organization advisers:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch approved organization advisers',
@@ -168,7 +166,6 @@ export const getHeroSection = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Error fetching hero section:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch hero section data',

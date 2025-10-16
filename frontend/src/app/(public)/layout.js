@@ -6,20 +6,7 @@ import '../globals.css';
 import Head from 'next/head';
 import { useEffect, useRef, useState } from 'react';
 import styles from './styles/publicLayout.module.css';
-import { Poppins, Inter } from 'next/font/google';
 import { usePublicBranding } from './hooks/usePublicData';
-
-const poppins = Poppins({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800', '900'],
-  variable: '--font-poppins',
-});
-
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-inter',
-});
 
 export default function PublicLayout({ children }) {
   const navbarRef = useRef(null);
@@ -117,21 +104,13 @@ export default function PublicLayout({ children }) {
           href="/samples/sample4.jpg"
           as="image"
         />
-        {/* Preload critical fonts */}
-        <link
-          rel="preload"
-          href="/fonts/inter-var.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
       </Head>
       
       {/* Page preloader for instant navigation */}
       <PagePreloader />
       
       {/* Optimized layout container */}
-      <div className={`${styles['public-layout-container']} ${poppins.variable} ${inter.variable}`}>
+      <div className={styles['public-layout-container']}>
         {/* Fixed navbar */}
         <div ref={navbarRef} className={styles['public-navbar-wrapper']}>
           <Navbar />

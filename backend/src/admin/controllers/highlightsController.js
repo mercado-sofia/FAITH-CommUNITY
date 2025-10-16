@@ -398,7 +398,6 @@ export const updateHighlightStatus = async (req, res) => {
     // If rejected, store rejection reason (you might want to add a rejection_reason column)
     if (status === 'rejected' && rejection_reason) {
       // For now, we'll just log it. You can add a rejection_reason column later if needed
-      console.log(`Highlight ${id} rejected. Reason: ${rejection_reason}`);
     }
     
     await connection.commit();

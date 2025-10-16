@@ -320,6 +320,133 @@
   min-height: 300px;
 }
 
+/* Approvals Table Skeleton */
+.approvalsSkeleton {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  margin-bottom: 1.4rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  min-height: 400px;
+}
+
+/* Invites Table Skeleton */
+.invitesSkeleton {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  margin-bottom: 1.4rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  min-height: 400px;
+}
+
+.tableSkeleton {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.tableHeaderSkeleton {
+  display: grid;
+  grid-template-columns: 40px 1fr 120px 100px 100px 60px;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 0.5rem;
+}
+
+.headerCellSkeleton {
+  height: 20px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  will-change: background-position;
+}
+
+.tableRowSkeleton {
+  display: grid;
+  grid-template-columns: 40px 1fr 120px 100px 100px 60px;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f3f4f6;
+  align-items: center;
+}
+
+.cellSkeleton {
+  display: flex;
+  align-items: center;
+  min-height: 20px;
+}
+
+.checkboxSkeleton {
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 3px;
+  will-change: background-position;
+}
+
+.badgeSkeleton {
+  width: 80px;
+  height: 24px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 12px;
+  will-change: background-position;
+}
+
+.actionButtonSkeleton {
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  will-change: background-position;
+}
+
+/* Invites-specific skeletons */
+.emailSkeleton {
+  width: 180px;
+  height: 16px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  will-change: background-position;
+}
+
+.dateTimeSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dateSkeleton {
+  width: 80px;
+  height: 14px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 3px;
+  will-change: background-position;
+}
+
+.timeSkeleton {
+  width: 60px;
+  height: 12px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 3px;
+  will-change: background-position;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .bannerImagesSkeleton {
@@ -336,5 +463,28 @@
   
   .buttonSkeleton {
     width: 100%;
+  }
+  
+  .tableHeaderSkeleton,
+  .tableRowSkeleton {
+    grid-template-columns: 30px 1fr 80px 80px 80px 40px;
+    gap: 0.5rem;
+  }
+  
+  .headerCellSkeleton,
+  .cellSkeleton {
+    font-size: 0.875rem;
+  }
+  
+  .emailSkeleton {
+    width: 120px;
+  }
+  
+  .dateSkeleton {
+    width: 60px;
+  }
+  
+  .timeSkeleton {
+    width: 45px;
   }
 }

@@ -4,7 +4,6 @@ import {
   getHeadsFacesById,
   createHeadsFaces,
   updateHeadsFaces,
-  deleteHeadsFaces,
   createOrUpdateHeadFaces,
   uploadHeadsFacesImage
 } from '../controllers/headsFacesController.js';
@@ -40,7 +39,6 @@ router.get('/:id', getHeadsFacesById);
 // Protected routes for superadmin management
 router.post('/', verifyAdminOrSuperadmin, createHeadsFaces);
 router.put('/:id', verifyAdminOrSuperadmin, updateHeadsFaces);
-router.delete('/:id', verifyAdminOrSuperadmin, deleteHeadsFaces);
 
 // Single head management endpoint
 router.post('/manage', verifyAdminOrSuperadmin, createOrUpdateHeadFaces);

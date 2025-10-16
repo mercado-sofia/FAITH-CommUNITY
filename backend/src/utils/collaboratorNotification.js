@@ -10,7 +10,6 @@ import NotificationController from '../admin/controllers/notificationController.
  */
 export const notifyCollaboratorsOnApproval = async (programId, programTitle) => {
   try {
-    console.log(`🔍 Looking for collaborators for program ID: ${programId}, title: "${programTitle}"`);
     
     // Get all collaborators for this program
     const [collaborators] = await db.execute(`
@@ -20,10 +19,8 @@ export const notifyCollaboratorsOnApproval = async (programId, programTitle) => 
       WHERE pc.program_id = ? AND pc.status = 'accepted'
     `, [programId]);
 
-    console.log(`📋 Found ${collaborators.length} collaborators:`, collaborators);
 
     if (collaborators.length === 0) {
-      console.log('⚠️ No collaborators found for this program');
       return {
         success: true,
         notifiedCount: 0,
@@ -37,7 +34,6 @@ export const notifyCollaboratorsOnApproval = async (programId, programTitle) => 
     // Notify each collaborator
     for (const collaborator of collaborators) {
       try {
-        console.log(`📤 Sending notification to collaborator ${collaborator.collaborator_admin_id} (${collaborator.email})`);
         const result = await NotificationController.createNotification(
           collaborator.collaborator_admin_id,
           'program_approval',
@@ -54,7 +50,6 @@ export const notifyCollaboratorsOnApproval = async (programId, programTitle) => 
       }
     }
 
-    console.log(`📊 Notification summary: ${notifiedCount} sent, ${errors.length} failed`);
     
     return {
       success: true,

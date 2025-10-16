@@ -29,8 +29,6 @@ export default function BannerSection() {
     checkAuth();
   }, []);
 
-
-
   return (
     <section className={styles.inviteSection}>
       <div className={styles.overlay} />

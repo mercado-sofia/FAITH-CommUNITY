@@ -9,7 +9,23 @@ const CollaborationBadge = ({
   isCollaborative = false,
   collaboratorCount = 0 
 }) => {
-  if (!isCollaborative) {
+  // Check if program has any collaborations that are not declined
+  // Show badge for pending and accepted collaborations
+  // Only hide badge if all collaborators have declined
+  const hasActiveCollaborations = () => {
+    if (!program.collaborators || !Array.isArray(program.collaborators)) {
+      return false;
+    }
+    
+    // Check if there are any collaborations that are not declined
+    // This includes pending and accepted collaborations
+    return program.collaborators.some(collab => 
+      collab.status !== 'declined'
+    );
+  };
+
+  // Show badge if there are any non-declined collaborations
+  if (!hasActiveCollaborations()) {
     return null;
   }
 
@@ -38,13 +54,19 @@ const CollaborationBadge = ({
 
   const badge = getBadgeContent();
 
+  // Count all non-declined collaborations (pending and accepted)
+  const activeCollaboratorCount = program.collaborators ? 
+    program.collaborators.filter(collab => 
+      collab.status !== 'declined'
+    ).length : 0;
+
   return (
     <div className={`${styles.badge} ${badge.className}`}>
       {badge.icon}
       <span className={styles.badgeText}>{badge.text}</span>
-      {collaboratorCount > 0 && (
+      {activeCollaboratorCount > 0 && (
         <span className={styles.collaboratorCount}>
-          ({collaboratorCount})
+          ({activeCollaboratorCount})
         </span>
       )}
     </div>

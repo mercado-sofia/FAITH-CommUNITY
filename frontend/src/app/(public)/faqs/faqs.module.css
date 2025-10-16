@@ -14,7 +14,7 @@
   color: #15803d;
   font-weight: 700;
   font-size: 0.85rem;
-  font-family: var(--font-roboto);
+  font-family: var(--font-inter);
   letter-spacing: 1px;
 }
 
@@ -23,7 +23,7 @@
   font-weight: 800;
   line-height: 1.4;
   margin: 0.8rem 0 2rem;
-  font-family: var(--font-roboto);
+  font-family: var(--font-inter);
 }
 
 .heading span {
@@ -50,7 +50,7 @@
   padding: 0;
   transition: background 0.3s ease;
   overflow: hidden;
-  font-family: var(--font-roboto);
+  font-family: var(--font-inter);
 }
 
 .faqItem:hover {
@@ -88,6 +88,7 @@
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.3s ease, padding 0.3s ease;
+  font-family: var(--font-inter);
 }
 
 .faqItem.open .answer {

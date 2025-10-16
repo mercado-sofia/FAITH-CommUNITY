@@ -9,8 +9,10 @@ const SearchAndFilterControls = ({
   sortBy,
   onSearchChange,
   onFilterChange,
-  totalCount,
-  filteredCount
+  // Collaboration-specific props
+  isCollaborationTab = false,
+  collaborationStatusFilter = 'all',
+  onCollaborationStatusChange
 }) => {
   const [showDropdown, setShowDropdown] = useState(null);
   const [localQuery, setLocalQuery] = useState(searchQuery || '');
@@ -30,11 +32,16 @@ const SearchAndFilterControls = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-
-
   const sortOptions = [
     { value: 'newest', label: 'Newest' },
     { value: 'oldest', label: 'Oldest' }
+  ];
+
+  const collaborationStatusOptions = [
+    { value: 'all', label: 'All Collaborations' },
+    { value: 'pending', label: 'Pending Response' },
+    { value: 'accepted', label: 'Accepted' },
+    { value: 'declined', label: 'Declined' }
   ];
 
   return (
@@ -87,11 +94,33 @@ const SearchAndFilterControls = ({
             </ul>
           )}
         </div>
+
+        {/* Collaboration Status Filter - Only show for collaboration tab */}
+        {isCollaborationTab && (
+          <div className={styles.dropdownWrapper}>
+            <div
+              className={styles.dropdown}
+              onClick={() => toggleDropdown("collaborationStatus")}
+            >
+              Status: {collaborationStatusOptions.find(opt => opt.value === collaborationStatusFilter)?.label || 'All Collaborations'}
+              <FiChevronDown className={styles.icon} />
+            </div>
+            {showDropdown === "collaborationStatus" && (
+              <ul className={styles.options}>
+                {collaborationStatusOptions.map((option) => (
+                  <li key={option.value} onClick={() => {
+                    onCollaborationStatusChange(option.value);
+                    setShowDropdown(null);
+                  }}>
+                    {option.label}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Empty right side to match news page layout */}
-      <div className={styles.searchWrapper}>
-      </div>
     </div>
   );
 };

@@ -45,6 +45,16 @@ export default function FeaturedProjects({ orgID }) {
   const handleButtonClick = (program, isApplyButton = false) => {
     // If it's an "Apply Now" button for an upcoming program
     if (isApplyButton && program.status === 'Upcoming') {
+      // Check if program accepts volunteers
+      // Handle both boolean and numeric values (0/1 from database)
+      const acceptsVolunteers = program.accepts_volunteers !== false && program.accepts_volunteers !== 0 && program.accepts_volunteers !== '0';
+      
+      if (!acceptsVolunteers) {
+        // Program doesn't accept volunteers, just navigate to details
+        router.push(`/programs/${program.slug || program.id}`);
+        return;
+      }
+      
       if (!isLoggedIn) {
         // Show login modal for non-authenticated users
         window.dispatchEvent(new CustomEvent('showLoginModal'));
@@ -119,7 +129,12 @@ export default function FeaturedProjects({ orgID }) {
                 const isActive = program.status === 'Active';
                 
                 const getActionButtonText = () => {
-                  if (isUpcoming) return 'Apply Now';
+                  if (isUpcoming) {
+                    // Check if program accepts volunteers
+                    // Handle both boolean and numeric values (0/1 from database)
+                    const acceptsVolunteers = program.accepts_volunteers !== false && program.accepts_volunteers !== 0 && program.accepts_volunteers !== '0';
+                    return acceptsVolunteers ? 'Apply Now' : 'Learn More';
+                  }
                   return 'Learn More';
                 };
                 
@@ -131,7 +146,7 @@ export default function FeaturedProjects({ orgID }) {
                 };
                 
                 const getActionButtonClass = () => {
-                  if (isUpcoming) return styles.programActionButton;
+                  if (isUpcoming && program.accepts_volunteers !== false && program.accepts_volunteers !== 0 && program.accepts_volunteers !== '0') return styles.programActionButton;
                   return `${styles.programActionButton} ${styles.learnMore}`;
                 };
 
@@ -154,7 +169,7 @@ export default function FeaturedProjects({ orgID }) {
                       <div className={styles.programBottomSection}>
                         <button 
                           className={getActionButtonClass()}
-                          onClick={() => handleButtonClick(program, isUpcoming)}
+                          onClick={() => handleButtonClick(program, isUpcoming && program.accepts_volunteers !== false && program.accepts_volunteers !== 0 && program.accepts_volunteers !== '0')}
                         >
                           {getActionButtonText()}
                         </button>

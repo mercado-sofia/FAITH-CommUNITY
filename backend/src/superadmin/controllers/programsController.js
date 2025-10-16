@@ -77,7 +77,6 @@ export const getAllProgramsByOrganization = async (req, res) => {
       data: programsWithDates
     });
   } catch (error) {
-    console.error('Error fetching programs by organization:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch programs by organization',
@@ -106,7 +105,6 @@ export const getProgramsStatistics = async (req, res) => {
       data: results[0]
     });
   } catch (error) {
-    console.error('Error fetching programs statistics:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch programs statistics',
@@ -201,7 +199,6 @@ export const getProgramById = async (req, res) => {
       data: programWithDates
     });
   } catch (error) {
-    console.error('Error fetching program by ID:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch program',
@@ -280,7 +277,6 @@ export const getProgramsByOrganizationId = async (req, res) => {
       data: programsWithDates
     });
   } catch (error) {
-    console.error('Error fetching programs by organization ID:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch programs by organization',

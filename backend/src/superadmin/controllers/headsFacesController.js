@@ -162,35 +162,6 @@ export const updateHeadsFaces = async (req, res) => {
   }
 };
 
-export const deleteHeadsFaces = async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    // Check if record exists
-    const [existingRecord] = await db.query(
-      "SELECT * FROM heads_faces WHERE id = ?",
-      [id]
-    );
-    
-    if (existingRecord.length === 0) {
-      return res.status(404).json({ success: false, error: 'Head of FACES not found' });
-    }
-    
-    // Soft delete by setting status to INACTIVE
-    await db.query(
-      "UPDATE heads_faces SET status = 'INACTIVE' WHERE id = ?",
-      [id]
-    );
-    
-    res.status(200).json({ 
-      success: true, 
-      message: 'Head of FACES deleted successfully' 
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-};
-
 // Upload image for heads of FACES
 export const uploadHeadsFacesImage = async (req, res) => {
   try {
@@ -232,11 +203,11 @@ export const uploadHeadsFacesImage = async (req, res) => {
         [imageUrl, existingHeads[0].id]
       );
     } else {
-      // Create new head with uploaded image
-      await db.query(
-        "INSERT INTO heads_faces (name, image_url, position, display_order) VALUES (?, ?, ?, ?)",
-        ['Head of FACES', imageUrl, 'Head of FACES', 1]
-      );
+      // Don't auto-create head when uploading image - user should create head first
+      return res.status(400).json({
+        success: false,
+        message: 'No head of FACES exists. Please create a head first before uploading an image.'
+      });
     }
 
     res.status(200).json({
@@ -254,7 +225,6 @@ export const uploadHeadsFacesImage = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error uploading heads of FACES image:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to upload heads of FACES image: ' + error.message

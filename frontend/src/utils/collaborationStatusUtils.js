@@ -12,10 +12,6 @@ export const getStatusColor = (status) => {
       return '#10b981'; // Green - collaborator accepted
     case 'declined':
       return '#ef4444'; // Red - collaborator declined
-    case 'pending_collaboration':
-      return '#3b82f6'; // Blue - waiting for collaborator responses
-    case 'pending_superadmin_approval':
-      return '#8b5cf6'; // Purple - waiting for superadmin approval
     case 'approved':
       return '#10b981'; // Green - fully approved
     case 'rejected':
@@ -36,10 +32,6 @@ export const getStatusDisplayText = (status) => {
       return 'Accepted';
     case 'declined':
       return 'Declined';
-    case 'pending_collaboration':
-      return 'Pending Collaboration';
-    case 'pending_superadmin_approval':
-      return 'Pending Superadmin Approval';
     case 'approved':
       return 'Approved';
     case 'rejected':
@@ -52,88 +44,49 @@ export const getStatusDisplayText = (status) => {
 };
 
 // Workflow stage mapping for collaboration cards
-export const getWorkflowStage = (status, requestType, programStatus, programTitle = '') => {
-  // Determine effective status (prioritize program status over collaboration status)
-  const getEffectiveStatus = (collaborationStatus, programStatus) => {
-    // Handle empty or null program status
-    if (!programStatus || programStatus === '' || programStatus === null) {
-      return collaborationStatus || 'pending';
+export const getWorkflowStage = (status, requestType, programStatus, programTitle = '', isApproved = false) => {
+  // Determine effective status based on new system
+  const getEffectiveStatus = (collaborationStatus, programStatus, isApproved) => {
+    // If program is approved, it's live regardless of collaboration status
+    if (isApproved) {
+      return 'approved';
     }
     
-    // If program has a final status (approved/rejected/completed), use that
-    if (programStatus === 'approved' || programStatus === 'rejected' || programStatus === 'Completed') {
-      return programStatus === 'Completed' ? 'approved' : programStatus;
+    // If program is not approved, check collaboration status
+    if (collaborationStatus === 'accepted') {
+      return 'accepted';
+    } else if (collaborationStatus === 'declined') {
+      return 'declined';
+    } else {
+      return 'pending';
     }
-    
-    // If program is pending superadmin approval, use that
-    if (programStatus === 'pending_superadmin_approval') {
-      return programStatus;
-    }
-    
-    // If program is pending collaboration, use that
-    if (programStatus === 'pending_collaboration') {
-      return programStatus;
-    }
-    
-    // If program is declined, use that
-    if (programStatus === 'declined') {
-      return programStatus;
-    }
-    
-    // Otherwise, use the collaboration status
-    return collaborationStatus || 'pending';
   };
 
-  const effectiveStatus = getEffectiveStatus(status, programStatus);
-  
-  // If we still don't have a proper program status, try to infer it from the collaboration status
-  if (!programStatus || programStatus === '') {
-    // If collaboration is accepted and we're in a sent request, it might be approved
-    if (status === 'accepted' && requestType === 'sent') {
-      return 'Step 4: ✅ Approved - Program Live';
-    }
-    
-    // For all programs: if collaboration is accepted and we have no program status, 
-    // check if this might be an approved program that needs status inference
-    if (status === 'accepted') {
-      console.log(`🔍 Status inference: Program "${programTitle}" with accepted status, checking if approved`);
-      // This will be handled by the effective status calculation below
-    }
-  }
+  const effectiveStatus = getEffectiveStatus(status, programStatus, isApproved);
   
   if (requestType === 'received') {
     switch (effectiveStatus) {
       case 'pending':
-      case 'pending_collaboration':
         return 'Step 2: Your Response Required';
       case 'accepted':
-        return 'Step 2: ✅ Accepted - Waiting for Other Collaborators';
-      case 'pending_superadmin_approval':
-        return 'Step 3: ✅ Accepted - Sent to Superadmin';
+        return 'Step 2: ✅ Accepted - Program is now collaborative';
       case 'declined':
-        return 'Step 2: ❌ Declined - Program Stopped';
+        return 'Step 2: ❌ Declined - Program remains solo';
       case 'approved':
-        return 'Step 4: ✅ Approved - Program Live';
-      case 'rejected':
-        return 'Step 4: ❌ Rejected by Superadmin';
+        return 'Step 3: ✅ Approved - Program Live';
       default:
         return 'Step 2: Collaboration Review';
     }
   } else {
     switch (effectiveStatus) {
       case 'pending':
-      case 'pending_collaboration':
         return 'Step 2: Waiting for Collaborator Response';
       case 'accepted':
-        return 'Step 2: ✅ Collaborator Accepted - Waiting for Others';
-      case 'pending_superadmin_approval':
-        return 'Step 3: Waiting for Superadmin Approval';
+        return 'Step 2: ✅ Collaborator Accepted - Program is now collaborative';
       case 'declined':
-        return 'Step 2: ❌ Declined - Program Stopped';
+        return 'Step 2: ❌ Declined - Program remains solo';
       case 'approved':
-        return 'Step 4: ✅ Approved - Program Live';
-      case 'rejected':
-        return 'Step 4: ❌ Rejected by Superadmin';
+        return 'Step 3: ✅ Approved - Program Live';
       default:
         return 'Step 1: Program Submitted';
     }
@@ -158,16 +111,6 @@ export const getStatusBadgeConfig = (status) => {
       className: 'statusDeclined',
       color: '#ef4444'
     },
-    'pending_collaboration': { 
-      text: 'Pending Collaboration', 
-      className: 'statusPending',
-      color: '#3b82f6'
-    },
-    'pending_superadmin_approval': { 
-      text: 'Pending Approval', 
-      className: 'statusPending',
-      color: '#8b5cf6'
-    },
     'approved': { 
       text: 'Approved', 
       className: 'statusApproved',
@@ -191,47 +134,26 @@ export const getStatusBadgeConfig = (status) => {
 // Check if status is a collaborative program status
 export const isCollaborativeStatus = (status) => {
   const collaborativeStatuses = [
-    'pending_collaboration',
     'accepted',
-    'pending_superadmin_approval',
-    'declined'
+    'declined',
+    'pending'
   ];
   return collaborativeStatuses.includes(status?.toLowerCase());
 };
 
 // Get effective status for filtering and display
-export const getEffectiveStatus = (collaborationStatus, programStatus) => {
-  // Handle empty or null program status
-  if (!programStatus || programStatus === '' || programStatus === null) {
-    // If collaboration is accepted and we have no program status, 
-    // this might indicate the program is approved but status wasn't properly set
-    if (collaborationStatus === 'accepted') {
-      console.log('🔍 Status inference: accepted collaboration with no program status, assuming approved');
-      return 'approved';
-    }
-    return collaborationStatus || 'pending';
+export const getEffectiveStatus = (collaborationStatus, programStatus, isApproved = false) => {
+  // If program is approved, it's live regardless of collaboration status
+  if (isApproved) {
+    return 'approved';
   }
   
-  // If program has a final status (approved/rejected/completed), use that
-  if (programStatus === 'approved' || programStatus === 'rejected' || programStatus === 'Completed') {
-    return programStatus === 'Completed' ? 'approved' : programStatus;
+  // If program is not approved, check collaboration status
+  if (collaborationStatus === 'accepted') {
+    return 'accepted';
+  } else if (collaborationStatus === 'declined') {
+    return 'declined';
+  } else {
+    return 'pending';
   }
-  
-  // If program is pending superadmin approval, use that
-  if (programStatus === 'pending_superadmin_approval') {
-    return programStatus;
-  }
-  
-  // If program is pending collaboration, use that
-  if (programStatus === 'pending_collaboration') {
-    return programStatus;
-  }
-  
-  // If program is declined, use that
-  if (programStatus === 'declined') {
-    return programStatus;
-  }
-  
-  // Otherwise, use the collaboration status
-  return collaborationStatus || 'pending';
 };

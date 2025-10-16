@@ -8,7 +8,6 @@ import styles from './Sidebar.module.css';
 import LogoutModalTrigger from '../../logout/page.js';
 
 import { TbChecklist } from "react-icons/tb";
-import { RiTreeFill } from "react-icons/ri";
 import { HiViewGrid } from 'react-icons/hi';
 import { FaClipboardCheck, FaRegQuestionCircle, FaAddressCard } from 'react-icons/fa';
 import { MdSettings } from 'react-icons/md';
@@ -104,13 +103,6 @@ export default function Sidebar() {
             <span>Invitations</span>
           </Link>
 
-          <Link
-            href="/superadmin/faithree/highlights"
-            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith('/superadmin/faithree') ? styles.active : ''}`}
-          >
-            <RiTreeFill className={styles.icon} />
-            <span>FAITHree</span>
-          </Link>
 
           <Link
             href="/superadmin/faqs"

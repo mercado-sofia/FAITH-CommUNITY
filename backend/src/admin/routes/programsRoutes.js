@@ -18,6 +18,7 @@ import {
   getProgramById,
   markProgramAsCompleted,
   markProgramAsActive,
+  toggleVolunteerAcceptance,
   // Functions from programProjectsController
   addProgramProject,
   updateProgramProject,
@@ -44,6 +45,7 @@ router.get('/admin/programs/single/:id', getProgramById);
 router.put('/admin/programs/:id', updateProgram);
 router.put('/admin/programs/:id/mark-completed', markProgramAsCompleted);
 router.put('/admin/programs/:id/mark-active', markProgramAsActive);
+router.put('/admin/programs/:id/toggle-volunteers', toggleVolunteerAcceptance);
 router.delete('/admin/programs/:id', deleteProgramSubmission);
 
 // Superadmin routes
@@ -51,7 +53,9 @@ router.get('/superadmin/featured-projects', getAllFeaturedPrograms);
 router.put('/superadmin/programs/:id/featured', toggleFeaturedStatus);
 
 // ===================== Program Projects routes (from programProjects.js) =====================
-router.post('/program-projects', verifyAdminOrSuperadmin, upload.single('image'), addProgramProject);
+// SECURITY FIX: Removed direct program creation endpoint to enforce submission workflow
+// All new programs must go through /api/submissions for superadmin approval
+// router.post('/program-projects', verifyAdminOrSuperadmin, upload.single('image'), addProgramProject); // REMOVED - SECURITY FIX
 router.put('/program-projects/:id', verifyAdminOrSuperadmin, upload.single('image'), updateProgramProject);
 router.get('/program-projects', verifyAdminOrSuperadmin, getProgramProjects);
 

@@ -119,13 +119,7 @@ export default function SuperAdminSettings() {
   // Simulate site content loading
   useEffect(() => {
     if (activeTab === 'site-content') {
-      setSiteContentLoading(true);
-      // Simulate loading time for better UX
-      const timer = setTimeout(() => {
-        setSiteContentLoading(false);
-      }, 800);
-
-      return () => clearTimeout(timer);
+      setSiteContentLoading(false);
     }
   }, [activeTab]);
 

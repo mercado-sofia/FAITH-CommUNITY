@@ -4,40 +4,81 @@ import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { FaEdit, FaTag, FaCalendar, FaEllipsisH, FaExclamationTriangle, FaSignOutAlt, FaUsers } from 'react-icons/fa';
 import { TbListDetails } from 'react-icons/tb';
-import { LuSquareCheckBig } from 'react-icons/lu';
-import { MdOutlineRadioButtonChecked } from 'react-icons/md';
 import { FiTrash2 } from 'react-icons/fi';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import { formatProgramDates, formatDateShort } from '@/utils/dateUtils.js';
-import CollaborationBadge from '../Collaboration/CollaborationBadge';
-import { optOutCollaboration } from '../../services/collaborationService';
-import { SuccessModal } from '@/components';
+import CollaborationBadge from '../CollaborationBadge/CollaborationBadge';
+import ProgramActions from './ProgramActions';
+import ProgramModals from './ProgramModals';
+import { useProgramActions } from '../../hooks';
 import styles from './ProgramCard.module.css';
 
-const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteers, onMarkCompleted, onMarkActive, onOptOut }) => {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isOptingOut, setIsOptingOut] = useState(false);
-  const [showMarkCompletedModal, setShowMarkCompletedModal] = useState(false);
-  const [showMarkActiveModal, setShowMarkActiveModal] = useState(false);
-  const [showOptOutModal, setShowOptOutModal] = useState(false);
+const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted, onMarkActive, onOptOut, onShowSuccessModal, onToggleVolunteerAcceptance, onAcceptCollaboration, onDeclineCollaboration, isCollaborationCard = false }) => {
   const [showDropdown, setShowDropdown] = useState(false);
-  const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
   const dropdownRef = useRef(null);
 
+  // Normalize data structure for both program and collaboration objects
+  const normalizedData = isCollaborationCard ? {
+    id: program.program_id,
+    title: program.program_title,
+    description: program.program_description,
+    category: program.program_category,
+    image: program.program_image,
+    event_start_date: program.event_start_date,
+    event_end_date: program.event_end_date,
+    created_at: program.invited_at,
+    user_role: program.request_type === 'sent' ? 'creator' : 'collaborator',
+    collaboration_id: program.collaboration_id,
+    status: program.status,
+    program_status: program.program_status,
+    is_collaborative: true,
+    accepts_volunteers: program.accepts_volunteers !== undefined ? program.accepts_volunteers : true,
+    // Map all_collaborators to collaborators array for the badge
+    collaborators: program.all_collaborators ? program.all_collaborators.map(collab => ({
+      id: collab.invitee_id,
+      status: collab.status,
+      email: collab.invitee_email,
+      organization_name: collab.invitee_org_name,
+      organization_acronym: collab.invitee_org_acronym
+    })) : []
+  } : program;
+
+  // Use the program actions hook
+  const actions = useProgramActions({
+    normalizedData,
+    onEdit,
+    onDelete,
+    onMarkCompleted,
+    onMarkActive,
+    onOptOut,
+    onShowSuccessModal,
+    onToggleVolunteerAcceptance,
+    onAcceptCollaboration,
+    onDeclineCollaboration,
+    isCollaborationCard
+  });
+
   // Helper function to determine program status based on dates
-  const getProgramStatusByDates = (program) => {
-    if (!program.event_start_date) {
-      // If no start date, use the database status
-      return program.status || 'Active';
+  const getProgramStatusByDates = (data) => {
+    // ALWAYS prioritize explicit database status over ANY date calculations
+    // This allows users to manually override date-based status
+    if (data.status === 'Active' || data.status === 'Completed' || data.status === 'Upcoming') {
+      return data.status;
+    }
+
+    // Only use date-based logic if no explicit status is set
+    if (!data.event_start_date) {
+      // If no start date, use the database status or default to Active
+      return data.status || 'Active';
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Reset time to start of day
     
-    const startDate = new Date(program.event_start_date);
+    const startDate = new Date(data.event_start_date);
     startDate.setHours(0, 0, 0, 0);
     
-    const endDate = program.event_end_date ? new Date(program.event_end_date) : null;
+    const endDate = data.event_end_date ? new Date(data.event_end_date) : null;
     if (endDate) {
       endDate.setHours(23, 59, 59, 999); // Set to end of day
     }
@@ -56,27 +97,6 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
     return 'Active';
   };
 
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      await onDelete();
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const confirmMarkCompleted = async () => {
-    try {
-      await onMarkCompleted();
-      setShowMarkCompletedModal(false);
-    } catch (error) {
-      // Handle error silently in production
-    }
-  };
-
-  const cancelMarkCompleted = () => {
-    setShowMarkCompletedModal(false);
-  };
 
   // Handle clicks outside dropdown to close it
   useEffect(() => {
@@ -94,76 +114,6 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
 
   const toggleDropdown = () => {
     setShowDropdown(!showDropdown);
-  };
-
-  const handleMarkCompletedClick = () => {
-    setShowDropdown(false);
-    setShowMarkCompletedModal(true);
-  };
-
-  const handleMarkActiveClick = () => {
-    setShowDropdown(false);
-    setShowMarkActiveModal(true);
-  };
-
-  const confirmMarkActive = async () => {
-    try {
-      await onMarkActive();
-      setShowMarkActiveModal(false);
-    } catch (error) {
-      // Handle error silently in production
-    }
-  };
-
-  const cancelMarkActive = () => {
-    setShowMarkActiveModal(false);
-  };
-
-  const handleOptOutClick = () => {
-    setShowDropdown(false);
-    setShowOptOutModal(true);
-  };
-
-  const confirmOptOut = async () => {
-    setIsOptingOut(true);
-    try {
-      // Use the collaboration_id from the program data
-      if (program.collaboration_id) {
-        await optOutCollaboration(program.collaboration_id);
-        
-        // Show success modal
-        setSuccessModal({
-          isVisible: true,
-          message: `You have successfully opted out of "${program.title}". The program will no longer appear in your programs list.`,
-          type: 'success'
-        });
-        
-        // Close the opt-out confirmation modal
-        setShowOptOutModal(false);
-        
-        // Refresh the programs list after a short delay
-        if (onOptOut) {
-          setTimeout(() => {
-            onOptOut();
-          }, 2000); // Wait 2 seconds to let user see the success message
-        }
-      }
-    } catch (error) {
-      // Show error modal
-      setSuccessModal({
-        isVisible: true,
-        message: `Failed to opt out of "${program.title}". Please try again.`,
-        type: 'error'
-      });
-      
-      setShowOptOutModal(false);
-    } finally {
-      setIsOptingOut(false);
-    }
-  };
-
-  const cancelOptOut = () => {
-    setShowOptOutModal(false);
   };
 
   // Using centralized date utilities - formatProgramDates is now imported
@@ -184,20 +134,31 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
     return categoryMap[category] || category || 'Uncategorized';
   };
 
+  // For collaboration cards, we need to handle status differently
+  const getDisplayStatus = () => {
+    if (isCollaborationCard) {
+      // For collaboration cards, use the collaboration status directly
+      return normalizedData.status || 'pending';
+    } else {
+      // For regular program cards, use date-based status
+      return getProgramStatusByDates(normalizedData);
+    }
+  };
+
   return (
     <div className={styles.programCard}>
       {/* Program Image */}
-      {program.image ? (
+      {normalizedData.image ? (
         <div className={styles.imageContainer}>
-          {getProgramImageUrl(program.image) === 'IMAGE_UNAVAILABLE' ? (
+          {getProgramImageUrl(normalizedData.image) === 'IMAGE_UNAVAILABLE' ? (
             <div className={styles.imagePlaceholder}>
               <FaExclamationTriangle className={styles.placeholderIcon} />
               <span>Image unavailable</span>
             </div>
           ) : (
             <Image
-              src={getProgramImageUrl(program.image)}
-              alt={program.title}
+              src={getProgramImageUrl(normalizedData.image)}
+              alt={normalizedData.title}
               className={styles.programImage}
               width={400}
               height={220}
@@ -234,18 +195,33 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
                   >
                     <TbListDetails /> View Details
                   </button>
-                  <button
-                    className={styles.dropdownItem}
-                    onClick={() => {
-                      setShowDropdown(false);
-                      onViewVolunteers();
-                    }}
-                  >
-                    <FaUsers /> View Volunteers
-                  </button>
                   {/* Show different actions based on user role */}
-                  {program.user_role === 'creator' ? (
+                  {normalizedData.user_role === 'creator' ? (
                     <>
+                      {/* Only show volunteer acceptance functions for upcoming programs */}
+                      {getProgramStatusByDates(normalizedData) === 'Upcoming' && (
+                        normalizedData.accepts_volunteers ? (
+                          <button
+                            className={styles.dropdownItem}
+                            onClick={() => {
+                              setShowDropdown(false);
+                              actions.handleVolunteerAcceptanceClick(false);
+                            }}
+                          >
+                            <FaUsers /> Close Volunteers
+                          </button>
+                        ) : (
+                          <button
+                            className={styles.dropdownItem}
+                            onClick={() => {
+                              setShowDropdown(false);
+                              actions.handleVolunteerAcceptanceClick(true);
+                            }}
+                          >
+                            <FaUsers /> Accept Volunteers
+                          </button>
+                        )
+                      )}
                       <button
                         className={styles.dropdownItem}
                         onClick={() => {
@@ -259,20 +235,23 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
                         className={styles.dropdownItem}
                         onClick={() => {
                           setShowDropdown(false);
-                          handleDelete();
+                          actions.handleDelete();
                         }}
-                        disabled={isDeleting}
+                        disabled={actions.isDeleting}
                       >
-                        <FiTrash2 /> {isDeleting ? 'Deleting...' : 'Delete'}
+                        <FiTrash2 /> {actions.isDeleting ? 'Deleting...' : 'Delete'}
                       </button>
                     </>
                   ) : (
                     <button
                       className={styles.dropdownItem}
-                      onClick={handleOptOutClick}
-                      disabled={isOptingOut}
+                      onClick={() => {
+                        setShowDropdown(false);
+                        actions.handleOptOutClick();
+                      }}
+                      disabled={actions.isOptingOut}
                     >
-                      <FaSignOutAlt /> {isOptingOut ? 'Opting Out...' : 'Opt Out'}
+                      <FaSignOutAlt /> {actions.isOptingOut ? 'Opting Out...' : 'Opt Out'}
                     </button>
                   )}
                 </div>
@@ -307,18 +286,33 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
                   >
                     <TbListDetails /> View Details
                   </button>
-                  <button
-                    className={styles.dropdownItem}
-                    onClick={() => {
-                      setShowDropdown(false);
-                      onViewVolunteers();
-                    }}
-                  >
-                    <FaUsers /> View Volunteers
-                  </button>
                   {/* Show different actions based on user role */}
-                  {program.user_role === 'creator' ? (
+                  {normalizedData.user_role === 'creator' ? (
                     <>
+                      {/* Only show volunteer acceptance functions for upcoming programs */}
+                      {getProgramStatusByDates(normalizedData) === 'Upcoming' && (
+                        normalizedData.accepts_volunteers ? (
+                          <button
+                            className={styles.dropdownItem}
+                            onClick={() => {
+                              setShowDropdown(false);
+                              actions.handleVolunteerAcceptanceClick(false);
+                            }}
+                          >
+                            <FaUsers /> Close Volunteers
+                          </button>
+                        ) : (
+                          <button
+                            className={styles.dropdownItem}
+                            onClick={() => {
+                              setShowDropdown(false);
+                              actions.handleVolunteerAcceptanceClick(true);
+                            }}
+                          >
+                            <FaUsers /> Accept Volunteers
+                          </button>
+                        )
+                      )}
                       <button
                         className={styles.dropdownItem}
                         onClick={() => {
@@ -332,20 +326,23 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
                         className={styles.dropdownItem}
                         onClick={() => {
                           setShowDropdown(false);
-                          handleDelete();
+                          actions.handleDelete();
                         }}
-                        disabled={isDeleting}
+                        disabled={actions.isDeleting}
                       >
-                        <FiTrash2 /> {isDeleting ? 'Deleting...' : 'Delete'}
+                        <FiTrash2 /> {actions.isDeleting ? 'Deleting...' : 'Delete'}
                       </button>
                     </>
                   ) : (
                     <button
                       className={styles.dropdownItem}
-                      onClick={handleOptOutClick}
-                      disabled={isOptingOut}
+                      onClick={() => {
+                        setShowDropdown(false);
+                        actions.handleOptOutClick();
+                      }}
+                      disabled={actions.isOptingOut}
                     >
-                      <FaSignOutAlt /> {isOptingOut ? 'Opting Out...' : 'Opt Out'}
+                      <FaSignOutAlt /> {actions.isOptingOut ? 'Opting Out...' : 'Opt Out'}
                     </button>
                   )}
                 </div>
@@ -358,41 +355,45 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
       <div className={styles.programContent}>
         <div className={styles.programHeader}>
           <div className={styles.titleRow}>
-            <h3 className={styles.programTitle}>{program.title}</h3>
+            <h3 className={styles.programTitle}>{normalizedData.title}</h3>
             <CollaborationBadge 
-              program={program}
-              userRole={program.user_role}
-              isCollaborative={program.is_collaborative}
-              collaboratorCount={program.collaborators?.length || 0}
+              program={normalizedData}
+              userRole={normalizedData.user_role}
+              isCollaborative={normalizedData.is_collaborative}
+              collaboratorCount={normalizedData.collaborators?.length || 0}
             />
           </div>
         </div>
 
         <p className={styles.programDescription}>
-          {program.description || 'No description provided'}
+          {normalizedData.description || 'No description provided'}
         </p>
 
         {/* Program Status Badge */}
         {(() => {
-          const displayStatus = getProgramStatusByDates(program);
+          const displayStatus = getDisplayStatus();
           return (
             <div className={`${styles.statusBadge} ${styles[displayStatus]}`}>
               {(() => {
                 // Handle special status display for collaborative programs
-                if (program.is_collaborative) {
-                  switch (program.status) {
-                    case 'pending_collaboration':
-                      return 'Pending Collab Approval';
+                // Check if program has any non-declined collaborations
+                const hasActiveCollaborations = normalizedData.collaborators && 
+                  normalizedData.collaborators.some(collab => 
+                    collab.status !== 'declined'
+                  );
+                
+                if (hasActiveCollaborations) {
+                  switch (normalizedData.status) {
                     case 'accepted':
                       return 'Collaborators Accepted';
-                    case 'pending_superadmin_approval':
-                      return 'Pending Superadmin Approval';
                     case 'declined':
                       return 'Collaboration Declined';
                     case 'approved':
                       return 'Approved';
                     case 'rejected':
                       return 'Rejected';
+                    case 'pending':
+                      return 'Pending Response';
                     default:
                       return displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1);
                   }
@@ -409,153 +410,43 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onViewVolunteer
             <div className={styles.metaItem}>
               <FaTag className={styles.metaIcon} />
               <span className={styles.metaText}>
-                {getCategoryLabel(program.category)}
+                {getCategoryLabel(normalizedData.category)}
               </span>
             </div>
 
             <div className={styles.metaItem}>
               <FaCalendar className={styles.metaIcon} />
               <span className={styles.metaText}>
-                {formatProgramDates(program)}
+                {formatProgramDates(normalizedData)}
               </span>
             </div>
           </div>
 
-          {program.created_at && (
+          {normalizedData.created_at && (
             <div className={styles.metaItem}>
               <FaCalendar className={styles.metaIcon} />
               <span className={styles.metaText}>
-                Created: {formatDateShort(program.created_at)}
+                Created: {formatDateShort(normalizedData.created_at)}
               </span>
             </div>
           )}
         </div>
 
-        {/* Action Buttons - Only show for creators */}
-        {program.user_role === 'creator' && (() => {
-          const displayStatus = getProgramStatusByDates(program);
-          return (
-            <div className={styles.actionButtons}>
-               {displayStatus !== 'Active' && (
-                 <button
-                   onClick={handleMarkActiveClick}
-                   className={styles.markActiveButton}
-                   disabled={isDeleting}
-                   title="Mark program as active"
-                 >
-                   <MdOutlineRadioButtonChecked /> Mark Active
-                 </button>
-               )}
-               
-               {displayStatus !== 'Completed' && (
-                 <button
-                   onClick={handleMarkCompletedClick}
-                   className={styles.markCompletedButton}
-                   disabled={isDeleting}
-                   title="Mark program as completed"
-                 >
-                   <LuSquareCheckBig /> Mark Complete
-                 </button>
-               )}
-            </div>
-          );
-        })()}
+        {/* Action Buttons */}
+        <ProgramActions
+          normalizedData={normalizedData}
+          isCollaborationCard={isCollaborationCard}
+          getProgramStatusByDates={getProgramStatusByDates}
+          actions={actions}
+        />
       </div>
 
-      {/* Mark as Completed Confirmation Modal */}
-      {showMarkCompletedModal && (
-        <div className={styles.modalOverlay} onClick={cancelMarkCompleted}>
-          <div className={`${styles.modalContent} ${styles.markCompletedModal}`} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Mark as Completed</h3>
-            </div>
-            <div className={styles.modalBody}>
-              <p>Are you sure you want to mark &quot;{program.title}&quot; as completed?</p>
-            </div>
-            <div className={styles.modalActions}>
-              <button
-                onClick={cancelMarkCompleted}
-                className={styles.cancelButton}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmMarkCompleted}
-                className={styles.confirmButton}
-              >
-                Mark as Completed
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Mark as Active Confirmation Modal */}
-      {showMarkActiveModal && (
-        <div className={styles.modalOverlay} onClick={cancelMarkActive}>
-          <div className={`${styles.modalContent} ${styles.markActiveModal}`} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Mark as Active</h3>
-            </div>
-            <div className={styles.modalBody}>
-              <p>Are you sure you want to mark &quot;{program.title}&quot; as active?</p>
-            </div>
-            <div className={styles.modalActions}>
-              <button
-                onClick={cancelMarkActive}
-                className={styles.cancelButton}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmMarkActive}
-                className={styles.confirmButton}
-              >
-                Mark as Active
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Opt Out Confirmation Modal */}
-      {showOptOutModal && (
-        <div className={styles.modalOverlay} onClick={cancelOptOut}>
-          <div className={`${styles.modalContent} ${styles.optOutModal}`} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Opt Out of Collaboration</h3>
-            </div>
-            <div className={styles.modalBody}>
-              <p>Are you sure you want to opt out of collaborating on &quot;{program.title}&quot;?</p>
-              <p className={styles.warningText}>This action cannot be undone. You will no longer have access to this program.</p>
-            </div>
-            <div className={styles.modalActions}>
-              <button
-                onClick={cancelOptOut}
-                className={styles.cancelButton}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmOptOut}
-                className={styles.confirmButton}
-                disabled={isOptingOut}
-              >
-                {isOptingOut ? 'Opting Out...' : 'Opt Out'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Success/Error Modal */}
-      <SuccessModal
-        message={successModal.message}
-        isVisible={successModal.isVisible}
-        onClose={() => setSuccessModal({ isVisible: false, message: '', type: 'success' })}
-        type={successModal.type}
-        autoHideDuration={successModal.type === 'success' ? 3000 : 0}
+      {/* All Confirmation Modals */}
+      <ProgramModals
+        normalizedData={normalizedData}
+        actions={actions}
       />
+
     </div>
   );
 };

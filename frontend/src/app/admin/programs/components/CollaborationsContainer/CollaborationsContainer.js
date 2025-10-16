@@ -7,7 +7,8 @@ const CollaborationsContainer = ({
   onViewCollaboration,
   onShowSuccessModal,
   onAcceptCollaboration,
-  onDeclineCollaboration
+  onDeclineCollaboration,
+  onEditProgram
 }) => {
   return (
     <div className={styles.programsSection}>
@@ -41,7 +42,20 @@ const CollaborationsContainer = ({
                 isCollaborationCard={true}
                 onViewDetails={() => onViewCollaboration(collaboration)}
                 onEdit={() => {
-                  // Edit functionality not available for collaboration cards
+                  // Convert collaboration data to program format for editing
+                  const programForEdit = {
+                    id: collaboration.program_id,
+                    title: collaboration.program_title,
+                    description: collaboration.program_description,
+                    category: collaboration.program_category,
+                    image: collaboration.program_image,
+                    event_start_date: collaboration.event_start_date,
+                    event_end_date: collaboration.event_end_date,
+                    status: collaboration.program_status,
+                    accepts_volunteers: collaboration.accepts_volunteers,
+                    collaborators: collaboration.all_collaborators || []
+                  };
+                  onEditProgram(programForEdit);
                 }}
                 onDelete={() => {
                   // Delete functionality not available for collaboration cards

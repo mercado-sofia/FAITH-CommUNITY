@@ -51,8 +51,8 @@ export const useProgramFilters = (programs, collaborations) => {
 
   // Filter and sort programs
   const filteredAndSortedPrograms = useCallback(() => {
-    return filterAndSortPrograms(programs, searchQuery, statusFilter, sortBy);
-  }, [programs, searchQuery, statusFilter, sortBy]);
+    return filterAndSortPrograms(programs, searchQuery, statusFilter, sortBy, collaborations);
+  }, [programs, searchQuery, statusFilter, sortBy, collaborations]);
 
   // Filter and sort collaborations
   const filteredAndSortedCollaborations = useCallback(() => {

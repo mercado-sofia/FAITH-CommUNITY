@@ -158,6 +158,7 @@ export default function AdminProgramsPage() {
               onShowSuccessModal={setSuccessModal}
               onAcceptCollaboration={acceptCollaboration}
               onDeclineCollaboration={declineCollaboration}
+              onEditProgram={modals.handleEditProgram}
             />
           ) : (
             <ProgramsContainer

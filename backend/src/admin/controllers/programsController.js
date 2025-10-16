@@ -42,7 +42,7 @@ export const getAdminPrograms = async (req, res) => {
     const adminOrgId = adminRows[0].organization_id;
     
     // Get programs where admin is creator (from their organization) OR collaborator (from other organizations)
-    // Exclude programs where admin has opted out (status = 'declined')
+    // Exclude programs where admin has opted out (status = 'declined') or pending collaboration requests
     const [programRows] = await db.execute(`
       SELECT DISTINCT p.*, o.org as orgAcronym, o.orgName as orgName, o.logo as orgLogo
       FROM programs_projects p
@@ -50,7 +50,7 @@ export const getAdminPrograms = async (req, res) => {
       WHERE p.organization_id = ? 
          OR p.id IN (
            SELECT program_id FROM program_collaborations 
-           WHERE collaborator_admin_id = ? AND status IN ('accepted', 'pending')
+           WHERE collaborator_admin_id = ? AND status = 'accepted'
          )
       ORDER BY p.created_at DESC
     `, [adminOrgId, currentAdminId]);
@@ -1276,7 +1276,6 @@ export const addProgramProject = async (req, res) => {
         collaborators = collaboratorsRaw;
       }
     } catch (error) {
-      console.error('Error parsing collaborators:', error);
       collaborators = [];
     }
   }
@@ -1390,19 +1389,18 @@ export const addProgramProject = async (req, res) => {
           // Notify collaborator about the collaboration request
           try {
             const NotificationController = (await import('./notificationController.js')).default;
-            await NotificationController.createNotification({
-              admin_id: collaboratorId,
-              title: 'New Collaboration Request',
-              message: `You have received a collaboration request for "${title}". Please review and respond.`,
-              type: 'collaboration_request',
-              submission_id: newId
-            });
+            await NotificationController.createNotification(
+              collaboratorId,
+              'collaboration_request',
+              'New Collaboration Request',
+              `You have received a collaboration request for "${title}". Please review and respond.`,
+              'programs',
+              newId
+            );
           } catch (notificationError) {
-            console.error('Failed to send collaboration request notification:', notificationError);
             // Don't fail the main operation if notification fails
           }
         } catch (collabError) {
-          console.error('Failed to add collaborator during program creation:', collabError);
           // Continue with other collaborators even if one fails
         }
       }
@@ -1428,7 +1426,6 @@ export const addProgramProject = async (req, res) => {
       .status(201)
       .json({ message: 'Project submitted for approval', id: newId });
   } catch (error) {
-    console.error('Program submission error:', error);
     return res.status(500).json({ error: error.message });
   }
 };

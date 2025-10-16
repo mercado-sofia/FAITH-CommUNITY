@@ -51,7 +51,8 @@ const ProgramActions = ({
   }
 
   // Collaboration action buttons - Only show for collaboration cards with pending status
-  if (isCollaborationCard && normalizedData.status === 'pending') {
+  // AND only if the user is NOT the creator (i.e., they are invited as a collaborator)
+  if (isCollaborationCard && normalizedData.status === 'pending' && normalizedData.user_role !== 'creator') {
     return (
       <div className={styles.actionButtons}>
         <button

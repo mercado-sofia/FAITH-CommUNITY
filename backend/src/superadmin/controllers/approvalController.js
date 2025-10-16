@@ -364,6 +364,54 @@ export const approveSubmission = async (req, res) => {
             WHERE submission_id = ? AND program_id IS NULL
           `, [programId, data.title, id]);
           
+          // If no existing collaboration requests were updated, create new ones
+          if (updateResult.affectedRows === 0) {
+            // Extract collaborator IDs (handle both object format and ID format)
+            const collaboratorIds = data.collaborators.map(collab => {
+              // If collaborator is an object with id property, extract the id
+              if (typeof collab === 'object' && collab.id) {
+                return collab.id;
+              }
+              // If collaborator is already just an ID, use it directly
+              return collab;
+            }).filter(id => id && id !== submission.submitted_by);
+            
+            // Create new collaboration requests
+            for (const collaboratorId of collaboratorIds) {
+              try {
+                await connection.execute(`
+                  INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status, program_title)
+                  VALUES (?, ?, ?, 'pending', ?)
+                `, [programId, collaboratorId, submission.submitted_by, data.title]);
+              } catch (collabError) {
+                // Error creating collaboration request
+              }
+            }
+          }
+          
+          // Send notifications to collaborators about the approved program
+          // Get all collaboration records for this program (both updated and newly created)
+          const [allCollaborations] = await connection.execute(`
+            SELECT collaborator_admin_id FROM program_collaborations 
+            WHERE program_id = ? AND status = 'pending'
+          `, [programId]);
+          
+          // Send notifications to each collaborator
+          for (const collab of allCollaborations) {
+            try {
+              await NotificationController.createNotification(
+                collab.collaborator_admin_id,
+                'collaboration_request',
+                'New Collaboration Request',
+                `You have received a collaboration request for "${data.title}". Please review and respond in the Collaboration section.`,
+                'programs',
+                programId
+              );
+            } catch (notificationError) {
+              // Error sending collaboration request notification
+            }
+          }
+          
           // Handle multiple dates for collaborative programs
           if (data.multiple_dates && Array.isArray(data.multiple_dates) && data.multiple_dates.length > 0) {
             for (const date of data.multiple_dates) {
@@ -873,38 +921,55 @@ export const bulkApproveSubmissions = async (req, res) => {
           
           // Handle collaboration invitations if provided
           if (data.collaborators && Array.isArray(data.collaborators) && data.collaborators.length > 0) {
-            // Extract collaborator IDs (handle both object format and ID format)
-            const collaboratorIds = data.collaborators.map(collab => {
-              // If collaborator is an object with id property, extract the id
-              if (typeof collab === 'object' && collab.id) {
-                return collab.id;
-              }
-              // If collaborator is already just an ID, use it directly
-              return collab;
-            }).filter(id => id && id !== submission.submitted_by);
+            // First, try to update existing collaboration requests from submission
+            const [updateResult] = await connection.execute(`
+              UPDATE program_collaborations 
+              SET program_id = ?, status = 'pending', program_title = ?
+              WHERE submission_id = ? AND program_id IS NULL
+            `, [programId, data.title, id]);
             
-            for (const collaboratorId of collaboratorIds) {
-              try {
-                await connection.execute(`
-                  INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status)
-                  VALUES (?, ?, ?, 'pending')
-                `, [programId, collaboratorId, submission.submitted_by]);
-                
-                // Notify collaborator about the collaboration request
-                try {
-                  await NotificationController.createNotification(
-                    collaboratorId,
-                    'collaboration_request',
-                    'New Collaboration Request',
-                    `You have received a collaboration request for "${data.title}". Please review and respond.`,
-                    'programs',
-                    programId
-                  );
-                } catch (notificationError) {
-                  // Don't fail the main operation if notification fails
+            // If no existing collaboration requests were updated, create new ones
+            if (updateResult.affectedRows === 0) {
+              // Extract collaborator IDs (handle both object format and ID format)
+              const collaboratorIds = data.collaborators.map(collab => {
+                // If collaborator is an object with id property, extract the id
+                if (typeof collab === 'object' && collab.id) {
+                  return collab.id;
                 }
-              } catch (collabError) {
-                // Continue if collaborator addition fails
+                // If collaborator is already just an ID, use it directly
+                return collab;
+              }).filter(id => id && id !== submission.submitted_by);
+              
+              for (const collaboratorId of collaboratorIds) {
+                try {
+                  await connection.execute(`
+                    INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status, program_title)
+                    VALUES (?, ?, ?, 'pending', ?)
+                  `, [programId, collaboratorId, submission.submitted_by, data.title]);
+                } catch (collabError) {
+                  // Continue if collaborator addition fails
+                }
+              }
+            }
+            
+            // Send notifications to all collaborators (both updated and newly created)
+            const [allCollaborations] = await connection.execute(`
+              SELECT collaborator_admin_id FROM program_collaborations 
+              WHERE program_id = ? AND status = 'pending'
+            `, [programId]);
+            
+            for (const collab of allCollaborations) {
+              try {
+                await NotificationController.createNotification(
+                  collab.collaborator_admin_id,
+                  'collaboration_request',
+                  'New Collaboration Request',
+                  `You have received a collaboration request for "${data.title}". Please review and respond in the Collaboration section.`,
+                  'programs',
+                  programId
+                );
+              } catch (notificationError) {
+                // Error sending collaboration request notification
               }
             }
           }

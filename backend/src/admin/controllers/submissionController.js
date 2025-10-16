@@ -165,11 +165,19 @@ export const submitChanges = async (req, res) => {
                       continue;
                     }
                     
-                    // Create collaboration request linked to submission (not program yet)
-                    await db.execute(`
-                      INSERT INTO program_collaborations (submission_id, collaborator_admin_id, invited_by_admin_id, status, program_title)
-                      VALUES (?, ?, ?, 'pending', ?)
-                    `, [submissionId, collaboratorId, item.submitted_by, proposedData.title]);
+                    // Check if collaboration request already exists
+                    const [existingCollaboration] = await db.execute(`
+                      SELECT id FROM program_collaborations 
+                      WHERE submission_id = ? AND collaborator_admin_id = ?
+                    `, [submissionId, collaboratorId]);
+                    
+                    if (existingCollaboration.length === 0) {
+                      // Create collaboration request linked to submission (not program yet)
+                      await db.execute(`
+                        INSERT INTO program_collaborations (submission_id, collaborator_admin_id, invited_by_admin_id, status, program_title)
+                        VALUES (?, ?, ?, 'pending', ?)
+                      `, [submissionId, collaboratorId, item.submitted_by, proposedData.title]);
+                    }
 
                     // Notify collaborator about the collaboration request
                     try {
@@ -183,16 +191,13 @@ export const submitChanges = async (req, res) => {
                         submissionId
                       );
                     } catch (notificationError) {
-                      console.error('Failed to send collaboration request notification:', notificationError);
                     }
                   } catch (collabError) {
-                    console.error('Failed to process collaboration request:', collabError);
                   }
                 }
               }
             }
           } catch (parseError) {
-            console.error('Error parsing program data:', parseError);
           }
         }
 
@@ -568,7 +573,6 @@ export const getSubmissionById = async (req, res) => {
               // If collaborators are already objects, keep them as is
             }
           } catch (collabError) {
-            console.error('Error fetching collaborator details:', collabError);
             // Keep original collaborator data if fetch fails
           }
         }

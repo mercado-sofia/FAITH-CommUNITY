@@ -21,7 +21,6 @@ export const getAllAvailableAdmins = async (req, res) => {
       data: availableAdmins
     });
   } catch (error) {
-    console.error('Error in getAllAvailableAdmins:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch available admins',
@@ -74,7 +73,6 @@ export const getAvailableAdmins = async (req, res) => {
       data: availableAdmins
     });
   } catch (error) {
-    console.error('Error in getAvailableAdmins:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch available admins',
@@ -151,15 +149,15 @@ export const inviteCollaborator = async (req, res) => {
     // Notify collaborator about the collaboration request
     try {
       const NotificationController = (await import('./notificationController.js')).default;
-      await NotificationController.createNotification({
-        admin_id: collaboratorAdminId,
-        title: 'New Collaboration Request',
-        message: `You have received a collaboration request for "${program.title}". Please review and respond.`,
-        type: 'collaboration_request',
-        submission_id: programId
-      });
+      await NotificationController.createNotification(
+        collaboratorAdminId,
+        'collaboration_request',
+        'New Collaboration Request',
+        `You have received a collaboration request for "${program.title}". Please review and respond.`,
+        'programs',
+        programId
+      );
     } catch (notificationError) {
-      console.error('Failed to send collaboration request notification:', notificationError);
       // Don't fail the main operation if notification fails
     }
 
@@ -386,7 +384,6 @@ export const optOutCollaboration = async (req, res) => {
       });
     } catch (auditError) {
       // Don't fail the opt-out if audit logging fails
-      console.error('Failed to log opt-out audit event:', auditError);
     }
 
     res.json({
@@ -452,7 +449,9 @@ export const getCollaborationRequests = async (req, res) => {
         prog_org.org as program_org_acronym,
         prog_org.logo as program_org_logo,
         pc.submission_id,
-        s.status as submission_status
+        s.status as submission_status,
+        pc.id as collaboration_id,
+        pc.status as collaboration_status
       FROM program_collaborations pc
       LEFT JOIN programs_projects p ON pc.program_id = p.id
       LEFT JOIN submissions s ON pc.submission_id = s.id
@@ -504,6 +503,13 @@ export const getCollaborationRequests = async (req, res) => {
         c.collaborator_admin_id == currentAdminId || c.invited_by_admin_id == currentAdminId
       ) || allCollaborators[0];
       
+      // Use the collaboration data from the main query if available
+      const mainCollab = {
+        collaboration_id: program.collaboration_id,
+        status: program.collaboration_status,
+        request_type: relevantCollab?.request_type || (isCreator ? 'sent' : 'received')
+      };
+      
       // Processing program collaborators
       
       // Determine if this admin is the creator or collaborator
@@ -541,9 +547,9 @@ export const getCollaborationRequests = async (req, res) => {
           invitee_org_acronym: c.invitee_org_acronym,
           request_type: c.request_type
         })),
-        collaboration_id: relevantCollab?.collaboration_id || null,
-        status: relevantCollab?.status || 'pending',
-        request_type: relevantCollab?.request_type || (isCreator ? 'sent' : 'received'),
+        collaboration_id: mainCollab.collaboration_id || relevantCollab?.collaboration_id || null,
+        status: mainCollab.status || relevantCollab?.status || 'pending',
+        request_type: mainCollab.request_type || relevantCollab?.request_type || (isCreator ? 'sent' : 'received'),
         inviter_email: relevantCollab?.inviter_email || null,
         inviter_org_name: relevantCollab?.inviter_org_name || null,
         inviter_org_acronym: relevantCollab?.inviter_org_acronym || null,
@@ -570,7 +576,6 @@ export const getCollaborationRequests = async (req, res) => {
       data: filteredCollaborations
     });
   } catch (error) {
-    console.error('Error fetching collaboration requests:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch collaboration requests',
@@ -649,15 +654,15 @@ export const acceptCollaborationRequest = async (req, res) => {
         // Notify the creator organization about the collaboration acceptance
         try {
           const NotificationController = (await import('./notificationController.js')).default;
-          await NotificationController.createNotification({
-            admin_id: collaboration.invited_by_admin_id,
-            title: 'Collaboration Accepted',
-            message: `Your collaboration request for "${collaboration.program_title}" has been accepted. The program is now marked as collaborative.`,
-            type: 'collaboration_accepted',
-            submission_id: collaboration.program_id
-          });
+          await NotificationController.createNotification(
+            collaboration.invited_by_admin_id,
+            'collaboration_accepted',
+            'Collaboration Accepted',
+            `Your collaboration request for "${collaboration.program_title}" has been accepted. The program is now marked as collaborative.`,
+            'programs',
+            collaboration.program_id
+          );
         } catch (notificationError) {
-          console.error('Failed to send collaboration acceptance notification:', notificationError);
         }
       } else {
         // No collaborations were accepted, update program to be non-collaborative (solo program)
@@ -672,15 +677,15 @@ export const acceptCollaborationRequest = async (req, res) => {
     // Notify the creator organization about the acceptance
     try {
       const NotificationController = (await import('./notificationController.js')).default;
-      await NotificationController.createNotification({
-        admin_id: collaboration.invited_by_admin_id,
-        title: 'Collaboration Request Accepted',
-        message: `Your collaboration request for "${collaboration.program_title}" has been accepted.`,
-        type: 'collaboration_accepted',
-        submission_id: collaboration.submission_id
-      });
+      await NotificationController.createNotification(
+        collaboration.invited_by_admin_id,
+        'collaboration_accepted',
+        'Collaboration Request Accepted',
+        `Your collaboration request for "${collaboration.program_title}" has been accepted.`,
+        'programs',
+        collaboration.submission_id
+      );
     } catch (notificationError) {
-      console.error('Failed to send acceptance notification:', notificationError);
     }
     
     res.json({
@@ -775,15 +780,15 @@ export const declineCollaborationRequest = async (req, res) => {
     // Notify the creator organization about the decline
     try {
       const NotificationController = (await import('./notificationController.js')).default;
-      await NotificationController.createNotification({
-        admin_id: collaboration.invited_by_admin_id,
-        title: 'Collaboration Request Declined',
-        message: `Your collaboration request for "${collaboration.program_title}" has been declined. The program will remain as a solo program.`,
-        type: 'collaboration_declined',
-        submission_id: collaboration.program_id
-      });
+      await NotificationController.createNotification(
+        collaboration.invited_by_admin_id,
+        'collaboration_declined',
+        'Collaboration Request Declined',
+        `Your collaboration request for "${collaboration.program_title}" has been declined. The program will remain as a solo program.`,
+        'programs',
+        collaboration.program_id
+      );
     } catch (notificationError) {
-      console.error('Failed to send decline notification:', notificationError);
       // Don't fail the main operation if notification fails
     }
     

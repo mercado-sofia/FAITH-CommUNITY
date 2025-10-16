@@ -102,9 +102,10 @@ export const sortByUpcomingDate = (a, b) => {
  * @param {string} searchQuery - Search query string
  * @param {string} statusFilter - Status filter ('Active', 'Upcoming', 'Completed')
  * @param {string} sortBy - Sort criteria ('newest', 'oldest', 'title')
+ * @param {Array} collaborations - Array of collaboration requests (optional)
  * @returns {Array} - Filtered and sorted programs
  */
-export const filterAndSortPrograms = (programs, searchQuery, statusFilter, sortBy) => {
+export const filterAndSortPrograms = (programs, searchQuery, statusFilter, sortBy, collaborations = []) => {
   let filtered = (programs || []).filter((program) => {
     if (!program || !program.title) return false;
     
@@ -116,6 +117,28 @@ export const filterAndSortPrograms = (programs, searchQuery, statusFilter, sortB
     // Use date-based status instead of database status
     const programStatus = getProgramStatusByDates(program);
     const matchesStatus = programStatus.toLowerCase() === statusFilter.toLowerCase();
+
+    // Check if this program has pending collaboration requests
+    // Only exclude from normal tabs if the admin is NOT the creator of the program
+    const hasPendingCollaboration = collaborations.some(collab => 
+      collab.program_id === program.id && collab.status === 'pending'
+    );
+    
+    // If there's a pending collaboration request, check if the admin is the creator
+    if (hasPendingCollaboration) {
+      // Check if the admin is the creator of this program
+      // If they are the creator, they should still see it in normal tabs
+      // If they are just invited, they should only see it in Collaborations tab until accepted
+      const isCreator = collaborations.some(collab => 
+        collab.program_id === program.id && 
+        collab.status === 'pending' && 
+        collab.request_type === 'sent' // 'sent' means the admin sent the invitation (is creator)
+      );
+      
+      if (!isCreator) {
+        return false; // Exclude programs where admin is invited but hasn't accepted yet
+      }
+    }
 
     return matchesSearch && matchesStatus;
   });

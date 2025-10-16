@@ -191,7 +191,6 @@ export const updateOrganizationInfo = async (req, res) => {
   const connection = await db.getConnection()
   
   if (!connection) {
-    console.error("❌ Backend: Failed to get database connection")
     return res.status(500).json({ success: false, error: "Database connection failed" })
   }
   
@@ -263,7 +262,7 @@ export const updateOrganizationInfo = async (req, res) => {
     try {
       await connection.rollback()
     } catch (rollbackErr) {
-      console.error("❌ Backend: Rollback error:", rollbackErr)
+      // Rollback error - could not recover
     } finally {
       connection.release()
     }

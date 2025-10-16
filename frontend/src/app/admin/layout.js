@@ -10,26 +10,7 @@ import Sidebar from "./components/Sidebar/Sidebar";
 import TopBar from "./components/TopBar/TopBar";
 import { ErrorBoundary, Loader } from "@/components";
 import styles from "./dashboard/styles/dashboard.module.css";
-import { Poppins, Inter, Urbanist } from 'next/font/google';
 import logger from '../../utils/logger.js';
-
-const poppins = Poppins({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800', '900'],
-  variable: '--font-poppins',
-});
-
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-inter',
-});
-
-const urbanist = Urbanist({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800', '900'],
-  variable: '--font-urbanist',
-});
 
 // Track if admin has been initialized
 let adminInitialized = false;
@@ -99,7 +80,7 @@ function AdminLayoutContent({ children }) {
   // For invitation acceptance page, render without admin layout components
   if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin/invitation/accept')) {
     return (
-      <div className={`${poppins.variable} ${inter.variable} ${urbanist.variable}`}>
+      <div>
         <ErrorBoundary>
           {children}
         </ErrorBoundary>
@@ -108,7 +89,7 @@ function AdminLayoutContent({ children }) {
   }
 
   return (
-    <div className={`${styles.adminLayout} ${poppins.variable} ${inter.variable} ${urbanist.variable}`}>
+    <div className={styles.adminLayout}>
       <Sidebar />
       <div className={styles.mainContent}>
         <TopBar />

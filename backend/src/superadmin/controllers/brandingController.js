@@ -83,7 +83,6 @@ export const updateBranding = async (req, res) => {
 // Upload logo
 export const uploadLogo = async (req, res) => {
   try {
-    
     if (!req.file) {
       return res.status(400).json({ 
         success: false, 
@@ -142,8 +141,6 @@ export const uploadLogo = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error uploading logo:', error);
-    console.error('Error stack:', error.stack);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to upload logo',
@@ -155,7 +152,6 @@ export const uploadLogo = async (req, res) => {
 // Upload favicon
 export const uploadFavicon = async (req, res) => {
   try {
-    
     if (!req.file) {
       return res.status(400).json({ 
         success: false, 
@@ -214,8 +210,6 @@ export const uploadFavicon = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error uploading favicon:', error);
-    console.error('Error stack:', error.stack);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to upload favicon',
@@ -311,7 +305,6 @@ export const deleteFavicon = async (req, res) => {
 // Upload name image
 export const uploadName = async (req, res) => {
   try {
-    
     if (!req.file) {
       return res.status(400).json({ 
         success: false, 
@@ -370,8 +363,6 @@ export const uploadName = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error uploading name:', error);
-    console.error('Error stack:', error.stack);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to upload name',

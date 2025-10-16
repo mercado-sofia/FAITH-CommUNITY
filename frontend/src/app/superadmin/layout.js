@@ -8,25 +8,6 @@ import Sidebar from "./components/Sidebar/Sidebar"
 import TopBar from "./components/TopBar/TopBar"
 import { Loader } from "@/components";
 import styles from "./styles/layout.module.css"
-import { Poppins, Inter, Urbanist } from 'next/font/google';
-
-const poppins = Poppins({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800', '900'],
-  variable: '--font-poppins',
-});
-
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-inter',
-});
-
-const urbanist = Urbanist({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-urbanist',
-});
 
 function SuperAdminLayoutContent({ children }) {
   const router = useRouter();
@@ -63,7 +44,7 @@ function SuperAdminLayoutContent({ children }) {
   }
 
   return (
-    <div className={`${styles.superAdminLayout} ${poppins.variable} ${inter.variable} ${urbanist.variable}`}>
+    <div className={styles.superAdminLayout}>
       <Sidebar />
       <div className={styles.mainContent}>
         <TopBar />

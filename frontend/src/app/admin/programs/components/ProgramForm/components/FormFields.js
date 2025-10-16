@@ -86,6 +86,42 @@ const FormFields = ({
           required={false}
         />
       </div>
+
+      {/* Volunteer Acceptance Toggle */}
+      <div className={styles.fieldSpacing}>
+        <label className={styles.label}>
+          Volunteer Applications
+        </label>
+        <div className={styles.toggleContainer}>
+          <div className={styles.toggleWrapper}>
+            <input
+              type="checkbox"
+              id="accepts_volunteers"
+              className={styles.toggleInput}
+              checked={formData.accepts_volunteers}
+              onChange={(e) => {
+                onFormDataChange({ accepts_volunteers: e.target.checked });
+                if (errors.accepts_volunteers) onClearError('accepts_volunteers');
+              }}
+            />
+            <label htmlFor="accepts_volunteers" className={styles.toggleLabel}>
+              <span className={styles.toggleSlider}></span>
+            </label>
+          </div>
+          <div className={styles.toggleText}>
+            <span className={formData.accepts_volunteers ? styles.toggleTextActive : styles.toggleTextInactive}>
+              {formData.accepts_volunteers ? 'Accepting volunteer applications' : 'Not accepting volunteer applications'}
+            </span>
+            <p className={styles.toggleDescription}>
+              {formData.accepts_volunteers 
+                ? 'Public users can apply to volunteer for this program'
+                : 'Public users cannot apply to volunteer for this program'
+              }
+            </p>
+          </div>
+        </div>
+        {errors.accepts_volunteers && <span className={styles.errorText}>{errors.accepts_volunteers}</span>}
+      </div>
     </>
   );
 };

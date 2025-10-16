@@ -125,48 +125,53 @@ const ProgramSelect = forwardRef(function ProgramSelect(
               role="listbox"
             >
               {programOptions.length > 0 ? (
-                programOptions.map((option) => {
-                  const isAlreadyApplied = isProgramAlreadyApplied(option.id);
-                  const applicationStatus = getApplicationStatus(option.id);
-                  const statusText = getStatusDisplayText(applicationStatus);
-                  
-                  return (
-                    <li
-                      key={option.id}
-                      className={`${styles.dropdownItem} ${isAlreadyApplied ? styles.disabledItem : ''}`}
-                      onClick={() => {
-                        if (isAlreadyApplied) return; // Prevent selection of already applied programs
-                        
-                        setFormData((prev) => ({
-                          ...prev,
-                          program: option,
-                        }));
-                        setDropdownOpen(false);
-                        // Clear program error when a program is selected
-                        if (clearFieldError) {
-                          clearFieldError('program');
-                        }
-                        // Notify parent component about program selection
-                        if (onProgramSelect) {
-                          onProgramSelect(option);
-                        }
-                      }}
-                    >
-                      <div>
-                        <strong>{option.title}</strong>
-                        {(option.orgAcronym || option.orgName) && (
-                          <span className={styles.orgName}> ({option.orgAcronym || option.orgName})</span>
-                        )}
-                        {statusText && (
-                          <span className={styles.alreadyAppliedText}>{statusText}</span>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })
+                programOptions
+                  .filter(option => option.accepts_volunteers !== false && option.accepts_volunteers !== 0 && option.accepts_volunteers !== '0') // Filter out programs that don't accept volunteers
+                  .map((option) => {
+                    const isAlreadyApplied = isProgramAlreadyApplied(option.id);
+                    const applicationStatus = getApplicationStatus(option.id);
+                    const statusText = getStatusDisplayText(applicationStatus);
+                    
+                    return (
+                      <li
+                        key={option.id}
+                        className={`${styles.dropdownItem} ${isAlreadyApplied ? styles.disabledItem : ''}`}
+                        onClick={() => {
+                          if (isAlreadyApplied) return; // Prevent selection of already applied programs
+                          
+                          setFormData((prev) => ({
+                            ...prev,
+                            program: option,
+                          }));
+                          setDropdownOpen(false);
+                          // Clear program error when a program is selected
+                          if (clearFieldError) {
+                            clearFieldError('program');
+                          }
+                          // Notify parent component about program selection
+                          if (onProgramSelect) {
+                            onProgramSelect(option);
+                          }
+                        }}
+                      >
+                        <div>
+                          <strong>{option.title}</strong>
+                          {(option.orgAcronym || option.orgName) && (
+                            <span className={styles.orgName}> ({option.orgAcronym || option.orgName})</span>
+                          )}
+                          {statusText && (
+                            <span className={styles.alreadyAppliedText}>{statusText}</span>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })
               ) : (
                 <li className={styles.noPrograms}>
-                  No volunteer programs are currently accepting applications. Please check back later or contact us to learn about upcoming opportunities.
+                  {programOptions.length > 0 
+                    ? "All available programs have closed volunteer applications. Please check back later or contact us to learn about upcoming opportunities."
+                    : "No volunteer programs are currently accepting applications. Please check back later or contact us to learn about upcoming opportunities."
+                  }
                 </li>
               )}
             </ul>

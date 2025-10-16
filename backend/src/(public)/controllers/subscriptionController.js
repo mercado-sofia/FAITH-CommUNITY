@@ -122,7 +122,6 @@ export const createSubscription = async (req, res) => {
       message: 'Please check your email and click the confirmation link.',
     });
   } catch (err) {
-    console.error('createSubscription error:', err);
     return res.status(500).json({ error: 'Failed to create subscription.' });
   }
 };
@@ -171,7 +170,6 @@ export const confirmSubscription = async (req, res) => {
 
     return res.json({ message: 'Subscription confirmed. Welcome!', email: s.email });
   } catch (err) {
-    console.error('confirmSubscription error:', err);
     return res.status(500).json({ error: 'Failed to confirm subscription.' });
   }
 };
@@ -191,7 +189,6 @@ export const unsubscribe = async (req, res) => {
     await db.execute('DELETE FROM subscribers WHERE id = ?', [rows[0].id]);
     return res.json({ message: 'You have been unsubscribed.', email: rows[0].email });
   } catch (err) {
-    console.error('unsubscribe error:', err);
     return res.status(500).json({ error: 'Failed to unsubscribe.' });
   }
 };

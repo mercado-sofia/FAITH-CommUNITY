@@ -142,10 +142,10 @@ export const inviteCollaborator = async (req, res) => {
       VALUES (?, ?, ?, 'pending')
     `, [programId, collaboratorAdminId, currentAdminId]);
 
-    // Update program status to pending_collaboration if it's not already collaborative
-    // This keeps the program in pending_collaboration status until collaborators accept
+    // Update program to mark as collaborative
+    // The program status remains as 'Upcoming' until collaborators accept
     await db.execute(`
-      UPDATE programs_projects SET status = 'pending_collaboration', is_collaborative = TRUE WHERE id = ?
+      UPDATE programs_projects SET is_collaborative = TRUE WHERE id = ?
     `, [programId]);
 
     // Notify collaborator about the collaboration request
@@ -314,12 +314,21 @@ export const optOutCollaboration = async (req, res) => {
     const { collaborationId } = req.params;
     const currentAdminId = req.admin?.id || req.superadmin?.id;
 
-    // Get collaboration details first
+    // Get collaboration details first with more comprehensive data
     const [collaborationRows] = await db.execute(`
-      SELECT pc.id, pc.program_id, pp.title as program_title
+      SELECT 
+        pc.id, 
+        pc.program_id, 
+        pc.submission_id,
+        pp.title as program_title,
+        pp.organization_id as program_org_id,
+        a.email as admin_email,
+        o.orgName as admin_org_name
       FROM program_collaborations pc
       LEFT JOIN programs_projects pp ON pc.program_id = pp.id
-      WHERE pc.id = ? AND pc.collaborator_admin_id = ? AND pc.status = 'accepted'
+      LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+      LEFT JOIN organizations o ON a.organization_id = o.id
+      WHERE pc.id = ? AND pc.collaborator_admin_id = ? AND pc.status IN ('accepted', 'pending')
     `, [collaborationId, currentAdminId]);
 
     if (collaborationRows.length === 0) {
@@ -335,7 +344,7 @@ export const optOutCollaboration = async (req, res) => {
     const [result] = await db.execute(`
       UPDATE program_collaborations 
       SET status = 'declined', responded_at = NOW()
-      WHERE id = ? AND collaborator_admin_id = ? AND status = 'accepted'
+      WHERE id = ? AND collaborator_admin_id = ? AND status IN ('accepted', 'pending')
     `, [collaborationId, currentAdminId]);
 
     if (result.affectedRows === 0) {
@@ -358,9 +367,31 @@ export const optOutCollaboration = async (req, res) => {
       `, [collaboration.program_id]);
     }
 
+    // Log the opt-out action for audit purposes
+    try {
+      const { logAuditEvent } = await import('../../utils/audit.js');
+      await logAuditEvent({
+        adminId: currentAdminId,
+        action: 'COLLABORATION_OPT_OUT',
+        details: {
+          collaborationId: parseInt(collaborationId),
+          programId: collaboration.program_id,
+          programTitle: collaboration.program_title,
+          adminEmail: collaboration.admin_email,
+          adminOrg: collaboration.admin_org_name,
+          remainingCollaborators: remainingCollaborations[0].count
+        },
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('User-Agent')
+      });
+    } catch (auditError) {
+      // Don't fail the opt-out if audit logging fails
+      console.error('Failed to log opt-out audit event:', auditError);
+    }
+
     res.json({
       success: true,
-      message: `You have opted out of collaborating on "${collaboration.program_title}"`
+      message: `You have opted out of collaborating on "${collaboration.program_title}". The program will no longer appear in your programs list.`
     });
   } catch (error) {
     res.status(500).json({
@@ -397,44 +428,49 @@ export const getCollaborationRequests = async (req, res) => {
     const adminEmail = adminRows[0].email;
     // Admin found
     
-    // Get all collaborative programs where the current admin is either creator or collaborator
+    // Get all collaboration requests where the current admin is either creator or collaborator
+    // This includes both pending submissions and existing programs
+    // Also includes programs where the creator is waiting for responses from other admins
     const [allCollaborations] = await db.execute(`
       SELECT DISTINCT
-        p.id as program_id,
-        p.title as program_title,
-        p.description as program_description,
-        p.status as program_status,
-        p.is_approved,
-        p.is_collaborative,
-        p.created_at as program_created_at,
-        p.image as program_image,
-        p.category as program_category,
-        p.event_start_date,
-        p.event_end_date,
-        p.slug as program_slug,
-        p.organization_id as program_org_id,
+        COALESCE(p.id, pc.submission_id) as program_id,
+        COALESCE(p.title, pc.program_title) as program_title,
+        COALESCE(p.description, JSON_EXTRACT(s.proposed_data, '$.description')) as program_description,
+        COALESCE(p.status, 'pending_collaboration') as program_status,
+        COALESCE(p.is_approved, 0) as is_approved,
+        COALESCE(p.is_collaborative, 1) as is_collaborative,
+        COALESCE(p.accepts_volunteers, JSON_EXTRACT(s.proposed_data, '$.accepts_volunteers'), 1) as accepts_volunteers,
+        COALESCE(p.created_at, s.submitted_at) as program_created_at,
+        COALESCE(p.image, JSON_EXTRACT(s.proposed_data, '$.image')) as program_image,
+        COALESCE(p.category, JSON_EXTRACT(s.proposed_data, '$.category')) as program_category,
+        COALESCE(p.event_start_date, JSON_EXTRACT(s.proposed_data, '$.event_start_date')) as event_start_date,
+        COALESCE(p.event_end_date, JSON_EXTRACT(s.proposed_data, '$.event_end_date')) as event_end_date,
+        COALESCE(p.slug, NULL) as program_slug,
+        COALESCE(p.organization_id, s.organization_id) as program_org_id,
         -- Program organization details
         prog_org.orgName as program_org_name,
         prog_org.org as program_org_acronym,
-        prog_org.logo as program_org_logo
-      FROM programs_projects p
-      LEFT JOIN organizations prog_org ON p.organization_id = prog_org.id
-      WHERE p.is_collaborative = 1 
-        AND (
-          p.organization_id = ? 
-          OR p.id IN (
-            SELECT program_id FROM program_collaborations 
-            WHERE collaborator_admin_id = ?
-          )
-        )
-      ORDER BY p.created_at DESC
-    `, [adminOrgId, currentAdminId]);
+        prog_org.logo as program_org_logo,
+        pc.submission_id,
+        s.status as submission_status
+      FROM program_collaborations pc
+      LEFT JOIN programs_projects p ON pc.program_id = p.id
+      LEFT JOIN submissions s ON pc.submission_id = s.id
+      LEFT JOIN organizations prog_org ON COALESCE(p.organization_id, s.organization_id) = prog_org.id
+      WHERE (
+        pc.collaborator_admin_id = ? 
+        OR pc.invited_by_admin_id = ?
+        OR COALESCE(p.organization_id, s.organization_id) = ?
+      )
+      AND pc.status IN ('pending', 'accepted', 'declined')
+      ORDER BY COALESCE(p.created_at, s.submitted_at) DESC
+    `, [currentAdminId, currentAdminId, adminOrgId]);
     
     // Found collaborative programs
     
     // Process each program to get collaboration details
     const processedCollaborations = await Promise.all(allCollaborations.map(async (program) => {
-      // Get all collaboration records for this program
+      // Get all collaboration records for this program/submission
       const [allCollaborators] = await db.execute(`
         SELECT 
           pc.id as collaboration_id,
@@ -459,9 +495,9 @@ export const getCollaborationRequests = async (req, res) => {
         LEFT JOIN organizations inviter_org ON inviter.organization_id = inviter_org.id
         LEFT JOIN admins invitee ON pc.collaborator_admin_id = invitee.id
         LEFT JOIN organizations invitee_org ON invitee.organization_id = invitee_org.id
-        WHERE pc.program_id = ?
+        WHERE (pc.program_id = ? OR pc.submission_id = ?)
         ORDER BY pc.invited_at DESC
-      `, [currentAdminId, currentAdminId, program.program_id]);
+      `, [currentAdminId, currentAdminId, program.program_id, program.submission_id]);
       
       // Find the most relevant collaboration for this admin
       const relevantCollab = allCollaborators.find(c => 
@@ -472,6 +508,21 @@ export const getCollaborationRequests = async (req, res) => {
       
       // Determine if this admin is the creator or collaborator
       const isCreator = program.program_org_id == adminOrgId;
+      
+      // Check if there are any pending collaboration requests for this program
+      const hasPendingCollaborations = allCollaborators.some(c => c.status === 'pending');
+      
+      // Check if all collaborators have declined (making it a solo program)
+      const allCollaboratorsDeclined = allCollaborators.length > 0 && allCollaborators.every(c => c.status === 'declined');
+      
+      // Determine if this program should be shown in collaborations tab
+      // Show if: current admin is involved (but not if they opted out) OR there are pending collaborations OR not all have declined
+      const currentAdminOptedOut = relevantCollab && relevantCollab.status === 'declined';
+      const shouldShowInCollaborations = (
+        (relevantCollab && !currentAdminOptedOut) || // Current admin is involved but hasn't opted out
+        hasPendingCollaborations || // There are pending requests
+        (!allCollaboratorsDeclined && allCollaborators.length > 0) // Not all have declined and there are collaborators
+      );
       
       return {
         ...program,
@@ -500,15 +551,23 @@ export const getCollaborationRequests = async (req, res) => {
         invitee_org_name: relevantCollab?.invitee_org_name || null,
         invitee_org_acronym: relevantCollab?.invitee_org_acronym || null,
         invited_at: relevantCollab?.invited_at || program.program_created_at,
-        responded_at: relevantCollab?.responded_at || null
+        responded_at: relevantCollab?.responded_at || null,
+        has_pending_collaborations: hasPendingCollaborations,
+        all_collaborators_declined: allCollaboratorsDeclined,
+        should_show_in_collaborations: shouldShowInCollaborations
       };
     }));
+    
+    // Filter to only show programs that should be displayed in collaborations tab
+    const filteredCollaborations = processedCollaborations.filter(program => 
+      program.should_show_in_collaborations
+    );
     
     // Processed collaborations
     
     res.json({
       success: true,
-      data: processedCollaborations
+      data: filteredCollaborations
     });
   } catch (error) {
     console.error('Error fetching collaboration requests:', error);
@@ -533,12 +592,13 @@ export const acceptCollaborationRequest = async (req, res) => {
       });
     }
     
-    // Get collaboration details
+    // Get collaboration details - check for both submission_id and program_id
     const [collaborationRows] = await db.execute(`
-      SELECT pc.id, pc.program_id, pc.status, pp.title as program_title, pp.status as program_status, pp.is_approved, pp.organization_id
+      SELECT pc.id, pc.submission_id, pc.program_id, pc.status, pc.program_title, pc.invited_by_admin_id,
+             s.organization_id, s.proposed_data, s.submitted_by
       FROM program_collaborations pc
-      LEFT JOIN programs_projects pp ON pc.program_id = pp.id
-      WHERE pc.id = ? AND pc.collaborator_admin_id = ? AND (pc.status = 'pending' OR pc.status IS NULL OR pc.status = '')
+      LEFT JOIN submissions s ON pc.submission_id = s.id
+      WHERE pc.id = ? AND pc.collaborator_admin_id = ? AND pc.status = 'pending'
     `, [collaborationId, currentAdminId]);
     
     if (collaborationRows.length === 0) {
@@ -550,6 +610,13 @@ export const acceptCollaborationRequest = async (req, res) => {
     
     const collaboration = collaborationRows[0];
     
+    if (!collaboration.program_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid collaboration request - no program found'
+      });
+    }
+    
     // Update collaboration status to accepted
     await db.execute(`
       UPDATE program_collaborations 
@@ -557,15 +624,10 @@ export const acceptCollaborationRequest = async (req, res) => {
       WHERE id = ? AND collaborator_admin_id = ?
     `, [collaborationId, currentAdminId]);
     
-    // Update program to mark as collaborative
-    await db.execute(`
-      UPDATE programs_projects SET is_collaborative = TRUE WHERE id = ?
-    `, [collaboration.program_id]);
-    
-    // Check if all pending collaborations have been responded to
+    // Check if all pending collaborations have been responded to for this program
     const [pendingCollaborations] = await db.execute(`
       SELECT COUNT(*) as count FROM program_collaborations 
-      WHERE program_id = ? AND (status = 'pending' OR status IS NULL OR status = '')
+      WHERE program_id = ? AND status = 'pending'
     `, [collaboration.program_id]);
     
     // If no pending collaborations remain, check if any were accepted
@@ -576,61 +638,54 @@ export const acceptCollaborationRequest = async (req, res) => {
       `, [collaboration.program_id]);
       
       if (acceptedCollaborations[0].count > 0) {
-        // Some collaborations were accepted, move to pending superadmin approval
+        // Some collaborations were accepted, update program to show it's collaborative
+        // The program already exists, just update its status
         await db.execute(`
-          UPDATE programs_projects SET status = 'pending_superadmin_approval', is_approved = 0 WHERE id = ?
+          UPDATE programs_projects 
+          SET is_collaborative = 1
+          WHERE id = ?
         `, [collaboration.program_id]);
         
-        // Notify superadmin about the new collaborative program pending approval
+        // Notify the creator organization about the collaboration acceptance
         try {
-          const [superadminRows] = await db.execute(`SELECT id FROM superadmin LIMIT 1`);
-          if (superadminRows.length > 0) {
-            await db.execute(`
-              INSERT INTO superadmin_notifications (superadmin_id, type, title, message, section, submission_id, organization_id)
-              VALUES (?, 'approval_request', 'New Collaborative Program Pending Approval', ?, 'programs', ?, ?)
-            `, [
-              superadminRows[0].id,
-              `A collaborative program "${collaboration.program_title}" is now pending your approval. All collaborators have accepted the collaboration request.`,
-              collaboration.program_id,
-              collaboration.organization_id
-            ]);
-          }
-        } catch (superadminNotificationError) {
-          console.error('Failed to send superadmin notification:', superadminNotificationError);
-          // Don't fail the main operation if notification fails
+          const NotificationController = (await import('./notificationController.js')).default;
+          await NotificationController.createNotification({
+            admin_id: collaboration.invited_by_admin_id,
+            title: 'Collaboration Accepted',
+            message: `Your collaboration request for "${collaboration.program_title}" has been accepted. The program is now marked as collaborative.`,
+            type: 'collaboration_accepted',
+            submission_id: collaboration.program_id
+          });
+        } catch (notificationError) {
+          console.error('Failed to send collaboration acceptance notification:', notificationError);
         }
       } else {
-        // No collaborations were accepted, mark program as declined
+        // No collaborations were accepted, update program to be non-collaborative (solo program)
         await db.execute(`
-          UPDATE programs_projects SET status = 'declined', is_approved = 0 WHERE id = ?
+          UPDATE programs_projects 
+          SET is_collaborative = 0
+          WHERE id = ?
         `, [collaboration.program_id]);
       }
     }
     
     // Notify the creator organization about the acceptance
     try {
-      const [creatorRows] = await db.execute(`
-        SELECT invited_by_admin_id FROM program_collaborations WHERE id = ?
-      `, [collaborationId]);
-      
-      if (creatorRows.length > 0) {
-        const NotificationController = (await import('./notificationController.js')).default;
-        await NotificationController.createNotification({
-          admin_id: creatorRows[0].invited_by_admin_id,
-          title: 'Collaboration Request Accepted',
-          message: `Your collaboration request for "${collaboration.program_title}" has been accepted. The program is now pending superadmin approval.`,
-          type: 'collaboration_accepted',
-          submission_id: collaboration.program_id
-        });
-      }
+      const NotificationController = (await import('./notificationController.js')).default;
+      await NotificationController.createNotification({
+        admin_id: collaboration.invited_by_admin_id,
+        title: 'Collaboration Request Accepted',
+        message: `Your collaboration request for "${collaboration.program_title}" has been accepted.`,
+        type: 'collaboration_accepted',
+        submission_id: collaboration.submission_id
+      });
     } catch (notificationError) {
       console.error('Failed to send acceptance notification:', notificationError);
-      // Don't fail the main operation if notification fails
     }
     
     res.json({
       success: true,
-      message: `Collaboration request for "${collaboration.program_title}" accepted successfully. The program is now pending superadmin approval.`
+      message: `Collaboration request for "${collaboration.program_title}" accepted successfully.`
     });
   } catch (error) {
     res.status(500).json({
@@ -656,12 +711,11 @@ export const declineCollaborationRequest = async (req, res) => {
       });
     }
     
-    // Get collaboration details
+    // Get collaboration details - check for program_id
     const [collaborationRows] = await db.execute(`
-      SELECT pc.id, pc.program_id, pc.status, pp.title as program_title, pc.invited_by_admin_id
+      SELECT pc.id, pc.submission_id, pc.program_id, pc.status, pc.program_title, pc.invited_by_admin_id
       FROM program_collaborations pc
-      LEFT JOIN programs_projects pp ON pc.program_id = pp.id
-      WHERE pc.id = ? AND pc.collaborator_admin_id = ? AND (pc.status = 'pending' OR pc.status IS NULL OR pc.status = '')
+      WHERE pc.id = ? AND pc.collaborator_admin_id = ? AND pc.status = 'pending'
     `, [collaborationId, currentAdminId]);
     
     if (collaborationRows.length === 0) {
@@ -672,6 +726,13 @@ export const declineCollaborationRequest = async (req, res) => {
     }
     
     const collaboration = collaborationRows[0];
+    
+    if (!collaboration.program_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid collaboration request - no program found'
+      });
+    }
     
     // Update collaboration status to declined
     await db.execute(`
@@ -695,14 +756,18 @@ export const declineCollaborationRequest = async (req, res) => {
       `, [collaboration.program_id]);
       
       if (acceptedCollaborations[0].count === 0) {
-        // No accepted collaborations, mark program as declined
+        // No accepted collaborations, update program to be non-collaborative (solo program)
         await db.execute(`
-          UPDATE programs_projects SET status = 'declined', is_approved = 0, is_collaborative = FALSE WHERE id = ?
+          UPDATE programs_projects 
+          SET is_collaborative = 0
+          WHERE id = ?
         `, [collaboration.program_id]);
       } else {
-        // Some collaborations were accepted, move to pending superadmin approval
+        // Some collaborations were accepted, keep program as collaborative
         await db.execute(`
-          UPDATE programs_projects SET status = 'pending_superadmin_approval', is_approved = 0 WHERE id = ?
+          UPDATE programs_projects 
+          SET is_collaborative = 1
+          WHERE id = ?
         `, [collaboration.program_id]);
       }
     }
@@ -713,9 +778,9 @@ export const declineCollaborationRequest = async (req, res) => {
       await NotificationController.createNotification({
         admin_id: collaboration.invited_by_admin_id,
         title: 'Collaboration Request Declined',
-        message: `Your collaboration request for "${collaboration.program_title}" has been declined.`,
+        message: `Your collaboration request for "${collaboration.program_title}" has been declined. The program will remain as a solo program.`,
         type: 'collaboration_declined',
-        related_id: collaboration.program_id
+        submission_id: collaboration.program_id
       });
     } catch (notificationError) {
       console.error('Failed to send decline notification:', notificationError);

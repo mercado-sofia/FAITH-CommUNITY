@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { FaSpinner, FaTimes, FaUpload, FaImage, FaVideo, FaFile, FaEye } from 'react-icons/fa';
 import { FiArrowLeft } from 'react-icons/fi';
 import styles from './HighlightForm.module.css';
@@ -564,10 +565,13 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
             </div>
             <div className={styles.previewBody}>
               {previewFile.mimetype?.startsWith('image/') ? (
-                <img
+                <Image
                   src={previewFile.url}
                   alt={previewFile.filename || 'Preview'}
                   className={styles.previewImage}
+                  width={400}
+                  height={300}
+                  style={{ objectFit: 'cover' }}
                 />
               ) : previewFile.mimetype?.startsWith('video/') ? (
                 <video

@@ -4,8 +4,8 @@ import crypto from "crypto";
 import db from "../../database.js";
 import { sendMail } from "../../utils/mailer.js";
 
-const API_BASE = process.env.API_BASE_URL || "http://localhost:8080";
-const APP_BASE = process.env.APP_BASE_URL || "http://localhost:3000";
+const API_BASE = process.env.API_BASE_URL;
+const APP_BASE = process.env.APP_BASE_URL;
 
 export async function subscribe(req, res) {
   const { email } = req.body || {};

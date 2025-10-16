@@ -125,7 +125,7 @@ export const registerUser = async (req, res) => {
     try {
       const { sendMail } = await import('../../utils/mailer.js');
       
-      const verificationLink = `http://localhost:3000/signup?token=${verificationToken}`;
+      const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/signup?token=${verificationToken}`;
       
       await sendMail({
         to: email,
@@ -281,7 +281,6 @@ export const loginUser = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -362,7 +361,6 @@ export const updateUserProfile = async (req, res) => {
 export const uploadProfilePhoto = async (req, res) => {
   try {
     const userId = req.user.id;
-    
 
     // Check if file exists
     if (!req.file) {
@@ -434,9 +432,8 @@ export const uploadProfilePhoto = async (req, res) => {
       throw new Error(`Cloudinary upload failed: ${cloudinaryError.message}`);
     }
 
-
     const profilePhotoUrl = uploadResult.url;
-    
+
     // Update user's profile_photo_url in database
     try {
       await db.query(
@@ -685,7 +682,6 @@ export const verifyEmailChangeOTP = async (req, res) => {
     // Clean up expired OTPs
     await EmailChangeOTP.cleanupExpiredOTPs();
 
-    
     res.json({ 
       message: 'Email changed successfully',
       newEmail: verificationResult.newEmail,
@@ -970,7 +966,6 @@ export const verifyEmail = async (req, res) => {
   try {
     const { token } = req.query;
 
-
     if (!token) {
       return res.status(400).json({ error: 'Verification token is required' });
     }
@@ -1047,7 +1042,7 @@ export const resendVerificationEmail = async (req, res) => {
     try {
       const { sendMail } = await import('../../utils/mailer.js');
       
-      const verificationLink = `http://localhost:3000/signup?token=${verificationToken}`;
+      const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/signup?token=${verificationToken}`;
       
       await sendMail({
         to: email,

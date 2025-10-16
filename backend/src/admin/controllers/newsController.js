@@ -3,14 +3,14 @@ import jwt from "jsonwebtoken";
 import db from "../../database.js";
 import { getOrganizationLogoUrl } from "../../utils/imageUrlUtils.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 /* ------------------------- Email notify helper ------------------------- */
 /** Broadcast to verified subscribers via your /api/subscribers/notify route.
  * Non-blocking: logs errors but doesn't break API response.
  */
 async function notifySubscribers({ type, subject, messageHtml }) {
-  const api = process.env.API_BASE_URL || "http://localhost:8080";
+  const api = process.env.API_BASE_URL;
   try {
     const resp = await fetch(`${api}/api/subscribers/notify`, {
       method: "POST",
@@ -132,7 +132,7 @@ export const createNews = async (req, res) => {
     const newsId = result.insertId;
 
     // 4) 🔔 Notify subscribers (announcement)
-    const appBase = process.env.APP_BASE_URL || "http://localhost:3000";
+    const appBase = process.env.APP_BASE_URL;
     const url = `${appBase}/news/${slug}`;
 
     // Fire-and-forget (remove await to make it truly background)

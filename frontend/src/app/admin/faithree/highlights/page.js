@@ -265,7 +265,7 @@ export default function AdminHighlightsPage() {
       setIsDeleting(false);
       setDeletingHighlight(null);
     }
-  }, [deletingHighlight]);
+  }, [deletingHighlight, loadHighlights]);
 
   // Handle form submission
   const handleFormSubmit = useCallback(async (formData) => {
@@ -316,7 +316,7 @@ export default function AdminHighlightsPage() {
         type: 'error'
       });
     }
-  }, [pageMode, editingHighlight, currentAdmin?.token]);
+  }, [pageMode, editingHighlight, loadHighlights]);
 
   // Handle form cancel
   const handleFormCancel = useCallback(async () => {

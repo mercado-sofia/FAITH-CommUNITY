@@ -1,0 +1,120 @@
+.actionButtons {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  flex-shrink: 0; /* Keep buttons at bottom */
+}
+
+.markActiveButton,
+.markCompletedButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.markActiveButton {
+  background: #f0f9ff;
+  color: #1e40af;
+  border: 1px solid #bad8fd;
+}
+
+.markActiveButton:hover:not(:disabled) {
+  background: #2648b8;
+  border-color: #1e40af;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.markCompletedButton {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.markCompletedButton:hover:not(:disabled) {
+  background: #06100f;
+  border-color: #06100f;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.markActiveButton:disabled,
+.markCompletedButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Collaboration Action Buttons */
+.acceptButton,
+.declineButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.acceptButton {
+  background: #f0f9ff;
+  color: #1e40af;
+  border: 1px solid #bad8fd;
+}
+
+.acceptButton:hover:not(:disabled) {
+  background: #2648b8;
+  border-color: #1e40af;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.declineButton {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.declineButton:hover:not(:disabled) {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.acceptButton:disabled,
+.declineButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 768px) {
+  .actionButtons {
+    flex-direction: column;
+  }
+
+  .markActiveButton,
+  .markCompletedButton,
+  .acceptButton,
+  .declineButton {
+    width: 100%;
+  }
+}

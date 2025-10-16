@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { FiEdit3, FiUpload, FiTrash2 } from 'react-icons/fi';
+import { FiEdit3, FiUpload } from 'react-icons/fi';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
-import { ConfirmationModal } from '@/components';
 import { getOrganizationImageUrl } from '@/utils/uploadPaths';
 import styles from './HeadManagement.module.css';
 
@@ -13,8 +12,6 @@ export default function HeadManagement({ showSuccessModal }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -166,43 +163,6 @@ export default function HeadManagement({ showSuccessModal }) {
     }
   };
 
-  // Handle delete
-  const handleDelete = async () => {
-    if (!headData) return;
-    
-    try {
-      setIsDeleting(true);
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const response = await makeAuthenticatedRequest(
-        `${baseUrl}/api/superadmin/heads-faces/${headData.id}`,
-        { method: 'DELETE' },
-        'superadmin'
-      );
-
-      if (response && response.ok) {
-        setHeadData(null);
-        setFormData({
-          name: '',
-          description: '',
-          email: '',
-          phone: '',
-          position: 'Head of FACES',
-          image_url: ''
-        });
-        setSelectedFile(null);
-        setIsEditing(false);
-        showSuccessModal('Head of FACES deleted successfully!');
-      } else {
-        const errorData = await response.json();
-        showSuccessModal(errorData.message || 'Failed to delete head of FACES');
-      }
-    } catch (error) {
-      showSuccessModal('Failed to delete head data. Please try again.');
-    } finally {
-      setIsDeleting(false);
-      setShowDeleteModal(false);
-    }
-  };
 
   // Handle cancel
   const handleCancel = () => {
@@ -424,35 +384,10 @@ export default function HeadManagement({ showSuccessModal }) {
               )}
             </div>
 
-            {/* Action Buttons - Only show in edit mode */}
-            {isEditing && headData && (
-              <div className={styles.actionButtons}>
-                <button
-                  className={styles.deleteBtn}
-                  onClick={() => setShowDeleteModal(true)}
-                  disabled={isDeleting}
-                >
-                  <FiTrash2 />
-                  Delete Head
-                </button>
-              </div>
-            )}
           </div>
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        onConfirm={handleDelete}
-        title="Delete Head of FACES"
-        message="Are you sure you want to delete this head of FACES? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
-        isLoading={isDeleting}
-        isDestructive={true}
-      />
     </div>
   );
 }

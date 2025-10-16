@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { FiEdit3, FiTrash2, FiEye, FiCalendar, FiImage } from 'react-icons/fi';
 import { formatDistanceToNow } from 'date-fns';
 import styles from './HighlightCard.module.css';
@@ -42,10 +43,13 @@ export default function HighlightCard({ highlight, onEdit, onView, onDelete }) {
       {/* Image Section */}
       <div className={styles.imageSection}>
         {imageUrl && !imageError ? (
-          <img
+          <Image
             src={imageUrl}
             alt={highlight.title || 'Highlight image'}
             className={styles.image}
+            width={300}
+            height={200}
+            style={{ objectFit: 'cover' }}
             onError={() => setImageError(true)}
           />
         ) : (

@@ -1,0 +1,225 @@
+/* Modal Overlay and Content */
+.modalOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+  border-radius: 12px;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: modalSlideIn 0.3s ease-out;
+  position: relative;
+  z-index: 1001;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modalHeader {
+  padding: 20px 20px 0;
+  text-align: center;
+}
+
+.modalTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.modalBody {
+  padding: 16px 20px;
+  text-align: center;
+}
+
+.modalBody p {
+  margin: 0 0 12px 0;
+  color: #374151;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.warningText {
+  color: #dc2626 !important;
+  font-weight: 500;
+  font-size: 13px !important;
+}
+
+.infoText {
+  color: #059669;
+  font-size: 14px;
+  margin-top: 8px;
+  font-weight: 500;
+}
+
+.modalActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 20px 20px;
+  width: 100%;
+}
+
+.cancelButton,
+.confirmButton {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cancelButton {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.cancelButton:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.confirmButton {
+  background: #0369a1;
+  color: white;
+}
+
+.confirmButton:hover {
+  background: #0284c7;
+}
+
+.confirmButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Mark as Completed Modal Confirm Button - matches markCompletedButton */
+.markCompletedModal .confirmButton {
+  background: #06100f;
+  color: white;
+  border: 1px solid #06100f;
+}
+
+.markCompletedModal .confirmButton:hover {
+  background: #0a1a18;
+  border-color: #0a1a18;
+  color: white;
+}
+
+/* Mark as Active Modal Confirm Button - matches markActiveButton */
+.markActiveModal .confirmButton {
+  background: #f0f9ff;
+  color: #1e40af;
+  border: 1px solid #bad8fd;
+}
+
+.markActiveModal .confirmButton:hover {
+  background: #2648b8;
+  border-color: #1e40af;
+  color: white;
+}
+
+/* Opt Out Modal Confirm Button - red theme */
+.optOutModal .confirmButton {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.optOutModal .confirmButton:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: white;
+}
+
+/* Volunteer Acceptance Modal Styles - Close Volunteers Modal Confirm Button - dark theme */
+.volunteerAcceptanceModal .confirmButton {
+  background: #06100f;
+  color: white;
+  border: 1px solid #06100f;
+}
+
+.volunteerAcceptanceModal .confirmButton:hover {
+  background: #0a1a18;
+  border-color: #0a1a18;
+  color: white;
+}
+
+/* Modal-specific wrapper classes */
+.markCompletedModal {
+  /* Additional styles for mark completed modal if needed */
+}
+
+.markActiveModal {
+  /* Additional styles for mark active modal if needed */
+}
+
+.optOutModal {
+  /* Additional styles for opt out modal if needed */
+}
+
+.volunteerAcceptanceModal {
+  /* Additional styles for volunteer acceptance modal if needed */
+}
+
+.acceptCollaborationModal {
+  /* Additional styles for accept collaboration modal if needed */
+}
+
+.declineCollaborationModal {
+  /* Additional styles for decline collaboration modal if needed */
+}
+
+/* Accept Collaboration Modal Styles */
+.acceptCollaborationModal .confirmButton {
+  background: #f0f9ff;
+  color: #1e40af;
+  border: 1px solid #bad8fd;
+}
+
+.acceptCollaborationModal .confirmButton:hover {
+  background: #2648b8;
+  border-color: #1e40af;
+  color: white;
+}
+
+/* Decline Collaboration Modal Styles */
+.declineCollaborationModal .confirmButton {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.declineCollaborationModal .confirmButton:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: white;
+}

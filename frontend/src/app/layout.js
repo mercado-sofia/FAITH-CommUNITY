@@ -1,19 +1,34 @@
 import "./globals.css";
-import { Inter, Roboto, Source_Sans_3 } from "next/font/google";
+import { Inter, Poppins, Urbanist, Roboto } from "next/font/google";
 import { LoaderWrapper, DisableTabOnButtonsLinks, SWRProvider } from "@/components";
 import ReduxProvider from "./ReduxProvider";
 import '../utils/devTools'; // Load development tools
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const inter = Inter({ 
+  subsets: ["latin"], 
+  variable: "--font-inter",
+  display: 'swap'
+});
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-poppins",
+  display: 'swap'
+});
+
+const urbanist = Urbanist({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-urbanist",
+  display: 'swap'
+});
+
 const roboto = Roboto({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["300", "400", "500", "700", "900"],
   variable: "--font-roboto",
-});
-const sourceSans3 = Source_Sans_3({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-source-sans",
+  display: 'swap'
 });
 
 export const metadata = {
@@ -23,7 +38,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${inter.variable} ${roboto.variable} ${sourceSans3.variable}`}>
+    <html lang="en" className={`${inter.variable} ${poppins.variable} ${urbanist.variable} ${roboto.variable}`}>
       <body className={inter.className}>
         <SWRProvider>
           <ReduxProvider>

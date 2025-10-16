@@ -1,6 +1,6 @@
 .controlsRow {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   flex-wrap: wrap;
   margin-bottom: 1.4rem;
@@ -81,13 +81,6 @@
   }
 }
 
-/* Search input wrapper*/
-.searchWrapper {
-  flex-shrink: 0;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-}
 
 /* Wrap input and icons together */
 .searchInputContainer {
@@ -132,35 +125,16 @@
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
-  .controlsContainer {
-    padding: 16px;
-  }
-
   .controlsRow {
     flex-direction: column;
     align-items: stretch;
     gap: 16px;
   }
-
-  .searchWrapper {
-    flex-shrink: 0;
-    display: flex;
-    justify-content: center;
-    align-items: stretch;
-    min-width: auto;
-    gap: 4px;
-  }
-
 }
 
 @media (max-width: 480px) {
-  .controlsContainer {
-    padding: 12px;
-  }
-
   .searchInput {
     padding: 10px 14px 10px 40px;
     font-size: 16px; /* Prevents zoom on iOS */
   }
-
 }

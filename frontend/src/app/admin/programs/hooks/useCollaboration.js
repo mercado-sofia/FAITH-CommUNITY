@@ -194,6 +194,14 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
     }
   }, [isEditMode, programId]);
 
+  // Reset collaboration state
+  const resetCollaboration = useCallback(() => {
+    setCollaboratorInput('');
+    setFilteredAdmins([]);
+    setSelectedAdminIndex(-1);
+    setSelectedAdminForInvite(null);
+  }, []);
+
   return {
     // State
     collaboratorInput,
@@ -212,6 +220,7 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
     loadAvailableAdmins,
     loadExistingCollaborators,
     refreshCollaborators,
+    resetCollaboration,
     
     // Setters
     setCollaboratorInput,

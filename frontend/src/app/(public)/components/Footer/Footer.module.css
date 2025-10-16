@@ -1,7 +1,7 @@
 .footerWrapper {
   background: #06100f;  
   color: #ffffff;
-  font-family: var(--font-source-sans);
+  font-family: var(--font-inter);
 }
 
 .footerContent {
@@ -373,12 +373,16 @@
     width: 100%;
   }
 
-  .linksSection,
-  .servicesSection {
-    width: 45%;
-    min-width: 200px;
-    margin-top: 1rem;
-  }
+.linksSection,
+.servicesSection {
+  width: 45%;
+  min-width: 200px;
+  margin-top: 1rem;
+}
+
+.servicesSection {
+  margin-top: 2rem;
+}
 
   .linksSection,
   .servicesSection {

@@ -9,19 +9,18 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 20px;
+  padding: 24px;
 }
 
 .modalContent {
   background: white;
-  border-radius: 14px;
+  border-radius: 12px;
   width: 100%;
   max-width: 800px;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  animation: modalSlideIn 0.3s ease-out;
-  padding: 0 10px;
+  padding: 0;
   
   /* Custom Scrollbar Styles */
   scrollbar-width: thin;
@@ -41,40 +40,44 @@
   border-radius: 3px;
 }
 
-.modalContent::-webkit-scrollbar-thumb:hover {
-  background-color: #9ca3af;
-}
-
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 .modalHeader {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  padding: 32px 32px 24px 32px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.titleSection {
+  flex: 1;
+  margin-right: 24px;
+}
+
+.headerActions {
+  display: flex;
   align-items: center;
-  padding: 24px 24px 0 24px;
-  margin-bottom: 24px;
-  position: relative;
+  gap: 16px;
 }
 
 .modalTitle {
-  font-size: 1.25rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  color: #06100f;
-  margin: 0;
+  color: #1a1a1a;
+  margin: 0 0 12px 0;
+  line-height: 1.3;
+}
+
+.requestType {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
 }
 
 .closeButton {
-  background: transparent;
-  border: none;
+  background: #f8f9fa;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   width: 40px;
   height: 40px;
@@ -83,51 +86,45 @@
   justify-content: center;
   cursor: pointer;
   color: #6b7280;
-  transition: all 0.2s ease;
   user-select: none;
 }
 
-.closeButton:hover {
-  background: #f3f4f6;
-  color: #06100f;
-}
-
 .modalBody {
-  padding: 0 24px 24px 24px;
+  padding: 32px;
 }
 
 .contentLayout {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  margin-bottom: 24px;
+  gap: 32px;
 }
 
 .topSection {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 32px;
+  gap: 40px;
   align-items: start;
 }
 
 .imageSection {
   border-radius: 12px;
   overflow: hidden;
-  background: #f3f4f6;
+  background: #f8f9fa;
   height: 100%;
-  min-height: 300px;
+  min-height: 320px;
+  border: 1px solid #e5e7eb;
 }
 
 .programInfoSection {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
 }
 
 .programImage {
   width: 100%;
   height: 100%;
-  min-height: 300px;
+  min-height: 320px;
   object-fit: cover;
   display: block;
 }
@@ -138,47 +135,54 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  min-height: 300px;
-  background: #f9fafb;
+  min-height: 320px;
+  background: #f8f9fa;
   border: 2px dashed #d1d5db;
   border-radius: 12px;
   color: #6b7280;
   font-size: 0.875rem;
-  gap: 8px;
+  gap: 12px;
 }
 
 .imagePlaceholder svg {
-  font-size: 2rem;
-  opacity: 0.5;
+  font-size: 2.5rem;
+  opacity: 0.6;
 }
 
 /* Category badge */
 .categoryBadge {
   display: inline-block;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  color: #22c55e;
+  color: #059669;
+  background: #ecfdf5;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid #d1fae5;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .programTitle {
-  font-size: 18px;
+  font-size: 1.5rem;
   font-weight: 700;
-  color: #06100f;
-  margin: 0 0 10px;
+  color: #1a1a1a;
+  margin: 0;
   line-height: 1.3;
 }
 
 /* Status badge */
 .statusBadge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.5px;
   align-self: flex-start;
-  margin-bottom: 8px;
 }
 
 .statusBadge.Upcoming {
@@ -228,37 +232,37 @@
 }
 
 .descriptionSection {
-  background: #f9fafb;
-  padding: 20px;
-  border-radius: 8px;
+  background: #f8f9fa;
+  padding: 24px;
+  border-radius: 12px;
   border: 1px solid #e5e7eb;
 }
 
 .collaborationSection {
   background: #f0f9ff;
-  padding: 20px;
-  border-radius: 8px;
+  padding: 24px;
+  border-radius: 12px;
   border: 1px solid #bae6fd;
 }
 
 .sectionTitle {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
-  color: #374151;
-  margin: 0 0 12px 0;
+  color: #1a1a1a;
+  margin: 0 0 16px 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .sectionIcon {
-  font-size: 14px;
+  font-size: 16px;
   color: #6b7280;
 }
 
 .description {
   font-size: 14px;
-  color: #6b7280;
+  color: #4b5563;
   line-height: 1.6;
   margin: 0;
 }
@@ -266,22 +270,22 @@
 .collaboratorsList {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .collaboratorItem {
   display: flex;
   align-items: center;
-  padding: 8px 12px;
+  padding: 12px 16px;
   background: white;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid #e5e7eb;
 }
 
 .collaboratorInfo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .collaboratorEmail {
@@ -291,7 +295,7 @@
 }
 
 .collaboratorOrg {
-  font-size: 12px;
+  font-size: 13px;
   color: #6b7280;
 }
 
@@ -304,18 +308,18 @@
 .detailsGrid {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .detailItem {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 16px;
 }
 
 .detailIcon {
-  font-size: 14px;
-  color: #c3c7ce;
+  font-size: 16px;
+  color: #9ca3af;
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -323,26 +327,26 @@
 .detailContent {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .detailLabel {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   color: #6b7280;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.5px;
 }
 
 .detailValue {
-  font-size: 13px;
+  font-size: 14px;
   color: #374151;
   font-weight: 500;
 }
 
 .additionalImagesSection {
-  background: #f9fafb;
-  padding: 20px;
+  background: #f8f9fa;
+  padding: 24px;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
 }
@@ -350,8 +354,8 @@
 .additionalImagesGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
+  gap: 20px;
+  margin-top: 20px;
 }
 
 .additionalImageContainer {
@@ -369,33 +373,29 @@
 }
 
 .modalFooter {
-  padding: 0 24px 24px 24px;
+  padding: 24px 32px 32px 32px;
   display: flex;
   justify-content: flex-end;
+  gap: 16px;
+  border-top: 1px solid #e5e7eb;
 }
 
 .closeModalButton {
-  background: #06100f;
+  background: #1a1a1a;
   color: white;
   border: none;
   padding: 12px 24px;
   border-radius: 8px;
   font-size: 14px;
-  font-weight: 500;
-  font-family: var(--font-inter);
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
   user-select: none;
-}
-
-.closeModalButton:hover {
-  background: #142220;
 }
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .modalOverlay {
-    padding: 10px;
+    padding: 16px;
   }
 
   .modalContent {
@@ -403,28 +403,28 @@
   }
 
   .modalHeader {
-    padding: 20px 20px 0 20px;
+    padding: 24px 24px 20px 24px;
   }
 
   .modalTitle {
-    font-size: 20px;
+    font-size: 1.5rem;
   }
 
   .modalBody {
-    padding: 0 20px 20px 20px;
+    padding: 24px;
   }
 
   .topSection {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 28px;
   }
 
   .imageSection {
-    min-height: 250px;
+    min-height: 280px;
   }
 
   .programImage {
-    min-height: 250px;
+    min-height: 280px;
   }
 
   .programTitle {
@@ -433,20 +433,20 @@
 
   .descriptionSection,
   .additionalImagesSection {
-    padding: 16px;
+    padding: 20px;
   }
 
   .detailsGrid {
-    gap: 12px;
+    gap: 16px;
   }
 
   .additionalImagesGrid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 12px;
+    gap: 16px;
   }
 
   .modalFooter {
-    padding: 16px 20px 20px 20px;
+    padding: 20px 24px 24px 24px;
   }
 
   .closeModalButton {
@@ -456,20 +456,254 @@
 
 @media (max-width: 480px) {
   .modalHeader {
-    padding: 16px 16px 0 16px;
+    padding: 20px 20px 16px 20px;
   }
 
   .modalBody {
-    padding: 0 16px 16px 16px;
+    padding: 20px;
   }
 
   .descriptionSection,
   .detailsSection,
   .additionalImagesSection {
-    padding: 12px;
+    padding: 16px;
   }
 
   .additionalImagesGrid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Collaboration Mode Styles */
+.section {
+  margin-bottom: 32px;
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.section .sectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.organizationInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.orgCard,
+.adminCard {
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+}
+
+.orgHeader,
+.adminHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.orgIcon,
+.adminIcon {
+  color: #6b7280;
+  font-size: 18px;
+}
+
+.orgLabel,
+.adminLabel {
+  font-size: 15px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.orgDetails,
+.adminDetails {
+  margin-left: 0;
+}
+
+.orgName,
+.adminName {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.orgAcronym,
+.adminEmail {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 30px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #e5e7eb;
+}
+
+.timelineItem {
+  position: relative;
+  margin-bottom: 28px;
+}
+
+.timelineItem:last-child {
+  margin-bottom: 0;
+}
+
+.timelineIcon {
+  position: absolute;
+  left: -22px;
+  top: 0;
+  width: 40px;
+  height: 40px;
+  background-color: #3b82f6;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  border: 3px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.timelineContent {
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+}
+
+.timelineTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 6px;
+}
+
+.timelineDate {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.actionInfo {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.infoIcon {
+  color: #3b82f6;
+  font-size: 22px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.infoContent h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e40af;
+  margin: 0 0 10px 0;
+}
+
+.infoContent p {
+  font-size: 14px;
+  color: #1e40af;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.acceptButton,
+.declineButton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.acceptButton {
+  background-color: #10b981;
+  color: white;
+}
+
+.declineButton {
+  background-color: #ef4444;
+  color: white;
+}
+
+.acceptButton:disabled,
+.declineButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Mobile Responsive for Collaboration Mode */
+@media (max-width: 768px) {
+  .modalHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .titleSection {
+    margin-right: 0;
+  }
+  
+  .headerActions {
+    justify-content: space-between;
+  }
+  
+  .modalFooter {
+    flex-direction: column;
+  }
+  
+  .acceptButton,
+  .declineButton {
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .orgDetails,
+  .adminDetails {
+    margin-left: 24px;
+  }
+  
+  .orgCard,
+  .adminCard,
+  .timelineContent,
+  .actionInfo {
+    padding: 16px;
   }
 }

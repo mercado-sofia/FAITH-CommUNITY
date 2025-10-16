@@ -207,8 +207,16 @@ export default function ProgramDetailsPage() {
   const handleApplyClick = () => {
     if (program) {
       const programStatus = getProgramStatusByDates(program);
+      // Handle both boolean and numeric values (0/1 from database)
+      const acceptsVolunteers = program.accepts_volunteers !== false && program.accepts_volunteers !== 0 && program.accepts_volunteers !== '0';
       
       if (programStatus === 'Upcoming') {
+        // Check if program accepts volunteers
+        if (!acceptsVolunteers) {
+          // Do nothing - button is disabled
+          return;
+        }
+        
         // Check if user has already applied
         const hasApplied = isLoggedIn && userApplications.some(app => app.programId === program.id);
         
@@ -295,6 +303,10 @@ export default function ProgramDetailsPage() {
     // Use date-based status instead of database status
     const programStatus = getProgramStatusByDates(program);
 
+    // Check if program accepts volunteers (admin can close volunteer applications)
+    // Handle both boolean and numeric values (0/1 from database)
+    const acceptsVolunteers = program.accepts_volunteers !== false && program.accepts_volunteers !== 0 && program.accepts_volunteers !== '0';
+
     switch (programStatus) {
       case 'Upcoming':
         if (hasApplied) {
@@ -306,6 +318,12 @@ export default function ProgramDetailsPage() {
             isDisabled: true
           };
         }
+        
+        // Check if program is accepting volunteers
+        if (!acceptsVolunteers) {
+          return null; // Return null to hide the application panel entirely
+        }
+        
         return {
           title: 'Ready to Join?',
           text: 'Take the first step towards making a positive impact in your community. Apply now and become part of this meaningful program.',
@@ -492,31 +510,33 @@ export default function ProgramDetailsPage() {
 
           {/* Sidebar - Application Invitation and Other Programs */}
           <div className={styles.sidebar}>
-            {/* Application Invitation */}
-            <div className={`${styles.applicationPanel} ${styles.stickyCard}`}>
-              <div className={styles.invitationContent}>
-                <div className={styles.invitationIcon}>
-                  {applicationContent.icon}
+            {/* Application Invitation - Only show if applicationContent is not null */}
+            {applicationContent && (
+              <div className={`${styles.applicationPanel} ${styles.stickyCard}`}>
+                <div className={styles.invitationContent}>
+                  <div className={styles.invitationIcon}>
+                    {applicationContent.icon}
+                  </div>
+                  <h3 className={styles.invitationTitle}>{applicationContent.title}</h3>
+                  <p className={styles.invitationText}>
+                    {applicationContent.text}
+                  </p>
+                  <button 
+                    onClick={handleApplyClick}
+                    className={`${styles.applyButton} ${
+                      applicationContent.isDisabled 
+                        ? applicationContent.buttonText === 'Already Applied' 
+                          ? styles.applyButtonAlreadyApplied 
+                          : styles.applyButtonDisabled 
+                        : ''
+                    }`}
+                    disabled={applicationContent.isDisabled}
+                  >
+                    {applicationContent.buttonText}
+                  </button>
                 </div>
-                <h3 className={styles.invitationTitle}>{applicationContent.title}</h3>
-                <p className={styles.invitationText}>
-                  {applicationContent.text}
-                </p>
-                <button 
-                  onClick={handleApplyClick}
-                  className={`${styles.applyButton} ${
-                    applicationContent.isDisabled 
-                      ? applicationContent.buttonText === 'Already Applied' 
-                        ? styles.applyButtonAlreadyApplied 
-                        : styles.applyButtonDisabled 
-                      : ''
-                  }`}
-                  disabled={applicationContent.isDisabled}
-                >
-                  {applicationContent.buttonText}
-                </button>
               </div>
-            </div>
+            )}
 
             {/* Other Programs from Same Organization */}
             {otherPrograms.length > 0 && (

@@ -114,7 +114,6 @@ export const removeCollaboratorFromProgram = async (programId, adminId) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      // Log error details for debugging
       throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 
@@ -143,7 +142,6 @@ export const optOutCollaboration = async (collaborationId) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      // Log error details for debugging
       throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 

@@ -78,3 +78,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .modalOpen {
   overflow: hidden;
 }
+
+/* Font fallback definitions for removed Google Fonts */
+:root {
+  --font-roboto: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-source-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+}

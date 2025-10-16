@@ -2,6 +2,7 @@ import mysql from "mysql2";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import { logError, logInfo } from "./utils/logger.js";
 
 // Get the directory name properly in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -19,6 +20,7 @@ const dbConfig = {
   connectionLimit: 10,
   queueLimit: 0,
   multipleStatements: true,
+  acquireTimeout: 60000,
   typeCast: function (field, next) {
     if (field.type === 'JSON') {
       return JSON.parse(field.string());
@@ -265,11 +267,11 @@ const runIncrementalMigrations = async (connection) => {
       console.log('Admin notifications enum update skipped (may already be updated)');
     }
 
-    // Update programs_projects status enum to include new status values
+    // Update programs_projects status enum to only include program lifecycle statuses
     try {
       await connection.query(`
         ALTER TABLE programs_projects 
-        MODIFY COLUMN status ENUM('pending', 'approved', 'rejected', 'pending_superadmin_approval', 'pending_collaboration', 'declined', 'Upcoming', 'Active', 'Completed', 'Cancelled') DEFAULT 'pending'
+        MODIFY COLUMN status ENUM('Upcoming', 'Active', 'Completed', 'Cancelled') DEFAULT 'Upcoming'
       `);
       // Programs status enum updated successfully
     } catch (enumError) {
@@ -280,7 +282,7 @@ const runIncrementalMigrations = async (connection) => {
 
 
   } catch (error) {
-    console.error('❌ Incremental migrations failed:', error);
+    logError('Incremental migrations failed', error, { context: 'database' });
     throw error;
   }
 };
@@ -382,14 +384,15 @@ const initializeDatabase = async () => {
           slug VARCHAR(255) UNIQUE,
           description TEXT NOT NULL,
           category VARCHAR(100),
-          status ENUM('pending', 'approved', 'rejected', 'pending_superadmin_approval', 'pending_collaboration', 'declined') DEFAULT 'pending',
+          status ENUM('Upcoming', 'Active', 'Completed', 'Cancelled') DEFAULT 'Upcoming',
           image VARCHAR(500),
           event_start_date DATE NULL,
           event_end_date DATE NULL,
           date_completed DATE NULL,
           is_featured BOOLEAN DEFAULT FALSE,
-          is_approved BOOLEAN DEFAULT TRUE,
+          is_approved BOOLEAN DEFAULT FALSE, // SECURITY FIX: Require explicit approval
           is_collaborative BOOLEAN DEFAULT FALSE,
+          accepts_volunteers BOOLEAN DEFAULT TRUE, // Controls whether program accepts volunteer applications
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
@@ -397,7 +400,8 @@ const initializeDatabase = async () => {
           INDEX idx_programs_organization (organization_id),
           INDEX idx_programs_status (status),
           INDEX idx_programs_featured (is_featured),
-          INDEX idx_programs_approved (is_approved)
+          INDEX idx_programs_approved (is_approved),
+          INDEX idx_programs_accepts_volunteers (accepts_volunteers)
         )
       `);
 
@@ -433,7 +437,7 @@ const initializeDatabase = async () => {
           previous_data JSON,
           proposed_data JSON NOT NULL,
           submitted_by INT NOT NULL,
-          status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+          status ENUM('pending', 'approved', 'rejected', 'approved_pending_collaboration') DEFAULT 'pending',
           rejection_reason TEXT,
           submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -586,18 +590,23 @@ const initializeDatabase = async () => {
           await connection.query(`
         CREATE TABLE IF NOT EXISTS program_collaborations (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          program_id INT NOT NULL,
+          program_id INT NULL,
+          submission_id INT NULL,
           collaborator_admin_id INT NOT NULL,
           invited_by_admin_id INT NOT NULL,
           status ENUM('pending', 'accepted', 'declined') DEFAULT 'pending',
+          program_title VARCHAR(255) NULL,
           invited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           responded_at TIMESTAMP NULL,
           FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE CASCADE,
+          FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE,
           FOREIGN KEY (collaborator_admin_id) REFERENCES admins(id) ON DELETE CASCADE,
           FOREIGN KEY (invited_by_admin_id) REFERENCES admins(id) ON DELETE CASCADE,
           UNIQUE KEY unique_program_collaborator (program_id, collaborator_admin_id),
+          UNIQUE KEY unique_submission_collaborator (submission_id, collaborator_admin_id),
           INDEX idx_collaborator_status (collaborator_admin_id, status),
-          INDEX idx_program_status (program_id, status)
+          INDEX idx_program_status (program_id, status),
+          INDEX idx_submission_status (submission_id, status)
         )
       `);
 
@@ -1087,7 +1096,7 @@ const initializeDatabase = async () => {
 
     return promisePool;
   } catch (error) {
-    console.error('❌ Database initialization failed:', error);
+    logError('Database initialization failed', error, { context: 'database' });
     throw error;
   } finally {
     connection.release();
@@ -1097,7 +1106,7 @@ const initializeDatabase = async () => {
 // Initialize database immediately
 initializeDatabase().then(() => {
 }).catch(error => {
-  console.error('❌ Database initialization failed:', error);
+  logError('Database initialization failed', error, { context: 'database' });
   process.exit(1);
 });
 

@@ -44,6 +44,13 @@ const nextConfig = {
   
   // Enable compression for better performance
   compress: true,
+  
+  // Font optimization is enabled by default in Next.js
+  
+  // Network timeout configuration
+  env: {
+    NEXT_FONT_GOOGLE_MOCKED_RESPONSES: process.env.NODE_ENV === 'development' ? '1' : '0',
+  },
 }
 
 module.exports = nextConfig

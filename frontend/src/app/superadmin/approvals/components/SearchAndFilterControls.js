@@ -158,13 +158,13 @@ const SearchAndFilterControls = ({
               }}>
                 All Section
               </li>
-              {["programs", "competency", "advocacy", "collaborative_programs"].map((section) => (
+              {["programs", "competency", "advocacy"].map((section) => (
                 <li key={section} onClick={(e) => {
                   e.stopPropagation();
                   onSectionChange({ target: { value: section } });
                   setShowDropdown(null);
                 }}>
-                  {section === 'collaborative_programs' ? 'Collaborative Programs' : section.charAt(0).toUpperCase() + section.slice(1)}
+                  {section.charAt(0).toUpperCase() + section.slice(1)}
                 </li>
               ))}
             </ul>

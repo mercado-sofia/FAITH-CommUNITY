@@ -105,7 +105,7 @@ export function useCollaborationRequests() {
       setError(error.message);
       throw error;
     }
-  }, [fetchCollaborations]);
+  }, []);
 
   const declineCollaboration = useCallback(async (collaborationId) => {
     try {
@@ -135,7 +135,7 @@ export function useCollaborationRequests() {
       setError(error.message);
       throw error;
     }
-  }, [fetchCollaborations]);
+  }, []);
 
   useEffect(() => {
     fetchCollaborations();

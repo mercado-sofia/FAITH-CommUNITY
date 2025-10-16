@@ -193,8 +193,8 @@ export default function ConfirmationModal({
             }
             disabled={isDeleting}
           >
-            {isDeleting ? <FaSpinner className={styles.spinner} /> : null}
             {actionContent.buttonText}
+            {isDeleting ? <FaSpinner className={styles.spinner} /> : null}
           </button>
         </div>
       </div>

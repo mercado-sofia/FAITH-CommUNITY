@@ -155,12 +155,23 @@
   text-transform: uppercase;
   border-bottom-left-radius: 12px;
   border-top-right-radius: 12px;
+  max-width: 80%;
+  word-wrap: break-word;
+  line-height: 1.2;
 }
 
 /* Transparent background badge - white text */
 .cardBadgeTransparent {
   color: white !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Collaborative badge styling */
+.cardBadgeCollaborative {
+  background: linear-gradient(135deg, #2D5A87 0%, #1E3A5F 100%) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(45, 90, 135, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* Card Content */
@@ -327,6 +338,7 @@
   .cardBadge {
     font-size: 14px;
     padding: 10px 16px;
+    max-width: 85%;
   }
 }
 
@@ -377,5 +389,6 @@
   .cardBadge {
     font-size: 13px;
     padding: 8px 14px;
+    max-width: 90%;
   }
 }

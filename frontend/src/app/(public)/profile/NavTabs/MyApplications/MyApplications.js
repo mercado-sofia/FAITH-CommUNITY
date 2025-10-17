@@ -67,6 +67,7 @@ export default function MyApplications() {
     switch (status.toLowerCase()) {
       case 'approved':
         return 'Approved';
+      case 'rejected':
       case 'declined':
         return 'Declined';
       case 'cancelled':
@@ -91,14 +92,20 @@ export default function MyApplications() {
 
   const canDeleteApplication = (status) => {
     const lowerStatus = status.toLowerCase();
-    // Only pending and declined applications can be deleted
+    // Only pending and declined/rejected applications can be deleted
     // Cancelled and completed applications are kept for historical records
-    return lowerStatus === 'pending' || lowerStatus === 'declined';
+    return lowerStatus === 'pending' || lowerStatus === 'declined' || lowerStatus === 'rejected';
   };
 
 
   const filteredApplications = applications.filter(app => {
     if (filter === 'all') return true;
+    
+    // Handle declined/rejected status mapping
+    if (filter === 'declined') {
+      return app.status.toLowerCase() === 'declined' || app.status.toLowerCase() === 'rejected';
+    }
+    
     return app.status.toLowerCase() === filter.toLowerCase();
   });
 
@@ -386,7 +393,7 @@ export default function MyApplications() {
           className={`${styles.filterTab} ${filter === 'declined' ? styles.active : ''}`}
           onClick={() => setFilter('declined')}
         >
-          Declined ({applications.filter(app => app.status.toLowerCase() === 'declined').length})
+          Declined ({applications.filter(app => app.status.toLowerCase() === 'declined' || app.status.toLowerCase() === 'rejected').length})
         </button>
         <button
           className={`${styles.filterTab} ${filter === 'cancelled' ? styles.active : ''}`}
@@ -582,7 +589,7 @@ export default function MyApplications() {
 
                     {/* Status Badge - Bottom Right */}
                     <div className={styles.statusContainer}>
-                      <span className={`${styles.statusBadge} ${styles[`status${application.status.charAt(0).toUpperCase() + application.status.slice(1).toLowerCase()}`]}`}>
+                      <span className={`${styles.statusBadge} ${styles[`status${application.status.charAt(0).toUpperCase() + application.status.slice(1)}`]}`}>
                         {getStatusText(application.status)}
                       </span>
                     </div>

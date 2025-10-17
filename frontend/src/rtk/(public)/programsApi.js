@@ -60,7 +60,9 @@ export const programsApi = createApi({
             orgColor: project.orgColor,
             category: project.category,
             created_at: project.created_at,
-            slug: project.slug
+            slug: project.slug,
+            is_collaborative: project.is_collaborative,
+            collaborators: project.collaborators
           }))
         }
         return []

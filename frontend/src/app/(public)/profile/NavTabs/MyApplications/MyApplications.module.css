@@ -304,7 +304,8 @@
   border-color: #e2f7f0;
 }
 
-.statusRejected {
+.statusRejected,
+.statusDeclined {
   background: #fef2f2;
   color: #dc2626;
   border-color: #fef2f2;

@@ -76,6 +76,27 @@ export default function ImpactSection() {
       // Use the optimized date processing utility
       const { displayDate, status, dateColor, CalendarIcon } = processProjectDates(project);
 
+      // Handle organization display for collaborations
+      let organizationDisplay = project.orgAcronym || 'FAITH';
+      let orgColor = project.orgColor;
+      let isCollaborative = false;
+      
+      if (project.is_collaborative && project.collaborators && project.collaborators.length > 0) {
+        // Create collaboration display text
+        // Now collaborators array includes both primary and collaborator organizations
+        const allOrgAcronyms = project.collaborators.map(collab => collab.organization_acronym).filter(Boolean);
+        if (allOrgAcronyms.length > 1) {
+          // Multiple organizations involved
+          organizationDisplay = allOrgAcronyms.join(' & ');
+          isCollaborative = true;
+          // Use a special collaboration color instead of org color
+          orgColor = '#2D5A87'; // Professional blue color for collaborations
+        } else if (allOrgAcronyms.length === 1) {
+          // Only one organization (shouldn't happen for collaborative, but handle gracefully)
+          organizationDisplay = allOrgAcronyms[0];
+        }
+      }
+
       return {
         image: project.image ? 
           getFeaturedProjectImageUrl(project.image)
@@ -83,8 +104,10 @@ export default function ImpactSection() {
         title: project.title || 'Featured Project',
         date: displayDate,
         description: project.description || 'An amazing project making a difference in the community.',
-        organization: project.orgAcronym || 'FAITH',
-        orgColor: project.orgColor,
+        organization: organizationDisplay,
+        orgColor: orgColor,
+        isCollaborative: isCollaborative,
+        collaborators: project.collaborators || [],
         status,
         dateColor,
         CalendarIcon,
@@ -224,9 +247,13 @@ export default function ImpactSection() {
                     />
                   )}
                   <div
-                    className={`${styles.cardBadge} ${!card.orgColor || card.orgColor === '#ffffff' ? styles.cardBadgeTransparent : ''}`}
+                    className={`${styles.cardBadge} ${
+                      card.isCollaborative 
+                        ? styles.cardBadgeCollaborative 
+                        : (!card.orgColor || card.orgColor === '#ffffff' ? styles.cardBadgeTransparent : '')
+                    }`}
                     style={{ 
-                      backgroundColor: card.orgColor && card.orgColor !== '#ffffff' ? 
+                      backgroundColor: !card.isCollaborative && card.orgColor && card.orgColor !== '#ffffff' ? 
                         `${card.orgColor}CC` :
                         'transparent' 
                     }}

@@ -274,7 +274,9 @@ export const getProgramsByOrg = async (req, res) => {
         orgID: program.orgAcronym || organization.org,
         orgName: program.orgName || organization.orgName,
         orgLogo: logoUrl,
-        slug: program.slug
+        slug: program.slug,
+        is_collaborative: program.is_collaborative,
+        collaborators: program.collaborators
       };
     });
 
@@ -503,7 +505,9 @@ export const getApprovedProgramsByOrg = async (req, res) => {
         orgName: program.orgName,
         orgLogo: logoUrl,
         created_at: program.created_at,
-        slug: program.slug
+        slug: program.slug,
+        is_collaborative: program.is_collaborative,
+        collaborators: program.collaborators
       };
     });
 
@@ -971,7 +975,9 @@ export const getAllFeaturedPrograms = async (req, res) => {
         orgColor: program.orgColor,
         orgLogo: logoUrl,
         created_at: program.created_at,
-        slug: program.slug
+        slug: program.slug,
+        is_collaborative: program.is_collaborative,
+        collaborators: program.collaborators
       };
     });
 
@@ -999,7 +1005,7 @@ export const getFeaturedPrograms = async (req, res) => {
       ORDER BY p.created_at DESC
     `);
 
-    // Get multiple dates and additional images for each program
+    // Get multiple dates, additional images, and collaboration data for each program
     const programsWithDates = await Promise.all(rows.map(async (program) => {
       let multipleDates = [];
       
@@ -1025,10 +1031,53 @@ export const getFeaturedPrograms = async (req, res) => {
       );
       const additionalImages = imageRows.map(row => row.image_data);
 
+      // Get collaboration data if program is collaborative
+      let collaborators = [];
+      if (program.is_collaborative) {
+        // Get all organizations involved in the collaboration
+        // This includes both the primary organization and accepted collaborators
+        const [collaborationRows] = await db.execute(`
+          SELECT DISTINCT
+            o.orgName as organization_name,
+            o.org as organization_acronym,
+            o.org_color as organization_color,
+            CASE 
+              WHEN o.id = ? THEN 'primary'
+              ELSE 'collaborator'
+            END as role
+          FROM (
+            -- Primary organization (the one that created the program)
+            SELECT ? as org_id, 'primary' as role
+            
+            UNION ALL
+            
+            -- Collaborator organizations (those who accepted collaboration)
+            SELECT o.id as org_id, 'collaborator' as role
+            FROM program_collaborations pc
+            LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+            LEFT JOIN organizations o ON a.organization_id = o.id
+            WHERE pc.program_id = ? AND pc.status = 'accepted'
+          ) org_roles
+          LEFT JOIN organizations o ON org_roles.org_id = o.id
+          WHERE o.id IS NOT NULL
+          ORDER BY 
+            CASE WHEN org_roles.role = 'primary' THEN 0 ELSE 1 END,
+            o.orgName ASC
+        `, [program.organization_id, program.organization_id, program.id]);
+        
+        collaborators = collaborationRows.map(collab => ({
+          organization_name: collab.organization_name,
+          organization_acronym: collab.organization_acronym,
+          organization_color: collab.organization_color,
+          role: collab.role
+        }));
+      }
+
       return {
         ...program,
         multiple_dates: multipleDates,
-        additional_images: additionalImages
+        additional_images: additionalImages,
+        collaborators: collaborators
       };
     }));
 
@@ -1060,7 +1109,9 @@ export const getFeaturedPrograms = async (req, res) => {
         orgColor: program.orgColor,
         orgLogo: logoUrl,
         created_at: program.created_at,
-        slug: program.slug
+        slug: program.slug,
+        is_collaborative: program.is_collaborative,
+        collaborators: program.collaborators
       };
     });
 

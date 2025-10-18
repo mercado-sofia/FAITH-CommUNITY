@@ -5,7 +5,8 @@ import styles from './OrgHeadsCarousel.module.css';
 import Image from 'next/image';
 import { FaFacebookF, FaEnvelope, FaPlus } from 'react-icons/fa';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { getOrganizationImageUrl } from '@/utils/uploadPaths';
+import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
+import { UnavailableImagePlaceholder } from '@/components';
 
 export default function OrgHeadsCarousel({ heads }) {
   const scrollRef = useRef(null);
@@ -64,21 +65,43 @@ export default function OrgHeadsCarousel({ heads }) {
                   <div key={i} className={styles.orgheadsWrapperItem}>
                     <div className={styles.imageContainer}>
                       {head.photo ? (
-                        <Image
-                          src={getOrganizationImageUrl(head.photo, 'head')}
-                          alt={head.head_name || head.name || 'Organization Head'}
-                          width={240}
-                          height={280}
+                        (() => {
+                          const headImageUrl = getOrganizationImageUrl(head.photo, 'head');
+                          if (isUnavailableImage(headImageUrl)) {
+                            return (
+                              <UnavailableImagePlaceholder 
+                                width="240px" 
+                                height="280px" 
+                                text="Photo Unavailable"
+                                className={styles.headImage}
+                              />
+                            );
+                          }
+                          return (
+                            <Image
+                              src={headImageUrl}
+                              alt={head.head_name || head.name || 'Organization Head'}
+                              width={240}
+                              height={280}
+                              className={styles.headImage}
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                          );
+                        })()
+                      ) : (
+                        <UnavailableImagePlaceholder 
+                          width="240px" 
+                          height="280px" 
+                          text="No Photo"
                           className={styles.headImage}
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
-                          }}
                         />
-                      ) : null}
+                      )}
                       <div 
                         className={styles.noImageFallback}
-                        style={{ display: head.photo ? 'none' : 'flex' }}
+                        style={{ display: 'none' }}
                       >
                         <span>No Image</span>
                       </div>

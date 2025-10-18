@@ -8,7 +8,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
 import { formatDateLong, formatApplicationProgramDates } from '@/utils/dateUtils';
-import { getOrganizationImageUrl } from '@/utils/uploadPaths';
+import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
+import { UnavailableImagePlaceholder } from '@/components';
 import styles from './ApplicationDetailsModal.module.css';
 import sharedStyles from './MyApplications.module.css';
 
@@ -145,12 +146,44 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
                 
                 {application.organizationName && (
                   <div className={styles.organizationInfo}>
-                    {application.orgLogo && (
-                      <Image 
-                        src={getOrganizationImageUrl(application.orgLogo)}
-                        alt={`${application.organizationName} logo`}
-                        width={24}
-                        height={24}
+                    {application.orgLogo ? (
+                      (() => {
+                        const orgImageUrl = getOrganizationImageUrl(application.orgLogo);
+                        if (isUnavailableImage(orgImageUrl)) {
+                          return (
+                            <UnavailableImagePlaceholder 
+                              width="24px" 
+                              height="24px" 
+                              text="Logo"
+                              className={styles.organizationLogo}
+                              style={{
+                                borderRadius: '50%',
+                                objectFit: 'cover',
+                                overflow: 'hidden'
+                              }}
+                            />
+                          );
+                        }
+                        return (
+                          <Image 
+                            src={orgImageUrl}
+                            alt={`${application.organizationName} logo`}
+                            width={24}
+                            height={24}
+                            className={styles.organizationLogo}
+                            style={{
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              overflow: 'hidden'
+                            }}
+                          />
+                        );
+                      })()
+                    ) : (
+                      <UnavailableImagePlaceholder 
+                        width="24px" 
+                        height="24px" 
+                        text="Logo"
                         className={styles.organizationLogo}
                         style={{
                           borderRadius: '50%',

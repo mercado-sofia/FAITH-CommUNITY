@@ -32,7 +32,6 @@ export const getAdminHighlights = async (req, res) => {
     
     res.json({ highlights });
   } catch (error) {
-    console.error('Error fetching admin highlights:', error);
     res.status(500).json({ error: 'Failed to fetch highlights' });
   }
 };
@@ -70,7 +69,6 @@ export const getHighlightById = async (req, res) => {
     
     res.json({ highlight });
   } catch (error) {
-    console.error('Error fetching highlight:', error);
     res.status(500).json({ error: 'Failed to fetch highlight' });
   }
 };
@@ -139,7 +137,6 @@ export const createHighlight = async (req, res) => {
     });
   } catch (error) {
     await connection.rollback();
-    console.error('Error creating highlight:', error);
     res.status(500).json({ error: 'Failed to create highlight' });
   } finally {
     connection.release();
@@ -223,7 +220,6 @@ export const updateHighlight = async (req, res) => {
     });
   } catch (error) {
     await connection.rollback();
-    console.error('Error updating highlight:', error);
     res.status(500).json({ error: 'Failed to update highlight' });
   } finally {
     connection.release();
@@ -278,7 +274,6 @@ export const deleteHighlight = async (req, res) => {
     res.json({ message: 'Highlight deleted successfully' });
   } catch (error) {
     await connection.rollback();
-    console.error('Error deleting highlight:', error);
     res.status(500).json({ error: 'Failed to delete highlight' });
   } finally {
     connection.release();
@@ -356,7 +351,6 @@ export const getAllHighlightsForApproval = async (req, res) => {
     
     res.json({ highlights });
   } catch (error) {
-    console.error('Error fetching highlights for approval:', error);
     res.status(500).json({ error: 'Failed to fetch highlights for approval' });
   }
 };
@@ -408,7 +402,6 @@ export const updateHighlightStatus = async (req, res) => {
     });
   } catch (error) {
     await connection.rollback();
-    console.error('Error updating highlight status:', error);
     res.status(500).json({ error: 'Failed to update highlight status' });
   } finally {
     connection.release();
@@ -444,7 +437,6 @@ export const getApprovedHighlights = async (req, res) => {
     
     res.json({ highlights });
   } catch (error) {
-    console.error('Error fetching approved highlights:', error);
     res.status(500).json({ error: 'Failed to fetch approved highlights' });
   }
 };

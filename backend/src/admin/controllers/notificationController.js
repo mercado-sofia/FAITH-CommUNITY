@@ -39,7 +39,6 @@ class NotificationController {
         total: total
       });
     } catch (error) {
-      console.error('Error fetching notifications:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to fetch notifications'
@@ -73,7 +72,6 @@ class NotificationController {
         message: 'Notification marked as read'
       });
     } catch (error) {
-      console.error('Error marking notification as read:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to mark notification as read'
@@ -99,7 +97,6 @@ class NotificationController {
         message: 'All notifications marked as read'
       });
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to mark notifications as read'
@@ -125,7 +122,6 @@ class NotificationController {
         count: result[0].count
       });
     } catch (error) {
-      console.error('Error fetching unread count:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to fetch unread count'
@@ -158,7 +154,6 @@ class NotificationController {
         message: 'Notification deleted successfully'
       });
     } catch (error) {
-      console.error('Error deleting notification:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to delete notification'
@@ -181,7 +176,6 @@ class NotificationController {
         notificationId: result.insertId
       };
     } catch (error) {
-      console.error('Error creating notification:', error);
       return {
         success: false,
         error: error.message
@@ -204,7 +198,6 @@ class NotificationController {
         notificationId: result.insertId
       };
     } catch (error) {
-      console.error('Error creating notification:', error);
       return {
         success: false,
         error: error.message

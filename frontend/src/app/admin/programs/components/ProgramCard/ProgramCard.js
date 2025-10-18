@@ -7,6 +7,7 @@ import { TbListDetails } from 'react-icons/tb';
 import { FiTrash2 } from 'react-icons/fi';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import { formatProgramDates, formatDateShort } from '@/utils/dateUtils.js';
+import { getProgramStatusByDates } from '@/utils/programStatusUtils';
 import CollaborationBadge from '../CollaborationBadge/CollaborationBadge';
 import ProgramActions from './ProgramActions';
 import ProgramModals from './ProgramModals';
@@ -58,44 +59,6 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
     isCollaborationCard
   });
 
-  // Helper function to determine program status based on dates
-  const getProgramStatusByDates = (data) => {
-    // ALWAYS prioritize explicit database status over ANY date calculations
-    // This allows users to manually override date-based status
-    if (data.status === 'Active' || data.status === 'Completed' || data.status === 'Upcoming') {
-      return data.status;
-    }
-
-    // Only use date-based logic if no explicit status is set
-    if (!data.event_start_date) {
-      // If no start date, use the database status or default to Active
-      return data.status || 'Active';
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time to start of day
-    
-    const startDate = new Date(data.event_start_date);
-    startDate.setHours(0, 0, 0, 0);
-    
-    const endDate = data.event_end_date ? new Date(data.event_end_date) : null;
-    if (endDate) {
-      endDate.setHours(23, 59, 59, 999); // Set to end of day
-    }
-
-    // If start date is in the future, it's upcoming
-    if (startDate > today) {
-      return 'Upcoming';
-    }
-    
-    // If end date exists and is in the past, it's completed
-    if (endDate && endDate < today) {
-      return 'Completed';
-    }
-    
-    // If start date is today or in the past, and either no end date or end date is today or in the future, it's active
-    return 'Active';
-  };
 
 
   // Handle clicks outside dropdown to close it
@@ -140,7 +103,7 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
       // For collaboration cards, use the collaboration status directly
       return normalizedData.status || 'pending';
     } else {
-      // For regular program cards, use date-based status
+      // For regular program cards, use the shared status calculation utility
       return getProgramStatusByDates(normalizedData);
     }
   };

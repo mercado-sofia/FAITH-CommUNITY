@@ -37,8 +37,6 @@ export const useApiCall = () => {
       }
 
       if (!response.ok) {
-        // Log error details for debugging
-        
         // Handle different error response formats
         let errorMessage;
         if (typeof data === 'string') {

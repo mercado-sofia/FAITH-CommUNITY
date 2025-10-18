@@ -279,6 +279,22 @@ const runIncrementalMigrations = async (connection) => {
       console.log('Programs status enum update skipped (may already be updated)');
     }
 
+    // Add manual_status_override field to programs_projects table
+    try {
+      await connection.query(`
+        ALTER TABLE programs_projects 
+        ADD COLUMN manual_status_override BOOLEAN DEFAULT FALSE
+      `);
+      await connection.query(`
+        ALTER TABLE programs_projects 
+        ADD INDEX idx_programs_manual_override (manual_status_override)
+      `);
+      console.log('Added manual_status_override field to programs_projects table');
+    } catch (columnError) {
+      // If the column already exists, skip
+      console.log('manual_status_override field already exists or could not be added');
+    }
+
 
 
   } catch (error) {
@@ -393,6 +409,7 @@ const initializeDatabase = async () => {
           is_approved BOOLEAN DEFAULT FALSE, // SECURITY FIX: Require explicit approval
           is_collaborative BOOLEAN DEFAULT FALSE,
           accepts_volunteers BOOLEAN DEFAULT TRUE, // Controls whether program accepts volunteer applications
+          manual_status_override BOOLEAN DEFAULT FALSE, // Indicates if admin manually set the status
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
@@ -401,7 +418,8 @@ const initializeDatabase = async () => {
           INDEX idx_programs_status (status),
           INDEX idx_programs_featured (is_featured),
           INDEX idx_programs_approved (is_approved),
-          INDEX idx_programs_accepts_volunteers (accepts_volunteers)
+          INDEX idx_programs_accepts_volunteers (accepts_volunteers),
+          INDEX idx_programs_manual_override (manual_status_override)
         )
       `);
 

@@ -6,3 +6,4 @@ export { default as OptimizedImage } from './OptimizedImage/OptimizedImage';
 export { default as SuccessModal } from './SuccessModal/SuccessModal';
 export { default as ConfirmationModal } from './ConfirmationModal/ConfirmationModal';
 export { default as ContactFormModal } from './ContactFormModal/ContactFormModal';
+export { default as UnavailableImagePlaceholder } from './UnavailableImagePlaceholder/UnavailableImagePlaceholder';

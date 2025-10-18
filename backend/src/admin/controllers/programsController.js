@@ -664,10 +664,10 @@ export const updateProgram = async (req, res) => {
     // If image is null, keep the existing image (imagePath already set to existingProgram[0].image)
 
     // Updating program in database
-    // Update the program
+    // Update the program and reset manual status override (admin is updating, so let dates determine status)
     const [result] = await db.execute(
       `UPDATE programs_projects 
-       SET title = ?, description = ?, category = ?, status = ?, image = ?, event_start_date = ?, event_end_date = ?, accepts_volunteers = ?
+       SET title = ?, description = ?, category = ?, status = ?, image = ?, event_start_date = ?, event_end_date = ?, accepts_volunteers = ?, manual_status_override = FALSE
        WHERE id = ?`,
       [title, description, category, status || 'active', imagePath, event_start_date || null, event_end_date || null, accepts_volunteers !== undefined ? accepts_volunteers : true, id]
     );
@@ -1248,8 +1248,8 @@ export const getProgramBySlug = async (req, res) => {
   }
 };
 
-// Get other programs from the same organization (excluding current program)
-export const getOtherProgramsByOrganization = async (req, res) => {
+// Get related programs from the same organization (excluding current program)
+export const getRelatedProgramsByOrganization = async (req, res) => {
   try {
     const { organizationId, excludeProgramId } = req.params;
     
@@ -1403,8 +1403,8 @@ export const addProgramProject = async (req, res) => {
     }
 
     const [result] = await db.execute(
-      `INSERT INTO programs_projects (organization_id, title, description, category, event_start_date, event_end_date, image, status, slug, is_approved, is_collaborative)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO programs_projects (organization_id, title, description, category, event_start_date, event_end_date, image, status, slug, is_approved, is_collaborative, manual_status_override)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         adminOrgId, 
         title, 
@@ -1416,7 +1416,8 @@ export const addProgramProject = async (req, res) => {
         'Upcoming', // Default status for new programs 
         finalSlug, 
         false, // SECURITY FIX: Always require superadmin approval - never auto-approve
-        collaborators && collaborators.length > 0
+        collaborators && collaborators.length > 0,
+        false // New programs start with automatic status (no manual override)
       ]
     );
 
@@ -1541,7 +1542,7 @@ export const updateProgramProject = async (req, res) => {
 
     await db.execute(
       `UPDATE programs_projects
-       SET title = ?, description = ?, image = COALESCE(?, image), status = ?${slugUpdate}
+       SET title = ?, description = ?, image = COALESCE(?, image), status = ?, manual_status_override = FALSE${slugUpdate}
        WHERE id = ?`,
       title ? [title, description ?? null, image, status ?? 'pending', slugValue, id] 
             : [title, description ?? null, image, status ?? 'pending', id]
@@ -1712,9 +1713,9 @@ export const markProgramAsCompleted = async (req, res) => {
       });
     }
 
-    // Update program status to completed
+    // Update program status to completed and mark as manually set
     await db.execute(
-      "UPDATE programs_projects SET status = 'Completed' WHERE id = ?",
+      "UPDATE programs_projects SET status = 'Completed', manual_status_override = TRUE WHERE id = ?",
       [id]
     );
 
@@ -1761,9 +1762,9 @@ export const markProgramAsActive = async (req, res) => {
       });
     }
 
-    // Update program status to active
+    // Update program status to active and mark as manually set
     await db.execute(
-      "UPDATE programs_projects SET status = 'Active' WHERE id = ?",
+      "UPDATE programs_projects SET status = 'Active', manual_status_override = TRUE WHERE id = ?",
       [id]
     );
 

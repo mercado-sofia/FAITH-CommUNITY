@@ -6,7 +6,8 @@ import Link from 'next/link';
 import styles from './ProgramPreview.module.css';
 import { FaUsers, FaCalendarAlt } from 'react-icons/fa';
 import { formatProgramDates } from '@/utils/dateUtils';
-import { getOrganizationImageUrl } from '@/utils/uploadPaths';
+import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
+import { UnavailableImagePlaceholder } from '@/components';
 
 export default function ProgramPreview({ selectedProgram, isLoading }) {
   const [imageError, setImageError] = useState(false);
@@ -82,30 +83,52 @@ export default function ProgramPreview({ selectedProgram, isLoading }) {
             </Link>
             <Link href={`/programs/org/${selectedProgram.orgAcronym || selectedProgram.orgID}`} className={styles.organizationLink}>
               {selectedProgram.orgLogo ? (
-                <Image
-                  src={getOrganizationImageUrl(selectedProgram.orgLogo)}
-                  alt={`${selectedProgram.orgName || 'Organization'} logo`}
-                  width={24}
-                  height={24}
+                (() => {
+                  const orgImageUrl = getOrganizationImageUrl(selectedProgram.orgLogo);
+                  if (isUnavailableImage(orgImageUrl)) {
+                    return (
+                      <UnavailableImagePlaceholder 
+                        width="24px" 
+                        height="24px" 
+                        text="Logo"
+                        className={styles.organizationIcon}
+                      />
+                    );
+                  }
+                  return (
+                    <Image
+                      src={orgImageUrl}
+                      alt={`${selectedProgram.orgName || 'Organization'} logo`}
+                      width={24}
+                      height={24}
+                      className={styles.organizationIcon}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        // Show the fallback icon
+                        const fallback = e.target.nextSibling;
+                        if (fallback) {
+                          fallback.style.display = 'flex';
+                        }
+                      }}
+                      onLoad={(e) => {
+                        // Hide the fallback icon when image loads successfully
+                        const fallback = e.target.nextSibling;
+                        if (fallback) {
+                          fallback.style.display = 'none';
+                        }
+                      }}
+                    />
+                  );
+                })()
+              ) : (
+                <UnavailableImagePlaceholder 
+                  width="24px" 
+                  height="24px" 
+                  text="Logo"
                   className={styles.organizationIcon}
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    // Show the fallback icon
-                    const fallback = e.target.nextSibling;
-                    if (fallback) {
-                      fallback.style.display = 'flex';
-                    }
-                  }}
-                  onLoad={(e) => {
-                    // Hide the fallback icon when image loads successfully
-                    const fallback = e.target.nextSibling;
-                    if (fallback) {
-                      fallback.style.display = 'none';
-                    }
-                  }}
                 />
-              ) : null}
-              <div className={styles.organizationIconFallback} style={{ display: selectedProgram.orgLogo ? 'none' : 'flex' }}>
+              )}
+              <div className={styles.organizationIconFallback} style={{ display: 'none' }}>
                 <span className={styles.fallbackText}>
                   {selectedProgram.orgName ? selectedProgram.orgName.charAt(0).toUpperCase() : 'O'}
                 </span>

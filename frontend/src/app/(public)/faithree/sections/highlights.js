@@ -44,7 +44,6 @@ export default function Highlights({ onClose }) {
         
         setStories(transformedHighlights);
       } catch (error) {
-        console.error('Error fetching highlights:', error);
         setError('Failed to load highlights');
         setStories([]);
       } finally {

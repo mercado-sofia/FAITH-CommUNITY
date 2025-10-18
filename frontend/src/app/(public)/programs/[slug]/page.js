@@ -7,10 +7,12 @@ import Link from 'next/link';
 import styles from './programDetails.module.css';
 import Loader from '../../../../components/ui/Loader/Loader';
 import { ContactFormModal } from '../../../../components/ui';
-import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
-import OtherProgramsCarousel from '../components/OtherProgramsCarousel/OtherProgramsCarousel';
+import { getProgramImageUrl, getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
+import { UnavailableImagePlaceholder } from '@/components';
 import CollaborationDisplay from '../components/CollaborationDisplay/CollaborationDisplay';
+import { RelatedPrograms } from '../components';
 import { usePublicPageLoader } from '../../hooks/usePublicPageLoader';
+import { getProgramStatusByDates } from '@/utils/programStatusUtils';
 
 // Custom functions to preserve exact date formatting for program details
 const formatEventDateWithWeekday = (dateString) => {
@@ -50,41 +52,11 @@ export default function ProgramDetailsPage() {
   const [isFetchingProgram, setIsFetchingProgram] = useState(false);
   const [userApplications, setUserApplications] = useState([]);
   const [showContactModal, setShowContactModal] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   // Use centralized page loader hook
   const { loading: pageLoading, pageReady } = usePublicPageLoader(`program-${slug}`);
 
-  // Helper function to determine program status based on dates
-  const getProgramStatusByDates = (program) => {
-    if (!program || !program.event_start_date) {
-      // If no start date, use the database status
-      return program?.status || 'Active';
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time to start of day
-    
-    const startDate = new Date(program.event_start_date);
-    startDate.setHours(0, 0, 0, 0);
-    
-    const endDate = program.event_end_date ? new Date(program.event_end_date) : null;
-    if (endDate) {
-      endDate.setHours(23, 59, 59, 999); // Set to end of day
-    }
-
-    // If start date is in the future, it's upcoming
-    if (startDate > today) {
-      return 'Upcoming';
-    }
-    
-    // If end date exists and is in the past, it's completed
-    if (endDate && endDate < today) {
-      return 'Completed';
-    }
-    
-    // If start date is today or in the past, and either no end date or end date is today or in the future, it's active
-    return 'Active';
-  };
 
   // Check user authentication status and fetch applications
   useEffect(() => {
@@ -203,20 +175,42 @@ export default function ProgramDetailsPage() {
     }
   }, [slug, pageReady, pageLoading]);
 
+  // Image carousel functions
+  const getAllImages = () => {
+    if (!program) return [];
+    const images = [];
+    if (program.image) {
+      images.push({ src: getProgramImageUrl(program.image), alt: program.title, isMain: true });
+    }
+    if (program.additional_images && program.additional_images.length > 0) {
+      program.additional_images.forEach((imagePath, index) => {
+        images.push({ 
+          src: getProgramImageUrl(imagePath), 
+          alt: `${program.title} - Image ${index + 1}`, 
+          isMain: false 
+        });
+      });
+    }
+    return images;
+  };
+
+  const goToNextImage = () => {
+    const images = getAllImages();
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const goToPreviousImage = () => {
+    const images = getAllImages();
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const goToImage = (index) => {
+    setCurrentImageIndex(index);
+  };
 
   const handleApplyClick = () => {
     if (program) {
-      const programStatus = getProgramStatusByDates(program);
-      // Handle both boolean and numeric values (0/1 from database)
-      const acceptsVolunteers = program.accepts_volunteers !== false && program.accepts_volunteers !== 0 && program.accepts_volunteers !== '0';
-      
       if (programStatus === 'Upcoming') {
-        // Check if program accepts volunteers
-        if (!acceptsVolunteers) {
-          // Do nothing - button is disabled
-          return;
-        }
-        
         // Check if user has already applied
         const hasApplied = isLoggedIn && userApplications.some(app => app.programId === program.id);
         
@@ -233,13 +227,9 @@ export default function ProgramDetailsPage() {
         }
       } else if (programStatus !== 'Upcoming' && programStatus !== 'Active' && programStatus !== 'Completed') {
         // Handle Contact Organization button click
-        handleContactOrganization();
+        setShowContactModal(true);
       }
     }
-  };
-
-  const handleContactOrganization = () => {
-    setShowContactModal(true);
   };
 
   const getStatusClass = (status) => {
@@ -262,7 +252,7 @@ export default function ProgramDetailsPage() {
         return formatEventDateWithWeekday(program.multiple_dates[0]);
       } else {
         const dates = program.multiple_dates.map(date => formatEventDateShort(date));
-        return `Multiple Dates: ${dates.join(', ')}`;
+        return dates.join(', ');
       }
     }
     
@@ -285,10 +275,11 @@ export default function ProgramDetailsPage() {
       return formatEventDateWithWeekday(program.event_start_date);
     }
     
-    return 'Coming Soon';
+    // No event date set - return null to hide the section
+    return null;
   };
 
-  const getApplicationContent = () => {
+  const getApplicationContent = (programStatus) => {
     if (!program) return {
       title: 'Program Not Found',
       text: 'The program you are looking for could not be found.',
@@ -299,13 +290,15 @@ export default function ProgramDetailsPage() {
 
     // Check if user has already applied to this program
     const hasApplied = isLoggedIn && userApplications.some(app => app.programId === program.id);
-    
-    // Use date-based status instead of database status
-    const programStatus = getProgramStatusByDates(program);
 
     // Check if program accepts volunteers (admin can close volunteer applications)
     // Handle both boolean and numeric values (0/1 from database)
     const acceptsVolunteers = program.accepts_volunteers !== false && program.accepts_volunteers !== 0 && program.accepts_volunteers !== '0';
+
+    // Only show apply button for Upcoming programs that accept volunteers
+    if (programStatus !== 'Upcoming' || !acceptsVolunteers) {
+      return null;
+    }
 
     switch (programStatus) {
       case 'Upcoming':
@@ -319,11 +312,6 @@ export default function ProgramDetailsPage() {
           };
         }
         
-        // Check if program is accepting volunteers
-        if (!acceptsVolunteers) {
-          return null; // Return null to hide the application panel entirely
-        }
-        
         return {
           title: 'Ready to Join?',
           text: 'Take the first step towards making a positive impact in your community. Apply now and become part of this meaningful program.',
@@ -331,30 +319,9 @@ export default function ProgramDetailsPage() {
           icon: '✨',
           isDisabled: false
         };
-      case 'Active':
-        return {
-          title: 'Program in Progress',
-          text: 'This program is currently active and running. Applications are no longer being accepted for this session.',
-          buttonText: 'Applications Closed',
-          icon: '🔄',
-          isDisabled: true
-        };
-      case 'Completed':
-        return {
-          title: 'Program Completed',
-          text: 'This program has been successfully completed. Thank you to all participants who made it possible!',
-          buttonText: 'Program Finished',
-          icon: '✅',
-          isDisabled: true
-        };
       default:
-        return {
-          title: 'Program Status Unknown',
-          text: 'The current status of this program is unclear. Please contact the organization for more information.',
-          buttonText: 'Contact Organization',
-          icon: '❓',
-          isDisabled: false
-        };
+        // This should never be reached due to the early return above
+        return null;
     }
   };
 
@@ -394,50 +361,60 @@ export default function ProgramDetailsPage() {
     return <Loader small centered />;
   }
 
-  const applicationContent = getApplicationContent();
+  const programStatus = getProgramStatusByDates(program);
+  const applicationContent = getApplicationContent(programStatus);
 
   return (
     <div className={styles.container}>
       <div className={styles.mainContent}>
-        <div className={styles.pageHeader}>
-          <h1 className={styles.pageTitle}>Program Details</h1>
-          <p className={styles.pageSubtitle}>Discover opportunities to make a difference</p>
+        {/* Breadcrumb Navigation */}
+        <div className={styles.breadcrumb}>
+          <Link 
+            href="/" 
+            className={styles.breadcrumbLink}
+          >
+            Home
+          </Link>
+          <span className={styles.breadcrumbSeparator}>›</span>
+          <Link 
+            href="/programs" 
+            className={styles.breadcrumbLink}
+          >
+            Programs and Services
+          </Link>
+          <span className={styles.breadcrumbSeparator}>›</span>
+          <span className={styles.breadcrumbCurrent}>{program.title}</span>
         </div>
-        
+
         <div className={styles.pageGrid}>
           {/* Main Content - Program Details */}
           <div className={styles.main}>
-            <div className={styles.programContent}>
-              {program.image && (
-                <Image 
-                  src={getProgramImageUrl(program.image)} 
-                  alt={program.title} 
-                  width={600} 
-                  height={400}
-                  className={styles.programImage}
-                />
-              )}
+            <div className={styles.programInfo}>
+              {/* Program Title - moved to top */}
+              <h2 className={styles.programTitle}>{program.title}</h2>
               
-              <div className={styles.programInfo}>
-                <h2 className={styles.programTitle}>{program.title}</h2>
-                
-                <div className={styles.metaGrid}>
+              {/* Status Badge - moved after title */}
+              <div className={styles.statusContainer}>
+                <span className={`${styles.statusBadge} ${getStatusClass(programStatus)}`}>
+                  {programStatus}
+                </span>
+              </div>
+              
+              <div className={styles.programDetailsSection}>
+                <div className={styles.metaInfo}>
                   <div className={styles.metaItem}>
                     <span className={styles.metaLabel}>Category</span>
                     <span className={styles.metaValue}>{program.category}</span>
                   </div>
-                  <div className={styles.metaItem}>
-                    <span className={styles.metaLabel}>Status</span>
-                    <span className={`${styles.statusBadge} ${getStatusClass(getProgramStatusByDates(program))}`}>
-                      {getProgramStatusByDates(program)}
-                    </span>
-                  </div>
-                  <div className={styles.metaItem}>
-                    <span className={styles.metaLabel}>Event Date</span>
-                    <span className={styles.metaValue}>
-                      {formatEventDates(program)}
-                    </span>
-                  </div>
+                  
+                  {formatEventDates(program) && (
+                    <div className={styles.metaItem}>
+                      <span className={styles.metaLabel}>Event Date</span>
+                      <span className={styles.metaValue}>
+                        {formatEventDates(program)}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 
                 <div className={styles.programDescription}>
@@ -445,108 +422,188 @@ export default function ProgramDetailsPage() {
                   <p className={styles.descriptionText}>{program.description}</p>
                 </div>
                 
-                {/* Host Organization */}
-                {(program.organization_name || program.organization_acronym) && (
-                  <div className={styles.organizationSection}>
-                    <h3 className={styles.orgTitle}>Host Organization</h3>
-                    <Link 
-                      href={`/programs/org/${program.organization_acronym || program.organization_id}`}
-                      className={styles.orgLink}
+                {/* Apply Button - positioned after description */}
+                {applicationContent && (
+                  <div className={styles.simpleApplyButtonContainer}>
+                    <button 
+                      onClick={handleApplyClick}
+                      className={`${styles.simpleApplyButton} ${
+                        applicationContent.isDisabled 
+                          ? applicationContent.buttonText === 'Already Applied' 
+                            ? styles.applyButtonAlreadyApplied 
+                            : styles.applyButtonDisabled 
+                          : ''
+                      }`}
+                      disabled={applicationContent.isDisabled}
                     >
-                      <div className={styles.orgInfo}>
-                        {program.orgLogo && (
-                          <Image 
-                            src={getOrganizationImageUrl(program.orgLogo)} 
-                            alt={`${program.organization_name || program.organization_acronym} logo`}
-                            width={48} 
-                            height={48}
-                            className={styles.orgLogo}
-                            onError={(e) => {
-                              e.target.src = '/assets/icons/placeholder.svg';
-                            }}
-                          />
-                        )}
-                        <div className={styles.orgDetails}>
-                          <div className={styles.orgName}>{program.organization_name || program.organization_acronym}</div>
-                          {program.organization_acronym && program.organization_name && (
-                            <div className={styles.orgId}>{program.organization_acronym}</div>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-                  </div>
-                )}
-                
-                {/* Collaboration Display */}
-                {(program.is_collaborative === 1 || program.is_collaborative === true) && program.collaborators && program.collaborators.length > 0 && (
-                  <CollaborationDisplay 
-                    collaborators={program.collaborators}
-                    programTitle={program.title}
-                  />
-                )}
-                
-                {/* Additional Images Gallery */}
-                {program.additional_images && program.additional_images.length > 0 && (
-                  <div className={styles.additionalImagesSection}>
-                    <h3 className={styles.additionalImagesTitle}>Program Gallery</h3>
-                    <div className={styles.additionalImagesGrid}>
-                      {program.additional_images.map((imagePath, index) => (
-                        <div key={index} className={styles.additionalImageContainer}>
-                          <Image 
-                            src={getProgramImageUrl(imagePath, 'additional')} 
-                            alt={`${program.title} - Image ${index + 1}`}
-                            width={200} 
-                            height={150}
-                            className={styles.additionalImage}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                      Apply for this Program
+                    </button>
                   </div>
                 )}
               </div>
             </div>
+            
           </div>
 
-          {/* Sidebar - Application Invitation and Other Programs */}
-          <div className={styles.sidebar}>
-            {/* Application Invitation - Only show if applicationContent is not null */}
-            {applicationContent && (
-              <div className={`${styles.applicationPanel} ${styles.stickyCard}`}>
-                <div className={styles.invitationContent}>
-                  <div className={styles.invitationIcon}>
-                    {applicationContent.icon}
+          {/* Right Column - Program Image Carousel */}
+          <div className={styles.rightColumn}>
+            {(() => {
+              const images = getAllImages();
+              if (images.length === 0) return null;
+              
+              const currentImage = images[currentImageIndex];
+              
+              return (
+                <div className={styles.programImageContainer}>
+                  <div className={styles.imageCarousel}>
+                    <Image 
+                      src={currentImage.src} 
+                      alt={currentImage.alt} 
+                      width={600} 
+                      height={400}
+                      className={styles.programImage}
+                    />
+                    
+                    {/* Navigation arrows - only show if more than 1 image */}
+                    {images.length > 1 && (
+                      <>
+                        <button 
+                          className={styles.carouselArrow} 
+                          onClick={goToPreviousImage}
+                          aria-label="Previous image"
+                        >
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </button>
+                        <button 
+                          className={styles.carouselArrow} 
+                          onClick={goToNextImage}
+                          aria-label="Next image"
+                        >
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </button>
+                      </>
+                    )}
+                    
+                    {/* Dots navigation - only show if more than 1 image */}
+                    {images.length > 1 && (
+                      <div className={styles.carouselDots}>
+                        {images.map((_, index) => (
+                          <button
+                            key={index}
+                            className={`${styles.carouselDot} ${index === currentImageIndex ? styles.carouselDotActive : ''}`}
+                            onClick={() => goToImage(index)}
+                            aria-label={`Go to image ${index + 1}`}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <h3 className={styles.invitationTitle}>{applicationContent.title}</h3>
-                  <p className={styles.invitationText}>
-                    {applicationContent.text}
-                  </p>
-                  <button 
-                    onClick={handleApplyClick}
-                    className={`${styles.applyButton} ${
-                      applicationContent.isDisabled 
-                        ? applicationContent.buttonText === 'Already Applied' 
-                          ? styles.applyButtonAlreadyApplied 
-                          : styles.applyButtonDisabled 
-                        : ''
-                    }`}
-                    disabled={applicationContent.isDisabled}
-                  >
-                    {applicationContent.buttonText}
-                  </button>
                 </div>
-              </div>
-            )}
-
-            {/* Other Programs from Same Organization */}
-            {otherPrograms.length > 0 && (
-              <OtherProgramsCarousel 
-                programs={otherPrograms}
-                organizationName={program.organization_name}
-              />
-            )}
+              );
+            })()}
           </div>
         </div>
+
+        {/* Organizations Row - Full Width */}
+        <div className={styles.organizationsRow}>
+          {/* Host Organization */}
+          {(program.organization_name || program.organization_acronym) && (
+            <div className={styles.organizationSection}>
+              <div className={styles.sectionHeader}>
+                <div className={styles.sectionIcon}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 21H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M5 21V7L13 2L21 7V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M9 9V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M15 9V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <h3 className={styles.sectionTitle}>Host Organization</h3>
+              </div>
+              
+              <div className={styles.organizationCard}>
+                <Link 
+                  href={`/programs/org/${program.organization_acronym || program.organization_id}`}
+                  className={styles.orgLink}
+                >
+                  <div className={styles.orgContent}>
+                    {program.orgLogo ? (
+                      <div className={styles.orgLogoContainer}>
+                        {(() => {
+                          const orgImageUrl = getOrganizationImageUrl(program.orgLogo);
+                          if (isUnavailableImage(orgImageUrl)) {
+                            return (
+                              <UnavailableImagePlaceholder 
+                                width="56px" 
+                                height="56px" 
+                                text="Logo Unavailable"
+                                className={styles.orgLogo}
+                              />
+                            );
+                          }
+                          return (
+                            <Image 
+                              src={orgImageUrl} 
+                              alt={`${program.organization_name || program.organization_acronym} logo`}
+                              width={56} 
+                              height={56}
+                              className={styles.orgLogo}
+                              onError={(e) => {
+                                e.target.src = '/assets/icons/placeholder.svg';
+                              }}
+                            />
+                          );
+                        })()}
+                      </div>
+                    ) : (
+                      <div className={styles.orgLogoContainer}>
+                        <UnavailableImagePlaceholder 
+                          width="56px" 
+                          height="56px" 
+                          text="No Logo"
+                          className={styles.orgLogo}
+                        />
+                      </div>
+                    )}
+                    <div className={styles.orgDetails}>
+                      <div className={styles.orgName}>
+                        {program.organization_name || program.organization_acronym}
+                        {program.organization_acronym && program.organization_name && (
+                          <span className={styles.orgAcronymInName}> ({program.organization_acronym})</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className={styles.orgArrow}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            </div>
+          )}
+          
+          {/* Collaboration Display */}
+          {(program.is_collaborative === 1 || program.is_collaborative === true) && program.collaborators && program.collaborators.length > 0 && (
+            <CollaborationDisplay 
+              collaborators={program.collaborators}
+            />
+          )}
+        </div>
+
+        {/* Related Programs from Same Organization */}
+        <RelatedPrograms 
+          otherPrograms={otherPrograms}
+          organizationName={program.organization_name}
+          organizationAcronym={program.organization_acronym}
+          organizationId={program.organization_id}
+        />
       </div>
 
       {/* Contact Organization Modal */}

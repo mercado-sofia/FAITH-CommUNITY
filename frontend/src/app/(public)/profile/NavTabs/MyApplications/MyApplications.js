@@ -8,7 +8,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
 import { formatDateShort, formatApplicationProgramDates } from '@/utils/dateUtils';
-import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
+import { getProgramImageUrl, getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
+import { UnavailableImagePlaceholder } from '@/components';
 import ApplicationDetailsModal from './ApplicationDetailsModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import styles from './MyApplications.module.css';
@@ -539,24 +540,56 @@ export default function MyApplications() {
                     {application.organizationName && (
                       <div className={styles.organizationInfo}>
                         {application.orgLogo ? (
-                          <Image 
-                            src={getOrganizationImageUrl(application.orgLogo)}
-                            alt={`${application.organizationName} logo`}
-                            width={20}
-                            height={20}
+                          (() => {
+                            const orgImageUrl = getOrganizationImageUrl(application.orgLogo);
+                            if (isUnavailableImage(orgImageUrl)) {
+                              return (
+                                <UnavailableImagePlaceholder 
+                                  width="20px" 
+                                  height="20px" 
+                                  text="Logo"
+                                  className={styles.organizationLogo}
+                                  style={{
+                                    borderRadius: '50%',
+                                    objectFit: 'cover',
+                                    overflow: 'hidden'
+                                  }}
+                                />
+                              );
+                            }
+                            return (
+                              <Image 
+                                src={orgImageUrl}
+                                alt={`${application.organizationName} logo`}
+                                width={20}
+                                height={20}
+                                className={styles.organizationLogo}
+                                style={{
+                                  borderRadius: '50%',
+                                  objectFit: 'cover',
+                                  overflow: 'hidden'
+                                }}
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'block';
+                                }}
+                              />
+                            );
+                          })()
+                        ) : (
+                          <UnavailableImagePlaceholder 
+                            width="20px" 
+                            height="20px" 
+                            text="Logo"
                             className={styles.organizationLogo}
                             style={{
                               borderRadius: '50%',
                               objectFit: 'cover',
                               overflow: 'hidden'
                             }}
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'block';
-                            }}
                           />
-                        ) : null}
-                        <div className={styles.orgLogoFallback} style={{ display: application.orgLogo ? 'none' : 'block' }}></div>
+                        )}
+                        <div className={styles.orgLogoFallback} style={{ display: 'none' }}></div>
                         <Link 
                           href={`/programs/org/${application.organizationAcronym}`}
                           className={styles.organizationLink}

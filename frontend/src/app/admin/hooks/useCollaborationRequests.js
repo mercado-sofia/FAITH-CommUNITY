@@ -15,7 +15,6 @@ export function useCollaborationRequests() {
       const userRole = document.cookie.includes('userRole=admin');
       
       if (!token || !adminData || !userRole) {
-        console.warn('Authentication check failed, redirecting to login');
         localStorage.removeItem('adminToken');
         localStorage.removeItem('adminData');
         document.cookie = 'userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
@@ -37,7 +36,6 @@ export function useCollaborationRequests() {
       
       const token = localStorage.getItem('adminToken');
       if (!token) {
-        console.warn('No adminToken found, redirecting to login');
         // Clear any invalid auth data and redirect to login
         localStorage.removeItem('adminToken');
         localStorage.removeItem('adminData');
@@ -54,18 +52,10 @@ export function useCollaborationRequests() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API Error:', response.status, errorText);
         throw new Error(`Failed to fetch collaboration requests: ${response.status} ${errorText}`);
       }
 
       const result = await response.json();
-      
-      console.log(`🔍 Frontend: Received collaborations data:`, result.data?.map(c => ({
-        program_title: c.program_title,
-        collaboration_id: c.collaboration_id,
-        status: c.status,
-        request_type: c.request_type
-      })));
       
       setCollaborations(result.data || []);
       return result.data || [];
@@ -81,7 +71,6 @@ export function useCollaborationRequests() {
     try {
       const token = localStorage.getItem('adminToken');
       if (!token) {
-        console.warn('No adminToken found, redirecting to login');
         window.location.href = '/login';
         return;
       }
@@ -111,7 +100,6 @@ export function useCollaborationRequests() {
     try {
       const token = localStorage.getItem('adminToken');
       if (!token) {
-        console.warn('No adminToken found, redirecting to login');
         window.location.href = '/login';
         return;
       }

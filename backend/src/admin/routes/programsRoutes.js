@@ -11,7 +11,7 @@ import {
   deleteProgramSubmission,
   updateProgram,
   getProgramBySlug,
-  getOtherProgramsByOrganization,
+  getRelatedProgramsByOrganization,
   getFeaturedPrograms,
   getAllFeaturedPrograms,
   toggleFeaturedStatus,
@@ -68,6 +68,6 @@ router.get('/programs', getApprovedPrograms);
 router.get('/programs/featured', getFeaturedPrograms);
 router.get('/programs/org/:orgId', getApprovedProgramsByOrg);
 router.get('/programs/slug/:slug', getProgramBySlug);
-router.get('/programs/org/:organizationId/other/:excludeProgramId', getOtherProgramsByOrganization);
+router.get('/programs/org/:organizationId/other/:excludeProgramId', getRelatedProgramsByOrganization);
 
 export default router;

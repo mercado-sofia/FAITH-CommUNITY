@@ -34,7 +34,6 @@ export const getAdminProfile = async (req, res) => {
       data: admin
     })
   } catch (err) {
-    console.error("Error fetching admin profile:", err)
     res.status(500).json({ error: "Internal server error" })
   }
 }
@@ -106,7 +105,6 @@ export const updateAdminProfile = async (req, res) => {
       data: { email }
     })
   } catch (err) {
-    console.error("Error updating admin profile:", err)
     res.status(500).json({ error: "Internal server error" })
   }
 }
@@ -179,7 +177,6 @@ export const requestAdminEmailChange = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("Error requesting admin email change:", err)
     res.status(500).json({ error: "Internal server error" })
   }
 }
@@ -265,7 +262,6 @@ export const verifyAdminEmailChangeOTP = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("Error verifying admin email change OTP:", err)
     res.status(500).json({ error: "Internal server error" })
   }
 }
@@ -339,7 +335,6 @@ export const updateAdminPassword = async (req, res) => {
       message: "Password updated successfully"
     })
   } catch (err) {
-    console.error("Error updating admin password:", err)
     res.status(500).json({ error: "Internal server error" })
   }
 }
@@ -373,7 +368,6 @@ export const verifyPasswordForEmailChange = async (req, res) => {
       message: "Password verified successfully"
     })
   } catch (err) {
-    console.error("Error verifying password:", err)
     res.status(500).json({ error: "Internal server error" })
   }
 }

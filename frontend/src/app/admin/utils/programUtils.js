@@ -1,47 +1,8 @@
 // Program utility functions extracted from page.js
+import { getProgramStatusByDates } from '@/utils/programStatusUtils';
 
-/**
- * Helper function to determine program status based on dates
- * @param {Object} program - The program object
- * @returns {string} - Program status ('Active', 'Upcoming', or 'Completed')
- */
-export const getProgramStatusByDates = (program) => {
-  // ALWAYS prioritize explicit database status over ANY date calculations
-  // This allows users to manually override date-based status
-  if (program.status === 'Active' || program.status === 'Completed' || program.status === 'Upcoming') {
-    return program.status;
-  }
-
-  // Only use date-based logic if no explicit status is set
-  if (!program.event_start_date) {
-    // If no start date, use the database status or default to Active
-    return program.status || 'Active';
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // Reset time to start of day
-  
-  const startDate = new Date(program.event_start_date);
-  startDate.setHours(0, 0, 0, 0);
-  
-  const endDate = program.event_end_date ? new Date(program.event_end_date) : null;
-  if (endDate) {
-    endDate.setHours(23, 59, 59, 999); // Set to end of day
-  }
-
-  // If start date is in the future, it's upcoming
-  if (startDate > today) {
-    return 'Upcoming';
-  }
-  
-  // If end date exists and is in the past, it's completed
-  if (endDate && endDate < today) {
-    return 'Completed';
-  }
-  
-  // If start date is today or in the past, and either no end date or end date is today or in the future, it's active
-  return 'Active';
-};
+// Re-export the shared utility function
+export { getProgramStatusByDates };
 
 /**
  * Helper function to sort by upcoming program dates

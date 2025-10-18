@@ -37,7 +37,7 @@ export const resetAllPageStates = () => {
 };
 
 /**
- * Get all visited pages (useful for debugging)
+ * Get all visited pages
  * @returns {Object} - Object containing all visited page states
  */
 export const getAllPageStates = () => {

@@ -4,15 +4,15 @@ import Image from 'next/image';
 import Link from 'next/link';
 import styles from './CollaborationDisplay.module.css';
 
-export default function CollaborationDisplay({ collaborators, programTitle }) {
+export default function CollaborationDisplay({ collaborators }) {
   if (!collaborators || collaborators.length === 0) {
     return null;
   }
 
   return (
     <div className={styles.collaborationSection}>
-      <div className={styles.collaborationHeader}>
-        <div className={styles.collaborationIcon}>
+      <div className={styles.sectionHeader}>
+        <div className={styles.sectionIcon}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path 
               d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" 
@@ -44,29 +44,26 @@ export default function CollaborationDisplay({ collaborators, programTitle }) {
             />
           </svg>
         </div>
-        <h3 className={styles.collaborationTitle}>Collaboration Partners</h3>
+        <h3 className={styles.sectionTitle}>Collaboration Partners</h3>
       </div>
       
-      <div className={styles.collaborationDescription}>
-        <p>This program is a collaborative effort involving multiple organizations working together to create meaningful impact.</p>
-      </div>
 
-      <div className={styles.collaboratorsList}>
+      <div className={styles.collaboratorsGrid}>
         {collaborators.map((collaborator, index) => (
-          <div key={index} className={styles.collaboratorItem}>
+          <div key={index} className={styles.collaboratorCard}>
             <Link 
               href={`/programs/org/${collaborator.organization_acronym}`}
               className={styles.collaboratorLink}
             >
-              <div className={styles.collaboratorInfo}>
+              <div className={styles.collaboratorContent}>
                 {collaborator.organization_logo && (
-                  <div className={styles.collaboratorLogo}>
+                  <div className={styles.collaboratorLogoContainer}>
                     <Image 
                       src={collaborator.organization_logo} 
                       alt={`${collaborator.organization_name} logo`}
-                      width={40} 
-                      height={40}
-                      className={styles.logoImage}
+                      width={48} 
+                      height={48}
+                      className={styles.collaboratorLogo}
                       onError={(e) => {
                         e.target.src = '/assets/icons/placeholder.svg';
                       }}
@@ -76,12 +73,16 @@ export default function CollaborationDisplay({ collaborators, programTitle }) {
                 <div className={styles.collaboratorDetails}>
                   <div className={styles.collaboratorName}>
                     {collaborator.organization_name}
+                    {collaborator.organization_acronym && (
+                      <span className={styles.collaboratorAcronymInName}> ({collaborator.organization_acronym})</span>
+                    )}
                   </div>
-                  {collaborator.organization_acronym && (
-                    <div className={styles.collaboratorAcronym}>
-                      {collaborator.organization_acronym}
-                    </div>
-                  )}
+                </div>
+                <div className={styles.collaboratorArrow}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </div>
               </div>
             </Link>

@@ -70,7 +70,6 @@ export const getOrganizationByName = async (req, res) => {
       },
     })
   } catch (err) {
-    console.error("Get organization error:", err)
     res.status(500).json({ success: false, error: err.message })
   }
 }
@@ -123,7 +122,6 @@ export const createOrganization = async (req, res) => {
       data: { id: result.insertId }
     })
   } catch (err) {
-    console.error("❌ Backend: Create organization error:", err)
     res.status(500).json({ success: false, error: err.message })
   }
 }
@@ -169,7 +167,6 @@ export const updateOrganizationInfo = async (req, res) => {
       );
       finalLogo = uploadResult.url;
     } catch (uploadError) {
-      console.error('Error uploading organization logo to Cloudinary:', uploadError);
       return res.status(500).json({ 
         success: false, 
         message: 'Failed to upload organization logo' 
@@ -267,14 +264,6 @@ export const updateOrganizationInfo = async (req, res) => {
       connection.release()
     }
     
-    console.error("❌ Backend: Update organization error:", err)
-    console.error("❌ Backend: Error stack:", err.stack)
-    console.error("❌ Backend: Error details:", {
-      message: err.message,
-      code: err.code,
-      sqlMessage: err.sqlMessage,
-      sqlState: err.sqlState
-    })
     res.status(500).json({ success: false, error: err.message })
   }
 }
@@ -353,7 +342,6 @@ export const getOrganizationById = async (req, res) => {
       }
     })
   } catch (err) {
-    console.error("❌ Backend: Get organization by ID error:", err)
     res.status(500).json({ success: false, error: err.message })
   }
 }
@@ -380,7 +368,6 @@ export const checkAcronymExists = async (req, res) => {
       exists: existingOrg.length > 0
     })
   } catch (err) {
-    console.error("❌ Backend: Check acronym exists error:", err)
     res.status(500).json({ success: false, error: err.message })
   }
 }
@@ -407,7 +394,6 @@ export const checkNameExists = async (req, res) => {
       exists: existingOrg.length > 0
     })
   } catch (err) {
-    console.error("❌ Backend: Check name exists error:", err)
     res.status(500).json({ success: false, error: err.message })
   }
 }

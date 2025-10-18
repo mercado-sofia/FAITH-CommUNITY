@@ -95,7 +95,6 @@ export default function AdminHighlightsPage() {
       const data = await response.json();
       setHighlights(data.highlights || []);
     } catch (err) {
-      console.error('Error loading highlights:', err);
       setError(err.message);
     } finally {
       if (isRefresh) {
@@ -255,7 +254,6 @@ export default function AdminHighlightsPage() {
         type: 'success'
       });
     } catch (err) {
-      console.error('Error deleting highlight:', err);
       setSuccessModal({
         isVisible: true,
         message: 'Failed to delete highlight. Please try again.',
@@ -309,7 +307,6 @@ export default function AdminHighlightsPage() {
       setPageMode('list');
       setEditingHighlight(null);
     } catch (err) {
-      console.error('Error submitting highlight:', err);
       setSuccessModal({
         isVisible: true,
         message: `Failed to ${pageMode === 'edit' ? 'update' : 'create'} highlight. Please try again.`,

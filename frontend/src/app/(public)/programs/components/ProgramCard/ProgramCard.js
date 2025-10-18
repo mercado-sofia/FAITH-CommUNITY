@@ -3,10 +3,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
-import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
+import { getProgramImageUrl, getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
 import { formatDateLong } from '@/utils/dateUtils';
+import { UnavailableImagePlaceholder } from '@/components';
 import styles from './ProgramCard.module.css';
 import logger from '@/utils/logger';
+import { getProgramStatusByDates } from '@/utils/programStatusUtils';
 
 // Utility function to get date information from various date formats
 const getDateInfo = (project) => {
@@ -249,10 +251,14 @@ const formatCollaborationBadgeText = (collaborators) => {
   return `${collaborators[0].organization_name}, ${collaborators[1].organization_name} +${remainingCount}`;
 };
 
+
 export default function ProgramCard({ project }) {
   const dateInfo = getDateInfo(project);
   const [isHovering, setIsHovering] = useState(false);
   const containerRef = useRef(null);
+  
+  // Use the same date-based status calculation as program details
+  const calculatedStatus = getProgramStatusByDates(project);
 
   const handleMouseEnter = (e) => {
     e.preventDefault();
@@ -313,7 +319,7 @@ export default function ProgramCard({ project }) {
         </div>
         
         {/* Date Badge */}
-        <DateBadge dateInfo={dateInfo} status={project.status} />
+        <DateBadge dateInfo={dateInfo} status={calculatedStatus} />
       </div>
 
       <div className={styles.cardContent}>
@@ -379,26 +385,48 @@ export default function ProgramCard({ project }) {
 
         <Link href={`/programs/org/${project.orgAcronym || project.orgID}`} className={styles.cardOrg}>
           {project.orgLogo ? (
-            <Image
-              src={getOrganizationImageUrl(project.orgLogo)}
-              alt={`${project.orgName} logo`}
-              width={24}
-              height={24}
+            (() => {
+              const orgImageUrl = getOrganizationImageUrl(project.orgLogo);
+              if (isUnavailableImage(orgImageUrl)) {
+                return (
+                  <UnavailableImagePlaceholder 
+                    width="24px" 
+                    height="24px" 
+                    text="Logo"
+                    className={styles.cardOrgIcon}
+                  />
+                );
+              }
+              return (
+                <Image
+                  src={orgImageUrl}
+                  alt={`${project.orgName} logo`}
+                  width={24}
+                  height={24}
+                  className={styles.cardOrgIcon}
+                  onError={(e) => {
+                    logger.error('Failed to load organization logo', null, { 
+                      projectId: project.id, 
+                      orgName: project.orgName,
+                      logoUrl: project.orgLogo 
+                    });
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'block';
+                  }}
+                />
+              );
+            })()
+          ) : (
+            <UnavailableImagePlaceholder 
+              width="24px" 
+              height="24px" 
+              text="Logo"
               className={styles.cardOrgIcon}
-              onError={(e) => {
-                logger.error('Failed to load organization logo', null, { 
-                  projectId: project.id, 
-                  orgName: project.orgName,
-                  logoUrl: project.orgLogo 
-                });
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'block';
-              }}
             />
-          ) : null}
+          )}
           <div 
             className={styles.cardOrgIconFallback} 
-            style={{ display: project.orgLogo ? 'none' : 'block' }}
+            style={{ display: 'none' }}
           ></div>
           <span>{project.orgName}</span>
         </Link>

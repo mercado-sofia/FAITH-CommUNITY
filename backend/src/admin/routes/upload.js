@@ -30,7 +30,6 @@ const authenticateAdmin = (req, res, next) => {
     req.admin = decoded;
     next();
   } catch (err) {
-    console.error('JWT verification error:', err);
     return res.status(403).json({ error: 'Invalid or expired token' });
   }
 };
@@ -103,7 +102,6 @@ router.post('/', verifyAdminOrSuperadmin, cloudinaryUploadConfigs.programMain.si
       res.status(500).json({ error: 'Failed to upload file to Cloudinary: ' + uploadError.message });
     }
   } catch (error) {
-    console.error('❌ File upload error:', error);
     next(error); // Pass error to error handling middleware
   }
 });
@@ -167,7 +165,6 @@ router.post('/public/organization-logo', cloudinaryUploadConfigs.organizationLog
       });
     }
   } catch (error) {
-    console.error('Public upload error:', error);
     res.status(500).json({ 
       success: false, 
       error: 'Upload failed: ' + error.message 

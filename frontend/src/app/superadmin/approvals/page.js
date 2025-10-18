@@ -441,11 +441,13 @@ export default function PendingApprovalsPage() {
         return key; // fallback for items without unique keys
       });
 
-      const res = await fetch(`${API_BASE_URL}/api/approvals/bulk/approve`, {
+      const res = await makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals/bulk/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: originalIds })
       });
+
+      if (!res) return; // Helper function handled redirect
 
       const result = await res.json();
 
@@ -470,11 +472,13 @@ export default function PendingApprovalsPage() {
         return key; // fallback for items without unique keys
       });
 
-      const res = await fetch(`${API_BASE_URL}/api/approvals/bulk/reject`, {
+      const res = await makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals/bulk/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: originalIds, rejection_comment: rejectComment })
       });
+
+      if (!res) return; // Helper function handled redirect
 
       const result = await res.json();
 
@@ -499,11 +503,13 @@ export default function PendingApprovalsPage() {
         return key; // fallback for items without unique keys
       });
 
-      const res = await fetch(`${API_BASE_URL}/api/approvals/bulk/delete`, {
+      const res = await makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals/bulk/delete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: originalIds })
       });
+
+      if (!res) return; // Helper function handled redirect
 
       const result = await res.json();
 
@@ -541,10 +547,10 @@ export default function PendingApprovalsPage() {
     try {
       switch (pendingIndividualAction) {
         case 'approve':
-          await handleApprove(selectedItemForAction.id);
+          await handleApprove(selectedItemForAction);
           break;
         case 'reject':
-          await handleReject(selectedItemForAction.id, rejectComment || '');
+          await handleReject(selectedItemForAction, rejectComment || '');
           break;
         default:
           throw new Error('Invalid individual action');
@@ -603,10 +609,12 @@ export default function PendingApprovalsPage() {
     
     setIsIndividualDeleting(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/approvals/${selectedItemForAction.id}/delete`, {
+      const res = await makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals/${selectedItemForAction.id}/delete`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' }
       });
+
+      if (!res) return; // Helper function handled redirect
 
       const result = await res.json();
 

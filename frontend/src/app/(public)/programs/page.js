@@ -8,6 +8,7 @@ import { PageBanner, Pagination } from '../components';
 import { SearchAndFilterBar, OrgLinks, ProgramCard } from './components';
 import { usePublicPrograms } from '../hooks/usePublicData';
 import { usePublicPageLoader } from '../hooks/usePublicPageLoader';
+import { getProgramStatusByDates } from '@/utils/programStatusUtils';
 
 const CARDS_PER_PAGE = 6;
 
@@ -87,11 +88,16 @@ export default function ProgramsPage() {
     }, 100);
   };
 
+
   const filteredProjects = useMemo(() => {
     let result = [...programs];
 
     if (filter !== 'All') {
-      result = result.filter((proj) => proj.status === filter);
+      result = result.filter((proj) => {
+        // Use the same date-based status calculation as program details
+        const calculatedStatus = getProgramStatusByDates(proj);
+        return calculatedStatus === filter;
+      });
     }
 
     if (submittedSearch.trim() !== '') {

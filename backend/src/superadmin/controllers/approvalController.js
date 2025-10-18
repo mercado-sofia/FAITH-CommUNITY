@@ -337,8 +337,8 @@ export const approveSubmission = async (req, res) => {
           // Create the program immediately
           
           const [result] = await connection.execute(
-            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               orgId,
               data.title,
@@ -351,7 +351,8 @@ export const approveSubmission = async (req, res) => {
               finalSlug,
               true, // Approved by superadmin
               true, // Collaborative - will be updated based on collaborator responses
-              data.accepts_volunteers !== undefined ? data.accepts_volunteers : true
+              data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
+              false // New approved programs start with automatic status (no manual override)
             ]
           );
           
@@ -432,8 +433,8 @@ export const approveSubmission = async (req, res) => {
           // For non-collaborative programs, create the program immediately
           
           const [result] = await connection.execute(
-            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               orgId,
               data.title,
@@ -446,7 +447,8 @@ export const approveSubmission = async (req, res) => {
               finalSlug,
               true, // SECURITY FIX: Always approve when superadmin approves (this is the approval process)
               false, // Not collaborative
-              data.accepts_volunteers !== undefined ? data.accepts_volunteers : true
+              data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
+              false // New approved programs start with automatic status (no manual override)
             ]
           );
           
@@ -899,8 +901,8 @@ export const bulkApproveSubmissions = async (req, res) => {
           }
 
           const [result] = await connection.execute(
-            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               orgId,
               data.title,
@@ -913,7 +915,8 @@ export const bulkApproveSubmissions = async (req, res) => {
               finalSlug,
               true, // SECURITY FIX: Always approve when superadmin approves (this is the approval process)
               data.collaborators && data.collaborators.length > 0,
-              data.accepts_volunteers !== undefined ? data.accepts_volunteers : true
+              data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
+              false // New approved programs start with automatic status (no manual override)
             ]
           );
           

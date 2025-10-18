@@ -94,7 +94,6 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
         size: file.size
       };
     } catch (error) {
-      console.error('Upload error:', error);
       throw error;
     }
   }, []);
@@ -130,7 +129,6 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
         media: [...prev.media, ...uploadedFiles]
       }));
     } catch (error) {
-      console.error('Error uploading files:', error);
       alert('Some files failed to upload. Please try again.');
     } finally {
       setUploadingFiles(prev => prev.filter(name => !validFiles.some(f => f.name === name)));
@@ -174,7 +172,6 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
         media: [...prev.media, ...uploadedFiles]
       }));
     } catch (error) {
-      console.error('Error uploading files:', error);
       alert('Some files failed to upload. Please try again.');
     } finally {
       setUploadingFiles(prev => prev.filter(name => !validFiles.some(f => f.name === name)));
@@ -305,7 +302,7 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
     try {
       await onSubmit(formData);
     } catch (error) {
-      console.error('Form submission error:', error);
+      // Handle error silently
     } finally {
       setIsSubmitting(false);
     }

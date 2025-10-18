@@ -42,7 +42,6 @@ export const createNews = async (req, res) => {
       );
       featured_image = uploadResult.url;
     } catch (uploadError) {
-      console.error('Error uploading featured image to Cloudinary:', uploadError);
       return res.status(500).json({ 
         success: false, 
         message: 'Failed to upload featured image' 
@@ -161,7 +160,6 @@ export const createNews = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("❌ Error creating news:", error);
     return res.status(500).json({ success: false, message: "Failed to create news", error: error.message });
   }
 };
@@ -262,7 +260,6 @@ export const getNewsByOrg = async (req, res) => {
     // Returning formatted news items
     return res.json(news);
   } catch (error) {
-    console.error("❌ Error fetching news:", error);
     return res.status(500).json({ success: false, message: "Failed to fetch news", error: error.message });
   }
 };
@@ -306,7 +303,6 @@ export const getApprovedNews = async (req, res) => {
 
     return res.json(news);
   } catch (error) {
-    console.error("❌ Error fetching approved news:", error);
     return res.status(500).json({ success: false, message: "Failed to fetch news", error: error.message });
   }
 };
@@ -375,7 +371,6 @@ export const getApprovedNewsByOrg = async (req, res) => {
 
     return res.json(news);
   } catch (error) {
-    console.error("❌ Error fetching approved news by org:", error);
     return res.status(500).json({ success: false, message: "Failed to fetch news", error: error.message });
   }
 };
@@ -428,7 +423,6 @@ export const getNewsById = async (req, res) => {
 
     return res.json(newsData);
   } catch (error) {
-    console.error("❌ Error fetching news by ID:", error);
     return res.status(500).json({ success: false, message: "Failed to fetch news", error: error.message });
   }
 };
@@ -482,7 +476,6 @@ export const getNewsBySlug = async (req, res) => {
 
     return res.json(newsData);
   } catch (error) {
-    console.error("❌ Error fetching news by slug:", error);
     return res.status(500).json({ success: false, message: "Failed to fetch news", error: error.message });
   }
 };
@@ -525,7 +518,6 @@ export const deleteNewsSubmission = async (req, res) => {
 
     return res.json({ success: true, message: "News moved to recently deleted" });
   } catch (error) {
-    console.error("❌ Error deleting news:", error);
     return res.status(500).json({ success: false, message: "Failed to delete news", error: error.message });
   }
 };
@@ -619,7 +611,6 @@ export const getRecentlyDeletedNews = async (req, res) => {
 
     return res.json(news);
   } catch (error) {
-    console.error("❌ Error fetching recently deleted news:", error);
     return res.status(500).json({ success: false, message: "Failed to fetch recently deleted news", error: error.message });
   }
 };
@@ -660,7 +651,6 @@ export const restoreNews = async (req, res) => {
 
     return res.json({ success: true, message: "News restored successfully" });
   } catch (error) {
-    console.error("❌ Error restoring news:", error);
     return res.status(500).json({ success: false, message: "Failed to restore news", error: error.message });
   }
 };
@@ -701,7 +691,6 @@ export const permanentlyDeleteNews = async (req, res) => {
 
     return res.json({ success: true, message: "News permanently deleted" });
   } catch (error) {
-    console.error("❌ Error permanently deleting news:", error);
     return res.status(500).json({ success: false, message: "Failed to permanently delete news", error: error.message });
   }
 };
@@ -740,7 +729,6 @@ export const updateNews = async (req, res) => {
       );
       featured_image = uploadResult.url;
     } catch (uploadError) {
-      console.error('Error uploading featured image to Cloudinary:', uploadError);
       return res.status(500).json({ 
         success: false, 
         message: 'Failed to upload featured image' 
@@ -824,7 +812,6 @@ export const updateNews = async (req, res) => {
 
     return res.json({ success: true, message: "News updated successfully" });
   } catch (error) {
-    console.error("❌ Error updating news:", error);
     return res.status(500).json({ success: false, message: "Failed to update news", error: error.message });
   }
 };

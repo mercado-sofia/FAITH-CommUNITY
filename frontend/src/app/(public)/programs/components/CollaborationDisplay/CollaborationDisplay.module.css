@@ -1,101 +1,85 @@
-/* Collaboration Display Styles - Adapted to Site's Design System */
+/* Collaboration Display Styles - Redesigned for Better UX */
 .collaborationSection {
   margin: 2rem 0;
   padding-top: 2rem;
   border-top: 1px solid #e2e8f0;
 }
 
-.collaborationHeader {
+.sectionHeader {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
-.collaborationIcon {
+.sectionIcon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  border-radius: 12px;
+  border-radius: 8px;
   color: white;
   flex-shrink: 0;
 }
 
-.collaborationTitle {
-  font-size: 1.25rem;
+.sectionTitle {
+  font-size: 16px;
   font-weight: 600;
   color: #1e293b;
   margin: 0;
   line-height: 1.3;
 }
 
-.collaborationDescription {
-  margin-bottom: 1.5rem;
-}
 
-.collaborationDescription p {
-  color: #475569;
-  font-size: 1rem;
-  line-height: 1.7;
-  margin: 0;
-  text-align: justify;
-}
-
-.collaboratorsList {
-  display: flex;
-  flex-direction: column;
+.collaboratorsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1rem;
 }
 
-.collaboratorItem {
-  background: #f8fafc;
-  border-radius: 12px;
+.collaboratorCard {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
   transition: all 0.2s ease;
-  cursor: pointer;
 }
 
-.collaboratorItem:hover {
-  background: #e2e8f0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
+.collaboratorCard:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
 }
 
 .collaboratorLink {
   display: block;
-  padding: 1rem;
-  text-decoration: none;
-  color: inherit;
-  transition: all 0.2s ease;
-}
-
-.collaboratorLink:hover {
   text-decoration: none;
   color: inherit;
 }
 
-.collaboratorInfo {
+.collaboratorContent {
   display: flex;
   align-items: center;
   gap: 1rem;
+  padding: 1.25rem;
 }
 
-.collaboratorLogo {
+.collaboratorLogoContainer {
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   overflow: hidden;
-  background: white;
+  background: #f8fafc;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 2px solid #e2e8f0;
+  margin-top: 2px;
 }
 
-.logoImage {
+.collaboratorLogo {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -105,27 +89,36 @@
 .collaboratorDetails {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
 }
 
 .collaboratorName {
-  font-size: 1.125rem;
+  font-size: 14px;
   font-weight: 600;
   color: #1e293b;
-  margin-bottom: 0.25rem;
   line-height: 1.3;
-  transition: all 0.2s ease;
 }
 
-.collaboratorItem:hover .collaboratorName::after {
-  content: " →";
-  color: #3b82f6;
-  font-weight: 600;
-}
-
-.collaboratorAcronym {
-  font-size: 0.875rem;
+.collaboratorAcronymInName {
+  font-size: 14px;
   color: #64748b;
   font-weight: 500;
+}
+
+.collaboratorArrow {
+  flex-shrink: 0;
+  color: #94a3b8;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+}
+
+.collaboratorCard:hover .collaboratorArrow {
+  color: #3b82f6;
+  transform: translateX(2px);
 }
 
 /* Responsive Design */
@@ -135,42 +128,64 @@
     padding-top: 1.5rem;
   }
   
-  .collaborationHeader {
+  .sectionHeader {
     gap: 0.5rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 1rem;
   }
   
-  .collaborationIcon {
-    width: 36px;
-    height: 36px;
+  .sectionIcon {
+    width: 28px;
+    height: 28px;
   }
   
-  .collaborationTitle {
-    font-size: 1.25rem;
+  .sectionTitle {
+    font-size: 16px;
   }
   
-  .collaborationDescription {
-    margin-bottom: 1.25rem;
-  }
   
-  .collaboratorLink {
-    padding: 0.875rem;
-  }
-  
-  .collaboratorInfo {
+  .collaboratorsGrid {
+    grid-template-columns: 1fr;
     gap: 0.75rem;
   }
   
-  .collaboratorLogo {
-    width: 40px;
-    height: 40px;
+  .collaboratorContent {
+    padding: 1rem;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  
+  .collaboratorLogoContainer {
+    width: 32px;
+    height: 32px;
   }
   
   .collaboratorName {
-    font-size: 1rem;
+    font-size: 14px;
   }
   
-  .collaboratorAcronym {
-    font-size: 0.8rem;
+  .collaboratorAcronymInName {
+    font-size: 14px;
   }
+  
+}
+
+@media (max-width: 480px) {
+  .collaboratorsGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .collaboratorContent {
+    padding: 0.875rem;
+    align-items: center;
+  }
+  
+  .collaboratorLogoContainer {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .collaboratorName {
+    font-size: 14px;
+  }
+  
 }

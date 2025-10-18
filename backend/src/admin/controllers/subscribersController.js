@@ -44,7 +44,6 @@ export async function subscribe(req, res) {
       message: "Please check your email to confirm subscription.",
     });
   } catch (dbErr) {
-    console.error("subscribe DB error:", dbErr);
     return res.status(500).json({ error: "Failed to subscribe" });
   }
 }
@@ -70,7 +69,6 @@ export async function verify(req, res) {
     }
     return res.send("Subscription verified. Thank you!");
   } catch (err) {
-    console.error("verify error:", err);
     return res.status(500).send("Failed to verify subscription.");
   }
 }
@@ -101,7 +99,6 @@ export async function unsubscribe(req, res) {
     }
     return res.send("You have been unsubscribed. Sorry to see you go!");
   } catch (err) {
-    console.error("unsubscribe error:", err);
     return res.status(500).send("Failed to unsubscribe.");
   }
 }
@@ -170,7 +167,6 @@ export async function notifySubscribers(req, res) {
     });
     return res.json({ message: "Notification finished.", ...result });
   } catch (err) {
-    console.error("notifySubscribers error:", err);
     return res.status(400).json({ error: err.message || "Failed to send notifications" });
   }
 }

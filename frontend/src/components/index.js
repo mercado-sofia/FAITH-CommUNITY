@@ -7,5 +7,5 @@ export { default as SWRProvider } from './providers/SWRProvider';
 export { EmailChange, useEmailChange, PasswordChange, StepUpModal } from './auth';
 
 // UI components
-export { Loader, LoaderWrapper, ErrorBoundary, OptimizedImage, SuccessModal, ConfirmationModal } from './ui';
+export { Loader, LoaderWrapper, ErrorBoundary, OptimizedImage, SuccessModal, ConfirmationModal, UnavailableImagePlaceholder } from './ui';
 export { default as Tooltip } from './ui/Tooltip/Tooltip';

@@ -2,7 +2,7 @@
 export { default as SearchAndFilterBar } from './SearchAndFilter/SearchAndFilterBar';
 export { default as OrgLinks } from './OrgLinks/OrgLinks';
 export { default as ProgramCard } from './ProgramCard/ProgramCard';
-export { default as OtherProgramsCarousel } from './OtherProgramsCarousel/OtherProgramsCarousel';
+export { default as RelatedPrograms } from './RelatedPrograms/RelatedPrograms';
 
 // Organization page components
 export { default as OrgInfoCard } from './OrgInfoCard/OrgInfoCard';

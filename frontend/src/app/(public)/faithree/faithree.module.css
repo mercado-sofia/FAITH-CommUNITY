@@ -327,13 +327,6 @@
   transform: rotate(90deg);
 }
 
-/* Content area styles moved to highlights.module.css */
-
-/* Breadcrumbs - moved to highlights.module.css */
-
-/* Page header styles - moved to highlights.module.css */
-
-/* Story-related styles - moved to highlights.module.css */
 
 /* Animations */
 @keyframes float {
@@ -383,8 +376,4 @@
     left: 0;
     height: calc(100% - 1rem);
   }
-  
-  /* Content area responsive styles moved to highlights.module.css */
-  
-  /* Responsive styles moved to highlights.module.css */
 }

@@ -1,6 +1,24 @@
 import db from '../src/database.js';
 import bcrypt from 'bcrypt';
 
+// Environment check
+const isProduction = process.env.NODE_ENV === 'production';
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+// Production-safe commands
+const productionSafeCommands = [
+  'create-superadmin',
+  'check-data', 
+  'fix-missing-data',
+  'production-health-check',
+  'help'
+];
+
+// Development-only commands
+const developmentOnlyCommands = [
+  'debug-collaborations'
+];
+
 /**
  * Creates the initial superadmin account
  * Usage: node scripts/utilities.js create-superadmin
@@ -351,12 +369,85 @@ async function createMissingTable(tableName) {
 }
 
 /**
- * Debugs collaboration data and relationships
+ * Production health check - checks system health without exposing sensitive data
+ * Usage: node scripts/utilities.js production-health-check
+ */
+async function productionHealthCheck() {
+  try {
+    console.log('🏥 Running production health check...\n');
+    
+    // Check database connectivity
+    console.log('🔗 Checking database connectivity...');
+    const [dbTest] = await db.execute('SELECT 1 as test');
+    console.log('✅ Database connection: OK');
+    
+    // Check critical tables exist
+    console.log('📋 Checking critical tables...');
+    const [tables] = await db.execute('SHOW TABLES');
+    const existingTables = tables.map(table => Object.values(table)[0]);
+    
+    const criticalTables = [
+      'users', 'admins', 'superadmin', 'organizations', 
+      'programs_projects', 'news', 'submissions'
+    ];
+    
+    const missingTables = criticalTables.filter(table => !existingTables.includes(table));
+    
+    if (missingTables.length === 0) {
+      console.log('✅ All critical tables exist');
+    } else {
+      console.log('❌ Missing critical tables:', missingTables);
+    }
+    
+    // Check data counts (without exposing sensitive data)
+    console.log('📊 Checking data health...');
+    const [userCount] = await db.execute('SELECT COUNT(*) as count FROM users');
+    const [adminCount] = await db.execute('SELECT COUNT(*) as count FROM admins');
+    const [superadminCount] = await db.execute('SELECT COUNT(*) as count FROM superadmin');
+    const [orgCount] = await db.execute('SELECT COUNT(*) as count FROM organizations');
+    
+    console.log(`   Users: ${userCount[0].count}`);
+    console.log(`   Admins: ${adminCount[0].count}`);
+    console.log(`   Superadmins: ${superadminCount[0].count}`);
+    console.log(`   Organizations: ${orgCount[0].count}`);
+    
+    // Check superadmin exists
+    if (superadminCount[0].count === 0) {
+      console.log('⚠️  No superadmin account found - run create-superadmin');
+    } else {
+      console.log('✅ Superadmin account exists');
+    }
+    
+    // Check organizations exist
+    if (orgCount[0].count === 0) {
+      console.log('⚠️  No organizations found - system may need initial setup');
+    } else {
+      console.log('✅ Organizations configured');
+    }
+    
+    console.log('\n✅ Production health check completed');
+    
+  } catch (error) {
+    console.error('❌ Health check failed:', error.message);
+    process.exit(1);
+  }
+}
+
+/**
+ * Debugs collaboration data and relationships (DEVELOPMENT ONLY)
  * Usage: node scripts/utilities.js debug-collaborations
  */
 async function debugCollaborations() {
+  // Production safety check
+  if (isProduction) {
+    console.log('❌ Debug commands are not available in production environment');
+    console.log('💡 Use production-health-check for production monitoring');
+    return;
+  }
+  
   try {
     console.log('🔍 Debugging collaboration data...');
+    console.log('⚠️  This is a development-only function');
     
     // Get all collaborations for the current admin
     const [collaborations] = await db.execute(`
@@ -436,22 +527,55 @@ function showHelp() {
   console.log('');
   console.log('Usage: node scripts/utilities.js <command>');
   console.log('');
-  console.log('Available commands:');
-  console.log('  create-superadmin    Create the initial superadmin account');
-  console.log('  check-data          Check all database data and show summary');
-  console.log('  fix-missing-data    Check and fix all missing tables and data');
-  console.log('  debug-collaborations Debug collaboration data and relationships');
-  console.log('  help                 Show this help message');
+  
+  if (isProduction) {
+    console.log('🏭 PRODUCTION MODE - Limited commands available:');
+    console.log('');
+    console.log('Production-safe commands:');
+    console.log('  create-superadmin        Create the initial superadmin account');
+    console.log('  check-data              Check all database data and show summary');
+    console.log('  fix-missing-data        Check and fix all missing tables and data');
+    console.log('  production-health-check Production health check (recommended)');
+    console.log('  help                    Show this help message');
+    console.log('');
+    console.log('Examples:');
+    console.log('  node scripts/utilities.js create-superadmin');
+    console.log('  node scripts/utilities.js production-health-check');
+  } else {
+    console.log('🛠️  DEVELOPMENT MODE - All commands available:');
+    console.log('');
+    console.log('Production-safe commands:');
+    console.log('  create-superadmin        Create the initial superadmin account');
+    console.log('  check-data              Check all database data and show summary');
+    console.log('  fix-missing-data        Check and fix all missing tables and data');
+    console.log('  production-health-check Production health check');
+    console.log('');
+    console.log('Development-only commands:');
+    console.log('  debug-collaborations    Debug collaboration data and relationships');
+    console.log('');
+    console.log('General commands:');
+    console.log('  help                    Show this help message');
+    console.log('');
+    console.log('Examples:');
+    console.log('  node scripts/utilities.js create-superadmin');
+    console.log('  node scripts/utilities.js debug-collaborations');
+  }
+  
   console.log('');
-  console.log('Examples:');
-  console.log('  node scripts/utilities.js create-superadmin');
-  console.log('  node scripts/utilities.js check-data');
-  console.log('  node scripts/utilities.js fix-missing-data');
-  console.log('  node scripts/utilities.js debug-collaborations');
+  console.log('Environment:', process.env.NODE_ENV || 'development');
 }
 
 // Main execution
 const command = process.argv[2];
+
+// Production safety check
+if (isProduction && developmentOnlyCommands.includes(command)) {
+  console.log('❌ Command not allowed in production environment');
+  console.log('💡 Use production-health-check for production monitoring');
+  console.log('');
+  showHelp();
+  process.exit(1);
+}
 
 switch (command) {
   case 'create-superadmin':
@@ -462,6 +586,9 @@ switch (command) {
     break;
   case 'fix-missing-data':
     await fixMissingData();
+    break;
+  case 'production-health-check':
+    await productionHealthCheck();
     break;
   case 'debug-collaborations':
     await debugCollaborations();

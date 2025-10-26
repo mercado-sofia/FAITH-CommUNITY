@@ -20,7 +20,6 @@ const dbConfig = {
   connectionLimit: 10,
   queueLimit: 0,
   multipleStatements: true,
-  acquireTimeout: 60000,
   typeCast: function (field, next) {
     if (field.type === 'JSON') {
       return JSON.parse(field.string());
@@ -279,23 +278,8 @@ const runIncrementalMigrations = async (connection) => {
       console.log('Programs status enum update skipped (may already be updated)');
     }
 
-    // Add manual_status_override field to programs_projects table
-    try {
-      await connection.query(`
-        ALTER TABLE programs_projects 
-        ADD COLUMN manual_status_override BOOLEAN DEFAULT FALSE
-      `);
-      await connection.query(`
-        ALTER TABLE programs_projects 
-        ADD INDEX idx_programs_manual_override (manual_status_override)
-      `);
-      console.log('Added manual_status_override field to programs_projects table');
-    } catch (columnError) {
-      // If the column already exists, skip
-      console.log('manual_status_override field already exists or could not be added');
-    }
-
-
+    // manual_status_override field is already included in the initial table creation
+    // No need to add it in migrations as it's part of the base schema
 
   } catch (error) {
     logError('Incremental migrations failed', error, { context: 'database' });

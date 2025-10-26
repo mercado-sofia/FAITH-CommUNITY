@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import styles from './faithree.module.css';
-import Highlights from './sections/highlights';
+import { Highlights } from './sections';
 
 export default function FAITHreePage() {
   const [isContentVisible, setIsContentVisible] = useState(false);
@@ -25,21 +25,6 @@ export default function FAITHreePage() {
         {/* Rolling hills - SVG paths */}
         <div className={styles.hills}>
           <svg className={styles.hillsSvg} viewBox="0 0 100 50" preserveAspectRatio="none">
-            {/* Gradient definitions */}
-            <defs>
-              <linearGradient id="faithreeHillGradient1" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#7CB342" />
-                <stop offset="100%" stopColor="#8BC34A" />
-              </linearGradient>
-              <linearGradient id="faithreeHillGradient2" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#8BC34A" />
-                <stop offset="100%" stopColor="#A5D6A7" />
-              </linearGradient>
-              <linearGradient id="faithreeHillGradient3" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#A5D6A7" />
-                <stop offset="100%" stopColor="#C8E6C9" />
-              </linearGradient>
-            </defs>
             
             {/* Back hill layer - deepest green */}
             <path

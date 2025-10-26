@@ -5,7 +5,6 @@ import styles from './highlights.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-// No mock data - using real API data only
 
 export default function Highlights({ onClose }) {
   const [stories, setStories] = useState([]);
@@ -27,9 +26,10 @@ export default function Highlights({ onClose }) {
         const data = await response.json();
         const highlights = data.highlights || [];
         
-        // Transform API data to match expected format
-        const transformedHighlights = highlights.map(highlight => ({
-          id: highlight.id,
+        // Transform API data to match expected format and ensure unique IDs
+        const transformedHighlights = highlights.map((highlight, index) => ({
+          id: `${highlight.id || 'unknown'}-${index}`,
+          originalId: highlight.id,
           title: highlight.title,
           organization: highlight.organization_name || 'Unknown Organization',
           organization_acronym: highlight.organization_acronym || '',
@@ -109,7 +109,7 @@ export default function Highlights({ onClose }) {
           {isLoading ? (
             // Loading skeleton
             Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className={styles.storyCard}>
+              <div key={`skeleton-${index}`} className={styles.storyCard}>
                 <div className={styles.cardImageContainer}>
                   <div className={styles.skeletonImage}></div>
                 </div>
@@ -130,9 +130,9 @@ export default function Highlights({ onClose }) {
               <p>{error}</p>
             </div>
           ) : null}
-          {!isLoading && stories.map((story) => (
+          {!isLoading && stories.map((story, index) => (
             <div 
-              key={story.id} 
+              key={`story-${story.originalId || 'unknown'}-${index}`} 
               className={styles.storyCard}
               onClick={() => handleCardClick(story)}
             >

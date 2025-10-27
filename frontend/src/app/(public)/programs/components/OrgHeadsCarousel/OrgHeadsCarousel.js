@@ -50,13 +50,15 @@ export default function OrgHeadsCarousel({ heads }) {
         </div>
 
         <div className={styles.orgheadsCarousel}>
-          <button
-            onClick={scrollLeft}
-            className={styles.orgheadsNavBtn}
-            disabled={disableLeft}
-          >
-            <ChevronLeft />
-          </button>
+          {heads.length >= 4 && (
+            <button
+              onClick={scrollLeft}
+              className={styles.orgheadsNavBtn}
+              disabled={disableLeft}
+            >
+              <ChevronLeft />
+            </button>
+          )}
 
           <div className={styles.carouselWindow}>
             <div ref={scrollRef} className={styles.orgheadsCards}>
@@ -133,13 +135,15 @@ export default function OrgHeadsCarousel({ heads }) {
             </div>
           </div>
 
-          <button
-            onClick={scrollRight}
-            className={styles.orgheadsNavBtn}
-            disabled={disableRight}
-          >
-            <ChevronRight />
-          </button>
+          {heads.length >= 4 && (
+            <button
+              onClick={scrollRight}
+              className={styles.orgheadsNavBtn}
+              disabled={disableRight}
+            >
+              <ChevronRight />
+            </button>
+          )}
         </div>
       </div>
     </section>

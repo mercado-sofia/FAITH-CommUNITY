@@ -8,7 +8,8 @@ const CollaborationsContainer = ({
   onShowSuccessModal,
   onAcceptCollaboration,
   onDeclineCollaboration,
-  onEditProgram
+  onEditProgram,
+  onOptOut
 }) => {
   return (
     <div className={styles.programsSection}>
@@ -60,9 +61,7 @@ const CollaborationsContainer = ({
                 onDelete={() => {
                   // Delete functionality not available for collaboration cards
                 }}
-                onOptOut={() => {
-                  // Opt out functionality handled by ProgramCard component
-                }}
+                onOptOut={onOptOut}
                 onShowSuccessModal={onShowSuccessModal}
                 onAcceptCollaboration={onAcceptCollaboration}
                 onDeclineCollaboration={onDeclineCollaboration}

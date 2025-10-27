@@ -2,7 +2,7 @@ import "./globals.css";
 import { Inter, Poppins, Urbanist, Roboto } from "next/font/google";
 import { LoaderWrapper, DisableTabOnButtonsLinks, SWRProvider } from "@/components";
 import ReduxProvider from "./ReduxProvider";
-import '../utils/devTools'; // Load development tools
+import '../utils/devTools';
 
 const inter = Inter({ 
   subsets: ["latin"], 
@@ -34,6 +34,9 @@ const roboto = Roboto({
 export const metadata = {
   title: "FAITH CommUNITY",
   description: "A unified platform for community extension programs.",
+  icons: {
+    icon: '/assets/icons/favicon.ico', // Default fallback favicon
+  },
 };
 
 export default function RootLayout({ children }) {

@@ -28,11 +28,7 @@ export function NavigationProvider({ children }) {
     // Don't show loading if already on the same page
     if (pathname === href) return;
     
-    // Don't show loading for previously visited pages (instant navigation)
-    if (visitedPages.has(href)) {
-      return; // Skip loading state for visited pages
-    }
-    
+    // Set loading state for all navigation (including visited pages)
     setLoadingPath(href);
     setIsNavigating(true);
     

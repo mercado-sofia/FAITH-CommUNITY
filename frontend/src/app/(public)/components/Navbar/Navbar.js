@@ -90,18 +90,8 @@ export default function Navbar() {
   };
 
 
-  // Loading state while auth initializes
-  if (authLoading) {
-    return (
-      <div className={styles.navbarWrapper}>
-        <nav className={styles.navbar}>
-          <div className={styles.loadingNavbar}>
-            <div className={styles.loadingSpinner}></div>
-          </div>
-        </nav>
-      </div>
-    );
-  }
+  // No loading state - navbar renders immediately
+  // Auth loading is handled by page-level loaders
 
   return (
     <div className={styles.navbarWrapper}>

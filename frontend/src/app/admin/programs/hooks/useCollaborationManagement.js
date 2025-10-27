@@ -34,6 +34,13 @@ export const useCollaborationManagement = (
       await refreshPrograms();
     }
     
+    // Always refresh collaborations list after opt-out to ensure UI consistency
+    try {
+      await fetchCollaborations();
+    } catch (error) {
+      // Handle error silently in production
+    }
+    
     // If we're in edit mode and have a refresh function, also refresh collaborators
     if (pageMode === 'edit' && refreshCollaboratorsFn) {
       try {
@@ -42,7 +49,7 @@ export const useCollaborationManagement = (
         // Handle error silently in production
       }
     }
-  }, [refreshPrograms]);
+  }, [refreshPrograms, fetchCollaborations]);
 
   // Handle collaboration action (accept/decline)
   const handleCollaborationAction = useCallback(async (collaborationId, action) => {

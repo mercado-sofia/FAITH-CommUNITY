@@ -217,11 +217,6 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
           showFieldError(fieldName, errors[fieldName]);
         });
         
-        // Log validation errors
-        logger.warn("Form validation failed", {
-          errors: errors,
-          formData: Object.keys(formData)
-        });
         
         setIsLoading(false);
         return;
@@ -278,12 +273,6 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
             onFormReset();
           }
           
-          // Log as info since this is expected behavior
-          logger.info("User already applied for this program", {
-            programId: formData.program.id,
-            email: userData.email,
-            status: 'already_applied'
-          });
           
           return; // Exit early, don't treat as error
         } else if (status === 400) {
@@ -344,11 +333,6 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
         onFormReset();
       }
 
-      // Log successful submission
-      logger.info("Volunteer application submitted successfully", {
-        programId: formData.program.id,
-        email: userData.email
-      });
 
     } catch (error) {
       // Log submission error

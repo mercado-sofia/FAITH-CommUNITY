@@ -4,12 +4,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
-import { FaPlus, FaSpinner } from 'react-icons/fa';
+import { FaPlus } from 'react-icons/fa';
 import { ConfirmationModal, SuccessModal } from '@/components';
 import { SkeletonLoader } from '../../components';
-import { SearchAndFilterControls } from './components';
-import { HighlightCard, ViewDetailsModal } from './components';
-import HighlightForm from './components/HighlightForm/HighlightForm';
+import { SearchAndFilterControls, HighlightCard, ViewDetailsModal, HighlightForm } from './components';
 import styles from './highlights.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -136,7 +134,7 @@ export default function AdminHighlightsPage() {
     } else {
       params.delete('search');
     }
-    router.replace(`/admin/faithree/highlights?${params.toString()}`);
+    router.replace(`/admin/highlights?${params.toString()}`);
   }, [searchParams, router]);
 
   // Handle filter change
@@ -149,7 +147,7 @@ export default function AdminHighlightsPage() {
       } else {
         params.delete('sort');
       }
-      router.replace(`/admin/faithree/highlights?${params.toString()}`);
+      router.replace(`/admin/highlights?${params.toString()}`);
     } else if (filterType === 'status') {
       setStatusFilter(value);
       const params = new URLSearchParams(searchParams);
@@ -158,7 +156,7 @@ export default function AdminHighlightsPage() {
       } else {
         params.delete('status');
       }
-      router.replace(`/admin/faithree/highlights?${params.toString()}`);
+      router.replace(`/admin/highlights?${params.toString()}`);
     }
   }, [searchParams, router]);
 

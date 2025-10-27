@@ -108,7 +108,6 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
       ];
       
       if (!validImageTypes.includes(file.type)) {
-        alert(`File ${file.name} is not a valid image format.`);
         return false;
       }
       
@@ -129,7 +128,7 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
         media: [...prev.media, ...uploadedFiles]
       }));
     } catch (error) {
-      alert('Some files failed to upload. Please try again.');
+      // Files failed to upload
     } finally {
       setUploadingFiles(prev => prev.filter(name => !validFiles.some(f => f.name === name)));
     }
@@ -141,7 +140,6 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
     const validFiles = fileArray.filter(file => {
       // Check file size (5MB minimum for videos)
       if (file.size < 5 * 1024 * 1024) {
-        alert(`Video ${file.name} is too small. Minimum size is 5MB.`);
         return false;
       }
       
@@ -151,7 +149,6 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
       ];
       
       if (!validVideoTypes.includes(file.type)) {
-        alert(`File ${file.name} is not a valid video format.`);
         return false;
       }
       
@@ -172,7 +169,7 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
         media: [...prev.media, ...uploadedFiles]
       }));
     } catch (error) {
-      alert('Some files failed to upload. Please try again.');
+      // Files failed to upload
     } finally {
       setUploadingFiles(prev => prev.filter(name => !validFiles.some(f => f.name === name)));
     }

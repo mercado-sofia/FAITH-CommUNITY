@@ -19,7 +19,6 @@ const formatEventDateWithWeekday = (dateString) => {
   if (!dateString) return 'Not specified';
   try {
     return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -409,7 +408,7 @@ export default function ProgramDetailsPage() {
                   
                   {formatEventDates(program) && (
                     <div className={styles.metaItem}>
-                      <span className={styles.metaLabel}>Event Date</span>
+                      <span className={styles.metaLabel}>Date</span>
                       <span className={styles.metaValue}>
                         {formatEventDates(program)}
                       </span>
@@ -515,7 +514,7 @@ export default function ProgramDetailsPage() {
             <div className={styles.organizationSection}>
               <div className={styles.sectionHeader}>
                 <div className={styles.sectionIcon}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M3 21H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     <path d="M5 21V7L13 2L21 7V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     <path d="M9 9V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>

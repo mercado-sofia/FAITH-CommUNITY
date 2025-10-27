@@ -16,10 +16,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  border-radius: 8px;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  border-radius: 6px;
   color: white;
   flex-shrink: 0;
 }
@@ -134,8 +134,8 @@
   }
   
   .sectionIcon {
-    width: 28px;
-    height: 28px;
+    width: 20px;
+    height: 20px;
   }
   
   .sectionTitle {

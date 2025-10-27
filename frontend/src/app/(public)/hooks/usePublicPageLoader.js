@@ -22,8 +22,8 @@ export const usePublicPageLoader = (pageName, options = {}) => {
   // Get initial state for this page
   const initialState = getPageLoaderState(pageName);
   
-  const [loading, setLoading] = useState(false); // Start with false to avoid stuck loading
-  const [pageReady, setPageReady] = useState(true); // Start with true to show content immediately
+  const [loading, setLoading] = useState(!initialState.hasVisited); // Show loading for first visits
+  const [pageReady, setPageReady] = useState(initialState.hasVisited); // Show content immediately for returning visits
   const timerRef = useRef(null);
   const pageReadyTimerRef = useRef(null);
 

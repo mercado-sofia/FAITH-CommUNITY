@@ -276,7 +276,7 @@ export const formatProgramDates = (program) => {
  */
 export const formatApplicationProgramDates = (application) => {
   try {
-    if (!application) return 'Not specified';
+    if (!application) return 'Coming soon';
     
     // 1. Handle multiple dates array (Multiple type)
     if (application.multiple_dates && Array.isArray(application.multiple_dates) && application.multiple_dates.length > 0) {
@@ -335,7 +335,7 @@ export const formatApplicationProgramDates = (application) => {
       return formatDateShort(application.programStartDate);
     }
     
-    return 'Not specified';
+    return 'Coming soon';
   } catch (error) {
     logger.error('Error in formatApplicationProgramDates', error, { application });
     return 'Invalid date';

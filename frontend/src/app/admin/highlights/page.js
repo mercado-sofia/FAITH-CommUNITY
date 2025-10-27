@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { FaPlus } from 'react-icons/fa';
 import { ConfirmationModal, SuccessModal } from '@/components';
-import { SkeletonLoader } from '../../components';
+import { SkeletonLoader } from '../components';
 import { SearchAndFilterControls, HighlightCard, ViewDetailsModal, HighlightForm } from './components';
 import styles from './highlights.module.css';
 
@@ -91,7 +91,16 @@ export default function AdminHighlightsPage() {
       }
 
       const data = await response.json();
-      setHighlights(data.highlights || []);
+      const highlightsData = data.highlights || [];
+      
+      // Debug: Check for duplicate IDs
+      const ids = highlightsData.map(h => h.id);
+      const duplicateIds = ids.filter((id, index) => ids.indexOf(id) !== index);
+      if (duplicateIds.length > 0) {
+        console.warn('Duplicate highlight IDs detected:', duplicateIds);
+      }
+      
+      setHighlights(highlightsData);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -162,7 +171,15 @@ export default function AdminHighlightsPage() {
 
   // Filter and sort highlights
   const filteredAndSortedHighlights = useCallback(() => {
-    let filtered = highlights;
+    // First, deduplicate highlights by ID to prevent duplicate keys
+    const uniqueHighlights = highlights.reduce((acc, highlight) => {
+      if (!acc.find(item => item.id === highlight.id)) {
+        acc.push(highlight);
+      }
+      return acc;
+    }, []);
+
+    let filtered = uniqueHighlights;
 
     // Apply status filter
     if (statusFilter === 'pending') {
@@ -379,9 +396,9 @@ export default function AdminHighlightsPage() {
           <div className={styles.programsSection}>
             {filteredAndSortedHighlights().length > 0 ? (
               <div className={styles.programsGrid}>
-                {filteredAndSortedHighlights().map((highlight) => (
+                {filteredAndSortedHighlights().map((highlight, index) => (
                   <HighlightCard
-                    key={highlight.id}
+                    key={`highlight-${highlight.id}-${index}`}
                     highlight={highlight}
                     onEdit={handleEditHighlight}
                     onView={handleViewHighlight}

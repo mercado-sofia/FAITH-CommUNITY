@@ -39,6 +39,11 @@
   position: relative;
 }
 
+/* When no navigation buttons, center the carousel window */
+.orgheadsCarousel:has(.carouselWindow:only-child) {
+  justify-content: center;
+}
+
 /* NEW: Carousel window to limit visible cards */
 .carouselWindow {
   width: 780px;

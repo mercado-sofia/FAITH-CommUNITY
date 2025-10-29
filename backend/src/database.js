@@ -685,11 +685,8 @@ const initializeDatabase = async () => {
           id INT AUTO_INCREMENT PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
           description TEXT,
-          email VARCHAR(255),
-          phone VARCHAR(50),
           image_url VARCHAR(500),
           position VARCHAR(100) DEFAULT 'Head of FACES',
-          display_order INT DEFAULT 0,
           status ENUM('ACTIVE', 'INACTIVE') DEFAULT 'ACTIVE',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

@@ -21,11 +21,6 @@
   opacity: 1 !important;
 }
 
-.toast.hide {
-  transform: translateX(100%);
-  opacity: 0;
-}
-
 .toastContent {
   display: flex;
   align-items: center;

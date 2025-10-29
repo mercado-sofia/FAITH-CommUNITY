@@ -54,7 +54,7 @@ export default function FloatingMessage() {
   } = useGetAllOrganizationsQuery();
 
   // Submit message mutation
-  const [submitMessage, { isLoading: submitLoading }] = useSubmitMessageMutation();
+  const [submitMessage] = useSubmitMessageMutation();
 
   // Email validation function
   const validateEmail = (email) => {

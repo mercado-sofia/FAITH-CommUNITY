@@ -40,7 +40,7 @@
 
 /* Main Container */
 .portfolioContainer {
-  max-width: 1000px;
+  max-width: 980px;
   margin: 0 auto;
   position: relative;
 }
@@ -52,7 +52,7 @@
   overflow: hidden;
   position: relative;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  padding: 2.4rem 0;
+  padding: 2rem 1rem 1.8rem;
 }
 
 .portfolioContent {
@@ -78,8 +78,14 @@
   order: 2;
 }
 
+.nameRoleWrapper {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1.5rem;
+}
+
 .greeting {
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .adviserName {
@@ -91,19 +97,11 @@
   letter-spacing: -0.02em;
 }
 
-.roleContainer {
-  margin-bottom: 1.5rem;
-}
-
 .roleText {
   display: inline-block;
-  background: #fff9ef;
-  border: 2px solid #FFAC00;
-  color: #FFAC00;
-  padding: 0.5rem 1rem;
-  border-radius: 9999px;
-  font-size: 12.5px;
-  font-weight: 600;
+  color: #2d2d2d;
+  font-size: 15px;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.2px;
 }
@@ -113,62 +111,8 @@
   color: #323232;
   line-height: 1.6;
   text-align: justify;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   max-width: 400px;
-}
-
-/* Contact Section */
-.contactSection {
-  margin-top: auto;
-}
-
-.contactButtons {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.contactBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: #124c44;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-  border: 2px solid #124c44;
-}
-
-.contactBtn:hover {
-  background: #165c50;
-}
-
-.phoneBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: white;
-  color: #10433b;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-  border: 2px solid #10433b;
-}
-
-.phoneBtn:hover {
-  background: #f0f9f7;
-  color: #145248;
-}
-
-.btnIcon {
-  font-size: 0.9rem;
 }
 
 /* Image Container */
@@ -183,8 +127,8 @@
 
 .imageWrapper {
   position: relative;
-  width: 400px;
-  height: 400px;
+  width: 380px;
+  height: 380px;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -202,7 +146,7 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .officerSection {
-    padding: 3rem 1.5rem;
+    padding: 4rem 1rem 4rem;
   }
 
   .officerHeading {
@@ -213,69 +157,102 @@
     font-size: 1.8rem;
   }
 
+  .officerSubtitle {
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    margin-bottom: 0.65rem;
+  }
+
+  .portfolioCard {
+    padding: 2.4rem 1.5rem 1.8rem;
+  }
+
   .portfolioContent {
     grid-template-columns: 1fr;
     min-height: auto;
   }
 
   .textContent {
-    padding: 1.5rem 1rem;
+    padding: 1rem 0.75rem;
     text-align: center;
   }
 
-
   .imageContainer {
-    padding: 2rem;
+    padding: 1rem;
   }
 
   .imageWrapper {
-    width: 320px;
-    height: 320px;
+    width: 300px;
+    height: 300px;
   }
 
-  .adviserName {
-    font-size: 2rem;
+  .nameRoleWrapper {
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 1.5rem;
   }
 
-  .contactButtons {
-    justify-content: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .officerSection {
-    padding: 2rem 1rem;
-  }
-
-  .textContent {
-    padding: 1rem 0.5rem;
+  .greeting {
+    margin-bottom: 1rem;
   }
 
   .adviserName {
     font-size: 1.8rem;
   }
 
+  .roleContainer {
+    margin-bottom: 0;
+  }
+
   .roleText {
-    font-size: 0.8rem;
-    padding: 0.4rem 0.8rem;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .officerHeading {
+    margin-bottom: 1.4rem;
+  }
+
+  .portfolioCard {
+    padding: 1rem 1rem 0.8rem;
+  }
+
+  .textContent {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .imageContainer {
+    padding: 0.75rem;
+  }
+
+  .nameRoleWrapper {
+    gap: 0;
+  }
+
+  .adviserName {
+    font-size: 1.4rem;
+  }
+
+  .roleText {
+    font-size: 15px;
   }
 
   .description {
     font-size: 0.9rem;
   }
 
-  .contactBtn,
-  .phoneBtn {
-    padding: 0.6rem 1.2rem;
-    font-size: 0.8rem;
-  }
-
   .imageWrapper {
-    width: 250px;
-    height: 250px;
+    width: 280px;
+    height: 280px;
   }
 
   .officerTitle {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
+  }
+
+  .officerSubtitle {
+    font-size: 0.85rem;
   }
 }

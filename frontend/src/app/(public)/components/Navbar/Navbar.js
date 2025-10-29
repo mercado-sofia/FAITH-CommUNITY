@@ -14,7 +14,7 @@ import { FaBars } from 'react-icons/fa';
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isAuthenticated, isLoading: authLoading } = useAuthState();
+  const { user, isAuthenticated } = useAuthState();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isSlidingOut, setIsSlidingOut] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);

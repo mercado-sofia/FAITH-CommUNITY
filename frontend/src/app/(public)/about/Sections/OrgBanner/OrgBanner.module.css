@@ -147,3 +147,72 @@
   color: rgba(255, 255, 255, 0.8);
   font-size: 1.1rem;
 }
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .orgSection {
+    padding: 1.5rem 2rem 2rem;
+  }
+  
+  .orgHeading {
+    font-size: 1.5rem;
+    margin-bottom: 1.2rem;
+  }
+  
+  .orgHeading span {
+    font-size: 2.2rem;
+  }
+  
+  .orgItem {
+    flex: 0 0 120px;
+  }
+  
+  .orgItem img {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .orgItem p {
+    font-size: 0.8rem;
+    margin-top: 0.4rem;
+  }
+  
+  .orgNavBtn {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .orgSection {
+    padding: 1.2rem 2rem 1.8rem;
+  }
+  
+  .orgHeading {
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+  }
+  
+  .orgHeading span {
+    font-size: 1.9rem;
+  }
+  
+  .orgItem {
+    flex: 0 0 100px;
+  }
+  
+  .orgItem img {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .orgItem p {
+    font-size: 0.75rem;
+    margin-top: 0.3rem;
+  }
+  
+  .orgNavBtn {
+    width: 24px;
+    height: 24px;
+  }
+}

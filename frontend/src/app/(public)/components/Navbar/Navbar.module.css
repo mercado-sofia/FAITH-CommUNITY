@@ -109,8 +109,7 @@
 }
 
 /* Authentication Button Styles */
-.navbarLoginBtn,
-.signupBtn {
+.navbarLoginBtn {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -124,9 +123,6 @@
   cursor: pointer !important;
   height: 40px !important;
   white-space: nowrap !important;
-}
-
-.navbarLoginBtn {
   background: transparent !important;
   color: #0c4b3a !important;
   border: 2px solid #0c4b3a !important;
@@ -134,17 +130,6 @@
 
 .navbarLoginBtn:hover {
   background: #f9fdfc !important;
-}
-
-.signupBtn {
-  background: #0c4b3a;
-  color: white;
-  border: 2px solid #0c4b3a;
-}
-
-.signupBtn:hover {
-  background: #145847;
-  border-color: #145847;
 }
 
 /* Loading states removed - handled by page-level loaders */
@@ -164,8 +149,7 @@
     order: 3;
   }
 
-  .navbarLoginBtn,
-  .signupBtn {
+  .navbarLoginBtn {
     padding: 0.4rem 0.8rem !important;
     font-size: 0.85rem !important;
   }

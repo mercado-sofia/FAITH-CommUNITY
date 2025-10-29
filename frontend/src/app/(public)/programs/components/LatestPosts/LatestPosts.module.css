@@ -112,8 +112,7 @@
 }
 
 .loadingContainer,
-.errorContainer,
-.emptyContainer {
+.errorContainer {
   text-align: center;
   padding: 3rem 2rem;
   color: #6b7280;
@@ -157,6 +156,10 @@
     align-items: flex-start;
     gap: 1rem;
   }
+  
+  .seeAllLink {
+    align-self: flex-end;
+  }
 }
 
 @media (max-width: 640px) {
@@ -173,7 +176,7 @@
   }
 
   .container {
-    padding: 0 0.5rem;
+    padding: 0 1rem;
   }
   
   .latestPostsSection {

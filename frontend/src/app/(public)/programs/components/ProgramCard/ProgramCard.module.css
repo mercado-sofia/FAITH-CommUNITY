@@ -57,6 +57,10 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+.dateBadgeSeparator {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
 /* Responsive adjustments for date badge */
 @media (max-width: 768px) {
   .dateBadge {
@@ -64,14 +68,19 @@
   }
   
   .dateBadgeSvg {
-    width: 70px;
-    height: 52px;
+    width: 85px;
+    height: 62px;
   }
   
   /* Adjust long badge for tablet */
   .dateBadge svg[viewBox="0 0 120 60"] {
-    width: 105px;
-    height: 52px;
+    width: 120px;
+    height: 62px;
+  }
+  
+  /* Increase font sizes on tablet */
+  .dateBadge svg text {
+    transform: scale(1.15);
   }
 }
 
@@ -81,14 +90,39 @@
   }
   
   .dateBadgeSvg {
-    width: 60px;
-    height: 45px;
+    width: 95px;
+    height: 70px;
   }
   
   /* Adjust long badge for mobile */
   .dateBadge svg[viewBox="0 0 120 60"] {
-    width: 90px;
-    height: 45px;
+    width: 130px;
+    height: 70px;
+  }
+  
+  /* Reduce font size for day numbers on mobile */
+  .dateBadge svg .dateBadgeDay {
+    font-size: 16px !important;
+    transform: translateY(-5px);
+    transform-origin: center center;
+  }
+  
+  /* Reduce font size for month text on mobile */
+  .dateBadge svg .dateBadgeMonth {
+    font-size: 12px !important;
+    transform: translateY(-5px);
+    transform-origin: center center;
+  }
+  
+  /* Optimize text rendering */
+  .dateBadge svg text {
+    dominant-baseline: central;
+    text-anchor: middle;
+  }
+  
+  /* Adjust separator position for mobile to center it properly between day numbers */
+  .dateBadge svg .dateBadgeSeparator {
+    transform: translateY(-6px);
   }
 }
   
@@ -242,13 +276,6 @@
   border-radius: 9999px;
   object-fit: contain;
 }
-
-.cardOrgIconFallback {
-  width: 18px;
-  height: 18px;
-  border-radius: 9999px;
-  background: #e2e8f0;
-}
   
 .cardDesc {
   font-size: 0.9rem;
@@ -270,6 +297,14 @@
 
 /* Responsive styles for collaboration badge and floating label */
 @media (max-width: 768px) {
+  .cardTitle {
+    font-size: 18px;
+  }
+  
+  .cardDate {
+    font-size: 16px;
+  }
+  
   .floatingLabel {
     font-size: 0.7rem;
     padding: 0.4rem 0.6rem;
@@ -280,9 +315,30 @@
     font-size: 0.7rem;
     padding: 0.2rem 0.6rem;
   }
+
+  /* Remove hover translate effect on mobile */
+  .card:hover {
+    transform: none;
+  }
 }
 
 @media (max-width: 480px) {
+  .cardTitle {
+    font-size: 18px;
+  }
+  
+  .cardOrg {
+    font-size: 13px;
+  }
+  
+  .cardDesc {
+    font-size: 14px;
+  }
+  
+  .cardDate {
+    font-size: 16px;
+  }
+  
   .floatingLabel {
     font-size: 0.65rem;
     padding: 0.35rem 0.5rem;
@@ -290,12 +346,17 @@
   }
   
   .collaborationBadge {
-    font-size: 0.65rem;
-    padding: 0.15rem 0.5rem;
+    font-size: 13px;
+    padding: 0.3rem 0.75rem;
   }
   
   .collaborationBadge svg {
-    width: 12px;
-    height: 12px;
+    width: 13px;
+    height: 13px;
+  }
+
+  /* Remove hover translate effect on mobile */
+  .card:hover {
+    transform: none;
   }
 }

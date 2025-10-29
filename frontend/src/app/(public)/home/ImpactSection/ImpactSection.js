@@ -28,6 +28,7 @@ const TruncatedDescription = ({ description, maxChars = 150 }) => {
 export default function ImpactSection() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isClient, setIsClient] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(0);
   const sectionRef = useRef(null);
 
   // Fetch featured projects from API
@@ -36,35 +37,42 @@ export default function ImpactSection() {
     isLoading 
   } = useGetPublicFeaturedProjectsQuery();
 
-  // Carousel configuration - memoized to prevent recalculation
+  // Carousel configuration - recalculates when window width changes
   const carouselConfig = useMemo(() => {
-    if (typeof window === 'undefined') {
-      return { cardWidth: 370, gap: 18 }; // Default for SSR
+    if (typeof window === 'undefined' || windowWidth === 0) {
+      return { cardWidth: 450, gap: 22, slideSize: 3 }; // Default for SSR
     }
     
-    const width = window.innerWidth;
+    const width = windowWidth;
     
     if (width < 768) {
       return {
-        cardWidth: 250,
-        gap: 10
+        cardWidth: 350, // Fallback, but CSS handles actual width
+        gap: 0,
+        slideSize: 1, // Show 1 card at a time on mobile
+        usePercentage: true // Flag to use percentage width on mobile
       };
     } else if (width < 1024) {
       return {
-        cardWidth: 290,
-        gap: 14
+        cardWidth: 380,
+        gap: 18,
+        slideSize: 2 // Show 2 cards on tablet
       };
     } else {
       return {
-        cardWidth: 370,
-        gap: 18
+        cardWidth: 400,
+        gap: 20,
+        slideSize: 3 // Show 3 cards on desktop
       };
     }
-  }, []);
+  }, [windowWidth]);
 
-  // Reset index on resize - debounced to prevent excessive calls
-  const debouncedResize = useMemo(() => 
-    debounce(() => setCurrentIndex(0), 150), 
+  // Handle window resize - debounced to prevent excessive calls
+  const handleResize = useMemo(() => 
+    debounce(() => {
+      setWindowWidth(window.innerWidth);
+      setCurrentIndex(0);
+    }, 150), 
     []
   );
 
@@ -121,10 +129,10 @@ export default function ImpactSection() {
     setCurrentIndex(0);
   }, [dataToDisplay.length]);
 
-  // Carousel calculations
-  const slideSize = 3;
+  // Carousel calculations - use dynamic slideSize from config
+  const slideSize = carouselConfig.slideSize;
   const maxIndex = dataToDisplay.length <= slideSize ? 0 : dataToDisplay.length - slideSize;
-  const shouldCenter = dataToDisplay.length < 3;
+  const shouldCenter = dataToDisplay.length < slideSize;
 
   const handlePrev = useCallback(() => {
     setCurrentIndex((prev) => {
@@ -148,23 +156,33 @@ export default function ImpactSection() {
   useEffect(() => {
     setIsClient(true);
     
+    // Set initial window width
+    if (typeof window !== 'undefined') {
+      setWindowWidth(window.innerWidth);
+    }
+    
     const handleKey = (e) => {
       if (e.key === 'ArrowRight') handleNext();
       else if (e.key === 'ArrowLeft') handlePrev();
     };
     
-    window.addEventListener('resize', debouncedResize);
+    window.addEventListener('resize', handleResize);
     window.addEventListener('keydown', handleKey);
     
     return () => {
-      window.removeEventListener('resize', debouncedResize);
+      window.removeEventListener('resize', handleResize);
       window.removeEventListener('keydown', handleKey);
     };
-  }, [handleNext, handlePrev, debouncedResize]);
+  }, [handleNext, handlePrev, handleResize]);
 
   // Calculate translateX for carousel sliding
   const translateX = useMemo(() => {
     if (dataToDisplay.length <= slideSize) {
+      return 0;
+    }
+    
+    // For mobile single card display, don't translate - let CSS centering handle it
+    if (carouselConfig.slideSize === 1) {
       return 0;
     }
     
@@ -213,16 +231,27 @@ export default function ImpactSection() {
           <div 
             className={`${styles.carouselTrack} ${shouldCenter ? styles.centeredTrack : ''}`}
             style={{ 
-              transform: `translateX(-${translateX}px)`,
+              transform: carouselConfig.slideSize === 1 ? 'none' : `translateX(-${translateX}px)`,
               gap: `${carouselConfig.gap}px`
             }}
           >
-            {dataToDisplay.map((card, index) => (
+            {dataToDisplay
+              .filter((card, index) => {
+                // For mobile single card display, only show the current card
+                if (carouselConfig.slideSize === 1) {
+                  return index === currentIndex;
+                }
+                // For multi-card display, show all cards
+                return true;
+              })
+              .map((card, index) => (
               <div
                 key={`${card.title}-${index}`}
                 className={styles.carouselCard}
                 style={{ 
-                  width: `${carouselConfig.cardWidth}px`,
+                  width: carouselConfig.usePercentage 
+                    ? '100%' // Use CSS for width on mobile via calc()
+                    : `${carouselConfig.cardWidth}px`,
                   flexShrink: 0
                 }}
               >

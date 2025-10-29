@@ -193,11 +193,12 @@ const DateBadge = ({ dateInfo, status }) => {
           {/* Separator */}
           <text 
             x="60" 
-            y="36" 
+            y="33" 
             textAnchor="middle" 
             fill="white" 
             fontSize="14" 
             fontWeight="600"
+            className={styles.dateBadgeSeparator}
           >
             -
           </text>
@@ -411,7 +412,6 @@ export default function ProgramCard({ project }) {
                       logoUrl: project.orgLogo 
                     });
                     e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'block';
                   }}
                 />
               );
@@ -424,10 +424,6 @@ export default function ProgramCard({ project }) {
               className={styles.cardOrgIcon}
             />
           )}
-          <div 
-            className={styles.cardOrgIconFallback} 
-            style={{ display: 'none' }}
-          ></div>
           <span>{project.orgName}</span>
         </Link>
 

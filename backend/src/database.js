@@ -281,6 +281,82 @@ const runIncrementalMigrations = async (connection) => {
     // manual_status_override field is already included in the initial table creation
     // No need to add it in migrations as it's part of the base schema
 
+    // Add status column to admin_highlights if it doesn't exist
+    try {
+      await connection.query(`
+        ALTER TABLE admin_highlights 
+        ADD COLUMN IF NOT EXISTS status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending'
+      `);
+      console.log('Admin highlights status column added successfully');
+    } catch (statusError) {
+      console.log('Admin highlights status column already exists or update failed');
+    }
+
+    // Add index for status column
+    try {
+      await connection.query(`
+        ALTER TABLE admin_highlights 
+        ADD INDEX IF NOT EXISTS idx_status (status)
+      `);
+      console.log('Admin highlights status index added successfully');
+    } catch (indexError) {
+      console.log('Admin highlights status index already exists or update failed');
+    }
+
+    // Fix any records with ID=0 by updating them to have proper auto-increment IDs
+    try {
+      const [zeroIdRecords] = await connection.query(`
+        SELECT COUNT(*) as count FROM admin_highlights WHERE id = 0
+      `);
+      
+      if (zeroIdRecords[0].count > 0) {
+        console.log(`Found ${zeroIdRecords[0].count} records with ID=0, fixing...`);
+        
+        // Get the next available ID
+        const [maxIdResult] = await connection.query(`
+          SELECT MAX(id) as max_id FROM admin_highlights WHERE id > 0
+        `);
+        let nextId = (maxIdResult[0].max_id || 0) + 1;
+        
+        // Update ALL records with ID=0 to have proper sequential IDs
+        const [allZeroRecords] = await connection.query(`
+          SELECT id FROM admin_highlights WHERE id = 0 ORDER BY created_at ASC
+        `);
+        
+        for (let i = 0; i < allZeroRecords.length; i++) {
+          await connection.query(`
+            UPDATE admin_highlights 
+            SET id = ? 
+            WHERE id = 0 
+            ORDER BY created_at ASC 
+            LIMIT 1
+          `, [nextId + i]);
+        }
+        
+        // Reset auto-increment to ensure proper IDs
+        const finalNextId = nextId + allZeroRecords.length;
+        await connection.query(`
+          ALTER TABLE admin_highlights AUTO_INCREMENT = ?
+        `, [finalNextId]);
+        
+        console.log(`Fixed ${allZeroRecords.length} ID=0 records in admin_highlights table, assigned IDs ${nextId} to ${finalNextId - 1}`);
+      }
+    } catch (idFixError) {
+      console.log('ID=0 fix skipped or failed:', idFixError.message);
+    }
+
+    // Ensure all existing highlights have a status (default to 'pending' if NULL)
+    try {
+      await connection.query(`
+        UPDATE admin_highlights 
+        SET status = 'pending' 
+        WHERE status IS NULL
+      `);
+      console.log('Updated NULL status records to pending');
+    } catch (statusUpdateError) {
+      console.log('Status update skipped or failed:', statusUpdateError.message);
+    }
+
   } catch (error) {
     logError('Incremental migrations failed', error, { context: 'database' });
     throw error;
@@ -702,6 +778,7 @@ const initializeDatabase = async () => {
           title VARCHAR(255) NOT NULL,
           description TEXT NOT NULL,
           media_files JSON,
+          status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
           organization_id INT NOT NULL,
           created_by INT NOT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -710,7 +787,8 @@ const initializeDatabase = async () => {
           FOREIGN KEY (created_by) REFERENCES admins(id) ON DELETE CASCADE,
           INDEX idx_organization_id (organization_id),
           INDEX idx_created_by (created_by),
-          INDEX idx_created_at (created_at)
+          INDEX idx_created_at (created_at),
+          INDEX idx_status (status)
         )
       `);
 

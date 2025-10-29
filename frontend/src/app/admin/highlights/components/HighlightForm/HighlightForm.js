@@ -26,12 +26,22 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
   // Initialize form data
   useEffect(() => {
     if (isEditMode && highlight) {
+      // Edit mode: populate form with existing highlight data
       setFormData({
         title: highlight.title || '',
         description: highlight.description || '',
         media: highlight.media || []
       });
+    } else {
+      // Create mode: reset form to empty state
+      setFormData({
+        title: '',
+        description: '',
+        media: []
+      });
     }
+    // Clear any existing errors when switching modes
+    setErrors({});
   }, [isEditMode, highlight]);
 
   // Handle input changes

@@ -52,6 +52,38 @@
   cursor: not-allowed;
 }
 
+/* Status Navigation Tabs */
+.statusTabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.statusTab {
+  background: none;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  color: #6b7280;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s ease;
+  border-bottom: 2px solid transparent;
+  user-select: none;
+}
+
+.statusTab:hover {
+  color: #06100f;
+}
+
+.statusTab.activeTab {
+  color: #06100f;
+  border-bottom-color: #06100f;
+}
+
 /* Highlights Section */
 .programsSection {
   margin-top: 2.4rem;

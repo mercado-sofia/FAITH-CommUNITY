@@ -1048,16 +1048,40 @@ export const bulkApproveSubmissions = async (req, res) => {
       
       if (action === 'create') {
         // For new highlights, update the status to approved
-        await connection.execute(
+        const [updateResult] = await connection.execute(
           'UPDATE admin_highlights SET status = ? WHERE id = ?',
           ['approved', data.highlight_id]
         );
+        
+        if (updateResult.affectedRows === 0) {
+          console.error(`Failed to update highlight ${data.highlight_id} - no rows affected`);
+          // Try to find the highlight by title as fallback
+          const [fallbackResult] = await connection.execute(
+            'UPDATE admin_highlights SET status = ? WHERE title = ? AND status = ?',
+            ['approved', data.title, 'pending']
+          );
+          if (fallbackResult.affectedRows > 0) {
+            console.log(`Updated highlight by title fallback: ${data.title}`);
+          }
+        }
       } else if (action === 'update') {
         // For updates, the highlight is already updated, just change status to approved
-        await connection.execute(
+        const [updateResult] = await connection.execute(
           'UPDATE admin_highlights SET status = ? WHERE id = ?',
           ['approved', data.highlight_id]
         );
+        
+        if (updateResult.affectedRows === 0) {
+          console.error(`Failed to update highlight ${data.highlight_id} - no rows affected`);
+          // Try to find the highlight by title as fallback
+          const [fallbackResult] = await connection.execute(
+            'UPDATE admin_highlights SET status = ? WHERE title = ? AND status = ?',
+            ['approved', data.title, 'pending']
+          );
+          if (fallbackResult.affectedRows > 0) {
+            console.log(`Updated highlight by title fallback: ${data.title}`);
+          }
+        }
       } else if (action === 'delete') {
         // For deletions, the highlight is already deleted, no additional action needed
         // The submission record will show the deletion was approved

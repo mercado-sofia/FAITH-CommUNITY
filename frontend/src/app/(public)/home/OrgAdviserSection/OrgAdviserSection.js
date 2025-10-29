@@ -20,7 +20,7 @@ export default function OrgAdviserSection() {
       const width = window.innerWidth;
 
       if (width < 640) {
-        setCardWidth(220);
+        setCardWidth(320);
         setCardGap(16);
         setVisibleCount(1);
       } else if (width < 964) {
@@ -54,8 +54,20 @@ export default function OrgAdviserSection() {
     );
   }, [visibleCount, organizationAdvisers.length]);
 
-  // Determine if navigation should be shown (5+ cards)
-  const shouldShowNavigation = organizationAdvisers.length >= 5;
+  // Determine if navigation should be shown (5+ cards and not mobile)
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+  
+  const shouldShowNavigation = organizationAdvisers.length >= 5 && !isMobile;
 
   // Reset startIndex when navigation state changes
   useEffect(() => {
@@ -74,7 +86,7 @@ export default function OrgAdviserSection() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [handleNext, handlePrev, shouldShowNavigation]);
 
-  const translateX = startIndex * (cardWidth + cardGap);
+  const translateX = isMobile ? 0 : startIndex * (cardWidth + cardGap);
 
   // Show loading state
   if (isLoading) {
@@ -116,7 +128,7 @@ export default function OrgAdviserSection() {
 
         <div className={`${styles.orgAdviserSliderWrapper} ${shouldShowNavigation ? styles.withNavigation : styles.withoutNavigation}`}>
           <div
-            className={styles.orgAdviserSliderTrack}
+            className={`${styles.orgAdviserSliderTrack} ${isMobile ? styles.mobileVertical : ''}`}
             style={{ 
               transform: shouldShowNavigation ? `translateX(-${translateX}px)` : 'none',
               justifyContent: shouldShowNavigation ? 'flex-start' : 'center'
@@ -130,7 +142,7 @@ export default function OrgAdviserSection() {
                     alt={adviser.name}
                     className={styles.orgAdviserImage}
                     fill
-                    sizes="(max-width: 640px) 220px, 240px"
+                    sizes="(max-width: 640px) 320px, 240px"
                     onError={(e) => {
                       e.target.src = '/defaults/default-profile.png';
                     }}

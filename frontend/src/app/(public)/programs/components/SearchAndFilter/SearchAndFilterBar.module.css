@@ -10,6 +10,29 @@
   z-index: 5;
 }
 
+/* Mobile: Normal positioning below banner */
+@media (max-width: 768px) {
+  .searchContainer {
+    top: 0;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    padding: 0 1rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    position: relative;
+  }
+
+  /* Search bar takes full width (first) */
+  .searchBar {
+    order: 1;
+    width: 100%;
+    flex: 0 0 auto;
+    position: relative;
+    margin-bottom: 0;
+  }
+}
+
 /* Main Search Bar */
 .searchBar {
   display: flex;
@@ -26,6 +49,91 @@
   flex-grow: 1;
 }
 
+/* Desktop: Filter stays inside search bar naturally */
+@media (min-width: 769px) {
+  .searchContainer {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .searchBar {
+    position: relative;
+  }
+}
+
+/* Desktop/Tablet: Show filter inside search bar, hide mobile controls */
+.filterDesktop {
+  display: flex;
+}
+
+.sortDesktop {
+  display: flex;
+}
+
+.mobileControls {
+  display: none;
+}
+
+/* Mobile: Hide desktop filter, show mobile controls below search bar */
+@media (max-width: 768px) {
+  .searchBar {
+    width: 100%;
+    max-width: 100%;
+    height: 3.5rem;
+    min-height: 3.5rem;
+    flex-direction: row;
+    align-items: center;
+    position: relative;
+    border-radius: 1rem;
+    overflow: visible;
+  }
+
+  /* Hide desktop filter and sort */
+  .filterDesktop {
+    display: none !important;
+  }
+
+  .sortDesktop {
+    display: none !important;
+  }
+  
+  /* Ensure sort wrapper with desktop class is hidden */
+  .sortSelectWrapper.sortDesktop {
+    display: none !important;
+  }
+
+  /* Show mobile controls container - aligned to left */
+  .mobileControls {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.75rem;
+    width: 100%;
+    margin-top: 0.3rem;
+    order: 2;
+  }
+
+  /* Mobile filter and sort controls */
+  .filterMobile,
+  .sortMobile {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .filterMobile {
+    width: 135px;
+    height: 3rem;
+  }
+
+  .sortMobile {
+    width: 140px;
+    height: 3rem;
+  }
+}
+
 /* Search Input Field */
 .searchInput {
   flex: 3;
@@ -35,6 +143,25 @@
   color: #333;
   border-left: 1px solid #e5e7eb;
   outline: none;
+}
+
+/* Desktop: Input has left margin for filter */
+@media (min-width: 769px) {
+  .searchInput {
+    border-left: 1px solid #e5e7eb;
+  }
+}
+
+/* Mobile: Takes available space, no left border */
+@media (max-width: 768px) {
+  .searchInput {
+    flex: 1;
+    border-left: none;
+    padding: 1rem 1.5rem;
+    padding-right: 3.5rem;
+    min-height: 3.5rem;
+    border-radius: 1rem;
+  }
 }
 
 .searchInput::placeholder {
@@ -52,6 +179,18 @@
   cursor: pointer;
 }
 
+/* Mobile: Positioned inside search input area */
+@media (max-width: 768px) {
+  .searchBtn {
+    padding: 0.75rem 1.25rem;
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+  }
+}
+
 /* Filter Dropdown */
 .customSelectWrapper {
   position: relative;
@@ -60,6 +199,14 @@
   font-size: 1rem;
   user-select: none;
   max-width: 200px;
+}
+
+/* Desktop: Reset margin-right since it's positioned absolutely */
+@media (min-width: 769px) {
+  .customSelectWrapper {
+    margin-right: 0;
+    font-size: 1rem;
+  }
 }
 
 .customSelectHeader {
@@ -76,9 +223,32 @@
   justify-content: space-between;
 }
 
+/* Desktop: Filter header styles */
+@media (min-width: 769px) {
+  .customSelectHeader {
+    padding: 1.2rem 2rem;
+    height: 5rem;
+    border-radius: 1rem 0 0 1rem;
+    background: transparent !important;
+    box-shadow: none !important;
+    font-weight: 700 !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
 .dropdownIcon {
   font-size: 0.85rem;
   margin-left: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(0deg);
+}
+
+.dropdownIconOpen {
+  transform: rotate(90deg);
 }
 
 .customSelectOptions {
@@ -107,6 +277,29 @@
   background-color: #f1f5f9;
 }
 
+/* Mobile: Filter extracted from search bar, styled for mobile */
+@media (max-width: 768px) {
+  /* Mobile filter header styling */
+  .filterMobile .customSelectHeader,
+  .sortMobile .sortSelectHeader {
+    padding: 0.75rem 1.2rem;
+    border-radius: 0.5rem;
+    background: #fff;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    min-height: 3rem;
+    height: 3rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0;
+  }
+
+  .filterMobile .customSelectHeader {
+    font-size: 14px;
+  }
+}
+
 /* Sort Dropdown */
 .sortSelectWrapper {
   position: relative;
@@ -117,6 +310,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Desktop: Sort stays outside */
+@media (min-width: 769px) {
+  .sortSelectWrapper {
+    width: 140px;
+    height: 50px;
+  }
+  
+  .sortDesktop {
+    display: flex;
+  }
 }
 
 .sortSelectHeader {
@@ -133,6 +338,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+/* Mobile: Sort header adjustments */
+@media (max-width: 768px) {
+  .sortSelectHeader {
+    padding: 0.75rem 1.2rem;
+    border-radius: 0.5rem;
+    min-height: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    margin: 0;
+  }
 }
 
 .sortSelectOptions {
@@ -160,6 +378,14 @@
 }
 
 .sortdropdownIcon {
-  font-size: 10px;
+  font-size: 0.85rem;
   margin-left: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(0deg);
+}
+
+.sortdropdownIconOpen {
+  transform: rotate(90deg);
 }

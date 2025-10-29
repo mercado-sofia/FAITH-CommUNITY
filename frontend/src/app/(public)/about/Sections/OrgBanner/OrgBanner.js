@@ -1,16 +1,27 @@
 import styles from './OrgBanner.module.css';
 import Image from 'next/image';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePublicOrganizations } from '../../../hooks/usePublicData';
 
 export default function OrgBanner() {
-  const cardWidth = 140;
   const [orgStart, setOrgStart] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
   const { organizations, isLoading: loading, error } = usePublicOrganizations();
   
-  // Calculate dynamic visible count based on available organizations
-  const maxVisibleCount = 7;
+  // Check if screen is mobile size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  // Calculate dynamic visible count based on screen size and available organizations
+  const maxVisibleCount = isMobile ? 3 : 7;
   const orgVisibleCount = Math.min(organizations.length, maxVisibleCount);
   const needsCarousel = organizations.length > maxVisibleCount;
 
@@ -64,7 +75,7 @@ export default function OrgBanner() {
             className={styles.orgSliderWrapper}
             style={{ 
               width: needsCarousel 
-                ? `calc((140px + 2px) * ${orgVisibleCount} - 2px)` 
+                ? `calc((${isMobile ? 120 : 140}px + 2px) * ${orgVisibleCount} - 2px)` 
                 : 'auto',
               justifyContent: needsCarousel ? 'flex-start' : 'center'
             }}
@@ -73,7 +84,7 @@ export default function OrgBanner() {
               className={styles.orgSliderTrack}
               style={{ 
                 transform: needsCarousel 
-                  ? `translateX(-${orgStart * (cardWidth + 2)}px)` 
+                  ? `translateX(-${orgStart * ((isMobile ? 120 : 140) + 2)}px)` 
                   : 'none',
                 justifyContent: needsCarousel ? 'flex-start' : 'center'
               }}

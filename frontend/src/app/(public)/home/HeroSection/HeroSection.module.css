@@ -15,7 +15,6 @@
 .hero {
   padding: 3rem 0 1rem;
   background: #ffffff;
-  min-height: auto;
 }
 
 .leftColumn {
@@ -29,6 +28,18 @@
   display: flex;
   gap: 1rem;
   align-items: flex-end;
+}
+
+/* Desktop Cards Container */
+.desktopCards {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+/* Mobile Carousel Container */
+.mobileCarousel {
+  display: none;
 }
 
 /* Base card styles */
@@ -106,14 +117,12 @@
   font-size: 1.5rem;
   font-weight: bold;
   margin: 0 0 0.25rem 0;
-  color: white;
 }
 
 .cardOverlayText p {
   font-size: 1rem;
   font-weight: 500;
   margin: 0;
-  color: white;
   opacity: 0.9;
 }
 
@@ -126,6 +135,75 @@
   opacity: 0;
   transform: translateY(10px);
   transition: all 0.3s ease;
+}
+
+/* Carousel Styles */
+.carouselContainer {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.carouselImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.carouselOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+  color: white;
+  padding: 2rem 1.5rem 3rem;
+  z-index: 2;
+}
+
+.carouselOverlay h2 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0 0 0.5rem 0;
+}
+
+.carouselOverlay p {
+  font-size: 1rem;
+  margin: 0;
+  opacity: 0.9;
+}
+
+.carouselIndicators {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  z-index: 3;
+}
+
+.indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background-color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.indicator.active {
+  background-color: #ffaa00c5;
+  transform: scale(1.2);
+}
+
+.indicator:hover {
+  background-color: rgba(255, 255, 255, 0.8);
 }
 
 .welcome {
@@ -157,8 +235,6 @@
 }
 
 .ctaContainer {
-  position: relative;
-  height: auto;
   margin-top: 3.2rem;
 }
 
@@ -215,8 +291,7 @@
 }
 
 /* Ensure text stays above the sliding layer */
-.cta button span,
-.cta button svg {
+.cta button * {
   position: relative;
   z-index: 1;
 }
@@ -307,12 +382,7 @@
 
 .videoOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   background-color: rgba(0, 0, 0, 0.95);
   display: flex;
   justify-content: center;
@@ -413,13 +483,6 @@
     width: 120px;
   }
 
-  .cardImage {
-    object-fit: cover;
-    width: 100%;
-    height: 100%;
-    transition: transform 0.3s ease;
-  }
-
   .rightColumn {
     gap: 0.75rem;
     align-items: flex-end;
@@ -433,14 +496,14 @@
   }
 
   .hero {
-    padding: 5rem 1rem 3rem;
+    padding: 0 1rem 3rem;
     text-align: center;
   }
 
   .heroWrapper {
     flex-direction: column;
     align-items: center;
-    gap: 2.5rem;
+    gap: 0;
   }
 
   .leftColumn {
@@ -448,6 +511,15 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    order: 2;
+  }
+
+  .welcome {
+    margin-bottom: 0.8rem;
+  }
+
+  .welcome::after {
+    display: none;
   }
 
   .herotitle {
@@ -457,7 +529,7 @@
   }
 
   .ctaContainer {
-    margin-top: 1.6rem;
+    margin-top: 0;
     width: 80%;
     display: flex;
     flex-direction: column;
@@ -484,7 +556,8 @@
     flex-direction: row;
     justify-content: center;
     gap: 1rem;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    align-items: center;
   }
 
   .discover {
@@ -499,60 +572,45 @@
   .rightColumn {
     width: 100%;
     display: flex;
-    flex-wrap: nowrap;
     justify-content: center;
-    align-items: stretch;
-    gap: clamp(0.5rem, 1vw, 1rem);
-    overflow-x: auto;
-    margin-top: 1rem;
+    align-items: center;
+    margin: 0 0 2rem 0;
+    order: 1;
+    padding: 0;
   }
 
-  .card,
-  .card.first,
-  .cardVertical {
-    flex-shrink: 0;
-    flex-basis: 20%;
-    min-width: 120px;
-    max-width: 420px;
-    height: 340px;
-    transition: flex-basis 0.5s ease, transform 0.3s ease;
+  .desktopCards {
+    display: none;
   }
 
-  .rightColumn > .card:hover,
-  .rightColumn > .cardVertical:hover {
-    flex-basis: 50%;
-  }
-
-  .rightColumn:has(.card:hover) > .card:not(:hover),
-  .rightColumn:has(.cardVertical:hover) > .cardVertical:not(:hover) {
-    flex-basis: 20%;
-  }
-
-  .cardImage {
-    object-fit: cover;
+  .mobileCarousel {
+    display: block;
     width: 100%;
-    height: 100%;
-    transition: transform 0.3s ease;
   }
 
-  /* Hide card text by default */
-  .cardText {
-    opacity: 0;
-    transform: translateY(10px);
-    transition: all 0.3s ease;
+  /* Mobile carousel specific styles */
+  .carouselContainer {
+    height: 250px;
+    border-radius: 0;
+    width: 100%;
   }
 
-  /* Show only on hover */
-  .card:hover .cardText,
-  .card.first:hover .cardText {
-    opacity: 1;
-    transform: translateY(0);
+  .carouselOverlay {
+    padding: 1.5rem 1rem 2.5rem;
+  }
+
+  .carouselOverlay h2 {
+    font-size: 1.4rem;
+  }
+
+  .carouselOverlay p {
+    font-size: 1rem;
   }
 }
 
 @media (max-width: 640px) {
   .hero {
-    padding: 8rem 0 0;
+    padding: 0 0 0;
     text-align: center;
     min-height: auto;
   }
@@ -561,8 +619,17 @@
     display: none;
   }
 
+  .leftColumn {
+    order: 2;
+  }
+
   .welcome {
     font-size: 0.9rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .welcome::after {
+    display: none;
   }
 
   .ctaContainer {
@@ -579,11 +646,13 @@
     align-items: center;
     justify-content: center;
     gap: 1rem;
+    flex-wrap: nowrap;
   }
 
   .discover {
     font-size: 14px;
     padding: 0.9rem 1.6rem;
+    flex-shrink: 0;
   }
 
   .playCircle {
@@ -593,6 +662,41 @@
   }
 
   .rightColumn {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 0 2rem 0;
+    order: 1;
+    padding: 0;
+  }
+
+  .desktopCards {
     display: none;
+  }
+
+  .mobileCarousel {
+    display: block;
+    width: 100%;
+  }
+
+  /* Smaller carousel for very small screens */
+  .carouselContainer {
+    height: 200px;
+    border-radius: 0;
+    width: 100%;
+  }
+
+  .carouselOverlay {
+    padding: 1rem 0.75rem 3rem;
+  }
+
+  .carouselOverlay h2 {
+    font-size: 1.35rem;
+    margin-bottom: 3px;
+  }
+
+  .carouselOverlay p {
+    font-size: 0.95rem;
   }
 }

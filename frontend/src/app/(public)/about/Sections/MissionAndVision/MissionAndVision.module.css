@@ -15,7 +15,7 @@
 .sectionTitle {
   font-size: 2.2rem;
   font-weight: 700;
-  margin-bottom: 4.2rem;
+  margin-bottom: 5rem;
 }
 
 .cardWrapper {
@@ -23,14 +23,14 @@
   justify-content: center;
   flex-wrap: wrap;
   gap: 4rem;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
 }
 
 .card {
   background: white;
   width: 450px;
-  padding: 3rem 4rem 4rem 4rem;
-  border-radius: 2rem;
+  padding: 2.5rem 3rem 3.5rem 3rem;
+  border-radius: 1.5rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
   position: relative;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -45,13 +45,13 @@
   background: white;
   border-radius: 50%;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  width: 85px;
-  height: 85px;
+  width: 75px;
+  height: 75px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: absolute;
-  top: -40px;
+  top: -35px;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -69,12 +69,102 @@
   color: #1A685B;
   font-size: 1.4rem;
   font-weight: bold;
-  margin-top: 1.6rem;
-  margin-bottom: 1.2rem;
+  margin-top: 1.2rem;
+  margin-bottom: 1rem;
   cursor: default;
 }
 
 .card p {
   font-size: 0.85rem;
   line-height: 1.8;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .details {
+    padding: 3rem 2rem 4rem;
+  }
+  
+  .sectionTitle {
+    font-size: 1.8rem;
+    margin-bottom: 3.8rem;
+  }
+  
+  .cardWrapper {
+    gap: 2.5rem;
+    margin-top: 2rem;
+  }
+  
+  .card {
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem 1.5rem 2.2rem 1.5rem;
+  }
+  
+  .card h4 {
+    font-size: 1.2rem;
+    margin-top: 1.2rem;
+    margin-bottom: 1rem;
+  }
+  
+  .card p {
+    font-size: 0.9rem;
+  }
+  
+  .iconCircle {
+    width: 65px;
+    height: 65px;
+    top: -32px;
+  }
+  
+  .iconReact {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .details {
+    padding: 2rem 2rem 3rem;
+  }
+  
+  .sectionTitle {
+    font-size: 1.5rem;
+    margin-bottom: 3rem;
+  }
+  
+  .cardWrapper {
+    gap: 2.8rem;
+  }
+  
+  .card {
+    padding: 1.8rem 1.2rem 2rem 1.2rem;
+  }
+  
+  .card h4 {
+    font-size: 1.1rem;
+  }
+  
+  .card p {
+    font-size: 0.85rem;
+  }
+  
+  .iconCircle {
+    width: 60px;
+    height: 60px;
+    top: -30px;
+  }
+  
+  .iconReact {
+    font-size: 24px;
+  }
+  
+  /* Disable hover effects on mobile */
+  .card:hover {
+    transform: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  }
+  
+  .card:hover .iconReact {
+    color: #1A685B;
+  }
 }

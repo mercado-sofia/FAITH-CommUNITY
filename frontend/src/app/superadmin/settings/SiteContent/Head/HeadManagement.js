@@ -17,8 +17,6 @@ export default function HeadManagement({ showSuccessModal }) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    email: '',
-    phone: '',
     position: 'Head of FACES',
     image_url: ''
   });
@@ -46,8 +44,6 @@ export default function HeadManagement({ showSuccessModal }) {
             setFormData({
               name: head.name || '',
               description: head.description || '',
-              email: head.email || '',
-              phone: head.phone || '',
               position: head.position || 'Head of FACES',
               image_url: head.image_url || ''
             });
@@ -144,8 +140,6 @@ export default function HeadManagement({ showSuccessModal }) {
         setFormData({
           name: data.data.name || '',
           description: data.data.description || '',
-          email: data.data.email || '',
-          phone: data.data.phone || '',
           position: data.data.position || 'Head of FACES',
           image_url: data.data.image_url || ''
         });
@@ -170,8 +164,6 @@ export default function HeadManagement({ showSuccessModal }) {
       setFormData({
         name: headData.name || '',
         description: headData.description || '',
-        email: headData.email || '',
-        phone: headData.phone || '',
         position: headData.position || 'Head of FACES',
         image_url: headData.image_url || ''
       });
@@ -179,8 +171,6 @@ export default function HeadManagement({ showSuccessModal }) {
       setFormData({
         name: '',
         description: '',
-        email: '',
-        phone: '',
         position: 'Head of FACES',
         image_url: ''
       });
@@ -333,27 +323,6 @@ export default function HeadManagement({ showSuccessModal }) {
                     />
                   </div>
 
-                  <div className={styles.inputGroup}>
-                    <label className={styles.inputLabel}>Email</label>
-                    <input
-                      type="email"
-                      className={styles.textInput}
-                      value={formData.email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                      placeholder="Enter email address"
-                    />
-                  </div>
-
-                  <div className={styles.inputGroup}>
-                    <label className={styles.inputLabel}>Phone</label>
-                    <input
-                      type="tel"
-                      className={styles.textInput}
-                      value={formData.phone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                      placeholder="Enter phone number"
-                    />
-                  </div>
                 </div>
               ) : (
                 <div className={styles.readOnlyInfo}>
@@ -366,20 +335,6 @@ export default function HeadManagement({ showSuccessModal }) {
                     <p className={styles.description}>{headData.description}</p>
                   )}
                   
-                  <div className={styles.contactInfo}>
-                    {headData?.email && (
-                      <div className={styles.contactItem}>
-                        <span className={styles.contactLabel}>Email:</span>
-                        <span className={styles.contactValue}>{headData.email}</span>
-                      </div>
-                    )}
-                    {headData?.phone && (
-                      <div className={styles.contactItem}>
-                        <span className={styles.contactLabel}>Phone:</span>
-                        <span className={styles.contactValue}>{headData.phone}</span>
-                      </div>
-                    )}
-                  </div>
                 </div>
               )}
             </div>

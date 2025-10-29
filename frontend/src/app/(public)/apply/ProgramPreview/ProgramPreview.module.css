@@ -6,6 +6,16 @@
   flex-direction: column;
 }
 
+/* Mobile Label - Only visible on mobile */
+.mobileLabel {
+  display: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #000;
+  margin-bottom: 1rem;
+  font-family: var(--font-roboto);
+}
+
 .programCard {
   background: white;
   border-radius: 8px;
@@ -364,8 +374,156 @@
   }
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
+/* Responsive Design - Mobile */
+@media (max-width: 479px) {
+  .previewContainer {
+    padding: 2rem 0;
+  }
+
+  .mobileLabel {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 0.625rem;
+  }
+  
+  .programCard {
+    padding: 14px 14px 20px;
+    gap: 12px;
+  }
+  
+  .programContent {
+    padding: 0 4px;
+    gap: 12px;
+  }
+  
+  .programTitle {
+    font-size: 1.15rem;
+    margin-bottom: 6px;
+  }
+  
+  .organizationName {
+    font-size: 13px;
+  }
+  
+  .organizationIcon,
+  .organizationIconFallback {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .imageContainer {
+    height: 160px;
+  }
+  
+  .imageOverlay {
+    top: 12px;
+    left: 12px;
+    padding: 5px 10px;
+  }
+  
+  .programType {
+    font-size: 11px;
+  }
+  
+  .sectionTitle {
+    font-size: 13px;
+  }
+  
+  .programDescription {
+    font-size: 12px;
+  }
+  
+  .detailItem {
+    padding: 10px;
+    gap: 10px;
+  }
+  
+  .detailIcon {
+    font-size: 14px;
+  }
+  
+  .detailLabel {
+    font-size: 11px;
+  }
+  
+  .detailValue {
+    font-size: 12px;
+  }
+  
+  .ctaCard {
+    padding: 12px;
+  }
+  
+  .ctaText {
+    font-size: 13px;
+  }
+  
+  .emptyState {
+    padding: 28px 16px;
+  }
+  
+  .emptyIcon {
+    font-size: 2.25rem;
+    margin-bottom: 12px;
+  }
+  
+  .emptyTitle {
+    font-size: 18px;
+  }
+  
+  .emptyDescription {
+    font-size: 14px;
+    max-width: 260px;
+  }
+}
+
+/* Responsive Design - Tablet */
+@media (min-width: 480px) and (max-width: 1023px) {
+  .mobileLabel {
+    display: none;
+  }
+  
+  .programCard {
+    padding: 16px 16px 22px;
+    gap: 14px;
+  }
+  
+  .programContent {
+    padding: 0 6px;
+    gap: 16px;
+  }
+  
+  .programTitle {
+    font-size: 1.3rem;
+    margin-bottom: 8px;
+  }
+  
+  .imageContainer {
+    height: 200px;
+  }
+  
+  .imageOverlay {
+    top: 14px;
+    left: 14px;
+    padding: 6px 11px;
+  }
+  
+  .detailItem {
+    padding: 11px;
+    gap: 11px;
+  }
+  
+  .emptyState {
+    padding: 32px 20px;
+  }
+  
+  .emptyIcon {
+    font-size: 2.5rem;
+  }
+}
+
+/* Responsive Design - Desktop (768px and above, maintain existing) */
+@media (min-width: 768px) {
   .programContent {
     padding: 20px;
     gap: 16px;
@@ -392,26 +550,27 @@
   }
 }
 
-@media (max-width: 480px) {
+/* Desktop - Preserve original desktop layout */
+@media (min-width: 1024px) {
+  .mobileLabel {
+    display: none;
+  }
+  
+  .programCard {
+    padding: 18px 18px 24px;
+    gap: 16px;
+  }
+  
   .programContent {
-    padding: 16px;
-    gap: 14px;
+    padding: 0 8px;
+    gap: 18px;
   }
   
   .programTitle {
-    font-size: 1.2rem;
+    font-size: 22px;
   }
   
   .imageContainer {
-    height: 180px;
-  }
-  
-  .detailItem {
-    padding: 8px;
-    gap: 10px;
-  }
-  
-  .detailIcon {
-    font-size: 0.9rem;
+    height: 220px;
   }
 }

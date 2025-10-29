@@ -226,12 +226,12 @@
   }
   
   .otherProgramCard {
-    height: 300px;
+    height: 380px;
     padding: 0.875rem;
   }
   
   .otherProgramImageContainer {
-    height: 140px;
+    height: 200px;
   }
   
   .otherProgramTitle {
@@ -240,6 +240,26 @@
   
   .otherProgramDescription {
     font-size: 0.8rem;
+  }
+  
+  /* Remove hover effects on mobile */
+  .otherProgramCard:hover {
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .otherProgramCard:hover .otherProgramImage {
+    transform: none;
+  }
+  
+  .otherProgramCard:hover .otherProgramOverlay {
+    opacity: 0;
+  }
+  
+  .seeAllButton:hover {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    transform: none;
+    box-shadow: none;
   }
 }
 
@@ -254,28 +274,48 @@
   }
   
   .otherProgramCard {
-    height: 280px;
-    padding: 0.75rem;
+    height: 360px;
+    padding: 1rem;
   }
   
   .otherProgramImageContainer {
-    height: 120px;
+    height: 200px;
   }
   
   .otherProgramTitle {
-    font-size: 0.875rem;
+    font-size: 18px;
   }
   
   .otherProgramDescription {
-    font-size: 0.8rem;
+    font-size: 14px;
   }
   
   .otherProgramStatusBadge {
-    font-size: 0.7rem;
+    font-size: 14px;
     padding: 0.2rem 0.6rem;
   }
   
   .otherProgramCategory {
-    font-size: 0.7rem;
+    font-size: 14px;
+  }
+  
+  /* Remove hover effects on mobile (smaller screens) */
+  .otherProgramCard:hover {
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .otherProgramCard:hover .otherProgramImage {
+    transform: none;
+  }
+  
+  .otherProgramCard:hover .otherProgramOverlay {
+    opacity: 0;
+  }
+  
+  .seeAllButton:hover {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    transform: none;
+    box-shadow: none;
   }
 }

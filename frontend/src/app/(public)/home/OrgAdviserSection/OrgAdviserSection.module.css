@@ -1,5 +1,5 @@
 .orgAdviserSection {
-  padding: 0 2rem 7rem;
+  padding: 0 1rem 7rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -76,6 +76,12 @@
 .orgAdviserSliderTrack.withoutNavigation {
   justify-content: center;
   flex-wrap: wrap;
+}
+
+.orgAdviserSliderTrack.mobileVertical {
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
 }
 
 
@@ -161,7 +167,7 @@
 }
 
 .orgAdviserName {
-  font-size: 1.1rem;
+  font-size: 18px;
   font-weight: 700;
   margin-top: 0.75rem;
   margin-bottom: 0.25rem;
@@ -169,14 +175,14 @@
 }
 
 .orgAdviserRole {
-  font-size: 0.95rem;
+  font-size: 15px;
   color: #333;
   margin: 0;
   cursor: default;
 }
 
 .orgAdviserOrg {
-  font-size: 0.85rem;
+  font-size: 14px;
   color: #666;
   margin: 0.25rem 0 0 0;
   cursor: default;
@@ -233,7 +239,7 @@
 /* Small devices (phones) */
 @media (max-width: 640px) {
   .orgAdviserSection {
-    padding: 1rem 1rem 3rem;
+    padding: 0 1rem 3rem;
   }
 
   .orgAdviserCarousel.withNavigation {
@@ -242,10 +248,11 @@
 
   .orgAdviserCarousel.withoutNavigation {
     justify-content: center;
+    flex-direction: column;
   }
 
   .orgAdviserSliderWrapper {
-    max-width: 220px;
+    max-width: 320px;
     width: 100%;
     margin: 0 auto;
   }
@@ -254,6 +261,7 @@
     max-width: 100%;
     width: auto;
     margin: 0;
+    overflow: visible;
   }
 
   .orgAdviserSliderTrack {
@@ -262,8 +270,8 @@
 
   .orgAdviserCard,
   .orgAdviserPhotoWrapper {
-    width: 220px;
-    height: 320px;
+    width: 280px;
+    height: 380px;
   }
 
   .orgAdviserNavBtn {
@@ -282,10 +290,15 @@
   }
 
   .orgAdviserName {
-    font-size: 15px;
+    font-size: 18px;
   }
 
   .orgAdviserRole {
+    font-size: 16px;
+  }
+  
+  .orgAdviserOrg {
     font-size: 14px;
   }
+
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { FaUsers, FaCrown, FaEye } from 'react-icons/fa';
+import { hasActiveCollaborations, getActiveCollaborators } from '@/utils/collaborationStatusUtils';
 import styles from './CollaborationBadge.module.css';
 
 const CollaborationBadge = ({ 
@@ -9,23 +10,9 @@ const CollaborationBadge = ({
   isCollaborative = false,
   collaboratorCount = 0 
 }) => {
-  // Check if program has any collaborations that are not declined
-  // Show badge for pending and accepted collaborations
-  // Only hide badge if all collaborators have declined
-  const hasActiveCollaborations = () => {
-    if (!program.collaborators || !Array.isArray(program.collaborators)) {
-      return false;
-    }
-    
-    // Check if there are any collaborations that are not declined
-    // This includes pending and accepted collaborations
-    return program.collaborators.some(collab => 
-      collab.status !== 'declined'
-    );
-  };
-
-  // Show badge if there are any non-declined collaborations
-  if (!hasActiveCollaborations()) {
+  // Show badge if program is collaborative AND has active collaborations
+  // This ensures the badge disappears when all collaborators opt out or decline
+  if (!isCollaborative || !hasActiveCollaborations(program)) {
     return null;
   }
 
@@ -54,11 +41,8 @@ const CollaborationBadge = ({
 
   const badge = getBadgeContent();
 
-  // Count all non-declined collaborations (pending and accepted)
-  const activeCollaboratorCount = program.collaborators ? 
-    program.collaborators.filter(collab => 
-      collab.status !== 'declined'
-    ).length : 0;
+  // Count all active collaborations (pending and accepted)
+  const activeCollaboratorCount = getActiveCollaborators(program.collaborators).length;
 
   return (
     <div className={`${styles.badge} ${badge.className}`}>

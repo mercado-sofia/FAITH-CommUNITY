@@ -4,6 +4,7 @@ import * as bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import crypto from "crypto"
 import { LoginAttemptTracker } from "../../utils/loginAttemptTracker.js"
+import { getClientIpAddress } from "../../utils/ipAddressHelper.js"
 import { generateTwoFASecret, verifyTwoFAToken, generateTwoFAQRCode, generateSimpleQRCode, validateTwoFATokenFormat } from "../../utils/twoFA.js"
 import { logSuperadminAction } from "../../utils/audit.js"
 
@@ -15,21 +16,27 @@ const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
 // Superadmin login endpoint
 export const loginSuperadmin = async (req, res) => {
   const { email, password, otp } = req.body
-  const ipAddress = req.ip || req.connection.remoteAddress
+  const ipAddress = getClientIpAddress(req)
 
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required" })
   }
 
   try {
-    // Check failed login attempts for superadmin type only
+    // Check failed login attempts BEFORE attempting login
     const failedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'superadmin');
     
     // Block for 5 minutes after 5 failed attempts
     if (failedAttempts >= 5) {
+      const remainingSeconds = await LoginAttemptTracker.getLockoutTimeRemaining(email, ipAddress, 'superadmin');
+      const remainingMinutes = Math.ceil(remainingSeconds / 60);
+      
       return res.status(429).json({ 
-        error: 'Too many failed login attempts. Please wait 5 minutes before trying again.',
-        retryAfter: '5 minutes'
+        error: `Too many failed login attempts. Please wait ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''} before trying again.`,
+        retryAfter: `${remainingMinutes} minutes`,
+        remainingSeconds: remainingSeconds,
+        attempts: failedAttempts,
+        maxAttempts: 5
       });
     }
     const [superadminRows] = await db.execute(
@@ -38,15 +45,27 @@ export const loginSuperadmin = async (req, res) => {
     )
 
     if (superadminRows.length === 0) {
+      // Track failed attempt - superadmin not found
       await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'superadmin');
-      return res.status(401).json({ error: "Invalid credentials" })
+      const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'superadmin');
+      return res.status(401).json({ 
+        error: "Invalid credentials",
+        attempts: newFailedAttempts,
+        remainingAttempts: Math.max(0, 5 - newFailedAttempts)
+      })
     }
 
     const superadmin = superadminRows[0]
     const isPasswordValid = await bcrypt.compare(password, superadmin.password)
     if (!isPasswordValid) {
+      // Track failed attempt - invalid password
       await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'superadmin');
-      return res.status(401).json({ error: "Invalid credentials" })
+      const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'superadmin');
+      return res.status(401).json({ 
+        error: "Invalid credentials",
+        attempts: newFailedAttempts,
+        remainingAttempts: Math.max(0, 5 - newFailedAttempts)
+      })
     }
 
     // Check if 2FA is enabled and verify token
@@ -78,7 +97,7 @@ export const loginSuperadmin = async (req, res) => {
       },
     )
 
-    // Clear failed login attempts on successful login
+    // Clear failed login attempts on successful login (reset counter)
     await LoginAttemptTracker.clearFailedAttempts(email, ipAddress, 'superadmin');
     
     // Log superadmin login action
@@ -96,7 +115,6 @@ export const loginSuperadmin = async (req, res) => {
       },
     })
   } catch (err) {
-    console.error("Superadmin login error:", err)
     res.status(500).json({ error: "Internal server error during login" })
   }
 }
@@ -167,7 +185,6 @@ export const getSuperadminProfile = async (req, res) => {
       password_changed_at: superadmin.password_changed_at,
     })
   } catch (err) {
-    console.error("Get superadmin profile error:", err)
     res.status(500).json({ error: "Internal server error while fetching profile" })
   }
 }
@@ -211,7 +228,6 @@ export const verifySuperadminPassword = async (req, res) => {
       message: "Password verified successfully"
     })
   } catch (err) {
-    console.error("Superadmin password verification error:", err)
     res.status(500).json({ error: "Internal server error during password verification" })
   }
 }
@@ -290,7 +306,6 @@ export const requestSuperadminEmailChange = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("Error requesting superadmin email change:", err)
     res.status(500).json({ error: "Internal server error" })
   }
 }
@@ -333,7 +348,6 @@ export const verifySuperadminEmailChangeOTP = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("Error verifying superadmin email change OTP:", err)
     res.status(500).json({ error: "Internal server error" })
   }
 }
@@ -441,7 +455,6 @@ export const updateSuperadminPassword = async (req, res) => {
       passwordChangedAt: new Date().toISOString()
     })
   } catch (err) {
-    console.error("Update superadmin password error:", err)
     res.status(500).json({ error: "Internal server error while updating password" })
   }
 }
@@ -512,7 +525,6 @@ FAITH CommUNITY Team`,
 
     res.json(genericOk)
   } catch (err) {
-    console.error("Superadmin forgot password error:", err)
     res.status(500).json({ error: "Internal server error while processing password reset request" })
   }
 }
@@ -592,7 +604,6 @@ export const resetPasswordSuperadmin = async (req, res) => {
 
     res.json({ message: "Password has been successfully reset" })
   } catch (err) {
-    console.error("Superadmin reset password error:", err)
     res.status(500).json({ error: "Internal server error while resetting password" })
   }
 }
@@ -617,7 +628,6 @@ export const validateResetToken = async (req, res) => {
 
     res.json({ message: "Token is valid" })
   } catch (err) {
-    console.error("Validate reset token error:", err)
     res.status(500).json({ error: "Internal server error while validating token" })
   }
 }
@@ -642,10 +652,10 @@ export const checkEmailSuperadmin = async (req, res) => {
       res.status(404).json({ exists: false })
     }
   } catch (err) {
-    console.error("Superadmin check email error:", err)
     res.status(500).json({ error: "Internal server error" })
   }
 }
+
 
 
 // -------------------- Update Email (Username) --------------------
@@ -691,7 +701,6 @@ export const updateSuperadminEmail = async (req, res) => {
       email: newEmail,
     })
   } catch (err) {
-    console.error("Update superadmin email error:", err)
     res.status(500).json({ error: "Internal server error while updating email" })
   }
 }
@@ -737,7 +746,6 @@ export const setupTwoFA = async (req, res) => {
         : 'Add the account to your authenticator app using the secret key, then enter the 6-digit code to verify'
     });
   } catch (error) {
-    console.error('2FA setup error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -784,7 +792,6 @@ export const verifyTwoFA = async (req, res) => {
       message: '2FA has been successfully enabled for your account'
     });
   } catch (error) {
-    console.error('2FA verification error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -810,7 +817,6 @@ export const disableTwoFA = async (req, res) => {
       message: '2FA has been successfully disabled for your account'
     });
   } catch (error) {
-    console.error('2FA disable error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

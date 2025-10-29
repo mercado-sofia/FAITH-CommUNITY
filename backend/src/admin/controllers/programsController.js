@@ -100,7 +100,7 @@ export const getAdminPrograms = async (req, res) => {
         collaborationStatus = collaborationRows[0].collaboration_status;
       }
 
-      // Get all collaborators for this program (including all statuses for visibility)
+      // Get all collaborators for this program (excluding declined/opted-out ones)
       const [allCollaborators] = await db.execute(`
         SELECT 
           a.id,
@@ -111,7 +111,7 @@ export const getAdminPrograms = async (req, res) => {
         FROM program_collaborations pc
         LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
         LEFT JOIN organizations o ON a.organization_id = o.id
-        WHERE pc.program_id = ? AND pc.status IN ('accepted', 'pending', 'declined')
+        WHERE pc.program_id = ? AND pc.status IN ('accepted', 'pending')
       `, [program.id]);
 
       let logoUrl;

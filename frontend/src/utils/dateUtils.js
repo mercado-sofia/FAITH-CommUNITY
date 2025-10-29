@@ -202,6 +202,66 @@ export const formatProgramDate = (startDate, endDate) => {
  * @param {Object} program - Program object with various date properties
  * @returns {string} Formatted program dates
  */
+/**
+ * Format program dates for program cards with one-line truncation
+ * Limits display to prevent wrapping to multiple lines
+ * @param {Object} program - Program object with various date properties
+ * @returns {string} Formatted program dates (truncated if too long)
+ */
+export const formatProgramDatesForCard = (program) => {
+  try {
+    if (!program) return 'Not specified';
+    
+    // 1. Handle multiple dates array (from frontend admin creation flow)
+    if (program.multiple_dates && Array.isArray(program.multiple_dates) && program.multiple_dates.length > 0) {
+      if (program.multiple_dates.length === 1) {
+        return formatDateShort(program.multiple_dates[0]);
+      } else if (program.multiple_dates.length === 2) {
+        return `${formatDateShort(program.multiple_dates[0])} and ${formatDateShort(program.multiple_dates[1])}`;
+      } else {
+        // For 3+ dates: limit to first 2 dates and add ellipsis
+        const firstDate = formatDateShort(program.multiple_dates[0]);
+        const secondDate = formatDateShort(program.multiple_dates[1]);
+        return `${firstDate}, ${secondDate}...`;
+      }
+    }
+    
+    // 2. Handle date range (event_start_date + event_end_date)
+    if (program.event_start_date && program.event_end_date) {
+      const startDate = new Date(program.event_start_date);
+      const endDate = new Date(program.event_end_date);
+      
+      // Check if dates are valid
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return 'Invalid date range';
+      }
+      
+      // If same day, show single date
+      if (startDate.getTime() === endDate.getTime()) {
+        return formatDateShort(program.event_start_date);
+      } else {
+        // Different days - show range
+        return `${formatDateShort(program.event_start_date)} - ${formatDateShort(program.event_end_date)}`;
+      }
+    }
+    
+    // 3. Handle single date (event_start_date only)
+    if (program.event_start_date) {
+      return formatDateShort(program.event_start_date);
+    }
+    
+    // 4. Handle legacy startDate property
+    if (program.startDate) {
+      return formatDateShort(program.startDate);
+    }
+    
+    return 'Coming Soon';
+  } catch (error) {
+    logger.error('Error in formatProgramDatesForCard', error, { program });
+    return 'Invalid date';
+  }
+};
+
 export const formatProgramDates = (program) => {
   try {
     if (!program) return 'Not specified';

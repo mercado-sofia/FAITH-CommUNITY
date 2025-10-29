@@ -35,7 +35,7 @@ router.post("/verify-password/:id", verifySuperadminToken, verifySuperadminPassw
 // Email change routes (secure flow with 2FA support)
 router.post("/email/request-change/:id", verifySuperadminToken, requestSuperadminEmailChange)
 router.post("/email/verify-otp/:id", verifySuperadminToken, verifySuperadminEmailChangeOTP)
-router.put("/email/:id",     verifySuperadminToken, updateSuperadminEmail) // Legacy endpoint
+router.put("/email/:id", verifySuperadminToken, updateSuperadminEmail)
 
 router.put("/password/:id",  verifySuperadminToken, updateSuperadminPassword)
 

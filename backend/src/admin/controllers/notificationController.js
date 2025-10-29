@@ -7,25 +7,45 @@ class NotificationController {
   static async getNotifications(req, res) {
     try {
       const { adminId } = req.params;
-      const { limit = 10, offset = 0 } = req.query;
+      const { limit = 10, offset = 0, tab = 'all' } = req.query;
+
+      // Build WHERE clause based on tab
+      let whereClause = 'admin_id = ?';
+      let queryParams = [adminId];
+
+      if (tab !== 'all') {
+        switch (tab) {
+          case 'submissions':
+            whereClause += ' AND (type = ? OR type = ?)';
+            queryParams.push('approval', 'decline');
+            break;
+          case 'collaborations':
+            whereClause += ' AND (type = ? OR type = ? OR type = ? OR type = ? OR type = ?)';
+            queryParams.push('collaboration', 'program_approval', 'collaboration_request', 'collaboration_accepted', 'program_declined');
+            break;
+          case 'messages':
+            whereClause += ' AND type = ?';
+            queryParams.push('message');
+            break;
+          // For 'all' tab, no additional filtering needed
+        }
+      }
 
       // Get total count first
-      const [countResult] = await db.execute(
-        'SELECT COUNT(*) as total FROM admin_notifications WHERE admin_id = ?',
-        [adminId]
-      );
+      const countQuery = `SELECT COUNT(*) as total FROM admin_notifications WHERE ${whereClause}`;
+      const [countResult] = await db.execute(countQuery, queryParams);
       const total = countResult[0].total;
 
       // Get notifications with pagination
       const query = `
         SELECT id, type, title, message, section, submission_id, is_read, created_at
         FROM admin_notifications 
-        WHERE admin_id = ? 
+        WHERE ${whereClause}
         ORDER BY created_at DESC 
         LIMIT ? OFFSET ?
       `;
 
-      const [notifications] = await db.execute(query, [adminId, parseInt(limit), parseInt(offset)]);
+      const [notifications] = await db.execute(query, [...queryParams, parseInt(limit), parseInt(offset)]);
 
       // Format the time ago for each notification
       const formattedNotifications = notifications.map(notification => ({
@@ -164,13 +184,18 @@ class NotificationController {
   // Static method to create notification (used by other controllers)
   static async createNotification(adminId, type, title, message, section = null, submissionId = null) {
     try {
+      // Validate required parameters
+      if (!adminId || !type || !title || !message) {
+        throw new Error(`Missing required notification parameters: adminId=${adminId}, type=${type}, title=${title}, message=${message}`);
+      }
+
       const query = `
         INSERT INTO admin_notifications (admin_id, type, title, message, section, submission_id)
         VALUES (?, ?, ?, ?, ?, ?)
       `;
 
       const [result] = await db.execute(query, [adminId, type, title, message, section, submissionId]);
-
+      
       return {
         success: true,
         notificationId: result.insertId
@@ -183,27 +208,6 @@ class NotificationController {
     }
   }
 
-  // Static method to create notification with object parameter (used by other controllers)
-  static async createNotification({ admin_id, type, title, message, section = null, related_id = null }) {
-    try {
-      const query = `
-        INSERT INTO admin_notifications (admin_id, type, title, message, section, submission_id)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `;
-
-      const [result] = await db.execute(query, [admin_id, type, title, message, section, related_id]);
-
-      return {
-        success: true,
-        notificationId: result.insertId
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
 
   // Helper method to format time ago
   static getTimeAgo(createdAt) {

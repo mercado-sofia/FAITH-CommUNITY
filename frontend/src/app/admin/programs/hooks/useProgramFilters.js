@@ -9,22 +9,39 @@ export const useProgramFilters = (programs, collaborations) => {
   
   // Filter and search states
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
-  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'Active');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
   
   // Collaboration-specific filter state
   const [collaborationStatusFilter, setCollaborationStatusFilter] = useState(searchParams.get('collaborationStatus') || 'all');
+  
+  // Tab state - handle tab parameter for direct navigation
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'active');
+  
+  // Derive status filter from active tab
+  const getStatusFilterFromTab = (tab) => {
+    switch (tab) {
+      case 'active':
+        return 'Active';
+      case 'upcoming':
+        return 'Upcoming';
+      case 'completed':
+        return 'Completed';
+      case 'collaborations':
+        return null; // No status filter for collaborations
+      default:
+        return 'Active';
+    }
+  };
+  
+  const statusFilter = getStatusFilterFromTab(activeTab);
 
   // Sync URL parameters with state when URL changes
   useEffect(() => {
-    const urlStatus = searchParams.get('status');
     const urlSearch = searchParams.get('search');
     const urlSort = searchParams.get('sort');
     const urlCollaborationStatus = searchParams.get('collaborationStatus');
+    const urlTab = searchParams.get('tab');
 
-    if (urlStatus) {
-      setStatusFilter(urlStatus);
-    }
     if (urlSearch !== null) {
       setSearchQuery(urlSearch);
     }
@@ -34,13 +51,16 @@ export const useProgramFilters = (programs, collaborations) => {
     if (urlCollaborationStatus) {
       setCollaborationStatusFilter(urlCollaborationStatus);
     }
+    if (urlTab) {
+      setActiveTab(urlTab);
+    }
   }, [searchParams]);
 
   // Update URL parameters
   const updateURLParams = useCallback((params) => {
     const newSearchParams = new URLSearchParams(searchParams);
     Object.entries(params).forEach(([key, value]) => {
-      if (value && value !== 'all' && value !== '' && !(key === 'sort' && value === 'newest') && !(key === 'status' && value === 'Active') && !(key === 'collaborationStatus' && value === 'all')) {
+      if (value && value !== 'all' && value !== '' && !(key === 'sort' && value === 'newest') && !(key === 'collaborationStatus' && value === 'all') && !(key === 'tab' && value === 'active')) {
         newSearchParams.set(key, value);
       } else {
         newSearchParams.delete(key);
@@ -66,10 +86,6 @@ export const useProgramFilters = (programs, collaborations) => {
 
   const handleFilterChange = useCallback((filterType, value) => {
     switch (filterType) {
-      case 'status':
-        setStatusFilter(value);
-        updateURLParams({ status: value });
-        break;
       case 'sort':
         setSortBy(value);
         updateURLParams({ sort: value });
@@ -82,16 +98,22 @@ export const useProgramFilters = (programs, collaborations) => {
     updateURLParams({ collaborationStatus: value });
   }, [updateURLParams]);
 
+  // Handle tab changes
+  const handleTabChange = useCallback((tab) => {
+    setActiveTab(tab);
+    updateURLParams({ tab });
+  }, [updateURLParams]);
+
   return {
     // State
     searchQuery,
     statusFilter,
     sortBy,
     collaborationStatusFilter,
+    activeTab,
     
     // Setters
     setSearchQuery,
-    setStatusFilter,
     setSortBy,
     setCollaborationStatusFilter,
     
@@ -103,6 +125,7 @@ export const useProgramFilters = (programs, collaborations) => {
     handleSearchChange,
     handleFilterChange,
     handleCollaborationStatusChange,
+    handleTabChange,
     updateURLParams
   };
 };

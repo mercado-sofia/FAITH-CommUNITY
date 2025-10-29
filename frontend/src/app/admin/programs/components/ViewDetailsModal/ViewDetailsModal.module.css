@@ -18,24 +18,32 @@
   width: 100%;
   max-width: 800px;
   max-height: 90vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   padding: 0;
+}
+
+.modalBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+  padding-bottom: 48px;
   
   /* Custom Scrollbar Styles */
   scrollbar-width: thin;
   scrollbar-color: #d1d5db transparent;
 }
 
-.modalContent::-webkit-scrollbar {
+.modalBody::-webkit-scrollbar {
   width: 4px;
 }
 
-.modalContent::-webkit-scrollbar-track {
+.modalBody::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.modalContent::-webkit-scrollbar-thumb {
+.modalBody::-webkit-scrollbar-thumb {
   background-color: #d1d5db;
   border-radius: 3px;
 }
@@ -44,8 +52,9 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 32px 32px 24px 32px;
+  padding: 22px 32px;
   border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
 }
 
 .titleSection {
@@ -60,15 +69,15 @@
 }
 
 .modalTitle {
-  font-size: 1.75rem;
+  font-size: 1.45rem;
   font-weight: 700;
-  color: #1a1a1a;
-  margin: 0 0 12px 0;
+  color: #000;
+  margin: 4px 0 0 0;
   line-height: 1.3;
 }
 
 .requestType {
-  font-size: 14px;
+  font-size: 12.5px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -89,9 +98,6 @@
   user-select: none;
 }
 
-.modalBody {
-  padding: 32px;
-}
 
 .contentLayout {
   display: flex;
@@ -103,7 +109,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 40px;
-  align-items: start;
+  align-items: center;
 }
 
 .imageSection {
@@ -155,19 +161,21 @@
   font-size: 13px;
   font-weight: 600;
   color: #059669;
-  background: #ecfdf5;
-  padding: 6px 12px;
-  border-radius: 20px;
-  border: 1px solid #d1fae5;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  width: fit-content;
+  max-width: 100%;
+  align-self: flex-start;
+  margin-bottom: 4px;
 }
 
 .programTitle {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #000;
   margin: 0;
+  margin-top: -10px;
+  margin-bottom: 12px;
   line-height: 1.3;
 }
 
@@ -177,6 +185,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
+  margin: 8px 5px 0 0;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
@@ -185,52 +194,7 @@
   align-self: flex-start;
 }
 
-.statusBadge.Upcoming {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.statusBadge.Active {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.statusBadge.Completed {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-/* Collaborative Program Status Styles */
-.statusBadge.pending_collaboration {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.statusBadge.accepted {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.statusBadge.pending_superadmin_approval {
-  background: #e0e7ff;
-  color: #3730a3;
-}
-
-.statusBadge.declined {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.statusBadge.approved {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.statusBadge.rejected {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
+/* Status badge variants - only used in collaboration mode with inline styles */
 .descriptionSection {
   background: #f8f9fa;
   padding: 24px;
@@ -314,14 +278,15 @@
 .detailItem {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: 10px;
 }
 
 .detailIcon {
-  font-size: 16px;
+  font-size: 14px;
   color: #9ca3af;
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 0;
+  align-self: flex-start;
 }
 
 .detailContent {
@@ -372,26 +337,6 @@
   display: block;
 }
 
-.modalFooter {
-  padding: 24px 32px 32px 32px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 16px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.closeModalButton {
-  background: #1a1a1a;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  user-select: none;
-}
-
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .modalOverlay {
@@ -412,6 +357,7 @@
 
   .modalBody {
     padding: 24px;
+    padding-bottom: 36px;
   }
 
   .topSection {
@@ -444,23 +390,16 @@
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 16px;
   }
-
-  .modalFooter {
-    padding: 20px 24px 24px 24px;
-  }
-
-  .closeModalButton {
-    width: 100%;
-  }
 }
 
 @media (max-width: 480px) {
   .modalHeader {
-    padding: 20px 20px 16px 20px;
+    padding: 12px 20px 10px 20px;
   }
 
   .modalBody {
     padding: 20px;
+    padding-bottom: 32px;
   }
 
   .descriptionSection,
@@ -476,7 +415,7 @@
 
 /* Collaboration Mode Styles */
 .section {
-  margin-bottom: 32px;
+  margin-bottom: 1rem;
 }
 
 .section:last-child {
@@ -530,6 +469,41 @@
 .orgDetails,
 .adminDetails {
   margin-left: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.orgLogoContainer {
+  flex-shrink: 0;
+}
+
+.orgLogo {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+}
+
+.orgLogoPlaceholder {
+  width: 48px;
+  height: 48px;
+  background-color: #f3f4f6;
+  border: 2px solid #e5e7eb;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 20px;
+}
+
+.orgTextContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .orgName,
@@ -537,73 +511,84 @@
   font-size: 15px;
   font-weight: 600;
   color: #1a1a1a;
-  margin-bottom: 8px;
+  margin: 0;
 }
 
 .orgAcronym,
 .adminEmail {
   font-size: 13px;
   color: #6b7280;
+  margin: 0;
 }
 
 .timeline {
   position: relative;
-  padding-left: 30px;
+  padding-left: 32px;
 }
 
 .timeline::before {
   content: '';
   position: absolute;
-  left: 15px;
-  top: 0;
+  left: 10px;
+  top: 10px;
   bottom: 0;
   width: 2px;
-  background-color: #e5e7eb;
+  background: #e5e7eb;
+  border-radius: 1px;
 }
 
 .timelineItem {
   position: relative;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .timelineItem:last-child {
   margin-bottom: 0;
 }
 
+.timelineItem:last-child::before {
+  display: none;
+}
+
 .timelineIcon {
   position: absolute;
-  left: -22px;
-  top: 0;
-  width: 40px;
-  height: 40px;
+  left: -31px;
+  top: 1px;
+  width: 20px;
+  height: 20px;
   background-color: #3b82f6;
   color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  border: 3px solid white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: 10px;
+  border: 2px solid white;
+  box-shadow: 0 0 0 2px #e5e7eb, 0 1px 3px rgba(0, 0, 0, 0.08);
+  z-index: 1;
+  flex-shrink: 0;
 }
 
 .timelineContent {
-  background-color: #f8f9fa;
-  border-radius: 12px;
-  padding: 20px;
-  border: 1px solid #e5e7eb;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
 }
 
 .timelineTitle {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 6px;
+  color: #111827;
+  margin: 0 0 4px 0;
+  line-height: 1.4;
 }
 
 .timelineDate {
-  font-size: 13px;
+  font-size: 12px;
   color: #6b7280;
+  font-weight: 400;
+  line-height: 1.5;
 }
 
 .actionInfo {
@@ -623,48 +608,34 @@
   flex-shrink: 0;
 }
 
+.infoContent {
+  flex: 1;
+}
+
 .infoContent h4 {
   font-size: 15px;
   font-weight: 600;
   color: #1e40af;
-  margin: 0 0 10px 0;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
 }
 
 .infoContent p {
-  font-size: 14px;
+  font-size: 13px;
   color: #1e40af;
   line-height: 1.6;
   margin: 0;
 }
 
-.acceptButton,
-.declineButton {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  text-decoration: none;
+/* Reduce spacing between sections containing actionInfo */
+.section:has(.actionInfo) {
+  margin-bottom: 16px;
 }
 
-.acceptButton {
-  background-color: #10b981;
-  color: white;
-}
-
-.declineButton {
-  background-color: #ef4444;
-  color: white;
-}
-
-.acceptButton:disabled,
-.declineButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+/* Further reduce spacing when one actionInfo section follows another */
+.section:has(.actionInfo) + .section:has(.actionInfo) {
+  margin-top: -16px;
+  margin-bottom: 16px;
 }
 
 /* Mobile Responsive for Collaboration Mode */
@@ -683,15 +654,6 @@
     justify-content: space-between;
   }
   
-  .modalFooter {
-    flex-direction: column;
-  }
-  
-  .acceptButton,
-  .declineButton {
-    justify-content: center;
-    width: 100%;
-  }
 }
 
 @media (max-width: 480px) {

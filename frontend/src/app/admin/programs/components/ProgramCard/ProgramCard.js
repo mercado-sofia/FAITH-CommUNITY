@@ -6,8 +6,9 @@ import { FaEdit, FaTag, FaCalendar, FaEllipsisH, FaExclamationTriangle, FaSignOu
 import { TbListDetails } from 'react-icons/tb';
 import { FiTrash2 } from 'react-icons/fi';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
-import { formatProgramDates, formatDateShort } from '@/utils/dateUtils.js';
+import { formatProgramDates, formatProgramDatesForCard, formatDateShort } from '@/utils/dateUtils.js';
 import { getProgramStatusByDates } from '@/utils/programStatusUtils';
+import { hasActiveCollaborations as checkHasActiveCollaborations } from '@/utils/collaborationStatusUtils';
 import CollaborationBadge from '../CollaborationBadge/CollaborationBadge';
 import ProgramActions from './ProgramActions';
 import ProgramModals from './ProgramModals';
@@ -339,11 +340,8 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
             <div className={`${styles.statusBadge} ${styles[displayStatus]}`}>
               {(() => {
                 // Handle special status display for collaborative programs
-                // Check if program has any non-declined collaborations
-                const hasActiveCollaborations = normalizedData.collaborators && 
-                  normalizedData.collaborators.some(collab => 
-                    collab.status !== 'declined'
-                  );
+                // Check if program has any active collaborations
+                const hasActiveCollaborations = checkHasActiveCollaborations(normalizedData);
                 
                 if (hasActiveCollaborations) {
                   switch (normalizedData.status) {
@@ -380,7 +378,7 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
             <div className={styles.metaItem}>
               <FaCalendar className={styles.metaIcon} />
               <span className={styles.metaText}>
-                {formatProgramDates(normalizedData)}
+                {formatProgramDatesForCard(normalizedData)}
               </span>
             </div>
           </div>

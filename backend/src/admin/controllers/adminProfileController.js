@@ -266,11 +266,6 @@ export const verifyAdminEmailChangeOTP = async (req, res) => {
   }
 }
 
-// Legacy update admin email function (kept for backward compatibility)
-export const updateAdminEmail = async (req, res) => {
-  // Redirect to new secure flow
-  return requestAdminEmailChange(req, res);
-}
 
 // Update admin's password
 export const updateAdminPassword = async (req, res) => {

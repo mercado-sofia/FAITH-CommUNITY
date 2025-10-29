@@ -93,7 +93,7 @@ export default function AdminProgramsPage() {
   };
 
   // Show skeleton immediately on first load or when loading
-  if (!hasInitiallyLoaded || isLoading || (filters.statusFilter === 'Collaborations' && collaborationsLoading)) {
+  if (!hasInitiallyLoaded || isLoading || (filters.activeTab === 'collaborations' && collaborationsLoading)) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
@@ -131,26 +131,36 @@ export default function AdminProgramsPage() {
             onSearchChange={filters.handleSearchChange}
             onFilterChange={filters.handleFilterChange}
             // Collaboration-specific props
-            isCollaborationTab={filters.statusFilter === 'Collaborations'}
+            isCollaborationTab={filters.activeTab === 'collaborations'}
             collaborationStatusFilter={filters.collaborationStatusFilter}
             onCollaborationStatusChange={filters.handleCollaborationStatusChange}
+            // Count props
+            totalCount={filters.activeTab === 'collaborations' ? collaborations?.length || 0 : programs?.length || 0}
+            filteredCount={filters.activeTab === 'collaborations' ? filters.filteredAndSortedCollaborations()?.length || 0 : filters.filteredAndSortedPrograms()?.length || 0}
           />
 
           {/* Status Navigation Tabs */}
           <div className={styles.statusTabs}>
-            {['Active', 'Upcoming', 'Completed', 'Collaborations'].map((status) => (
+            {[
+              { key: 'active', label: 'Active' },
+              { key: 'upcoming', label: 'Upcoming' },
+              { key: 'completed', label: 'Completed' },
+              { key: 'collaborations', label: 'Collaborations' }
+            ].map((tab) => (
               <button
-                key={status}
-                className={`${styles.statusTab} ${filters.statusFilter === status ? styles.activeTab : ''}`}
-                onClick={() => filters.handleFilterChange('status', status)}
+                key={tab.key}
+                className={`${styles.statusTab} ${filters.activeTab === tab.key ? styles.activeTab : ''}`}
+                onClick={() => {
+                  filters.handleTabChange(tab.key);
+                }}
               >
-                {status}
+                {tab.label}
               </button>
             ))}
           </div>
 
           {/* Programs Grid or Collaborations Section */}
-          {filters.statusFilter === 'Collaborations' ? (
+          {filters.activeTab === 'collaborations' ? (
             <CollaborationsContainer
               filteredCollaborations={filters.filteredAndSortedCollaborations()}
               collaborationStatusFilter={filters.collaborationStatusFilter}
@@ -216,12 +226,6 @@ export default function AdminProgramsPage() {
           collaboration={modals.selectedCollaboration}
           onClose={modals.closeCollaborationModal}
           mode="collaboration"
-          onAccept={() => {
-            handleCollaborationActionWithClose(modals.selectedCollaboration.collaboration_id, 'accept');
-          }}
-          onDecline={() => {
-            handleCollaborationActionWithClose(modals.selectedCollaboration.collaboration_id, 'decline');
-          }}
         />
       )}
 

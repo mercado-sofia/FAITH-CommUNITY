@@ -62,7 +62,11 @@ export default function NotificationsPage() {
         case 'submissions':
           return notification.type === 'approval' || notification.type === 'decline';
         case 'collaborations':
-          return notification.type === 'collaboration' || notification.type === 'program_approval';
+          return notification.type === 'collaboration' || 
+                 notification.type === 'program_approval' || 
+                 notification.type === 'collaboration_request' || 
+                 notification.type === 'collaboration_accepted' || 
+                 notification.type === 'program_declined';
         case 'messages':
           return notification.type === 'message';
         case 'all':

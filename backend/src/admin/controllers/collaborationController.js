@@ -1,6 +1,7 @@
 // Program collaboration management controller
 import db from '../../database.js';
 import NotificationController from './notificationController.js';
+import { getClientIpAddress } from '../../utils/ipAddressHelper.js';
 
 // Get all available admins (for new program creation)
 export const getAllAvailableAdmins = async (req, res) => {
@@ -379,7 +380,7 @@ export const optOutCollaboration = async (req, res) => {
           adminOrg: collaboration.admin_org_name,
           remainingCollaborators: remainingCollaborations[0].count
         },
-        ipAddress: req.ip || req.connection.remoteAddress,
+        ipAddress: getClientIpAddress(req),
         userAgent: req.get('User-Agent')
       });
     } catch (auditError) {
@@ -422,7 +423,6 @@ export const getCollaborationRequests = async (req, res) => {
     }
     
     const adminOrgId = adminRows[0].organization_id;
-    const adminEmail = adminRows[0].email;
     // Admin found
     
     // Get all collaboration requests where the current admin is either creator or collaborator
@@ -448,14 +448,38 @@ export const getCollaborationRequests = async (req, res) => {
         prog_org.orgName as program_org_name,
         prog_org.org as program_org_acronym,
         prog_org.logo as program_org_logo,
+        -- Inviter details
+        inviter.id as inviter_admin_id,
+        inviter.email as inviter_email,
+        inviter_org.orgName as inviter_org_name,
+        inviter_org.org as inviter_org_acronym,
+        inviter_org.logo as inviter_org_logo,
+        -- Invitee details
+        invitee.id as invitee_admin_id,
+        invitee.email as invitee_email,
+        invitee_org.orgName as invitee_org_name,
+        invitee_org.org as invitee_org_acronym,
+        invitee_org.logo as invitee_org_logo,
         pc.submission_id,
         s.status as submission_status,
         pc.id as collaboration_id,
-        pc.status as collaboration_status
+        pc.status as collaboration_status,
+        pc.invited_at,
+        pc.responded_at,
+        -- Determine request type
+        CASE 
+          WHEN pc.collaborator_admin_id = ? THEN 'received'
+          WHEN pc.invited_by_admin_id = ? THEN 'sent'
+          ELSE 'unknown'
+        END as request_type
       FROM program_collaborations pc
       LEFT JOIN programs_projects p ON pc.program_id = p.id
       LEFT JOIN submissions s ON pc.submission_id = s.id
       LEFT JOIN organizations prog_org ON COALESCE(p.organization_id, s.organization_id) = prog_org.id
+      LEFT JOIN admins inviter ON pc.invited_by_admin_id = inviter.id
+      LEFT JOIN organizations inviter_org ON inviter.organization_id = inviter_org.id
+      LEFT JOIN admins invitee ON pc.collaborator_admin_id = invitee.id
+      LEFT JOIN organizations invitee_org ON invitee.organization_id = invitee_org.id
       WHERE (
         pc.collaborator_admin_id = ? 
         OR pc.invited_by_admin_id = ?
@@ -463,7 +487,7 @@ export const getCollaborationRequests = async (req, res) => {
       )
       AND pc.status IN ('pending', 'accepted', 'declined')
       ORDER BY COALESCE(p.created_at, s.submitted_at) DESC
-    `, [currentAdminId, currentAdminId, adminOrgId]);
+    `, [currentAdminId, currentAdminId, currentAdminId, currentAdminId, adminOrgId]);
     
     // Found collaborative programs
     
@@ -481,9 +505,11 @@ export const getCollaborationRequests = async (req, res) => {
           inviter.email as inviter_email,
           inviter_org.orgName as inviter_org_name,
           inviter_org.org as inviter_org_acronym,
+          inviter_org.logo as inviter_org_logo,
           invitee.email as invitee_email,
           invitee_org.orgName as invitee_org_name,
           invitee_org.org as invitee_org_acronym,
+          invitee_org.logo as invitee_org_logo,
           CASE 
             WHEN pc.collaborator_admin_id = ? THEN 'received'
             WHEN pc.invited_by_admin_id = ? THEN 'sent'
@@ -541,21 +567,25 @@ export const getCollaborationRequests = async (req, res) => {
           inviter_email: c.inviter_email,
           inviter_org_name: c.inviter_org_name,
           inviter_org_acronym: c.inviter_org_acronym,
+          inviter_org_logo: c.inviter_org_logo,
           invitee_id: c.collaborator_admin_id,
           invitee_email: c.invitee_email,
           invitee_org_name: c.invitee_org_name,
           invitee_org_acronym: c.invitee_org_acronym,
+          invitee_org_logo: c.invitee_org_logo,
           request_type: c.request_type
         })),
         collaboration_id: mainCollab.collaboration_id || relevantCollab?.collaboration_id || null,
         status: mainCollab.status || relevantCollab?.status || 'pending',
         request_type: mainCollab.request_type || relevantCollab?.request_type || (isCreator ? 'sent' : 'received'),
-        inviter_email: relevantCollab?.inviter_email || null,
-        inviter_org_name: relevantCollab?.inviter_org_name || null,
-        inviter_org_acronym: relevantCollab?.inviter_org_acronym || null,
-        invitee_email: relevantCollab?.invitee_email || null,
-        invitee_org_name: relevantCollab?.invitee_org_name || null,
-        invitee_org_acronym: relevantCollab?.invitee_org_acronym || null,
+        inviter_email: relevantCollab?.inviter_email || program.inviter_email || null,
+        inviter_org_name: relevantCollab?.inviter_org_name || program.inviter_org_name || null,
+        inviter_org_acronym: relevantCollab?.inviter_org_acronym || program.inviter_org_acronym || null,
+        inviter_org_logo: relevantCollab?.inviter_org_logo || program.inviter_org_logo || null,
+        invitee_email: relevantCollab?.invitee_email || program.invitee_email || null,
+        invitee_org_name: relevantCollab?.invitee_org_name || program.invitee_org_name || null,
+        invitee_org_acronym: relevantCollab?.invitee_org_acronym || program.invitee_org_acronym || null,
+        invitee_org_logo: relevantCollab?.invitee_org_logo || program.invitee_org_logo || null,
         invited_at: relevantCollab?.invited_at || program.program_created_at,
         responded_at: relevantCollab?.responded_at || null,
         has_pending_collaborations: hasPendingCollaborations,
@@ -647,7 +677,7 @@ export const acceptCollaborationRequest = async (req, res) => {
         // The program already exists, just update its status
         await db.execute(`
           UPDATE programs_projects 
-          SET is_collaborative = 1
+          SET is_collaborative = TRUE
           WHERE id = ?
         `, [collaboration.program_id]);
         
@@ -668,7 +698,7 @@ export const acceptCollaborationRequest = async (req, res) => {
         // No collaborations were accepted, update program to be non-collaborative (solo program)
         await db.execute(`
           UPDATE programs_projects 
-          SET is_collaborative = 0
+          SET is_collaborative = FALSE
           WHERE id = ?
         `, [collaboration.program_id]);
       }
@@ -764,14 +794,14 @@ export const declineCollaborationRequest = async (req, res) => {
         // No accepted collaborations, update program to be non-collaborative (solo program)
         await db.execute(`
           UPDATE programs_projects 
-          SET is_collaborative = 0
+          SET is_collaborative = FALSE
           WHERE id = ?
         `, [collaboration.program_id]);
       } else {
         // Some collaborations were accepted, keep program as collaborative
         await db.execute(`
           UPDATE programs_projects 
-          SET is_collaborative = 1
+          SET is_collaborative = TRUE
           WHERE id = ?
         `, [collaboration.program_id]);
       }

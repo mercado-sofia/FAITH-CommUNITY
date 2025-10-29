@@ -153,9 +153,9 @@ export const submitChanges = async (req, res) => {
               
               // Handle collaboration requests for collaborative programs
               if (proposedData.collaborators && Array.isArray(proposedData.collaborators) && proposedData.collaborators.length > 0) {
-                message = `${orgAcronym} has submitted a collaborative program "${proposedData.title}" for approval. Collaboration requests will be sent to invited organizations.`
+                message = `${orgAcronym} has submitted a collaborative program "${proposedData.title}" for approval. Collaboration requests will be sent to invited organizations after superadmin approval.`
                 
-                // Send collaboration requests immediately
+                // Create collaboration request records (notifications will be sent only after superadmin approval)
                 for (const collaborator of proposedData.collaborators) {
                   try {
                     const collaboratorId = typeof collaborator === 'object' ? collaborator.id : collaborator;
@@ -173,26 +173,14 @@ export const submitChanges = async (req, res) => {
                     
                     if (existingCollaboration.length === 0) {
                       // Create collaboration request linked to submission (not program yet)
+                      // Notifications will be sent only after superadmin approves the program
                       await db.execute(`
                         INSERT INTO program_collaborations (submission_id, collaborator_admin_id, invited_by_admin_id, status, program_title)
                         VALUES (?, ?, ?, 'pending', ?)
                       `, [submissionId, collaboratorId, item.submitted_by, proposedData.title]);
                     }
-
-                    // Notify collaborator about the collaboration request
-                    try {
-                      const NotificationController = (await import('./notificationController.js')).default;
-                      await NotificationController.createNotification(
-                        collaboratorId,
-                        'collaboration_request',
-                        'New Collaboration Request',
-                        `You have received a collaboration request for "${proposedData.title}". Please review and respond in the Collaboration section.`,
-                        'programs',
-                        submissionId
-                      );
-                    } catch (notificationError) {
-                    }
                   } catch (collabError) {
+                    // Continue with other collaborators even if one fails
                   }
                 }
               }

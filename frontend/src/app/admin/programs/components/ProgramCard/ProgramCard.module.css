@@ -220,6 +220,10 @@
 
 .metaText {
   line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 /* Image placeholder */

@@ -2,15 +2,30 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useSelector } from 'react-redux';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useAdminNotifications } from '@/hooks/useAdminNotifications';
 import { useDropdown } from '@/hooks/useDropdown';
+import { useAuthState } from '@/hooks/useAuthState';
+import { selectCurrentAdmin, selectUserType } from '@/rtk/superadmin/adminSlice';
 import styles from './styles/NotificationsDropdown.module.css';
 import { FaBell } from 'react-icons/fa';
 
 export default function NotificationsDropdown({ isAuthenticated, profileDropdown }) {
   const router = useRouter();
   const notificationsDropdown = useDropdown(false);
-  const notifications = useNotifications(isAuthenticated);
+  const { user } = useAuthState();
+  const currentAdmin = useSelector(selectCurrentAdmin);
+  const userType = useSelector(selectUserType);
+  
+  // Use appropriate notification hook based on user type
+  const isAdmin = userType === 'admin' || userType === 'superadmin';
+  
+  const userNotifications = useNotifications(isAuthenticated && !isAdmin);
+  const adminNotifications = useAdminNotifications(isAuthenticated && isAdmin ? currentAdmin?.id : null);
+  
+  // Use the appropriate notification data
+  const notifications = isAdmin ? adminNotifications : userNotifications;
 
   const handleNotificationsToggle = () => {
     if (profileDropdown.isOpen) {
@@ -66,22 +81,33 @@ export default function NotificationsDropdown({ isAuthenticated, profileDropdown
               </div>
             ) : (
               notifications.notifications.map((notification) => {
+                // Handle different data structures between user and admin notifications
+                const isRead = notification.is_read !== undefined ? notification.is_read : notification.isRead;
+                const createdAt = notification.created_at || notification.createdAt;
                 
                 return (
                   <div 
                     key={notification.id} 
-                    className={`${styles.notificationItem} ${!notification.isRead ? styles.unread : ''}`}
+                    className={`${styles.notificationItem} ${!isRead ? styles.unread : ''}`}
                     onClick={() => {
                       notifications.handleNotificationClick(notification);
                       notificationsDropdown.close();
-                      router.push('/profile?tab=notifications');
+                      
+                      // Handle collaboration notifications specially
+                      if (isAdmin && (notification.type === 'collaboration_request' || notification.type === 'collaboration' || notification.type === 'program_approval')) {
+                        router.push('/admin/programs?tab=collaborations');
+                      } else if (isAdmin) {
+                        router.push('/admin/notifications');
+                      } else {
+                        router.push('/profile?tab=notifications');
+                      }
                     }}
                   >
                   <div className={styles.notificationContent}>
                     <p className={styles.notificationText}>{notification.title}</p>
                     <p className={styles.notificationMessage}>{notification.message}</p>
                     <span className={styles.notificationTime}>
-                      {notifications.formatNotificationTime(notification.created_at)}
+                      {notifications.formatNotificationTime(createdAt)}
                     </span>
                   </div>
                 </div>
@@ -91,7 +117,7 @@ export default function NotificationsDropdown({ isAuthenticated, profileDropdown
           </div>
           <div className={styles.notificationsFooter}>
             <Link 
-              href="/profile?tab=notifications" 
+              href={isAdmin ? "/admin/notifications" : "/profile?tab=notifications"} 
               className={styles.viewAllBtn}
               onClick={notificationsDropdown.close}
             >

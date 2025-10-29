@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch } from "react-redux"
 import { loginAdmin, loginSuperAdmin, logoutAdmin } from "../../../rtk/superadmin/adminSlice"
@@ -25,8 +25,39 @@ export default function LoginPage() {
   const [focusedFields, setFocusedFields] = useState({})
   const [fieldErrors, setFieldErrors] = useState({})
   const [lastAttemptedSystem, setLastAttemptedSystem] = useState(null)
+  const [attemptCount, setAttemptCount] = useState(0)
+  const [remainingAttempts, setRemainingAttempts] = useState(5)
+  const [lockoutSeconds, setLockoutSeconds] = useState(0)
+  const [isLockedOut, setIsLockedOut] = useState(false)
   const router = useRouter()
   const dispatch = useDispatch()
+
+  // Countdown timer for lockout
+  useEffect(() => {
+    if (isLockedOut && lockoutSeconds > 0) {
+      const timer = setInterval(() => {
+        setLockoutSeconds(prev => {
+          if (prev <= 1) {
+            setIsLockedOut(false)
+            setErrorMessage("")
+            setAttemptCount(0)
+            setRemainingAttempts(5)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+
+      return () => clearInterval(timer)
+    }
+  }, [isLockedOut, lockoutSeconds])
+
+  // Format time remaining as MM:SS
+  const formatTimeRemaining = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
 
   // Function to completely clear all session data
   const clearAllSessionData = () => {
@@ -161,9 +192,21 @@ export default function LoginPage() {
       
       if (result.ok) {
         successfulSystem = systemToTry
+        // Reset attempt tracking on success
+        setAttemptCount(0)
+        setRemainingAttempts(5)
+        setIsLockedOut(false)
       } else if (result.status === 429) {
         // Rate limit hit - don't try other systems
-        setErrorMessage("Too many failed login attempts. Please wait 5 minutes before trying again.")
+        const data = result.data || {}
+        const remainingSecs = data.remainingSeconds || 300 // Default to 5 minutes
+        const attempts = data.attempts || 5
+        
+        setIsLockedOut(true)
+        setLockoutSeconds(remainingSecs)
+        setAttemptCount(attempts)
+        setRemainingAttempts(0)
+        setErrorMessage(data.error || `Too many failed login attempts. Please wait ${formatTimeRemaining(remainingSecs)} before trying again.`)
         setShowError(true)
         setFieldErrors({ email: "Rate limit exceeded", password: "Rate limit exceeded" })
         setIsLoading(false)
@@ -178,7 +221,15 @@ export default function LoginPage() {
             break
           } else if (result.status === 429) {
             // Rate limit hit during fallback attempts
-            setErrorMessage("Too many failed login attempts. Please wait 5 minutes before trying again.")
+            const data = result.data || {}
+            const remainingSecs = data.remainingSeconds || 300
+            const attempts = data.attempts || 5
+            
+            setIsLockedOut(true)
+            setLockoutSeconds(remainingSecs)
+            setAttemptCount(attempts)
+            setRemainingAttempts(0)
+            setErrorMessage(data.error || `Too many failed login attempts. Please wait ${formatTimeRemaining(remainingSecs)} before trying again.`)
             setShowError(true)
             setFieldErrors({ email: "Rate limit exceeded", password: "Rate limit exceeded" })
             setIsLoading(false)
@@ -221,7 +272,15 @@ export default function LoginPage() {
 
       // Handle rate limiting (this should now be caught earlier in the logic above)
       if (result && result.status === 429) {
-        setErrorMessage("Too many failed login attempts. Please wait 5 minutes before trying again.")
+        const data = result.data || {}
+        const remainingSecs = data.remainingSeconds || 300
+        const attempts = data.attempts || 5
+        
+        setIsLockedOut(true)
+        setLockoutSeconds(remainingSecs)
+        setAttemptCount(attempts)
+        setRemainingAttempts(0)
+        setErrorMessage(data.error || `Too many failed login attempts. Please wait ${formatTimeRemaining(remainingSecs)} before trying again.`)
         setShowError(true)
         setFieldErrors({ email: "Rate limit exceeded", password: "Rate limit exceeded" })
         setIsLoading(false)
@@ -245,12 +304,20 @@ export default function LoginPage() {
         return
       }
 
+      // Update attempt count from response if available
+      if (data?.attempts !== undefined) {
+        setAttemptCount(data.attempts)
+        setRemainingAttempts(data.remainingAttempts !== undefined ? data.remainingAttempts : Math.max(0, 5 - data.attempts))
+      }
+
       if (successfulSystem === "user" && data?.requiresVerification) {
         setErrorMessage("Please verify your email address before logging in. Check your email for a verification link.")
         setShowError(true)
         setFieldErrors({ email: "Please verify your email address", password: "Please verify your email address" })
       } else {
-        setErrorMessage((data && data.error) || "Invalid email or password. Please check your credentials and try again.")
+        const baseError = (data && data.error) || "Invalid email or password. Please check your credentials and try again."
+        const attemptsInfo = data?.attempts ? ` (Attempt ${data.attempts}/5${data?.remainingAttempts ? `, ${data.remainingAttempts} remaining` : ''})` : ""
+        setErrorMessage(baseError + attemptsInfo)
         setShowError(true)
         setFieldErrors({ email: "Invalid email or password", password: "Invalid email or password" })
       }
@@ -330,13 +397,25 @@ export default function LoginPage() {
           </div>
 
           {showError && (
-            <p className={styles.errorMessage}>
-              {errorMessage}
-            </p>
+            <div className={styles.errorContainer}>
+              <p className={styles.errorMessage}>
+                {errorMessage}
+              </p>
+              {isLockedOut && lockoutSeconds > 0 && (
+                <p className={styles.lockoutTimer}>
+                  Try again in: {formatTimeRemaining(lockoutSeconds)}
+                </p>
+              )}
+              {!isLockedOut && attemptCount > 0 && (
+                <p className={styles.attemptInfo}>
+                  Failed login attempts: {attemptCount}/5 {remainingAttempts > 0 && `(${remainingAttempts} remaining)`}
+                </p>
+              )}
+            </div>
           )}
 
-          <button type="submit" className={styles.loginBtn} disabled={isLoading} aria-busy={isLoading}>
-            Log In
+          <button type="submit" className={styles.loginBtn} disabled={isLoading || isLockedOut} aria-busy={isLoading}>
+            {isLockedOut ? "Locked Out" : "Log In"}
             {isLoading && <FaSpinner className={styles.spinner} />}
           </button>
 

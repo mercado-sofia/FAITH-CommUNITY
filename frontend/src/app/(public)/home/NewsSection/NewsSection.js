@@ -18,6 +18,9 @@ export default function NewsSection() {
   const [touchStartX, setTouchStartX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Responsive display count
+  const [isMobile, setIsMobile] = useState(false);
+
   // Use SWR hooks for data fetching
   const { organizations: orgsData, isLoading: orgLoading } = usePublicOrganizations();
   const { news, isLoading: newsLoading } = usePublicNews();
@@ -62,6 +65,22 @@ export default function NewsSection() {
     
     return sortedOrgs;
   }, [orgsData, news]);
+
+  // Handle screen size detection for responsive display count
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    // Check on mount
+    checkScreenSize();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkScreenSize);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   // Handle initial organization selection - always reset to first organization
   useEffect(() => {
@@ -141,7 +160,7 @@ export default function NewsSection() {
     }
   };
 
-  const maxDisplay = 6;
+  const maxDisplay = isMobile ? 3 : 6;
 
   // Using centralized date utility - format remains exactly the same
   const formatDate = (dateString) => {

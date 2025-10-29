@@ -1,6 +1,6 @@
 .controlsRow {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   margin-bottom: 1.4rem;
@@ -12,6 +12,13 @@
   display: flex;
   align-items: center;
   gap: 0.65rem;
+}
+
+.resultsCount {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .dropdownWrapper {

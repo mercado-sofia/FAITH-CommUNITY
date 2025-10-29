@@ -18,8 +18,8 @@ export const notificationsApi = createApi({
   endpoints: (builder) => ({
     // Get notifications for an admin
     getNotifications: builder.query({
-      query: ({ adminId, limit = 10, offset = 0 }) => ({
-        url: `/${adminId}?limit=${limit}&offset=${offset}`,
+      query: ({ adminId, limit = 10, offset = 0, tab = 'all' }) => ({
+        url: `/${adminId}?limit=${limit}&offset=${offset}&tab=${tab}`,
         method: 'GET',
       }),
       providesTags: ['Notifications'],

@@ -6,6 +6,7 @@ import { authenticator } from "otplib"
 import { logAdminAction, logSuperadminAction } from "../../utils/audit.js"
 import { SessionSecurity } from "../../utils/sessionSecurity.js"
 import { LoginAttemptTracker } from "../../utils/loginAttemptTracker.js"
+import { getClientIpAddress } from "../../utils/ipAddressHelper.js"
 
 // JWT secret via env
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
@@ -13,21 +14,27 @@ const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
 // Admin login endpoint
 export const loginAdmin = async (req, res) => {
   const { email, password, otp } = req.body
-  const ipAddress = req.ip || req.connection.remoteAddress
+  const ipAddress = getClientIpAddress(req)
 
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required" })
   }
 
   try {
-    // Check failed login attempts for admin type only
+    // Check failed login attempts BEFORE attempting login
     const failedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'admin');
     
     // Block for 5 minutes after 5 failed attempts
     if (failedAttempts >= 5) {
+      const remainingSeconds = await LoginAttemptTracker.getLockoutTimeRemaining(email, ipAddress, 'admin');
+      const remainingMinutes = Math.ceil(remainingSeconds / 60);
+      
       return res.status(429).json({ 
-        error: 'Too many failed login attempts. Please wait 5 minutes before trying again.',
-        retryAfter: '5 minutes'
+        error: `Too many failed login attempts. Please wait ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''} before trying again.`,
+        retryAfter: `${remainingMinutes} minutes`,
+        remainingSeconds: remainingSeconds,
+        attempts: failedAttempts,
+        maxAttempts: 5
       });
     }
     const [adminRows] = await db.execute(
@@ -40,16 +47,28 @@ export const loginAdmin = async (req, res) => {
     )
 
     if (adminRows.length === 0) {
+      // Track failed attempt - admin not found or inactive
       await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'admin');
-      return res.status(401).json({ error: "Invalid credentials or account inactive" })
+      const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'admin');
+      return res.status(401).json({ 
+        error: "Invalid credentials or account inactive",
+        attempts: newFailedAttempts,
+        remainingAttempts: Math.max(0, 5 - newFailedAttempts)
+      })
     }
 
     const admin = adminRows[0]
     const isPasswordValid = await bcrypt.compare(password, admin.password)
 
     if (!isPasswordValid) {
+      // Track failed attempt - invalid password
       await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'admin');
-      return res.status(401).json({ error: "Invalid credentials" })
+      const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'admin');
+      return res.status(401).json({ 
+        error: "Invalid credentials",
+        attempts: newFailedAttempts,
+        remainingAttempts: Math.max(0, 5 - newFailedAttempts)
+      })
     }
 
     // MFA removed for admin accounts - only superadmin accounts use MFA
@@ -76,12 +95,12 @@ export const loginAdmin = async (req, res) => {
     // Create secure session with IP/UA binding
     await SessionSecurity.createAdminSession(
       admin.id,
-      req.ip || req.connection.remoteAddress,
+      getClientIpAddress(req),
       req.headers['user-agent'],
       token
     )
 
-    // Clear failed login attempts on successful login
+    // Clear failed login attempts on successful login (reset counter)
     await LoginAttemptTracker.clearFailedAttempts(email, ipAddress, 'admin');
     
     await logAdminAction(admin.id, 'login', 'Admin logged in', req)
@@ -100,7 +119,6 @@ export const loginAdmin = async (req, res) => {
       },
     })
   } catch (err) {
-    console.error("Admin login error:", err)
     res.status(500).json({ error: "Internal server error during login" })
   }
 }
@@ -143,7 +161,6 @@ export const getAllAdmins = async (req, res) => {
     )
     res.json(rows)
   } catch (err) {
-    console.error("Get all admins error:", err)
     res.status(500).json({ error: "Internal server error while fetching admins" })
   }
 }
@@ -171,7 +188,6 @@ export const getAdminById = async (req, res) => {
 
     res.json(rows[0])
   } catch (err) {
-    console.error("Get admin by ID error:", err)
     res.status(500).json({ error: "Internal server error while fetching admin" })
   }
 }
@@ -275,7 +291,6 @@ export const updateAdmin = async (req, res) => {
     })
   } catch (err) {
     await connection.rollback()
-    console.error("Update admin error:", err)
     res.status(500).json({ error: "Internal server error while updating admin" })
   } finally {
     connection.release()
@@ -339,7 +354,6 @@ export const deactivateAdmin = async (req, res) => {
     })
   } catch (err) {
     await connection.rollback()
-    console.error("Toggle admin status error:", err)
     res.status(500).json({ error: "Internal server error while updating admin status" })
   } finally {
     connection.release()
@@ -406,7 +420,6 @@ export const deleteAdmin = async (req, res) => {
     })
   } catch (err) {
     await connection.rollback()
-    console.error("Delete admin error:", err)
     res.status(500).json({ error: "Internal server error while deleting admin" })
   } finally {
     connection.release()
@@ -451,7 +464,6 @@ export const verifyPasswordForEmailChange = async (req, res) => {
       message: "Password verified successfully"
     })
   } catch (err) {
-    console.error("Password verification error:", err)
     res.status(500).json({ error: "Internal server error during password verification" })
   }
 }
@@ -494,7 +506,6 @@ export const verifyPasswordForPasswordChange = async (req, res) => {
       message: "Password verified successfully"
     })
   } catch (err) {
-    console.error("Password verification error:", err)
     res.status(500).json({ error: "Internal server error during password verification" })
   }
 }
@@ -559,7 +570,6 @@ export const forgotPassword = async (req, res) => {
 
     res.json({ message: "If an account with that email exists, a password reset link has been sent." })
   } catch (err) {
-    console.error("Forgot password error:", err)
     res.status(500).json({ error: "Internal server error while processing password reset request" })
   }
 }
@@ -638,7 +648,6 @@ export const resetPassword = async (req, res) => {
 
     res.json({ message: "Password has been successfully reset" })
   } catch (err) {
-    console.error("Reset password error:", err)
     res.status(500).json({ error: "Internal server error while resetting password" })
   }
 }
@@ -664,7 +673,6 @@ export const validateResetToken = async (req, res) => {
 
     res.json({ message: "Token is valid" })
   } catch (err) {
-    console.error("Validate reset token error:", err)
     res.status(500).json({ error: "Internal server error while validating token" })
   }
 }
@@ -689,7 +697,6 @@ export const checkEmailAdmin = async (req, res) => {
       res.status(404).json({ exists: false })
     }
   } catch (err) {
-    console.error("Admin check email error:", err)
     res.status(500).json({ error: "Internal server error" })
   }
 }

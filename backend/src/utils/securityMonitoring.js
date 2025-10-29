@@ -1,5 +1,6 @@
 import db from "../database.js"
 import pino from "pino"
+import { getClientIpAddress } from "./ipAddressHelper.js"
 
 const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
@@ -14,7 +15,7 @@ export class SecurityMonitoring {
   static async logSecurityEvent(type, severity, details, req = null) {
     await this.ensureSecurityLogsTable()
     
-    const ipAddress = req?.ip || req?.connection?.remoteAddress || null
+    const ipAddress = req ? getClientIpAddress(req) : null
     const userAgent = req?.headers?.['user-agent'] || null
     const userId = req?.admin?.id || req?.user?.id || null
     const userType = req?.admin ? 'admin' : req?.user ? 'user' : null

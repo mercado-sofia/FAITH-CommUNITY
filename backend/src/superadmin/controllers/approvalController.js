@@ -424,10 +424,9 @@ export const approveSubmission = async (req, res) => {
           }
           
         // Additional images will be handled in the general section below
-          
-          // Note: Collaborators should only receive the original collaboration request notification
-          // when the program is first submitted, not when it's approved by superadmin
-          // The collaboration request notifications are handled in submissionController.js
+          // Note: Collaborators receive collaboration request notifications ONLY after superadmin approval.
+          // During submission, collaboration records are created but no notifications are sent.
+          // Notifications are sent here (in approvalController.js) after the program is approved.
           
         } else {
           // For non-collaborative programs, create the program immediately

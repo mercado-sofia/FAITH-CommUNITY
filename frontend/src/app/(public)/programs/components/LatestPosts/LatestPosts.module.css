@@ -80,12 +80,11 @@
   color: #167c59;
 }
 
-
 .newsTitle {
   font-size: 1.2rem;
-  font-weight: 700;
+  font-weight: 600;
   font-family: var(--font-poppins);
-  color: #333335;
+  color: #000;
   line-height: 1.3;
   transition: color 0.2s ease;
 }

@@ -1,5 +1,6 @@
 import crypto from "crypto"
 import db from "../database.js"
+import { getClientIpAddress } from "./ipAddressHelper.js"
 
 export class StepUpAuth {
   // Create step-up authentication challenge
@@ -106,7 +107,7 @@ export const requireStepUp = (action) => {
       const token = await StepUpAuth.createStepUpChallenge(
         req.admin.id,
         action,
-        req.ip || req.connection.remoteAddress
+        getClientIpAddress(req)
       )
       
       return res.status(403).json({

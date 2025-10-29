@@ -31,7 +31,12 @@ export default function AdminHighlightsPage() {
   // Filter and search states
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
-  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'pending');
+  const [statusFilter, setStatusFilter] = useState(() => {
+    const status = searchParams.get('status') || 'pending';
+    const normalizedStatus = status.replace(/\+/g, '-');
+    console.log('Initial statusFilter setup:', { status, normalizedStatus });
+    return normalizedStatus;
+  });
 
   // Show skeleton immediately on first load, then show content when data is ready
   const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
@@ -58,10 +63,13 @@ export default function AdminHighlightsPage() {
   useEffect(() => {
     const search = searchParams.get('search') || '';
     const sort = searchParams.get('sort') || 'newest';
+    const status = searchParams.get('status') || 'pending';
+    const normalizedStatus = status.replace(/\+/g, '-');
     
     if (search !== searchQuery) setSearchQuery(search);
     if (sort !== sortBy) setSortBy(sort);
-  }, [searchParams, searchQuery, sortBy]);
+    if (normalizedStatus !== statusFilter) setStatusFilter(normalizedStatus);
+  }, [searchParams, searchQuery, sortBy, statusFilter]);
 
   // Load highlights data
   const loadHighlights = useCallback(async (isRefresh = false) => {
@@ -99,6 +107,9 @@ export default function AdminHighlightsPage() {
       if (duplicateIds.length > 0) {
         console.warn('Duplicate highlight IDs detected:', duplicateIds);
       }
+      
+      // Debug: Check status values
+      console.log('Received highlights from API:', highlightsData.map(h => ({ id: h.id, title: h.title, status: h.status })));
       
       setHighlights(highlightsData);
     } catch (err) {
@@ -182,10 +193,15 @@ export default function AdminHighlightsPage() {
     let filtered = uniqueHighlights;
 
     // Apply status filter
+    console.log('Applying status filter:', { statusFilter, totalHighlights: filtered.length });
     if (statusFilter === 'pending') {
       filtered = filtered.filter(highlight => highlight.status === 'pending');
-    } else if (statusFilter === 'showed-in-public') {
+      console.log('Filtered for pending:', filtered.length, 'highlights');
+    } else if (statusFilter === 'showed-in-public' || statusFilter === 'showed-in+public' || statusFilter === 'showed in public') {
       filtered = filtered.filter(highlight => highlight.status === 'approved');
+      console.log('Filtered for approved:', filtered.length, 'highlights');
+    } else {
+      console.log('No status filter applied, showing all:', filtered.length, 'highlights');
     }
 
     // Apply search filter
@@ -284,6 +300,7 @@ export default function AdminHighlightsPage() {
   const handleFormSubmit = useCallback(async (formData) => {
     try {
       const isEdit = pageMode === 'edit';
+      
       const url = isEdit 
         ? `${API_BASE_URL}/api/admin/highlights/${editingHighlight.id}`
         : `${API_BASE_URL}/api/admin/highlights`;
@@ -383,14 +400,24 @@ export default function AdminHighlightsPage() {
           <SearchAndFilterControls
             searchQuery={searchQuery}
             sortBy={sortBy}
-            statusFilter={statusFilter}
             onSearchChange={handleSearchChange}
             onFilterChange={handleFilterChange}
-            onRefresh={handleRefresh}
-            isRefreshing={isRefreshing}
             totalCount={highlights?.length || 0}
             filteredCount={filteredAndSortedHighlights()?.length || 0}
           />
+
+          {/* Status Navigation Tabs */}
+          <div className={styles.statusTabs}>
+            {['Pending', 'Showed in Public'].map((status) => (
+              <button
+                key={status}
+                className={`${styles.statusTab} ${statusFilter === status.toLowerCase().replace(' ', '-') || statusFilter === status.toLowerCase().replace(' ', '+') || statusFilter === status.toLowerCase() ? styles.activeTab : ''}`}
+                onClick={() => handleFilterChange('status', status.toLowerCase().replace(' ', '-'))}
+              >
+                {status}
+              </button>
+            ))}
+          </div>
 
           {/* Highlights Grid */}
           <div className={styles.programsSection}>

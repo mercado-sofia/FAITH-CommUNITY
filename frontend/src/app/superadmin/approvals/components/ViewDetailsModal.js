@@ -55,7 +55,43 @@ const ViewDetailsModal = ({
     }
   };
 
+  // Parse highlights data for display
+  const getHighlightsData = () => {
+    if (submissionData.section !== 'highlights') return null;
+    try {
+      // Try different possible field names for the data
+      const dataField = submissionData.proposed_data || submissionData.data || submissionData.new_data;
+      const parsedData = typeof dataField === 'string' 
+        ? JSON.parse(dataField) 
+        : dataField;
+      
+      // Parse media_files if it's a JSON string
+      if (parsedData && parsedData.media_files) {
+        if (typeof parsedData.media_files === 'string') {
+          parsedData.media_files = JSON.parse(parsedData.media_files);
+        }
+      }
+      
+      return parsedData;
+    } catch (error) {
+      console.error('Error parsing highlights data:', error);
+      return null;
+    }
+  };
+
   const programData = getProgramData();
+  const highlightsData = getHighlightsData();
+  
+  // Debug logging for highlights data
+  if (submissionData.section === 'highlights') {
+    console.log('Highlights submission data:', submissionData);
+    console.log('Parsed highlights data:', highlightsData);
+    if (highlightsData && highlightsData.media_files) {
+      console.log('Media files:', highlightsData.media_files);
+      console.log('Media files type:', typeof highlightsData.media_files);
+      console.log('Is array:', Array.isArray(highlightsData.media_files));
+    }
+  }
 
   // Handle image viewing
   const openImageViewer = (images, startIndex = 0) => {
@@ -280,8 +316,73 @@ const ViewDetailsModal = ({
               )}
 
             </div>
+          ) : submissionData.section === 'highlights' && highlightsData ? (
+            // For highlights approvals, show formatted highlight data
+            <div className={styles.contentSections}>
+              {/* Title Section */}
+              {highlightsData.title && (
+                <div className={styles.contentSection}>
+                  <h4 className={styles.sectionTitle}>TITLE:</h4>
+                  <div className={styles.descriptionBox}>
+                    {highlightsData.title}
+                  </div>
+                </div>
+              )}
+
+              {/* Description Section */}
+              {highlightsData.description && (
+                <div className={styles.contentSection}>
+                  <h4 className={styles.sectionTitle}>DESCRIPTION:</h4>
+                  <div className={styles.descriptionBox}>
+                    {highlightsData.description}
+                  </div>
+                </div>
+              )}
+
+              {/* Media Section */}
+              <div className={styles.contentSection}>
+                <h4 className={styles.sectionTitle}>MEDIA:</h4>
+                {highlightsData && highlightsData.media_files && Array.isArray(highlightsData.media_files) && highlightsData.media_files.length > 0 ? (
+                  <div className={styles.additionalImagesContainer}>
+                    {highlightsData.media_files.map((media, index) => {
+                      const imageUrl = media.url || media.filename || '/defaults/default-profile.png';
+                      return (
+                        <div 
+                          key={index} 
+                          className={styles.additionalImageWrapper}
+                          onClick={() => openImageViewer(highlightsData.media_files.map(m => ({
+                            src: m.url || m.filename || '/defaults/default-profile.png',
+                            alt: m.filename || `Media ${index + 1}`,
+                            type: 'media'
+                          })), index)}
+                        >
+                          <Image 
+                            src={imageUrl} 
+                            alt={media.filename || `Media ${index + 1}`} 
+                            width={120}
+                            height={120}
+                            style={{objectFit: 'cover', borderRadius: '8px'}} 
+                            className={styles.additionalImage}
+                            onError={(e) => {
+                              e.target.src = '/defaults/default-profile.png';
+                            }}
+                          />
+                          <div className={styles.imageOverlay}>
+                            <FaEye className={styles.viewIcon} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className={styles.descriptionBox}>
+                    {highlightsData ? 'No media files found' : 'No highlight data available'}
+                  </div>
+                )}
+              </div>
+            </div>
           ) : (
-            // For non-program approvals, show data comparison
+            // For other non-program/highlights approvals, show data comparison
             <div className={styles.contentSections}>
               <div className={styles.contentSection}>
                 <h4 className={styles.sectionTitle}>DATA CHANGES:</h4>

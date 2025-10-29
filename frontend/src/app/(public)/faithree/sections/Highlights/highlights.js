@@ -11,48 +11,74 @@ export default function Highlights({ onClose }) {
   const [selectedStory, setSelectedStory] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Fetch approved highlights from API
-  useEffect(() => {
-    const fetchHighlights = async () => {
-      try {
+  const fetchHighlights = async (isManualRefresh = false) => {
+    try {
+      if (isManualRefresh) {
+        setIsRefreshing(true);
+      } else {
         setIsLoading(true);
-        const response = await fetch(`${API_BASE_URL}/api/highlights/public/approved`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch highlights');
-        }
-        
-        const data = await response.json();
-        const highlights = data.highlights || [];
-        
-        // Transform API data to match expected format and ensure unique IDs
-        const transformedHighlights = highlights.map((highlight, index) => ({
-          id: `${highlight.id || 'unknown'}-${index}`,
-          originalId: highlight.id,
-          title: highlight.title,
-          organization: highlight.organization_name || 'Unknown Organization',
-          organization_acronym: highlight.organization_acronym || '',
-          description: highlight.description,
-          date: new Date(highlight.created_at).toLocaleDateString('en-US', { 
-            month: 'short', 
-            year: 'numeric' 
-          }),
-          media: highlight.media || [],
-          isHighlighted: false
-        }));
-        
-        setStories(transformedHighlights);
-      } catch (error) {
-        setError('Failed to load highlights');
-        setStories([]);
-      } finally {
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/highlights/public/approved`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch highlights');
+      }
+      
+      const data = await response.json();
+      const highlights = data.highlights || [];
+      
+      // Transform API data to match expected format and ensure unique IDs
+      const transformedHighlights = highlights.map((highlight, index) => ({
+        id: `${highlight.id || 'unknown'}-${index}`,
+        originalId: highlight.id,
+        title: highlight.title,
+        organization: highlight.organization_name || 'Unknown Organization',
+        organization_acronym: highlight.organization_acronym || '',
+        description: highlight.description,
+        date: new Date(highlight.created_at).toLocaleDateString('en-US', { 
+          month: 'short', 
+          year: 'numeric' 
+        }),
+        media: highlight.media || [],
+        isHighlighted: false
+      }));
+      
+      setStories(transformedHighlights);
+      setError(null);
+    } catch (error) {
+      setError('Failed to load highlights');
+      setStories([]);
+    } finally {
+      if (isManualRefresh) {
+        setIsRefreshing(false);
+      } else {
         setIsLoading(false);
       }
-    };
+    }
+  };
 
+  // Load highlights on component mount
+  useEffect(() => {
     fetchHighlights();
   }, []);
+
+  // Auto-refresh every 30 seconds to catch new approvals
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchHighlights(true);
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Manual refresh function
+  const handleManualRefresh = () => {
+    fetchHighlights(true);
+  };
 
   const handleStarClick = (storyId, event) => {
     event.stopPropagation(); // Prevent card click when clicking star
@@ -90,15 +116,32 @@ export default function Highlights({ onClose }) {
                 Environmental stewardship and sustainability initiatives
               </p>
             </div>
-            <button
-              className={styles.closeButton}
-              onClick={onClose}
-              title="Close FAITHree Stories Highlights"
-            >
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
+            <div className={styles.headerActions}>
+              <button 
+                className={styles.refreshButton}
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
+                title="Refresh highlights"
+              >
+                <svg 
+                  className={`${styles.refreshIcon} ${isRefreshing ? styles.spinning : ''}`}
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              <button
+                className={styles.closeButton}
+                onClick={onClose}
+                title="Close FAITHree Stories Highlights"
+              >
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -137,7 +180,18 @@ export default function Highlights({ onClose }) {
               onClick={() => handleCardClick(story)}
             >
               <div className={styles.cardImageContainer}>
-                <div className={styles.imagePlaceholder}>
+                {story.media && story.media.length > 0 && story.media[0].url ? (
+                  <img 
+                    src={story.media[0].url} 
+                    alt={story.title}
+                    className={styles.cardImage}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div className={styles.imagePlaceholder} style={{ display: story.media && story.media.length > 0 && story.media[0].url ? 'none' : 'flex' }}>
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M4 16L8.586 11.414C9.367 10.633 10.633 10.633 11.414 11.414L16 16M14 14L15.586 12.414C16.367 11.633 17.633 11.633 18.414 12.414L20 14M14 8H14.01M6 20H18C19.105 20 20 19.105 20 18V6C20 4.895 19.105 4 18 4H6C4.895 4 4 4.895 4 6V18C4 19.105 4.895 20 6 20Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
@@ -190,31 +244,82 @@ export default function Highlights({ onClose }) {
             </div>
             
             <div className={styles.modalBody}>
-              <div className={styles.modalImageContainer}>
-                <div className={styles.modalImagePlaceholder}>
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4 16L8.586 11.414C9.367 10.633 10.633 10.633 11.414 11.414L16 16M14 14L15.586 12.414C16.367 11.633 17.633 11.633 18.414 12.414L20 14M14 8H14.01M6 20H18C19.105 20 20 19.105 20 18V6C20 4.895 19.105 4 18 4H6C4.895 4 4 4.895 4 6V18C4 19.105 4.895 20 6 20Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
+              {/* Description Section */}
+              <div className={styles.modalSection}>
+                <h3 className={styles.modalSectionTitle}>Description</h3>
+                <p className={styles.modalDescriptionText}>
+                  {selectedStory.description || 'No description provided.'}
+                </p>
               </div>
-              
-              <div className={styles.modalInfo}>
-                <div className={styles.modalOrganization}>
-                  {selectedStory.organization}
-                </div>
-                <div className={styles.modalDescription}>
-                  {selectedStory.description}
-                </div>
-                <div className={styles.modalDetails}>
-                  <div className={styles.modalStatus}>
-                    <span className={styles.modalLabel}>Status:</span>
-                    <span className={`${styles.modalStatusBadge} ${styles[selectedStory.status]}`}>
-                      {selectedStory.status.charAt(0).toUpperCase() + selectedStory.status.slice(1)}
-                    </span>
+
+              {/* Media Gallery */}
+              {selectedStory.media && selectedStory.media.length > 0 && (
+                <div className={styles.modalSection}>
+                  <h3 className={styles.modalSectionTitle}>
+                    Media ({selectedStory.media.length} {selectedStory.media.length === 1 ? 'file' : 'files'})
+                  </h3>
+                  
+                  <div className={styles.modalImageGallery}>
+                    <div className={styles.modalMainImage}>
+                      {selectedStory.media[0] && (
+                        <img
+                          src={selectedStory.media[0].url}
+                          alt={`${selectedStory.title} image`}
+                          className={styles.modalMainImageContent}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      )}
+                      <div className={styles.modalImagePlaceholder} style={{ display: selectedStory.media[0] ? 'none' : 'flex' }}>
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M4 16L8.586 11.414C9.367 10.633 10.633 10.633 11.414 11.414L16 16M14 14L15.586 12.414C16.367 11.633 17.633 11.633 18.414 12.414L20 14M14 8H14.01M6 20H18C19.105 20 20 19.105 20 18V6C20 4.895 19.105 4 18 4H6C4.895 4 4 4.895 4 6V18C4 19.105 4.895 20 6 20Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                    </div>
+                    
+                    {selectedStory.media.length > 1 && (
+                      <div className={styles.modalImageThumbnails}>
+                        {selectedStory.media.map((item, index) => (
+                          <button
+                            key={index}
+                            className={`${styles.modalThumbnail} ${index === 0 ? styles.modalActiveThumbnail : ''}`}
+                            onClick={() => {
+                              // For now, just show the first image
+                              // Could implement thumbnail switching later
+                            }}
+                          >
+                            <img
+                              src={item.url}
+                              alt={`Thumbnail ${index + 1}`}
+                              className={styles.modalThumbnailImage}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className={styles.modalDate}>
-                    <span className={styles.modalLabel}>Date:</span>
-                    <span className={styles.modalDateValue}>{selectedStory.date}</span>
+                </div>
+              )}
+
+              {/* Details Section */}
+              <div className={styles.modalSection}>
+                <h3 className={styles.modalSectionTitle}>Details</h3>
+                <div className={styles.modalMetadata}>
+                  <div className={styles.modalMetaItem}>
+                    <svg className={styles.modalMetaIcon} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M19 21V5C19 3.89543 18.1046 3 17 3H7C5.89543 3 5 3.89543 5 5V21M19 21H5M19 21H21M5 21H3M9 7H15M9 11H15M9 15H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span className={styles.modalMetaLabel}>Organization:</span>
+                    <span className={styles.modalMetaValue}>{selectedStory.organization}</span>
+                  </div>
+                  <div className={styles.modalMetaItem}>
+                    <svg className={styles.modalMetaIcon} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M8 7V3M16 7V3M3 11H21M5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V19C3 20.1046 3.89543 21 5 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span className={styles.modalMetaLabel}>Date:</span>
+                    <span className={styles.modalMetaValue}>{selectedStory.date}</span>
                   </div>
                 </div>
               </div>

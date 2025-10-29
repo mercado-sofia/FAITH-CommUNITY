@@ -159,6 +159,11 @@ export const updateHighlight = async (req, res) => {
       return res.status(400).json({ error: 'Title and description are required' });
     }
     
+    // Validate ID parameter
+    if (!id || id === '0' || isNaN(parseInt(id))) {
+      return res.status(400).json({ error: 'Invalid highlight ID' });
+    }
+    
     // Check if highlight exists and belongs to organization, get current data
     const checkQuery = 'SELECT * FROM admin_highlights WHERE id = ? AND organization_id = ?';
     const [checkRows] = await connection.execute(checkQuery, [id, orgId]);
@@ -235,6 +240,11 @@ export const deleteHighlight = async (req, res) => {
     
     const { id } = req.params;
     const { organization_id: orgId } = req.admin;
+    
+    // Validate ID parameter
+    if (!id || id === '0' || isNaN(parseInt(id))) {
+      return res.status(400).json({ error: 'Invalid highlight ID' });
+    }
     
     // Check if highlight exists and belongs to organization, get current data
     const checkQuery = 'SELECT * FROM admin_highlights WHERE id = ? AND organization_id = ?';

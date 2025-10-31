@@ -8,7 +8,7 @@ import { NavigationProvider } from "../../contexts/NavigationContext";
 import { clearAuthImmediate, USER_TYPES } from "../../utils/authService";
 import Sidebar from "./components/Sidebar/Sidebar";
 import TopBar from "./components/TopBar/TopBar";
-import { ErrorBoundary, Loader } from "@/components";
+import { ErrorBoundary, Loader, DynamicFavicon } from "@/components";
 import styles from "./dashboard/styles/dashboard.module.css";
 import logger from '../../utils/logger.js';
 
@@ -89,17 +89,21 @@ function AdminLayoutContent({ children }) {
   }
 
   return (
-    <div className={styles.adminLayout}>
-      <Sidebar />
-      <div className={styles.mainContent}>
-        <TopBar />
-        <main className={styles.content}>
-          <ErrorBoundary>
-            {children}
-          </ErrorBoundary>
-        </main>
+    <>
+      {/* Dynamic Favicon - optimized to prevent navigation delays */}
+      <DynamicFavicon />
+      <div className={styles.adminLayout}>
+        <Sidebar />
+        <div className={styles.mainContent}>
+          <TopBar />
+          <main className={styles.content}>
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

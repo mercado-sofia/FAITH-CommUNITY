@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { FaTimes, FaTag, FaCalendar, FaEye, FaChartBar, FaExclamationTriangle, FaUsers } from 'react-icons/fa';
+import { FaTimes, FaTag, FaCalendar, FaEye, FaChartBar, FaExclamationTriangle, FaUsers, FaFile } from 'react-icons/fa';
 import { formatDateShort, formatDateTime } from '@/utils/dateUtils.js';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import styles from './SubmissionModal.module.css';
@@ -352,39 +352,161 @@ export default function SubmissionModal({ data, onClose }) {
           )}
 
           {/* Data Comparison */}
-          <div className={data.section === 'programs' ? styles.dataComparisonSingle : styles.dataComparison}>
-            {/* For programs section, show only proposed data without previous data */}
-            {data.section === 'programs' ? (
+          {data.section === 'Post Act Report' ? (
+            // For Post Act Report, show only the uploaded file
+            <div className={styles.dataComparisonSingle}>
               <div className={styles.dataSection}>
-                <h3 className={styles.sectionTitle}>Proposed Program</h3>
+                <h3 className={styles.sectionTitle}>Uploaded File</h3>
                 <div className={styles.dataContent}>
-                  {formatData(data.proposed_data)}
+                  {(() => {
+                    try {
+                      const proposedData = typeof data.proposed_data === 'string' 
+                        ? JSON.parse(data.proposed_data) 
+                        : data.proposed_data;
+                      const fileUrl = proposedData?.file_url;
+                      
+                      if (!fileUrl) {
+                        return <div className={styles.noData}>No file available</div>;
+                      }
+                      
+                      // Extract file name from URL
+                      const getFileNameFromUrl = (url) => {
+                        try {
+                          const urlParts = url.split('/');
+                          const fileNameWithParams = urlParts[urlParts.length - 1];
+                          // Remove query parameters but keep extension
+                          const fileName = fileNameWithParams.split('?')[0];
+                          // Ensure filename has proper extension
+                          if (fileName && !fileName.includes('.')) {
+                            // If no extension found, try to extract from original filename in URL
+                            const extension = url.split('.').pop()?.split('?')[0]?.toLowerCase();
+                            if (extension && extension.length <= 5) {
+                              return `Post Act Report.${extension}`;
+                            }
+                          }
+                          return fileName || 'Post Act Report';
+                        } catch {
+                          return 'Post Act Report';
+                        }
+                      };
+                      
+                      const fileName = getFileNameFromUrl(fileUrl);
+                      
+                      // Determine if it's an image or non-image file
+                      const fileExtension = fileUrl.split('.').pop()?.toLowerCase().split('?')[0];
+                      const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'svg'].includes(fileExtension);
+                      const isPdf = fileExtension === 'pdf';
+                      const isDocument = ['doc', 'docx'].includes(fileExtension);
+                      
+                      // S3 URLs work directly with proper Content-Type headers - no URL conversion needed
+                      // For images: open in new tab
+                      // For non-image files (PDFs, DOC, DOCX): download via fetch to ensure correct file type
+                      const handleFileClick = async (e) => {
+                        if (!isImage) {
+                          e.preventDefault();
+                          try {
+                            // Fetch the file from S3 (serves with correct Content-Type automatically)
+                            const response = await fetch(fileUrl, {
+                              method: 'GET',
+                              headers: {
+                                'Accept': '*/*'
+                              }
+                            });
+                            
+                            if (!response.ok) {
+                              throw new Error('Failed to download file');
+                            }
+                            
+                            // Get the blob with correct MIME type from S3
+                            const blob = await response.blob();
+                            
+                            // Create download link with proper file type
+                            const downloadUrl = window.URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = downloadUrl;
+                            link.download = fileName; // Use filename with extension
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            
+                            // Clean up the object URL
+                            window.URL.revokeObjectURL(downloadUrl);
+                          } catch (error) {
+                            console.error('Error downloading file:', error);
+                            // Fallback: try direct download (S3 URLs work directly)
+                            const link = document.createElement('a');
+                            link.href = fileUrl;
+                            link.download = fileName;
+                            link.target = '_blank';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }
+                        }
+                        // For images, default behavior (open in new tab) works fine with S3
+                      };
+                      
+                      return (
+                        <a
+                          href={fileUrl}
+                          onClick={handleFileClick}
+                          target={isImage ? '_blank' : undefined}
+                          rel={isImage ? 'noreferrer noopener' : undefined}
+                          className={styles.fileCard}
+                        >
+                          <div className={styles.fileIconWrapper}>
+                            <FaFile className={styles.fileIcon} />
+                          </div>
+                          <div className={styles.fileInfo}>
+                            <div className={styles.fileName}>{fileName}</div>
+                            <div className={styles.fileSize}>
+                              {isImage ? 'View File' : 'Download File'}
+                            </div>
+                          </div>
+                        </a>
+                      );
+                    } catch (error) {
+                      return <div className={styles.noData}>No file available</div>;
+                    }
+                  })()}
                 </div>
               </div>
-            ) : (
-              <>
-                {/* Previous Data */}
+            </div>
+          ) : (
+            <div className={data.section === 'programs' ? styles.dataComparisonSingle : styles.dataComparison}>
+              {/* For programs section, show only proposed data without previous data */}
+              {data.section === 'programs' ? (
                 <div className={styles.dataSection}>
-                  <h3 className={styles.sectionTitle}>Previous Data</h3>
-                  <div className={styles.dataContent}>
-                    {data.previous_data ? (
-                      formatData(data.previous_data)
-                    ) : (
-                      <div className={styles.noData}>No previous data</div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Proposed Data */}
-                <div className={styles.dataSection}>
-                  <h3 className={styles.sectionTitle}>Proposed Changes</h3>
+                  <h3 className={styles.sectionTitle}>Proposed Program</h3>
                   <div className={styles.dataContent}>
                     {formatData(data.proposed_data)}
                   </div>
                 </div>
-              </>
-            )}
-          </div>
+              ) : (
+                <>
+                  {/* Previous Data */}
+                  <div className={styles.dataSection}>
+                    <h3 className={styles.sectionTitle}>Previous Data</h3>
+                    <div className={styles.dataContent}>
+                      {data.previous_data ? (
+                        formatData(data.previous_data)
+                      ) : (
+                        <div className={styles.noData}>No previous data</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Proposed Data */}
+                  <div className={styles.dataSection}>
+                    <h3 className={styles.sectionTitle}>Proposed Changes</h3>
+                    <div className={styles.dataContent}>
+                      {formatData(data.proposed_data)}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Actions */}
@@ -398,6 +520,7 @@ export default function SubmissionModal({ data, onClose }) {
           </button>
         </div>
       </div>
+
     </div>
   );
 }

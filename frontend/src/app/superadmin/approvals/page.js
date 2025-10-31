@@ -876,7 +876,7 @@ export default function PendingApprovalsPage() {
       <div className={styles.tableSection}>
         <ApprovalsTable
           approvals={currentApprovals}
-          onApprove={handleApprove}
+          onApprove={handleApproveClick}
           onRejectClick={handleRejectClick}
           onDeleteClick={handleDeleteClick}
           selectedItems={selectedItems}

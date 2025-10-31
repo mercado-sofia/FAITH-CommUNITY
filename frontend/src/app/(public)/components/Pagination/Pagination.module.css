@@ -42,3 +42,30 @@
   cursor: not-allowed;
   font-weight: 500;
 }
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .pagination {
+    margin: 2rem 0;
+    gap: 4px;
+  }
+
+  .pageBtn {
+    width: 38px;
+    height: 38px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pagination {
+    margin: 1.5rem 0;
+    gap: 3px;
+  }
+
+  .pageBtn {
+    width: 36px;
+    height: 36px;
+    font-size: 13px;
+  }
+}

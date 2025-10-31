@@ -15,6 +15,11 @@
   gap: 4px;
 }
 
+/* Extra spacing specifically for the Event Dates label inside the Program Form */
+.eventDatesLabel {
+  margin-bottom: 8px;
+}
+
 .required {
   color: #ef4444;
   font-weight: 700;

@@ -9,6 +9,7 @@ import { formatDateShort, formatDateForAPI } from '@/utils/dateUtils.js';
 import "react-datepicker/dist/react-datepicker.css";
 import './datePickerOverrides.css';
 import styles from './DateSelectionField.module.css';
+import formStyles from '../ProgramForm/ProgramForm.module.css';
 
 const CustomDropdown = ({ options, value, onChange, disabled, placeholder }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -252,8 +253,8 @@ const DateSelectionField = ({
   return (
     <div className={styles.dateSelectionContainer}>
       {label && (
-        <label className={styles.label}>
-          {label} {required && <span className={styles.required}></span>}
+        <label className={`${formStyles.label} ${styles.eventDatesLabel}`}>
+          {label} {required && <span className={formStyles.required}></span>}
         </label>
       )}
       

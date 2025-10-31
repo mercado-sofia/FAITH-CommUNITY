@@ -27,9 +27,12 @@ export const testCloudinaryConnection = async () => {
 // Upload buffer to Cloudinary
 export const uploadBufferToCloudinary = (buffer, options = {}) => {
   return new Promise((resolve, reject) => {
+    // Use provided resource_type or default to 'auto'
+    // 'auto' detects image/video/raw automatically
+    // 'raw' should be used explicitly for PDFs and documents
     const uploadStream = cloudinary.uploader.upload_stream(
       {
-        resource_type: 'auto',
+        resource_type: options.resource_type || 'auto',
         folder: options.folder || 'faith-community',
         public_id: options.public_id,
         transformation: options.transformation,
@@ -60,31 +63,82 @@ export const uploadFileToCloudinary = (filePath, options = {}) => {
 };
 
 // Delete file from Cloudinary
+// If resource_type is not provided, try both 'image' and 'raw'
 export const deleteFromCloudinary = async (publicId, options = {}) => {
   try {
-    const result = await cloudinary.uploader.destroy(publicId, {
-      resource_type: options.resource_type || 'image',
-      ...options
-    });
-    return result;
+    // If resource_type is explicitly provided, use it
+    if (options.resource_type) {
+      const result = await cloudinary.uploader.destroy(publicId, {
+        resource_type: options.resource_type,
+        ...options
+      });
+      return result;
+    }
+    
+    // If resource_type not provided and URL is available, determine from URL
+    if (options.url) {
+      const resourceType = getResourceTypeFromUrl(options.url);
+      const result = await cloudinary.uploader.destroy(publicId, {
+        resource_type: resourceType,
+        ...options
+      });
+      return result;
+    }
+    
+    // Try 'image' first (default), then 'raw' if it fails
+    try {
+      const result = await cloudinary.uploader.destroy(publicId, {
+        resource_type: 'image',
+        ...options
+      });
+      return result;
+    } catch (imageError) {
+      // If image delete fails, try raw
+      try {
+        const result = await cloudinary.uploader.destroy(publicId, {
+          resource_type: 'raw',
+          ...options
+        });
+        return result;
+      } catch (rawError) {
+        // If both fail, throw the original error
+        throw imageError;
+      }
+    }
   } catch (error) {
     console.error('Error deleting from Cloudinary:', error);
     throw error;
   }
 };
 
-// Extract public ID from Cloudinary URL
+// Extract public ID from Cloudinary URL and determine resource type
 export const extractPublicIdFromUrl = (url) => {
   if (!url) return null;
   
-  // Handle different Cloudinary URL formats
-  const patterns = [
-    /\/v\d+\/(.+?)\.(jpg|jpeg|png|gif|webp|svg|ico)$/i,
-    /\/image\/upload\/v\d+\/(.+?)\.(jpg|jpeg|png|gif|webp|svg|ico)$/i,
-    /\/image\/upload\/(.+?)\.(jpg|jpeg|png|gif|webp|svg|ico)$/i
+  // Handle different Cloudinary URL formats for images
+  const imagePatterns = [
+    /\/v\d+\/(.+?)\.(jpg|jpeg|png|gif|webp|svg|ico|heic)$/i,
+    /\/image\/upload\/v\d+\/(.+?)\.(jpg|jpeg|png|gif|webp|svg|ico|heic)$/i,
+    /\/image\/upload\/(.+?)\.(jpg|jpeg|png|gif|webp|svg|ico|heic)$/i
   ];
   
-  for (const pattern of patterns) {
+  // Handle raw file URLs (PDFs, DOC, DOCX, etc.)
+  const rawPatterns = [
+    /\/raw\/upload\/v\d+\/(.+?)$/i,
+    /\/raw\/upload\/(.+?)$/i,
+    /\/v\d+\/(.+?)\.(pdf|doc|docx|zip|txt)$/i
+  ];
+  
+  // Try image patterns first
+  for (const pattern of imagePatterns) {
+    const match = url.match(pattern);
+    if (match) {
+      return match[1];
+    }
+  }
+  
+  // Try raw patterns
+  for (const pattern of rawPatterns) {
     const match = url.match(pattern);
     if (match) {
       return match[1];
@@ -92,6 +146,24 @@ export const extractPublicIdFromUrl = (url) => {
   }
   
   return null;
+};
+
+// Determine resource type from Cloudinary URL
+export const getResourceTypeFromUrl = (url) => {
+  if (!url) return 'image'; // default
+  
+  // Check for raw file URLs
+  if (url.includes('/raw/upload')) {
+    return 'raw';
+  }
+  
+  // Check for image URLs
+  if (url.includes('/image/upload')) {
+    return 'image';
+  }
+  
+  // Default to image if cannot determine
+  return 'image';
 };
 
 // Generate Cloudinary URL with transformations
@@ -140,7 +212,8 @@ export const CLOUDINARY_FOLDERS = {
   PROGRAMS: {
     MAIN: 'faith-community/programs/main',
     ADDITIONAL: 'faith-community/programs/additional',
-    THUMBNAILS: 'faith-community/programs/thumbnails'
+    THUMBNAILS: 'faith-community/programs/thumbnails',
+    POST_ACT: 'faith-community/programs/post-act-reports' // Mixed files: images, PDFs, DOC, DOCX
   }
 };
 

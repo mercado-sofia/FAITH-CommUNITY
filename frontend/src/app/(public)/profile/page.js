@@ -11,6 +11,7 @@ import styles from './profile.module.css';
 export default function ProfilePage() {
   const [userData, setUserData] = useState(null);
   const [activeTab, setActiveTab] = useState('personal-info');
+  const [isMobile, setIsMobile] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toasts, removeToast, showError } = useToast();
@@ -27,21 +28,25 @@ export default function ProfilePage() {
     {
       id: 'personal-info',
       label: 'Profile Info',
+      mobileLabel: 'Profile',
       component: PersonalInfo
     },
     {
       id: 'email-password',
       label: 'Email & Password',
+      mobileLabel: 'Email & Password',
       component: EmailandPassword
     },
     {
       id: 'notifications',
       label: 'Notifications',
+      mobileLabel: 'Notifications',
       component: Notifications
     },
     {
       id: 'applications',
       label: 'My Applications',
+      mobileLabel: 'Applications',
       component: MyApplications
     }
   ];
@@ -56,6 +61,14 @@ export default function ProfilePage() {
       }
     }
   }, [searchParams]);
+
+  // Track viewport for mobile-specific labels
+  useEffect(() => {
+    const checkIsMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
 
 
   // Handle user authentication and data loading
@@ -116,7 +129,7 @@ export default function ProfilePage() {
                     className={`${styles.navItem} ${activeTab === item.id ? styles.active : ''}`}
                     onClick={() => handleTabChange(item.id)}
                   >
-                    <span>{item.label}</span>
+                    <span>{isMobile ? (item.mobileLabel ?? item.label) : item.label}</span>
                   </button>
                 );
               })}

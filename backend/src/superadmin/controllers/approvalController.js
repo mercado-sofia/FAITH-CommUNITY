@@ -526,14 +526,72 @@ export const approveSubmission = async (req, res) => {
       }
     }
 
+    // Handle Post Act Report approval
+    if (section === 'Post Act Report') {
+      // Extract report_id and program_id from proposed_data
+      const reportId = data.report_id;
+      const programId = data.program_id;
+
+      if (!reportId || !programId) {
+        throw new Error('Post Act Report submission missing report_id or program_id');
+      }
+
+      // Check if report exists and is pending
+      const [reportRows] = await connection.execute(
+        `SELECT id, program_id, status FROM program_post_act_reports WHERE id = ? FOR UPDATE`,
+        [reportId]
+      );
+
+      if (reportRows.length === 0) {
+        throw new Error('Post Act Report not found');
+      }
+
+      const report = reportRows[0];
+      
+      // Verify the program_id matches
+      if (report.program_id !== programId) {
+        throw new Error('Post Act Report program_id mismatch');
+      }
+
+      if (report.status !== 'pending') {
+        throw new Error(`Post Act Report is not pending (current status: ${report.status})`);
+      }
+
+      // Update post act report status to approved
+      await connection.execute(
+        `UPDATE program_post_act_reports SET status = 'approved', reviewed_by_superadmin_id = ?, reviewed_at = NOW() WHERE id = ?`,
+        [req.superadmin?.id || null, reportId]
+      );
+
+      // Update program status to Completed with manual override
+      await connection.execute(
+        `UPDATE programs_projects SET status = 'Completed', manual_status_override = TRUE WHERE id = ?`,
+        [programId]
+      );
+    }
+
     // Update submission status to approved
     await connection.execute(`UPDATE submissions SET status = 'approved' WHERE id = ?`, [id]);
     
     // Create dynamic notification message based on section and data
     let notificationMessage = `Your submission for ${section} has been approved by SuperAdmin`;
     
+    // Add specific details for Post Act Report
+    if (section === 'Post Act Report') {
+      // Get program title for the notification message
+      try {
+        const [programRows] = await connection.execute(
+          `SELECT title FROM programs_projects WHERE id = ?`,
+          [data.program_id]
+        );
+        const programTitle = programRows.length > 0 ? programRows[0].title : 'program';
+        notificationMessage = `Your Post Act Report was approved. The program "${programTitle}" is now marked as Completed.`;
+      } catch (err) {
+        notificationMessage = 'Your Post Act Report was approved. The program is now marked as Completed.';
+      }
+    }
     // Add specific details for programs
-    if (section === 'programs' && data.title) {
+    else if (section === 'programs' && data.title) {
       if (data.collaborators && data.collaborators.length > 0) {
         notificationMessage = `Your collaborative program "${data.title}" has been approved by SuperAdmin. Collaboration requests have been sent to the invited organizations.`;
       } else {
@@ -626,6 +684,26 @@ export const rejectSubmission = async (req, res) => {
       }
     }
 
+    // Handle Post Act Report rejection
+    if (submission.section === 'Post Act Report') {
+      try {
+        const data = JSON.parse(submission.proposed_data);
+        const reportId = data.report_id;
+        
+        if (reportId) {
+          // Update post act report status to rejected
+          await db.execute(
+            `UPDATE program_post_act_reports 
+             SET status = 'rejected', reviewed_by_superadmin_id = ?, reviewed_at = NOW()
+             WHERE id = ? AND status = 'pending'`,
+            [req.superadmin?.id || null, reportId]
+          );
+        }
+      } catch (parseError) {
+        // Continue with submission rejection even if report update fails
+      }
+    }
+
     // Update submission status to rejected
     await db.execute(
       'UPDATE submissions SET status = "rejected", rejection_reason = ? WHERE id = ?',
@@ -639,8 +717,21 @@ export const rejectSubmission = async (req, res) => {
     try {
       const data = JSON.parse(submission.proposed_data);
       
+      // Add specific details for Post Act Report
+      if (submission.section === 'Post Act Report') {
+        try {
+          const [programRows] = await db.execute(
+            `SELECT title FROM programs_projects WHERE id = ?`,
+            [data.program_id]
+          );
+          const programTitle = programRows.length > 0 ? programRows[0].title : 'program';
+          notificationMessage = `Your Post Act Report for "${programTitle}" has been declined by SuperAdmin. Please review the note and re-upload.`;
+        } catch (err) {
+          notificationMessage = 'Your Post Act Report has been declined by SuperAdmin. Please review the note and re-upload.';
+        }
+      }
       // Add specific details for programs
-      if (submission.section === 'programs' && data.title) {
+      else if (submission.section === 'programs' && data.title) {
         notificationMessage = `Your program "${data.title}" has been declined by SuperAdmin`;
       }
       // Add specific details for organization
@@ -1087,14 +1178,80 @@ export const bulkApproveSubmissions = async (req, res) => {
       }
     }
 
+        // Handle Post Act Report approval
+        if (section === 'Post Act Report') {
+          // Extract report_id and program_id from proposed_data
+          const reportId = data.report_id;
+          const programId = data.program_id;
+
+          if (!reportId || !programId) {
+            errors.push(`Submission ${id} missing report_id or program_id`);
+            errorCount++;
+            continue;
+          }
+
+          // Check if report exists and is pending
+          const [reportRows] = await connection.execute(
+            `SELECT id, program_id, status FROM program_post_act_reports WHERE id = ? FOR UPDATE`,
+            [reportId]
+          );
+
+          if (reportRows.length === 0) {
+            errors.push(`Submission ${id}: Post Act Report not found`);
+            errorCount++;
+            continue;
+          }
+
+          const report = reportRows[0];
+          
+          // Verify the program_id matches
+          if (report.program_id !== programId) {
+            errors.push(`Submission ${id}: Post Act Report program_id mismatch`);
+            errorCount++;
+            continue;
+          }
+
+          if (report.status !== 'pending') {
+            errors.push(`Submission ${id}: Post Act Report is not pending (current status: ${report.status})`);
+            errorCount++;
+            continue;
+          }
+
+          // Update post act report status to approved
+          await connection.execute(
+            `UPDATE program_post_act_reports SET status = 'approved', reviewed_by_superadmin_id = ?, reviewed_at = NOW() WHERE id = ?`,
+            [req.superadmin?.id || null, reportId]
+          );
+
+          // Update program status to Completed with manual override
+          await connection.execute(
+            `UPDATE programs_projects SET status = 'Completed', manual_status_override = TRUE WHERE id = ?`,
+            [programId]
+          );
+        }
+
         // Update submission status
         await connection.execute(`UPDATE submissions SET status = 'approved' WHERE id = ?`, [id]);
 
         // Create individual notification for this submission
         let notificationMessage = `Your submission for ${section} has been approved by SuperAdmin`;
         
+        // Add specific details for Post Act Report
+        if (section === 'Post Act Report') {
+          // Get program title for the notification message
+          try {
+            const [programRows] = await connection.execute(
+              `SELECT title FROM programs_projects WHERE id = ?`,
+              [data.program_id]
+            );
+            const programTitle = programRows.length > 0 ? programRows[0].title : 'program';
+            notificationMessage = `Your Post Act Report was approved. The program "${programTitle}" is now marked as Completed.`;
+          } catch (err) {
+            notificationMessage = 'Your Post Act Report was approved. The program is now marked as Completed.';
+          }
+        }
         // Add specific details for programs
-        if (section === 'programs' && data.title) {
+        else if (section === 'programs' && data.title) {
           if (data.collaborators && data.collaborators.length > 0) {
             notificationMessage = `Your collaborative program "${data.title}" has been approved by SuperAdmin. Collaboration requests have been sent to the invited organizations.`;
           } else {
@@ -1215,6 +1372,26 @@ export const bulkRejectSubmissions = async (req, res) => {
           }
         }
 
+        // Handle Post Act Report rejection
+        if (submission.section === 'Post Act Report') {
+          try {
+            const data = JSON.parse(submission.proposed_data);
+            const reportId = data.report_id;
+            
+            if (reportId) {
+              // Update post act report status to rejected
+              await db.execute(
+                `UPDATE program_post_act_reports 
+                 SET status = 'rejected', reviewed_by_superadmin_id = ?, reviewed_at = NOW()
+                 WHERE id = ? AND status = 'pending'`,
+                [req.superadmin?.id || null, reportId]
+              );
+            }
+          } catch (parseError) {
+            // Continue with submission rejection even if report update fails
+          }
+        }
+
         // Update submission status to rejected
         await db.execute(
           'UPDATE submissions SET status = ?, rejection_reason = ? WHERE id = ?',
@@ -1228,8 +1405,21 @@ export const bulkRejectSubmissions = async (req, res) => {
         try {
           const data = JSON.parse(submission.proposed_data);
           
+          // Add specific details for Post Act Report
+          if (submission.section === 'Post Act Report') {
+            try {
+              const [programRows] = await db.execute(
+                `SELECT title FROM programs_projects WHERE id = ?`,
+                [data.program_id]
+              );
+              const programTitle = programRows.length > 0 ? programRows[0].title : 'program';
+              notificationMessage = `Your Post Act Report for "${programTitle}" has been declined by SuperAdmin. Please review the note and re-upload.`;
+            } catch (err) {
+              notificationMessage = 'Your Post Act Report has been declined by SuperAdmin. Please review the note and re-upload.';
+            }
+          }
           // Add specific details for programs
-          if (submission.section === 'programs' && data.title) {
+          else if (submission.section === 'programs' && data.title) {
             notificationMessage = `Your program "${data.title}" has been declined by SuperAdmin`;
           }
           // Add specific details for organization

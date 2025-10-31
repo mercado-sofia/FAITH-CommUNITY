@@ -5,6 +5,21 @@
   flex-shrink: 0; /* Keep buttons at bottom */
 }
 
+.notice {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  cursor: default;
+}
+
 .markActiveButton,
 .markCompletedButton {
   flex: 1;

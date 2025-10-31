@@ -337,14 +337,43 @@ export const cancelSubmission = async (req, res) => {
   }
 
   try {
-    // First check if submission exists
-    const [existing] = await db.execute("SELECT id, status, section FROM submissions WHERE id = ?", [id])
+    // First check if submission exists and get its data
+    const [existing] = await db.execute("SELECT id, status, section, proposed_data FROM submissions WHERE id = ?", [id])
 
     if (existing.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Submission not found",
       })
+    }
+
+    const submission = existing[0];
+
+    // If it's a Post Act Report submission, optionally delete the file from S3
+    // Note: Files are kept by default for audit purposes, but we can delete if needed
+    if (submission.section === 'Post Act Report') {
+      try {
+        const proposedData = JSON.parse(submission.proposed_data || '{}');
+        const filePublicId = proposedData?.file_public_id;
+        const fileUrl = proposedData?.file_url;
+
+        // If file exists and is in S3, optionally delete it
+        // Keeping file for now for audit trail - can be enabled if needed
+        if (filePublicId && fileUrl && fileUrl.includes('amazonaws.com')) {
+          // Optional: Delete file from S3 if submission is cancelled
+          // Uncomment below if you want to delete S3 files when submissions are cancelled
+          /*
+          const { extractKeyFromUrl, deleteFromS3 } = await import('../../utils/s3Upload.js');
+          const key = extractKeyFromUrl(fileUrl);
+          if (key) {
+            await deleteFromS3(key);
+          }
+          */
+        }
+      } catch (fileError) {
+        // Non-fatal: continue with submission deletion even if file deletion fails
+        console.error('Error handling file deletion for submission:', fileError);
+      }
     }
 
     // Delete the submission (allow deletion regardless of status)
@@ -359,7 +388,7 @@ export const cancelSubmission = async (req, res) => {
 
     res.json({
       success: true,
-      message: `Submission for ${existing[0].section} deleted successfully`,
+      message: `Submission for ${submission.section} deleted successfully`,
     })
   } catch (error) {
     res.status(500).json({

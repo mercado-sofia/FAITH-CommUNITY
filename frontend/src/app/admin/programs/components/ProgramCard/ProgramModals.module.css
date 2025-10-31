@@ -1,28 +1,31 @@
 /* Modal Overlay and Content */
 .modalOverlay {
-  position: absolute;
+  position: fixed;
   top: 0;
-  left: 0;
   right: 0;
   bottom: 0;
+  left: 0;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 24px;
-  border-radius: 12px;
 }
 
 .modalContent {
   background: white;
-  border-radius: 12px;
   width: 100%;
-  max-width: 400px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  animation: modalSlideIn 0.3s ease-out;
+  max-width: 640px;
+  max-height: 85vh;
+  border-radius: 8px;
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+  animation: modalSlideIn 0.2s ease-out;
   position: relative;
   z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 @keyframes modalSlideIn {
@@ -37,20 +40,22 @@
 }
 
 .modalHeader {
-  padding: 20px 20px 0;
-  text-align: center;
+  padding: 18px 28px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .modalTitle {
   font-size: 18px;
   font-weight: 600;
-  color: #111827;
+  color: #000;
   margin: 0;
 }
 
 .modalBody {
-  padding: 16px 20px;
-  text-align: center;
+  padding: 16px 28px;
+  text-align: left;
+  overflow: auto;
 }
 
 .modalBody p {
@@ -61,9 +66,9 @@
 }
 
 .warningText {
-  color: #dc2626 !important;
+  color: #dc2626;
   font-weight: 500;
-  font-size: 13px !important;
+  font-size: 13px;
 }
 
 .infoText {
@@ -75,10 +80,14 @@
 
 .modalActions {
   display: flex;
-  flex-direction: column;
   gap: 12px;
-  padding: 0 20px 20px;
+  padding: 18px 28px;
   width: 100%;
+  border-top: 1px solid #e5e7eb;
+  position: sticky;
+  bottom: 0;
+  background: white;
+  justify-content: flex-end;
 }
 
 .cancelButton,
@@ -90,8 +99,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  width: 100%;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
 }
@@ -175,28 +183,77 @@
 
 /* Modal-specific wrapper classes */
 .markCompletedModal {
-  /* Additional styles for mark completed modal if needed */
+  height: auto;
+  max-width: 520px;
 }
 
-.markActiveModal {
-  /* Additional styles for mark active modal if needed */
+/* Upload field */
+.uploadField {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
 }
 
-.optOutModal {
-  /* Additional styles for opt out modal if needed */
+.uploadHint {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 6px;
 }
 
-.volunteerAcceptanceModal {
-  /* Additional styles for volunteer acceptance modal if needed */
+/* File preview row */
+.filePreviewRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  margin-top: 8px;
 }
 
-.acceptCollaborationModal {
-  /* Additional styles for accept collaboration modal if needed */
+.fileNameLink {
+  color: #000; /* black */
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
 }
 
-.declineCollaborationModal {
-  /* Additional styles for decline collaboration modal if needed */
+.fileNameLink:hover {
+  text-decoration: underline;
 }
+
+.fileMeta {
+  font-size: 13px; /* keep simple and readable */
+  color: #000; /* black */
+  opacity: 0.8;
+}
+
+.removeFileBtn {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  color: #000; /* black */
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.removeFileBtn:hover {
+  background: #f3f4f6;
+}
+
+/* Compact body layout specifically for the mark completed modal */
+.markCompletedModal .modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+
 
 /* Accept Collaboration Modal Styles */
 .acceptCollaborationModal .confirmButton {

@@ -359,7 +359,8 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
                       return displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1);
                   }
                 }
-                return displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1);
+                const baseText = displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1);
+                return baseText;
               })()}
             </div>
           );

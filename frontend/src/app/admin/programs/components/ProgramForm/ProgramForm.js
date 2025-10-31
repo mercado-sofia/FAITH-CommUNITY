@@ -201,7 +201,7 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
         event_end_date: formData.event_end_date || null,
         multiple_dates: formData.multiple_dates || null,
         status: isEditMode ? (formData.status || 'active') : 'pending',
-        accepts_volunteers: formData.accepts_volunteers !== undefined ? formData.accepts_volunteers : true,
+        accepts_volunteers: formData.accepts_volunteers !== undefined ? formData.accepts_volunteers : false,
         // Extract collaborator IDs from collaborator objects
         collaborators: Array.isArray(formData.collaborators) 
           ? formData.collaborators.map(collab => collab.id).filter(id => id && typeof id === 'number')

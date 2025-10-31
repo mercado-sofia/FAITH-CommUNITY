@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { PiWarningOctagonBold } from 'react-icons/pi';
 
@@ -18,6 +18,24 @@ export default function ConfirmationModal({
   actionType = "delete", // 'delete', 'cancel', or 'complete'
   itemName = null // For displaying the specific item name
 }) {
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Set initial value
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isMobile = windowWidth <= 640;
+  const isSmallMobile = windowWidth <= 480;
+
   // Get configuration based on action type
   const getActionConfig = () => {
     switch (actionType) {
@@ -119,9 +137,9 @@ export default function ConfirmationModal({
   const getConfirmButtonStyles = () => {
     const baseStyles = {
       flex: 1,
-      padding: '0.75rem 1rem',
+      padding: isMobile ? '0.875rem 1rem' : '0.75rem 1rem',
       borderRadius: '8px',
-      fontSize: '14px',
+      fontSize: isMobile ? '13px' : '14px',
       fontWeight: 500,
       fontFamily: 'var(--font-inter)',
       cursor: 'pointer',
@@ -132,7 +150,8 @@ export default function ConfirmationModal({
       justifyContent: 'center',
       outline: 'none',
       gap: '8px',
-      border: '1px solid'
+      border: '1px solid',
+      minHeight: '44px'
     };
 
     if (config.isCancelAction) {
@@ -182,7 +201,8 @@ export default function ConfirmationModal({
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 9999,
-        overflow: 'hidden'
+        overflow: 'hidden',
+        padding: isMobile ? '1rem' : '1rem'
       }}
       onClick={handleOverlayClick}
       onKeyDown={handleKeyDown}
@@ -193,35 +213,45 @@ export default function ConfirmationModal({
       <div 
         style={{
           backgroundColor: 'white',
-          borderRadius: '16px',
+          borderRadius: isMobile ? '16px' : '16px',
           width: '100%',
-          padding: '2rem 2rem 1.8rem',
+          padding: isMobile ? '1.5rem 1.25rem 1.25rem' : '2rem 2rem 1.8rem',
           maxWidth: '400px',
+          maxHeight: isMobile ? 'calc(100vh - 2rem)' : '90vh',
+          overflowY: 'auto',
           boxShadow: '0 8px 30px rgba(0, 0, 0, 0.2)',
           animation: 'fadeIn 0.2s ease-in-out',
           overflow: 'hidden',
-          position: 'relative'
+          position: 'relative',
+          margin: isMobile ? '0 0.5rem' : '0'
         }}
       >
         <div 
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.65rem',
-            marginBottom: '1.5rem'
+            gap: isMobile ? '0.5rem' : '0.65rem',
+            marginBottom: isMobile ? '1rem' : '1.5rem',
+            paddingRight: isMobile ? '2.5rem' : '0'
           }}
         >
-          <div style={getIconContainerStyles()}>
+          <div style={{
+            ...getIconContainerStyles(),
+            width: isMobile ? '24px' : '28px',
+            height: isMobile ? '24px' : '28px',
+            fontSize: isMobile ? '0.9rem' : '1rem'
+          }}>
             <PiWarningOctagonBold />
           </div>
           <h2 
             id="modal-title" 
             style={{
               margin: 0,
-              fontSize: '17px',
+              fontSize: isMobile ? '15px' : '17px',
               fontWeight: 700,
               fontFamily: 'var(--font-inter)',
-              color: '#000'
+              color: '#000',
+              lineHeight: 1.3
             }}
           >
             {config.title}
@@ -230,17 +260,17 @@ export default function ConfirmationModal({
         
         <div 
           style={{
-            marginBottom: '2.2rem'
+            marginBottom: isMobile ? '1.5rem' : '2.2rem'
           }}
         >
           <p 
             style={{
               margin: 0,
               color: '#6B7280',
-              fontSize: '13px',
+              fontSize: isMobile ? '12px' : '13px',
               lineHeight: 1.6,
               textAlign: 'center',
-              padding: '0 0.5rem'
+              padding: isMobile ? '0' : '0 0.5rem'
             }}
           >
             {config.message}
@@ -250,7 +280,8 @@ export default function ConfirmationModal({
         <div 
           style={{
             display: 'flex',
-            gap: '12px',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: isMobile ? '0.625rem' : '12px',
             justifyContent: 'center'
           }}
         >
@@ -261,14 +292,15 @@ export default function ConfirmationModal({
               backgroundColor: '#F9FAFB',
               color: '#374151',
               border: '1px solid #E5E7EB',
-              padding: '0.75rem 1rem',
+              padding: isMobile ? '0.875rem 1rem' : '0.75rem 1rem',
               borderRadius: '8px',
-              fontSize: '14px',
+              fontSize: isMobile ? '13px' : '14px',
               fontWeight: 500,
               fontFamily: 'var(--font-inter)',
               cursor: 'pointer',
               transition: 'all 0.15s ease',
               userSelect: 'none',
+              minHeight: '44px',
               ...(isLoading && {
                 backgroundColor: '#F3F4F6',
                 borderColor: '#E5E7EB',

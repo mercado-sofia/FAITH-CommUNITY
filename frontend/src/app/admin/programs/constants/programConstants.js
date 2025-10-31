@@ -17,7 +17,7 @@ export const DEFAULT_FORM_DATA = {
   event_end_date: null,
   multiple_dates: null,
   collaborators: [],
-  accepts_volunteers: true // Default to accepting volunteers
+  accepts_volunteers: false // Default to closed volunteers on create
 };
 
 // Form validation rules

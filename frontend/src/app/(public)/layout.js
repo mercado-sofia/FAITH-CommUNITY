@@ -1,17 +1,14 @@
 'use client';
 
 import { Navbar, Footer, FloatingMessage, ToastContainer, GlobalLoginModal } from './components';
-import { Loader, PagePreloader } from '@/components';
+import { Loader, PagePreloader, DynamicFavicon } from '@/components';
 import '../globals.css';
-import Head from 'next/head';
 import { useEffect, useRef, useState } from 'react';
 import styles from './styles/publicLayout.module.css';
-import { usePublicBranding } from './hooks/usePublicData';
 
 export default function PublicLayout({ children }) {
   const navbarRef = useRef(null);
   const [showLogoutLoader, setShowLogoutLoader] = useState(false);
-  const { brandingData } = usePublicBranding();
 
   useEffect(() => {
     // Preload critical resources
@@ -31,6 +28,13 @@ export default function PublicLayout({ children }) {
         link.href = src;
         document.head.appendChild(link);
       });
+      
+      // Preload sample4.jpg
+      const preloadLink = document.createElement('link');
+      preloadLink.rel = 'preload';
+      preloadLink.href = '/samples/sample4.jpg';
+      preloadLink.as = 'image';
+      document.head.appendChild(preloadLink);
     };
 
     preloadCriticalResources();
@@ -89,22 +93,8 @@ export default function PublicLayout({ children }) {
 
   return (
     <>
-      <Head>
-        {/* Dynamic Favicon */}
-        {brandingData?.favicon_url && (
-          <link
-            rel="icon"
-            href={brandingData.favicon_url}
-            type="image/x-icon"
-          />
-        )}
-        
-        <link
-          rel="preload"
-          href="/samples/sample4.jpg"
-          as="image"
-        />
-      </Head>
+      {/* Dynamic Favicon - uses client-side DOM manipulation for App Router */}
+      <DynamicFavicon />
       
       {/* Page preloader for instant navigation */}
       <PagePreloader />

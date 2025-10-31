@@ -169,16 +169,101 @@
 
 /* Responsive design */
 @media (max-width: 640px) {
+  .modalOverlay {
+    padding: 0.5rem;
+    align-items: flex-start;
+    padding-top: 2rem;
+  }
+
   .modalContent {
-    padding: 1.5rem;
-    margin: 1rem;
+    padding: 1.25rem;
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100vh - 4rem);
+    border-radius: 12px 12px 0 0;
+  }
+  
+  .closeButton {
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1.75rem;
   }
   
   .modalHeader {
-    padding-right: 0;
+    padding-right: 2.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .modalHeader h2 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .modalHeader p {
+    font-size: 13px;
+  }
+  
+  .modalBody {
+    margin-bottom: 1.5rem;
+  }
+
+  .benefits h3 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .benefits li {
+    font-size: 14px;
+    padding: 0.4rem 0;
+  }
+
+  .benefits li:before {
+    margin-right: 0.5rem;
+    font-size: 1rem;
+  }
+
+  .modalFooter {
+    gap: 0.625rem;
   }
   
   .button {
     max-width: 100%;
+    padding: 0.875rem 1.25rem;
+    font-size: 0.9rem;
+    min-height: 44px;
+  }
+
+  .textButton {
+    padding: 0.625rem 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .modalOverlay {
+    padding-top: 1rem;
+  }
+
+  .modalContent {
+    padding: 1rem;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .modalHeader h2 {
+    font-size: 1.15rem;
+  }
+
+  .modalHeader p {
+    font-size: 12px;
+  }
+
+  .benefits h3 {
+    font-size: 0.95rem;
+  }
+
+  .benefits li {
+    font-size: 13px;
   }
 }

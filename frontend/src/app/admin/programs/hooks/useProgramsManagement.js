@@ -281,26 +281,9 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
     }
   }, [refreshPrograms, setSuccessModal, resetPageMode]);
 
-  // Handle mark program as completed
-  const handleMarkCompleted = useCallback(async (program) => {
+  // Handle mark program as completed: now uploads Post Act Report and submits for approval
+  const handleMarkCompleted = useCallback(async (program, reportFile) => {
     try {
-      // Optimistically update the UI immediately
-      refreshPrograms((currentData) => {
-        if (!currentData?.success || !Array.isArray(currentData.data)) {
-          return currentData;
-        }
-        
-        // Update the program status to Completed
-        const updatedPrograms = currentData.data.map(p => 
-          p.id === program.id ? { ...p, status: 'Completed' } : p
-        );
-        
-        return {
-          ...currentData,
-          data: updatedPrograms
-        };
-      }, { revalidate: false });
-
       // Get admin token for authentication
       const token = localStorage.getItem('adminToken');
       if (!token) {
@@ -312,32 +295,58 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/programs/${program.id}/mark-completed`, {
-        method: 'PUT',
+      let effectiveFile = reportFile;
+      if (!effectiveFile && typeof document !== 'undefined') {
+        const input = document.querySelector('input[data-post-act-input="true"]');
+        if (input && input.files && input.files[0]) {
+          effectiveFile = input.files[0];
+        }
+      }
+
+      if (!effectiveFile) {
+        setSuccessModal({
+          isVisible: true,
+          message: 'Please attach a Post Act Report file before submitting.',
+          type: 'error'
+        });
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', effectiveFile);
+
+      const response = await fetch(`${API_BASE_URL}/api/admin/programs/${program.id}/post-act-report`, {
+        method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
+        body: formData
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        throw new Error(errorData.message || `HTTP ${response.status}: Failed to mark program as completed`);
+        throw new Error(errorData.message || `HTTP ${response.status}: Failed to submit Post Act Report`);
       }
 
-      setSuccessModal({ 
-        isVisible: true, 
-        message: 'Program marked as completed successfully!', 
-        type: 'success' 
+      // Optimistically update UI to reflect pending state to avoid duplicate submissions
+      refreshPrograms((currentData) => {
+        if (!currentData?.success || !Array.isArray(currentData.data)) return currentData;
+        const updated = currentData.data.map(p => (
+          p.id === program.id ? { ...p, has_pending_post_act_report: true } : p
+        ));
+        return { ...currentData, data: updated };
+      }, { revalidate: true });
+
+      setSuccessModal({
+        isVisible: true,
+        message: 'Post Act Report submitted for superadmin approval. Program will be marked Completed after approval.',
+        type: 'success'
       });
-      // Force immediate revalidation to ensure data consistency
-      refreshPrograms(undefined, { revalidate: true });
+      // Revalidation already requested above
     } catch (error) {
-      // Revert optimistic update on error
-      refreshPrograms(undefined, { revalidate: true });
       setSuccessModal({ 
         isVisible: true, 
-        message: `Failed to mark program as completed: ${error.message}`, 
+        message: `Failed to submit Post Act Report: ${error.message}`, 
         type: 'error' 
       });
     }
@@ -345,6 +354,20 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
 
   // Handle mark program as active
   const handleMarkActive = useCallback(async (program) => {
+    // Get admin token for authentication
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      setSuccessModal({ 
+        isVisible: true, 
+        message: 'Authentication token not found. Please log in again.', 
+        type: 'error' 
+      });
+      return;
+    }
+
+    // Store the original data for potential rollback
+    let originalData = null;
+    
     try {
       // Optimistically update the UI immediately
       refreshPrograms((currentData) => {
@@ -352,9 +375,12 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
           return currentData;
         }
         
-        // Update the program status to Active
+        // Store original data for potential rollback
+        originalData = currentData;
+        
+        // Update the program status to Active with manual override flag
         const updatedPrograms = currentData.data.map(p => 
-          p.id === program.id ? { ...p, status: 'Active' } : p
+          p.id === program.id ? { ...p, status: 'Active', manual_status_override: true } : p
         );
         
         return {
@@ -363,17 +389,7 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         };
       }, { revalidate: false });
 
-      // Get admin token for authentication
-      const token = localStorage.getItem('adminToken');
-      if (!token) {
-        setSuccessModal({ 
-          isVisible: true, 
-          message: 'Authentication token not found. Please log in again.', 
-          type: 'error' 
-        });
-        return;
-      }
-
+      // Make the API call
       const response = await fetch(`${API_BASE_URL}/api/admin/programs/${program.id}/mark-active`, {
         method: 'PUT',
         headers: {
@@ -392,11 +408,16 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         message: 'Program marked as active successfully!', 
         type: 'success' 
       });
-      // Force immediate revalidation to ensure data consistency
+      
+      // Force immediate revalidation to ensure data consistency with server
       refreshPrograms(undefined, { revalidate: true });
     } catch (error) {
-      // Revert optimistic update on error
+      // Revert optimistic update on error by revalidating from server
+      if (originalData) {
+        refreshPrograms(originalData, { revalidate: false });
+      }
       refreshPrograms(undefined, { revalidate: true });
+      
       setSuccessModal({ 
         isVisible: true, 
         message: `Failed to mark program as active: ${error.message}`, 

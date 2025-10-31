@@ -77,4 +77,13 @@
   .content h1 {
     font-size: 1.6rem;
   }
+
+  .breadcrumb {
+    font-size: 13px;
+    gap: 0.2rem;
+  }
+
+  .breadcrumbItem {
+    gap: 0.2rem;
+  }
 }

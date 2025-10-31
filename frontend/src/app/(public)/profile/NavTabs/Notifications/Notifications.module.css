@@ -4,6 +4,15 @@
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   padding: 4rem 2rem 2rem;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  height: fit-content;
+  min-height: auto;
 }
 
 .sectionHeader {
@@ -214,6 +223,81 @@
 
   .notificationActions {
     align-self: flex-end;
+  }
+}
+
+@media (max-width: 768px) {
+  .notificationsSection {
+    padding: 0.25rem 1rem 1.25rem;
+    align-items: flex-start;
+    justify-content: flex-start;
+    margin-top: 0;
+    height: auto;
+    min-height: auto;
+  }
+
+  .sectionHeader {
+    padding-top: 0;
+    margin-top: 0;
+  }
+
+  .notificationContent h4,
+  .notificationContent p {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .sectionHeader {
+    align-self: flex-start;
+    width: 100%;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .sectionHeader h2 {
+    font-size: 16px;
+  }
+
+  .notificationsList {
+    align-self: flex-start;
+    width: 100%;
+  }
+
+  .notificationsList h3 {
+    margin-bottom: 1rem;
+    font-size: 15px;
+  }
+
+  .notificationsContainer {
+    align-self: flex-start;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .notificationsSection {
+    padding: 0.25rem 0.75rem 1rem;
+    align-items: flex-start;
+    justify-content: flex-start;
+    margin-top: 0;
+    height: auto;
+    min-height: auto;
+  }
+
+  .sectionHeader {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    padding-top: 0;
+    margin-top: 0;
+  }
+
+  .sectionHeader h2 {
+    font-size: 16px;
+  }
+
+  .notificationsList h3 {
+    margin-bottom: 0.75rem;
+    font-size: 14px;
   }
 }
 

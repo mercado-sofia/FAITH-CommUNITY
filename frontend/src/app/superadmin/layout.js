@@ -6,7 +6,7 @@ import { NavigationProvider } from "../../contexts/NavigationContext";
 import { clearAuthImmediate, USER_TYPES } from "../../utils/authService";
 import Sidebar from "./components/Sidebar/Sidebar"
 import TopBar from "./components/TopBar/TopBar"
-import { Loader } from "@/components";
+import { Loader, DynamicFavicon } from "@/components";
 import styles from "./styles/layout.module.css"
 
 function SuperAdminLayoutContent({ children }) {
@@ -44,15 +44,19 @@ function SuperAdminLayoutContent({ children }) {
   }
 
   return (
-    <div className={styles.superAdminLayout}>
-      <Sidebar />
-      <div className={styles.mainContent}>
-        <TopBar />
-        <main className={styles.content}>
-          {children}
-        </main>
+    <>
+      {/* Dynamic Favicon - optimized to prevent navigation delays */}
+      <DynamicFavicon />
+      <div className={styles.superAdminLayout}>
+        <Sidebar />
+        <div className={styles.mainContent}>
+          <TopBar />
+          <main className={styles.content}>
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

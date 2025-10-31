@@ -67,10 +67,16 @@ MAIL_FROM=FAITH CommUNITY <noreply@yourdomain.com>
 # Frontend URL
 FRONTEND_URL=https://yourdomain.com
 
-# Cloudinary Configuration
+# Cloudinary Configuration (for images)
 CLOUDINARY_CLOUD_NAME=your-production-cloud-name
 CLOUDINARY_API_KEY=your-production-api-key
 CLOUDINARY_API_SECRET=your-production-api-secret
+
+# AWS S3 Configuration (for Post Act Reports/documents)
+AWS_REGION=ap-northeast-1
+AWS_ACCESS_KEY_ID=your-production-access-key-id
+AWS_SECRET_ACCESS_KEY=your-production-secret-access-key
+AWS_S3_BUCKET_NAME=faith-community-files
 
 # Security (CRITICAL - Generate strong secrets)
 JWT_SECRET=your-super-secure-jwt-secret-minimum-32-chars

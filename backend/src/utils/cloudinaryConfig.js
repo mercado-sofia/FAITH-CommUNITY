@@ -212,8 +212,7 @@ export const CLOUDINARY_FOLDERS = {
   PROGRAMS: {
     MAIN: 'faith-community/programs/main',
     ADDITIONAL: 'faith-community/programs/additional',
-    THUMBNAILS: 'faith-community/programs/thumbnails',
-    POST_ACT: 'faith-community/programs/post-act-reports' // Mixed files: images, PDFs, DOC, DOCX
+    THUMBNAILS: 'faith-community/programs/thumbnails'
   }
 };
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import styles from './highlights.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -181,14 +182,12 @@ export default function Highlights({ onClose }) {
             >
               <div className={styles.cardImageContainer}>
                 {story.media && story.media.length > 0 && story.media[0].url ? (
-                  <img 
+                  <Image 
                     src={story.media[0].url} 
                     alt={story.title}
+                    fill
                     className={styles.cardImage}
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
+                    sizes="350px"
                   />
                 ) : null}
                 <div className={styles.imagePlaceholder} style={{ display: story.media && story.media.length > 0 && story.media[0].url ? 'none' : 'flex' }}>
@@ -262,14 +261,12 @@ export default function Highlights({ onClose }) {
                   <div className={styles.modalImageGallery}>
                     <div className={styles.modalMainImage}>
                       {selectedStory.media[0] && (
-                        <img
+                        <Image
                           src={selectedStory.media[0].url}
                           alt={`${selectedStory.title} image`}
+                          fill
                           className={styles.modalMainImageContent}
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
-                          }}
+                          sizes="800px"
                         />
                       )}
                       <div className={styles.modalImagePlaceholder} style={{ display: selectedStory.media[0] ? 'none' : 'flex' }}>
@@ -290,10 +287,12 @@ export default function Highlights({ onClose }) {
                               // Could implement thumbnail switching later
                             }}
                           >
-                            <img
+                            <Image
                               src={item.url}
                               alt={`Thumbnail ${index + 1}`}
+                              fill
                               className={styles.modalThumbnailImage}
+                              sizes="100px"
                             />
                           </button>
                         ))}

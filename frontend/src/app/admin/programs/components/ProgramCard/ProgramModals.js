@@ -224,7 +224,7 @@ const ProgramModals = ({
       )}
 
       {/* Accept Collaboration Confirmation Modal */}
-      {showAcceptCollaborationModal && (
+      {showAcceptCollaborationModal && typeof window !== 'undefined' && createPortal((
         <div className={styles.modalOverlay} onClick={cancelAcceptCollaboration}>
           <div className={`${styles.modalContent} ${styles.acceptCollaborationModal}`} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
@@ -233,7 +233,7 @@ const ProgramModals = ({
             <div className={styles.modalBody}>
               <p>Are you sure you want to accept the collaboration request for &quot;{normalizedData.title}&quot;?</p>
               <p className={styles.infoText}>
-                This will make you a collaborator on this program and you&apos;ll be able to view and manage it.
+                This will make you a collaborator on this program
               </p>
             </div>
             <div className={styles.modalActions}>
@@ -254,10 +254,10 @@ const ProgramModals = ({
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
 
       {/* Decline Collaboration Confirmation Modal */}
-      {showDeclineCollaborationModal && (
+      {showDeclineCollaborationModal && typeof window !== 'undefined' && createPortal((
         <div className={styles.modalOverlay} onClick={cancelDeclineCollaboration}>
           <div className={`${styles.modalContent} ${styles.declineCollaborationModal}`} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
@@ -287,7 +287,7 @@ const ProgramModals = ({
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
     </>
   );
 };

@@ -432,7 +432,6 @@ export default function SubmissionModal({ data, onClose }) {
                             // Clean up the object URL
                             window.URL.revokeObjectURL(downloadUrl);
                           } catch (error) {
-                            console.error('Error downloading file:', error);
                             // Fallback: try direct download (S3 URLs work directly)
                             const link = document.createElement('a');
                             link.href = fileUrl;

@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation"
 import { useDispatch } from "react-redux"
 import { loginAdmin, loginSuperAdmin, logoutAdmin } from "../../../rtk/superadmin/adminSlice"
 import styles from "./login.module.css"
-import { FaUser, FaSpinner } from "react-icons/fa"
+import { FaUser, FaSpinner, FaArrowLeft } from "react-icons/fa"
 import { AuthLeftPanel, ForgotPasswordModal, OtpInput, PasswordField } from "../components"
 import { postJson } from "../api/authClient"
+import { usePublicSiteName } from "@/app/(public)/hooks/usePublicData"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -31,6 +32,8 @@ export default function LoginPage() {
   const [isLockedOut, setIsLockedOut] = useState(false)
   const router = useRouter()
   const dispatch = useDispatch()
+  const { siteNameData } = usePublicSiteName()
+  const siteName = siteNameData?.site_name || "FAITH CommUNITY"
 
   // Countdown timer for lockout
   useEffect(() => {
@@ -334,6 +337,16 @@ export default function LoginPage() {
     <div className={styles.container}>
       <AuthLeftPanel labelText="Log In" />
       <div className={styles.rightPane}>
+        <div className={styles.backLink}>
+          <button
+            type="button"
+            onClick={() => router.push('/')}
+            className={styles.backButton}
+          >
+            <FaArrowLeft className={styles.backIcon} />
+            Go Back
+          </button>
+        </div>
         <form onSubmit={handleLogin} className={styles.form} noValidate>
           <h2 className={styles.title}>Log In</h2>
 
@@ -415,7 +428,7 @@ export default function LoginPage() {
           )}
 
           <button type="submit" className={styles.loginBtn} disabled={isLoading || isLockedOut} aria-busy={isLoading}>
-            {isLockedOut ? "Locked Out" : "Log In"}
+            Log In
             {isLoading && <FaSpinner className={styles.spinner} />}
           </button>
 

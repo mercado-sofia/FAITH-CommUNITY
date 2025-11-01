@@ -3,7 +3,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 export const submissionApi = createApi({
   reducerPath: 'submissionApi',
   baseQuery: fetchBaseQuery({ 
-    baseUrl: 'http://localhost:8080/api/submissions/',
+    baseUrl: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/submissions/`,
     prepareHeaders: (headers) => {
       // Don't set Content-Type for FormData, let the browser handle it
       return headers;

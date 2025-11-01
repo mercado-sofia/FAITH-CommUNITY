@@ -349,32 +349,8 @@ export const cancelSubmission = async (req, res) => {
 
     const submission = existing[0];
 
-    // If it's a Post Act Report submission, optionally delete the file from S3
-    // Note: Files are kept by default for audit purposes, but we can delete if needed
-    if (submission.section === 'Post Act Report') {
-      try {
-        const proposedData = JSON.parse(submission.proposed_data || '{}');
-        const filePublicId = proposedData?.file_public_id;
-        const fileUrl = proposedData?.file_url;
-
-        // If file exists and is in S3, optionally delete it
-        // Keeping file for now for audit trail - can be enabled if needed
-        if (filePublicId && fileUrl && fileUrl.includes('amazonaws.com')) {
-          // Optional: Delete file from S3 if submission is cancelled
-          // Uncomment below if you want to delete S3 files when submissions are cancelled
-          /*
-          const { extractKeyFromUrl, deleteFromS3 } = await import('../../utils/s3Upload.js');
-          const key = extractKeyFromUrl(fileUrl);
-          if (key) {
-            await deleteFromS3(key);
-          }
-          */
-        }
-      } catch (fileError) {
-        // Non-fatal: continue with submission deletion even if file deletion fails
-        console.error('Error handling file deletion for submission:', fileError);
-      }
-    }
+    // If it's a Post Act Report submission, keep the file in S3 for audit purposes
+    // Files are intentionally retained when submissions are cancelled for audit trail
 
     // Delete the submission (allow deletion regardless of status)
     const [result] = await db.execute('DELETE FROM submissions WHERE id = ?', [id])

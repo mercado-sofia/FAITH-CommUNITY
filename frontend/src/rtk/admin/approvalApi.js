@@ -2,7 +2,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 export const approvalApi = createApi({
   reducerPath: 'approvalApi',
-  baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:8080/api/approvals/' }),
+  baseQuery: fetchBaseQuery({ baseUrl: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/approvals/` }),
   tagTypes: ['Approvals'],
   endpoints: (builder) => ({
     submitUpdate: builder.mutation({

@@ -203,7 +203,7 @@
   background: none;
   border: none;
   color: #169c86;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   font-family: var(--font-inter);
@@ -211,6 +211,7 @@
 
 .forgotPasswordButton:hover {
   color: #0ECCAC;
+  text-decoration: underline;
 }
 
 .forgotPasswordButton:focus {
@@ -240,10 +241,45 @@
 
 .signupButton:hover {
   color: #0ECCAC;
+  text-decoration: underline;
 }
 
 .signupButton:focus {
   outline: none;
+}
+
+.backLink {
+  position: absolute;
+  top: 3rem;
+  left: 2rem;
+  text-align: left;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  color: #169c86;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: var(--font-inter);
+  padding: 0.25rem 0;
+  transition: color 0.3s ease;
+}
+
+.backButton:hover {
+  color: #0ECCAC;
+}
+
+.backButton:focus {
+  outline: none;
+}
+
+.backIcon {
+  font-size: 12px;
 }
 
 .successMessage {

@@ -306,13 +306,13 @@
   }
   
   .floatingLabel {
-    font-size: 0.7rem;
+    font-size: 13px;
     padding: 0.4rem 0.6rem;
     max-width: 200px;
   }
   
   .collaborationBadge {
-    font-size: 0.7rem;
+    font-size: 13px;
     padding: 0.2rem 0.6rem;
   }
 
@@ -340,13 +340,13 @@
   }
   
   .floatingLabel {
-    font-size: 0.65rem;
+    font-size: 12px;
     padding: 0.35rem 0.5rem;
     max-width: 150px;
   }
   
   .collaborationBadge {
-    font-size: 13px;
+    font-size: 12px;
     padding: 0.3rem 0.75rem;
   }
   

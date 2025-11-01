@@ -8,7 +8,7 @@ import CustomSelect from './CustomSelect/CustomSelect';
 import DeleteAccount from './DeleteAccount/DeleteAccount';
 import { useFormValidation } from '../../hooks/useFormValidation';
 import { useProfileApi } from '../../hooks/useApiCall';
-import { useToast } from '../../components/Toast';
+import { useToast } from '../../../components/Toast';
 import { formatBirthDate, formatDateForInput } from '@/utils/dateUtils';
 import { getProfilePhotoUrl } from '@/utils/uploadPaths';
 import styles from './PersonalInfo.module.css';

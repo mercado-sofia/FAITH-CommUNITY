@@ -91,7 +91,7 @@ export const inviteCollaborator = async (req, res) => {
 
     // Verify the program exists and current admin is the creator
     const [programRows] = await db.execute(`
-      SELECT p.id, p.title, p.organization_id, a.organization_id as admin_org_id
+      SELECT p.id, p.title, p.organization_id, p.is_approved, a.organization_id as admin_org_id
       FROM programs_projects p
       LEFT JOIN admins a ON a.id = ?
       WHERE p.id = ? AND p.organization_id = a.organization_id
@@ -105,6 +105,9 @@ export const inviteCollaborator = async (req, res) => {
     }
 
     const program = programRows[0];
+    
+    // Check if program is already posted (approved)
+    const isProgramPosted = program.is_approved === 1;
 
     // Prevent self-collaboration
     if (collaboratorAdminId === currentAdminId) {
@@ -133,39 +136,61 @@ export const inviteCollaborator = async (req, res) => {
           message: 'Admin has previously opted out of this collaboration'
         });
       }
+      // If status is 'pending', the invitation already exists - just return it
+      if (collaboration.status === 'pending') {
+        return res.status(200).json({
+          success: true,
+          message: 'Collaboration invitation already pending',
+          collaborationId: collaboration.id,
+          status: 'pending'
+        });
+      }
     }
 
-    // Create collaboration invitation with pending status
+    // Always set status to 'pending' - collaborator must accept first
+    // The only difference for posted programs is that notification is sent immediately
+    // (no superadmin approval wait), but status is still 'pending'
+    const collaborationStatus = 'pending';
+
+    // Create collaboration invitation
     const [result] = await db.execute(`
       INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status)
-      VALUES (?, ?, ?, 'pending')
-    `, [programId, collaboratorAdminId, currentAdminId]);
+      VALUES (?, ?, ?, ?)
+    `, [programId, collaboratorAdminId, currentAdminId, collaborationStatus]);
 
     // Update program to mark as collaborative
-    // The program status remains as 'Upcoming' until collaborators accept
     await db.execute(`
       UPDATE programs_projects SET is_collaborative = TRUE WHERE id = ?
     `, [programId]);
 
     // Notify collaborator about the collaboration request
-    try {
-      const NotificationController = (await import('./notificationController.js')).default;
-      await NotificationController.createNotification(
-        collaboratorAdminId,
-        'collaboration_request',
-        'New Collaboration Request',
-        `You have received a collaboration request for "${program.title}". Please review and respond.`,
-        'programs',
-        programId
-      );
-    } catch (notificationError) {
-      // Don't fail the main operation if notification fails
+    // For posted programs, notification is sent immediately (no superadmin approval wait)
+    // For non-posted programs, notification will be sent after superadmin approval
+    if (isProgramPosted) {
+      // Program is already posted, send notification immediately
+      try {
+        const NotificationController = (await import('./notificationController.js')).default;
+        await NotificationController.createNotification(
+          collaboratorAdminId,
+          'collaboration_request',
+          'New Collaboration Request',
+          `You have received a collaboration request for "${program.title}". Please review and respond.`,
+          'programs',
+          programId
+        );
+      } catch (notificationError) {
+        // Don't fail the main operation if notification fails
+      }
     }
+    // For non-posted programs, notification will be sent during superadmin approval process
 
     res.status(201).json({
       success: true,
-      message: 'Collaboration request sent successfully',
-      collaborationId: result.insertId
+      message: isProgramPosted 
+        ? 'Collaboration request sent successfully' 
+        : 'Collaboration request will be sent after superadmin approval',
+      collaborationId: result.insertId,
+      status: collaborationStatus
     });
   } catch (error) {
     res.status(500).json({
@@ -188,7 +213,7 @@ export const getProgramCollaborators = async (req, res) => {
       FROM programs_projects 
       WHERE id = ? AND (
         organization_id = (SELECT organization_id FROM admins WHERE id = ?)
-        OR id IN (SELECT program_id FROM program_collaborations WHERE collaborator_admin_id = ? AND status = 'accepted')
+        OR id IN (SELECT program_id FROM program_collaborations WHERE collaborator_admin_id = ? AND status IN ('accepted', 'pending'))
       )
     `, [programId, currentAdminId, currentAdminId]);
 
@@ -199,7 +224,7 @@ export const getProgramCollaborators = async (req, res) => {
       });
     }
 
-    // Get collaborators (only active/accepted ones)
+    // Get all collaborators with all statuses (pending, accepted, declined)
     const [collaborators] = await db.execute(`
       SELECT 
         pc.id,
@@ -213,7 +238,7 @@ export const getProgramCollaborators = async (req, res) => {
       FROM program_collaborations pc
       LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
       LEFT JOIN organizations o ON a.organization_id = o.id
-      WHERE pc.program_id = ? AND pc.status = 'accepted'
+      WHERE pc.program_id = ?
       ORDER BY pc.invited_at DESC
     `, [programId]);
 

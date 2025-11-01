@@ -235,10 +235,8 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         multiple_dates: programData.multiple_dates || null,
         status: programData.status || 'active',
         accepts_volunteers: programData.accepts_volunteers !== undefined ? programData.accepts_volunteers : true,
-        // Extract collaborator IDs from collaborator objects
-        collaborators: Array.isArray(programData.collaborators) 
-          ? programData.collaborators.map(collab => collab.id).filter(id => id && typeof id === 'number')
-          : [],
+        // DO NOT send collaborators in Edit mode - they are handled separately via the invite-collaborator endpoint
+        // This prevents overwriting collaborators that were just added
         // Handle image properly - use uploaded URL, base64 string, or undefined to keep existing
         image: imageUrl || programData.image,
         additionalImages: programData.additionalImages || []

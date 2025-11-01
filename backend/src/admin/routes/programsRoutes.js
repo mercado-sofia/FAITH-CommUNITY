@@ -15,7 +15,6 @@ import {
   getAllFeaturedPrograms,
   toggleFeaturedStatus,
   getProgramById,
-  markProgramAsCompleted,
   markProgramAsActive,
   toggleVolunteerAcceptance,
   // Functions from programProjectsController
@@ -43,7 +42,6 @@ router.get('/admin/programs', getAdminPrograms);
 router.get('/admin/programs/:orgId', getProgramsByOrg);
 router.get('/admin/programs/single/:id', getProgramById);
 router.put('/admin/programs/:id', updateProgram);
-router.put('/admin/programs/:id/mark-completed', markProgramAsCompleted);
 router.put('/admin/programs/:id/mark-active', markProgramAsActive);
 router.put('/admin/programs/:id/toggle-volunteers', toggleVolunteerAcceptance);
 // Post Act Report upload (using S3 upload configuration)

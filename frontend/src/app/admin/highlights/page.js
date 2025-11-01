@@ -34,7 +34,6 @@ export default function AdminHighlightsPage() {
   const [statusFilter, setStatusFilter] = useState(() => {
     const status = searchParams.get('status') || 'pending';
     const normalizedStatus = status.replace(/\+/g, '-');
-    console.log('Initial statusFilter setup:', { status, normalizedStatus });
     return normalizedStatus;
   });
 
@@ -100,16 +99,6 @@ export default function AdminHighlightsPage() {
 
       const data = await response.json();
       const highlightsData = data.highlights || [];
-      
-      // Debug: Check for duplicate IDs
-      const ids = highlightsData.map(h => h.id);
-      const duplicateIds = ids.filter((id, index) => ids.indexOf(id) !== index);
-      if (duplicateIds.length > 0) {
-        console.warn('Duplicate highlight IDs detected:', duplicateIds);
-      }
-      
-      // Debug: Check status values
-      console.log('Received highlights from API:', highlightsData.map(h => ({ id: h.id, title: h.title, status: h.status })));
       
       setHighlights(highlightsData);
     } catch (err) {
@@ -193,15 +182,10 @@ export default function AdminHighlightsPage() {
     let filtered = uniqueHighlights;
 
     // Apply status filter
-    console.log('Applying status filter:', { statusFilter, totalHighlights: filtered.length });
     if (statusFilter === 'pending') {
       filtered = filtered.filter(highlight => highlight.status === 'pending');
-      console.log('Filtered for pending:', filtered.length, 'highlights');
     } else if (statusFilter === 'showed-in-public' || statusFilter === 'showed-in+public' || statusFilter === 'showed in public') {
       filtered = filtered.filter(highlight => highlight.status === 'approved');
-      console.log('Filtered for approved:', filtered.length, 'highlights');
-    } else {
-      console.log('No status filter applied, showing all:', filtered.length, 'highlights');
     }
 
     // Apply search filter

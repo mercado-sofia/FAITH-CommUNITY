@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PersonalInfo, EmailandPassword, Notifications, MyApplications } from './NavTabs';
 import { ErrorBoundary, Loader } from '@/components';
-import { ToastContainer, useToast } from './components/Toast';
+import { ToastContainer, useToast } from '../components/Toast';
 import { usePublicPageLoader } from '../hooks/usePublicPageLoader';
 import styles from './profile.module.css';
 

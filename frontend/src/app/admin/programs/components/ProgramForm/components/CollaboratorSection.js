@@ -78,19 +78,51 @@ const CollaboratorSection = ({
           <div className={styles.selectedCollaborators}>
             <h5>Selected Collaborators ({collaborators.length})</h5>
             <div className={styles.collaboratorsList}>
-              {collaborators.map((collaborator, index) => (
-                <div key={collaborator.id || index} className={styles.collaboratorItem}>
-                  <span className={styles.collaboratorEmail}>{collaborator.email || 'No email'}</span>
-                  <span className={styles.collaboratorOrg}>({collaborator.organization_acronym || 'Unknown Org'})</span>
-                  <button
-                    type="button"
-                    onClick={() => onRemoveCollaborator(index)}
-                    className={styles.removeCollaboratorButton}
-                  >
-                    <FiTrash2 />
-                  </button>
-                </div>
-              ))}
+              {collaborators.map((collaborator, index) => {
+                const status = collaborator.status || 'pending';
+                const getStatusLabel = () => {
+                  switch (status) {
+                    case 'accepted':
+                      return 'Accepted';
+                    case 'declined':
+                      return 'Declined';
+                    case 'pending':
+                    default:
+                      return 'Pending Invite';
+                  }
+                };
+                const getStatusClass = () => {
+                  switch (status) {
+                    case 'accepted':
+                      return styles.statusAccepted;
+                    case 'declined':
+                      return styles.statusDeclined;
+                    case 'pending':
+                    default:
+                      return styles.statusPending;
+                  }
+                };
+                return (
+                  <div key={collaborator.id || index} className={styles.collaboratorItem}>
+                    <div className={styles.collaboratorInfo}>
+                      <span className={styles.collaboratorEmail}>{collaborator.email || 'No email'}</span>
+                      <span className={styles.collaboratorOrg}>({collaborator.organization_acronym || 'Unknown Org'})</span>
+                      {isEditMode && (
+                        <span className={`${styles.statusBadge} ${getStatusClass()}`}>
+                          {getStatusLabel()}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onRemoveCollaborator(index)}
+                      className={styles.removeCollaboratorButton}
+                    >
+                      <FiTrash2 />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

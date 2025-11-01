@@ -3,7 +3,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 export const invitationsApi = createApi({
   reducerPath: "invitationsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:8080/api/invitations",
+    baseUrl: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/invitations`,
     prepareHeaders: (headers, { getState }) => {
       headers.set("Content-Type", "application/json")
 

@@ -3,7 +3,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 export const userNotificationsApi = createApi({
   reducerPath: 'userNotificationsApi',
   baseQuery: fetchBaseQuery({ 
-    baseUrl: 'http://localhost:8080/api/users/',
+    baseUrl: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/users/`,
     prepareHeaders: (headers, { getState }) => {
       const token = localStorage.getItem('userToken');
       if (token) {

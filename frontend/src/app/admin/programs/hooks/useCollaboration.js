@@ -7,6 +7,7 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
   const [filteredAdmins, setFilteredAdmins] = useState([]);
   const [selectedAdminIndex, setSelectedAdminIndex] = useState(-1);
   const [selectedAdminForInvite, setSelectedAdminForInvite] = useState(null);
+  const [existingCollaboratorIds, setExistingCollaboratorIds] = useState(new Set());
 
   // Fetch available admins
   const loadAvailableAdmins = useCallback(async () => {
@@ -36,9 +37,13 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
           organization_acronym: collab.organization_acronym,
           status: collab.status
         }));
+        // Track existing collaborator IDs so we can identify new ones later
+        const existingIds = new Set(normalizedCollaborators.map(c => c.id));
+        setExistingCollaboratorIds(existingIds);
         setCollaborators(normalizedCollaborators);
       } catch (error) {
         // Set empty array on error to prevent crashes
+        setExistingCollaboratorIds(new Set());
         setCollaborators([]);
       }
     }
@@ -151,24 +156,18 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
       return;
     }
 
-    if (isEditMode && programId) {
-      // For edit mode, call the backend API
-      try {
-        await addCollaboratorToProgram(programId, selectedAdminForInvite.id);
-        // Add to local state for immediate UI update
-        const newCollaborators = [...collaboratorsArray, selectedAdminForInvite];
-        setCollaborators(newCollaborators);
-      } catch (error) {
-        throw error;
-      }
-    } else {
-      // For create mode, just update local state
-      const newCollaborators = [...collaboratorsArray, selectedAdminForInvite];
-      setCollaborators(newCollaborators);
-    }
+    // For both create and edit modes, just update local state
+    // In Edit mode, invites will be sent when user saves the form
+    // In Create mode, invites will be sent during submission approval process
+    const collaboratorWithStatus = {
+      ...selectedAdminForInvite,
+      status: 'pending' // Always pending - requires acceptance
+    };
+    const newCollaborators = [...collaboratorsArray, collaboratorWithStatus];
+    setCollaborators(newCollaborators);
 
     clearCollaboratorInput();
-  }, [selectedAdminForInvite, clearCollaboratorInput, isEditMode, programId]);
+  }, [selectedAdminForInvite, clearCollaboratorInput]);
 
   // Remove collaborator from list
   const removeCollaborator = useCallback(async (index, collaborators, setCollaborators) => {
@@ -178,21 +177,33 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
     if (!collaboratorToRemove) return;
 
     if (isEditMode && programId) {
-      // For edit mode, call the backend API
-      try {
-        await removeCollaboratorFromProgram(programId, collaboratorToRemove.id);
-        // Remove from local state for immediate UI update
-        const newCollaborators = collaboratorsArray.filter((_, i) => i !== index);
-        setCollaborators(newCollaborators);
-      } catch (error) {
-        throw error;
+      // Check if this collaborator exists in the database (was already saved)
+      const wasExisting = existingCollaboratorIds.has(collaboratorToRemove.id);
+      
+      if (wasExisting) {
+        // Only call API if collaborator exists in database
+        try {
+          await removeCollaboratorFromProgram(programId, collaboratorToRemove.id);
+          // Update existingCollaboratorIds to remove this ID
+          setExistingCollaboratorIds(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(collaboratorToRemove.id);
+            return newSet;
+          });
+        } catch (error) {
+          throw error;
+        }
       }
+      // If it wasn't existing (newly added, not yet saved), just remove from local state
+      // Remove from local state for immediate UI update
+      const newCollaborators = collaboratorsArray.filter((_, i) => i !== index);
+      setCollaborators(newCollaborators);
     } else {
       // For create mode, just update local state
       const newCollaborators = collaboratorsArray.filter((_, i) => i !== index);
       setCollaborators(newCollaborators);
     }
-  }, [isEditMode, programId]);
+  }, [isEditMode, programId, existingCollaboratorIds]);
 
   // Reset collaboration state
   const resetCollaboration = useCallback(() => {
@@ -200,7 +211,35 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
     setFilteredAdmins([]);
     setSelectedAdminIndex(-1);
     setSelectedAdminForInvite(null);
+    setExistingCollaboratorIds(new Set());
   }, []);
+
+  // Get newly added collaborators (for Edit mode - to send invites on save)
+  const getNewCollaborators = useCallback((collaborators) => {
+    if (!isEditMode || !programId) return [];
+    const collaboratorsArray = Array.isArray(collaborators) ? collaborators : [];
+    return collaboratorsArray.filter(collab => 
+      collab.id && !existingCollaboratorIds.has(collab.id)
+    );
+  }, [isEditMode, programId, existingCollaboratorIds]);
+
+  // Send invites for newly added collaborators (called on save in Edit mode)
+  const sendInvitesForNewCollaborators = useCallback(async (collaborators) => {
+    if (!isEditMode || !programId) return;
+    
+    const newCollaborators = getNewCollaborators(collaborators);
+    if (newCollaborators.length === 0) return;
+
+    // Send invites for each newly added collaborator
+    const invitePromises = newCollaborators.map(collab => 
+      addCollaboratorToProgram(programId, collab.id).catch(error => {
+        console.error(`Failed to invite collaborator ${collab.id}:`, error);
+        return null; // Continue with other invites even if one fails
+      })
+    );
+
+    await Promise.all(invitePromises);
+  }, [isEditMode, programId, getNewCollaborators]);
 
   return {
     // State
@@ -209,6 +248,7 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
     filteredAdmins,
     selectedAdminIndex,
     selectedAdminForInvite,
+    existingCollaboratorIds,
     
     // Actions
     handleCollaboratorInputChange,
@@ -221,6 +261,8 @@ export const useCollaboration = (isEditMode = false, programId = null) => {
     loadExistingCollaborators,
     refreshCollaborators,
     resetCollaboration,
+    getNewCollaborators,
+    sendInvitesForNewCollaborators,
     
     // Setters
     setCollaboratorInput,

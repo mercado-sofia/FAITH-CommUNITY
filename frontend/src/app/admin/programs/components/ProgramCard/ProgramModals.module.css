@@ -253,9 +253,11 @@
   gap: 12px;
 }
 
-
-
 /* Accept Collaboration Modal Styles */
+.acceptCollaborationModal {
+  max-width: 420px;
+}
+
 .acceptCollaborationModal .confirmButton {
   background: #f0f9ff;
   color: #1e40af;
@@ -269,6 +271,10 @@
 }
 
 /* Decline Collaboration Modal Styles */
+.declineCollaborationModal {
+  max-width: 420px;
+}
+
 .declineCollaborationModal .confirmButton {
   background: #fef2f2;
   color: #dc2626;

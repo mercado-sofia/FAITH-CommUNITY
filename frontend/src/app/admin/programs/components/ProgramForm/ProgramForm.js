@@ -247,7 +247,7 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateForm, formData, isEditMode, program, onSubmit, clearAllErrors, updateFormData, resetForm, resetImageUploads, resetCollaboration]);
+  }, [validateForm, formData, isEditMode, program, onSubmit, clearAllErrors, updateFormData, resetForm, resetImageUploads, resetCollaboration, sendInvitesForNewCollaborators]);
 
   // Handle form key down
   const handleFormKeyDown = useCallback((e) => {

@@ -1,0 +1,63 @@
+/* Hero Section */
+.heroSection {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  padding: 4rem 2rem;
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #f8f9fa 50%,
+    #ffffff 100%
+  );
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.heroContent {
+  max-width: 800px;
+  text-align: center;
+  padding: 2rem;
+}
+
+.sectionTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2e7d32;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+}
+
+.sectionDescription {
+  font-size: 1.25rem;
+  color: #555;
+  line-height: 1.8;
+  margin: 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .heroSection {
+    padding: 3rem 1.5rem;
+  }
+  
+  .sectionTitle {
+    font-size: 2rem;
+  }
+  
+  .sectionDescription {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .sectionTitle {
+    font-size: 1.75rem;
+  }
+  
+  .sectionDescription {
+    font-size: 1rem;
+  }
+}

@@ -18,9 +18,10 @@
 
 .headingContainer {
   display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-start;
-  gap: 0.8rem;
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   width: 100%;
 }
 
@@ -29,8 +30,8 @@
   font-weight: bold;
   text-align: left;
   color: #12554a;
-  margin: 0 0 1rem;
-  width: 100%;
+  margin: 0;
+  flex: 1;
 }
 
 .seeAllLink {
@@ -40,8 +41,7 @@
   font-size: 14px;
   transition: color 0.2s ease;
   flex-shrink: 0;
-  text-align: right;
-  align-self: flex-end;
+  white-space: nowrap;
 }
 
 .seeAllLink:hover {
@@ -340,6 +340,7 @@
     font-size: 13px;
     align-self: flex-end !important;
     margin-top: 0;
+    margin-bottom: -0.5rem;
   }
   
   .orgNavInner {
@@ -435,6 +436,7 @@
   .seeAllLink {
     align-self: flex-end !important;
     margin-top: 0;
+    margin-bottom: -0.5rem;
   }
   
   .orgNavInner {
@@ -531,6 +533,7 @@
     font-size: 13px;
     align-self: flex-end !important;
     margin-top: 0;
+    margin-bottom: -0.5rem;
   }
   
   .orgNavInner {

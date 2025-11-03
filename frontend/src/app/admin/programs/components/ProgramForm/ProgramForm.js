@@ -74,17 +74,33 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
         setImagePreview(getProgramImageUrl(program.image));
       }
       
-      // Set existing additional images previews
-      if (program.additional_images && program.additional_images.length > 0 && additionalImagePreviews.length === 0) {
-        const existingPreviews = program.additional_images.map((imagePath, index) => ({
-          id: `existing-${index}`,
-          url: getProgramImageUrl(imagePath, 'additional'),
-          name: `Additional Image ${index + 1}`
-        }));
-        setAdditionalImagePreviews(existingPreviews);
+      // Set existing additional images previews AND form data
+      if (program.additional_images && program.additional_images.length > 0) {
+        // Initialize previews if not already set
+        if (additionalImagePreviews.length === 0) {
+          const existingPreviews = program.additional_images.map((imagePath, index) => ({
+            id: `existing-${index}`,
+            url: getProgramImageUrl(imagePath, 'additional'),
+            name: `Additional Image ${index + 1}`
+          }));
+          setAdditionalImagePreviews(existingPreviews);
+        }
+        
+        // Always initialize formData.additionalImages with existing Cloudinary URLs if it's empty
+        // This ensures existing images are preserved when updating
+        if (!formData.additionalImages || formData.additionalImages.length === 0) {
+          const existingImageUrls = program.additional_images.map(imagePath => {
+            // Check if it's already a full URL or needs the helper function
+            if (imagePath && (imagePath.startsWith('http://') || imagePath.startsWith('https://'))) {
+              return imagePath;
+            }
+            return getProgramImageUrl(imagePath, 'additional');
+          });
+          updateFormData({ additionalImages: existingImageUrls });
+        }
       }
     }
-  }, [isEditMode, program, imagePreview, additionalImagePreviews.length, setImagePreview, setAdditionalImagePreviews]);
+  }, [isEditMode, program, imagePreview, additionalImagePreviews.length, formData.additionalImages, setImagePreview, setAdditionalImagePreviews, updateFormData]);
 
   // Load existing collaborators in edit mode
   useEffect(() => {
@@ -122,7 +138,9 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
     if (validPreviews.length > 0) {
       // Extract just the base64 URLs from preview objects for form data
       const base64Images = validPreviews.map(preview => preview.url);
-      updateFormData({ additionalImages: [...formData.additionalImages, ...base64Images] });
+      const currentAdditionalImages = Array.isArray(formData.additionalImages) ? formData.additionalImages : [];
+      const newAdditionalImages = [...currentAdditionalImages, ...base64Images];
+      updateFormData({ additionalImages: newAdditionalImages });
     }
   }, [handleAdditionalImagesChange, updateFormData, formData.additionalImages]);
 
@@ -204,8 +222,8 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
         ),
         // Handle image properly for both create and edit modes
         image: null,
-        // Skip additional images for now as backend doesn't support them yet
-        additionalImages: []
+        // Include additional images from formData
+        additionalImages: Array.isArray(formData.additionalImages) ? formData.additionalImages : []
       };
 
       // Handle image data properly
@@ -222,7 +240,6 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
         // No image provided
         submissionData.image = null;
       }
-
 
       // In Edit mode, send invites for newly added collaborators before submitting
       if (isEditMode && sendInvitesForNewCollaborators) {

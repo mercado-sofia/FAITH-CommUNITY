@@ -202,7 +202,7 @@ export default function ProgramDetailsPage() {
     if (program.additional_images && program.additional_images.length > 0) {
       program.additional_images.forEach((imagePath, index) => {
         images.push({ 
-          src: getProgramImageUrl(imagePath), 
+          src: getProgramImageUrl(imagePath, 'additional'), 
           alt: `${program.title} - Image ${index + 1}`, 
           isMain: false 
         });

@@ -480,58 +480,78 @@ export const approveSubmission = async (req, res) => {
           }
         }
 
-        // Handle additional images upload to Cloudinary
-        if (data.additionalImages && Array.isArray(data.additionalImages) && data.additionalImages.length > 0) {
-          const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
-          const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
-          
-          for (let i = 0; i < data.additionalImages.length; i++) {
-            const imageData = data.additionalImages[i];
+          // Handle additional images upload to Cloudinary
+          if (data.additionalImages && Array.isArray(data.additionalImages) && data.additionalImages.length > 0) {
+            const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+            const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
             
-            if (imageData && imageData.startsWith('data:image/')) {
-              try {
-                // Convert base64 to buffer
-                const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
-                const buffer = Buffer.from(base64Data, 'base64');
-                
-                // Create a file-like object for Cloudinary upload
-                const file = {
-                  buffer: buffer,
-                  originalname: `additional-${i}.jpg`,
-                  mimetype: imageData.match(/data:image\/(\w+);/)[1],
-                  size: buffer.length
-                };
-                
-                // Upload to Cloudinary
-                const uploadResult = await uploadSingleToCloudinary(
-                  file, 
-                  CLOUDINARY_FOLDERS.PROGRAMS.ADDITIONAL,
-                  { prefix: 'prog_add_' }
-                );
-                
-                // Store Cloudinary URL in database
-                await connection.execute(
-                  `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
-                  [programId, uploadResult.url, i]
-                );
-                
-              } catch (uploadError) {
-                logError(`Cloudinary upload failed for additional image ${i}`, uploadError, { context: 'approval_controller', imageIndex: i });
-                // Continue with base64 as fallback
-                await connection.execute(
-                  `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
-                  [programId, imageData, i]
-                );
+            for (let i = 0; i < data.additionalImages.length; i++) {
+              const imageData = data.additionalImages[i];
+              
+              if (!imageData) {
+                continue; // Skip empty entries
               }
-            } else {
-              // If it's not base64, store as is (might already be a Cloudinary URL)
-              await connection.execute(
-                `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
-                [programId, imageData, i]
-              );
+              
+              // Check if it's a new base64 image that needs to be uploaded
+              if (typeof imageData === 'string' && imageData.startsWith('data:image/')) {
+                try {
+                  // Convert base64 to buffer
+                  const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+                  const buffer = Buffer.from(base64Data, 'base64');
+                  
+                  // Create a file-like object for Cloudinary upload
+                  const file = {
+                    buffer: buffer,
+                    originalname: `additional-${i}.jpg`,
+                    mimetype: imageData.match(/data:image\/(\w+);/)?.[1] || 'jpg',
+                    size: buffer.length
+                  };
+                  
+                  // Upload to Cloudinary
+                  const uploadResult = await uploadSingleToCloudinary(
+                    file, 
+                    CLOUDINARY_FOLDERS.PROGRAMS.ADDITIONAL,
+                    { prefix: 'prog_add_' }
+                  );
+                  
+                  if (!uploadResult || !uploadResult.url) {
+                    logError(`Cloudinary upload failed for additional image ${i}: No URL returned`, null, { context: 'approval_controller', imageIndex: i });
+                    continue;
+                  }
+                  
+                  // Store Cloudinary URL in database
+                  await connection.execute(
+                    `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
+                    [programId, uploadResult.url, i]
+                  );
+                  
+                } catch (uploadError) {
+                  logError(`Cloudinary upload failed for additional image ${i}`, uploadError, { context: 'approval_controller', imageIndex: i });
+                  // Fallback: Store base64 in database if Cloudinary fails (for resilience)
+                  // This ensures images aren't lost if Cloudinary is temporarily unavailable
+                  try {
+                    await connection.execute(
+                      `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
+                      [programId, imageData, i]
+                    );
+                  } catch (dbError) {
+                    logError(`Failed to store base64 fallback for image ${i}`, dbError, { context: 'approval_controller', imageIndex: i });
+                  }
+                }
+              } else if (typeof imageData === 'string' && (imageData.startsWith('http://') || imageData.startsWith('https://'))) {
+                // It's an existing Cloudinary URL - store it directly
+                try {
+                  await connection.execute(
+                    `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
+                    [programId, imageData, i]
+                  );
+                } catch (dbError) {
+                  logError(`Failed to store existing image ${i}`, dbError, { context: 'approval_controller', imageIndex: i });
+                }
+              }
+              // Skip any invalid formats
             }
           }
-        }
 
         // Note: For collaborative programs, they are set to pending_collaboration status
         // and will only be approved by superadmin after collaborators accept
@@ -1183,7 +1203,12 @@ export const bulkApproveSubmissions = async (req, res) => {
             for (let i = 0; i < data.additionalImages.length; i++) {
               const imageData = data.additionalImages[i];
               
-              if (imageData && imageData.startsWith('data:image/')) {
+              if (!imageData) {
+                continue; // Skip empty entries
+              }
+              
+              // Check if it's a new base64 image that needs to be uploaded
+              if (typeof imageData === 'string' && imageData.startsWith('data:image/')) {
                 try {
                   // Convert base64 to buffer
                   const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
@@ -1193,7 +1218,7 @@ export const bulkApproveSubmissions = async (req, res) => {
                   const file = {
                     buffer: buffer,
                     originalname: `additional-${i}.jpg`,
-                    mimetype: imageData.match(/data:image\/(\w+);/)[1],
+                    mimetype: imageData.match(/data:image\/(\w+);/)?.[1] || 'jpg',
                     size: buffer.length
                   };
                   
@@ -1204,6 +1229,11 @@ export const bulkApproveSubmissions = async (req, res) => {
                     { prefix: 'prog_add_' }
                   );
                   
+                  if (!uploadResult || !uploadResult.url) {
+                    logError(`Cloudinary upload failed for additional image ${i}: No URL returned`, null, { context: 'bulk_approval_controller', imageIndex: i });
+                    continue;
+                  }
+                  
                   // Store Cloudinary URL in database
                   await connection.execute(
                     `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
@@ -1211,19 +1241,30 @@ export const bulkApproveSubmissions = async (req, res) => {
                   );
                   
                 } catch (uploadError) {
-                  // Continue with base64 as fallback
+                  logError(`Cloudinary upload failed for additional image ${i}`, uploadError, { context: 'bulk_approval_controller', imageIndex: i });
+                  // Fallback: Store base64 in database if Cloudinary fails (for resilience)
+                  // This ensures images aren't lost if Cloudinary is temporarily unavailable
+                  try {
+                    await connection.execute(
+                      `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
+                      [programId, imageData, i]
+                    );
+                  } catch (dbError) {
+                    logError(`Failed to store base64 fallback for image ${i}`, dbError, { context: 'bulk_approval_controller', imageIndex: i });
+                  }
+                }
+              } else if (typeof imageData === 'string' && (imageData.startsWith('http://') || imageData.startsWith('https://'))) {
+                // It's an existing Cloudinary URL - store it directly
+                try {
                   await connection.execute(
                     `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
                     [programId, imageData, i]
                   );
+                } catch (dbError) {
+                  logError(`Failed to store existing image ${i}`, dbError, { context: 'bulk_approval_controller', imageIndex: i });
                 }
-              } else {
-                // If it's not base64, store as is (might already be a Cloudinary URL)
-                await connection.execute(
-                  `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
-                  [programId, imageData, i]
-                );
               }
+              // Skip any invalid formats
             }
           }
         }

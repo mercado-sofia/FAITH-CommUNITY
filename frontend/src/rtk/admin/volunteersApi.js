@@ -8,13 +8,11 @@ export const volunteersApi = createApi({
       headers.set("Content-Type", "application/json")
 
       // Add JWT token for admin authentication
-      const token = getState().admin?.token || localStorage.getItem("adminToken")
+      // Check for window to avoid SSR errors
+      const token = getState().admin?.token || (typeof window !== 'undefined' ? localStorage.getItem("adminToken") : null)
       if (token) {
         headers.set("Authorization", `Bearer ${token}`)
-        console.log('VolunteersApi: Using token for authentication')
-      } else {
-        console.warn('VolunteersApi: No admin token found')
-      }
+       }
 
       return headers
     },

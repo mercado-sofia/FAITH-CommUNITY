@@ -53,6 +53,11 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
   }, [isOpen, applicationId, fetchApplicationDetails]);
 
   useEffect(() => {
+    // Check for document to avoid SSR errors
+    if (typeof document === 'undefined' || !document.body) {
+      return;
+    }
+
     if (isOpen) {
       // Prevent body scroll and ensure modal covers entire screen
       document.body.style.overflow = 'hidden';
@@ -69,10 +74,12 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
 
     return () => {
       // Cleanup: always restore body styles
-      document.body.style.overflow = 'auto';
-      document.body.style.position = '';
-      document.body.style.width = '';
-      document.body.style.height = '';
+      if (typeof document !== 'undefined' && document.body) {
+        document.body.style.overflow = 'auto';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.body.style.height = '';
+      }
     };
   }, [isOpen]);
 

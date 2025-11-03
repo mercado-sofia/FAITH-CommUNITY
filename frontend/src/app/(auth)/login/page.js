@@ -64,6 +64,8 @@ export default function LoginPage() {
 
   // Function to completely clear all session data
   const clearAllSessionData = () => {
+    // Check for window/document to avoid SSR errors
+    if (typeof window === 'undefined') return;
 
     // Clear admin tokens
     localStorage.removeItem("adminToken")
@@ -83,8 +85,10 @@ export default function LoginPage() {
     localStorage.removeItem("userEmail")
     localStorage.removeItem("userName")
 
-    document.cookie = "userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT"
-    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT"
+    if (typeof document !== 'undefined') {
+      document.cookie = "userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT"
+      document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT"
+    }
 
     dispatch(logoutAdmin())
   }

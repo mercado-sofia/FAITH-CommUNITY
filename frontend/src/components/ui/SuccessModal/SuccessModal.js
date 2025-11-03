@@ -29,6 +29,11 @@ export default function SuccessModal({
 
   // Preserve scroll position and lock body scroll when modal opens/closes
   useEffect(() => {
+    // Check for window and document to avoid SSR errors
+    if (typeof window === 'undefined' || typeof document === 'undefined' || !document.body) {
+      return;
+    }
+
     if (isVisible) {
       // Save current scroll position when modal opens
       scrollPositionRef.current = window.scrollY;
@@ -53,13 +58,15 @@ export default function SuccessModal({
 
     // Cleanup function
     return () => {
-      if (isVisible) {
+      if (isVisible && typeof document !== 'undefined' && document.body) {
         document.body.style.position = '';
         document.body.style.top = '';
         document.body.style.left = '';
         document.body.style.right = '';
         document.body.style.overflow = '';
-        window.scrollTo(0, scrollPositionRef.current);
+        if (typeof window !== 'undefined') {
+          window.scrollTo(0, scrollPositionRef.current);
+        }
       }
     };
   }, [isVisible]);

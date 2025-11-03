@@ -98,15 +98,21 @@ function AdminLayoutContent({ children }) {
       }
 
       // Check if this is the invitation acceptance page - skip authentication
-      if (window.location.pathname.startsWith('/admin/invitation/accept')) {
+      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin/invitation/accept')) {
         setIsInitialLoading(false);
         return;
       }
 
       try {
+        // Check for window to avoid SSR errors
+        if (typeof window === 'undefined') {
+          setIsInitialLoading(false);
+          return;
+        }
+        
         const token = localStorage.getItem('adminToken');
         const adminData = localStorage.getItem('adminData');
-        const userRole = document.cookie.includes('userRole=admin');
+        const userRole = typeof document !== 'undefined' ? document.cookie.includes('userRole=admin') : false;
         
         if (!token || !adminData || !userRole) {
           // Use centralized immediate cleanup for security
@@ -124,7 +130,9 @@ function AdminLayoutContent({ children }) {
         logger.error('Error initializing admin', error, { context: 'admin_initialization' });
         // Use centralized immediate cleanup for security
         clearAuthImmediate(USER_TYPES.ADMIN);
-        window.location.href = '/login';
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
       }
     };
 
@@ -136,7 +144,9 @@ function AdminLayoutContent({ children }) {
     if (adminError === "Invalid authentication data") {
       // Use centralized immediate cleanup for security
       clearAuthImmediate(USER_TYPES.ADMIN);
-      window.location.href = '/login';
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
     }
   }, [adminError]);
 

@@ -41,6 +41,11 @@ export default function DynamicFavicon() {
   const isUpdating = useRef(false);
 
   useEffect(() => {
+    // Check for document to avoid SSR errors
+    if (typeof document === 'undefined' || !document.head) {
+      return;
+    }
+
     // Don't do anything while loading or if already updating
     if (isLoading || isUpdating.current) return;
 
@@ -60,6 +65,12 @@ export default function DynamicFavicon() {
     // This ensures navigation is not blocked
     const updateTimer = setTimeout(() => {
       try {
+        // Check for document again inside setTimeout (SSR safety)
+        if (typeof document === 'undefined' || !document.head) {
+          isUpdating.current = false;
+          return;
+        }
+
         // Remove only the favicon links we created, not all icon links
         // This prevents interfering with other icon links
         if (faviconElements.current.icon && faviconElements.current.icon.parentNode) {
@@ -83,8 +94,10 @@ export default function DynamicFavicon() {
         faviconElements.current.appleTouch = appleTouchIcon;
 
         // Add to document head
-        document.head.appendChild(faviconLink);
-        document.head.appendChild(appleTouchIcon);
+        if (document.head) {
+          document.head.appendChild(faviconLink);
+          document.head.appendChild(appleTouchIcon);
+        }
       } catch (error) {
         // Silently fail if DOM manipulation fails (e.g., during navigation)
         console.warn('Failed to update favicon:', error);

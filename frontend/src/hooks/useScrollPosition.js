@@ -6,6 +6,12 @@ import { useCallback } from 'react';
  */
 export const useScrollPosition = () => {
   const preserveScrollPosition = useCallback((callback) => {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') {
+      callback();
+      return;
+    }
+
     // Save current scroll position
     const currentScrollY = window.scrollY;
     
@@ -14,11 +20,19 @@ export const useScrollPosition = () => {
     
     // Restore scroll position after the next tick
     setTimeout(() => {
-      window.scrollTo(0, currentScrollY);
+      if (typeof window !== 'undefined') {
+        window.scrollTo(0, currentScrollY);
+      }
     }, 0);
   }, []);
 
   const preserveScrollPositionAsync = useCallback(async (asyncCallback) => {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') {
+      await asyncCallback();
+      return;
+    }
+
     // Save current scroll position
     const currentScrollY = window.scrollY;
     
@@ -28,7 +42,9 @@ export const useScrollPosition = () => {
     } finally {
       // Restore scroll position after the next tick
       setTimeout(() => {
-        window.scrollTo(0, currentScrollY);
+        if (typeof window !== 'undefined') {
+          window.scrollTo(0, currentScrollY);
+        }
       }, 0);
     }
   }, []);

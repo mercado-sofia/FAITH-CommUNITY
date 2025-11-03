@@ -57,7 +57,7 @@ const ProgramModals = ({
   return (
     <>
       {/* Mark as Completed Confirmation Modal */}
-      {showMarkCompletedModal && typeof window !== 'undefined' && createPortal((
+      {showMarkCompletedModal && typeof window !== 'undefined' && typeof document !== 'undefined' && document.body && createPortal((
         <div className={styles.modalOverlay} onClick={cancelMarkCompleted}>
           <div className={`${styles.modalContent} ${styles.markCompletedModal}`} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
@@ -224,7 +224,7 @@ const ProgramModals = ({
       )}
 
       {/* Accept Collaboration Confirmation Modal */}
-      {showAcceptCollaborationModal && typeof window !== 'undefined' && createPortal((
+      {showAcceptCollaborationModal && typeof window !== 'undefined' && typeof document !== 'undefined' && document.body && createPortal((
         <div className={styles.modalOverlay} onClick={cancelAcceptCollaboration}>
           <div className={`${styles.modalContent} ${styles.acceptCollaborationModal}`} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
@@ -257,7 +257,7 @@ const ProgramModals = ({
       ), document.body)}
 
       {/* Decline Collaboration Confirmation Modal */}
-      {showDeclineCollaborationModal && typeof window !== 'undefined' && createPortal((
+      {showDeclineCollaborationModal && typeof window !== 'undefined' && typeof document !== 'undefined' && document.body && createPortal((
         <div className={styles.modalOverlay} onClick={cancelDeclineCollaboration}>
           <div className={`${styles.modalContent} ${styles.declineCollaborationModal}`} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>

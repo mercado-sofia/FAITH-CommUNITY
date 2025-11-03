@@ -49,6 +49,11 @@ const SuperadminProgramsPage = () => {
 
   // Handle click outside for dropdowns
   useEffect(() => {
+    // Check for window and document to avoid SSR errors
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
     const handleClickOutside = (e) => {
       // Don't close if clicking on dropdown options or inside dropdown containers
       if (e.target.closest(`.${styles.options}`)) {
@@ -75,14 +80,19 @@ const SuperadminProgramsPage = () => {
           }
         } else {
           // For window scroll events, check if any dropdown wrapper is visible
-          const dropdownWrappers = document.querySelectorAll(`.${styles.dropdownWrapper}`);
-          const isAnyDropdownVisible = Array.from(dropdownWrappers).some(wrapper => 
-            wrapper.querySelector(`.${styles.options}`) && 
-            window.getComputedStyle(wrapper.querySelector(`.${styles.options}`)).display !== 'none'
-          );
-          
-          if (!isAnyDropdownVisible) {
-            setShowDropdown(null);
+          if (typeof document !== 'undefined' && typeof window !== 'undefined') {
+            const dropdownWrappers = document.querySelectorAll(`.${styles.dropdownWrapper}`);
+            const isAnyDropdownVisible = Array.from(dropdownWrappers).some(wrapper => {
+              const optionsElement = wrapper.querySelector(`.${styles.options}`);
+              if (optionsElement && typeof window.getComputedStyle !== 'undefined') {
+                return window.getComputedStyle(optionsElement).display !== 'none';
+              }
+              return false;
+            });
+            
+            if (!isAnyDropdownVisible) {
+              setShowDropdown(null);
+            }
           }
         }
       }
@@ -93,9 +103,13 @@ const SuperadminProgramsPage = () => {
     window.addEventListener('scroll', handleScroll, true);
     
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('scroll', handleScroll, true);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('mousedown', handleClickOutside);
+      }
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', handleResize);
+        window.removeEventListener('scroll', handleScroll, true);
+      }
     };
   }, [showDropdown]);
 

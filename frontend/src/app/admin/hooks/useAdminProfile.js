@@ -42,7 +42,15 @@ const adminProfileFetcher = async (url) => {
       throw error;
     }
 
-    const data = await response.json();
+    // Parse JSON with error handling
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      const error = new Error('Invalid JSON response from server');
+      logger.apiError(url, error, { type: 'json_parse_error', parseError: parseError.message });
+      throw error;
+    }
     
     // Validate response structure
     if (!data || typeof data !== 'object') {

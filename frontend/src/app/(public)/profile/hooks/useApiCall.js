@@ -31,7 +31,13 @@ export const useApiCall = () => {
       let data;
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          setError('Invalid response from server. Please try again.');
+          setIsLoading(false);
+          return { data: null, response };
+        }
       } else {
         data = await response.text();
       }

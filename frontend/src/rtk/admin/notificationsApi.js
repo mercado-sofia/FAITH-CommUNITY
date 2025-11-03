@@ -7,7 +7,8 @@ export const notificationsApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: `${API_BASE_URL}/api/notifications`,
     prepareHeaders: (headers, { getState }) => {
-      const token = localStorage.getItem('adminToken');
+      // Check for window to avoid SSR errors
+      const token = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
       if (token) {
         headers.set('authorization', `Bearer ${token}`);
       }

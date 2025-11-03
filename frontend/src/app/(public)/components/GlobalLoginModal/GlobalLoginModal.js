@@ -24,17 +24,19 @@ export default function GlobalLoginModal() {
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
-      setIsVisible(true);
-      document.body.style.overflow = 'hidden';
-    } else {
-      setIsVisible(false);
-      document.body.style.overflow = 'auto';
-    }
+    if (typeof document !== 'undefined' && document.body) {
+      if (isOpen) {
+        setIsVisible(true);
+        document.body.style.overflow = 'hidden';
+      } else {
+        setIsVisible(false);
+        document.body.style.overflow = 'auto';
+      }
 
-    return () => {
-      document.body.style.overflow = 'auto';
-    };
+      return () => {
+        document.body.style.overflow = 'auto';
+      };
+    }
   }, [isOpen]);
 
   const handleLogin = () => {
@@ -102,5 +104,11 @@ export default function GlobalLoginModal() {
     </div>
   );
 
-  return createPortal(modalContent, document.body);
+  // Ensure document.body exists before creating portal (SSR safety)
+  if (typeof document !== 'undefined' && document.body) {
+    return createPortal(modalContent, document.body);
+  }
+
+  // Fallback for SSR or if document.body doesn't exist
+  return null;
 }

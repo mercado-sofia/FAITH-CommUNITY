@@ -5,7 +5,8 @@ export const userNotificationsApi = createApi({
   baseQuery: fetchBaseQuery({ 
     baseUrl: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/users/`,
     prepareHeaders: (headers, { getState }) => {
-      const token = localStorage.getItem('userToken');
+      // Check for window to avoid SSR errors
+      const token = typeof window !== 'undefined' ? localStorage.getItem('userToken') : null;
       if (token) {
         headers.set('authorization', `Bearer ${token}`);
       }

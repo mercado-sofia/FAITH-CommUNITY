@@ -100,6 +100,12 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
       return;
     }
 
+    // Check for document to avoid SSR errors
+    if (typeof document === 'undefined') {
+      setErrors(prev => ({ ...prev, content: 'Cannot generate excerpt in server environment' }));
+      return;
+    }
+
     // Sanitize HTML and extract text while preserving logical spaces for line breaks
     const container = document.createElement('div');
     container.innerHTML = DOMPurify.sanitize(formData.content);

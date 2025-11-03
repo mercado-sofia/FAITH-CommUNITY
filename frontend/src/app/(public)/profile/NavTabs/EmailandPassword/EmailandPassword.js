@@ -26,7 +26,9 @@ export default function EmailandPassword({ userData, setUserData }) {
     });
     setShowEmailModal(false);
     setShowSuccessModal(true);
-    document.body.classList.remove('modalOpen');
+    if (typeof document !== 'undefined' && document.body) {
+      document.body.classList.remove('modalOpen');
+    }
   };
 
   const handlePasswordChangeSuccess = () => {
@@ -37,12 +39,16 @@ export default function EmailandPassword({ userData, setUserData }) {
     });
     setShowPasswordModal(false);
     setShowSuccessModal(true);
-    document.body.classList.remove('modalOpen');
+    if (typeof document !== 'undefined' && document.body) {
+      document.body.classList.remove('modalOpen');
+    }
   };
 
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
-    document.body.classList.remove('modalOpen');
+    if (typeof document !== 'undefined' && document.body) {
+      document.body.classList.remove('modalOpen');
+    }
   };
 
   return (
@@ -72,7 +78,9 @@ export default function EmailandPassword({ userData, setUserData }) {
               <button 
                 onClick={() => {
                   setShowEmailModal(true);
-                  document.body.classList.add('modalOpen');
+                  if (typeof document !== 'undefined' && document.body) {
+                    document.body.classList.add('modalOpen');
+                  }
                 }} 
                 className={styles.changeEmailButton}
               >
@@ -103,7 +111,9 @@ export default function EmailandPassword({ userData, setUserData }) {
               <button 
                 onClick={() => {
                   setShowPasswordModal(true);
-                  document.body.classList.add('modalOpen');
+                  if (typeof document !== 'undefined' && document.body) {
+                    document.body.classList.add('modalOpen');
+                  }
                 }} 
                 className={styles.changePasswordButton}
               >
@@ -116,12 +126,14 @@ export default function EmailandPassword({ userData, setUserData }) {
       </div>
 
       {/* Modal Components - Rendered with Portal for proper overlay */}
-      {showEmailModal && createPortal(
+      {showEmailModal && typeof document !== 'undefined' && document.body && createPortal(
         <EmailChange 
           isOpen={showEmailModal}
           onClose={() => {
             setShowEmailModal(false);
-            document.body.classList.remove('modalOpen');
+            if (typeof document !== 'undefined' && document.body) {
+              document.body.classList.remove('modalOpen');
+            }
           }}
           onSuccess={handleEmailChangeSuccess}
           userType="public"
@@ -133,12 +145,14 @@ export default function EmailandPassword({ userData, setUserData }) {
         document.body
       )}
       
-      {showPasswordModal && createPortal(
+      {showPasswordModal && typeof document !== 'undefined' && document.body && createPortal(
         <PasswordChange
           isOpen={showPasswordModal}
           onClose={() => {
             setShowPasswordModal(false);
-            document.body.classList.remove('modalOpen');
+            if (typeof document !== 'undefined' && document.body) {
+              document.body.classList.remove('modalOpen');
+            }
           }}
           onSuccess={handlePasswordChangeSuccess}
           userType="public"

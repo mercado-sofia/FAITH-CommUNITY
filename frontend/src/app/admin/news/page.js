@@ -105,10 +105,11 @@ export default function AdminNewsPage() {
 
   // Loading state
   if (!currentAdmin) {
+    const hasToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : false;
     return (
       <div className={styles.container}>
         <div className={styles.loading} aria-live="polite">
-          {localStorage.getItem('adminToken') ? 'Loading admin session...' : 'Please log in to access this page.'}
+          {hasToken ? 'Loading admin session...' : 'Please log in to access this page.'}
         </div>
       </div>
     );

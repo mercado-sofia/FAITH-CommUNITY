@@ -41,6 +41,9 @@ export default function HeroSection() {
 
   // Check user authentication status
   useEffect(() => {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') return;
+    
     const checkAuth = async () => {
       const token = localStorage.getItem('userToken');
       const storedUserData = localStorage.getItem('userData');
@@ -78,19 +81,23 @@ export default function HeroSection() {
   }, [heroData?.images]);
 
   useEffect(() => {
-    if (showVideo) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
+    if (typeof document !== 'undefined' && document.body) {
+      if (showVideo) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = 'unset';
+      }
 
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+      return () => {
+        document.body.style.overflow = 'unset';
+      };
+    }
   }, [showVideo]);
 
   // Handle ESC key to close video
   useEffect(() => {
+    if (typeof document === 'undefined') return;
+    
     const handleKeyDown = (event) => {
       if (event.key === 'Escape' && showVideo) {
         setShowVideo(false);

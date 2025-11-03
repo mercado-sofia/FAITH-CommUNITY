@@ -19,7 +19,14 @@ export const swrConfig = {
         throw error;
       }
 
-      return response.json();
+      // Parse JSON with error handling
+      try {
+        return await response.json();
+      } catch (parseError) {
+        const error = new Error('Invalid JSON response from server');
+        logger.apiError(url, error, { parseError: parseError.message });
+        throw error;
+      }
     } catch (error) {
       logger.apiError(url, error);
       throw error;

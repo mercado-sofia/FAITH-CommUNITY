@@ -359,7 +359,15 @@ export default function SignupForm({ onRegistrationSuccess }) {
         }),
       })
       
-      const data = await response.json()
+      // Parse JSON with error handling
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        setErrorMessage("Invalid response from server. Please try again.");
+        setShowError(true);
+        return;
+      }
       
       if (response.ok) {
         if (data.requiresVerification) {

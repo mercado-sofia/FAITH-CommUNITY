@@ -38,6 +38,11 @@ export default function ChangeSuccessModal({
   const isMobile = windowWidth <= 640;
   const isSmallMobile = windowWidth <= 480;
 
+  // Ensure document.body exists before creating portal (SSR safety)
+  if (typeof document === 'undefined' || !document.body) {
+    return null;
+  }
+
   return createPortal(
     <div 
       style={{
@@ -48,18 +53,17 @@ export default function ChangeSuccessModal({
         bottom: 0,
         background: 'rgba(0, 0, 0, 0.5)',
         display: 'flex',
-        alignItems: isMobile ? 'flex-start' : 'center',
+        alignItems: 'center',
         justifyContent: 'center',
         zIndex: 9999,
-        padding: isMobile ? '0.5rem' : '1rem',
-        paddingTop: isMobile ? '2rem' : '1rem'
+        padding: isMobile ? '0.5rem' : '1rem'
       }} 
       onClick={onClose}
     >
       <div 
         style={{
           background: 'white',
-          borderRadius: isMobile ? '12px 12px 0 0' : '12px',
+          borderRadius: '12px',
           boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
           maxWidth: '500px',
           width: '100%',

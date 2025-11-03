@@ -59,6 +59,9 @@ export default function ProgramDetailsPage() {
 
   // Check user authentication status and fetch applications
   useEffect(() => {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') return;
+    
     const checkAuth = async () => {
       const token = localStorage.getItem('userToken');
       const storedUserData = localStorage.getItem('userData');
@@ -97,8 +100,13 @@ export default function ProgramDetailsPage() {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setUserApplications(data.applications || []);
+        try {
+          const data = await response.json();
+          setUserApplications(data.applications || []);
+        } catch (parseError) {
+          // If JSON parsing fails, set empty array
+          setUserApplications([]);
+        }
       } else {
         setUserApplications([]);
       }
@@ -133,7 +141,13 @@ export default function ProgramDetailsPage() {
           throw new Error('Program not found');
         }
         
-        const result = await response.json();
+        // Parse JSON with error handling
+        let result;
+        try {
+          result = await response.json();
+        } catch (parseError) {
+          throw new Error('Invalid response format from server');
+        }
         
         let programData;
         if (isNumeric) {
@@ -154,8 +168,12 @@ export default function ProgramDetailsPage() {
           try {
             const otherResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/programs/org/${programData.organization_id}/other/${programData.id}`);
             if (otherResponse.ok) {
-              const otherResult = await otherResponse.json();
-              setOtherPrograms(otherResult.data);
+              try {
+                const otherResult = await otherResponse.json();
+                setOtherPrograms(otherResult.data);
+              } catch (parseError) {
+                // Silently fail JSON parsing for other programs - not critical
+              }
             }
           } catch (err) {
             // Silently fail for other programs - not critical

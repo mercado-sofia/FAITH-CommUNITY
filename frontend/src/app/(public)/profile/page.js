@@ -64,16 +64,29 @@ export default function ProfilePage() {
 
   // Track viewport for mobile-specific labels
   useEffect(() => {
-    const checkIsMobile = () => setIsMobile(window.innerWidth <= 768);
+    if (typeof window === 'undefined') return;
+    
+    const checkIsMobile = () => {
+      if (typeof window !== 'undefined') {
+        setIsMobile(window.innerWidth <= 768);
+      }
+    };
     checkIsMobile();
     window.addEventListener('resize', checkIsMobile);
-    return () => window.removeEventListener('resize', checkIsMobile);
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', checkIsMobile);
+      }
+    };
   }, []);
 
 
   // Handle user authentication and data loading
   useEffect(() => {
     if (!pageReady) return;
+    
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') return;
 
     const token = localStorage.getItem('userToken');
     const storedUserData = localStorage.getItem('userData');
@@ -105,9 +118,11 @@ export default function ProfilePage() {
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
     // Update URL without page reload
-    const url = new URL(window.location);
-    url.searchParams.set('tab', tabId);
-    router.replace(url.pathname + url.search, { scroll: false });
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location);
+      url.searchParams.set('tab', tabId);
+      router.replace(url.pathname + url.search, { scroll: false });
+    }
   };
 
   const ActiveComponent = navigationItems.find(item => item.id === activeTab)?.component;

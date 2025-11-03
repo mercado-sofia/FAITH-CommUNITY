@@ -70,6 +70,11 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
 
   // Prevent body scroll when modal is open
   useEffect(() => {
+    // Check for document to avoid SSR errors
+    if (typeof document === 'undefined' || !document.body) {
+      return;
+    }
+
     if (isOpen) {
       document.body.style.overflow = 'hidden';
     } else {
@@ -77,7 +82,9 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
     }
 
     return () => {
-      document.body.style.overflow = 'unset';
+      if (typeof document !== 'undefined' && document.body) {
+        document.body.style.overflow = 'unset';
+      }
     };
   }, [isOpen]);
 
@@ -91,10 +98,9 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
     bottom: 0,
     zIndex: 999999,
     display: 'flex',
-    alignItems: isMobile ? 'flex-start' : 'center',
+    alignItems: 'center',
     justifyContent: 'center',
-    padding: isMobile ? '0.5rem' : '1rem',
-    paddingTop: isMobile ? '2rem' : '1rem'
+    padding: isMobile ? '0.5rem' : '1rem'
   };
 
   const backdropStyle = {
@@ -109,7 +115,7 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
   const contentStyle = {
     position: 'relative',
     background: 'white',
-    borderRadius: isMobile ? '12px 12px 0 0' : '1rem',
+    borderRadius: isMobile ? '12px' : '1rem',
     padding: isMobile ? '1.25rem' : '1.5rem',
     maxWidth: '400px',
     width: '100%',
@@ -188,6 +194,11 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
     transition: 'width 0.3s ease',
     width: `${((5 - timeLeft) / 5) * 100}%`
   };
+
+  // Ensure document.body exists before creating portal (SSR safety)
+  if (typeof document === 'undefined' || !document.body) {
+    return null;
+  }
 
   return createPortal(
     <div style={overlayStyle}>

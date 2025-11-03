@@ -25,6 +25,16 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         return;
       }
       
+      // Check for window to avoid SSR errors
+      if (typeof window === 'undefined') {
+        setSuccessModal({ 
+          isVisible: true, 
+          message: 'Cannot perform this action on server side.', 
+          type: 'error' 
+        });
+        return;
+      }
+      
       // Get admin token for authentication
       const token = localStorage.getItem('adminToken');
       if (!token) {
@@ -190,6 +200,16 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         return;
       }
 
+      // Check for window to avoid SSR errors
+      if (typeof window === 'undefined') {
+        setSuccessModal({ 
+          isVisible: true, 
+          message: 'Cannot perform this action on server side.', 
+          type: 'error' 
+        });
+        return;
+      }
+
       // Get admin token for authentication
       const token = localStorage.getItem('adminToken');
       if (!token) {
@@ -281,6 +301,16 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
 
   // Handle mark program as completed: now uploads Post Act Report and submits for approval
   const handleMarkCompleted = useCallback(async (program, reportFile) => {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') {
+      setSuccessModal({ 
+        isVisible: true, 
+        message: 'Cannot perform this action on server side.', 
+        type: 'error' 
+      });
+      return;
+    }
+
     try {
       // Get admin token for authentication
       const token = localStorage.getItem('adminToken');
@@ -352,6 +382,16 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
 
   // Handle mark program as active
   const handleMarkActive = useCallback(async (program) => {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') {
+      setSuccessModal({ 
+        isVisible: true, 
+        message: 'Cannot perform this action on server side.', 
+        type: 'error' 
+      });
+      return;
+    }
+
     // Get admin token for authentication
     const token = localStorage.getItem('adminToken');
     if (!token) {
@@ -428,6 +468,17 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
   const confirmDeleteProgram = useCallback(async (deletingProgram) => {
     if (!deletingProgram) return;
     
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') {
+      setIsDeleting(false);
+      setSuccessModal({ 
+        isVisible: true, 
+        message: 'Cannot perform this action on server side.', 
+        type: 'error' 
+      });
+      return;
+    }
+    
     setIsDeleting(true);
     try {
       // Get admin token for authentication
@@ -481,6 +532,16 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
 
   // Handle toggle volunteer acceptance
   const handleToggleVolunteerAcceptance = useCallback(async (program, acceptsVolunteers) => {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') {
+      setSuccessModal({ 
+        isVisible: true, 
+        message: 'Cannot perform this action on server side.', 
+        type: 'error' 
+      });
+      return;
+    }
+
     try {
       // Get admin token for authentication
       const token = localStorage.getItem('adminToken');

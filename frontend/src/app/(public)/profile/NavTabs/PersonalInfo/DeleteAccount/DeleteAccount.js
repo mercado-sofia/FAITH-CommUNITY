@@ -56,7 +56,9 @@ export default function DeleteAccount() {
           // Use centralized immediate cleanup for security
           const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
           clearAuthImmediate(USER_TYPES.PUBLIC);
-          window.location.href = '/';
+          if (typeof window !== 'undefined') {
+            window.location.href = '/';
+          }
         }, 2000);
       } else {
         setDeleteError(data.message || 'Incorrect password, please try again');
@@ -112,7 +114,7 @@ export default function DeleteAccount() {
       />
       
       {/* Password Confirmation Modal */}
-      {showConfirmModal && createPortal(
+      {showConfirmModal && typeof document !== 'undefined' && document.body && createPortal(
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
             <div className={styles.topRow}>

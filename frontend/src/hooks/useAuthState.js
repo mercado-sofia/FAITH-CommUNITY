@@ -20,6 +20,12 @@ export const useAuthState = () => {
   // Initialize auth state from localStorage
   const initializeAuth = useCallback(async () => {
     try {
+      // Check for window to avoid SSR errors
+      if (typeof window === 'undefined') {
+        setIsLoading(false);
+        return;
+      }
+      
       const token = localStorage.getItem('userToken');
       const storedUserData = localStorage.getItem('userData');
       
@@ -48,11 +54,13 @@ export const useAuthState = () => {
 
   // Check if user is authenticated
   const isAuthenticated = useCallback(() => {
+    if (typeof window === 'undefined') return false;
     return !!user && !!localStorage.getItem('userToken');
   }, [user]);
 
   // Get current token
   const getToken = useCallback(() => {
+    if (typeof window === 'undefined') return null;
     return localStorage.getItem('userToken');
   }, []);
 

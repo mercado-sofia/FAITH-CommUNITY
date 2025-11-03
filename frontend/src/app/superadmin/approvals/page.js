@@ -17,6 +17,11 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 // Helper function to make authenticated API calls
 const makeAuthenticatedRequest = async (url, options = {}) => {
+  // Check for window to avoid SSR errors
+  if (typeof window === 'undefined') {
+    throw new Error('Cannot make authenticated request on server side');
+  }
+
   const token = localStorage.getItem('superAdminToken');
   if (!token) {
     // Use centralized immediate cleanup for security
@@ -45,7 +50,9 @@ const makeAuthenticatedRequest = async (url, options = {}) => {
     // Token expired or invalid - use centralized cleanup
     const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
     clearAuthImmediate(USER_TYPES.SUPERADMIN);
-    window.location.href = '/login';
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
     return null;
   }
 

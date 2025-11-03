@@ -78,15 +78,25 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
 
   // Handle file upload
   const uploadFile = useCallback(async (file) => {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') {
+      throw new Error('Cannot upload file on server side');
+    }
+    
     const formData = new FormData();
     formData.append('file', file);
     formData.append('uploadType', 'highlight');
+    
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      throw new Error('No admin token found. Please log in again.');
+    }
     
     try {
       const response = await fetch(`${API_BASE_URL}/api/upload`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: formData,
       });

@@ -8,7 +8,8 @@ export const superadminProgramsApi = createApi({
       headers.set("Content-Type", "application/json")
 
       // Add JWT token for superadmin authentication
-      const token = getState().superadmin?.token || localStorage.getItem("superAdminToken")
+      // Check for window to avoid SSR errors
+      const token = getState().superadmin?.token || (typeof window !== 'undefined' ? localStorage.getItem("superAdminToken") : null)
       if (token) {
         headers.set("Authorization", `Bearer ${token}`)
       }

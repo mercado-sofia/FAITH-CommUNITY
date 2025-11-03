@@ -28,7 +28,9 @@ export default function Navbar() {
   const handleApplyClick = (e) => {
     if (!isAuthenticated) {
       e.preventDefault();
-      window.dispatchEvent(new CustomEvent('showLoginModal'));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('showLoginModal'));
+      }
     }
   };
 
@@ -50,7 +52,9 @@ export default function Navbar() {
   const handleResize = useCallback(() => {
     if (resizeTimeoutRef.current) clearTimeout(resizeTimeoutRef.current);
     resizeTimeoutRef.current = setTimeout(() => {
-      if (window.innerWidth > 1180) setMenuOpen(false);
+      if (typeof window !== 'undefined' && window.innerWidth > 1180) {
+        setMenuOpen(false);
+      }
     }, 100);
   }, []);
 
@@ -59,9 +63,16 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     window.addEventListener('resize', handleResize, { passive: true });
     return () => {
-      window.removeEventListener('resize', handleResize);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', handleResize);
+      }
       if (resizeTimeoutRef.current) clearTimeout(resizeTimeoutRef.current);
     };
   }, [handleResize]);

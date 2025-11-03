@@ -58,14 +58,20 @@ export const useToast = () => {
   const ToastComponent = () => {
     if (!toast.show) return null;
 
-    return createPortal(
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        onClose={hideToast}
-      />,
-      document.body
-    );
+    // Ensure document.body exists before creating portal (SSR safety)
+    if (typeof document !== 'undefined' && document.body) {
+      return createPortal(
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+        />,
+        document.body
+      );
+    }
+
+    // Fallback for SSR or if document.body doesn't exist
+    return null;
   };
 
   return {

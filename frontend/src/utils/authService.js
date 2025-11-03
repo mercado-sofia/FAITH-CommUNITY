@@ -49,6 +49,11 @@ const COMMON_KEYS = [
  * Clear authentication data from localStorage and cookies
  */
 export const clearAuthData = (userType = USER_TYPES.PUBLIC) => {
+  // Check for window and document to avoid SSR errors
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return;
+  }
+
   const authKeys = AUTH_KEYS[userType];
   
   // Clear user-specific data
@@ -70,6 +75,11 @@ export const clearAuthData = (userType = USER_TYPES.PUBLIC) => {
  * No delays, no events, no redirects - just secure cleanup
  */
 export const clearAuthImmediate = (userType = USER_TYPES.PUBLIC) => {
+  // Check for window and document to avoid SSR errors
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return;
+  }
+
   const authKeys = AUTH_KEYS[userType];
   
   // Clear user-specific data
@@ -96,13 +106,18 @@ export const clearAuthImmediate = (userType = USER_TYPES.PUBLIC) => {
  * Call logout API endpoint (only for public users)
  */
 const callLogoutAPI = async (userType) => {
+  // Check for window to avoid SSR errors
+  if (typeof window === 'undefined') {
+    return;
+  }
+
   const authKeys = AUTH_KEYS[userType];
   
   if (!authKeys?.apiEndpoint) {
     return; // No API endpoint for admin/superadmin
   }
   
-  const token = localStorage.getItem(authKeys.token);
+  const token = typeof window !== 'undefined' ? localStorage.getItem(authKeys.token) : null;
   if (!token) return;
   
   try {
@@ -130,9 +145,14 @@ export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
     onError = null
   } = options;
   
+  // Check for window to avoid SSR errors
+  if (typeof window === 'undefined') {
+    return;
+  }
+
   try {
     // Show loader if requested
-    if (showLoader) {
+    if (showLoader && typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('showLogoutLoader'));
     }
     
@@ -143,9 +163,11 @@ export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
     clearAuthData(userType);
     
     // Dispatch logout event for other components to listen
-    window.dispatchEvent(new CustomEvent('user:logout', {
-      detail: { userType, timestamp: Date.now() }
-    }));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('user:logout', {
+        detail: { userType, timestamp: Date.now() }
+      }));
+    }
     
     // Call success callback
     if (onSuccess) {
@@ -155,7 +177,7 @@ export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
     // Handle redirect
     if (redirect) {
       setTimeout(() => {
-        if (showLoader) {
+        if (showLoader && typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('hideLogoutLoader'));
         }
         
@@ -164,7 +186,9 @@ export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
           ? redirectPath 
           : '/login';
           
-        window.location.href = finalRedirectPath;
+        if (typeof window !== 'undefined') {
+          window.location.href = finalRedirectPath;
+        }
       }, showLoader ? 1000 : 0);
     }
     
@@ -181,7 +205,9 @@ export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
       const finalRedirectPath = userType === USER_TYPES.PUBLIC 
         ? redirectPath 
         : '/login';
-      window.location.href = finalRedirectPath;
+      if (typeof window !== 'undefined') {
+        window.location.href = finalRedirectPath;
+      }
     }
   }
 };
@@ -190,6 +216,9 @@ export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
  * Check if user is authenticated
  */
 export const isAuthenticated = (userType = USER_TYPES.PUBLIC) => {
+  // Check for window to avoid SSR errors
+  if (typeof window === 'undefined') return false;
+  
   const authKeys = AUTH_KEYS[userType];
   if (!authKeys) return false;
   
@@ -209,6 +238,9 @@ export const isAuthenticated = (userType = USER_TYPES.PUBLIC) => {
  * Get current user data
  */
 export const getCurrentUser = (userType = USER_TYPES.PUBLIC) => {
+  // Check for window to avoid SSR errors
+  if (typeof window === 'undefined') return null;
+  
   const authKeys = AUTH_KEYS[userType];
   if (!authKeys) return null;
   
@@ -226,6 +258,9 @@ export const getCurrentUser = (userType = USER_TYPES.PUBLIC) => {
  * Get current token
  */
 export const getCurrentToken = (userType = USER_TYPES.PUBLIC) => {
+  // Check for window to avoid SSR errors
+  if (typeof window === 'undefined') return null;
+  
   const authKeys = AUTH_KEYS[userType];
   if (!authKeys) return null;
   

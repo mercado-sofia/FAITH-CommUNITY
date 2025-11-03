@@ -70,23 +70,37 @@ function SuperAdminLayoutContent({ children }) {
   // Check for mobile device
   useEffect(() => {
     setIsClient(true);
+    if (typeof window === 'undefined') return;
+    
     const checkIsMobile = () => {
       // Consider devices with width <= 1024px as mobile/tablet
       // You can adjust this threshold if needed
-      setIsMobile(window.innerWidth <= 1024);
+      if (typeof window !== 'undefined') {
+        setIsMobile(window.innerWidth <= 1024);
+      }
     };
     
     checkIsMobile();
     window.addEventListener('resize', checkIsMobile);
-    return () => window.removeEventListener('resize', checkIsMobile);
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', checkIsMobile);
+      }
+    };
   }, []);
 
   useEffect(() => {
     const initializeSuperAdmin = async () => {
       try {
+        // Check for window to avoid SSR errors
+        if (typeof window === 'undefined') {
+          setIsInitialLoading(false);
+          return;
+        }
+        
         const token = localStorage.getItem('superAdminToken');
         const superAdminData = localStorage.getItem('superAdminData');
-        const userRole = document.cookie.includes('userRole=superadmin');
+        const userRole = typeof document !== 'undefined' ? document.cookie.includes('userRole=superadmin') : false;
         
         if (!token || !superAdminData || !userRole) {
           // Use centralized immediate cleanup for security
@@ -99,7 +113,9 @@ function SuperAdminLayoutContent({ children }) {
       } catch (error) {
         // Use centralized immediate cleanup for security
         clearAuthImmediate(USER_TYPES.SUPERADMIN);
-        window.location.href = '/login';
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
       }
     };
 

@@ -39,7 +39,15 @@ const ContactFormModal = ({ isOpen, onClose, organizationName, organizationId, p
         })
       });
 
-      const result = await response.json();
+      // Parse JSON with error handling
+      let result;
+      try {
+        result = await response.json();
+      } catch (parseError) {
+        setSubmitStatus('error');
+        setIsSubmitting(false);
+        return;
+      }
 
       if (response.ok && result.success) {
         setSubmitStatus('success');

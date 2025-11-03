@@ -14,6 +14,9 @@ export default function FeaturedProjects({ orgID }) {
 
   // Check user authentication status
   useEffect(() => {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') return;
+    
     const checkAuth = async () => {
       const token = localStorage.getItem('userToken');
       const storedUserData = localStorage.getItem('userData');

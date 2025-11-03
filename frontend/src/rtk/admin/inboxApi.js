@@ -8,7 +8,8 @@ export const inboxApi = createApi({
     baseUrl: API_BASE_URL,
     credentials: 'include',
     prepareHeaders: (headers) => {
-      const token = localStorage.getItem('adminToken');
+      // Check for window to avoid SSR errors
+      const token = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
       if (token) {
         headers.set('Authorization', `Bearer ${token}`);
       }

@@ -8,7 +8,8 @@ export const adminProgramsApi = createApi({
       headers.set("Content-Type", "application/json")
 
       // Add JWT token for admin authentication
-      const token = getState().admin?.token || localStorage.getItem("adminToken")
+      // Check for window to avoid SSR errors
+      const token = getState().admin?.token || (typeof window !== 'undefined' ? localStorage.getItem("adminToken") : null)
       if (token) {
         headers.set("Authorization", `Bearer ${token}`)
       }

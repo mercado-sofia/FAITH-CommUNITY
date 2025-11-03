@@ -18,11 +18,16 @@ export default function ForgotPasswordModal({
   const [focusedField, setFocusedField] = useState("")
 
   useEffect(() => {
-    if (!isOpen) return
+    // Check for window to avoid SSR errors
+    if (!isOpen || typeof window === 'undefined') return
     inputRef.current?.focus()
     const onKeyDown = (e) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('keydown', onKeyDown)
+      }
+    }
   }, [isOpen, onClose])
 
   const handleFocus = (fieldName) => {

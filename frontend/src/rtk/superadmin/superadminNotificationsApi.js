@@ -7,7 +7,8 @@ export const superadminNotificationsApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: `${API_BASE_URL}/api/superadmin/notifications`,
     prepareHeaders: (headers, { getState }) => {
-      const token = localStorage.getItem('superAdminToken');
+      // Check for window to avoid SSR errors
+      const token = typeof window !== 'undefined' ? localStorage.getItem('superAdminToken') : null;
       if (token) {
         headers.set('authorization', `Bearer ${token}`);
       }

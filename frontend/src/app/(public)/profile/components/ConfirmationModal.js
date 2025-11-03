@@ -87,14 +87,19 @@ export default function ConfirmationModal({
 
   // Handle body class for modal open state
   useEffect(() => {
-    if (isOpen && typeof document !== 'undefined') {
-      document.body.classList.add('modalOpen');
-      
-      // Cleanup function to remove class when modal closes
-      return () => {
-        document.body.classList.remove('modalOpen');
-      };
+    // Check for document to avoid SSR errors
+    if (!isOpen || typeof document === 'undefined' || !document.body) {
+      return;
     }
+
+    document.body.classList.add('modalOpen');
+    
+    // Cleanup function to remove class when modal closes
+    return () => {
+      if (typeof document !== 'undefined' && document.body) {
+        document.body.classList.remove('modalOpen');
+      }
+    };
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -184,6 +189,11 @@ export default function ConfirmationModal({
     borderColor: '#9CA3AF',
     cursor: 'not-allowed'
   });
+
+  // Ensure document.body exists before creating portal (SSR safety)
+  if (typeof document === 'undefined' || !document.body) {
+    return null;
+  }
 
   return createPortal(
     <div 

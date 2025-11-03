@@ -11,6 +11,11 @@ export default function PublicLayout({ children }) {
   const [showLogoutLoader, setShowLogoutLoader] = useState(false);
 
   useEffect(() => {
+    // Check for window and document to avoid SSR errors
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
     // Preload critical resources
     const preloadCriticalResources = () => {
       // Preload critical images
@@ -26,7 +31,9 @@ export default function PublicLayout({ children }) {
         link.rel = 'preload';
         link.as = 'image';
         link.href = src;
-        document.head.appendChild(link);
+        if (document.head) {
+          document.head.appendChild(link);
+        }
       });
       
       // Preload sample4.jpg
@@ -34,7 +41,9 @@ export default function PublicLayout({ children }) {
       preloadLink.rel = 'preload';
       preloadLink.href = '/samples/sample4.jpg';
       preloadLink.as = 'image';
-      document.head.appendChild(preloadLink);
+      if (document.head) {
+        document.head.appendChild(preloadLink);
+      }
     };
 
     preloadCriticalResources();
@@ -62,12 +71,19 @@ export default function PublicLayout({ children }) {
     window.addEventListener('scroll', throttledScroll, { passive: true });
 
     return () => {
-      window.removeEventListener('scroll', throttledScroll);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('scroll', throttledScroll);
+      }
     };
   }, []);
 
   // Handle global logout loader
   useEffect(() => {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     const handleShowLogoutLoader = () => {
       setShowLogoutLoader(true);
     };
@@ -81,8 +97,10 @@ export default function PublicLayout({ children }) {
     window.addEventListener('hideLogoutLoader', handleHideLogoutLoader);
 
     return () => {
-      window.removeEventListener('showLogoutLoader', handleShowLogoutLoader);
-      window.removeEventListener('hideLogoutLoader', handleHideLogoutLoader);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('showLogoutLoader', handleShowLogoutLoader);
+        window.removeEventListener('hideLogoutLoader', handleHideLogoutLoader);
+      }
     };
   }, []);
 

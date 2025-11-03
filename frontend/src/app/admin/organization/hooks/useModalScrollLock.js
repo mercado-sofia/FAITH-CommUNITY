@@ -2,19 +2,24 @@ import { useEffect } from 'react';
 
 export const useModalScrollLock = (isOpen) => {
   useEffect(() => {
-    if (isOpen) {
-      // Store current scroll position
-      const scrollY = window.scrollY;
-      
-      // Lock body scroll and maintain position
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.left = '0';
-      document.body.style.right = '0';
-      document.body.style.overflow = 'hidden';
-      
-      return () => {
-        // Restore body scroll and position
+    // Check for window and document to avoid SSR errors
+    if (!isOpen || typeof window === 'undefined' || typeof document === 'undefined' || !document.body) {
+      return;
+    }
+
+    // Store current scroll position
+    const scrollY = window.scrollY;
+    
+    // Lock body scroll and maintain position
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.overflow = 'hidden';
+    
+    return () => {
+      // Restore body scroll and position
+      if (typeof document !== 'undefined' && document.body) {
         document.body.style.position = '';
         document.body.style.top = '';
         document.body.style.left = '';
@@ -22,8 +27,10 @@ export const useModalScrollLock = (isOpen) => {
         document.body.style.overflow = '';
         
         // Restore scroll position
-        window.scrollTo(0, scrollY);
-      };
-    }
+        if (typeof window !== 'undefined') {
+          window.scrollTo(0, scrollY);
+        }
+      }
+    };
   }, [isOpen]);
 };

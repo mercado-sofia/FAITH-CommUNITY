@@ -12,18 +12,20 @@ const UnfeatureConfirmationModal = ({
 }) => {
   // Prevent body scroll when modal is open
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-      document.body.style.paddingRight = '0px'
-    } else {
-      document.body.style.overflow = 'unset'
-      document.body.style.paddingRight = '0px'
-    }
+    if (typeof document !== 'undefined' && document.body) {
+      if (isOpen) {
+        document.body.style.overflow = 'hidden'
+        document.body.style.paddingRight = '0px'
+      } else {
+        document.body.style.overflow = 'unset'
+        document.body.style.paddingRight = '0px'
+      }
 
-    // Cleanup on unmount
-    return () => {
-      document.body.style.overflow = 'unset'
-      document.body.style.paddingRight = '0px'
+      // Cleanup on unmount
+      return () => {
+        document.body.style.overflow = 'unset'
+        document.body.style.paddingRight = '0px'
+      }
     }
   }, [isOpen])
 
@@ -89,7 +91,15 @@ const UnfeatureConfirmationModal = ({
   )
 
   // Use portal to render modal outside of the card's DOM hierarchy
-  return isOpen ? createPortal(modalContent, document.body) : null
+  // Ensure document.body exists before creating portal (SSR safety)
+  if (!isOpen) return null;
+  
+  if (typeof document !== 'undefined' && document.body) {
+    return createPortal(modalContent, document.body);
+  }
+  
+  // Fallback for SSR or if document.body doesn't exist
+  return null;
 }
 
 export default UnfeatureConfirmationModal

@@ -16,26 +16,28 @@ if (process.env.NODE_ENV === 'development') {
     };
 
     // Add a visual indicator for development mode
-    const devIndicator = document.createElement('div');
-    devIndicator.style.cssText = `
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      background: #ff6b6b;
-      color: white;
-      padding: 5px 10px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: bold;
-      z-index: 9999;
-      cursor: pointer;
-    `;
-    devIndicator.textContent = 'DEV MODE';
-    devIndicator.title = 'Click to open logger tools';
-    devIndicator.onclick = () => {
-      // FAITH Logger Tools available
-    };
-    document.body.appendChild(devIndicator);
+    if (typeof document !== 'undefined' && document.body) {
+      const devIndicator = document.createElement('div');
+      devIndicator.style.cssText = `
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: #ff6b6b;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+        z-index: 9999;
+        cursor: pointer;
+      `;
+      devIndicator.textContent = 'DEV MODE';
+      devIndicator.title = 'Click to open logger tools';
+      devIndicator.onclick = () => {
+        // FAITH Logger Tools available
+      };
+      document.body.appendChild(devIndicator);
+    }
 
     // Log that dev tools are loaded
     logger.info('Development tools loaded', {
@@ -77,7 +79,7 @@ export const devTools = {
     const dataStr = JSON.stringify(logs, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       const url = URL.createObjectURL(dataBlob);
       const link = document.createElement('a');
       link.href = url;

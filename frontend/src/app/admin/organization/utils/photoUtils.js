@@ -7,6 +7,11 @@ export class PhotoUtils {
    * @returns {Promise<File>} Compressed image file
    */
   static async compressImage(file, options = {}) {
+    // Check for document and window to avoid SSR errors
+    if (typeof document === 'undefined' || typeof window === 'undefined') {
+      throw new Error('Image compression requires browser environment');
+    }
+
     const {
       maxWidth = 400,
       maxHeight = 500,
@@ -104,6 +109,10 @@ export class PhotoUtils {
    * @returns {string} Preview URL
    */
   static createPreviewUrl(file) {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined' || typeof URL === 'undefined') {
+      throw new Error('Preview URL creation requires browser environment');
+    }
     return URL.createObjectURL(file);
   }
 
@@ -112,6 +121,10 @@ export class PhotoUtils {
    * @param {string} url - Preview URL to cleanup
    */
   static cleanupPreviewUrl(url) {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined' || typeof URL === 'undefined') {
+      return;
+    }
     if (url && url.startsWith('blob:')) {
       URL.revokeObjectURL(url);
     }
@@ -123,6 +136,11 @@ export class PhotoUtils {
    * @returns {Promise<Object>} Image dimensions
    */
   static async getImageDimensions(file) {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined' || typeof URL === 'undefined') {
+      throw new Error('Image dimension detection requires browser environment');
+    }
+
     return new Promise((resolve, reject) => {
       const img = new Image();
       
@@ -145,6 +163,11 @@ export class PhotoUtils {
    * @returns {Promise<string>} Base64 thumbnail
    */
   static async generateThumbnail(file) {
+    // Check for document and window to avoid SSR errors
+    if (typeof document === 'undefined' || typeof window === 'undefined') {
+      throw new Error('Thumbnail generation requires browser environment');
+    }
+
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();

@@ -80,6 +80,11 @@ export default function AdminHighlightsPage() {
       }
       setError(null);
       
+      // Check for window to avoid SSR errors
+      if (typeof window === 'undefined') {
+        throw new Error('Cannot fetch highlights on server side');
+      }
+      
       // Get admin token from localStorage
       const token = localStorage.getItem('adminToken');
       if (!token) {

@@ -93,6 +93,9 @@ export default function Footer() {
 
   // Check user authentication status
   useEffect(() => {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') return;
+    
     const checkAuth = async () => {
       const token = localStorage.getItem('userToken');
       const storedUserData = localStorage.getItem('userData');
@@ -287,7 +290,7 @@ export default function Footer() {
 
   return (
     <>
-      {toast.show && createPortal(
+      {toast.show && typeof document !== 'undefined' && document.body && createPortal(
         <Toast
           message={toast.message}
           type={toast.type}

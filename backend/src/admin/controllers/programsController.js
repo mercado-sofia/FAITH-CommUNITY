@@ -740,20 +740,25 @@ export const updateProgram = async (req, res) => {
     }
 
     // Handle additional images if provided
-    if (additionalImages && Array.isArray(additionalImages)) {
+    if (additionalImages !== undefined) {
       // Processing additional images
       // First, delete existing additional images for this program
       await db.execute('DELETE FROM program_additional_images WHERE program_id = ?', [id]);
       
       // Then insert new additional images
-      if (additionalImages.length > 0) {
+      if (Array.isArray(additionalImages) && additionalImages.length > 0) {
         const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
         const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
 
         for (let i = 0; i < additionalImages.length; i++) {
           const imageData = additionalImages[i];
           
-          if (imageData && imageData.startsWith('data:image/')) {
+          if (!imageData) {
+            continue; // Skip empty entries
+          }
+          
+          // Check if it's a new base64 image that needs to be uploaded
+          if (typeof imageData === 'string' && imageData.startsWith('data:image/')) {
             try {
               // Convert base64 to buffer
               const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
@@ -763,7 +768,7 @@ export const updateProgram = async (req, res) => {
               const file = {
                 buffer: buffer,
                 originalname: `additional-${i}.jpg`,
-                mimetype: imageData.match(/data:image\/(\w+);/)[1],
+                mimetype: imageData.match(/data:image\/(\w+);/)?.[1] || 'jpg',
                 size: buffer.length
               };
               
@@ -774,6 +779,11 @@ export const updateProgram = async (req, res) => {
                 { prefix: 'prog_add_' }
               );
               
+              if (!uploadResult || !uploadResult.url) {
+                console.error(`Failed to upload additional image ${i}: No URL returned`);
+                continue;
+              }
+              
               // Store Cloudinary URL in database
               await db.execute(
                 'INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)',
@@ -781,6 +791,17 @@ export const updateProgram = async (req, res) => {
               );
             } catch (uploadError) {
               // Continue with other images even if one fails
+              console.error(`Failed to upload additional image ${i}:`, uploadError);
+            }
+          } else if (typeof imageData === 'string' && (imageData.startsWith('http://') || imageData.startsWith('https://'))) {
+            // It's an existing Cloudinary URL - store it directly
+            try {
+              await db.execute(
+                'INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)',
+                [id, imageData, i]
+              );
+            } catch (dbError) {
+              console.error(`Failed to store existing image ${i}:`, dbError);
             }
           }
         }

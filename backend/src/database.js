@@ -303,6 +303,37 @@ const runIncrementalMigrations = async (connection) => {
       console.log('Admin highlights status index already exists or update failed');
     }
 
+    // Fix admin_highlights id column to ensure AUTO_INCREMENT and PRIMARY KEY are properly set
+    try {
+      // Check if id column has AUTO_INCREMENT
+      const [columnInfo] = await connection.query(`
+        SELECT COLUMN_KEY, EXTRA 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'admin_highlights' 
+        AND COLUMN_NAME = 'id'
+      `);
+      
+      if (columnInfo.length > 0) {
+        const hasAutoIncrement = columnInfo[0].EXTRA?.includes('auto_increment') || false;
+        const hasPrimaryKey = columnInfo[0].COLUMN_KEY === 'PRI';
+        
+        if (!hasAutoIncrement || !hasPrimaryKey) {
+          console.log('Fixing admin_highlights id column: ensuring AUTO_INCREMENT and PRIMARY KEY...');
+          
+          // First, ensure the column is INT AUTO_INCREMENT
+          await connection.query(`
+            ALTER TABLE admin_highlights 
+            MODIFY COLUMN id INT AUTO_INCREMENT PRIMARY KEY
+          `);
+          
+          console.log('Admin highlights id column fixed successfully');
+        }
+      }
+    } catch (idColumnFixError) {
+      console.log('Admin highlights id column fix skipped or failed:', idColumnFixError.message);
+    }
+
     // Fix any records with ID=0 by updating them to have proper auto-increment IDs
     try {
       const [zeroIdRecords] = await connection.query(`
@@ -318,22 +349,32 @@ const runIncrementalMigrations = async (connection) => {
         `);
         let nextId = (maxIdResult[0].max_id || 0) + 1;
         
-        // Update ALL records with ID=0 to have proper sequential IDs
+        // Get ALL records with ID=0 ordered by created_at
         const [allZeroRecords] = await connection.query(`
-          SELECT id FROM admin_highlights WHERE id = 0 ORDER BY created_at ASC
+          SELECT id, created_at, title 
+          FROM admin_highlights 
+          WHERE id = 0 
+          ORDER BY created_at ASC
         `);
         
+        // Update each record individually with a unique identifier
+        // Use a temporary unique identifier to track each record
         for (let i = 0; i < allZeroRecords.length; i++) {
+          const record = allZeroRecords[i];
+          const newId = nextId + i;
+          
+          // Update by using created_at and title as unique identifiers
           await connection.query(`
             UPDATE admin_highlights 
             SET id = ? 
             WHERE id = 0 
-            ORDER BY created_at ASC 
+            AND created_at = ? 
+            AND title = ?
             LIMIT 1
-          `, [nextId + i]);
+          `, [newId, record.created_at, record.title]);
         }
         
-        // Reset auto-increment to ensure proper IDs
+        // Reset auto-increment to ensure proper IDs for future inserts
         const finalNextId = nextId + allZeroRecords.length;
         await connection.query(`
           ALTER TABLE admin_highlights AUTO_INCREMENT = ?

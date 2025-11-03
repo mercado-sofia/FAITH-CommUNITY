@@ -133,6 +133,22 @@ export const approveSubmission = async (req, res) => {
       throw new Error(`Invalid submission data: ${parseError.message}`);
     }
     
+    // For deletions, proposed_data is empty {}, so we need to check previous_data for the action
+    // If proposed_data is empty and previous_data exists, parse it to get the deletion info
+    let previousData = null;
+    if ((!data || Object.keys(data).length === 0) && submission.previous_data) {
+      try {
+        previousData = JSON.parse(submission.previous_data);
+        // If previous_data has an action field, use it to determine if this is a deletion
+        if (previousData && previousData.action === 'delete') {
+          data = previousData; // Use previous_data for deletion approvals
+        }
+      } catch (prevParseError) {
+        // If parsing previous_data fails, continue with empty data
+        logError('Failed to parse previous_data for deletion', prevParseError, { context: 'approval_controller' });
+      }
+    }
+    
     const section = submission.section;
     const orgId = submission.organization_id;
     
@@ -602,6 +618,14 @@ export const approveSubmission = async (req, res) => {
     else if (section === 'news' && data.title) {
       notificationMessage = `Your news "${data.title}" has been approved by SuperAdmin`;
     }
+    // Add specific details for highlights
+    else if (section === 'highlights' && data) {
+      if (data.action === 'delete' && data.title) {
+        notificationMessage = `Your deletion request for highlight "${data.title}" has been approved by SuperAdmin. The highlight has been removed.`;
+      } else if (data.title) {
+        notificationMessage = `Your highlight "${data.title}" has been approved by SuperAdmin`;
+      }
+    }
     // Add specific details for organization
     else if (section === 'organization' && data.orgName) {
       notificationMessage = `Your organization "${data.orgName}" has been approved by SuperAdmin`;
@@ -672,8 +696,41 @@ export const rejectSubmission = async (req, res) => {
     // Handle highlights rejection by updating highlight status
     if (submission.section === 'highlights') {
       try {
-        const data = JSON.parse(submission.proposed_data);
-        if (data.highlight_id) {
+        let data;
+        try {
+          data = JSON.parse(submission.proposed_data);
+        } catch (parseError) {
+          // For deletions, proposed_data is empty {}, so check previous_data
+          if (submission.previous_data) {
+            try {
+              data = JSON.parse(submission.previous_data);
+            } catch (prevParseError) {
+              // Continue if parsing fails
+            }
+          }
+        }
+        
+        // If this is a deletion rejection, ensure the highlight stays approved (don't delete)
+        if (data && data.action === 'delete') {
+          const highlightId = data.highlight_id || (typeof data.highlight_id === 'string' ? parseInt(data.highlight_id) : null);
+          if (highlightId) {
+            // Check if highlight exists and ensure it stays approved
+            const [existingHighlight] = await db.execute(
+              'SELECT id, status FROM admin_highlights WHERE id = ?',
+              [highlightId]
+            );
+            
+            if (existingHighlight.length > 0) {
+              // Highlight exists - ensure it's approved (if it was approved before deletion request)
+              // The highlight should remain approved since deletion was rejected
+              await db.execute(
+                'UPDATE admin_highlights SET status = ? WHERE id = ? AND status != ?',
+                ['approved', highlightId, 'approved']
+              );
+            }
+          }
+        } else if (data && data.highlight_id) {
+          // For create/update rejections, mark as rejected
           await db.execute(
             'UPDATE admin_highlights SET status = ? WHERE id = ?',
             ['rejected', data.highlight_id]
@@ -715,7 +772,19 @@ export const rejectSubmission = async (req, res) => {
     
     // Parse the proposed data to get specific details
     try {
-      const data = JSON.parse(submission.proposed_data);
+      let data;
+      try {
+        data = JSON.parse(submission.proposed_data);
+      } catch (parseError) {
+        // For deletions, proposed_data is empty {}, so check previous_data
+        if (submission.previous_data) {
+          try {
+            data = JSON.parse(submission.previous_data);
+          } catch (prevParseError) {
+            // Keep the generic message if parsing fails
+          }
+        }
+      }
       
       // Add specific details for Post Act Report
       if (submission.section === 'Post Act Report') {
@@ -735,12 +804,16 @@ export const rejectSubmission = async (req, res) => {
         notificationMessage = `Your program "${data.title}" has been declined by SuperAdmin`;
       }
       // Add specific details for organization
-      else if (submission.section === 'organization' && data.orgName) {
+      else if (submission.section === 'organization' && data && data.orgName) {
         notificationMessage = `Your organization "${data.orgName}" has been declined by SuperAdmin`;
       }
       // Add specific details for highlights
-      else if (submission.section === 'highlights' && data.title) {
-        notificationMessage = `Your highlight "${data.title}" has been declined by SuperAdmin`;
+      else if (submission.section === 'highlights' && data) {
+        if (data.action === 'delete' && data.title) {
+          notificationMessage = `Your deletion request for highlight "${data.title}" has been declined by SuperAdmin. The highlight remains visible.`;
+        } else if (data.title) {
+          notificationMessage = `Your highlight "${data.title}" has been declined by SuperAdmin`;
+        }
       }
     } catch (parseError) {
       // Keep the generic message if parsing fails
@@ -818,7 +891,33 @@ export const bulkApproveSubmissions = async (req, res) => {
           continue;
         }
 
-        const data = JSON.parse(submission.proposed_data);
+        let data;
+        try {
+          data = JSON.parse(submission.proposed_data);
+        } catch (parseError) {
+          errors.push(`Submission ${id} has invalid proposed_data`);
+          errorCount++;
+          continue;
+        }
+        
+        // For deletions, proposed_data is empty {}, so we need to check previous_data for the action
+        // If proposed_data is empty and previous_data exists, parse it to get the deletion info
+        let previousData = null;
+        if ((!data || Object.keys(data).length === 0) && submission.previous_data) {
+          try {
+            previousData = JSON.parse(submission.previous_data);
+            // If previous_data has an action field, use it to determine if this is a deletion
+            if (previousData && previousData.action === 'delete') {
+              data = previousData; // Use previous_data for deletion approvals
+            }
+          } catch (prevParseError) {
+            // If parsing previous_data fails, continue with empty data
+            errors.push(`Submission ${id} has invalid previous_data for deletion`);
+            errorCount++;
+            continue;
+          }
+        }
+        
         const section = submission.section;
         const orgId = submission.organization_id;
 
@@ -1173,8 +1272,34 @@ export const bulkApproveSubmissions = async (req, res) => {
           }
         }
       } else if (action === 'delete') {
-        // For deletions, the highlight is already deleted, no additional action needed
-        // The submission record will show the deletion was approved
+        // For deletions, ensure the highlight is actually deleted
+        // The highlight might have been deleted by admin already, but verify and clean up
+        const highlightId = data.highlight_id || (typeof data.highlight_id === 'string' ? parseInt(data.highlight_id) : null);
+        
+        if (highlightId) {
+          // Check if highlight still exists
+          const [existingHighlight] = await connection.execute(
+            'SELECT id FROM admin_highlights WHERE id = ?',
+            [highlightId]
+          );
+          
+          if (existingHighlight.length > 0) {
+            // Highlight still exists, delete it now (approved deletion)
+            const [deleteResult] = await connection.execute(
+              'DELETE FROM admin_highlights WHERE id = ?',
+              [highlightId]
+            );
+            
+            if (deleteResult.affectedRows > 0) {
+              console.log(`Highlight ${highlightId} deleted after bulk approval`);
+            }
+          } else {
+            // Highlight already deleted, just log it
+            console.log(`Highlight ${highlightId} was already deleted, approving deletion submission`);
+          }
+        } else {
+          console.error(`Invalid highlight_id in deletion submission ${id}: ${highlightId}`);
+        }
       }
     }
 
@@ -1267,8 +1392,12 @@ export const bulkApproveSubmissions = async (req, res) => {
           notificationMessage = `Your organization "${data.orgName}" has been approved by SuperAdmin`;
         }
         // Add specific details for highlights
-        else if (section === 'highlights' && data.title) {
-          notificationMessage = `Your highlight "${data.title}" has been approved by SuperAdmin`;
+        else if (section === 'highlights' && data) {
+          if (data.action === 'delete' && data.title) {
+            notificationMessage = `Your deletion request for highlight "${data.title}" has been approved by SuperAdmin. The highlight has been removed.`;
+          } else if (data.title) {
+            notificationMessage = `Your highlight "${data.title}" has been approved by SuperAdmin`;
+          }
         }
         
         // Create notification for the admin

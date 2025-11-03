@@ -276,8 +276,20 @@ export const deleteHighlight = async (req, res) => {
       req.admin.id
     ]);
     
-    // Delete highlight (media files are stored as JSON, so no separate deletion needed)
-    await connection.execute('DELETE FROM admin_highlights WHERE id = ? AND organization_id = ?', [id, orgId]);
+    // Only delete immediately if the highlight is pending (not yet approved/public)
+    // If the highlight is approved, wait for superadmin approval before deleting
+    if (currentHighlight.status === 'pending') {
+      // Pending highlights can be deleted immediately since they're not public yet
+      await connection.execute('DELETE FROM admin_highlights WHERE id = ? AND organization_id = ?', [id, orgId]);
+    } else if (currentHighlight.status === 'approved') {
+      // Approved highlights require superadmin approval before deletion
+      // Don't delete immediately - keep it as 'approved' until superadmin approves/rejects the deletion
+      // The highlight will be deleted when superadmin approves the deletion submission
+      // If rejected, the highlight stays approved and visible on the public portal
+    } else {
+      // For rejected or other statuses, delete immediately
+      await connection.execute('DELETE FROM admin_highlights WHERE id = ? AND organization_id = ?', [id, orgId]);
+    }
     
     await connection.commit();
     

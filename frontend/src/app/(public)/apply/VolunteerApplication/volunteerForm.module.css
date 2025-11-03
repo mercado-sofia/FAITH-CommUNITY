@@ -1,25 +1,38 @@
 .formContainer {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
   margin: 0 auto;
   width: 100%;
   max-width: 740px;
-  padding: 0 1rem;
-  min-width: 320px;
+  padding: 0;
+  min-width: 0;
+}
+
+@media (max-width: 479px) {
+  .formContainer {
+    gap: 1.25rem;
+  }
+}
+
+@media (min-width: 480px) and (max-width: 1023px) {
+  .formContainer {
+    gap: 1.75rem;
+    padding: 0 0.5rem;
+  }
 }
 
 @media (min-width: 768px) {
   .formContainer {
-    margin: 0 auto;
-    padding: 0 2rem;
+    gap: 2rem;
+    padding: 0;
   }
 }
 
 @media (min-width: 1024px) {
   .formContainer {
     margin: 0 auto;
-    padding: 0 2rem;
+    padding: 0;
   }
   
   .formTitle {
@@ -34,23 +47,67 @@
 /* === Form Header === */
 .formHeader {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 .formTitle {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
   color: #06100f;
   font-family: var(--font-roboto);
+  line-height: 1.3;
 }
 
 .formSubtitle {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: #15803d;
   margin-bottom: 0;
   font-family: var(--font-roboto);
+}
+
+@media (max-width: 479px) {
+  .formHeader {
+    margin-bottom: 1.5rem;
+    padding-top: 1.2rem;
+  }
+  
+  .formTitle {
+    font-size: 1.35rem;
+  }
+  
+  .formSubtitle {
+    font-size: 0.875rem;
+  }
+}
+
+@media (min-width: 480px) and (max-width: 1023px) {
+  .formHeader {
+    margin-bottom: 2.5rem;
+  }
+  
+  .formTitle {
+    font-size: 1.65rem;
+  }
+  
+  .formSubtitle {
+    font-size: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .formHeader {
+    margin-bottom: 3rem;
+  }
+  
+  .formTitle {
+    font-size: 1.75rem;
+  }
+  
+  .formSubtitle {
+    font-size: 1rem;
+  }
 }
 
 /* === Reason Section === */
@@ -71,10 +128,10 @@
 
 .reasonTextarea {
   width: 100%;
-  min-height: 220px;
+  min-height: 180px;
   background-color: white;
   border: 2px solid #bfc3cc;
-  padding: 1rem;
+  padding: 0.875rem;
   color: #000000;
   box-shadow: 0 4px 8px rgba(63, 70, 103, 0.2);
   border-radius: .5rem;
@@ -84,6 +141,27 @@
   line-height: 1.4;
   resize: none;
   font-weight: 400;
+}
+
+@media (max-width: 479px) {
+  .reasonTextarea {
+    min-height: 160px;
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (min-width: 480px) and (max-width: 1023px) {
+  .reasonTextarea {
+    min-height: 200px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .reasonTextarea {
+    min-height: 220px;
+    padding: 1rem;
+  }
 }
 
 .reasonTextarea::placeholder {
@@ -149,10 +227,10 @@
 .submitBtn {
   background-color: #237c68;
   color: white;
-  padding: 1rem;
+  padding: 0.875rem 1rem;
   border-radius: 0.5rem;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14px;
   border: none;
   width: 100%;
   margin: 0 auto;
@@ -162,8 +240,32 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  min-height: 48px;
+  min-height: 44px;
   position: relative;
+}
+
+@media (max-width: 479px) {
+  .submitBtn {
+    padding: 0.75rem 1rem;
+    font-size: 14px;
+    min-height: 44px;
+  }
+}
+
+@media (min-width: 480px) and (max-width: 1023px) {
+  .submitBtn {
+    padding: 0.9375rem 1rem;
+    font-size: 15px;
+    min-height: 46px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .submitBtn {
+    padding: 1rem;
+    font-size: 15px;
+    min-height: 48px;
+  }
 }
 
 .submitBtn:hover {

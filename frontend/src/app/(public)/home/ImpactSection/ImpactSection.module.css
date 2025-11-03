@@ -5,6 +5,8 @@
   align-items: center;
   text-align: center;
   background-color: #fff;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .impactHeading {
@@ -12,7 +14,7 @@
 }
 
 .impactTitle {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 800;
   line-height: 1.4;
   width: 100%;
@@ -33,9 +35,10 @@
   justify-content: center;
   position: relative;
   width: 100%;
-  max-width: 1210px;
+  max-width: 1300px;
   margin: 0 auto;
   padding: 12px 2rem 0 2rem;
+  box-sizing: border-box;
 }
 
 /* Navigation Buttons */
@@ -72,11 +75,42 @@
 }
 
 .navButtonPrev {
-  left: 8px;
+  left: 6px;
 }
 
 .navButtonNext {
-  right: 8px;
+  right: 6px;
+}
+
+/* Mobile-specific positioning overrides */
+@media (max-width: 768px) {
+  .navButtonPrev {
+    left: 4px !important;
+  }
+  
+  .navButtonNext {
+    right: 4px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .navButtonPrev {
+    left: 2px !important;
+  }
+  
+  .navButtonNext {
+    right: 2px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .navButtonPrev {
+    left: 1px !important;
+  }
+  
+  .navButtonNext {
+    right: 1px !important;
+  }
 }
 
 /* Carousel Wrapper */
@@ -84,7 +118,8 @@
   overflow: hidden;
   width: 100%;
   position: relative;
-  height: 500px;
+  height: 490px;
+  box-sizing: border-box;
 }
 
 /* Carousel Track */
@@ -95,6 +130,7 @@
   padding-top: 12px;
   width: 100%;
   justify-content: flex-start;
+  box-sizing: border-box;
 }
 
 /* Centered container for fewer than 3 projects */
@@ -118,8 +154,9 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
-  height: 470px;
+  height: 450px;
   padding: 12px;
+  box-sizing: border-box;
 }
 
 /* Card Image Container */
@@ -148,7 +185,7 @@
   bottom: 0;
   left: 0;
   padding: 12px 20px;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   letter-spacing: 0.5px;
   color: white;
@@ -185,7 +222,7 @@
 .cardTitle {
   margin: 0 0 0.75rem 0;
   font-weight: 700;
-  font-size: 1.25rem;
+  font-size: 18px;
   line-height: 1.3;
   color: #1a1a1a;
   text-align: left;
@@ -222,7 +259,7 @@
 }
 
 .impactdesc {
-  font-size: 15px;
+  font-size: 14px;
   color: #555;
   line-height: 1.4;
   text-align: left;
@@ -257,7 +294,7 @@
   
   
   .carouselWrapper {
-    height: 460px;
+    height: 490px;
   }
   
   .navButton {
@@ -274,12 +311,12 @@
   }
   
   .carouselCard {
-    height: 430px;
+    height: 460px;
     padding: 10px;
   }
   
   .cardImageContainer {
-    height: 200px;
+    height: 240px;
   }
   
   .cardContent {
@@ -287,40 +324,75 @@
   }
   
   .cardTitle {
-    font-size: 1.1rem;
+    font-size: 18px;
   }
 }
 
 @media (max-width: 768px) {
-  .carouselContainer {
-    padding: 12px 1rem 0 1rem;
+  .impactSection {
+    padding: 2.5rem 1.5rem 3rem;
   }
   
+  .impactTitle {
+    font-size: 1.6rem;
+    line-height: 1.3;
+  }
+  
+  .subtitle {
+    font-size: 0.9rem;
+  }
+  
+  .carouselContainer {
+    padding: 12px 1.5rem 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
   
   .carouselWrapper {
-    height: 420px;
+    height: 430px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .carouselTrack {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding-top: 12px;
   }
   
   .navButton {
     width: 40px;
     height: 40px;
+    font-size: 14px;
   }
   
   .navButtonPrev {
-    left: 4px;
+    left: 4px !important;
   }
   
   .navButtonNext {
-    right: 4px;
+    right: 4px !important;
   }
   
   .carouselCard {
-    height: 390px;
+    height: 400px;
     padding: 8px;
+    max-width: calc(100vw - 3rem - 88px);
+    width: calc(100vw - 3rem - 88px);
+    box-sizing: border-box;
   }
   
   .cardImageContainer {
-    height: 180px;
+    height: 220px;
   }
   
   .cardContent {
@@ -328,67 +400,198 @@
   }
   
   .cardTitle {
-    font-size: 1rem;
+    font-size: 18px;
+    line-height: 1.25;
   }
   
   .cardDate {
-    font-size: 13px;
+    font-size: 16px;
   }
   
   .cardBadge {
-    font-size: 14px;
+    font-size: 16px;
     padding: 10px 16px;
     max-width: 85%;
+  }
+  
+  .impactdesc {
+    font-size: 14px;
   }
 }
 
 @media (max-width: 480px) {
-  .carouselContainer {
-    padding: 12px 0.5rem 0 0.5rem;
+  .impactSection {
+    padding: 2rem 1rem 3rem;
   }
   
+  .impactHeading {
+    margin-bottom: 1rem;
+  }
+
+  .impactTitle {
+    font-size: 1.35rem;
+    line-height: 1.25;
+  }
+  
+  .subtitle {
+    font-size: 0.85rem;
+  }
+  
+  .carouselContainer {
+    padding: 12px 1rem 0 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
   
   .carouselWrapper {
-    height: 400px;
+    height: 410px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .carouselTrack {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding-top: 12px;
   }
   
   .navButton {
     width: 36px;
     height: 36px;
+    font-size: 12px;
   }
   
   .navButtonPrev {
-    left: 3px;
+    left: 2px !important;
   }
   
   .navButtonNext {
-    right: 3px;
+    right: 2px !important;
+  }
+  
+  .carouselCard {
+    height: 380px;
+    padding: 6px;
+    max-width: calc(100vw - 2rem - 80px);
+    width: calc(100vw - 2rem - 80px);
+    box-sizing: border-box;
+  }
+  
+  .cardImageContainer {
+    height: 200px;
+  }
+  
+  .cardContent {
+    padding: 0.8rem 1rem;
+  }
+  
+  .cardTitle {
+    font-size: 18px;
+    line-height: 1.2;
+  }
+  
+  .cardDate {
+    font-size: 16px;
+  }
+  
+  .cardBadge {
+    font-size: 16px;
+    padding: 8px 16px;
+    max-width: 90%;
+  }
+  
+  .impactdesc {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  .impactSection {
+    padding: 2rem 0.75rem 3rem;
+  }
+  
+  .impactTitle {
+    font-size: 1.25rem;
+  }
+  
+  .subtitle {
+    font-size: 0.8rem;
+  }
+  
+  .carouselContainer {
+    padding: 12px 0.75rem 0 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .carouselWrapper {
+    height: 400px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .carouselTrack {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding-top: 12px;
+  }
+  
+  .navButton {
+    width: 32px;
+    height: 32px;
+    font-size: 11px;
+  }
+  
+  .navButtonPrev {
+    left: 1px !important;
+  }
+  
+  .navButtonNext {
+    right: 1px !important;
   }
   
   .carouselCard {
     height: 370px;
-    padding: 6px;
+    max-width: calc(100vw - 1.5rem - 70px);
+    width: calc(100vw - 1.5rem - 70px);
   }
   
   .cardImageContainer {
-    height: 160px;
-  }
-  
-  .cardContent {
-    padding: 0.375rem 0.875rem 0.875rem 0.875rem;
+    height: 180px;
   }
   
   .cardTitle {
-    font-size: 0.95rem;
+    font-size: 18px;
   }
   
   .cardDate {
-    font-size: 12px;
+    font-size: 16px;
   }
   
   .cardBadge {
-    font-size: 13px;
-    padding: 8px 14px;
-    max-width: 90%;
+    font-size: 16px;
+    padding: 6px 14px;
+  }
+  
+  .impactdesc {
+    font-size: 14px;
   }
 }

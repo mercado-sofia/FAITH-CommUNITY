@@ -12,7 +12,10 @@ const SearchAndFilterControls = ({
   // Collaboration-specific props
   isCollaborationTab = false,
   collaborationStatusFilter = 'all',
-  onCollaborationStatusChange
+  onCollaborationStatusChange,
+  // Count props
+  totalCount = 0,
+  filteredCount = 0
 }) => {
   const [showDropdown, setShowDropdown] = useState(null);
   const [localQuery, setLocalQuery] = useState(searchQuery || '');
@@ -121,6 +124,14 @@ const SearchAndFilterControls = ({
         )}
       </div>
 
+      {/* Results Count on the right */}
+      <div className={styles.resultsCount}>
+        {filteredCount === totalCount ? (
+          <span>{totalCount} program{totalCount !== 1 ? 's' : ''}</span>
+        ) : (
+          <span>{filteredCount} of {totalCount} programs</span>
+        )}
+      </div>
     </div>
   );
 };

@@ -20,6 +20,10 @@ export default function ProgramPreview({ selectedProgram, isLoading }) {
   if (isLoading) {
     return (
       <div className={styles.previewContainer}>
+        {/* Mobile Label */}
+        <div className={styles.mobileLabel}>
+          Selected Program
+        </div>
         <div className={styles.loadingState}>
           <div className={styles.loadingSkeleton}>
             <div className={styles.skeletonImage}></div>
@@ -37,6 +41,10 @@ export default function ProgramPreview({ selectedProgram, isLoading }) {
   if (!selectedProgram) {
     return (
       <div className={styles.previewContainer}>
+        {/* Mobile Label */}
+        <div className={styles.mobileLabel}>
+          Selected Program
+        </div>
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>
             <FaUsers />
@@ -53,6 +61,11 @@ export default function ProgramPreview({ selectedProgram, isLoading }) {
 
   return (
     <div className={styles.previewContainer}>
+      {/* Mobile Label */}
+      <div className={styles.mobileLabel}>
+        Selected Program
+      </div>
+      
       <div className={styles.programCard}>
         {/* Program Image */}
         <div className={styles.imageContainer}>

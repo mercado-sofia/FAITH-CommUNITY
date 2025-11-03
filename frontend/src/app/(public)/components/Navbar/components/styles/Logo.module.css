@@ -9,12 +9,6 @@
   flex-shrink: 0;
 }
 
-.logoTextWrapper {
-  display: flex;
-  flex-direction: column;
-  line-height: 1;
-}
-
 .logoNameImage {
   display: flex;
   align-items: center;
@@ -22,20 +16,18 @@
   height: 30px;
 }
 
-.logoTop {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: #15803d;
+/* Logo Image */
+.logoImage {
+  flex-shrink: 0;
+  width: 45px !important;
+  height: 45px !important;
 }
 
-.logoBottom {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #06100f;
-}
-
-.orange {
-  color: #FFAC00;
+/* Logo Name Image - constrain size on desktop */
+.logoNameImage img {
+  width: 140px !important;
+  height: 40px !important;
+  object-fit: contain;
 }
 
 /* Mobile responsive adjustments */
@@ -45,11 +37,19 @@
     gap: 0;
   }
 
-  .logoTextWrapper {
-    line-height: 1.1;
-  }
-
   .logoNameImage {
     height: 25px;
+  }
+
+  /* Reduce logo image size on mobile */
+  .logoImage {
+    width: 35px !important;
+    height: 35px !important;
+  }
+
+  /* Reduce logo name image size on mobile */
+  .logoNameImage img {
+    width: 110px !important;
+    height: 32px !important;
   }
 }

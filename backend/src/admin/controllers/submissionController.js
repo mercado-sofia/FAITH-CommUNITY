@@ -153,9 +153,9 @@ export const submitChanges = async (req, res) => {
               
               // Handle collaboration requests for collaborative programs
               if (proposedData.collaborators && Array.isArray(proposedData.collaborators) && proposedData.collaborators.length > 0) {
-                message = `${orgAcronym} has submitted a collaborative program "${proposedData.title}" for approval. Collaboration requests will be sent to invited organizations.`
+                message = `${orgAcronym} has submitted a collaborative program "${proposedData.title}" for approval. Collaboration requests will be sent to invited organizations after superadmin approval.`
                 
-                // Send collaboration requests immediately
+                // Create collaboration request records (notifications will be sent only after superadmin approval)
                 for (const collaborator of proposedData.collaborators) {
                   try {
                     const collaboratorId = typeof collaborator === 'object' ? collaborator.id : collaborator;
@@ -173,26 +173,14 @@ export const submitChanges = async (req, res) => {
                     
                     if (existingCollaboration.length === 0) {
                       // Create collaboration request linked to submission (not program yet)
+                      // Notifications will be sent only after superadmin approves the program
                       await db.execute(`
                         INSERT INTO program_collaborations (submission_id, collaborator_admin_id, invited_by_admin_id, status, program_title)
                         VALUES (?, ?, ?, 'pending', ?)
                       `, [submissionId, collaboratorId, item.submitted_by, proposedData.title]);
                     }
-
-                    // Notify collaborator about the collaboration request
-                    try {
-                      const NotificationController = (await import('./notificationController.js')).default;
-                      await NotificationController.createNotification(
-                        collaboratorId,
-                        'collaboration_request',
-                        'New Collaboration Request',
-                        `You have received a collaboration request for "${proposedData.title}". Please review and respond in the Collaboration section.`,
-                        'programs',
-                        submissionId
-                      );
-                    } catch (notificationError) {
-                    }
                   } catch (collabError) {
+                    // Continue with other collaborators even if one fails
                   }
                 }
               }
@@ -349,8 +337,8 @@ export const cancelSubmission = async (req, res) => {
   }
 
   try {
-    // First check if submission exists
-    const [existing] = await db.execute("SELECT id, status, section FROM submissions WHERE id = ?", [id])
+    // First check if submission exists and get its data
+    const [existing] = await db.execute("SELECT id, status, section, proposed_data FROM submissions WHERE id = ?", [id])
 
     if (existing.length === 0) {
       return res.status(404).json({
@@ -358,6 +346,11 @@ export const cancelSubmission = async (req, res) => {
         message: "Submission not found",
       })
     }
+
+    const submission = existing[0];
+
+    // If it's a Post Act Report submission, keep the file in S3 for audit purposes
+    // Files are intentionally retained when submissions are cancelled for audit trail
 
     // Delete the submission (allow deletion regardless of status)
     const [result] = await db.execute('DELETE FROM submissions WHERE id = ?', [id])
@@ -371,7 +364,7 @@ export const cancelSubmission = async (req, res) => {
 
     res.json({
       success: true,
-      message: `Submission for ${existing[0].section} deleted successfully`,
+      message: `Submission for ${submission.section} deleted successfully`,
     })
   } catch (error) {
     res.status(500).json({

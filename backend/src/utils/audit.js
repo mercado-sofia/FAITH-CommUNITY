@@ -1,5 +1,6 @@
 import db from "../database.js"
 import pino from "pino"
+import { getClientIpAddress } from "./ipAddressHelper.js"
 
 const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
@@ -109,7 +110,7 @@ export async function logAdminAction(adminId, action, details, req) {
     }
     
     await ensureAuditTable();
-    const ip = req?.ip || null;
+    const ip = req ? getClientIpAddress(req) : null;
     const ua = req?.headers?.['user-agent'] || null;
     
     await db.execute(
@@ -135,7 +136,7 @@ export async function logAdminAction(adminId, action, details, req) {
       details: details ? details.substring(0, 100) + '...' : null,
       error: e.message,
       stack: e.stack,
-      ipAddress: req?.ip || null
+      ipAddress: req ? getClientIpAddress(req) : null
     }, 'CRITICAL: Failed to log admin action');
     
     // Don't throw the error to prevent breaking the main operation
@@ -152,7 +153,7 @@ export async function logSuperadminAction(superadminId, action, details, req) {
     }
     
     await ensureAuditTable();
-    const ip = req?.ip || null;
+    const ip = req ? getClientIpAddress(req) : null;
     const ua = req?.headers?.['user-agent'] || null;
     
     await db.execute(
@@ -178,7 +179,7 @@ export async function logSuperadminAction(superadminId, action, details, req) {
       details: details ? details.substring(0, 100) + '...' : null,
       error: e.message,
       stack: e.stack,
-      ipAddress: req?.ip || null
+      ipAddress: req ? getClientIpAddress(req) : null
     }, 'CRITICAL: Failed to log superadmin action');
     
     // Don't throw the error to prevent breaking the main operation

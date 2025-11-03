@@ -62,7 +62,8 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
     removeCollaborator,
     loadExistingCollaborators,
     refreshCollaborators,
-    resetCollaboration
+    resetCollaboration,
+    sendInvitesForNewCollaborators
   } = useCollaboration(isEditMode, program?.id);
 
   // Initialize existing images in edit mode
@@ -93,13 +94,6 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
       });
     }
   }, [isEditMode, program?.id, loadExistingCollaborators, updateFormData]);
-
-  // Also load collaborators from program data if available
-  useEffect(() => {
-    if (isEditMode && program?.collaborators && Array.isArray(program.collaborators)) {
-      updateFormData({ collaborators: program.collaborators });
-    }
-  }, [isEditMode, program?.collaborators, updateFormData]);
 
   // Handle form data changes
   const handleFormDataChange = useCallback((updates) => {
@@ -201,11 +195,13 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
         event_end_date: formData.event_end_date || null,
         multiple_dates: formData.multiple_dates || null,
         status: isEditMode ? (formData.status || 'active') : 'pending',
-        accepts_volunteers: formData.accepts_volunteers !== undefined ? formData.accepts_volunteers : true,
-        // Extract collaborator IDs from collaborator objects
-        collaborators: Array.isArray(formData.collaborators) 
-          ? formData.collaborators.map(collab => collab.id).filter(id => id && typeof id === 'number')
-          : [],
+        accepts_volunteers: formData.accepts_volunteers !== undefined ? formData.accepts_volunteers : false,
+        // Only send collaborators in create mode - in edit mode they are handled separately via invite endpoint
+        collaborators: isEditMode ? undefined : (
+          Array.isArray(formData.collaborators) 
+            ? formData.collaborators.map(collab => collab.id).filter(id => id && typeof id === 'number')
+            : []
+        ),
         // Handle image properly for both create and edit modes
         image: null,
         // Skip additional images for now as backend doesn't support them yet
@@ -228,6 +224,16 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
       }
 
 
+      // In Edit mode, send invites for newly added collaborators before submitting
+      if (isEditMode && sendInvitesForNewCollaborators) {
+        try {
+          await sendInvitesForNewCollaborators(formData.collaborators);
+        } catch (error) {
+          console.error('Failed to send some collaborator invites:', error);
+          // Continue with form submission even if some invites fail
+        }
+      }
+
       await onSubmit(submissionData);
       
       // Reset form after successful submission (only for create mode)
@@ -241,7 +247,7 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateForm, formData, isEditMode, program, onSubmit, clearAllErrors, updateFormData, resetForm, resetImageUploads, resetCollaboration]);
+  }, [validateForm, formData, isEditMode, program, onSubmit, clearAllErrors, updateFormData, resetForm, resetImageUploads, resetCollaboration, sendInvitesForNewCollaborators]);
 
   // Handle form key down
   const handleFormKeyDown = useCallback((e) => {

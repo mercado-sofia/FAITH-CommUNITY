@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import styles from "./volunteerForm.module.css";
+import styles from "./VolunteerForm.module.css";
 import ProgramSelect from "./ProgramSelect";
 import SuccessModal from "../components/SuccessModal";
 import { usePublicApprovedPrograms } from "../../hooks/usePublicData";

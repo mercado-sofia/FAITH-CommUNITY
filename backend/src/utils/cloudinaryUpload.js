@@ -87,8 +87,9 @@ export const uploadSingleToCloudinary = async (file, folder, options = {}) => {
       original_filename: file.originalname,
       size: file.size,
       format: result.format,
-      width: result.width,
-      height: result.height
+      width: result.width || null,
+      height: result.height || null,
+      resource_type: result.resource_type
     };
   } catch (error) {
     console.error('Error uploading to Cloudinary:', error);

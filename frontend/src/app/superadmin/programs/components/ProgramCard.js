@@ -3,7 +3,7 @@
 import React from 'react'
 import Image from 'next/image'
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths'
-import { formatProgramDates } from '@/utils/dateUtils.js'
+import { formatProgramDates, formatProgramDatesForCard } from '@/utils/dateUtils.js'
 import StarButton from './StarButton'
 import styles from './styles/ProgramCard.module.css'
 
@@ -97,7 +97,7 @@ const ProgramCard = ({
             {program.status}
           </span>
           <span className={styles.cardDate}>
-            {formatProgramDates(program)}
+            {formatProgramDatesForCard(program)}
           </span>
         </div>
         

@@ -114,32 +114,12 @@
 
 /* IMAGE */
 .headImage {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   border-bottom-left-radius: 18px;
   border-bottom-right-radius: 18px;
   transition: filter 0.4s ease;
-}
-
-/* NO IMAGE FALLBACK */
-.noImageFallback {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #e5e5e5;
-  display: none; /* Hidden by default, shown only when image fails to load */
-  align-items: center;
-  justify-content: center;
-  border-bottom-left-radius: 18px;
-  border-bottom-right-radius: 18px;
-}
-
-.noImageFallback span {
-  color: #666;
-  font-style: italic;
-  font-size: 1rem;
-  font-weight: 500;
 }
 
 .imageContainer:hover .headImage {
@@ -208,13 +188,202 @@
 }
 
 .orgheadsTextInfo h4 {
-  font-size: 1.1rem;
+  font-size: 16px;
   font-weight: 700;
   margin-bottom: 0.25rem;
 }
 
 .orgheadsTextInfo p {
-  font-size: 0.95rem;
+  font-size: 14px;
   margin: 0;
   color: #333;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .orgheadsSection {
+    padding: 3rem 1.5rem 3rem 1.5rem;
+  }
+
+  .orgheadsWrapper {
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .orgheadsText {
+    max-width: 100%;
+    text-align: center;
+  }
+
+  .orgheadsText p {
+    font-size: 0.95rem;
+  }
+
+  .orgheadsText h2 {
+    font-size: 2rem;
+  }
+
+  .orgheadsCarousel {
+    flex: 1;
+    width: 100%;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* Hide navigation buttons on mobile */
+  .orgheadsNavBtn {
+    display: none !important;
+  }
+
+  .carouselWindow {
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+  }
+
+  /* Change from horizontal scroll to grid layout */
+  .orgheadsCards {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 0;
+    overflow-x: visible;
+    overflow-y: visible;
+  }
+
+  .orgheadsWrapperItem {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .imageContainer {
+    width: 100%;
+    max-width: 300px;
+    aspect-ratio: 240 / 280;
+    height: auto;
+    margin: 0 auto;
+  }
+
+  .headImage {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+  }
+
+  .orgheadsTextInfo h4 {
+    font-size: 20px;
+  }
+
+  .orgheadsTextInfo p {
+    font-size: 18px;
+  }
+
+  /* Remove hover effects on mobile */
+  .imageContainer:hover {
+    border-bottom-color: #FFAC00;
+    transform: none;
+  }
+
+  .imageContainer:hover .headImage {
+    filter: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .orgheadsSection {
+    padding: 2.5rem 1rem 2.5rem 1rem;
+  }
+
+  .orgheadsWrapper {
+    gap: 1.5rem;
+  }
+
+  .orgheadsText p {
+    font-size: 0.9rem;
+  }
+
+  .orgheadsText h2 {
+    font-size: 1.75rem;
+  }
+
+  /* Hide navigation buttons on mobile */
+  .orgheadsNavBtn {
+    display: none !important;
+  }
+
+  .carouselWindow {
+    max-width: 100%;
+    overflow: visible;
+  }
+
+  /* Grid layout with one card per row */
+  .orgheadsCards {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 0;
+    overflow-x: visible;
+    overflow-y: visible;
+  }
+
+  .orgheadsWrapperItem {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .imageContainer {
+    width: 100%;
+    max-width: 280px;
+    aspect-ratio: 240 / 280;
+    height: auto;
+    margin: 0 auto;
+    border-bottom-width: 6px;
+  }
+
+  .headImage {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+  }
+
+  .iconBtn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
+  }
+
+  .plusBtn {
+    font-size: 0.75rem;
+  }
+
+  .orgheadsTextInfo {
+    margin-top: 0.75rem;
+  }
+
+  .orgheadsTextInfo h4 {
+    font-size: 18px;
+  }
+
+  .orgheadsTextInfo p {
+    font-size: 16px;
+  }
+
+  /* Remove hover effects on mobile */
+  .imageContainer:hover {
+    border-bottom-color: #FFAC00;
+    transform: none;
+  }
+
+  .imageContainer:hover .headImage {
+    filter: none;
+  }
 }

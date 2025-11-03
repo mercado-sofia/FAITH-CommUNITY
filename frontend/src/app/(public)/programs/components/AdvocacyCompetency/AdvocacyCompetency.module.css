@@ -78,3 +78,114 @@
   text-align: justify;
   line-height: 1.8;
 }
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .details {
+    padding: 3rem 1.5rem;
+  }
+
+  .sectionTag {
+    font-size: 0.9rem;
+  }
+
+  .sectionTitle {
+    font-size: 1.75rem;
+    margin-bottom: 3rem;
+  }
+
+  .cardWrapper {
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .card {
+    max-width: 100%;
+    padding: 2rem 2rem 2.5rem;
+  }
+
+  .iconCircle {
+    width: 70px;
+    height: 70px;
+    top: -35px;
+  }
+
+  .iconReact {
+    font-size: 28px;
+  }
+
+  .card h4 {
+    font-size: 1.1rem;
+    margin-top: 1.5rem;
+  }
+
+  .card p {
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  /* Remove hover effects on mobile */
+  .card:hover {
+    transform: none;
+    box-shadow: 0 8px 35px rgba(0, 0, 0, 0.12);
+  }
+
+  .card:hover .iconReact {
+    color: #1A685B;
+  }
+}
+
+@media (max-width: 480px) {
+  .details {
+    padding: 2.5rem 1rem;
+  }
+
+  .sectionTag {
+    font-size: 0.85rem;
+  }
+
+  .sectionTitle {
+    font-size: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .cardWrapper {
+    gap: 1.25rem;
+    margin-top: 1.25rem;
+  }
+
+  .card {
+    padding: 1.75rem 1.5rem 2.25rem;
+  }
+
+  .iconCircle {
+    width: 60px;
+    height: 60px;
+    top: -30px;
+  }
+
+  .iconReact {
+    font-size: 24px;
+  }
+
+  .card h4 {
+    font-size: 1rem;
+    margin-top: 1.25rem;
+    margin-bottom: 0.875rem;
+  }
+
+  .card p {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  /* Remove hover effects on mobile */
+  .card:hover {
+    transform: none;
+    box-shadow: 0 8px 35px rgba(0, 0, 0, 0.12);
+  }
+
+  .card:hover .iconReact {
+    color: #1A685B;
+  }
+}

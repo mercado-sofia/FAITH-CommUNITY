@@ -2,11 +2,11 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { FaTimes, FaCalendar, FaEye, FaUsers, FaExclamationTriangle, FaCheck, FaUser, FaBuilding, FaClock, FaInfoCircle } from 'react-icons/fa';
-import { getProgramImageUrl } from '@/utils/uploadPaths';
+import { FaTimes, FaCalendar, FaEye, FaUsers, FaExclamationTriangle, FaCheck, FaBuilding, FaClock, FaInfoCircle } from 'react-icons/fa';
+import { hasActiveCollaborations as checkHasActiveCollaborations, getActiveCollaborators } from '@/utils/collaborationStatusUtils';
+import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
 import { formatProgramDates, formatDateShort } from '@/utils/dateUtils.js';
 import { getStatusDisplayText } from '@/utils/collaborationStatusUtils';
-import { ConfirmationModal } from '@/components';
 import styles from './ViewDetailsModal.module.css';
 
 const ViewDetailsModal = ({ 
@@ -14,14 +14,10 @@ const ViewDetailsModal = ({
   onClose, 
   // Collaboration mode props
   mode = 'view', // 'view' or 'collaboration'
-  collaboration = null,
-  onAccept = null,
-  onDecline = null
+  collaboration = null
 }) => {
   // State for collaboration mode
-  const [isProcessing, setIsProcessing] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [showDeclineModal, setShowDeclineModal] = useState(false);
 
   // Safety check for collaboration data in collaboration mode
   if (mode === 'collaboration' && !collaboration) {
@@ -47,35 +43,6 @@ const ViewDetailsModal = ({
     return categoryMap[category] || category || 'Uncategorized';
   };
 
-  // Collaboration mode helper functions
-  const handleAccept = async () => {
-    if (!onAccept) return;
-    setIsProcessing(true);
-    try {
-      await onAccept();
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleDeclineClick = () => {
-    setShowDeclineModal(true);
-  };
-
-  const handleDeclineConfirm = async () => {
-    if (!onDecline) return;
-    setIsProcessing(true);
-    try {
-      await onDecline();
-      setShowDeclineModal(false);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleDeclineCancel = () => {
-    setShowDeclineModal(false);
-  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -227,24 +194,6 @@ const ViewDetailsModal = ({
                   {mode === 'collaboration' ? data.program_title : data.title}
                 </h3>
                 
-                {/* Status Badge - only show in view mode */}
-                {mode === 'view' && data.status && (
-                  <div className={`${styles.statusBadge} ${styles[data.status]}`}>
-                    {(() => {
-                      // Handle special status display for collaborative programs
-                      // Check if program has any non-declined collaborations
-                      const hasActiveCollaborations = data.collaborators && 
-                        data.collaborators.some(collab => 
-                          collab.status !== 'declined'
-                        );
-                      
-                      if (hasActiveCollaborations) {
-                        return getStatusDisplayText(data.status);
-                      }
-                      return data.status.charAt(0).toUpperCase() + data.status.slice(1);
-                    })()}
-                  </div>
-                )}
 
                 {/* Program Details */}
                 <div className={styles.detailsSection}>
@@ -278,10 +227,22 @@ const ViewDetailsModal = ({
                       </div>
                     )}
 
-                    {mode === 'collaboration' && data.program_status && (
+                    {/* Program Status - show in both modes */}
+                    {(mode === 'collaboration' ? data.program_status : data.status) && (
                       <div className={styles.detailItem}>
                         <span className={styles.detailLabel}>Program Status:</span>
-                        <span className={styles.detailValue}>{data.program_status}</span>
+                        <span className={styles.detailValue}>
+                          {mode === 'collaboration' ? data.program_status : (() => {
+                            // Handle special status display for collaborative programs
+                            // Check if program has any active collaborations
+                            const hasActiveCollaborations = checkHasActiveCollaborations(data);
+                            
+                            if (hasActiveCollaborations) {
+                              return getStatusDisplayText(data.status);
+                            }
+                            return data.status.charAt(0).toUpperCase() + data.status.slice(1);
+                          })()}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -299,12 +260,8 @@ const ViewDetailsModal = ({
 
             {/* Collaboration Section - only show in view mode */}
             {mode === 'view' && (() => {
-              // Check if program has any non-declined collaborations
-              const hasActiveCollaborations = data.collaborators && 
-                Array.isArray(data.collaborators) && 
-                data.collaborators.some(collab => 
-                  collab.status !== 'declined'
-                );
+              // Check if program has any active collaborations
+              const hasActiveCollaborations = checkHasActiveCollaborations(data);
               
               const hasCollaborators = hasActiveCollaborations &&
                                      data.collaborators.some(collab => 
@@ -318,8 +275,8 @@ const ViewDetailsModal = ({
                 return null;
               }
 
-              // Filter out invalid collaborators
-              const validCollaborators = data.collaborators.filter(collab => 
+              // Get active collaborators (excludes declined/opted-out ones)
+              const validCollaborators = getActiveCollaborators(data.collaborators).filter(collab => 
                 collab && 
                 typeof collab === 'object' && 
                 collab.email && 
@@ -356,32 +313,49 @@ const ViewDetailsModal = ({
             })()}
 
             {/* Organization Information - only show in collaboration mode */}
-            {mode === 'collaboration' && (
-              <div className={styles.section}>
-                <h3 className={styles.sectionTitle}>Collaborator</h3>
-                <div className={styles.organizationInfo}>
-                  <div className={styles.orgCard}>
-                    <div className={styles.orgDetails}>
-                      <div className={styles.orgName}>
-                        {data.request_type === 'received' 
-                          ? data.inviter_org_name 
-                          : data.invitee_org_name
-                        } ({data.request_type === 'received' 
-                          ? data.inviter_org_acronym 
-                          : data.invitee_org_acronym
-                        })
-                      </div>
-                      <div className={styles.adminEmail}>
-                        {data.request_type === 'received' 
-                          ? data.inviter_email 
-                          : data.invitee_email
-                        }
+            {mode === 'collaboration' && (() => {
+              const orgName = data.request_type === 'received' ? data.inviter_org_name : data.invitee_org_name;
+              const orgAcronym = data.request_type === 'received' ? data.inviter_org_acronym : data.invitee_org_acronym;
+              const orgLogo = data.request_type === 'received' ? data.inviter_org_logo : data.invitee_org_logo;
+              const adminEmail = data.request_type === 'received' ? data.inviter_email : data.invitee_email;
+              const logoUrl = orgLogo ? getOrganizationImageUrl(orgLogo, 'logo') : null;
+              
+              return (
+                <div className={styles.section}>
+                  <h3 className={styles.sectionTitle}>Collaborator</h3>
+                  <div className={styles.organizationInfo}>
+                    <div className={styles.orgCard}>
+                      <div className={styles.orgDetails}>
+                        {/* Always show logo container, with fallback if no logo */}
+                        <div className={styles.orgLogoContainer}>
+                          {logoUrl && logoUrl !== 'ORGANIZATION_LOGO_UNAVAILABLE' && orgLogo ? (
+                            <Image
+                              src={logoUrl}
+                              alt={`${orgName} logo`}
+                              width={48}
+                              height={48}
+                              className={styles.orgLogo}
+                            />
+                          ) : (
+                            <div className={styles.orgLogoPlaceholder}>
+                              <FaBuilding />
+                            </div>
+                          )}
+                        </div>
+                        <div className={styles.orgTextContainer}>
+                          <div className={styles.orgName}>
+                            {orgName} ({orgAcronym})
+                          </div>
+                          <div className={styles.adminEmail}>
+                            {adminEmail}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Timeline - only show in collaboration mode */}
             {mode === 'collaboration' && (
@@ -536,49 +510,8 @@ const ViewDetailsModal = ({
             </div>
           )}
         </div>
-
-        <div className={styles.modalFooter}>
-          <button onClick={onClose} className={styles.closeModalButton}>
-            Close
-          </button>
-          
-          {/* Collaboration mode action buttons */}
-          {mode === 'collaboration' && (data.status === 'pending' || data.status === '' || !data.status) && data.request_type === 'received' && (
-            <>
-              <button
-                onClick={handleDeclineClick}
-                className={styles.declineButton}
-                disabled={isProcessing}
-              >
-                <FaTimes />
-                {isProcessing ? 'Processing...' : 'Decline'}
-              </button>
-              <button
-                onClick={handleAccept}
-                className={styles.acceptButton}
-                disabled={isProcessing}
-              >
-                <FaCheck />
-                {isProcessing ? 'Processing...' : 'Accept'}
-              </button>
-            </>
-          )}
-        </div>
       </div>
 
-      {/* Decline Confirmation Modal - only show in collaboration mode */}
-      {mode === 'collaboration' && (
-        <ConfirmationModal
-          isOpen={showDeclineModal}
-          itemName={data.program_title}
-          itemType="collaboration invite"
-          actionType="decline"
-          onConfirm={handleDeclineConfirm}
-          onCancel={handleDeclineCancel}
-          isDeleting={isProcessing}
-          customMessage="Are you sure you want to decline this collaboration invite?"
-        />
-      )}
     </div>
   );
 };

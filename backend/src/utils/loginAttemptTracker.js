@@ -1,26 +1,43 @@
 import db from "../database.js"
 
-// Failed login attempt tracking
+// Failed login attempt tracking - only tracks FAILED attempts
 export class LoginAttemptTracker {
+  // Track failed login attempt (only called when login fails)
+  // Uses a transaction to prevent race conditions
   static async trackFailedAttempt(identifier, ipAddress, userType = 'user') {
     await this.ensureAttemptsTable()
     
-    // Use database time for more accurate timing
-    await db.execute(
-      'DELETE FROM login_attempts WHERE created_at < DATE_SUB(NOW(), INTERVAL 5 MINUTE)'
-    )
+    // Get connection from pool for transaction
+    const connection = await db.getConnection();
     
-    // Add new attempt with user type
-    await db.execute(
-      'INSERT INTO login_attempts (identifier, ip_address, attempt_type, user_type) VALUES (?, ?, ?, ?)',
-      [identifier, ipAddress, 'failed', userType]
-    )
+    try {
+      await connection.beginTransaction();
+      
+      // Clean up old attempts (older than 5 minutes) - interstitial cleanup
+      await connection.execute(
+        'DELETE FROM login_attempts WHERE created_at < DATE_SUB(NOW(), INTERVAL 5 MINUTE)'
+      );
+      
+      // Add new failed attempt atomically within transaction
+      await connection.execute(
+        'INSERT INTO login_attempts (identifier, ip_address, attempt_type, user_type) VALUES (?, ?, ?, ?)',
+        [identifier, ipAddress, 'failed', userType]
+      );
+      
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
   }
   
+  // Get failed login attempts count (only counts FAILED attempts)
   static async getFailedAttempts(identifier, ipAddress, userType = 'user') {
     await this.ensureAttemptsTable()
     
-    // Use database time for more accurate timing
+    // Use database time for more accurate timing - only count FAILED attempts
     const [rows] = await db.execute(
       'SELECT COUNT(*) as count FROM login_attempts WHERE (identifier = ? OR ip_address = ?) AND attempt_type = ? AND user_type = ? AND created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)',
       [identifier, ipAddress, 'failed', userType]
@@ -28,11 +45,33 @@ export class LoginAttemptTracker {
     
     return rows[0]?.count || 0
   }
+
+  // Get time remaining until lockout expires (in seconds)
+  static async getLockoutTimeRemaining(identifier, ipAddress, userType = 'user') {
+    await this.ensureAttemptsTable()
+    
+    // Use database TIMESTAMPDIFF for accurate time calculation (avoids JS Date/timezone issues)
+    const [rows] = await db.execute(
+      `SELECT 
+        TIMESTAMPDIFF(SECOND, NOW(), DATE_ADD(MIN(created_at), INTERVAL 5 MINUTE)) as remaining_seconds
+       FROM login_attempts 
+       WHERE (identifier = ? OR ip_address = ?) AND attempt_type = ? AND user_type = ? 
+       AND created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)`,
+      [identifier, ipAddress, 'failed', userType]
+    )
+    
+    if (!rows[0] || rows[0].remaining_seconds === null) {
+      return 0
+    }
+    
+    return Math.max(0, rows[0].remaining_seconds)
+  }
   
+  // Clear all failed attempts (called on successful login to reset the counter)
   static async clearFailedAttempts(identifier, ipAddress, userType = 'user') {
     await db.execute(
-      'DELETE FROM login_attempts WHERE (identifier = ? OR ip_address = ?) AND attempt_type = ? AND user_type = ?',
-      [identifier, ipAddress, 'failed', userType]
+      'DELETE FROM login_attempts WHERE (identifier = ? OR ip_address = ?) AND user_type = ?',
+      [identifier, ipAddress, userType]
     )
   }
   

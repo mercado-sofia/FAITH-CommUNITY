@@ -535,6 +535,7 @@
   
   .programImageContainer {
     position: static;
+    padding: 0 1rem;
   }
   
   .imageCarousel {
@@ -602,8 +603,42 @@
     font-size: 14px;
   }
   
+  /* Remove hover effects on mobile */
+  .breadcrumbLink:hover {
+    text-decoration: none;
+  }
   
+  .carouselArrow:hover {
+    background: rgba(0, 0, 0, 0.5);
+    transform: translateY(-50%);
+  }
   
+  .carouselDot:hover {
+    background: rgba(255, 255, 255, 0.5);
+    transform: scale(1);
+  }
+  
+  .organizationCard:hover {
+    border-color: #e2e8f0;
+    box-shadow: none;
+  }
+  
+  .organizationCard:hover .orgArrow {
+    color: #94a3b8;
+    transform: translateX(0);
+  }
+  
+  .applyButton:hover {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .simpleApplyButton:hover {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    transform: none;
+    box-shadow: none;
+  }
   
   .container {
     padding: 1rem 0;
@@ -618,11 +653,24 @@
   
   .pageGrid {
     padding: 0 0.75rem;
+    margin-bottom: 1rem;
   }
   
   .breadcrumb {
     font-size: 12px;
     gap: 0.35rem;
+  }
+  
+  .breadcrumbLink {
+    font-size: 13px;
+  }
+  
+  .breadcrumbSeparator {
+    font-size: 13px;
+  }
+  
+  .breadcrumbCurrent {
+    font-size: 13px;
   }
   
   .programTitle {
@@ -634,12 +682,25 @@
     gap: 1.5rem;
   }
   
-  .organizationsRow {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-    padding: 0 1.5rem;
+  .programDetailsSection {
+    margin-bottom: 0.8rem;
   }
   
+  .simpleApplyButtonContainer {
+    margin: 1.25rem 0 0.5rem 0;
+  }
+  
+  .organizationsRow {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 0 1.5rem;
+    margin: 0;
+  }
+  
+  .organizationSection {
+    padding-top: 0.75rem;
+    margin-top: 0;
+  }
   
   .statusContainer {
     margin-bottom: 1rem;
@@ -662,7 +723,26 @@
     padding: 0 1rem;
   }
   
+  .programDetailsSection {
+    margin-bottom: 0.65rem;
+  }
+  
+  .simpleApplyButtonContainer {
+    margin: 1rem 0 0.4rem 0;
+  }
+  
   .organizationsRow {
+    padding: 0 1rem;
+    margin: 0;
+    gap: 1rem;
+  }
+  
+  .organizationSection {
+    padding-top: 0.5rem;
+    margin-top: 0;
+  }
+  
+  .programImageContainer {
     padding: 0 1rem;
   }
   
@@ -692,6 +772,43 @@
     height: 5px;
   }
   
+  /* Remove hover effects on mobile (smaller screens) */
+  .breadcrumbLink:hover {
+    text-decoration: none;
+  }
+  
+  .carouselArrow:hover {
+    background: rgba(0, 0, 0, 0.5);
+    transform: translateY(-50%);
+  }
+  
+  .carouselDot:hover {
+    background: rgba(255, 255, 255, 0.5);
+    transform: scale(1);
+  }
+  
+  .organizationCard:hover {
+    border-color: #e2e8f0;
+    box-shadow: none;
+  }
+  
+  .organizationCard:hover .orgArrow {
+    color: #94a3b8;
+    transform: translateX(0);
+  }
+  
+  .applyButton:hover {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .simpleApplyButton:hover {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    transform: none;
+    box-shadow: none;
+  }
+  
   .container {
     overflow-x: hidden;
   }
@@ -703,11 +820,24 @@
   
   .pageGrid {
     padding: 0 0.5rem;
+    margin-bottom: 0.75rem;
   }
   
   .breadcrumb {
     font-size: 11px;
     gap: 0.3rem;
+  }
+  
+  .breadcrumbLink {
+    font-size: 13px;
+  }
+  
+  .breadcrumbSeparator {
+    font-size: 13px;
+  }
+  
+  .breadcrumbCurrent {
+    font-size: 13px;
   }
   
   .programTitle {

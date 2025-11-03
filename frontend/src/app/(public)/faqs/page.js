@@ -47,9 +47,7 @@ export default function FaqPage() {
         <section className={styles.hero}>
           <p className={styles.tag}>COMMON QUESTIONS</p>
           <h1 className={styles.heading}>
-            Everything You Need to Know
-            <br />
-            About <span>{siteNameData?.site_name || 'CommUNITY'}</span> Here.
+            Everything You Need to Know About <span>{siteNameData?.site_name || 'CommUNITY'}</span> Here.
           </h1>
         </section>
 

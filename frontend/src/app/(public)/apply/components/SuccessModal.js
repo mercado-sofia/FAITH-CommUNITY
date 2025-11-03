@@ -7,6 +7,7 @@ import { FiCheckCircle, FiX, FiInfo } from "react-icons/fi";
 export default function SuccessModal({ isOpen, onClose, message = "Application submitted successfully!", type = "success" }) {
   const [mounted, setMounted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(5);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
 
   // Set appropriate styling and content based on type
   const modalConfig = {
@@ -27,6 +28,22 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Set initial value
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isMobile = windowWidth <= 640;
+  const isSmallMobile = windowWidth <= 480;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -74,9 +91,10 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
     bottom: 0,
     zIndex: 999999,
     display: 'flex',
-    alignItems: 'center',
+    alignItems: isMobile ? 'flex-start' : 'center',
     justifyContent: 'center',
-    padding: '1rem'
+    padding: isMobile ? '0.5rem' : '1rem',
+    paddingTop: isMobile ? '2rem' : '1rem'
   };
 
   const backdropStyle = {
@@ -91,18 +109,20 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
   const contentStyle = {
     position: 'relative',
     background: 'white',
-    borderRadius: '1rem',
-    padding: '1.5rem',
+    borderRadius: isMobile ? '12px 12px 0 0' : '1rem',
+    padding: isMobile ? '1.25rem' : '1.5rem',
     maxWidth: '400px',
     width: '100%',
+    maxHeight: isMobile ? 'calc(100vh - 4rem)' : '90vh',
+    overflowY: 'auto',
     boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
     border: `3px solid ${type === 'already_applied' ? '#3b82f6' : '#10b981'}`
   };
 
   const closeBtnStyle = {
     position: 'absolute',
-    top: '1rem',
-    right: '1rem',
+    top: isMobile ? '0.75rem' : '1rem',
+    right: isMobile ? '0.75rem' : '1rem',
     background: 'none',
     border: 'none',
     color: '#6b7280',
@@ -111,7 +131,11 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
     borderRadius: '0.5rem',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    width: isMobile ? '2.5rem' : 'auto',
+    height: isMobile ? '2.5rem' : 'auto',
+    minWidth: '44px',
+    minHeight: '44px'
   };
 
   const bodyStyle = {
@@ -124,26 +148,27 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
   };
 
   const titleStyle = {
-    fontSize: '1.25rem',
+    fontSize: isMobile ? '1.15rem' : '1.25rem',
     fontWeight: 700,
     color: '#1f2937',
-    marginBottom: '0.75rem',
+    marginBottom: isMobile ? '0.5rem' : '0.75rem',
     fontFamily: 'var(--font-roboto)',
     color: config.titleColor
   };
 
   const messageStyle = {
-    fontSize: '0.875rem',
+    fontSize: isMobile ? '0.8rem' : '0.875rem',
     color: '#6b7280',
-    marginBottom: '1.5rem',
+    marginBottom: isMobile ? '1rem' : '1.5rem',
     lineHeight: 1.5,
     fontFamily: 'var(--font-roboto)'
   };
 
   const timerStyle = {
-    marginTop: '1.5rem',
-    paddingTop: '1rem',
-    borderTop: '1px solid #e5e7eb'
+    marginTop: isMobile ? '1rem' : '1.5rem',
+    paddingTop: isMobile ? '0.75rem' : '1rem',
+    borderTop: '1px solid #e5e7eb',
+    fontSize: isMobile ? '0.75rem' : '0.875rem'
   };
 
   const progressBarStyle = {
@@ -179,9 +204,9 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
         <div style={bodyStyle}>
           <div style={successIconStyle}>
             {type === "already_applied" ? (
-              <FiInfo size={48} style={{ color: config.iconColor }} />
+              <FiInfo size={isMobile ? 40 : 48} style={{ color: config.iconColor }} />
             ) : (
-              <FiCheckCircle size={48} style={{ color: config.iconColor }} />
+              <FiCheckCircle size={isMobile ? 40 : 48} style={{ color: config.iconColor }} />
             )}
           </div>
           

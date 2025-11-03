@@ -45,23 +45,6 @@ export const getStatusDisplayText = (status) => {
 
 // Workflow stage mapping for collaboration cards
 export const getWorkflowStage = (status, requestType, programStatus, programTitle = '', isApproved = false) => {
-  // Determine effective status based on new system
-  const getEffectiveStatus = (collaborationStatus, programStatus, isApproved) => {
-    // If program is approved, it's live regardless of collaboration status
-    if (isApproved) {
-      return 'approved';
-    }
-    
-    // If program is not approved, check collaboration status
-    if (collaborationStatus === 'accepted') {
-      return 'accepted';
-    } else if (collaborationStatus === 'declined') {
-      return 'declined';
-    } else {
-      return 'pending';
-    }
-  };
-
   const effectiveStatus = getEffectiveStatus(status, programStatus, isApproved);
   
   if (requestType === 'received') {
@@ -156,4 +139,34 @@ export const getEffectiveStatus = (collaborationStatus, programStatus, isApprove
   } else {
     return 'pending';
   }
+};
+
+// Centralized utility to get collaboration status from any collaborator object
+export const getCollaborationStatus = (collab) => {
+  if (!collab || typeof collab !== 'object') {
+    return null;
+  }
+  return collab.collaboration_status || collab.status || null;
+};
+
+// Check if a collaborator is active (not declined)
+export const isActiveCollaborator = (collab) => {
+  const status = getCollaborationStatus(collab);
+  return status !== 'declined';
+};
+
+// Get active collaborators from an array
+export const getActiveCollaborators = (collaborators) => {
+  if (!Array.isArray(collaborators)) {
+    return [];
+  }
+  return collaborators.filter(isActiveCollaborator);
+};
+
+// Check if program has any active collaborations
+export const hasActiveCollaborations = (program) => {
+  if (!program || !program.collaborators || !Array.isArray(program.collaborators)) {
+    return false;
+  }
+  return program.collaborators.some(isActiveCollaborator);
 };

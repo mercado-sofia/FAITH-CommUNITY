@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './ProgramModals.module.css';
 
 const ProgramModals = ({
@@ -37,17 +38,72 @@ const ProgramModals = ({
     cancelDeclineCollaboration
   } = actions;
 
+  // Local preview URL for selected file
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (actions.postActReportFile) {
+      const url = URL.createObjectURL(actions.postActReportFile);
+      setPreviewUrl(url);
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    } else {
+      setPreviewUrl(null);
+    }
+  }, [actions.postActReportFile]);
+
   return (
     <>
       {/* Mark as Completed Confirmation Modal */}
-      {showMarkCompletedModal && (
+      {showMarkCompletedModal && typeof window !== 'undefined' && createPortal((
         <div className={styles.modalOverlay} onClick={cancelMarkCompleted}>
           <div className={`${styles.modalContent} ${styles.markCompletedModal}`} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Mark as Completed</h3>
+              <h3 className={styles.modalTitle}>Submit Post Act Report</h3>
             </div>
             <div className={styles.modalBody}>
-              <p>Are you sure you want to mark &quot;{normalizedData.title}&quot; as completed?</p>
+              <p>To complete this program, upload the Post Act Report. A superadmin will review and approve it. The status will change to Completed after approval.</p>
+              <div className={styles.uploadField}>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.doc,.docx"
+                  data-post-act-input="true"
+                  onChange={(e) => actions.setPostActReportFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
+                />
+                <div className={styles.uploadHint}>Allowed: PDF, JPG, PNG, WEBP, HEIC, DOC, DOCX</div>
+                {actions.postActReportFile && (
+                  <div className={styles.filePreviewRow}>
+                    <a
+                      href={previewUrl || '#'}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className={styles.fileNameLink}
+                    >
+                      {actions.postActReportFile.name}
+                    </a>
+                    <span className={styles.fileMeta}>
+                      {(actions.postActReportFile.size > 1024 * 1024
+                        ? (actions.postActReportFile.size / (1024 * 1024)).toFixed(1) + ' MB'
+                        : (actions.postActReportFile.size / 1024).toFixed(0) + ' KB')}
+                    </span>
+                    <button
+                      type="button"
+                      className={styles.removeFileBtn}
+                      onClick={() => {
+                        actions.setPostActReportFile(null);
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = '';
+                        }
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
             <div className={styles.modalActions}>
               <button
@@ -59,13 +115,14 @@ const ProgramModals = ({
               <button
                 onClick={confirmMarkCompleted}
                 className={styles.confirmButton}
+                disabled={!actions.postActReportFile || actions.isMarkingCompleted}
               >
-                Mark as Completed
+                {actions.isMarkingCompleted ? 'Submitting...' : 'Submit for Approval'}
               </button>
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
 
       {/* Mark as Active Confirmation Modal */}
       {showMarkActiveModal && (
@@ -167,7 +224,7 @@ const ProgramModals = ({
       )}
 
       {/* Accept Collaboration Confirmation Modal */}
-      {showAcceptCollaborationModal && (
+      {showAcceptCollaborationModal && typeof window !== 'undefined' && createPortal((
         <div className={styles.modalOverlay} onClick={cancelAcceptCollaboration}>
           <div className={`${styles.modalContent} ${styles.acceptCollaborationModal}`} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
@@ -176,7 +233,7 @@ const ProgramModals = ({
             <div className={styles.modalBody}>
               <p>Are you sure you want to accept the collaboration request for &quot;{normalizedData.title}&quot;?</p>
               <p className={styles.infoText}>
-                This will make you a collaborator on this program and you&apos;ll be able to view and manage it.
+                This will make you a collaborator on this program
               </p>
             </div>
             <div className={styles.modalActions}>
@@ -197,10 +254,10 @@ const ProgramModals = ({
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
 
       {/* Decline Collaboration Confirmation Modal */}
-      {showDeclineCollaborationModal && (
+      {showDeclineCollaborationModal && typeof window !== 'undefined' && createPortal((
         <div className={styles.modalOverlay} onClick={cancelDeclineCollaboration}>
           <div className={`${styles.modalContent} ${styles.declineCollaborationModal}`} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
@@ -230,7 +287,7 @@ const ProgramModals = ({
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
     </>
   );
 };

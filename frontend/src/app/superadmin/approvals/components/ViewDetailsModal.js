@@ -81,17 +81,6 @@ const ViewDetailsModal = ({
 
   const programData = getProgramData();
   const highlightsData = getHighlightsData();
-  
-  // Debug logging for highlights data
-  if (submissionData.section === 'highlights') {
-    console.log('Highlights submission data:', submissionData);
-    console.log('Parsed highlights data:', highlightsData);
-    if (highlightsData && highlightsData.media_files) {
-      console.log('Media files:', highlightsData.media_files);
-      console.log('Media files type:', typeof highlightsData.media_files);
-      console.log('Is array:', Array.isArray(highlightsData.media_files));
-    }
-  }
 
   // Handle image viewing
   const openImageViewer = (images, startIndex = 0) => {

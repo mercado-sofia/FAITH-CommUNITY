@@ -74,7 +74,6 @@
   position: relative;
   font-size: 20px;
   margin-bottom: 1.6rem;
-  margin-bottom: 1.6rem;
 }
 
 .linksSection ul,
@@ -315,10 +314,6 @@
   text-align: center;
 }
 
-.bottomBar span {
-  color: #FFAC00;
-}
-
 /* LINE EFFECT */
 .sectionHeading::after {
   content: "";
@@ -365,7 +360,7 @@
     padding: 4rem 3rem 2rem;
     display: flex;
     flex-wrap: wrap;
-    gap: 2rem;
+    gap: 1rem;
     justify-content: flex-start;
   }
 
@@ -377,11 +372,11 @@
 .servicesSection {
   width: 45%;
   min-width: 200px;
-  margin-top: 1rem;
+  margin-top: 0.5rem;
 }
 
 .servicesSection {
-  margin-top: 2rem;
+  margin-top: 0.5rem;
 }
 
   .linksSection,
@@ -392,7 +387,7 @@
   .newsletter {
     width: 70%;
     order: 2;
-    margin-top: 1rem;
+    margin-top: 0.5rem;
   }
 
   .subscribeForm input {
@@ -412,7 +407,7 @@
     padding: 3rem 2.5rem;
     display: flex;
     flex-wrap: wrap;
-    gap: 2rem;
+    gap: 1rem;
     justify-content: flex-start;
   }
 
@@ -423,13 +418,8 @@
 
   .linksSection,
   .servicesSection {
-    width: 45%;
-    min-width: 140px;
-    margin-top: 1rem;
-  }
-
-  .linksSection,
-  .servicesSection {
+    width: 100%;
+    margin-top: 0.5rem;
     order: 1;
   }
 
@@ -437,12 +427,20 @@
     font-size: 18px;
   }
 
+  .contactText small {
+    font-size: 14px;
+  }
+
+  .contactText p {
+    font-size: 16px;
+  }
+
   .about p,
   .newsletter p,
   .linksSection li,
   .servicesSection li,
   .linksSection a {
-    font-size: 13px;
+    font-size: 14px;
   }
 
   .linksSection h4,
@@ -486,7 +484,7 @@
 
   .unsubscribeButton {
     padding: 6px 12px;
-    font-size: 13px;
+    font-size: 14px;
   }
 
   .socials {
@@ -494,7 +492,7 @@
   }
 
   .bottomBar {
-    font-size: 12.5px;
+    font-size: 14px;
     padding: 1rem;
     height: auto;
   }

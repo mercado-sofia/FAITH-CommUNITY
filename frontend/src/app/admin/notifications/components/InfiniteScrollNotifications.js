@@ -45,8 +45,9 @@ export default function InfiniteScrollNotifications({
   const queryParams = useMemo(() => ({
     adminId: currentAdmin?.id, 
     limit: itemsPerPage, 
-    offset: (currentPage - 1) * itemsPerPage
-  }), [currentAdmin?.id, itemsPerPage, currentPage]);
+    offset: (currentPage - 1) * itemsPerPage,
+    tab: currentTab // Include tab in query parameters
+  }), [currentAdmin?.id, itemsPerPage, currentPage, currentTab]);
 
   // Fetch notifications for current page
   const { data: notificationsData, isLoading, error } = useGetNotificationsQuery(
@@ -106,30 +107,21 @@ export default function InfiniteScrollNotifications({
     if (node) observer.current.observe(node);
   }, [isLoading, isLoadingMore, hasNextPage]);
 
-  // Filter notifications based on current tab
-  const filteredNotifications = allNotifications.filter(notification => {
-    switch (currentTab) {
-      case 'submissions':
-        return notification.type === 'approval' || notification.type === 'decline';
-      case 'collaborations':
-        return notification.type === 'collaboration' || notification.type === 'program_approval';
-      case 'messages':
-        return notification.type === 'message';
-      default:
-        return true;
-    }
-  });
+  // Use allNotifications directly since API now handles filtering
+  const filteredNotifications = allNotifications;
 
-  // Handle clicking on message notifications to navigate to inbox
+  // Handle clicking on notifications to navigate to appropriate pages
   const handleNotificationClick = useCallback((notification, event) => {
     // Don't navigate if clicking on interactive elements
     if (event.target.closest('input, button')) {
       return;
     }
     
-    // Only make message notifications clickable
+    // Handle different notification types
     if (notification.type === 'message') {
       router.push('/admin/inbox');
+    } else if (notification.type === 'collaboration_request' || notification.type === 'collaboration' || notification.type === 'program_approval') {
+      router.push('/admin/programs?tab=collaborations');
     }
   }, [router]);
 
@@ -181,7 +173,7 @@ export default function InfiniteScrollNotifications({
           <div 
             key={notification.id}
             ref={ref}
-            className={`${styles.notificationItem} ${!notification.is_read ? styles.unread : ''} ${notification.type === 'message' ? styles.clickableMessage : ''}`}
+            className={`${styles.notificationItem} ${!notification.is_read ? styles.unread : ''} ${(notification.type === 'message' || notification.type === 'collaboration_request' || notification.type === 'collaboration' || notification.type === 'program_approval') ? styles.clickableMessage : ''}`}
             onClick={(e) => handleNotificationClick(notification, e)}
           >
             <div className={styles.notificationCheckbox}>

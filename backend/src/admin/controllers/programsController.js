@@ -41,10 +41,31 @@ export const getAdminPrograms = async (req, res) => {
     
     const adminOrgId = adminRows[0].organization_id;
     
-    // Get programs where admin is creator (from their organization) OR collaborator (from other organizations)
-    // Exclude programs where admin has opted out (status = 'declined') or pending collaboration requests
-    const [programRows] = await db.execute(`
-      SELECT DISTINCT p.*, o.org as orgAcronym, o.orgName as orgName, o.logo as orgLogo
+    // Determine if post-act reports table exists to avoid SQL errors in environments without migration
+    const [tableCheckRows] = await db.execute(
+      `SELECT COUNT(*) as cnt FROM information_schema.tables 
+        WHERE table_schema = DATABASE() AND table_name = 'program_post_act_reports'`
+    );
+    const hasPostActTable = tableCheckRows?.[0]?.cnt > 0;
+
+    // Build SELECT with optional flags depending on table availability
+    const selectFlags = hasPostActTable
+      ? `
+        , EXISTS(SELECT 1 FROM program_post_act_reports r WHERE r.program_id = p.id AND r.status = 'pending') AS has_pending_post_act_report
+        , EXISTS(SELECT 1 FROM program_post_act_reports r2 WHERE r2.program_id = p.id AND r2.status = 'approved') AS has_approved_post_act_report
+      `
+      : `
+        , FALSE AS has_pending_post_act_report
+        , FALSE AS has_approved_post_act_report
+      `;
+
+    const baseQuery = `
+      SELECT DISTINCT 
+        p.*, 
+        o.org as orgAcronym, 
+        o.orgName as orgName, 
+        o.logo as orgLogo
+        ${selectFlags}
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
       WHERE p.organization_id = ? 
@@ -53,7 +74,9 @@ export const getAdminPrograms = async (req, res) => {
            WHERE collaborator_admin_id = ? AND status = 'accepted'
          )
       ORDER BY p.created_at DESC
-    `, [adminOrgId, currentAdminId]);
+    `;
+
+    const [programRows] = await db.execute(baseQuery, [adminOrgId, currentAdminId]);
 
     // Get collaboration data for each program
     const programsWithCollaboration = await Promise.all(programRows.map(async (program) => {
@@ -100,7 +123,7 @@ export const getAdminPrograms = async (req, res) => {
         collaborationStatus = collaborationRows[0].collaboration_status;
       }
 
-      // Get all collaborators for this program (including all statuses for visibility)
+      // Get all collaborators for this program (excluding declined/opted-out ones)
       const [allCollaborators] = await db.execute(`
         SELECT 
           a.id,
@@ -111,7 +134,7 @@ export const getAdminPrograms = async (req, res) => {
         FROM program_collaborations pc
         LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
         LEFT JOIN organizations o ON a.organization_id = o.id
-        WHERE pc.program_id = ? AND pc.status IN ('accepted', 'pending', 'declined')
+        WHERE pc.program_id = ? AND pc.status IN ('accepted', 'pending')
       `, [program.id]);
 
       let logoUrl;
@@ -143,7 +166,10 @@ export const getAdminPrograms = async (req, res) => {
         user_role: userRole,
         collaboration_status: collaborationStatus,
         collaboration_id: collaborationRows.length > 0 ? collaborationRows[0].collaboration_id : null,
-        collaborators: allCollaborators
+        collaborators: allCollaborators,
+        has_pending_post_act_report: program.has_pending_post_act_report === 1 || program.has_pending_post_act_report === true,
+        has_approved_post_act_report: program.has_approved_post_act_report === 1 || program.has_approved_post_act_report === true,
+        manual_status_override: program.manual_status_override === 1 || program.manual_status_override === true
       };
     }));
 
@@ -608,9 +634,9 @@ export const updateProgram = async (req, res) => {
   }
 
   try {
-    // Check if program exists
+    // Check if program exists and get current status/override flag
     const [existingProgram] = await db.execute(
-      'SELECT id, organization_id, image FROM programs_projects WHERE id = ?',
+      'SELECT id, organization_id, image, status, manual_status_override FROM programs_projects WHERE id = ?',
       [id]
     );
 
@@ -623,6 +649,17 @@ export const updateProgram = async (req, res) => {
     }
 
     // Program found
+    const currentStatus = existingProgram[0].status;
+    const currentManualOverride = existingProgram[0].manual_status_override === 1 || existingProgram[0].manual_status_override === true;
+    const newStatus = status || 'active';
+    
+    // Preserve manual_status_override if:
+    // 1. Status is "Completed" (likely from Post Act Report approval) - don't reset it
+    // 2. Status hasn't changed and was previously manually overridden
+    // Only reset to FALSE if admin is explicitly changing the status away from Completed
+    const shouldPreserveOverride = (currentStatus === 'Completed' && currentManualOverride && newStatus === 'Completed') ||
+                                   (currentStatus === newStatus && currentManualOverride);
+    
     let imagePath = existingProgram[0].image; // Keep existing image by default
 
     // Handle main image if provided (base64 or Cloudinary URL)
@@ -664,12 +701,14 @@ export const updateProgram = async (req, res) => {
     // If image is null, keep the existing image (imagePath already set to existingProgram[0].image)
 
     // Updating program in database
-    // Update the program and reset manual status override (admin is updating, so let dates determine status)
+    // Preserve manual_status_override for Completed programs (from Post Act Report approval)
+    // Only reset if admin is explicitly changing status away from current status
+    const manualOverrideValue = shouldPreserveOverride ? 1 : 0;
     const [result] = await db.execute(
       `UPDATE programs_projects 
-       SET title = ?, description = ?, category = ?, status = ?, image = ?, event_start_date = ?, event_end_date = ?, accepts_volunteers = ?, manual_status_override = FALSE
+       SET title = ?, description = ?, category = ?, status = ?, image = ?, event_start_date = ?, event_end_date = ?, accepts_volunteers = ?, manual_status_override = ?
        WHERE id = ?`,
-      [title, description, category, status || 'active', imagePath, event_start_date || null, event_end_date || null, accepts_volunteers !== undefined ? accepts_volunteers : true, id]
+      [title, description, category, newStatus, imagePath, event_start_date || null, event_end_date || null, accepts_volunteers !== undefined ? accepts_volunteers : true, manualOverrideValue, id]
     );
 
     if (result.affectedRows === 0) {
@@ -1684,55 +1723,6 @@ export const getProgramsStatistics = async (req, res) => {
       success: false,
       message: 'Failed to fetch programs statistics',
       error: error.message,
-    });
-  }
-};
-
-// Mark program as completed
-export const markProgramAsCompleted = async (req, res) => {
-  const { id } = req.params;
-
-  if (!id) {
-    return res.status(400).json({
-      success: false,
-      message: "Program ID is required",
-    });
-  }
-
-  try {
-    // Check if program exists
-    const [programRows] = await db.execute(
-      "SELECT id, title, status FROM programs_projects WHERE id = ?",
-      [id]
-    );
-
-    if (programRows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Program not found",
-      });
-    }
-
-    // Update program status to completed and mark as manually set
-    await db.execute(
-      "UPDATE programs_projects SET status = 'Completed', manual_status_override = TRUE WHERE id = ?",
-      [id]
-    );
-
-    res.json({
-      success: true,
-      message: "Program marked as completed successfully",
-      data: {
-        id: id,
-        title: programRows[0].title,
-        status: 'Completed'
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to mark program as completed",
-      error: error.message
     });
   }
 };

@@ -124,8 +124,8 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .collaborationSection {
-    margin: 1.5rem 0;
-    padding-top: 1.5rem;
+    margin: 0;
+    padding-top: 1rem;
   }
   
   .sectionHeader {
@@ -167,9 +167,25 @@
     font-size: 14px;
   }
   
+  /* Remove hover effects on mobile */
+  .collaboratorCard:hover {
+    border-color: #e2e8f0;
+    box-shadow: none;
+  }
+  
+  .collaboratorCard:hover .collaboratorArrow {
+    color: #94a3b8;
+    transform: translateX(0);
+  }
+  
 }
 
 @media (max-width: 480px) {
+  .collaborationSection {
+    margin: 0 0 2rem;
+    padding-top: 1rem;
+  }
+  
   .collaboratorsGrid {
     grid-template-columns: 1fr;
   }
@@ -186,6 +202,17 @@
   
   .collaboratorName {
     font-size: 14px;
+  }
+  
+  /* Remove hover effects on mobile (smaller screens) */
+  .collaboratorCard:hover {
+    border-color: #e2e8f0;
+    box-shadow: none;
+  }
+  
+  .collaboratorCard:hover .collaboratorArrow {
+    color: #94a3b8;
+    transform: translateX(0);
   }
   
 }

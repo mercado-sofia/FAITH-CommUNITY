@@ -485,6 +485,10 @@
     font-size: 1.5rem;
   }
 
+  .stepSubheading {
+    margin-bottom: 0.5rem;
+  }
+
   .inputGroup input,
   .inputGroup select,
   .inputGroup textarea {

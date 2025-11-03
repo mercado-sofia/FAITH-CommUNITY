@@ -440,10 +440,9 @@ export const approveSubmission = async (req, res) => {
           }
           
         // Additional images will be handled in the general section below
-          
-          // Note: Collaborators should only receive the original collaboration request notification
-          // when the program is first submitted, not when it's approved by superadmin
-          // The collaboration request notifications are handled in submissionController.js
+          // Note: Collaborators receive collaboration request notifications ONLY after superadmin approval.
+          // During submission, collaboration records are created but no notifications are sent.
+          // Notifications are sent here (in approvalController.js) after the program is approved.
           
         } else {
           // For non-collaborative programs, create the program immediately
@@ -543,83 +542,48 @@ export const approveSubmission = async (req, res) => {
       }
     }
 
-    if (section === 'highlights') {
-      const action = data.action;
-      
-      if (action === 'create') {
-        // For new highlights, update the status to approved
-        const [updateResult] = await connection.execute(
-          'UPDATE admin_highlights SET status = ?, updated_at = NOW() WHERE id = ?',
-          ['approved', data.highlight_id]
-        );
-        
-        if (updateResult.affectedRows === 0) {
-          logError(`Failed to update highlight ${data.highlight_id} - no rows affected`, null, { context: 'approval_controller', highlight_id: data.highlight_id });
-          // Try to find the highlight by title as fallback
-          const [fallbackResult] = await connection.execute(
-            'UPDATE admin_highlights SET status = ?, updated_at = NOW() WHERE title = ? AND status = ?',
-            ['approved', data.title, 'pending']
-          );
-          if (fallbackResult.affectedRows > 0) {
-            logInfo(`Updated highlight by title fallback: ${data.title}`, { context: 'approval_controller' });
-          } else {
-            logError(`Failed to update highlight by title fallback: ${data.title}`, null, { context: 'approval_controller' });
-          }
-        } else {
-          logInfo(`Successfully updated highlight ${data.highlight_id} to approved`, { context: 'approval_controller' });
-        }
-      } else if (action === 'update') {
-        // For updates, the highlight is already updated, just change status to approved
-        const [updateResult] = await connection.execute(
-          'UPDATE admin_highlights SET status = ?, updated_at = NOW() WHERE id = ?',
-          ['approved', data.highlight_id]
-        );
-        
-        if (updateResult.affectedRows === 0) {
-          logError(`Failed to update highlight ${data.highlight_id} - no rows affected`, null, { context: 'approval_controller', highlight_id: data.highlight_id });
-          // Try to find the highlight by title as fallback
-          const [fallbackResult] = await connection.execute(
-            'UPDATE admin_highlights SET status = ?, updated_at = NOW() WHERE title = ? AND status = ?',
-            ['approved', data.title, 'pending']
-          );
-          if (fallbackResult.affectedRows > 0) {
-            logInfo(`Updated highlight by title fallback: ${data.title}`, { context: 'approval_controller' });
-          } else {
-            logError(`Failed to update highlight by title fallback: ${data.title}`, null, { context: 'approval_controller' });
-          }
-        } else {
-          logInfo(`Successfully updated highlight ${data.highlight_id} to approved`, { context: 'approval_controller' });
-        }
-      } else if (action === 'delete') {
-        // For deletions, ensure the highlight is actually deleted
-        // The highlight might have been deleted by admin already, but verify and clean up
-        const highlightId = data.highlight_id || (typeof data.highlight_id === 'string' ? parseInt(data.highlight_id) : null);
-        
-        if (highlightId) {
-          // Check if highlight still exists
-          const [existingHighlight] = await connection.execute(
-            'SELECT id FROM admin_highlights WHERE id = ?',
-            [highlightId]
-          );
-          
-          if (existingHighlight.length > 0) {
-            // Highlight still exists, delete it now (approved deletion)
-            const [deleteResult] = await connection.execute(
-              'DELETE FROM admin_highlights WHERE id = ?',
-              [highlightId]
-            );
-            
-            if (deleteResult.affectedRows > 0) {
-              logInfo(`Highlight ${highlightId} deleted after approval`, { context: 'approval_controller' });
-            }
-          } else {
-            // Highlight already deleted, just log it
-            logInfo(`Highlight ${highlightId} was already deleted, approving deletion submission`, { context: 'approval_controller' });
-          }
-        } else {
-          logError(`Invalid highlight_id in deletion submission: ${highlightId}`, null, { context: 'approval_controller', data });
-        }
+    // Handle Post Act Report approval
+    if (section === 'Post Act Report') {
+      // Extract report_id and program_id from proposed_data
+      const reportId = data.report_id;
+      const programId = data.program_id;
+
+      if (!reportId || !programId) {
+        throw new Error('Post Act Report submission missing report_id or program_id');
       }
+
+      // Check if report exists and is pending
+      const [reportRows] = await connection.execute(
+        `SELECT id, program_id, status FROM program_post_act_reports WHERE id = ? FOR UPDATE`,
+        [reportId]
+      );
+
+      if (reportRows.length === 0) {
+        throw new Error('Post Act Report not found');
+      }
+
+      const report = reportRows[0];
+      
+      // Verify the program_id matches
+      if (report.program_id !== programId) {
+        throw new Error('Post Act Report program_id mismatch');
+      }
+
+      if (report.status !== 'pending') {
+        throw new Error(`Post Act Report is not pending (current status: ${report.status})`);
+      }
+
+      // Update post act report status to approved
+      await connection.execute(
+        `UPDATE program_post_act_reports SET status = 'approved', reviewed_by_superadmin_id = ?, reviewed_at = NOW() WHERE id = ?`,
+        [req.superadmin?.id || null, reportId]
+      );
+
+      // Update program status to Completed with manual override
+      await connection.execute(
+        `UPDATE programs_projects SET status = 'Completed', manual_status_override = TRUE WHERE id = ?`,
+        [programId]
+      );
     }
 
     // Update submission status to approved
@@ -628,8 +592,22 @@ export const approveSubmission = async (req, res) => {
     // Create dynamic notification message based on section and data
     let notificationMessage = `Your submission for ${section} has been approved by SuperAdmin`;
     
+    // Add specific details for Post Act Report
+    if (section === 'Post Act Report') {
+      // Get program title for the notification message
+      try {
+        const [programRows] = await connection.execute(
+          `SELECT title FROM programs_projects WHERE id = ?`,
+          [data.program_id]
+        );
+        const programTitle = programRows.length > 0 ? programRows[0].title : 'program';
+        notificationMessage = `Your Post Act Report was approved. The program "${programTitle}" is now marked as Completed.`;
+      } catch (err) {
+        notificationMessage = 'Your Post Act Report was approved. The program is now marked as Completed.';
+      }
+    }
     // Add specific details for programs
-    if (section === 'programs' && data.title) {
+    else if (section === 'programs' && data.title) {
       if (data.collaborators && data.collaborators.length > 0) {
         notificationMessage = `Your collaborative program "${data.title}" has been approved by SuperAdmin. Collaboration requests have been sent to the invited organizations.`;
       } else {
@@ -763,6 +741,26 @@ export const rejectSubmission = async (req, res) => {
       }
     }
 
+    // Handle Post Act Report rejection
+    if (submission.section === 'Post Act Report') {
+      try {
+        const data = JSON.parse(submission.proposed_data);
+        const reportId = data.report_id;
+        
+        if (reportId) {
+          // Update post act report status to rejected
+          await db.execute(
+            `UPDATE program_post_act_reports 
+             SET status = 'rejected', reviewed_by_superadmin_id = ?, reviewed_at = NOW()
+             WHERE id = ? AND status = 'pending'`,
+            [req.superadmin?.id || null, reportId]
+          );
+        }
+      } catch (parseError) {
+        // Continue with submission rejection even if report update fails
+      }
+    }
+
     // Update submission status to rejected
     await db.execute(
       'UPDATE submissions SET status = "rejected", rejection_reason = ? WHERE id = ?',
@@ -788,8 +786,21 @@ export const rejectSubmission = async (req, res) => {
         }
       }
       
+      // Add specific details for Post Act Report
+      if (submission.section === 'Post Act Report') {
+        try {
+          const [programRows] = await db.execute(
+            `SELECT title FROM programs_projects WHERE id = ?`,
+            [data.program_id]
+          );
+          const programTitle = programRows.length > 0 ? programRows[0].title : 'program';
+          notificationMessage = `Your Post Act Report for "${programTitle}" has been declined by SuperAdmin. Please review the note and re-upload.`;
+        } catch (err) {
+          notificationMessage = 'Your Post Act Report has been declined by SuperAdmin. Please review the note and re-upload.';
+        }
+      }
       // Add specific details for programs
-      if (submission.section === 'programs' && data && data.title) {
+      else if (submission.section === 'programs' && data.title) {
         notificationMessage = `Your program "${data.title}" has been declined by SuperAdmin`;
       }
       // Add specific details for organization
@@ -1292,14 +1303,80 @@ export const bulkApproveSubmissions = async (req, res) => {
       }
     }
 
+        // Handle Post Act Report approval
+        if (section === 'Post Act Report') {
+          // Extract report_id and program_id from proposed_data
+          const reportId = data.report_id;
+          const programId = data.program_id;
+
+          if (!reportId || !programId) {
+            errors.push(`Submission ${id} missing report_id or program_id`);
+            errorCount++;
+            continue;
+          }
+
+          // Check if report exists and is pending
+          const [reportRows] = await connection.execute(
+            `SELECT id, program_id, status FROM program_post_act_reports WHERE id = ? FOR UPDATE`,
+            [reportId]
+          );
+
+          if (reportRows.length === 0) {
+            errors.push(`Submission ${id}: Post Act Report not found`);
+            errorCount++;
+            continue;
+          }
+
+          const report = reportRows[0];
+          
+          // Verify the program_id matches
+          if (report.program_id !== programId) {
+            errors.push(`Submission ${id}: Post Act Report program_id mismatch`);
+            errorCount++;
+            continue;
+          }
+
+          if (report.status !== 'pending') {
+            errors.push(`Submission ${id}: Post Act Report is not pending (current status: ${report.status})`);
+            errorCount++;
+            continue;
+          }
+
+          // Update post act report status to approved
+          await connection.execute(
+            `UPDATE program_post_act_reports SET status = 'approved', reviewed_by_superadmin_id = ?, reviewed_at = NOW() WHERE id = ?`,
+            [req.superadmin?.id || null, reportId]
+          );
+
+          // Update program status to Completed with manual override
+          await connection.execute(
+            `UPDATE programs_projects SET status = 'Completed', manual_status_override = TRUE WHERE id = ?`,
+            [programId]
+          );
+        }
+
         // Update submission status
         await connection.execute(`UPDATE submissions SET status = 'approved' WHERE id = ?`, [id]);
 
         // Create individual notification for this submission
         let notificationMessage = `Your submission for ${section} has been approved by SuperAdmin`;
         
+        // Add specific details for Post Act Report
+        if (section === 'Post Act Report') {
+          // Get program title for the notification message
+          try {
+            const [programRows] = await connection.execute(
+              `SELECT title FROM programs_projects WHERE id = ?`,
+              [data.program_id]
+            );
+            const programTitle = programRows.length > 0 ? programRows[0].title : 'program';
+            notificationMessage = `Your Post Act Report was approved. The program "${programTitle}" is now marked as Completed.`;
+          } catch (err) {
+            notificationMessage = 'Your Post Act Report was approved. The program is now marked as Completed.';
+          }
+        }
         // Add specific details for programs
-        if (section === 'programs' && data.title) {
+        else if (section === 'programs' && data.title) {
           if (data.collaborators && data.collaborators.length > 0) {
             notificationMessage = `Your collaborative program "${data.title}" has been approved by SuperAdmin. Collaboration requests have been sent to the invited organizations.`;
           } else {
@@ -1424,6 +1501,26 @@ export const bulkRejectSubmissions = async (req, res) => {
           }
         }
 
+        // Handle Post Act Report rejection
+        if (submission.section === 'Post Act Report') {
+          try {
+            const data = JSON.parse(submission.proposed_data);
+            const reportId = data.report_id;
+            
+            if (reportId) {
+              // Update post act report status to rejected
+              await db.execute(
+                `UPDATE program_post_act_reports 
+                 SET status = 'rejected', reviewed_by_superadmin_id = ?, reviewed_at = NOW()
+                 WHERE id = ? AND status = 'pending'`,
+                [req.superadmin?.id || null, reportId]
+              );
+            }
+          } catch (parseError) {
+            // Continue with submission rejection even if report update fails
+          }
+        }
+
         // Update submission status to rejected
         await db.execute(
           'UPDATE submissions SET status = ?, rejection_reason = ? WHERE id = ?',
@@ -1437,8 +1534,21 @@ export const bulkRejectSubmissions = async (req, res) => {
         try {
           const data = JSON.parse(submission.proposed_data);
           
+          // Add specific details for Post Act Report
+          if (submission.section === 'Post Act Report') {
+            try {
+              const [programRows] = await db.execute(
+                `SELECT title FROM programs_projects WHERE id = ?`,
+                [data.program_id]
+              );
+              const programTitle = programRows.length > 0 ? programRows[0].title : 'program';
+              notificationMessage = `Your Post Act Report for "${programTitle}" has been declined by SuperAdmin. Please review the note and re-upload.`;
+            } catch (err) {
+              notificationMessage = 'Your Post Act Report has been declined by SuperAdmin. Please review the note and re-upload.';
+            }
+          }
           // Add specific details for programs
-          if (submission.section === 'programs' && data.title) {
+          else if (submission.section === 'programs' && data.title) {
             notificationMessage = `Your program "${data.title}" has been declined by SuperAdmin`;
           }
           // Add specific details for organization

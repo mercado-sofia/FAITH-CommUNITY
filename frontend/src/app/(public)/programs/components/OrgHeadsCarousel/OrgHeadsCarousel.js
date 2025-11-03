@@ -86,10 +86,6 @@ export default function OrgHeadsCarousel({ heads }) {
                               width={240}
                               height={280}
                               className={styles.headImage}
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'flex';
-                              }}
                             />
                           );
                         })()
@@ -101,12 +97,6 @@ export default function OrgHeadsCarousel({ heads }) {
                           className={styles.headImage}
                         />
                       )}
-                      <div 
-                        className={styles.noImageFallback}
-                        style={{ display: 'none' }}
-                      >
-                        <span>No Image</span>
-                      </div>
                       <div className={styles.iconBar}>
                         {head.facebook && (
                           <a href={head.facebook} target="_blank" rel="noreferrer" className={styles.iconBtn}>

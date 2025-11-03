@@ -4,6 +4,15 @@
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   padding: 4rem 2rem 2rem;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  height: fit-content;
+  min-height: auto;
 }
 
 .sectionHeader {
@@ -98,6 +107,12 @@
   transition: background-color 0.2s ease;
   margin-left: 1rem;
   flex-shrink: 0;
+}
+
+.applicationsList {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .applicationsContainer {
@@ -446,6 +461,21 @@
   text-align: center;
   padding: 3rem 1rem;
   color: #6c757d;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.emptyIcon {
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .emptyState p {
@@ -495,12 +525,24 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .myApplicationsSection {
-    padding: 1.5rem 1rem;
+    padding: 0.25rem 1rem;
     border-radius: 12px;
+    align-items: flex-start;
+    justify-content: flex-start;
+    margin-top: 0;
+    height: auto;
+    min-height: auto;
+  }
+
+  .sectionHeader {
+    margin-bottom: 1rem;
+    padding-bottom: 0.625rem;
+    padding-top: 0;
+    margin-top: 0;
   }
 
   .sectionHeader h2 {
-    font-size: 1.25rem;
+    font-size: 16px;
   }
 
   .filterTabs {
@@ -564,18 +606,48 @@
     right: 1.25rem; /* Position at the right edge of the card on tablet */
   }
 
+  .applicationsList {
+    align-items: center;
+    width: 100%;
+  }
+
   .emptyState {
     padding: 3rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .emptyIcon {
+    margin-left: auto;
+    margin-right: auto;
     font-size: 2rem;
   }
 }
 
 @media (max-width: 480px) {
   .myApplicationsSection {
-    padding: 1rem 0.75rem;
+    padding: 0.25rem 0.75rem;
+    align-items: flex-start;
+    justify-content: flex-start;
+    margin-top: 0;
+    height: auto;
+    min-height: auto;
+  }
+
+  .sectionHeader {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    padding-top: 0;
+    margin-top: 0;
+  }
+
+  .sectionHeader h2 {
+    font-size: 16px;
   }
 
   .filterTab {
@@ -618,5 +690,64 @@
   .dropdownContainer {
     top: 1rem; /* Align with the top of the card content on mobile */
     right: 1rem; /* Position at the right edge of the card on mobile */
+  }
+
+  .applicationsList {
+    align-items: center;
+    width: 100%;
+  }
+
+  .emptyState {
+    padding: 3rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .emptyIcon {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .emptyState p,
+  .emptyState span {
+    text-align: center;
+    width: 100%;
+  }
+}
+
+/* Small devices: stack content to avoid horizontal overflow */
+@media (max-width: 640px) {
+  .applicationContent {
+    flex-direction: column;
+  }
+
+  .programImageThumbnail {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    order: 1;
+  }
+
+  .applicationInfo {
+    height: auto;
+    padding-right: 0;
+    order: 2;
+  }
+
+  .statusContainer {
+    position: static;
+    margin-top: 0.75rem;
+    justify-content: flex-start;
+  }
+
+  .applicationReason p {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
   }
 }

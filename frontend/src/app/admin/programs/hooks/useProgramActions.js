@@ -19,9 +19,11 @@ export const useProgramActions = ({
   const [isOptingOut, setIsOptingOut] = useState(false);
   const [isAcceptingCollaboration, setIsAcceptingCollaboration] = useState(false);
   const [isDecliningCollaboration, setIsDecliningCollaboration] = useState(false);
+  const [isMarkingCompleted, setIsMarkingCompleted] = useState(false);
 
   // State for modals
   const [showMarkCompletedModal, setShowMarkCompletedModal] = useState(false);
+  const [postActReportFile, setPostActReportFile] = useState(null);
   const [showMarkActiveModal, setShowMarkActiveModal] = useState(false);
   const [showOptOutModal, setShowOptOutModal] = useState(false);
   const [showVolunteerAcceptanceModal, setShowVolunteerAcceptanceModal] = useState(false);
@@ -45,16 +47,37 @@ export const useProgramActions = ({
   }, []);
 
   const confirmMarkCompleted = useCallback(async () => {
+    if (isMarkingCompleted) return; // Prevent duplicate submissions
+    
+    setIsMarkingCompleted(true);
     try {
-      await onMarkCompleted(normalizedData);
+      await onMarkCompleted(normalizedData, postActReportFile);
       setShowMarkCompletedModal(false);
+      setPostActReportFile(null);
+      // Clear file input if it exists
+      if (typeof document !== 'undefined') {
+        const input = document.querySelector('input[data-post-act-input="true"]');
+        if (input) {
+          input.value = '';
+        }
+      }
     } catch (error) {
       // Keep modal open on error so user can retry
+    } finally {
+      setIsMarkingCompleted(false);
     }
-  }, [onMarkCompleted, normalizedData]);
+  }, [onMarkCompleted, normalizedData, postActReportFile, isMarkingCompleted]);
 
   const cancelMarkCompleted = useCallback(() => {
     setShowMarkCompletedModal(false);
+    setPostActReportFile(null);
+    // Clear file input if it exists
+    if (typeof document !== 'undefined') {
+      const input = document.querySelector('input[data-post-act-input="true"]');
+      if (input) {
+        input.value = '';
+      }
+    }
   }, []);
 
   // Mark as active handlers
@@ -207,9 +230,11 @@ export const useProgramActions = ({
     isOptingOut,
     isAcceptingCollaboration,
     isDecliningCollaboration,
+    isMarkingCompleted,
     
     // Modal states
     showMarkCompletedModal,
+    postActReportFile,
     showMarkActiveModal,
     showOptOutModal,
     showVolunteerAcceptanceModal,
@@ -236,6 +261,7 @@ export const useProgramActions = ({
     
     // Cancel handlers
     cancelMarkCompleted,
+    setPostActReportFile,
     cancelMarkActive,
     cancelOptOut,
     cancelVolunteerAcceptance,

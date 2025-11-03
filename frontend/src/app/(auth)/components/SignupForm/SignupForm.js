@@ -3,7 +3,8 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import styles from "./SignupForm.module.css"
-import { FaUser, FaLock, FaEye, FaEyeSlash, FaPhone, FaMapMarkerAlt, FaVenusMars, FaSpinner } from "react-icons/fa"
+import { FaUser, FaLock, FaPhone, FaMapMarkerAlt, FaVenusMars, FaSpinner } from "react-icons/fa"
+import { FiEye, FiEyeOff } from "react-icons/fi"
 import CustomDropdown from "./CustomDropdown"
 import { formatDateForAPI } from "@/utils/dateUtils.js"
 
@@ -655,7 +656,7 @@ export default function SignupForm({ onRegistrationSuccess }) {
                disabled={isLoading}
                tabIndex="-1"
              >
-               {showPassword ? <FaEyeSlash /> : <FaEye />}
+               {showPassword ? <FiEyeOff /> : <FiEye />}
              </button>
            </div>
            {fieldErrors.password && <span className={styles.errorMessage}>{fieldErrors.password}</span>}
@@ -683,7 +684,7 @@ export default function SignupForm({ onRegistrationSuccess }) {
                disabled={isLoading || !formData.password}
                tabIndex="-1"
              >
-               {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+               {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
              </button>
            </div>
            {fieldErrors.confirmPassword && <span className={styles.errorMessage}>{fieldErrors.confirmPassword}</span>}

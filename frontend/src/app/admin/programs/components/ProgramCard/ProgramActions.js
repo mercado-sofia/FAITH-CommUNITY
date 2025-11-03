@@ -23,9 +23,34 @@ const ProgramActions = ({
   if (normalizedData.user_role === 'creator' && !isCollaborationCard) {
     const displayStatus = getProgramStatusByDates(normalizedData);
     
+    // If a report is pending, show notice and hide both buttons
+    if (normalizedData.has_pending_post_act_report) {
+      return (
+        <div className={styles.actionButtons}>
+          <div className={styles.notice} title="Post Act Report submitted and waiting for superadmin approval">
+            Report Submitted • Pending Approval
+          </div>
+        </div>
+      );
+    }
+    
+    // If report is approved but program is not yet completed, show notice
+    // Once program is completed, don't show the notice (it's already completed)
+    if (normalizedData.has_approved_post_act_report && displayStatus !== 'Completed') {
+      return (
+        <div className={styles.actionButtons}>
+          <div className={styles.notice} title="Post Act Report approved">
+            <LuSquareCheckBig /> Report Approved
+          </div>
+        </div>
+      );
+    }
+    
+    // Otherwise, show buttons as normal
     return (
       <div className={styles.actionButtons}>
-        {displayStatus !== 'Active' && (
+        {/* Show Mark Active only for Upcoming programs (not Active, not Completed) */}
+        {displayStatus !== 'Active' && displayStatus !== 'Completed' && (
           <button
             onClick={handleMarkActiveClick}
             className={styles.markActiveButton}
@@ -36,6 +61,7 @@ const ProgramActions = ({
           </button>
         )}
         
+        {/* Show Mark Complete only for non-Completed programs */}
         {displayStatus !== 'Completed' && (
           <button
             onClick={handleMarkCompletedClick}

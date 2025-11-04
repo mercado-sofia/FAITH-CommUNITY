@@ -46,10 +46,6 @@ const SearchAndFilterControls = ({
     return () => clearTimeout(timer);
   }, [localSearchTerm, onSearchChange]);
 
-  const handleSearchSubmit = () => {
-    onSearchChange(localSearchTerm);
-  };
-
   const handleSearchClear = () => {
     setLocalSearchTerm('');
     onSearchChange('');
@@ -57,11 +53,6 @@ const SearchAndFilterControls = ({
 
   const handleDropdownClick = (dropdownType) => {
     setShowDropdown(showDropdown === dropdownType ? null : dropdownType);
-  };
-
-  const handleDropdownOptionClick = (dropdownType, value, urlParam) => {
-    setShowDropdown(null);
-    onUpdateURLParams({ [urlParam]: value });
   };
 
   // Handle click outside for dropdowns

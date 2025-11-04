@@ -127,7 +127,9 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
             status: programData.status || 'pending',
             collaborators: programData.collaborators || [],
             image: imageUrl, // Use uploaded image URL
-            additionalImages: programData.additionalImages || []
+            additionalImages: programData.additionalImages || [],
+            submitted_by_name: programData.submitted_by_name?.trim() || '',
+            submitted_by_role: programData.submitted_by_role?.trim() || ''
           },
           submitted_by: currentAdmin.id
         }]

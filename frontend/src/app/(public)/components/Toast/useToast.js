@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Toast from './Toast';
 
@@ -8,14 +8,33 @@ export const useToast = () => {
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   // Support for multiple toasts (for profile page compatibility)
   const [toasts, setToasts] = useState([]);
+  // Store timeout reference for proper cleanup
+  const timeoutRef = useRef(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const showToast = useCallback((message, type = 'success', duration = 3000) => {
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
     setToast({ show: true, message, type });
     
-    // Auto-hide after duration
-    setTimeout(() => {
-      setToast(prev => ({ ...prev, show: false }));
-    }, duration);
+    // Auto-hide after duration - only run on client side
+    if (typeof window !== 'undefined') {
+      timeoutRef.current = setTimeout(() => {
+        setToast(prev => ({ ...prev, show: false }));
+        timeoutRef.current = null;
+      }, duration);
+    }
   }, []);
 
   const addToast = useCallback((toastData) => {
@@ -55,11 +74,11 @@ export const useToast = () => {
     setToast(prev => ({ ...prev, show: false }));
   }, []);
 
-  const ToastComponent = () => {
+  const ToastComponent = useCallback(() => {
     if (!toast.show) return null;
 
     // Ensure document.body exists before creating portal (SSR safety)
-    if (typeof document !== 'undefined' && document.body) {
+    if (typeof window !== 'undefined' && typeof document !== 'undefined' && document.body) {
       return createPortal(
         <Toast
           message={toast.message}
@@ -72,7 +91,7 @@ export const useToast = () => {
 
     // Fallback for SSR or if document.body doesn't exist
     return null;
-  };
+  }, [toast.show, toast.message, toast.type, hideToast]);
 
   return {
     showToast,

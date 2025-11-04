@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import logger from '@/utils/logger';
 import styles from './ContactFormModal.module.css';
 
 const ContactFormModal = ({ isOpen, onClose, organizationName, organizationId, programTitle }) => {
@@ -11,6 +12,16 @@ const ContactFormModal = ({ isOpen, onClose, organizationName, organizationId, p
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); // 'success', 'error', null
+  const closeTimeoutRef = useRef(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -57,15 +68,22 @@ const ContactFormModal = ({ isOpen, onClose, organizationName, organizationId, p
           senderEmail: '',
           message: ''
         });
-        // Close modal after 2 seconds
-        setTimeout(() => {
-          onClose();
-        }, 2000);
+        // Clear any existing timeout
+        if (closeTimeoutRef.current) {
+          clearTimeout(closeTimeoutRef.current);
+        }
+        // Close modal after 2 seconds - only run on client side
+        if (typeof window !== 'undefined') {
+          closeTimeoutRef.current = setTimeout(() => {
+            onClose();
+            closeTimeoutRef.current = null;
+          }, 2000);
+        }
       } else {
         setSubmitStatus('error');
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      logger.error('Error sending message', error, { context: 'ContactFormModal' });
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);

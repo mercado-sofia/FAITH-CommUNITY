@@ -167,32 +167,42 @@ export const validateTokenAndGetUser = async (userType = 'admin') => {
 export const showAuthError = (message = 'Your session has expired. Please log in again.') => {
   // You can customize this to show a modal, toast, or other UI element
   // For now, using a more user-friendly approach
-  if (typeof window !== 'undefined') {
-    // Create a temporary notification element
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #f44336;
-      color: white;
-      padding: 16px 24px;
-      border-radius: 4px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      z-index: 10000;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      max-width: 400px;
-    `;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification);
-      }
-    }, 5000);
+  if (typeof window === 'undefined' || typeof document === 'undefined' || !document.body) {
+    return null; // Return cleanup function for consistency
   }
+  
+  // Create a temporary notification element
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #f44336;
+    color: white;
+    padding: 16px 24px;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10000;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    max-width: 400px;
+  `;
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  
+  // Auto-remove after 5 seconds with cleanup support
+  const timeoutId = setTimeout(() => {
+    if (notification.parentNode) {
+      notification.parentNode.removeChild(notification);
+    }
+  }, 5000);
+  
+  // Return cleanup function for manual cleanup if needed
+  return () => {
+    clearTimeout(timeoutId);
+    if (notification.parentNode) {
+      notification.parentNode.removeChild(notification);
+    }
+  };
 };
 
 /**

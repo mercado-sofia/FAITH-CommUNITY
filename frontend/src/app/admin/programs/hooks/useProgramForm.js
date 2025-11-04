@@ -164,6 +164,31 @@ export const useProgramForm = (mode = 'create', program = null) => {
       }
     });
 
+    // Validate officer fields - required only for create mode
+    if (!isEditMode) {
+      // Validate officer name
+      const nameError = validateField('submitted_by_name', formData.submitted_by_name, VALIDATION_RULES);
+      if (nameError) {
+        newErrors.submitted_by_name = nameError;
+      }
+
+      // Validate officer role - handle custom role for "Others"
+      const role = formData.submitted_by_role || '';
+      if (!role || role.trim() === '') {
+        newErrors.submitted_by_role = ERROR_MESSAGES.submitted_by_role.required;
+      } else if (role === 'Others') {
+        // If "Others" is selected, the custom role input should have updated formData.submitted_by_role
+        // If it's still "Others", it means no custom role was provided
+        newErrors.submitted_by_role = 'Please specify the custom role/position';
+      } else {
+        // Validate role length for non-"Others" roles
+        const roleError = validateField('submitted_by_role', role, VALIDATION_RULES);
+        if (roleError) {
+          newErrors.submitted_by_role = roleError;
+        }
+      }
+    }
+
     // Validate main image - required for new programs
     if (!isEditMode && !formData.image) {
       newErrors.image = ERROR_MESSAGES.image.required;

@@ -1463,8 +1463,8 @@ export const addProgramProject = async (req, res) => {
     }
 
     const [result] = await db.execute(
-      `INSERT INTO programs_projects (organization_id, title, description, category, event_start_date, event_end_date, image, status, slug, is_approved, is_collaborative, manual_status_override)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO programs_projects (organization_id, title, description, category, event_start_date, event_end_date, image, status, slug, is_approved, is_collaborative, manual_status_override, submitted_by_name, submitted_by_role)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         adminOrgId, 
         title, 
@@ -1477,7 +1477,9 @@ export const addProgramProject = async (req, res) => {
         finalSlug, 
         false, // SECURITY FIX: Always require superadmin approval - never auto-approve
         collaborators && collaborators.length > 0,
-        false // New programs start with automatic status (no manual override)
+        false, // New programs start with automatic status (no manual override)
+        null, // submitted_by_name not available for direct program creation (only via submissions)
+        null // submitted_by_role not available for direct program creation (only via submissions)
       ]
     );
 

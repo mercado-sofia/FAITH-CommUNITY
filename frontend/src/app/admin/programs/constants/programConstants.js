@@ -17,7 +17,9 @@ export const DEFAULT_FORM_DATA = {
   event_end_date: null,
   multiple_dates: null,
   collaborators: [],
-  accepts_volunteers: false // Default to closed volunteers on create
+  accepts_volunteers: false, // Default to closed volunteers on create
+  submitted_by_name: '',
+  submitted_by_role: ''
 };
 
 // Form validation rules
@@ -39,6 +41,16 @@ export const VALIDATION_RULES = {
   },
   event_start_date: {
     required: false
+  },
+  submitted_by_name: {
+    required: true,
+    minLength: 2,
+    maxLength: 100
+  },
+  submitted_by_role: {
+    required: true,
+    minLength: 2,
+    maxLength: 100
   },
   image: {
     required: true,
@@ -71,6 +83,16 @@ export const ERROR_MESSAGES = {
   },
   event_start_date: {
     required: 'Event date is required'
+  },
+  submitted_by_name: {
+    required: 'Officer name is required',
+    minLength: 'Officer name must be at least 2 characters long',
+    maxLength: 'Officer name must be less than 100 characters'
+  },
+  submitted_by_role: {
+    required: 'Officer role/position is required',
+    minLength: 'Role/position must be at least 2 characters long',
+    maxLength: 'Role/position must be less than 100 characters'
   },
   image: {
     required: 'Highlight image is required',

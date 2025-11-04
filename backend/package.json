@@ -12,8 +12,8 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.921.0",
-    "@aws-sdk/lib-storage": "^3.921.0",
+    "@aws-sdk/client-s3": "^3.922.0",
+    "@aws-sdk/lib-storage": "^3.922.0",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.7.0",
     "cookie-parser": "^1.4.7",

@@ -1000,10 +1000,91 @@ export const getAllFeaturedPrograms = async (req, res) => {
       );
       const additionalImages = imageRows.map(row => row.image_data);
 
+      // Get collaboration data if program is collaborative
+      let collaborators = [];
+      if (program.is_collaborative) {
+        // Get all organizations involved in the collaboration
+        const [collaborationRows] = await db.execute(`
+          SELECT DISTINCT
+            o.orgName as organization_name,
+            o.org as organization_acronym,
+            o.org_color as organization_color,
+            o.logo as organization_logo,
+            CASE 
+              WHEN o.id = ? THEN 'primary'
+              ELSE 'collaborator'
+            END as role
+          FROM (
+            -- Primary organization (the one that created the program)
+            SELECT ? as org_id, 'primary' as role
+            
+            UNION ALL
+            
+            -- Collaborator organizations (those who accepted collaboration)
+            SELECT o.id as org_id, 'collaborator' as role
+            FROM program_collaborations pc
+            LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+            LEFT JOIN organizations o ON a.organization_id = o.id
+            WHERE pc.program_id = ? AND pc.status = 'accepted'
+          ) org_roles
+          LEFT JOIN organizations o ON org_roles.org_id = o.id
+          WHERE o.id IS NOT NULL
+          ORDER BY 
+            CASE WHEN org_roles.role = 'primary' THEN 0 ELSE 1 END,
+            o.orgName ASC
+        `, [program.organization_id, program.organization_id, program.id]);
+        
+        // Get admin details for each collaborator organization
+        const collaboratorsWithAdmins = await Promise.all(collaborationRows.map(async (collab) => {
+          if (collab.role === 'primary') {
+            // For primary, get the admin who created the program
+            const [adminRows] = await db.execute(`
+              SELECT a.id, a.email
+              FROM admins a
+              WHERE a.organization_id = ? AND a.is_active = TRUE
+              LIMIT 1
+            `, [program.organization_id]);
+            return {
+              organization_name: collab.organization_name,
+              organization_acronym: collab.organization_acronym,
+              organization_color: collab.organization_color,
+              organization_logo: collab.organization_logo,
+              admin_id: adminRows[0]?.id || null,
+              admin_email: adminRows[0]?.email || null,
+              role: collab.role
+              // Primary doesn't need collaboration_status
+            };
+          } else {
+            // For collaborators, get the admin who accepted the collaboration
+            const [adminRows] = await db.execute(`
+              SELECT a.id, a.email
+              FROM program_collaborations pc
+              LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+              LEFT JOIN organizations o ON a.organization_id = o.id
+              WHERE pc.program_id = ? AND o.orgName = ? AND pc.status = 'accepted'
+              LIMIT 1
+            `, [program.id, collab.organization_name]);
+            return {
+              organization_name: collab.organization_name,
+              organization_acronym: collab.organization_acronym,
+              organization_color: collab.organization_color,
+              organization_logo: collab.organization_logo,
+              admin_id: adminRows[0]?.id || null,
+              admin_email: adminRows[0]?.email || null,
+              role: collab.role,
+              collaboration_status: 'accepted' // All collaborators are accepted
+            };
+          }
+        }));
+        
+        collaborators = collaboratorsWithAdmins;
+      }
+
       return {
         ...program,
         multiple_dates: multipleDates,
-        additional_images: additionalImages
+        additional_images: additionalImages,
+        collaborators: collaborators
       };
     }));
 
@@ -1650,6 +1731,13 @@ export const getProgramProjects = async (req, res) => {
 
 // ---------------- Get all programs with organization details for superadmin (from programProjectsController) ----------------
 export const getAllProgramsForSuperadmin = async (req, res) => {
+  // Disable caching to ensure fresh data (especially for collaboration data)
+  res.set({
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+
   try {
     const query = `
       SELECT 
@@ -1664,6 +1752,7 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
         pp.created_at,
         pp.updated_at,
         pp.organization_id,
+        pp.is_collaborative,
         o.orgName as organization_name,
         o.org as organization_acronym,
         o.logo as orgLogo,
@@ -1691,6 +1780,101 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
           multipleDates = dateRows.map((row) => row.event_date);
         }
 
+        // Get additional images for this program
+        const [imageRows] = await db.execute(
+          'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
+          [program.id]
+        );
+        const additionalImages = imageRows.map(row => row.image_data);
+
+        // Get collaboration data if program is collaborative
+        let collaborators = [];
+        
+        // Check if program is collaborative (handle both 0/1 from MySQL and boolean)
+        const isCollaborativeProgram = program.is_collaborative === 1 || 
+                                       program.is_collaborative === true || 
+                                       program.is_collaborative === '1' ||
+                                       Boolean(program.is_collaborative);
+        
+        if (isCollaborativeProgram) {
+          // Get all organizations involved in the collaboration
+          // This includes both the primary organization and accepted collaborators
+          const [collaborationRows] = await db.execute(`
+            SELECT DISTINCT
+              o.orgName as organization_name,
+              o.org as organization_acronym,
+              o.org_color as organization_color,
+              o.logo as organization_logo,
+              CASE 
+                WHEN o.id = ? THEN 'primary'
+                ELSE 'collaborator'
+              END as role
+            FROM (
+              -- Primary organization (the one that created the program)
+              SELECT ? as org_id, 'primary' as role
+              
+              UNION ALL
+              
+              -- Collaborator organizations (those who accepted collaboration)
+              SELECT o.id as org_id, 'collaborator' as role
+              FROM program_collaborations pc
+              LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+              LEFT JOIN organizations o ON a.organization_id = o.id
+              WHERE pc.program_id = ? AND pc.status = 'accepted'
+            ) org_roles
+            LEFT JOIN organizations o ON org_roles.org_id = o.id
+            WHERE o.id IS NOT NULL
+            ORDER BY 
+              CASE WHEN org_roles.role = 'primary' THEN 0 ELSE 1 END,
+              o.orgName ASC
+          `, [program.organization_id, program.organization_id, program.id]);
+          
+          // Get admin details for each collaborator organization
+          const collaboratorsWithAdmins = await Promise.all(collaborationRows.map(async (collab) => {
+            if (collab.role === 'primary') {
+              // For primary, get the admin who created the program
+              const [adminRows] = await db.execute(`
+                SELECT a.id, a.email
+                FROM admins a
+                WHERE a.organization_id = ? AND a.is_active = TRUE
+                LIMIT 1
+              `, [program.organization_id]);
+              return {
+                organization_name: collab.organization_name,
+                organization_acronym: collab.organization_acronym,
+                organization_color: collab.organization_color,
+                organization_logo: collab.organization_logo,
+                admin_id: adminRows[0]?.id || null,
+                admin_email: adminRows[0]?.email || null,
+                role: collab.role
+                // Primary doesn't need collaboration_status
+              };
+            } else {
+              // For collaborators, get the admin who accepted the collaboration
+              const [adminRows] = await db.execute(`
+                SELECT a.id, a.email
+                FROM program_collaborations pc
+                LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+                LEFT JOIN organizations o ON a.organization_id = o.id
+                WHERE pc.program_id = ? AND o.orgName = ? AND pc.status = 'accepted'
+                LIMIT 1
+              `, [program.id, collab.organization_name]);
+              return {
+                organization_name: collab.organization_name,
+                organization_acronym: collab.organization_acronym,
+                organization_color: collab.organization_color,
+                organization_logo: collab.organization_logo,
+                admin_id: adminRows[0]?.id || null,
+                admin_email: adminRows[0]?.email || null,
+                role: collab.role,
+                collaboration_status: 'accepted' // All collaborators in superadmin are accepted
+              };
+            }
+          }));
+          
+          collaborators = collaboratorsWithAdmins;
+        }
+
         let logoUrl;
         if (program.orgLogo) {
           logoUrl = getOrganizationLogoUrl(program.orgLogo);
@@ -1698,13 +1882,32 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
           logoUrl = `/logo/faith_community_logo.png`;
         }
 
+        // Ensure is_collaborative is explicitly set (handle MySQL returning 0/1 as Buffer or number)
+        // MySQL TINYINT(1) returns 0 or 1 as numbers
+        // Convert to boolean explicitly
+        let isCollaborativeValue = false;
+        if (program.is_collaborative === 1 || 
+            program.is_collaborative === true || 
+            program.is_collaborative === '1' ||
+            String(program.is_collaborative) === '1' ||
+            (program.is_collaborative && program.is_collaborative !== 0)) {
+          isCollaborativeValue = true;
+        }
+
         return {
           ...program,
           orgLogo: logoUrl,
           multiple_dates: multipleDates,
+          additional_images: additionalImages,
+          collaborators: collaborators,
+          // Override is_collaborative to ensure it's set correctly (use the same value we checked)
+          is_collaborative: isCollaborativeValue
         };
       })
     );
+    
+    // Remove ETag to prevent 304 responses (already set cache headers at start)
+    res.removeHeader('ETag');
     
     res.json({
       success: true,

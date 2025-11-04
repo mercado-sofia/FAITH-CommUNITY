@@ -10,7 +10,7 @@ export const getPendingSubmissions = async (req, res) => {
       SELECT s.*, 
              o.orgName, o.org, 
              submitted_admin.email as submitted_by_email,
-             submitted_org.orgName as submitted_by_name 
+             submitted_org.orgName as submitted_by_org_name 
       FROM submissions s 
       LEFT JOIN organizations o ON o.id = s.organization_id 
       LEFT JOIN admins submitted_admin ON s.submitted_by = submitted_admin.id 
@@ -19,13 +19,44 @@ export const getPendingSubmissions = async (req, res) => {
       ORDER BY s.submitted_at DESC
     `);
 
-    // Parse JSON data for each submission
-    const submissions = rows.map(submission => {
+    // Parse JSON data for each submission and enrich collaborator data
+    const submissions = await Promise.all(rows.map(async (submission) => {
       try {
+        const previousData = JSON.parse(submission.previous_data || '{}');
+        let proposedData = JSON.parse(submission.proposed_data || '{}');
+        
+        // For program submissions, enrich collaborator data with organization information
+        if (submission.section === 'programs' && proposedData.collaborators && Array.isArray(proposedData.collaborators)) {
+          try {
+            const collaborators = proposedData.collaborators;
+            if (collaborators.length > 0) {
+              // Check if collaborators are stored as IDs (numbers) or objects
+              const firstCollaborator = collaborators[0];
+              if (typeof firstCollaborator === 'number' || (typeof firstCollaborator === 'string' && !isNaN(firstCollaborator))) {
+                // Collaborators are stored as IDs, fetch full details
+                const placeholders = collaborators.map(() => '?').join(',');
+                const [collaboratorRows] = await db.execute(`
+                  SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
+                  FROM admins a
+                  LEFT JOIN organizations o ON a.organization_id = o.id
+                  WHERE a.id IN (${placeholders})
+                `, collaborators);
+                
+                // Replace collaborator IDs with full collaborator objects
+                proposedData.collaborators = collaboratorRows;
+              }
+              // If collaborators are already objects, keep them as is
+            }
+          } catch (collabError) {
+            logWarn('Failed to enrich collaborator data', { error: collabError.message, submissionId: submission.id });
+            // Keep original collaborator data if fetch fails
+          }
+        }
+        
         return {
           ...submission,
-          previous_data: JSON.parse(submission.previous_data || '{}'),
-          proposed_data: JSON.parse(submission.proposed_data || '{}')
+          previous_data: previousData,
+          proposed_data: proposedData
         };
       } catch (parseError) {
         return {
@@ -34,7 +65,7 @@ export const getPendingSubmissions = async (req, res) => {
           proposed_data: {}
         };
       }
-    });
+    }));
 
     res.json({
       success: true,
@@ -55,7 +86,7 @@ export const getAllSubmissions = async (req, res) => {
       SELECT s.*, 
              o.orgName, o.org, 
              submitted_admin.email as submitted_by_email,
-             submitted_org.orgName as submitted_by_name 
+             submitted_org.orgName as submitted_by_org_name 
       FROM submissions s 
       LEFT JOIN organizations o ON o.id = s.organization_id 
       LEFT JOIN admins submitted_admin ON s.submitted_by = submitted_admin.id 
@@ -63,13 +94,44 @@ export const getAllSubmissions = async (req, res) => {
       ORDER BY s.submitted_at DESC
     `);
 
-    // Parse JSON data for each submission
-    const submissions = rows.map(submission => {
+    // Parse JSON data for each submission and enrich collaborator data
+    const submissions = await Promise.all(rows.map(async (submission) => {
       try {
+        const previousData = JSON.parse(submission.previous_data || '{}');
+        let proposedData = JSON.parse(submission.proposed_data || '{}');
+        
+        // For program submissions, enrich collaborator data with organization information
+        if (submission.section === 'programs' && proposedData.collaborators && Array.isArray(proposedData.collaborators)) {
+          try {
+            const collaborators = proposedData.collaborators;
+            if (collaborators.length > 0) {
+              // Check if collaborators are stored as IDs (numbers) or objects
+              const firstCollaborator = collaborators[0];
+              if (typeof firstCollaborator === 'number' || (typeof firstCollaborator === 'string' && !isNaN(firstCollaborator))) {
+                // Collaborators are stored as IDs, fetch full details
+                const placeholders = collaborators.map(() => '?').join(',');
+                const [collaboratorRows] = await db.execute(`
+                  SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
+                  FROM admins a
+                  LEFT JOIN organizations o ON a.organization_id = o.id
+                  WHERE a.id IN (${placeholders})
+                `, collaborators);
+                
+                // Replace collaborator IDs with full collaborator objects
+                proposedData.collaborators = collaboratorRows;
+              }
+              // If collaborators are already objects, keep them as is
+            }
+          } catch (collabError) {
+            logWarn('Failed to enrich collaborator data', { error: collabError.message, submissionId: submission.id });
+            // Keep original collaborator data if fetch fails
+          }
+        }
+        
         return {
           ...submission,
-          previous_data: JSON.parse(submission.previous_data || '{}'),
-          proposed_data: JSON.parse(submission.proposed_data || '{}')
+          previous_data: previousData,
+          proposed_data: proposedData
         };
       } catch (parseError) {
         return {
@@ -78,7 +140,7 @@ export const getAllSubmissions = async (req, res) => {
           proposed_data: {}
         };
       }
-    });
+    }));
 
     res.json({
       success: true,
@@ -337,8 +399,8 @@ export const approveSubmission = async (req, res) => {
           // Create the program immediately
           
           const [result] = await connection.execute(
-            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override, submitted_by_name, submitted_by_role)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               orgId,
               data.title,
@@ -352,7 +414,9 @@ export const approveSubmission = async (req, res) => {
               true, // Approved by superadmin
               true, // Collaborative - will be updated based on collaborator responses
               data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
-              false // New approved programs start with automatic status (no manual override)
+              false, // New approved programs start with automatic status (no manual override)
+              data.submitted_by_name || null,
+              data.submitted_by_role || null
             ]
           );
           
@@ -432,8 +496,8 @@ export const approveSubmission = async (req, res) => {
           // For non-collaborative programs, create the program immediately
           
           const [result] = await connection.execute(
-            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override, submitted_by_name, submitted_by_role)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               orgId,
               data.title,
@@ -447,7 +511,9 @@ export const approveSubmission = async (req, res) => {
               true, // SECURITY FIX: Always approve when superadmin approves (this is the approval process)
               false, // Not collaborative
               data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
-              false // New approved programs start with automatic status (no manual override)
+              false, // New approved programs start with automatic status (no manual override)
+              data.submitted_by_name || null,
+              data.submitted_by_role || null
             ]
           );
           
@@ -1011,8 +1077,8 @@ export const bulkApproveSubmissions = async (req, res) => {
           }
 
           const [result] = await connection.execute(
-            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override, submitted_by_name, submitted_by_role)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               orgId,
               data.title,
@@ -1026,7 +1092,9 @@ export const bulkApproveSubmissions = async (req, res) => {
               true, // SECURITY FIX: Always approve when superadmin approves (this is the approval process)
               data.collaborators && data.collaborators.length > 0,
               data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
-              false // New approved programs start with automatic status (no manual override)
+              false, // New approved programs start with automatic status (no manual override)
+              data.submitted_by_name || null,
+              data.submitted_by_role || null
             ]
           );
           

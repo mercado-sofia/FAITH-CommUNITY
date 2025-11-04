@@ -5,7 +5,10 @@ import { FaSpinner } from 'react-icons/fa';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import { useProgramForm, useImageUpload, useCollaboration } from '../../hooks';
 import { FormFields, ImageUpload, AdditionalImagesUpload, CollaboratorSection } from './components';
+import CustomDropdown from './components/CustomDropdown';
 import { UnsaveChangesModal } from '../index';
+import { ROLE_OPTIONS } from '@/app/admin/organization/utils/roleHierarchy';
+import logger from '@/utils/logger';
 import styles from './ProgramForm.module.css';
 
 const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRefreshCollaborators }) => {
@@ -65,6 +68,42 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
     resetCollaboration,
     sendInvitesForNewCollaborators
   } = useCollaboration(isEditMode, program?.id);
+
+  // State for custom role input (only shown when "Others" is selected)
+  const [customRole, setCustomRole] = useState('');
+
+  // Handle role change
+  const handleRoleChange = useCallback((selectedRole) => {
+    if (selectedRole === 'Others') {
+      updateFormData({ submitted_by_role: 'Others' });
+      setCustomRole('');
+    } else {
+      updateFormData({ submitted_by_role: selectedRole });
+      setCustomRole('');
+    }
+    
+    // Clear role error when user selects a role
+    if (errors.submitted_by_role) clearError('submitted_by_role');
+  }, [updateFormData, errors.submitted_by_role, clearError]);
+
+  // Handle custom role change
+  const handleCustomRoleChange = useCallback((value) => {
+    setCustomRole(value);
+    // Update formData with custom role
+    updateFormData({ submitted_by_role: value });
+    
+    // Clear role error when user starts typing
+    if (errors.submitted_by_role) clearError('submitted_by_role');
+  }, [updateFormData, errors.submitted_by_role, clearError]);
+
+  // Initialize custom role if existing role is not in predefined options
+  useEffect(() => {
+    if (formData.submitted_by_role && !ROLE_OPTIONS.find(option => option.value === formData.submitted_by_role)) {
+      setCustomRole(formData.submitted_by_role);
+    } else {
+      setCustomRole('');
+    }
+  }, [formData.submitted_by_role]);
 
   // Initialize existing images in edit mode
   useEffect(() => {
@@ -223,7 +262,10 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
         // Handle image properly for both create and edit modes
         image: null,
         // Include additional images from formData
-        additionalImages: Array.isArray(formData.additionalImages) ? formData.additionalImages : []
+        additionalImages: Array.isArray(formData.additionalImages) ? formData.additionalImages : [],
+        // Officer information - only for create mode
+        submitted_by_name: !isEditMode ? (formData.submitted_by_name?.trim() || '') : undefined,
+        submitted_by_role: !isEditMode ? (formData.submitted_by_role?.trim() || '') : undefined
       };
 
       // Handle image data properly
@@ -246,7 +288,7 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
         try {
           await sendInvitesForNewCollaborators(formData.collaborators);
         } catch (error) {
-          console.error('Failed to send some collaborator invites:', error);
+          logger.error('Failed to send some collaborator invites', error, { context: 'ProgramForm' });
           // Continue with form submission even if some invites fail
         }
       }
@@ -329,6 +371,68 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
             onInviteCollaborator={handleInviteCollaborator}
             onRemoveCollaborator={handleRemoveCollaborator}
           />
+
+          {/* Submitted By Section - Only shown in create mode */}
+          {!isEditMode && (
+            <div className={styles.container}>
+              <h3 className={styles.containerTitle}>Submitted by</h3>
+              <div className={styles.submittedByFields}>
+                <div className={styles.submittedByNameField}>
+                  <label className={styles.inlineLabel}>
+                    Name
+                  </label>
+                  <div className={styles.inputWrapper}>
+                    <input
+                      type="text"
+                      className={`${styles.input} ${errors.submitted_by_name ? styles.inputError : ''}`}
+                      value={formData.submitted_by_name || ''}
+                      onChange={(e) => {
+                        updateFormData({ submitted_by_name: e.target.value });
+                        if (errors.submitted_by_name) clearError('submitted_by_name');
+                      }}
+                      placeholder="Enter name"
+                    />
+                    {errors.submitted_by_name && <span className={styles.errorText}>{errors.submitted_by_name}</span>}
+                  </div>
+                </div>
+                <div className={styles.submittedByRoleField}>
+                  <label className={styles.inlineLabel}>
+                    Position
+                  </label>
+                  <div className={styles.roleInputGroup}>
+                    <div className={styles.inputWrapper}>
+                      <CustomDropdown
+                        options={ROLE_OPTIONS}
+                        value={ROLE_OPTIONS.find(option => option.value === formData.submitted_by_role) 
+                          ? formData.submitted_by_role 
+                          : (formData.submitted_by_role && !ROLE_OPTIONS.find(option => option.value === formData.submitted_by_role) 
+                            ? 'Others' 
+                            : '')}
+                        onChange={(selectedValue) => handleRoleChange(selectedValue)}
+                        placeholder="Select a role"
+                        error={!!errors.submitted_by_role}
+                        required
+                      />
+                    </div>
+                    {/* Custom role input - only show when "Others" is selected or when role is not in predefined options */}
+                    {(formData.submitted_by_role === 'Others' || (formData.submitted_by_role && !ROLE_OPTIONS.find(option => option.value === formData.submitted_by_role))) && (
+                      <div className={styles.customRoleInput}>
+                        <input
+                          type="text"
+                          value={customRole}
+                          onChange={(e) => handleCustomRoleChange(e.target.value)}
+                          className={`${styles.input} ${errors.submitted_by_role ? styles.inputError : ''}`}
+                          placeholder="Enter custom role/position"
+                          required
+                        />
+                      </div>
+                    )}
+                  </div>
+                  {errors.submitted_by_role && <span className={styles.errorText}>{errors.submitted_by_role}</span>}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className={styles.formActions}>

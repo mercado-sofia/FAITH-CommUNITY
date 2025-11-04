@@ -122,6 +122,7 @@ const FormFields = ({
         </div>
         {errors.accepts_volunteers && <span className={styles.errorText}>{errors.accepts_volunteers}</span>}
       </div>
+
     </>
   );
 };

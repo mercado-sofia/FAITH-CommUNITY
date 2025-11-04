@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Toast from '../Toast/Toast';
 
 /**
@@ -18,30 +18,34 @@ import Toast from '../Toast/Toast';
 export default function ToastContainer() {
   const [toasts, setToasts] = useState([]);
 
-  // Function to add a new toast
-  const addToast = (message, type = 'success', duration = 4000) => {
+  // Function to add a new toast - wrapped in useCallback for stable reference
+  const addToast = useCallback((message, type = 'success', duration = 4000) => {
+    // Only execute on client side
+    if (typeof window === 'undefined') return;
+    
     const id = Date.now() + Math.random();
     const newToast = { id, message, type, duration };
     setToasts(prev => [...prev, newToast]);
-  };
+  }, []);
 
-  // Function to remove a toast
-  const removeToast = (id) => {
+  // Function to remove a toast - wrapped in useCallback for stable reference
+  const removeToast = useCallback((id) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
-  };
+  }, []);
 
   // Expose addToast function globally for easy access
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.showToast = addToast;
-    }
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+
+    window.showToast = addToast;
 
     return () => {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== 'undefined' && window.showToast) {
         delete window.showToast;
       }
     };
-  }, []);
+  }, [addToast]);
 
   return (
     <div style={{ position: 'fixed', top: 0, right: 0, zIndex: 1000000, pointerEvents: 'none' }}>

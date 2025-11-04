@@ -470,6 +470,8 @@ const initializeDatabase = async () => {
           is_collaborative BOOLEAN DEFAULT FALSE,
           accepts_volunteers BOOLEAN DEFAULT TRUE, // Controls whether program accepts volunteer applications
           manual_status_override BOOLEAN DEFAULT FALSE, // Indicates if admin manually set the status
+          submitted_by_name VARCHAR(100) NULL, // Name of the officer who submitted the program
+          submitted_by_role VARCHAR(100) NULL, // Role/position of the officer who submitted the program
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
@@ -482,6 +484,49 @@ const initializeDatabase = async () => {
           INDEX idx_programs_manual_override (manual_status_override)
         )
       `);
+
+      // Add submitted_by_name and submitted_by_role columns if they don't exist (migration for existing databases)
+      try {
+        // Check if submitted_by_name column exists
+        const [nameColumns] = await connection.query(`
+          SELECT COLUMN_NAME 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_SCHEMA = DATABASE() 
+          AND TABLE_NAME = 'programs_projects' 
+          AND COLUMN_NAME = 'submitted_by_name'
+        `);
+        
+        if (nameColumns.length === 0) {
+          await connection.query(`
+            ALTER TABLE programs_projects 
+            ADD COLUMN submitted_by_name VARCHAR(100) NULL
+          `);
+          logInfo('Added submitted_by_name column to programs_projects table', { context: 'database' });
+        }
+      } catch (error) {
+        logError('Error adding submitted_by_name column', error, { context: 'database' });
+      }
+
+      try {
+        // Check if submitted_by_role column exists
+        const [roleColumns] = await connection.query(`
+          SELECT COLUMN_NAME 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_SCHEMA = DATABASE() 
+          AND TABLE_NAME = 'programs_projects' 
+          AND COLUMN_NAME = 'submitted_by_role'
+        `);
+        
+        if (roleColumns.length === 0) {
+          await connection.query(`
+            ALTER TABLE programs_projects 
+            ADD COLUMN submitted_by_role VARCHAR(100) NULL
+          `);
+          logInfo('Added submitted_by_role column to programs_projects table', { context: 'database' });
+        }
+      } catch (error) {
+        logError('Error adding submitted_by_role column', error, { context: 'database' });
+      }
 
       await connection.query(`
         CREATE TABLE IF NOT EXISTS news (

@@ -20,6 +20,7 @@ export default function Navbar() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const resizeTimeoutRef = useRef(null);
+  const sidebarTimeoutRef = useRef(null);
 
   // Dropdowns
   const profileDropdown = useDropdown(false);
@@ -36,11 +37,20 @@ export default function Navbar() {
 
   // Sidebar open/close
   const handleCloseSidebar = useCallback(() => {
+    // Clear any existing timeout
+    if (sidebarTimeoutRef.current) {
+      clearTimeout(sidebarTimeoutRef.current);
+    }
+
     setIsSlidingOut(true);
-    setTimeout(() => {
-      setMenuOpen(false);
-      setIsSlidingOut(false);
-    }, 300);
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      sidebarTimeoutRef.current = setTimeout(() => {
+        setMenuOpen(false);
+        setIsSlidingOut(false);
+        sidebarTimeoutRef.current = null;
+      }, 300);
+    }
   }, []);
 
   const toggleMenu = useCallback(() => {
@@ -60,6 +70,14 @@ export default function Navbar() {
 
   useEffect(() => {
     setIsMounted(true);
+  }, []);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (resizeTimeoutRef.current) clearTimeout(resizeTimeoutRef.current);
+      if (sidebarTimeoutRef.current) clearTimeout(sidebarTimeoutRef.current);
+    };
   }, []);
 
   useEffect(() => {

@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { FiCheckCircle, FiX, FiAlertCircle, FiInfo, FiAlertTriangle } from 'react-icons/fi';
 import styles from './Toast.module.css';
 
 export default function Toast({ message, type = 'success', duration = 3000, onClose }) {
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+
     const timer = setTimeout(() => {
       onClose?.();
     }, duration);

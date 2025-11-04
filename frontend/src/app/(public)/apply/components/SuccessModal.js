@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { FiCheckCircle, FiX, FiInfo } from "react-icons/fi";
 
@@ -8,6 +8,7 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
   const [mounted, setMounted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(5);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  const closeTimeoutRef = useRef(null);
 
   // Set appropriate styling and content based on type
   const modalConfig = {
@@ -42,22 +43,45 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
   const isMobile = windowWidth <= 640;
   const isSmallMobile = windowWidth <= 480;
 
   useEffect(() => {
     if (!isOpen) return;
+    // Only run on client side
+    if (typeof window === 'undefined') return;
 
     // Reset timer when modal opens
     setTimeLeft(5);
+
+    // Clear any existing close timeout
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
 
     // Countdown timer
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
+          // Clear any existing close timeout
+          if (closeTimeoutRef.current) {
+            clearTimeout(closeTimeoutRef.current);
+          }
           // Use setTimeout to schedule the onClose call for the next tick
-          setTimeout(() => {
+          closeTimeoutRef.current = setTimeout(() => {
             onClose();
+            closeTimeoutRef.current = null;
           }, 0);
           return 0;
         }
@@ -65,7 +89,13 @@ export default function SuccessModal({ isOpen, onClose, message = "Application s
       });
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = null;
+      }
+    };
   }, [isOpen, onClose]);
 
   // Prevent body scroll when modal is open

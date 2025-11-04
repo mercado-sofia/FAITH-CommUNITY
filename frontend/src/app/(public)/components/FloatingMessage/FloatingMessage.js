@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import styles from "./FloatingMessage.module.css";
 import { FiMessageCircle } from "react-icons/fi";
 import { FaChevronRight, FaSpinner } from "react-icons/fa";
@@ -22,6 +22,7 @@ export default function FloatingMessage() {
 
   const boxRef = useRef(null);
   const dropdownRef = useRef(null);
+  const clickLockTimeoutRef = useRef(null);
 
   // Check user authentication status
   useEffect(() => {
@@ -91,6 +92,9 @@ export default function FloatingMessage() {
       }
     };
 
+    // Only add listeners on client side
+    if (typeof document === 'undefined') return;
+
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
       document.addEventListener("touchstart", handleClickOutside);
@@ -98,11 +102,13 @@ export default function FloatingMessage() {
     }
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
-      document.removeEventListener("keydown", handleKeyDown);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener("mousedown", handleClickOutside);
+        document.removeEventListener("touchstart", handleClickOutside);
+        document.removeEventListener("keydown", handleKeyDown);
+      }
     };
-  }, [isOpen]);
+  }, [isOpen, closeMessageBox]);
 
   // Handle dropdown outside click
   useEffect(() => {
@@ -112,18 +118,32 @@ export default function FloatingMessage() {
       }
     };
 
+    // Only add listeners on client side
+    if (typeof document === 'undefined') return;
+
     if (dropdownOpen) {
       document.addEventListener("mousedown", handleDropdownClickOutside);
       document.addEventListener("touchstart", handleDropdownClickOutside);
     }
 
     return () => {
-      document.removeEventListener("mousedown", handleDropdownClickOutside);
-      document.removeEventListener("touchstart", handleDropdownClickOutside);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener("mousedown", handleDropdownClickOutside);
+        document.removeEventListener("touchstart", handleDropdownClickOutside);
+      }
     };
   }, [dropdownOpen]);
 
-  const closeMessageBox = (resetAll = true) => {
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (clickLockTimeoutRef.current) {
+        clearTimeout(clickLockTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const closeMessageBox = useCallback((resetAll = true) => {
     setIsOpen(false);
     setDropdownOpen(false);
     
@@ -134,9 +154,20 @@ export default function FloatingMessage() {
       setEmailError("");
     }
 
+    // Clear any existing timeout
+    if (clickLockTimeoutRef.current) {
+      clearTimeout(clickLockTimeoutRef.current);
+    }
+
     setClickLocked(true);
-    setTimeout(() => setClickLocked(false), 300);
-  };
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      clickLockTimeoutRef.current = setTimeout(() => {
+        setClickLocked(false);
+        clickLockTimeoutRef.current = null;
+      }, 300);
+    }
+  }, []);
 
   const handleToggleChat = () => {
     if (clickLocked) return;

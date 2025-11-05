@@ -126,7 +126,9 @@ export const useProgramForm = (mode = 'create', program = null) => {
         image: null, // Will be handled separately for existing images
         additionalImages: [], // Will be handled separately for existing images
         collaborators: Array.isArray(program.collaborators) ? program.collaborators : [],
-        accepts_volunteers: program.accepts_volunteers !== undefined ? program.accepts_volunteers : true
+        accepts_volunteers: program.accepts_volunteers !== undefined ? program.accepts_volunteers : true,
+        edited_by_name: program.edited_by_name || '',
+        edited_by_role: program.edited_by_role || ''
       });
     }
   }, [isEditMode, program]);

@@ -84,15 +84,66 @@
 }
 
 .modalBody {
-  padding: 32px;
+  padding: 0;
   overflow-y: auto;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tabs Styles */
+.tabsContainer {
+  display: flex;
+  border-bottom: 2px solid #e5e7eb;
+  padding: 0 32px;
+  background: #f8fafc;
+  gap: 0;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  color: #6b7280;
+  transition: all 0.2s ease;
+  font-family: 'Poppins', sans-serif;
+  position: relative;
+  bottom: -2px;
+}
+
+.tab:hover {
+  color: #374151;
+  background: #f1f5f9;
+}
+
+.tab.activeTab {
+  color: #06100f;
+  border-bottom-color: #06100f;
+  font-weight: 600;
+}
+
+.tabIcon {
+  font-size: 14px;
+}
+
+.tabContent {
+  padding: 32px;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .contentLayout {
   display: flex;
   flex-direction: column;
   gap: 32px;
+  padding: 32px;
 }
 
 .topSection {
@@ -428,4 +479,138 @@
   .additionalImage {
     height: 120px;
   }
+}
+
+/* Activity Tracker Styles */
+.activityTrackerContent {
+  padding: 32px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.activityTrackerTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 24px 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+.activityList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.activityItem {
+  display: flex;
+  gap: 16px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.activityItem:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.activityIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.activityContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.activityHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.activityAction {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  font-family: 'Poppins', sans-serif;
+}
+
+.activityDate {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.activityDetails {
+  margin-top: 4px;
+}
+
+.activityDetailRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.activityDetailIcon {
+  font-size: 14px;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.activityDetailLabel {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.activityDetailValue {
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.activityRole {
+  color: #6b7280;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.noActivity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: #9ca3af;
+}
+
+.noActivityIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.noActivity p {
+  font-size: 16px;
+  margin: 0;
+  color: #9ca3af;
 }

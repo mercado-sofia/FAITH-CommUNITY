@@ -60,7 +60,11 @@ export const superadminProgramsApi = createApi({
               collaborators: program.collaborators || [],
               organization_name: program.organization_name,
               organization_acronym: program.organization_acronym,
-              organization_color: program.organization_color
+              organization_color: program.organization_color,
+              submitted_by_name: program.submitted_by_name,
+              submitted_by_role: program.submitted_by_role,
+              edited_by_name: program.edited_by_name,
+              edited_by_role: program.edited_by_role
             };
 
             // Categorize by status
@@ -137,7 +141,11 @@ export const superadminProgramsApi = createApi({
             organization_acronym: program.organization_acronym,
             orgLogo: program.orgLogo,
             is_collaborative: program.is_collaborative || false,
-            collaborators: program.collaborators || []
+            collaborators: program.collaborators || [],
+            submitted_by_name: program.submitted_by_name,
+            submitted_by_role: program.submitted_by_role,
+            edited_by_name: program.edited_by_name,
+            edited_by_role: program.edited_by_role
           };
         }
         return null;

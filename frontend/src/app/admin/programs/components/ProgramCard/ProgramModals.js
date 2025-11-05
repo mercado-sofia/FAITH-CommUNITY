@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { FiX, FiAlertTriangle } from 'react-icons/fi';
+import { FaSpinner } from 'react-icons/fa';
 import styles from './ProgramModals.module.css';
 
 const ProgramModals = ({
@@ -229,12 +231,29 @@ const ProgramModals = ({
           <div className={`${styles.modalContent} ${styles.acceptCollaborationModal}`} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h3 className={styles.modalTitle}>Accept Collaboration</h3>
+              <button
+                className={styles.closeBtn}
+                onClick={cancelAcceptCollaboration}
+                disabled={isAcceptingCollaboration}
+                aria-label="Close"
+              >
+                <FiX />
+              </button>
             </div>
             <div className={styles.modalBody}>
-              <p>Are you sure you want to accept the collaboration request for &quot;{normalizedData.title}&quot;?</p>
-              <p className={styles.infoText}>
-                This will make you a collaborator on this program
-              </p>
+              <div className={styles.warningSection}>
+                <div className={styles.warningIcon}>
+                  <FiAlertTriangle />
+                </div>
+                <div className={styles.warningText}>
+                  <p className={styles.message}>
+                    Are you sure you want to accept the collaboration request for &quot;{normalizedData.title}&quot;?
+                  </p>
+                  <p className={styles.details}>
+                    This will make you a collaborator on this program. The program will be submitted for superadmin approval after all collaborators accept.
+                  </p>
+                </div>
+              </div>
             </div>
             <div className={styles.modalActions}>
               <button
@@ -246,10 +265,17 @@ const ProgramModals = ({
               </button>
               <button
                 onClick={confirmAcceptCollaboration}
-                className={styles.confirmButton}
+                className={`${styles.confirmButton} ${styles.acceptBtn}`}
                 disabled={isAcceptingCollaboration}
               >
-                {isAcceptingCollaboration ? 'Accepting...' : 'Accept Collaboration'}
+                {isAcceptingCollaboration ? (
+                  <>
+                    <FaSpinner className={styles.spinner} />
+                    Accepting...
+                  </>
+                ) : (
+                  'Accept Collaboration'
+                )}
               </button>
             </div>
           </div>

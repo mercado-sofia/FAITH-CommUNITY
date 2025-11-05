@@ -26,6 +26,10 @@ export const getAllProgramsByOrganization = async (req, res) => {
         pp.updated_at,
         pp.organization_id,
         pp.is_collaborative,
+        pp.submitted_by_name,
+        pp.submitted_by_role,
+        pp.edited_by_name,
+        pp.edited_by_role,
         o.orgName as organization_name,
         o.org as organization_acronym,
         o.logo as orgLogo,
@@ -65,16 +69,6 @@ export const getAllProgramsByOrganization = async (req, res) => {
 
       // Get collaboration data if program is collaborative
       let collaborators = [];
-      
-      // Debug: Log is_collaborative value for testinggg
-      if (program.title === 'testinggg') {
-        console.log('🔍 Backend Debug - testinggg:', {
-          id: program.id,
-          is_collaborative_raw: program.is_collaborative,
-          is_collaborative_type: typeof program.is_collaborative,
-          is_collaborative_truthy: Boolean(program.is_collaborative)
-        });
-      }
       
       // Check if program is collaborative (handle both 0/1 from MySQL and boolean)
       const isCollaborativeProgram = program.is_collaborative === 1 || 
@@ -156,18 +150,6 @@ export const getAllProgramsByOrganization = async (req, res) => {
         }));
         
         collaborators = collaboratorsWithAdmins;
-        
-        // Debug: Log collaborators for testinggg
-        if (program.title === 'testinggg') {
-          console.log('🔍 Backend Debug - testinggg collaborators:', {
-            count: collaborators.length,
-            collaborators: collaborators.map(c => ({ 
-              role: c.role, 
-              org: c.organization_name,
-              has_status: !!c.collaboration_status
-            }))
-          });
-        }
       }
 
       // Construct proper logo URL
@@ -189,17 +171,6 @@ export const getAllProgramsByOrganization = async (req, res) => {
           String(program.is_collaborative) === '1' ||
           (program.is_collaborative && program.is_collaborative !== 0)) {
         isCollaborativeValue = true;
-      }
-      
-      // Debug: Log final return value for testinggg
-      if (program.title === 'testinggg') {
-        console.log('🔍 Backend Debug - testinggg RETURN:', {
-          id: program.id,
-          is_collaborative_original: program.is_collaborative,
-          is_collaborative_final: isCollaborativeValue,
-          collaborators_count: collaborators.length,
-          collaborators: collaborators.map(c => ({ role: c.role, org: c.organization_name }))
-        });
       }
       
       return {
@@ -276,6 +247,10 @@ export const getProgramById = async (req, res) => {
         pp.updated_at,
         pp.organization_id,
         pp.is_collaborative,
+        pp.submitted_by_name,
+        pp.submitted_by_role,
+        pp.edited_by_name,
+        pp.edited_by_role,
         o.orgName as organization_name,
         o.org as organization_acronym,
         o.logo as orgLogo,

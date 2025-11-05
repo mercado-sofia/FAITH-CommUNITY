@@ -1,29 +1,33 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import Image from 'next/image'
-import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding } from 'react-icons/fa'
+import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding, FaHistory, FaInfoCircle, FaUser, FaClock } from 'react-icons/fa'
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths'
 import { useGetProgramByIdQuery } from '@/rtk/superadmin/programsApi'
-import { formatProgramDates, formatDateShort } from '@/utils/dateUtils.js'
+import { formatProgramDates, formatDateShort, formatDateTime } from '@/utils/dateUtils.js'
 import styles from './styles/ProgramDetailsModal.module.css'
 
 const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
+  const [activeTab, setActiveTab] = useState('details')
+
   // Fetch complete program details when modal opens
   const { 
     data: fullProgramData, 
     isLoading: programLoading, 
     error: programError 
   } = useGetProgramByIdQuery(program?.id, {
-    skip: !isOpen || !program?.id
+    skip: !isOpen || !program?.id,
+    refetchOnMountOrArgChange: true // Force refetch when modal opens
   })
 
   if (!isOpen || !program) return null
 
   // Use fetched data if available, otherwise fallback to passed program data
-  const programData = fullProgramData || program
-
-
+  // Prefer fetched data as it includes complete information like submitted_by_name and submitted_by_role
+  // If query has completed (even if it returned null), use that; otherwise use initial program data
+  const programData = fullProgramData !== undefined ? (fullProgramData || program) : program
+  
   // Use the new upload path utility
   const imageSource = getProgramImageUrl(programData.image);
 
@@ -66,9 +70,29 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
         </div>
         
         <div className={styles.modalBody}>
-          <div className={styles.contentLayout}>
-            {/* Top Section - Image and Program Info Side by Side */}
-            <div className={styles.topSection}>
+          {/* Tabs */}
+          <div className={styles.tabsContainer}>
+            <button
+              className={`${styles.tab} ${activeTab === 'details' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('details')}
+            >
+              <FaInfoCircle className={styles.tabIcon} />
+              Details
+            </button>
+            <button
+              className={`${styles.tab} ${activeTab === 'activity' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('activity')}
+            >
+              <FaHistory className={styles.tabIcon} />
+              Activity Tracker
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          {activeTab === 'details' && (
+            <div className={styles.contentLayout}>
+              {/* Top Section - Image and Program Info Side by Side */}
+              <div className={styles.topSection}>
               {/* Left - Program Image */}
               <div className={styles.imageSection}>
                 {imageSource ? (
@@ -205,25 +229,152 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
                 </div>
               );
             })()}
-          </div>
 
-          {/* Additional Images - Full Width Below - Only show if there are additional images */}
-          {programData.additional_images && programData.additional_images.length > 0 && (
-            <div className={styles.additionalImagesSection}>
-              <h4 className={styles.sectionTitle}>Additional Images</h4>
-              <div className={styles.additionalImagesGrid}>
-                {programData.additional_images.map((imagePath, index) => (
-                  <div key={index} className={styles.additionalImageContainer}>
-                    <Image
-                      src={getProgramImageUrl(imagePath, 'additional')}
-                      alt={`Additional ${index + 1}`}
-                      className={styles.additionalImage}
-                      width={150}
-                      height={150}
-                      onError={(e) => e.target.style.display = 'none'}
-                    />
+            {/* Additional Images - Full Width Below - Only show if there are additional images */}
+            {programData.additional_images && programData.additional_images.length > 0 && (
+              <div className={styles.additionalImagesSection}>
+                <h4 className={styles.sectionTitle}>Additional Images</h4>
+                <div className={styles.additionalImagesGrid}>
+                  {programData.additional_images.map((imagePath, index) => (
+                    <div key={index} className={styles.additionalImageContainer}>
+                      <Image
+                        src={getProgramImageUrl(imagePath, 'additional')}
+                        alt={`Additional ${index + 1}`}
+                        className={styles.additionalImage}
+                        width={150}
+                        height={150}
+                        onError={(e) => e.target.style.display = 'none'}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            </div>
+          )}
+
+          {/* Activity Tracker Tab */}
+          {activeTab === 'activity' && (
+            <div className={styles.activityTrackerContent}>
+              <h3 className={styles.activityTrackerTitle}>Activity History</h3>
+              
+              <div className={styles.activityList}>
+                {/* Created Activity */}
+                {programData.created_at && (
+                  <>
+                    <div className={styles.activityItem}>
+                      <div className={styles.activityIcon}>
+                        <FaClock />
+                      </div>
+                      <div className={styles.activityContent}>
+                        <div className={styles.activityHeader}>
+                          <span className={styles.activityAction}>Program Created</span>
+                          <span className={styles.activityDate}>
+                            {formatDateTime(programData.created_at)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Submitted By Information */}
+                    <div className={styles.activityItem}>
+                      <div className={styles.activityIcon}>
+                        <FaUser />
+                      </div>
+                      <div className={styles.activityContent}>
+                        <div className={styles.activityHeader}>
+                          <span className={styles.activityAction}>Submitted by</span>
+                        </div>
+                        <div className={styles.activityDetails}>
+                          <div className={styles.activityDetailRow}>
+                            <span className={styles.activityDetailValue}>
+                              {programData.submitted_by_name && programData.submitted_by_name.trim() 
+                                ? programData.submitted_by_name 
+                                : 'Not specified'}
+                              {programData.submitted_by_role && programData.submitted_by_role.trim() && (
+                                <span className={styles.activityRole}> ({programData.submitted_by_role})</span>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Updated Activity - Only show if program has been updated AND has edited_by data */}
+                {(() => {
+                  // Check if edited_by_name exists and has real data (not empty, not null, not "Not specified")
+                  const hasEditedByData = programData.edited_by_name && 
+                    typeof programData.edited_by_name === 'string' &&
+                    programData.edited_by_name.trim() !== '' &&
+                    programData.edited_by_name.trim().toLowerCase() !== 'not specified';
+                  
+                  // Check if program has been updated (updated_at exists and is different from created_at)
+                  // Use a 1 second threshold to account for MySQL timestamp precision
+                  const hasBeenUpdated = programData.updated_at && 
+                    programData.created_at && 
+                    (() => {
+                      const updatedTime = new Date(programData.updated_at).getTime();
+                      const createdTime = new Date(programData.created_at).getTime();
+                      // Program has been updated if updated_at is at least 1 second after created_at
+                      return (updatedTime - createdTime) >= 1000;
+                    })();
+                  
+                  // Only show if program has been updated AND has edited_by data
+                  if (hasBeenUpdated && hasEditedByData) {
+                    return (
+                      <>
+                        <div className={styles.activityItem}>
+                          <div className={styles.activityIcon}>
+                            <FaClock />
+                          </div>
+                          <div className={styles.activityContent}>
+                            <div className={styles.activityHeader}>
+                              <span className={styles.activityAction}>Program Updated</span>
+                              <span className={styles.activityDate}>
+                                {formatDateTime(programData.updated_at)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Updated By Information - Only show if edited_by_name exists */}
+                        <div className={styles.activityItem}>
+                          <div className={styles.activityIcon}>
+                            <FaUser />
+                          </div>
+                          <div className={styles.activityContent}>
+                            <div className={styles.activityHeader}>
+                              <span className={styles.activityAction}>Updated by</span>
+                            </div>
+                            <div className={styles.activityDetails}>
+                              <div className={styles.activityDetailRow}>
+                                <span className={styles.activityDetailValue}>
+                                  {programData.edited_by_name.trim()}
+                                  {programData.edited_by_role && 
+                                   typeof programData.edited_by_role === 'string' &&
+                                   programData.edited_by_role.trim() !== '' && (
+                                    <span className={styles.activityRole}> ({programData.edited_by_role.trim()})</span>
+                                  )}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {/* No activity message */}
+                {!programData.created_at && !programData.updated_at && (
+                  <div className={styles.noActivity}>
+                    <FaHistory className={styles.noActivityIcon} />
+                    <p>No activity history available</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           )}

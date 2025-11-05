@@ -257,6 +257,10 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         multiple_dates: programData.multiple_dates || null,
         status: programData.status || 'active',
         accepts_volunteers: programData.accepts_volunteers !== undefined ? programData.accepts_volunteers : true,
+        // The form sends edited_by_name/role as submitted_by_name/role in edit mode
+        // So we use programData.submitted_by_name/role (which contains the edited_by values)
+        submitted_by_name: programData.submitted_by_name?.trim() || '',
+        submitted_by_role: programData.submitted_by_role?.trim() || '',
         // DO NOT send collaborators in Edit mode - they are handled separately via the invite-collaborator endpoint
         // This prevents overwriting collaborators that were just added
         // Handle image properly - use uploaded URL, base64 string, or undefined to keep existing

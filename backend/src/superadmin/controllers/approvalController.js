@@ -6,6 +6,7 @@ import { logError, logWarn, logInfo } from '../../utils/logger.js';
 
 export const getPendingSubmissions = async (req, res) => {
   try {
+    // Get all pending submissions, but exclude collaborative programs that haven't been accepted by all collaborators yet
     const [rows] = await db.execute(`
       SELECT s.*, 
              o.orgName, o.org, 
@@ -16,6 +17,45 @@ export const getPendingSubmissions = async (req, res) => {
       LEFT JOIN admins submitted_admin ON s.submitted_by = submitted_admin.id 
       LEFT JOIN organizations submitted_org ON submitted_admin.organization_id = submitted_org.id
       WHERE s.status = 'pending' 
+        AND (
+          -- Include non-program submissions
+          s.section != 'programs'
+          OR
+          -- Include program submissions that don't have collaborators in proposed_data AND no collaboration records
+          (
+            (
+              -- Check if proposed_data doesn't have collaborators
+              (JSON_EXTRACT(s.proposed_data, '$.collaborators') IS NULL)
+              OR
+              (JSON_LENGTH(JSON_EXTRACT(s.proposed_data, '$.collaborators')) = 0)
+            )
+            AND
+            -- Also check that no collaboration records exist
+            NOT EXISTS (
+              SELECT 1 FROM program_collaborations pc 
+              WHERE pc.submission_id = s.id AND (pc.program_id IS NULL OR pc.program_id = 0)
+            )
+          )
+          OR
+          -- Include collaborative programs only if all collaborators have responded AND at least one accepted
+          -- Check both submission_id and ensure program_id is NULL (indicating it's a submission-based collaboration)
+          (
+            EXISTS (
+              SELECT 1 FROM program_collaborations pc 
+              WHERE pc.submission_id = s.id AND (pc.program_id IS NULL OR pc.program_id = 0)
+            )
+            AND NOT EXISTS (
+              -- Exclude if there are still pending collaboration requests
+              SELECT 1 FROM program_collaborations pc 
+              WHERE pc.submission_id = s.id AND pc.status = 'pending' AND (pc.program_id IS NULL OR pc.program_id = 0)
+            )
+            AND EXISTS (
+              -- Only include if at least one collaborator accepted
+              SELECT 1 FROM program_collaborations pc 
+              WHERE pc.submission_id = s.id AND pc.status = 'accepted' AND (pc.program_id IS NULL OR pc.program_id = 0)
+            )
+          )
+        )
       ORDER BY s.submitted_at DESC
     `);
 
@@ -82,6 +122,7 @@ export const getPendingSubmissions = async (req, res) => {
 
 export const getAllSubmissions = async (req, res) => {
   try {
+    // Get all submissions, but exclude pending collaborative programs that haven't been accepted by all collaborators yet
     const [rows] = await db.execute(`
       SELECT s.*, 
              o.orgName, o.org, 
@@ -91,6 +132,54 @@ export const getAllSubmissions = async (req, res) => {
       LEFT JOIN organizations o ON o.id = s.organization_id 
       LEFT JOIN admins submitted_admin ON s.submitted_by = submitted_admin.id 
       LEFT JOIN organizations submitted_org ON submitted_admin.organization_id = submitted_org.id
+      WHERE (
+        -- Include non-pending submissions (already approved/rejected) - these are always shown
+        s.status != 'pending'
+        OR
+        (
+          -- For pending submissions, apply filtering
+          s.status = 'pending'
+          AND (
+            -- Include non-program submissions
+            s.section != 'programs'
+            OR
+            -- Include program submissions that don't have collaborators in proposed_data AND no collaboration records
+            (
+              (
+                -- Check if proposed_data doesn't have collaborators
+                (JSON_EXTRACT(s.proposed_data, '$.collaborators') IS NULL)
+                OR
+                (JSON_LENGTH(JSON_EXTRACT(s.proposed_data, '$.collaborators')) = 0)
+              )
+              AND
+              -- Also check that no collaboration records exist
+              NOT EXISTS (
+                SELECT 1 FROM program_collaborations pc 
+                WHERE pc.submission_id = s.id AND (pc.program_id IS NULL OR pc.program_id = 0)
+              )
+            )
+            OR
+            -- Include collaborative programs only if all collaborators have responded AND at least one accepted
+            -- Check both submission_id and ensure program_id is NULL (indicating it's a submission-based collaboration)
+            (
+              EXISTS (
+                SELECT 1 FROM program_collaborations pc 
+                WHERE pc.submission_id = s.id AND (pc.program_id IS NULL OR pc.program_id = 0)
+              )
+              AND NOT EXISTS (
+                -- Exclude if there are still pending collaboration requests
+                SELECT 1 FROM program_collaborations pc 
+                WHERE pc.submission_id = s.id AND pc.status = 'pending' AND (pc.program_id IS NULL OR pc.program_id = 0)
+              )
+              AND EXISTS (
+                -- Only include if at least one collaborator accepted
+                SELECT 1 FROM program_collaborations pc 
+                WHERE pc.submission_id = s.id AND pc.status = 'accepted' AND (pc.program_id IS NULL OR pc.program_id = 0)
+              )
+            )
+          )
+        )
+      )
       ORDER BY s.submitted_at DESC
     `);
 
@@ -185,6 +274,15 @@ export const approveSubmission = async (req, res) => {
     }
 
     const submission = rows[0];
+    
+    // Check if submission is pending
+    if (submission.status !== 'pending') {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Submission cannot be approved. Current status: ${submission.status}`,
+        error: `Submission is not pending (current status: ${submission.status})`
+      });
+    }
     
     // Validate and parse the proposed data
     let data;
@@ -414,10 +512,24 @@ export const approveSubmission = async (req, res) => {
           
           // Create the program immediately
           
-          const [result] = await connection.execute(
-            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override, submitted_by_name, submitted_by_role)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
+          // Check if submitted_by_name and submitted_by_role columns exist
+          const [columns] = await connection.execute(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'programs_projects' 
+            AND COLUMN_NAME IN ('submitted_by_name', 'submitted_by_role')
+          `);
+          
+          const hasSubmittedByName = columns.some(col => col.COLUMN_NAME === 'submitted_by_name');
+          const hasSubmittedByRole = columns.some(col => col.COLUMN_NAME === 'submitted_by_role');
+          
+          let insertQuery, insertValues;
+          
+          if (hasSubmittedByName && hasSubmittedByRole) {
+            insertQuery = `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override, submitted_by_name, submitted_by_role)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            insertValues = [
               orgId,
               data.title,
               data.description,
@@ -431,17 +543,38 @@ export const approveSubmission = async (req, res) => {
               true, // Collaborative - will be updated based on collaborator responses
               data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
               false, // New approved programs start with automatic status (no manual override)
-              data.submitted_by_name || null,
-              data.submitted_by_role || null
-            ]
-          );
+              (data.submitted_by_name && data.submitted_by_name.trim()) ? data.submitted_by_name.trim() : null,
+              (data.submitted_by_role && data.submitted_by_role.trim()) ? data.submitted_by_role.trim() : null
+            ];
+          } else {
+            insertQuery = `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            insertValues = [
+              orgId,
+              data.title,
+              data.description,
+              data.category,
+              'Upcoming',
+              cloudinaryImageUrl,
+              data.event_start_date || null,
+              data.event_end_date || null,
+              finalSlug,
+              true, // Approved by superadmin
+              true, // Collaborative - will be updated based on collaborator responses
+              data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
+              false // New approved programs start with automatic status (no manual override)
+            ];
+          }
+          
+          const [result] = await connection.execute(insertQuery, insertValues);
           
           const programId = result.insertId;
           
           // Update existing collaboration requests to link to the new program
+          // IMPORTANT: Preserve existing status (accepted/declined) - don't reset to 'pending'
           const [updateResult] = await connection.execute(`
             UPDATE program_collaborations 
-            SET program_id = ?, status = 'pending', program_title = ?
+            SET program_id = ?, program_title = ?
             WHERE submission_id = ? AND program_id IS NULL
           `, [programId, data.title, id]);
           
@@ -511,10 +644,24 @@ export const approveSubmission = async (req, res) => {
         } else {
           // For non-collaborative programs, create the program immediately
           
-          const [result] = await connection.execute(
-            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override, submitted_by_name, submitted_by_role)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
+          // Check if submitted_by_name and submitted_by_role columns exist
+          const [columns2] = await connection.execute(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'programs_projects' 
+            AND COLUMN_NAME IN ('submitted_by_name', 'submitted_by_role')
+          `);
+          
+          const hasSubmittedByName2 = columns2.some(col => col.COLUMN_NAME === 'submitted_by_name');
+          const hasSubmittedByRole2 = columns2.some(col => col.COLUMN_NAME === 'submitted_by_role');
+          
+          let insertQuery2, insertValues2;
+          
+          if (hasSubmittedByName2 && hasSubmittedByRole2) {
+            insertQuery2 = `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override, submitted_by_name, submitted_by_role)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            insertValues2 = [
               orgId,
               data.title,
               data.description,
@@ -528,10 +675,30 @@ export const approveSubmission = async (req, res) => {
               false, // Not collaborative
               data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
               false, // New approved programs start with automatic status (no manual override)
-              data.submitted_by_name || null,
-              data.submitted_by_role || null
-            ]
-          );
+              (data.submitted_by_name && data.submitted_by_name.trim()) ? data.submitted_by_name.trim() : null,
+              (data.submitted_by_role && data.submitted_by_role.trim()) ? data.submitted_by_role.trim() : null
+            ];
+          } else {
+            insertQuery2 = `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            insertValues2 = [
+              orgId,
+              data.title,
+              data.description,
+              data.category,
+              'Upcoming', // Default status for approved programs
+              cloudinaryImageUrl, // Use Cloudinary URL instead of base64
+              data.event_start_date || null,
+              data.event_end_date || null,
+              finalSlug,
+              true, // SECURITY FIX: Always approve when superadmin approves (this is the approval process)
+              false, // Not collaborative
+              data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
+              false // New approved programs start with automatic status (no manual override)
+            ];
+          }
+          
+          const [result] = await connection.execute(insertQuery2, insertValues2);
           
           const programId = result.insertId;
           
@@ -751,10 +918,29 @@ export const approveSubmission = async (req, res) => {
   } catch (err) {
     // Rollback transaction on error
     if (connection) {
-      await connection.rollback();
+      try {
+        await connection.rollback();
+      } catch (rollbackError) {
+        logError('Failed to rollback transaction', rollbackError, { context: 'approval_controller', submissionId: id });
+      }
     }
-    logError(`Error approving submission ${id}`, err, { context: 'approval_controller', submissionId: id });
-    res.status(500).json({ success: false, message: 'Failed to apply submission', error: err.message });
+    
+    // Log detailed error information
+    logError(`Error approving submission ${id}`, err, { 
+      context: 'approval_controller', 
+      submissionId: id,
+      section: err.section || 'unknown',
+      errorStack: err.stack
+    });
+    
+    // Return detailed error message
+    const errorMessage = err.message || 'Unknown error occurred';
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to apply submission', 
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   } finally {
     // Always release the connection back to the pool
     if (connection) {
@@ -1175,10 +1361,24 @@ export const bulkApproveSubmissions = async (req, res) => {
             }
           }
 
-          const [result] = await connection.execute(
-            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override, submitted_by_name, submitted_by_role)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
+          // Check if submitted_by_name and submitted_by_role columns exist (for bulk approve)
+          const [columns3] = await connection.execute(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'programs_projects' 
+            AND COLUMN_NAME IN ('submitted_by_name', 'submitted_by_role')
+          `);
+          
+          const hasSubmittedByName3 = columns3.some(col => col.COLUMN_NAME === 'submitted_by_name');
+          const hasSubmittedByRole3 = columns3.some(col => col.COLUMN_NAME === 'submitted_by_role');
+          
+          let insertQuery3, insertValues3;
+          
+          if (hasSubmittedByName3 && hasSubmittedByRole3) {
+            insertQuery3 = `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override, submitted_by_name, submitted_by_role)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            insertValues3 = [
               orgId,
               data.title,
               data.description,
@@ -1192,19 +1392,40 @@ export const bulkApproveSubmissions = async (req, res) => {
               data.collaborators && data.collaborators.length > 0,
               data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
               false, // New approved programs start with automatic status (no manual override)
-              data.submitted_by_name || null,
-              data.submitted_by_role || null
-            ]
-          );
+              (data.submitted_by_name && data.submitted_by_name.trim()) ? data.submitted_by_name.trim() : null,
+              (data.submitted_by_role && data.submitted_by_role.trim()) ? data.submitted_by_role.trim() : null
+            ];
+          } else {
+            insertQuery3 = `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            insertValues3 = [
+              orgId,
+              data.title,
+              data.description,
+              data.category,
+              'Upcoming', // Default status for approved programs
+              cloudinaryImageUrl, // Use Cloudinary URL instead of base64
+              data.event_start_date || null,
+              data.event_end_date || null,
+              finalSlug,
+              true, // SECURITY FIX: Always approve when superadmin approves (this is the approval process)
+              data.collaborators && data.collaborators.length > 0,
+              data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
+              false // New approved programs start with automatic status (no manual override)
+            ];
+          }
+          
+          const [result] = await connection.execute(insertQuery3, insertValues3);
           
           const programId = result.insertId;
           
           // Handle collaboration invitations if provided
           if (data.collaborators && Array.isArray(data.collaborators) && data.collaborators.length > 0) {
             // First, try to update existing collaboration requests from submission
+            // IMPORTANT: Preserve existing status (accepted/declined) - don't reset to 'pending'
             const [updateResult] = await connection.execute(`
               UPDATE program_collaborations 
-              SET program_id = ?, status = 'pending', program_title = ?
+              SET program_id = ?, program_title = ?
               WHERE submission_id = ? AND program_id IS NULL
             `, [programId, data.title, id]);
             

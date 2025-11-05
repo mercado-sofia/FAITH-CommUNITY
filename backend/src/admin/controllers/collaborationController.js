@@ -655,7 +655,7 @@ export const acceptCollaborationRequest = async (req, res) => {
     // Get collaboration details - check for both submission_id and program_id
     const [collaborationRows] = await db.execute(`
       SELECT pc.id, pc.submission_id, pc.program_id, pc.status, pc.program_title, pc.invited_by_admin_id,
-             s.organization_id, s.proposed_data, s.submitted_by
+             s.organization_id, s.proposed_data, s.submitted_by, s.status as submission_status
       FROM program_collaborations pc
       LEFT JOIN submissions s ON pc.submission_id = s.id
       WHERE pc.id = ? AND pc.collaborator_admin_id = ? AND pc.status = 'pending'
@@ -670,13 +670,6 @@ export const acceptCollaborationRequest = async (req, res) => {
     
     const collaboration = collaborationRows[0];
     
-    if (!collaboration.program_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid collaboration request - no program found'
-      });
-    }
-    
     // Update collaboration status to accepted
     await db.execute(`
       UPDATE program_collaborations 
@@ -684,63 +677,150 @@ export const acceptCollaborationRequest = async (req, res) => {
       WHERE id = ? AND collaborator_admin_id = ?
     `, [collaborationId, currentAdminId]);
     
-    // Check if all pending collaborations have been responded to for this program
-    const [pendingCollaborations] = await db.execute(`
-      SELECT COUNT(*) as count FROM program_collaborations 
-      WHERE program_id = ? AND status = 'pending'
-    `, [collaboration.program_id]);
+    // Handle two scenarios:
+    // 1. Submission-based workflow (program_id is NULL) - collaborators accept FIRST, then auto-submit to superadmin
+    // 2. Program-based workflow (program_id exists) - program already created, just update status
     
-    // If no pending collaborations remain, check if any were accepted
-    if (pendingCollaborations[0].count === 0) {
-      const [acceptedCollaborations] = await db.execute(`
+    if (!collaboration.program_id && collaboration.submission_id) {
+      // SUBMISSION-BASED WORKFLOW: Collaborators accept first, then auto-submit to superadmin
+      
+      // Check if all pending collaborations have been responded to for this submission
+      const [pendingCollaborations] = await db.execute(`
         SELECT COUNT(*) as count FROM program_collaborations 
-        WHERE program_id = ? AND status = 'accepted'
+        WHERE submission_id = ? AND status = 'pending'
+      `, [collaboration.submission_id]);
+      
+      // If no pending collaborations remain, check if any were accepted
+      if (pendingCollaborations[0].count === 0) {
+        const [acceptedCollaborations] = await db.execute(`
+          SELECT COUNT(*) as count FROM program_collaborations 
+          WHERE submission_id = ? AND status = 'accepted'
+        `, [collaboration.submission_id]);
+        
+        if (acceptedCollaborations[0].count > 0) {
+          // All collaborators have accepted - auto-submit to superadmin
+          try {
+            // Check if superadmin notification already exists for this submission
+            const [existingNotification] = await db.execute(`
+              SELECT id FROM superadmin_notifications 
+              WHERE submission_id = ? AND type = 'approval_request' AND section = 'programs'
+            `, [collaboration.submission_id]);
+            
+            // Only create notification if one doesn't already exist
+            if (existingNotification.length === 0) {
+              const SuperAdminNotificationController = (await import('../../superadmin/controllers/superadminNotificationController.js')).default;
+              
+              // Get superadmin ID
+              const [superadminRows] = await db.execute("SELECT id FROM superadmin LIMIT 1");
+              const superadminId = superadminRows.length > 0 ? superadminRows[0].id : null;
+              
+              if (superadminId) {
+                // Get organization data for the notification
+                const [orgRows] = await db.execute(
+                  "SELECT org, orgName FROM organizations WHERE id = ? LIMIT 1",
+                  [collaboration.organization_id]
+                );
+                const orgAcronym = orgRows.length > 0 ? orgRows[0].org : 'Unknown';
+                
+                // Create superadmin notification
+                await SuperAdminNotificationController.createNotification(
+                  superadminId,
+                  'approval_request',
+                  `New Program Submission`,
+                  `${orgAcronym} has submitted a collaborative program "${collaboration.program_title}" for approval. All collaborators have accepted the collaboration request.`,
+                  'programs',
+                  collaboration.submission_id,
+                  collaboration.organization_id
+                );
+              }
+            }
+          } catch (notificationError) {
+            // Continue - don't fail the operation if notification fails
+          }
+        }
+      }
+      
+      // Notify the creator organization about the acceptance
+      try {
+        const NotificationController = (await import('./notificationController.js')).default;
+        await NotificationController.createNotification(
+          collaboration.invited_by_admin_id,
+          'collaboration_accepted',
+          'Collaboration Request Accepted',
+          `Your collaboration request for "${collaboration.program_title}" has been accepted.`,
+          'programs',
+          collaboration.submission_id
+        );
+      } catch (notificationError) {
+      }
+      
+    } else if (collaboration.program_id) {
+      // PROGRAM-BASED WORKFLOW: Program already exists, just update collaborative status
+      
+      // Check if all pending collaborations have been responded to for this program
+      const [pendingCollaborations] = await db.execute(`
+        SELECT COUNT(*) as count FROM program_collaborations 
+        WHERE program_id = ? AND status = 'pending'
       `, [collaboration.program_id]);
       
-      if (acceptedCollaborations[0].count > 0) {
-        // Some collaborations were accepted, update program to show it's collaborative
-        // The program already exists, just update its status
-        await db.execute(`
-          UPDATE programs_projects 
-          SET is_collaborative = TRUE
-          WHERE id = ?
+      // If no pending collaborations remain, check if any were accepted
+      if (pendingCollaborations[0].count === 0) {
+        const [acceptedCollaborations] = await db.execute(`
+          SELECT COUNT(*) as count FROM program_collaborations 
+          WHERE program_id = ? AND status = 'accepted'
         `, [collaboration.program_id]);
         
-        // Notify the creator organization about the collaboration acceptance
-        try {
-          const NotificationController = (await import('./notificationController.js')).default;
-          await NotificationController.createNotification(
-            collaboration.invited_by_admin_id,
-            'collaboration_accepted',
-            'Collaboration Accepted',
-            `Your collaboration request for "${collaboration.program_title}" has been accepted. The program is now marked as collaborative.`,
-            'programs',
-            collaboration.program_id
-          );
-        } catch (notificationError) {
+        if (acceptedCollaborations[0].count > 0) {
+          // Some collaborations were accepted, update program to show it's collaborative
+          // The program already exists, just update its status
+          await db.execute(`
+            UPDATE programs_projects 
+            SET is_collaborative = TRUE
+            WHERE id = ?
+          `, [collaboration.program_id]);
+          
+          // Notify the creator organization about the collaboration acceptance
+          try {
+            const NotificationController = (await import('./notificationController.js')).default;
+            await NotificationController.createNotification(
+              collaboration.invited_by_admin_id,
+              'collaboration_accepted',
+              'Collaboration Accepted',
+              `Your collaboration request for "${collaboration.program_title}" has been accepted. The program is now marked as collaborative.`,
+              'programs',
+              collaboration.program_id
+            );
+          } catch (notificationError) {
+          }
+        } else {
+          // No collaborations were accepted, update program to be non-collaborative (solo program)
+          await db.execute(`
+            UPDATE programs_projects 
+            SET is_collaborative = FALSE
+            WHERE id = ?
+          `, [collaboration.program_id]);
         }
-      } else {
-        // No collaborations were accepted, update program to be non-collaborative (solo program)
-        await db.execute(`
-          UPDATE programs_projects 
-          SET is_collaborative = FALSE
-          WHERE id = ?
-        `, [collaboration.program_id]);
       }
-    }
-    
-    // Notify the creator organization about the acceptance
-    try {
-      const NotificationController = (await import('./notificationController.js')).default;
-      await NotificationController.createNotification(
-        collaboration.invited_by_admin_id,
-        'collaboration_accepted',
-        'Collaboration Request Accepted',
-        `Your collaboration request for "${collaboration.program_title}" has been accepted.`,
-        'programs',
-        collaboration.submission_id
-      );
-    } catch (notificationError) {
+      
+      // Notify the creator organization about the acceptance
+      try {
+        const NotificationController = (await import('./notificationController.js')).default;
+        await NotificationController.createNotification(
+          collaboration.invited_by_admin_id,
+          'collaboration_accepted',
+          'Collaboration Request Accepted',
+          `Your collaboration request for "${collaboration.program_title}" has been accepted.`,
+          'programs',
+          collaboration.program_id
+        );
+      } catch (notificationError) {
+      }
+    } else {
+      // Neither submission_id nor program_id exists - invalid state
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid collaboration request - no submission or program found'
+      });
     }
     
     res.json({
@@ -771,10 +851,12 @@ export const declineCollaborationRequest = async (req, res) => {
       });
     }
     
-    // Get collaboration details - check for program_id
+    // Get collaboration details - check for both submission_id and program_id
     const [collaborationRows] = await db.execute(`
-      SELECT pc.id, pc.submission_id, pc.program_id, pc.status, pc.program_title, pc.invited_by_admin_id
+      SELECT pc.id, pc.submission_id, pc.program_id, pc.status, pc.program_title, pc.invited_by_admin_id,
+             s.organization_id, s.proposed_data, s.submitted_by
       FROM program_collaborations pc
+      LEFT JOIN submissions s ON pc.submission_id = s.id
       WHERE pc.id = ? AND pc.collaborator_admin_id = ? AND pc.status = 'pending'
     `, [collaborationId, currentAdminId]);
     
@@ -787,13 +869,6 @@ export const declineCollaborationRequest = async (req, res) => {
     
     const collaboration = collaborationRows[0];
     
-    if (!collaboration.program_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid collaboration request - no program found'
-      });
-    }
-    
     // Update collaboration status to declined
     await db.execute(`
       UPDATE program_collaborations 
@@ -801,50 +876,137 @@ export const declineCollaborationRequest = async (req, res) => {
       WHERE id = ? AND collaborator_admin_id = ?
     `, [collaborationId, currentAdminId]);
     
-    // Check if there are any remaining pending collaborations for this program
-    const [remainingCollaborations] = await db.execute(`
-      SELECT COUNT(*) as count FROM program_collaborations 
-      WHERE program_id = ? AND status = 'pending'
-    `, [collaboration.program_id]);
+    // Handle two scenarios:
+    // 1. Submission-based workflow (program_id is NULL) - check if all responded and at least one accepted
+    // 2. Program-based workflow (program_id exists) - program already created, just update status
     
-    // If no pending collaborations remain, check if any were accepted
-    if (remainingCollaborations[0].count === 0) {
-      // Check if there are any accepted collaborations
-      const [acceptedCollaborations] = await db.execute(`
+    if (!collaboration.program_id && collaboration.submission_id) {
+      // SUBMISSION-BASED WORKFLOW: Check if all collaborators have responded
+      
+      // Check if there are any remaining pending collaborations for this submission
+      const [remainingCollaborations] = await db.execute(`
         SELECT COUNT(*) as count FROM program_collaborations 
-        WHERE program_id = ? AND status = 'accepted'
+        WHERE submission_id = ? AND status = 'pending'
+      `, [collaboration.submission_id]);
+      
+      // If no pending collaborations remain, check if any were accepted
+      if (remainingCollaborations[0].count === 0) {
+        const [acceptedCollaborations] = await db.execute(`
+          SELECT COUNT(*) as count FROM program_collaborations 
+          WHERE submission_id = ? AND status = 'accepted'
+        `, [collaboration.submission_id]);
+        
+        if (acceptedCollaborations[0].count > 0) {
+          // At least one collaborator accepted - auto-submit to superadmin
+          try {
+            // Check if superadmin notification already exists for this submission
+            const [existingNotification] = await db.execute(`
+              SELECT id FROM superadmin_notifications 
+              WHERE submission_id = ? AND type = 'approval_request' AND section = 'programs'
+            `, [collaboration.submission_id]);
+            
+            // Only create notification if one doesn't already exist
+            if (existingNotification.length === 0) {
+              const SuperAdminNotificationController = (await import('../../superadmin/controllers/superadminNotificationController.js')).default;
+              
+              // Get superadmin ID
+              const [superadminRows] = await db.execute("SELECT id FROM superadmin LIMIT 1");
+              const superadminId = superadminRows.length > 0 ? superadminRows[0].id : null;
+              
+              if (superadminId) {
+                // Get organization data for the notification
+                const [orgRows] = await db.execute(
+                  "SELECT org, orgName FROM organizations WHERE id = ? LIMIT 1",
+                  [collaboration.organization_id]
+                );
+                const orgAcronym = orgRows.length > 0 ? orgRows[0].org : 'Unknown';
+                
+                // Create superadmin notification
+                await SuperAdminNotificationController.createNotification(
+                  superadminId,
+                  'approval_request',
+                  `New Program Submission`,
+                  `${orgAcronym} has submitted a collaborative program "${collaboration.program_title}" for approval. All collaborators have responded, and at least one has accepted the collaboration request.`,
+                  'programs',
+                  collaboration.submission_id,
+                  collaboration.organization_id
+                );
+              }
+            }
+          } catch (notificationError) {
+            // Continue - don't fail the operation if notification fails
+          }
+        }
+        // If no collaborators accepted, don't submit to superadmin (all declined)
+      }
+      
+      // Notify the creator organization about the decline
+      try {
+        const NotificationController = (await import('./notificationController.js')).default;
+        await NotificationController.createNotification(
+          collaboration.invited_by_admin_id,
+          'collaboration_declined',
+          'Collaboration Request Declined',
+          `Your collaboration request for "${collaboration.program_title}" has been declined.`,
+          'programs',
+          collaboration.submission_id
+        );
+      } catch (notificationError) {
+      }
+      
+    } else if (collaboration.program_id) {
+      // PROGRAM-BASED WORKFLOW: Program already exists, just update collaborative status
+      
+      // Check if there are any remaining pending collaborations for this program
+      const [remainingCollaborations] = await db.execute(`
+        SELECT COUNT(*) as count FROM program_collaborations 
+        WHERE program_id = ? AND status = 'pending'
       `, [collaboration.program_id]);
       
-      if (acceptedCollaborations[0].count === 0) {
-        // No accepted collaborations, update program to be non-collaborative (solo program)
-        await db.execute(`
-          UPDATE programs_projects 
-          SET is_collaborative = FALSE
-          WHERE id = ?
+      // If no pending collaborations remain, check if any were accepted
+      if (remainingCollaborations[0].count === 0) {
+        // Check if there are any accepted collaborations
+        const [acceptedCollaborations] = await db.execute(`
+          SELECT COUNT(*) as count FROM program_collaborations 
+          WHERE program_id = ? AND status = 'accepted'
         `, [collaboration.program_id]);
-      } else {
-        // Some collaborations were accepted, keep program as collaborative
-        await db.execute(`
-          UPDATE programs_projects 
-          SET is_collaborative = TRUE
-          WHERE id = ?
-        `, [collaboration.program_id]);
+        
+        if (acceptedCollaborations[0].count === 0) {
+          // No accepted collaborations, update program to be non-collaborative (solo program)
+          await db.execute(`
+            UPDATE programs_projects 
+            SET is_collaborative = FALSE
+            WHERE id = ?
+          `, [collaboration.program_id]);
+        } else {
+          // Some collaborations were accepted, keep program as collaborative
+          await db.execute(`
+            UPDATE programs_projects 
+            SET is_collaborative = TRUE
+            WHERE id = ?
+          `, [collaboration.program_id]);
+        }
       }
-    }
-    
-    // Notify the creator organization about the decline
-    try {
-      const NotificationController = (await import('./notificationController.js')).default;
-      await NotificationController.createNotification(
-        collaboration.invited_by_admin_id,
-        'collaboration_declined',
-        'Collaboration Request Declined',
-        `Your collaboration request for "${collaboration.program_title}" has been declined. The program will remain as a solo program.`,
-        'programs',
-        collaboration.program_id
-      );
-    } catch (notificationError) {
-      // Don't fail the main operation if notification fails
+      
+      // Notify the creator organization about the decline
+      try {
+        const NotificationController = (await import('./notificationController.js')).default;
+        await NotificationController.createNotification(
+          collaboration.invited_by_admin_id,
+          'collaboration_declined',
+          'Collaboration Request Declined',
+          `Your collaboration request for "${collaboration.program_title}" has been declined. The program will remain as a solo program.`,
+          'programs',
+          collaboration.program_id
+        );
+      } catch (notificationError) {
+      }
+    } else {
+      // Neither submission_id nor program_id exists - invalid state
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid collaboration request - no submission or program found'
+      });
     }
     
     res.json({

@@ -560,6 +560,10 @@ function showHelp() {
   }
   
   console.log('');
+  console.log('Database Management:');
+  console.log('  node scripts/mergeDatabases.js    Interactive database merger tool');
+  console.log('  node scripts/databaseMerger.js    Programmatic database merger');
+  console.log('');
   console.log('Environment:', process.env.NODE_ENV || 'development');
 }
 

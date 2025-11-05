@@ -344,7 +344,9 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
                 const hasActiveCollaborations = checkHasActiveCollaborations(normalizedData);
                 
                 if (hasActiveCollaborations) {
-                  switch (normalizedData.status) {
+                  // Use collaboration_status if available, otherwise fall back to status
+                  const collaborationStatus = normalizedData.collaboration_status || normalizedData.status;
+                  switch (collaborationStatus) {
                     case 'accepted':
                       return 'Collaborators Accepted';
                     case 'declined':

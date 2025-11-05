@@ -7,17 +7,12 @@ import db from '../database.js';
  */
 export const cleanupDeletedNews = async () => {
   try {
-    
     // Delete news items that have been deleted for more than 15 days
     const [result] = await db.execute(`
       DELETE FROM news 
       WHERE is_deleted = TRUE 
       AND deleted_at < DATE_SUB(NOW(), INTERVAL 15 DAY)
     `);
-
-    if (result.affectedRows > 0) {
-    } else {
-    }
 
     return {
       success: true,

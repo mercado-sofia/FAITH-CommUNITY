@@ -41,7 +41,7 @@ export default function BulkActionConfirmationModal({
     const isIndividual = selectedItem && selectedCount === 1;
     const itemText = isMultiple ? 'Items' : 'Item';
     const actionText = isMultiple ? 'All' : '';
-    const itemName = isIndividual ? (selectedItem.org || 'this submission') : '';
+    const itemName = isIndividual ? (selectedItem.org || selectedItem.organization_acronym || selectedItem.orgName || selectedItem.organization_name || 'this submission') : '';
     
     switch (actionType) {
       case 'approve':
@@ -90,12 +90,26 @@ export default function BulkActionConfirmationModal({
   const config = getActionConfig();
   if (!config) return null;
 
-  const handleConfirm = () => {
+  const handleConfirm = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (isProcessing) {
+      return; // Prevent double-clicks
+    }
+    
     if (actionType === 'reject' && !rejectComment.trim()) {
       // Validation handled by form state
       return;
     }
-    onConfirm(actionType === 'reject' ? rejectComment : undefined);
+    
+    if (onConfirm && typeof onConfirm === 'function') {
+      onConfirm(actionType === 'reject' ? rejectComment : undefined);
+    } else {
+      console.error('onConfirm is not a function:', onConfirm);
+    }
   };
 
   return (
@@ -149,6 +163,7 @@ export default function BulkActionConfirmationModal({
 
         <div className={styles.actions}>
           <button
+            type="button"
             onClick={onCancel}
             className={styles.cancelBtn}
             disabled={isProcessing}
@@ -156,6 +171,7 @@ export default function BulkActionConfirmationModal({
             Cancel
           </button>
           <button
+            type="button"
             onClick={handleConfirm}
             className={`${styles.confirmBtn} ${config.buttonClass}`}
             disabled={isProcessing}

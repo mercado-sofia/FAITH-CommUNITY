@@ -137,6 +137,24 @@ export const getAdminPrograms = async (req, res) => {
         WHERE pc.program_id = ? AND pc.status IN ('accepted', 'pending')
       `, [program.id]);
 
+      // For creators, determine overall collaboration status based on all collaborators
+      if (userRole === 'creator' && program.is_collaborative) {
+        // Check if there are any pending collaborations
+        const hasPending = allCollaborators.some(c => c.collaboration_status === 'pending');
+        const hasAccepted = allCollaborators.some(c => c.collaboration_status === 'accepted');
+        
+        if (hasPending) {
+          // Some collaborators haven't responded yet
+          collaborationStatus = 'pending';
+        } else if (hasAccepted) {
+          // All collaborators have responded and at least one accepted
+          collaborationStatus = 'accepted';
+        } else {
+          // All declined (shouldn't happen if filtering correctly, but handle it)
+          collaborationStatus = 'declined';
+        }
+      }
+
       let logoUrl;
       if (program.orgLogo) {
         logoUrl = getOrganizationLogoUrl(program.orgLogo);
@@ -156,6 +174,7 @@ export const getAdminPrograms = async (req, res) => {
         event_end_date: program.event_end_date,
         multiple_dates: multipleDates,
         created_at: program.created_at,
+        updated_at: program.updated_at,
         orgID: program.orgAcronym,
         orgName: program.orgName,
         orgLogo: logoUrl,
@@ -169,7 +188,11 @@ export const getAdminPrograms = async (req, res) => {
         collaborators: allCollaborators,
         has_pending_post_act_report: program.has_pending_post_act_report === 1 || program.has_pending_post_act_report === true,
         has_approved_post_act_report: program.has_approved_post_act_report === 1 || program.has_approved_post_act_report === true,
-        manual_status_override: program.manual_status_override === 1 || program.manual_status_override === true
+        manual_status_override: program.manual_status_override === 1 || program.manual_status_override === true,
+        edited_by_name: program.edited_by_name || null,
+        edited_by_role: program.edited_by_role || null,
+        submitted_by_name: program.submitted_by_name || null,
+        submitted_by_role: program.submitted_by_role || null
       };
     }));
 
@@ -615,7 +638,7 @@ export const deleteProgramSubmission = async (req, res) => {
 // Update an approved program (admin only)
 export const updateProgram = async (req, res) => {
   const { id } = req.params;
-  const { title, description, category, status, image, additionalImages, event_start_date, event_end_date, multiple_dates, collaborators, accepts_volunteers } = req.body;
+  const { title, description, category, status, image, additionalImages, event_start_date, event_end_date, multiple_dates, collaborators, accepts_volunteers, submitted_by_name, submitted_by_role } = req.body;
 
   // Update program request received
 
@@ -700,16 +723,78 @@ export const updateProgram = async (req, res) => {
     }
     // If image is null, keep the existing image (imagePath already set to existingProgram[0].image)
 
+    // Get edited_by information - prioritize submitted_by_name/role from request body (user input)
+    // If not provided, fallback to admin's name and role from organization_heads table
+    let editedByName = null;
+    let editedByRole = null;
+    
+    // First, check if submitted_by_name/role are provided in request body (user input from form)
+    // Note: submitted_by_name/role are used for edited_by_name/role in edit mode
+    if (submitted_by_name !== undefined && submitted_by_name !== null && submitted_by_name.trim()) {
+      editedByName = submitted_by_name.trim();
+    }
+    if (submitted_by_role !== undefined && submitted_by_role !== null && submitted_by_role.trim()) {
+      editedByRole = submitted_by_role.trim();
+    }
+    
+    // If not provided in request body, fallback to admin's info from organization_heads
+    if (!editedByName && req.admin?.id) {
+      const [adminHeadRows] = await db.execute(`
+        SELECT head_name, role 
+        FROM organization_heads 
+        WHERE organization_id = ? AND email = ?
+        LIMIT 1
+      `, [req.admin.organization_id, req.admin.email]);
+      
+      if (adminHeadRows.length > 0) {
+        editedByName = adminHeadRows[0].head_name || null;
+      }
+    }
+    
+    if (!editedByRole && req.admin?.id) {
+      const [adminHeadRows] = await db.execute(`
+        SELECT head_name, role 
+        FROM organization_heads 
+        WHERE organization_id = ? AND email = ?
+        LIMIT 1
+      `, [req.admin.organization_id, req.admin.email]);
+      
+      if (adminHeadRows.length > 0) {
+        editedByRole = adminHeadRows[0].role || null;
+      }
+    }
+    
+    // Check if edited_by columns exist
+    const [editColumns] = await db.execute(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'programs_projects' 
+      AND COLUMN_NAME IN ('edited_by_name', 'edited_by_role')
+    `);
+    
+    const hasEditedByName = editColumns.some(col => col.COLUMN_NAME === 'edited_by_name');
+    const hasEditedByRole = editColumns.some(col => col.COLUMN_NAME === 'edited_by_role');
+    
     // Updating program in database
     // Preserve manual_status_override for Completed programs (from Post Act Report approval)
     // Only reset if admin is explicitly changing status away from current status
     const manualOverrideValue = shouldPreserveOverride ? 1 : 0;
-    const [result] = await db.execute(
-      `UPDATE programs_projects 
+    
+    let updateQuery, updateValues;
+    if (hasEditedByName && hasEditedByRole) {
+      updateQuery = `UPDATE programs_projects 
+       SET title = ?, description = ?, category = ?, status = ?, image = ?, event_start_date = ?, event_end_date = ?, accepts_volunteers = ?, manual_status_override = ?, edited_by_name = ?, edited_by_role = ?
+       WHERE id = ?`;
+      updateValues = [title, description, category, newStatus, imagePath, event_start_date || null, event_end_date || null, accepts_volunteers !== undefined ? accepts_volunteers : true, manualOverrideValue, editedByName, editedByRole, id];
+    } else {
+      updateQuery = `UPDATE programs_projects 
        SET title = ?, description = ?, category = ?, status = ?, image = ?, event_start_date = ?, event_end_date = ?, accepts_volunteers = ?, manual_status_override = ?
-       WHERE id = ?`,
-      [title, description, category, newStatus, imagePath, event_start_date || null, event_end_date || null, accepts_volunteers !== undefined ? accepts_volunteers : true, manualOverrideValue, id]
-    );
+       WHERE id = ?`;
+      updateValues = [title, description, category, newStatus, imagePath, event_start_date || null, event_end_date || null, accepts_volunteers !== undefined ? accepts_volunteers : true, manualOverrideValue, id];
+    }
+    
+    const [result] = await db.execute(updateQuery, updateValues);
 
     if (result.affectedRows === 0) {
       // No rows affected during update
@@ -780,7 +865,6 @@ export const updateProgram = async (req, res) => {
               );
               
               if (!uploadResult || !uploadResult.url) {
-                console.error(`Failed to upload additional image ${i}: No URL returned`);
                 continue;
               }
               
@@ -791,7 +875,6 @@ export const updateProgram = async (req, res) => {
               );
             } catch (uploadError) {
               // Continue with other images even if one fails
-              console.error(`Failed to upload additional image ${i}:`, uploadError);
             }
           } else if (typeof imageData === 'string' && (imageData.startsWith('http://') || imageData.startsWith('https://'))) {
             // It's an existing Cloudinary URL - store it directly
@@ -801,7 +884,7 @@ export const updateProgram = async (req, res) => {
                 [id, imageData, i]
               );
             } catch (dbError) {
-              console.error(`Failed to store existing image ${i}:`, dbError);
+              // Continue with next image if storage fails
             }
           }
         }
@@ -951,7 +1034,11 @@ export const getProgramById = async (req, res) => {
         orgName: program.orgName,
         orgColor: program.orgColor,
         created_at: program.created_at,
-        slug: program.slug
+        slug: program.slug,
+        edited_by_name: program.edited_by_name || null,
+        edited_by_role: program.edited_by_role || null,
+        submitted_by_name: program.submitted_by_name || null,
+        submitted_by_role: program.submitted_by_role || null
       }
     });
   } catch (error) {

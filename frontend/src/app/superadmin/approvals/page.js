@@ -402,12 +402,15 @@ export default function PendingApprovalsPage() {
       const result = await res.json();
 
       if (!res.ok || !result.success) {
-        throw new Error(result.message || 'Approval failed');
+        // Show detailed error message from backend
+        const errorMessage = result.error || result.message || 'Approval failed';
+        throw new Error(errorMessage);
       }
 
       showSuccessModal('Changes have been approved and applied.');
       fetchApprovals(); // Refresh the list
     } catch (err) {
+      console.error('Approval error:', err);
       showSuccessModal('Failed to approve changes: ' + err.message, 'error');
     }
   }, [showSuccessModal, fetchApprovals]);
@@ -536,17 +539,25 @@ export default function PendingApprovalsPage() {
   const handleApproveClick = useCallback((approval) => {
     setSelectedItemForAction(approval);
     setPendingIndividualAction('approve');
+    setIsProcessing(false); // Ensure processing state is reset when opening modal
     setShowIndividualModal(true);
   }, []);
 
   const handleRejectClick = useCallback((approval) => {
     setSelectedItemForAction(approval);
     setPendingIndividualAction('reject');
+    setIsProcessing(false); // Ensure processing state is reset when opening modal
     setShowIndividualModal(true);
   }, []);
 
   const handleIndividualActionConfirm = useCallback(async (rejectComment) => {
-    if (!selectedItemForAction || !pendingIndividualAction) return;
+    if (!selectedItemForAction || !pendingIndividualAction) {
+      console.error('Cannot confirm action: missing selectedItemForAction or pendingIndividualAction', {
+        selectedItemForAction,
+        pendingIndividualAction
+      });
+      return;
+    }
     
     setIsProcessing(true);
     setShowIndividualModal(false);
@@ -566,11 +577,12 @@ export default function PendingApprovalsPage() {
       setSelectedItemForAction(null);
       setPendingIndividualAction(null);
     } catch (error) {
-      // Handle error silently in production
+      console.error('Error in handleIndividualActionConfirm:', error);
+      showSuccessModal('An error occurred: ' + (error.message || 'Unknown error'), 'error');
     } finally {
       setIsProcessing(false);
     }
-  }, [selectedItemForAction, pendingIndividualAction, handleApprove, handleReject]);
+  }, [selectedItemForAction, pendingIndividualAction, handleApprove, handleReject, showSuccessModal]);
 
   const handleIndividualActionCancel = useCallback(() => {
     setShowIndividualModal(false);

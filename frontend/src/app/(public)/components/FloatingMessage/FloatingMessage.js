@@ -78,6 +78,33 @@ export default function FloatingMessage() {
     }
   };
 
+  // Close message box function
+  const closeMessageBox = useCallback((resetAll = true) => {
+    setIsOpen(false);
+    setDropdownOpen(false);
+    
+    if (resetAll) {
+      setOrg("");
+      setEmail("");
+      setMessage("");
+      setEmailError("");
+    }
+
+    // Clear any existing timeout
+    if (clickLockTimeoutRef.current) {
+      clearTimeout(clickLockTimeoutRef.current);
+    }
+
+    setClickLocked(true);
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      clickLockTimeoutRef.current = setTimeout(() => {
+        setClickLocked(false);
+        clickLockTimeoutRef.current = null;
+      }, 300);
+    }
+  }, []);
+
   // Handle outside click, ESC press
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -141,32 +168,6 @@ export default function FloatingMessage() {
         clearTimeout(clickLockTimeoutRef.current);
       }
     };
-  }, []);
-
-  const closeMessageBox = useCallback((resetAll = true) => {
-    setIsOpen(false);
-    setDropdownOpen(false);
-    
-    if (resetAll) {
-      setOrg("");
-      setEmail("");
-      setMessage("");
-      setEmailError("");
-    }
-
-    // Clear any existing timeout
-    if (clickLockTimeoutRef.current) {
-      clearTimeout(clickLockTimeoutRef.current);
-    }
-
-    setClickLocked(true);
-    // Only run on client side
-    if (typeof window !== 'undefined') {
-      clickLockTimeoutRef.current = setTimeout(() => {
-        setClickLocked(false);
-        clickLockTimeoutRef.current = null;
-      }, 300);
-    }
   }, []);
 
   const handleToggleChat = () => {

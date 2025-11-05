@@ -71,6 +71,8 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
 
   // State for custom role input (only shown when "Others" is selected)
   const [customRole, setCustomRole] = useState('');
+  // State for custom edited role input (for edit mode)
+  const [customEditedRole, setCustomEditedRole] = useState('');
 
   // Handle role change
   const handleRoleChange = useCallback((selectedRole) => {
@@ -96,6 +98,24 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
     if (errors.submitted_by_role) clearError('submitted_by_role');
   }, [updateFormData, errors.submitted_by_role, clearError]);
 
+  // Handle edited role change (for edit mode)
+  const handleEditedRoleChange = useCallback((selectedRole) => {
+    if (selectedRole === 'Others') {
+      updateFormData({ edited_by_role: 'Others' });
+      setCustomEditedRole(''); // Clear when "Others" is selected so admin can input fresh
+    } else {
+      updateFormData({ edited_by_role: selectedRole });
+      setCustomEditedRole('');
+    }
+  }, [updateFormData]);
+
+  // Handle custom edited role change (for edit mode)
+  const handleCustomEditedRoleChange = useCallback((value) => {
+    setCustomEditedRole(value);
+    // Update formData with custom role
+    updateFormData({ edited_by_role: value });
+  }, [updateFormData]);
+
   // Initialize custom role if existing role is not in predefined options
   useEffect(() => {
     if (formData.submitted_by_role && !ROLE_OPTIONS.find(option => option.value === formData.submitted_by_role)) {
@@ -104,6 +124,17 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
       setCustomRole('');
     }
   }, [formData.submitted_by_role]);
+
+  // Initialize custom edited role if existing role is not in predefined options (for edit mode)
+  useEffect(() => {
+    if (isEditMode && formData.edited_by_role && !ROLE_OPTIONS.find(option => option.value === formData.edited_by_role)) {
+      setCustomEditedRole(formData.edited_by_role);
+    } else if (isEditMode && formData.edited_by_role === 'Others') {
+      setCustomEditedRole(''); // Leave blank when "Others" is selected
+    } else {
+      setCustomEditedRole('');
+    }
+  }, [formData.edited_by_role, isEditMode]);
 
   // Initialize existing images in edit mode
   useEffect(() => {
@@ -263,9 +294,15 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
         image: null,
         // Include additional images from formData
         additionalImages: Array.isArray(formData.additionalImages) ? formData.additionalImages : [],
-        // Officer information - only for create mode
-        submitted_by_name: !isEditMode ? (formData.submitted_by_name?.trim() || '') : undefined,
-        submitted_by_role: !isEditMode ? (formData.submitted_by_role?.trim() || '') : undefined
+        // Officer information - use submitted_by for create mode, edited_by for edit mode
+        // Note: Backend expects submitted_by_name/role for both create and edit, but in edit mode
+        // we send edited_by_name/role as submitted_by_name/role
+        submitted_by_name: !isEditMode 
+          ? (formData.submitted_by_name?.trim() || '') 
+          : (formData.edited_by_name?.trim() || ''),
+        submitted_by_role: !isEditMode 
+          ? (formData.submitted_by_role?.trim() || '') 
+          : (formData.edited_by_role?.trim() || '')
       };
 
       // Handle image data properly
@@ -372,7 +409,7 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
             onRemoveCollaborator={handleRemoveCollaborator}
           />
 
-          {/* Submitted By Section - Only shown in create mode */}
+          {/* Submitted By Section - Show in create mode */}
           {!isEditMode && (
             <div className={styles.container}>
               <h3 className={styles.containerTitle}>Submitted by</h3>
@@ -429,6 +466,64 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
                     )}
                   </div>
                   {errors.submitted_by_role && <span className={styles.errorText}>{errors.submitted_by_role}</span>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Edited By Section - Only shown in edit mode */}
+          {isEditMode && (
+            <div className={styles.container}>
+              <h3 className={styles.containerTitle}>Edited by</h3>
+              <div className={styles.submittedByFields}>
+                <div className={styles.submittedByNameField}>
+                  <label className={styles.inlineLabel}>
+                    Name
+                  </label>
+                  <div className={styles.inputWrapper}>
+                    <input
+                      type="text"
+                      className={styles.input}
+                      value={formData.edited_by_name || program?.edited_by_name || ''}
+                      onChange={(e) => {
+                        updateFormData({ edited_by_name: e.target.value });
+                      }}
+                      placeholder="Enter name"
+                    />
+                  </div>
+                </div>
+                <div className={styles.submittedByRoleField}>
+                  <label className={styles.inlineLabel}>
+                    Position
+                  </label>
+                  <div className={styles.roleInputGroup}>
+                    <div className={styles.inputWrapper}>
+                      <CustomDropdown
+                        options={ROLE_OPTIONS}
+                        value={ROLE_OPTIONS.find(option => option.value === (formData.edited_by_role || program?.edited_by_role)) 
+                          ? (formData.edited_by_role || program?.edited_by_role)
+                          : ((formData.edited_by_role || program?.edited_by_role) && !ROLE_OPTIONS.find(option => option.value === (formData.edited_by_role || program?.edited_by_role)) 
+                            ? 'Others' 
+                            : '')}
+                        onChange={(selectedValue) => handleEditedRoleChange(selectedValue)}
+                        placeholder="Select a role"
+                        error={false}
+                        required={false}
+                      />
+                    </div>
+                    {/* Custom role input - only show when "Others" is selected or when role is not in predefined options */}
+                    {((formData.edited_by_role || program?.edited_by_role) === 'Others' || ((formData.edited_by_role || program?.edited_by_role) && !ROLE_OPTIONS.find(option => option.value === (formData.edited_by_role || program?.edited_by_role)))) && (
+                      <div className={styles.customRoleInput}>
+                        <input
+                          type="text"
+                          value={customEditedRole}
+                          onChange={(e) => handleCustomEditedRoleChange(e.target.value)}
+                          className={styles.input}
+                          placeholder="Enter custom role/position"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

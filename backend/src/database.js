@@ -569,6 +569,49 @@ const initializeDatabase = async () => {
         logError('Error adding submitted_by_role column', error, { context: 'database' });
       }
 
+      // Add edited_by_name and edited_by_role columns if they don't exist (migration for existing databases)
+      try {
+        // Check if edited_by_name column exists
+        const [editedNameColumns] = await connection.query(`
+          SELECT COLUMN_NAME 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_SCHEMA = DATABASE() 
+          AND TABLE_NAME = 'programs_projects' 
+          AND COLUMN_NAME = 'edited_by_name'
+        `);
+        
+        if (editedNameColumns.length === 0) {
+          await connection.query(`
+            ALTER TABLE programs_projects 
+            ADD COLUMN edited_by_name VARCHAR(100) NULL
+          `);
+          logInfo('Added edited_by_name column to programs_projects table', { context: 'database' });
+        }
+      } catch (error) {
+        logError('Error adding edited_by_name column', error, { context: 'database' });
+      }
+
+      try {
+        // Check if edited_by_role column exists
+        const [editedRoleColumns] = await connection.query(`
+          SELECT COLUMN_NAME 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_SCHEMA = DATABASE() 
+          AND TABLE_NAME = 'programs_projects' 
+          AND COLUMN_NAME = 'edited_by_role'
+        `);
+        
+        if (editedRoleColumns.length === 0) {
+          await connection.query(`
+            ALTER TABLE programs_projects 
+            ADD COLUMN edited_by_role VARCHAR(100) NULL
+          `);
+          logInfo('Added edited_by_role column to programs_projects table', { context: 'database' });
+        }
+      } catch (error) {
+        logError('Error adding edited_by_role column', error, { context: 'database' });
+      }
+
       await connection.query(`
         CREATE TABLE IF NOT EXISTS news (
           id INT AUTO_INCREMENT PRIMARY KEY,

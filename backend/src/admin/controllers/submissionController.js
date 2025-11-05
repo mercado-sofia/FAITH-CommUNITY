@@ -145,23 +145,32 @@ export const submitChanges = async (req, res) => {
         let message = `${orgAcronym} has submitted a new ${item.section} for approval.`
 
         // Special handling for programs
+        let isCollaborativeProgram = false;
         if (item.section === 'programs') {
           try {
-            const proposedData = JSON.parse(item.proposed_data)
-            if (proposedData.title) {
+            // proposed_data might already be an object or a JSON string
+            let proposedData;
+            if (typeof item.proposed_data === 'string') {
+              proposedData = JSON.parse(item.proposed_data);
+            } else {
+              proposedData = item.proposed_data;
+            }
+            
+            if (proposedData && proposedData.title) {
               message = `${orgAcronym} has submitted a new program "${proposedData.title}" for approval.`
               
               // Handle collaboration requests for collaborative programs
               if (proposedData.collaborators && Array.isArray(proposedData.collaborators) && proposedData.collaborators.length > 0) {
-                message = `${orgAcronym} has submitted a collaborative program "${proposedData.title}" for approval. Collaboration requests will be sent to invited organizations after superadmin approval.`
+                isCollaborativeProgram = true;
+                message = `${orgAcronym} has submitted a collaborative program "${proposedData.title}". Collaboration requests have been sent to invited organizations. The program will be submitted for superadmin approval after all collaborators accept.`
                 
-                // Create collaboration request records (notifications will be sent only after superadmin approval)
+                // Create collaboration request records and send notifications immediately
                 for (const collaborator of proposedData.collaborators) {
                   try {
-                    const collaboratorId = typeof collaborator === 'object' ? collaborator.id : collaborator;
+                    const collaboratorId = typeof collaborator === 'object' && collaborator !== null ? collaborator.id : collaborator;
                     
-                    // Skip self-collaboration
-                    if (collaboratorId === item.submitted_by) {
+                    // Skip if collaboratorId is invalid
+                    if (!collaboratorId || collaboratorId === item.submitted_by) {
                       continue;
                     }
                     
@@ -173,11 +182,25 @@ export const submitChanges = async (req, res) => {
                     
                     if (existingCollaboration.length === 0) {
                       // Create collaboration request linked to submission (not program yet)
-                      // Notifications will be sent only after superadmin approves the program
                       await db.execute(`
                         INSERT INTO program_collaborations (submission_id, collaborator_admin_id, invited_by_admin_id, status, program_title)
                         VALUES (?, ?, ?, 'pending', ?)
                       `, [submissionId, collaboratorId, item.submitted_by, proposedData.title]);
+                      
+                      // Send notification to collaborator immediately
+                      try {
+                        const AdminNotificationController = (await import('./notificationController.js')).default;
+                        await AdminNotificationController.createNotification(
+                          collaboratorId,
+                          'collaboration_request',
+                          'New Collaboration Request',
+                          `You have received a collaboration request for "${proposedData.title}". Please review and respond.`,
+                          'programs',
+                          submissionId
+                        );
+                      } catch (notificationError) {
+                        // Continue even if notification fails
+                      }
                     }
                   } catch (collabError) {
                     // Continue with other collaborators even if one fails
@@ -186,19 +209,24 @@ export const submitChanges = async (req, res) => {
               }
             }
           } catch (parseError) {
+            // Continue - don't fail the entire submission if parsing fails
           }
         }
 
-        // Create the notification with organization_id
-        await SuperAdminNotificationController.createNotification(
-          superadminId,
-          'approval_request',
-          title,
-          message,
-          item.section,
-          submissionId,
-          numericOrgId  // Pass organization_id instead of acronym
-        )
+        // For collaborative programs, DO NOT send superadmin notification immediately
+        // It will be sent automatically after all collaborators accept
+        if (!isCollaborativeProgram) {
+          // Create the notification with organization_id for non-collaborative programs
+          await SuperAdminNotificationController.createNotification(
+            superadminId,
+            'approval_request',
+            title,
+            message,
+            item.section,
+            submissionId,
+            numericOrgId  // Pass organization_id instead of acronym
+          )
+        }
       }
     }
 

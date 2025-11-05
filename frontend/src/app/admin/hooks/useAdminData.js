@@ -93,10 +93,12 @@ const adminFetcher = async (url) => {
         errorMessage = 'Your session has expired. Please log in again.';
         // Clear invalid token
         try {
-          localStorage.removeItem('adminToken');
-          localStorage.removeItem('adminData');
-          // Redirect to login page
-          window.location.href = '/login';
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminData');
+            // Redirect to login page
+            window.location.href = '/login';
+          }
         } catch (e) {
           // Ignore localStorage errors
         }
@@ -115,7 +117,15 @@ const adminFetcher = async (url) => {
       throw error;
     }
 
-    const data = await response.json();
+    // Parse JSON with error handling
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      const error = new Error('Invalid JSON response from server');
+      logger.apiError(url, error, { type: 'json_parse_error', parseError: parseError.message });
+      throw error;
+    }
     
     // Validate response structure
     if (!data || typeof data !== 'object') {
@@ -284,7 +294,15 @@ const organizationFetcher = async (url) => {
       throw error;
     }
 
-    const data = await response.json();
+    // Parse JSON with error handling
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      const error = new Error('Invalid JSON response from server');
+      logger.apiError(url, error, { type: 'json_parse_error', parseError: parseError.message });
+      throw error;
+    }
     
     // Don't modify the response data - let the backend handle logo properly
     return data;

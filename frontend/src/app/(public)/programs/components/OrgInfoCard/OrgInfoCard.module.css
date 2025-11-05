@@ -81,3 +81,85 @@
 .orgIcons a:hover {
   transform: scale(1.02);
 }
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .orgSection {
+    padding: 2rem 1rem;
+  }
+
+  .orgCard {
+    flex-direction: column;
+    padding: 2rem 1.5rem;
+    gap: 1.5rem;
+    text-align: center;
+  }
+
+  .logoWrapper {
+    width: 180px;
+    height: 180px;
+    margin-right: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  .orgTitle {
+    font-size: 1.75rem;
+  }
+
+  .orgDesc {
+    font-size: 0.95rem;
+    line-height: 1.8;
+  }
+
+  .orgIcons {
+    justify-content: center;
+  }
+
+  /* Remove hover transform on mobile */
+  .orgIcons a:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .orgSection {
+    padding: 1.5rem 0.75rem;
+  }
+
+  .orgCard {
+    padding: 1.5rem 1rem;
+    gap: 1.25rem;
+  }
+
+  .logoWrapper {
+    width: 150px;
+    height: 150px;
+  }
+
+  .orgTitle {
+    font-size: 1.5rem;
+  }
+
+  .orgDesc {
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+
+  .orgIcons {
+    gap: 0.5rem;
+  }
+
+  .orgIcons a {
+    padding: 0.35rem;
+  }
+
+  .orgIcons a svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Remove hover transform on mobile */
+  .orgIcons a:hover {
+    transform: none;
+  }
+}

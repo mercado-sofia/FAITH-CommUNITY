@@ -1,0 +1,109 @@
+import React from 'react';
+import { LuSquareCheckBig } from 'react-icons/lu';
+import { MdOutlineRadioButtonChecked, MdOutlineCancel } from 'react-icons/md';
+import styles from './ProgramActions.module.css';
+
+const ProgramActions = ({
+  normalizedData,
+  isCollaborationCard,
+  getProgramStatusByDates,
+  actions
+}) => {
+  const {
+    isDeleting,
+    isAcceptingCollaboration,
+    isDecliningCollaboration,
+    handleMarkCompletedClick,
+    handleMarkActiveClick,
+    handleAcceptCollaborationClick,
+    handleDeclineCollaborationClick
+  } = actions;
+
+  // Regular program action buttons - Only show for creators and not for collaboration cards
+  if (normalizedData.user_role === 'creator' && !isCollaborationCard) {
+    const displayStatus = getProgramStatusByDates(normalizedData);
+    
+    // If a report is pending, show notice and hide both buttons
+    if (normalizedData.has_pending_post_act_report) {
+      return (
+        <div className={styles.actionButtons}>
+          <div className={styles.notice} title="Post Act Report submitted and waiting for superadmin approval">
+            Report Submitted • Pending Approval
+          </div>
+        </div>
+      );
+    }
+    
+    // If report is approved but program is not yet completed, show notice
+    // Once program is completed, don't show the notice (it's already completed)
+    if (normalizedData.has_approved_post_act_report && displayStatus !== 'Completed') {
+      return (
+        <div className={styles.actionButtons}>
+          <div className={styles.notice} title="Post Act Report approved">
+            <LuSquareCheckBig /> Report Approved
+          </div>
+        </div>
+      );
+    }
+    
+    // Otherwise, show buttons as normal
+    return (
+      <div className={styles.actionButtons}>
+        {/* Show Mark Active only for Upcoming programs (not Active, not Completed) */}
+        {displayStatus !== 'Active' && displayStatus !== 'Completed' && (
+          <button
+            onClick={handleMarkActiveClick}
+            className={styles.markActiveButton}
+            disabled={isDeleting}
+            title="Mark program as active"
+          >
+            <MdOutlineRadioButtonChecked /> Mark Active
+          </button>
+        )}
+        
+        {/* Show Mark Complete only for non-Completed programs */}
+        {displayStatus !== 'Completed' && (
+          <button
+            onClick={handleMarkCompletedClick}
+            className={styles.markCompletedButton}
+            disabled={isDeleting}
+            title="Mark program as completed"
+          >
+            <LuSquareCheckBig /> Mark Complete
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // Collaboration action buttons - Only show for collaboration cards with pending status
+  // AND only if the user is NOT the creator (i.e., they are invited as a collaborator)
+  if (isCollaborationCard && normalizedData.status === 'pending' && normalizedData.user_role !== 'creator') {
+    return (
+      <div className={styles.actionButtons}>
+        <button
+          onClick={handleAcceptCollaborationClick}
+          className={styles.acceptButton}
+          disabled={isAcceptingCollaboration || isDecliningCollaboration}
+          title="Accept collaboration invitation"
+        >
+          <LuSquareCheckBig /> {isAcceptingCollaboration ? 'Accepting...' : 'Accept'}
+        </button>
+        
+        <button
+          onClick={handleDeclineCollaborationClick}
+          className={styles.declineButton}
+          disabled={isAcceptingCollaboration || isDecliningCollaboration}
+          title="Decline collaboration invitation"
+        >
+          <MdOutlineCancel /> {isDecliningCollaboration ? 'Declining...' : 'Decline'}
+        </button>
+      </div>
+    );
+  }
+
+  // No action buttons to show
+  return null;
+};
+
+export default ProgramActions;

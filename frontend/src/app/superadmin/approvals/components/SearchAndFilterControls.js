@@ -46,10 +46,6 @@ const SearchAndFilterControls = ({
     return () => clearTimeout(timer);
   }, [localSearchTerm, onSearchChange]);
 
-  const handleSearchSubmit = () => {
-    onSearchChange(localSearchTerm);
-  };
-
   const handleSearchClear = () => {
     setLocalSearchTerm('');
     onSearchChange('');
@@ -57,11 +53,6 @@ const SearchAndFilterControls = ({
 
   const handleDropdownClick = (dropdownType) => {
     setShowDropdown(showDropdown === dropdownType ? null : dropdownType);
-  };
-
-  const handleDropdownOptionClick = (dropdownType, value, urlParam) => {
-    setShowDropdown(null);
-    onUpdateURLParams({ [urlParam]: value });
   };
 
   // Handle click outside for dropdowns
@@ -158,13 +149,13 @@ const SearchAndFilterControls = ({
               }}>
                 All Section
               </li>
-              {["programs", "competency", "advocacy", "collaborative_programs"].map((section) => (
+              {["programs", "competency", "advocacy"].map((section) => (
                 <li key={section} onClick={(e) => {
                   e.stopPropagation();
                   onSectionChange({ target: { value: section } });
                   setShowDropdown(null);
                 }}>
-                  {section === 'collaborative_programs' ? 'Collaborative Programs' : section.charAt(0).toUpperCase() + section.slice(1)}
+                  {section.charAt(0).toUpperCase() + section.slice(1)}
                 </li>
               ))}
             </ul>

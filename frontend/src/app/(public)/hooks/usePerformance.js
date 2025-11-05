@@ -43,11 +43,20 @@ export const usePerformance = () => {
   }, []);
 
   useEffect(() => {
+    // Check for window and document to avoid SSR errors
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
     if (document.readyState === 'complete') {
       measurePerformance();
     } else {
       window.addEventListener('load', measurePerformance);
-      return () => window.removeEventListener('load', measurePerformance);
+      return () => {
+        if (typeof window !== 'undefined') {
+          window.removeEventListener('load', measurePerformance);
+        }
+      };
     }
   }, [measurePerformance]);
 

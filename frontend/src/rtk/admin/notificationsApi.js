@@ -7,7 +7,8 @@ export const notificationsApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: `${API_BASE_URL}/api/notifications`,
     prepareHeaders: (headers, { getState }) => {
-      const token = localStorage.getItem('adminToken');
+      // Check for window to avoid SSR errors
+      const token = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
       if (token) {
         headers.set('authorization', `Bearer ${token}`);
       }
@@ -18,8 +19,8 @@ export const notificationsApi = createApi({
   endpoints: (builder) => ({
     // Get notifications for an admin
     getNotifications: builder.query({
-      query: ({ adminId, limit = 10, offset = 0 }) => ({
-        url: `/${adminId}?limit=${limit}&offset=${offset}`,
+      query: ({ adminId, limit = 10, offset = 0, tab = 'all' }) => ({
+        url: `/${adminId}?limit=${limit}&offset=${offset}&tab=${tab}`,
         method: 'GET',
       }),
       providesTags: ['Notifications'],

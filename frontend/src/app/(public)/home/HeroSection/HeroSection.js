@@ -13,33 +13,37 @@ export default function HeroSection() {
   const [showVideo, setShowVideo] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   // Fetch hero section data
-  const { heroData, isLoading, error } = usePublicHeroSection();
+  const { heroData } = usePublicHeroSection();
 
   // Helper function to convert YouTube URLs to embed format
   const convertToEmbedUrl = (url) => {
     if (url.includes('youtube.com/watch')) {
       const videoId = url.match(/[?&]v=([^&]+)/);
-      if (videoId) {
-        return `https://www.youtube.com/embed/${videoId[1]}`;
-      }
+      if (videoId) return `https://www.youtube.com/embed/${videoId[1]}`;
     } else if (url.includes('youtu.be/')) {
       const videoId = url.match(/youtu\.be\/([^?&]+)/);
-      if (videoId) {
-        return `https://www.youtube.com/embed/${videoId[1]}`;
-      }
+      if (videoId) return `https://www.youtube.com/embed/${videoId[1]}`;
     } else if (url.includes('vimeo.com/')) {
       const videoId = url.match(/vimeo\.com\/(\d+)/);
-      if (videoId) {
-        return `https://player.vimeo.com/video/${videoId[1]}`;
-      }
+      if (videoId) return `https://player.vimeo.com/video/${videoId[1]}`;
     }
-    return url; // Return original if no conversion needed
+    return url;
+  };
+
+  // Helper function to get fallback image
+  const getFallbackImage = (index) => {
+    const fallbacks = ["/samples/sample2.jpg", "/samples/sample8.jpg", "/samples/sample3.jpeg"];
+    return fallbacks[index] || fallbacks[0];
   };
 
   // Check user authentication status
   useEffect(() => {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') return;
+    
     const checkAuth = async () => {
       const token = localStorage.getItem('userToken');
       const storedUserData = localStorage.getItem('userData');
@@ -63,20 +67,37 @@ export default function HeroSection() {
     setMounted(true);
   }, []);
 
+  // Auto-cycling carousel effect for mobile
   useEffect(() => {
-    if (showVideo) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
+    if (!heroData?.images || heroData.images.length <= 1) return;
 
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => 
+        (prevIndex + 1) % heroData.images.length
+      );
+    }, 4000); // Change image every 4 seconds
+
+    return () => clearInterval(interval);
+  }, [heroData?.images]);
+
+  useEffect(() => {
+    if (typeof document !== 'undefined' && document.body) {
+      if (showVideo) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = 'unset';
+      }
+
+      return () => {
+        document.body.style.overflow = 'unset';
+      };
+    }
   }, [showVideo]);
 
   // Handle ESC key to close video
   useEffect(() => {
+    if (typeof document === 'undefined') return;
+    
     const handleKeyDown = (event) => {
       if (event.key === 'Escape' && showVideo) {
         setShowVideo(false);
@@ -140,34 +161,69 @@ export default function HeroSection() {
           </div>
 
           <div className={styles.rightColumn}>
-            {heroData?.images?.map((image, index) => {
-              const isFirst = index === 0;
-              const imageSrc = image.url || (isFirst ? "/samples/sample2.jpg" : index === 1 ? "/samples/sample8.jpg" : "/samples/sample3.jpeg");
-              
-              return (
-                <div key={image.id} className={`${styles.card} ${isFirst ? styles.first : styles.cardVertical}`}>
+            {/* Desktop Card Layout */}
+            <div className={styles.desktopCards}>
+              {heroData?.images?.map((image, index) => {
+                const isFirst = index === 0;
+                const imageSrc = image.url || getFallbackImage(index);
+                
+                return (
+                  <div key={image.id} className={`${styles.card} ${isFirst ? styles.first : styles.cardVertical}`}>
+                    <Image
+                      src={imageSrc}
+                      alt={isFirst ? "Main Card" : `Vertical Card ${index}`}
+                      width={280}
+                      height={isFirst ? 180 : 340}
+                      className={styles.cardImage}
+                      priority
+                    />
+                    {isFirst ? (
+                      <div className={styles.cardText}>
+                        <h2>{image.heading}</h2>
+                        <p>{image.subheading}</p>
+                      </div>
+                    ) : (
+                      <div className={styles.cardOverlayText}>
+                        <h3>{image.heading}</h3>
+                        <p>{image.subheading}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Mobile Carousel */}
+            <div className={styles.mobileCarousel}>
+              {heroData?.images && heroData.images.length > 0 && (
+                <div className={styles.carouselContainer}>
                   <Image
-                    src={imageSrc}
-                    alt={isFirst ? "Main Card" : `Vertical Card ${index}`}
-                    width={280}
-                    height={isFirst ? 180 : 340}
-                    className={styles.cardImage}
+                    src={heroData.images[currentImageIndex]?.url || getFallbackImage(currentImageIndex)}
+                    alt={`Carousel Image ${currentImageIndex + 1}`}
+                    width={400}
+                    height={300}
+                    className={styles.carouselImage}
                     priority
                   />
-                  {isFirst ? (
-                    <div className={styles.cardText}>
-                      <h2>{image.heading}</h2>
-                      <p>{image.subheading}</p>
-                    </div>
-                  ) : (
-                    <div className={styles.cardOverlayText}>
-                      <h3>{image.heading}</h3>
-                      <p>{image.subheading}</p>
-                    </div>
-                  )}
+                  <div className={styles.carouselOverlay}>
+                    <h2>{heroData.images[currentImageIndex]?.heading || "Community Impact"}</h2>
+                    <p>{heroData.images[currentImageIndex]?.subheading || "Making a difference together"}</p>
+                  </div>
+                  
+                  {/* Carousel Indicators */}
+                  <div className={styles.carouselIndicators}>
+                    {heroData.images.map((_, index) => (
+                      <button
+                        key={index}
+                        className={`${styles.indicator} ${index === currentImageIndex ? styles.active : ''}`}
+                        onClick={() => setCurrentImageIndex(index)}
+                        aria-label={`Go to image ${index + 1}`}
+                      />
+                    ))}
+                  </div>
                 </div>
-              );
-            })}
+              )}
+            </div>
           </div>
         </div>
       </div>

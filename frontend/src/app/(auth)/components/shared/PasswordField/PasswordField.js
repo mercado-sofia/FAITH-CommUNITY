@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useId } from "react"
-import { FaLock, FaEye, FaEyeSlash } from "react-icons/fa"
+import { FaLock } from "react-icons/fa"
+import { FiEye, FiEyeOff } from "react-icons/fi"
 import styles from "./PasswordField.module.css"
 
 export default function PasswordField({
@@ -45,7 +46,7 @@ export default function PasswordField({
 				disabled={disabled}
 				tabIndex="-1"
 			>
-				{show ? <FaEyeSlash /> : <FaEye />}
+				{show ? <FiEyeOff /> : <FiEye />}
 			</button>
 		</div>
 	)

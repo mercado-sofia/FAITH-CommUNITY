@@ -62,6 +62,12 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+.modalHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .modalCloseBtn {
   background: none;
   border: none;
@@ -183,11 +189,6 @@
   padding: 28px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   border: 1px solid #e5e7eb;
-  transition: box-shadow 0.2s ease;
-}
-
-.contentSection:hover {
-  box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 .sectionTitle {
@@ -352,6 +353,20 @@
 }
 
 .summaryItem:last-child {
+  margin-bottom: 0;
+}
+
+.summaryRow {
+  display: flex;
+  flex-direction: row;
+  gap: 24px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.summaryRow .summaryItem {
+  flex: 1;
+  min-width: 150px;
   margin-bottom: 0;
 }
 
@@ -782,11 +797,50 @@
   gap: 4px;
 }
 
+.collaboratorHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+
 .collaboratorName {
   font-size: 16px;
   font-weight: 600;
   color: #1f2937;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  flex: 1;
+}
+
+.collabStatusBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Collaboration Status Badge Colors - Gray for pending */
+.collabStatusBadge.statusPending {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.collabStatusBadge.statusAccepted {
+  background: #d1fae5;
+  color: #058964;
+  border: 1px solid #a7f3d0;
+}
+
+.collabStatusBadge.statusDeclined {
+  background: #fee2e2;
+  color: #b61212;
+  border: 1px solid #fecaca;
 }
 
 .collaboratorEmail {
@@ -795,9 +849,75 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.collaboratorAcronym {
-  font-size: 12px;
-  color: #9ca3af;
+/* File Card Styles */
+.noData {
+  font-size: 0.875rem;
+  color: #64748b;
   font-style: italic;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  text-align: center;
+  padding: 24px;
+}
+
+.fileCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  color: inherit;
+}
+
+.fileCard:hover {
+  border-color: #d1d5db;
+  background-color: #f9fafb;
+}
+
+.fileCard:hover .fileName {
+  text-decoration: underline;
+}
+
+.fileIconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.fileIcon {
+  font-size: 18px;
+  color: #374151;
+}
+
+.fileInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.fileName {
+  font-size: 13px;
+  font-weight: 500;
+  color: #000;
+  line-height: 1.4;
+  word-break: break-word;
+  text-decoration: none;
+}
+
+.fileSize {
+  font-size: 13px;
+  font-weight: 400;
+  color: #6b7280;
+  line-height: 1.4;
+  opacity: 0.8;
 }

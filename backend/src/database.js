@@ -2,6 +2,7 @@ import mysql from "mysql2";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import { logError, logInfo } from "./utils/logger.js";
 
 // Get the directory name properly in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -265,11 +266,11 @@ const runIncrementalMigrations = async (connection) => {
       console.log('Admin notifications enum update skipped (may already be updated)');
     }
 
-    // Update programs_projects status enum to include new status values
+    // Update programs_projects status enum to only include program lifecycle statuses
     try {
       await connection.query(`
         ALTER TABLE programs_projects 
-        MODIFY COLUMN status ENUM('pending', 'approved', 'rejected', 'pending_superadmin_approval', 'pending_collaboration', 'declined', 'Upcoming', 'Active', 'Completed', 'Cancelled') DEFAULT 'pending'
+        MODIFY COLUMN status ENUM('Upcoming', 'Active', 'Completed', 'Cancelled') DEFAULT 'Upcoming'
       `);
       // Programs status enum updated successfully
     } catch (enumError) {
@@ -277,10 +278,128 @@ const runIncrementalMigrations = async (connection) => {
       console.log('Programs status enum update skipped (may already be updated)');
     }
 
+    // manual_status_override field is already included in the initial table creation
+    // No need to add it in migrations as it's part of the base schema
 
+    // Add status column to admin_highlights if it doesn't exist
+    try {
+      await connection.query(`
+        ALTER TABLE admin_highlights 
+        ADD COLUMN IF NOT EXISTS status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending'
+      `);
+      console.log('Admin highlights status column added successfully');
+    } catch (statusError) {
+      console.log('Admin highlights status column already exists or update failed');
+    }
+
+    // Add index for status column
+    try {
+      await connection.query(`
+        ALTER TABLE admin_highlights 
+        ADD INDEX IF NOT EXISTS idx_status (status)
+      `);
+      console.log('Admin highlights status index added successfully');
+    } catch (indexError) {
+      console.log('Admin highlights status index already exists or update failed');
+    }
+
+    // Fix admin_highlights id column to ensure AUTO_INCREMENT and PRIMARY KEY are properly set
+    try {
+      // Check if id column has AUTO_INCREMENT
+      const [columnInfo] = await connection.query(`
+        SELECT COLUMN_KEY, EXTRA 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'admin_highlights' 
+        AND COLUMN_NAME = 'id'
+      `);
+      
+      if (columnInfo.length > 0) {
+        const hasAutoIncrement = columnInfo[0].EXTRA?.includes('auto_increment') || false;
+        const hasPrimaryKey = columnInfo[0].COLUMN_KEY === 'PRI';
+        
+        if (!hasAutoIncrement || !hasPrimaryKey) {
+          console.log('Fixing admin_highlights id column: ensuring AUTO_INCREMENT and PRIMARY KEY...');
+          
+          // First, ensure the column is INT AUTO_INCREMENT
+          await connection.query(`
+            ALTER TABLE admin_highlights 
+            MODIFY COLUMN id INT AUTO_INCREMENT PRIMARY KEY
+          `);
+          
+          console.log('Admin highlights id column fixed successfully');
+        }
+      }
+    } catch (idColumnFixError) {
+      console.log('Admin highlights id column fix skipped or failed:', idColumnFixError.message);
+    }
+
+    // Fix any records with ID=0 by updating them to have proper auto-increment IDs
+    try {
+      const [zeroIdRecords] = await connection.query(`
+        SELECT COUNT(*) as count FROM admin_highlights WHERE id = 0
+      `);
+      
+      if (zeroIdRecords[0].count > 0) {
+        console.log(`Found ${zeroIdRecords[0].count} records with ID=0, fixing...`);
+        
+        // Get the next available ID
+        const [maxIdResult] = await connection.query(`
+          SELECT MAX(id) as max_id FROM admin_highlights WHERE id > 0
+        `);
+        let nextId = (maxIdResult[0].max_id || 0) + 1;
+        
+        // Get ALL records with ID=0 ordered by created_at
+        const [allZeroRecords] = await connection.query(`
+          SELECT id, created_at, title 
+          FROM admin_highlights 
+          WHERE id = 0 
+          ORDER BY created_at ASC
+        `);
+        
+        // Update each record individually with a unique identifier
+        // Use a temporary unique identifier to track each record
+        for (let i = 0; i < allZeroRecords.length; i++) {
+          const record = allZeroRecords[i];
+          const newId = nextId + i;
+          
+          // Update by using created_at and title as unique identifiers
+          await connection.query(`
+            UPDATE admin_highlights 
+            SET id = ? 
+            WHERE id = 0 
+            AND created_at = ? 
+            AND title = ?
+            LIMIT 1
+          `, [newId, record.created_at, record.title]);
+        }
+        
+        // Reset auto-increment to ensure proper IDs for future inserts
+        const finalNextId = nextId + allZeroRecords.length;
+        await connection.query(`
+          ALTER TABLE admin_highlights AUTO_INCREMENT = ?
+        `, [finalNextId]);
+        
+        console.log(`Fixed ${allZeroRecords.length} ID=0 records in admin_highlights table, assigned IDs ${nextId} to ${finalNextId - 1}`);
+      }
+    } catch (idFixError) {
+      console.log('ID=0 fix skipped or failed:', idFixError.message);
+    }
+
+    // Ensure all existing highlights have a status (default to 'pending' if NULL)
+    try {
+      await connection.query(`
+        UPDATE admin_highlights 
+        SET status = 'pending' 
+        WHERE status IS NULL
+      `);
+      console.log('Updated NULL status records to pending');
+    } catch (statusUpdateError) {
+      console.log('Status update skipped or failed:', statusUpdateError.message);
+    }
 
   } catch (error) {
-    console.error('❌ Incremental migrations failed:', error);
+    logError('Incremental migrations failed', error, { context: 'database' });
     throw error;
   }
 };
@@ -382,14 +501,18 @@ const initializeDatabase = async () => {
           slug VARCHAR(255) UNIQUE,
           description TEXT NOT NULL,
           category VARCHAR(100),
-          status ENUM('pending', 'approved', 'rejected', 'pending_superadmin_approval', 'pending_collaboration', 'declined') DEFAULT 'pending',
+          status ENUM('Upcoming', 'Active', 'Completed', 'Cancelled') DEFAULT 'Upcoming',
           image VARCHAR(500),
           event_start_date DATE NULL,
           event_end_date DATE NULL,
           date_completed DATE NULL,
           is_featured BOOLEAN DEFAULT FALSE,
-          is_approved BOOLEAN DEFAULT TRUE,
+          is_approved BOOLEAN DEFAULT FALSE, // SECURITY FIX: Require explicit approval
           is_collaborative BOOLEAN DEFAULT FALSE,
+          accepts_volunteers BOOLEAN DEFAULT TRUE, // Controls whether program accepts volunteer applications
+          manual_status_override BOOLEAN DEFAULT FALSE, // Indicates if admin manually set the status
+          submitted_by_name VARCHAR(100) NULL, // Name of the officer who submitted the program
+          submitted_by_role VARCHAR(100) NULL, // Role/position of the officer who submitted the program
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
@@ -397,9 +520,54 @@ const initializeDatabase = async () => {
           INDEX idx_programs_organization (organization_id),
           INDEX idx_programs_status (status),
           INDEX idx_programs_featured (is_featured),
-          INDEX idx_programs_approved (is_approved)
+          INDEX idx_programs_approved (is_approved),
+          INDEX idx_programs_accepts_volunteers (accepts_volunteers),
+          INDEX idx_programs_manual_override (manual_status_override)
         )
       `);
+
+      // Add submitted_by_name and submitted_by_role columns if they don't exist (migration for existing databases)
+      try {
+        // Check if submitted_by_name column exists
+        const [nameColumns] = await connection.query(`
+          SELECT COLUMN_NAME 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_SCHEMA = DATABASE() 
+          AND TABLE_NAME = 'programs_projects' 
+          AND COLUMN_NAME = 'submitted_by_name'
+        `);
+        
+        if (nameColumns.length === 0) {
+          await connection.query(`
+            ALTER TABLE programs_projects 
+            ADD COLUMN submitted_by_name VARCHAR(100) NULL
+          `);
+          logInfo('Added submitted_by_name column to programs_projects table', { context: 'database' });
+        }
+      } catch (error) {
+        logError('Error adding submitted_by_name column', error, { context: 'database' });
+      }
+
+      try {
+        // Check if submitted_by_role column exists
+        const [roleColumns] = await connection.query(`
+          SELECT COLUMN_NAME 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_SCHEMA = DATABASE() 
+          AND TABLE_NAME = 'programs_projects' 
+          AND COLUMN_NAME = 'submitted_by_role'
+        `);
+        
+        if (roleColumns.length === 0) {
+          await connection.query(`
+            ALTER TABLE programs_projects 
+            ADD COLUMN submitted_by_role VARCHAR(100) NULL
+          `);
+          logInfo('Added submitted_by_role column to programs_projects table', { context: 'database' });
+        }
+      } catch (error) {
+        logError('Error adding submitted_by_role column', error, { context: 'database' });
+      }
 
       await connection.query(`
         CREATE TABLE IF NOT EXISTS news (
@@ -433,7 +601,7 @@ const initializeDatabase = async () => {
           previous_data JSON,
           proposed_data JSON NOT NULL,
           submitted_by INT NOT NULL,
-          status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+          status ENUM('pending', 'approved', 'rejected', 'approved_pending_collaboration') DEFAULT 'pending',
           rejection_reason TEXT,
           submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -586,18 +754,23 @@ const initializeDatabase = async () => {
           await connection.query(`
         CREATE TABLE IF NOT EXISTS program_collaborations (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          program_id INT NOT NULL,
+          program_id INT NULL,
+          submission_id INT NULL,
           collaborator_admin_id INT NOT NULL,
           invited_by_admin_id INT NOT NULL,
           status ENUM('pending', 'accepted', 'declined') DEFAULT 'pending',
+          program_title VARCHAR(255) NULL,
           invited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           responded_at TIMESTAMP NULL,
           FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE CASCADE,
+          FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE,
           FOREIGN KEY (collaborator_admin_id) REFERENCES admins(id) ON DELETE CASCADE,
           FOREIGN KEY (invited_by_admin_id) REFERENCES admins(id) ON DELETE CASCADE,
           UNIQUE KEY unique_program_collaborator (program_id, collaborator_admin_id),
+          UNIQUE KEY unique_submission_collaborator (submission_id, collaborator_admin_id),
           INDEX idx_collaborator_status (collaborator_admin_id, status),
-          INDEX idx_program_status (program_id, status)
+          INDEX idx_program_status (program_id, status),
+          INDEX idx_submission_status (submission_id, status)
         )
       `);
 
@@ -674,11 +847,8 @@ const initializeDatabase = async () => {
           id INT AUTO_INCREMENT PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
           description TEXT,
-          email VARCHAR(255),
-          phone VARCHAR(50),
           image_url VARCHAR(500),
           position VARCHAR(100) DEFAULT 'Head of FACES',
-          display_order INT DEFAULT 0,
           status ENUM('ACTIVE', 'INACTIVE') DEFAULT 'ACTIVE',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -691,6 +861,7 @@ const initializeDatabase = async () => {
           title VARCHAR(255) NOT NULL,
           description TEXT NOT NULL,
           media_files JSON,
+          status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
           organization_id INT NOT NULL,
           created_by INT NOT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -699,7 +870,8 @@ const initializeDatabase = async () => {
           FOREIGN KEY (created_by) REFERENCES admins(id) ON DELETE CASCADE,
           INDEX idx_organization_id (organization_id),
           INDEX idx_created_by (created_by),
-          INDEX idx_created_at (created_at)
+          INDEX idx_created_at (created_at),
+          INDEX idx_status (status)
         )
       `);
 
@@ -1087,7 +1259,7 @@ const initializeDatabase = async () => {
 
     return promisePool;
   } catch (error) {
-    console.error('❌ Database initialization failed:', error);
+    logError('Database initialization failed', error, { context: 'database' });
     throw error;
   } finally {
     connection.release();
@@ -1097,7 +1269,7 @@ const initializeDatabase = async () => {
 // Initialize database immediately
 initializeDatabase().then(() => {
 }).catch(error => {
-  console.error('❌ Database initialization failed:', error);
+  logError('Database initialization failed', error, { context: 'database' });
   process.exit(1);
 });
 

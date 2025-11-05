@@ -11,23 +11,15 @@ Welcome to the FAITH CommUNITY frontend documentation. This comprehensive guide 
 ## 🎨 02-Frontend
 - [CSS Optimization Guide](./02-frontend/CSS_OPTIMIZATION_GUIDE.md) - Performance and styling best practices
 - [Performance Optimization Guide](./02-frontend/PERFORMANCE_OPTIMIZATION_GUIDE.md) - Frontend performance improvements
-- [Profile Page Documentation](./02-frontend/profile-page/) - Complete profile management system
 
 ## 🔐 03-Security
 - [Email Change Analysis](./03-security/EMAIL_CHANGE_ANALYSIS.md) - Secure email change implementation
-- [Admin Invitation Fixes](./03-security/ADMIN_INVITATION_FIXES.md) - Admin invitation system security
 
 ## 📧 04-Features
 - [Newsletter Implementation](./04-features/NEWSLETTER_IMPLEMENTATION_GUIDE.md) - Newsletter subscription system
 
-## 🧪 05-Testing
-- [Form Persistence Tests](./05-testing/FORM_PERSISTENCE_TEST.md) - Volunteer application form testing
-- [Program Preview Tests](./05-testing/PROGRAM_PREVIEW_PERSISTENCE_TEST.md) - Program selection testing
-- [Admin Invitation Tests](./05-testing/test_invitation_flow.md) - Admin invitation flow testing
-- [Password Reset Tests](./05-testing/test_reset_password.md) - Password reset functionality testing
-
-## 🛠️ 06-Development
-- [Logging System](./06-development/LOGGING_README.md) - Production-ready logging implementation
+## 🛠️ 05-Development
+- [Logging System](./05-development/LOGGING_README.md) - Production-ready logging implementation
 
 ## 🎯 Project Overview
 
@@ -64,7 +56,32 @@ npm run dev
 ```
 
 ### Environment Variables
-See individual documentation files for specific environment variable requirements.
+
+#### Required Environment Variables
+Create a `.env.local` file in the frontend root directory with the following variables:
+
+```env
+# Backend API URL (Required)
+NEXT_PUBLIC_API_URL=http://localhost:8080
+
+# Backend URL for file uploads (Required)
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
+
+# Cloudinary Configuration (Required for image uploads)
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your-cloud-name
+```
+
+#### Production Environment Variables
+For production deployment, update the URLs to your production backend:
+
+```env
+NEXT_PUBLIC_API_URL=https://your-backend-domain.com
+NEXT_PUBLIC_BACKEND_URL=https://your-backend-domain.com
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your-production-cloud-name
+```
+
+#### Environment Template
+Use `env.example` as a template for your environment configuration.
 
 ## 📖 Documentation Standards
 

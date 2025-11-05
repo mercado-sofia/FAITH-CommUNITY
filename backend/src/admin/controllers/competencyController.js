@@ -55,7 +55,6 @@ export const addCompetency = async (req, res) => {
       })
     }
   } catch (error) {
-    console.error("Add/Update competency error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to save competency",
@@ -81,7 +80,6 @@ export const getCompetencies = async (req, res) => {
       data: rows,
     })
   } catch (error) {
-    console.error("Get competencies error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to retrieve competencies",
@@ -103,7 +101,6 @@ export const getAllCompetencies = async (req, res) => {
       data: rows,
     })
   } catch (error) {
-    console.error("Get all competencies error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to retrieve competencies",
@@ -137,7 +134,6 @@ export const deleteCompetency = async (req, res) => {
       message: "Competency deleted successfully",
     })
   } catch (error) {
-    console.error("Delete competency error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to delete competency",

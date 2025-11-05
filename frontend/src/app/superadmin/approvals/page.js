@@ -10,12 +10,18 @@ import { ConfirmationModal } from '@/components';
 import { SuccessModal } from '@/components';
 import ApprovalsTable from './components/ApprovalsTable';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
+import { SkeletonLoader } from '../components';
 import styles from './approvals.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 // Helper function to make authenticated API calls
 const makeAuthenticatedRequest = async (url, options = {}) => {
+  // Check for window to avoid SSR errors
+  if (typeof window === 'undefined') {
+    throw new Error('Cannot make authenticated request on server side');
+  }
+
   const token = localStorage.getItem('superAdminToken');
   if (!token) {
     // Use centralized immediate cleanup for security
@@ -44,7 +50,9 @@ const makeAuthenticatedRequest = async (url, options = {}) => {
     // Token expired or invalid - use centralized cleanup
     const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
     clearAuthImmediate(USER_TYPES.SUPERADMIN);
-    window.location.href = '/login';
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
     return null;
   }
 
@@ -133,63 +141,24 @@ export default function PendingApprovalsPage() {
     try {
       setIsLoading(true);
       
-      // Fetch both submissions and collaborative programs
-      const [submissionsRes, collaborativeRes] = await Promise.all([
-        makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals`),
-        makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals/collaborative-programs`)
-      ]);
+      // Fetch submissions only (collaborative programs are now handled as regular submissions)
+      const submissionsRes = await makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals`);
       
-      if (!submissionsRes || !collaborativeRes) return; // Helper function handled redirect
+      if (!submissionsRes) return; // Helper function handled redirect
       
-      const [submissionsResult, collaborativeResult] = await Promise.all([
-        submissionsRes.json(),
-        collaborativeRes.json()
-      ]);
+      const submissionsResult = await submissionsRes.json();
 
       if (!submissionsRes.ok || !submissionsResult.success) {
         throw new Error(submissionsResult.message || 'Failed to fetch submissions');
       }
 
-      if (!collaborativeRes.ok || !collaborativeResult.success) {
-        throw new Error(collaborativeResult.message || 'Failed to fetch collaborative programs');
-      }
-
       // Format submissions
-      const formattedSubmissions = submissionsResult.data.map((item) => ({
+      const allApprovals = submissionsResult.data.map((item) => ({
         ...item,
         submitted_at: new Date(item.submitted_at),
         type: 'submission',
         uniqueKey: `submission-${item.id}` // Create unique key
       }));
-
-      // Format collaborative programs
-      const formattedCollaborative = collaborativeResult.data.map((item) => {
-        // Debug logging for collaborative programs in superadmin
-        if (item.title === 'Collab test') {
-          console.log('🔍 Superadmin - Collab test data:', {
-            id: item.id,
-            title: item.title,
-            status: item.status,
-            organization_acronym: item.organization_acronym
-          });
-        }
-        
-        return {
-          ...item,
-          submitted_at: new Date(item.created_at), // Use created_at as submitted_at for consistency
-          type: 'collaborative_program',
-          section: 'collaborative_programs',
-          organization_acronym: item.organization_acronym,
-          status: item.status, // Use actual status from backend
-          title: item.title,
-          org: item.organization_acronym,
-          orgName: item.organization_name,
-          uniqueKey: `collaborative-${item.id}` // Create unique key
-        };
-      });
-
-      // Combine both types
-      const allApprovals = [...formattedSubmissions, ...formattedCollaborative];
       
       // Sort by date (newest first)
       allApprovals.sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at));
@@ -421,14 +390,7 @@ export default function PendingApprovalsPage() {
 
   const handleApprove = useCallback(async (item) => {
     try {
-      let url;
-      
-      // Determine the correct endpoint based on item type
-      if (item.type === 'collaborative_program') {
-        url = `${API_BASE_URL}/api/approvals/collaborative-programs/${item.id}/approve`;
-      } else {
-        url = `${API_BASE_URL}/api/approvals/${item.id}/approve`;
-      }
+      const url = `${API_BASE_URL}/api/approvals/${item.id}/approve`;
 
       const res = await makeAuthenticatedRequest(url, {
         method: 'PUT',
@@ -452,14 +414,7 @@ export default function PendingApprovalsPage() {
 
   const handleReject = useCallback(async (item, rejectComment = '') => {
     try {
-      let url;
-      
-      // Determine the correct endpoint based on item type
-      if (item.type === 'collaborative_program') {
-        url = `${API_BASE_URL}/api/approvals/collaborative-programs/${item.id}/reject`;
-      } else {
-        url = `${API_BASE_URL}/api/approvals/${item.id}/reject`;
-      }
+      const url = `${API_BASE_URL}/api/approvals/${item.id}/reject`;
 
       const res = await makeAuthenticatedRequest(url, {
         method: 'PUT',
@@ -489,17 +444,17 @@ export default function PendingApprovalsPage() {
       const originalIds = uniqueKeys.map(key => {
         if (key.startsWith('submission-')) {
           return key.replace('submission-', '');
-        } else if (key.startsWith('collaborative-')) {
-          return key.replace('collaborative-', '');
         }
         return key; // fallback for items without unique keys
       });
 
-      const res = await fetch(`${API_BASE_URL}/api/approvals/bulk/approve`, {
+      const res = await makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals/bulk/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: originalIds })
       });
+
+      if (!res) return; // Helper function handled redirect
 
       const result = await res.json();
 
@@ -520,17 +475,17 @@ export default function PendingApprovalsPage() {
       const originalIds = uniqueKeys.map(key => {
         if (key.startsWith('submission-')) {
           return key.replace('submission-', '');
-        } else if (key.startsWith('collaborative-')) {
-          return key.replace('collaborative-', '');
         }
         return key; // fallback for items without unique keys
       });
 
-      const res = await fetch(`${API_BASE_URL}/api/approvals/bulk/reject`, {
+      const res = await makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals/bulk/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: originalIds, rejection_comment: rejectComment })
       });
+
+      if (!res) return; // Helper function handled redirect
 
       const result = await res.json();
 
@@ -551,17 +506,17 @@ export default function PendingApprovalsPage() {
       const originalIds = uniqueKeys.map(key => {
         if (key.startsWith('submission-')) {
           return key.replace('submission-', '');
-        } else if (key.startsWith('collaborative-')) {
-          return key.replace('collaborative-', '');
         }
         return key; // fallback for items without unique keys
       });
 
-      const res = await fetch(`${API_BASE_URL}/api/approvals/bulk/delete`, {
+      const res = await makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals/bulk/delete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: originalIds })
       });
+
+      if (!res) return; // Helper function handled redirect
 
       const result = await res.json();
 
@@ -599,10 +554,10 @@ export default function PendingApprovalsPage() {
     try {
       switch (pendingIndividualAction) {
         case 'approve':
-          await handleApprove(selectedItemForAction.id);
+          await handleApprove(selectedItemForAction);
           break;
         case 'reject':
-          await handleReject(selectedItemForAction.id, rejectComment || '');
+          await handleReject(selectedItemForAction, rejectComment || '');
           break;
         default:
           throw new Error('Invalid individual action');
@@ -661,10 +616,12 @@ export default function PendingApprovalsPage() {
     
     setIsIndividualDeleting(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/approvals/${selectedItemForAction.id}/delete`, {
+      const res = await makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals/${selectedItemForAction.id}/delete`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' }
       });
+
+      if (!res) return; // Helper function handled redirect
 
       const result = await res.json();
 
@@ -820,8 +777,11 @@ export default function PendingApprovalsPage() {
 
   if (isLoading) {
     return (
-      <div className={styles.container}>
-        <div className={styles.loading}>Loading approvals...</div>
+      <div className={styles.mainArea}>
+        <div className={styles.header}>
+          <h1 className={styles.pageTitle}>Approvals</h1>
+        </div>
+        <SkeletonLoader type="approvals" count={5} />
       </div>
     );
   }
@@ -923,7 +883,7 @@ export default function PendingApprovalsPage() {
       <div className={styles.tableSection}>
         <ApprovalsTable
           approvals={currentApprovals}
-          onApprove={handleApprove}
+          onApprove={handleApproveClick}
           onRejectClick={handleRejectClick}
           onDeleteClick={handleDeleteClick}
           selectedItems={selectedItems}

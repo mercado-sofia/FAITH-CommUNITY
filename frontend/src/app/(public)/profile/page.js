@@ -4,13 +4,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PersonalInfo, EmailandPassword, Notifications, MyApplications } from './NavTabs';
 import { ErrorBoundary, Loader } from '@/components';
-import { ToastContainer, useToast } from './components/Toast';
+import { ToastContainer, useToast } from '../components/Toast';
 import { usePublicPageLoader } from '../hooks/usePublicPageLoader';
 import styles from './profile.module.css';
 
 export default function ProfilePage() {
   const [userData, setUserData] = useState(null);
   const [activeTab, setActiveTab] = useState('personal-info');
+  const [isMobile, setIsMobile] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toasts, removeToast, showError } = useToast();
@@ -27,21 +28,25 @@ export default function ProfilePage() {
     {
       id: 'personal-info',
       label: 'Profile Info',
+      mobileLabel: 'Profile',
       component: PersonalInfo
     },
     {
       id: 'email-password',
       label: 'Email & Password',
+      mobileLabel: 'Email & Password',
       component: EmailandPassword
     },
     {
       id: 'notifications',
       label: 'Notifications',
+      mobileLabel: 'Notifications',
       component: Notifications
     },
     {
       id: 'applications',
       label: 'My Applications',
+      mobileLabel: 'Applications',
       component: MyApplications
     }
   ];
@@ -57,10 +62,31 @@ export default function ProfilePage() {
     }
   }, [searchParams]);
 
+  // Track viewport for mobile-specific labels
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const checkIsMobile = () => {
+      if (typeof window !== 'undefined') {
+        setIsMobile(window.innerWidth <= 768);
+      }
+    };
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', checkIsMobile);
+      }
+    };
+  }, []);
+
 
   // Handle user authentication and data loading
   useEffect(() => {
     if (!pageReady) return;
+    
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') return;
 
     const token = localStorage.getItem('userToken');
     const storedUserData = localStorage.getItem('userData');
@@ -92,9 +118,11 @@ export default function ProfilePage() {
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
     // Update URL without page reload
-    const url = new URL(window.location);
-    url.searchParams.set('tab', tabId);
-    router.replace(url.pathname + url.search, { scroll: false });
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location);
+      url.searchParams.set('tab', tabId);
+      router.replace(url.pathname + url.search, { scroll: false });
+    }
   };
 
   const ActiveComponent = navigationItems.find(item => item.id === activeTab)?.component;
@@ -116,7 +144,7 @@ export default function ProfilePage() {
                     className={`${styles.navItem} ${activeTab === item.id ? styles.active : ''}`}
                     onClick={() => handleTabChange(item.id)}
                   >
-                    <span>{item.label}</span>
+                    <span>{isMobile ? (item.mobileLabel ?? item.label) : item.label}</span>
                   </button>
                 );
               })}

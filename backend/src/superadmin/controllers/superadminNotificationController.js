@@ -33,7 +33,6 @@ class SuperAdminNotificationController {
         message: 'Test data retrieved successfully'
       });
     } catch (error) {
-      console.error('Error in testNotifications:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to fetch test data',
@@ -64,7 +63,6 @@ class SuperAdminNotificationController {
         message: 'Test notification created successfully'
       });
     } catch (error) {
-      console.error('Error creating test notification:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to create test notification',
@@ -78,7 +76,6 @@ class SuperAdminNotificationController {
     try {
       const { superAdminId } = req.params;
       const { limit = 10, offset = 0 } = req.query;
-
 
       // Get total count first
       const [countResult] = await db.execute(
@@ -112,7 +109,6 @@ class SuperAdminNotificationController {
       `;
 
       const [notifications] = await db.execute(query, [superAdminId, parseInt(limit), parseInt(offset)]);
-      
 
       // Format the time ago, logo URL, and generate dynamic messages for each notification
       const formattedNotifications = notifications.map(notification => {
@@ -152,7 +148,6 @@ class SuperAdminNotificationController {
         total: total
       });
     } catch (error) {
-      console.error('Error fetching superadmin notifications:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to fetch notifications'
@@ -186,7 +181,6 @@ class SuperAdminNotificationController {
         message: 'Notification marked as read'
       });
     } catch (error) {
-      console.error('Error marking notification as read:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to mark notification as read'
@@ -212,7 +206,6 @@ class SuperAdminNotificationController {
         message: `${result.affectedRows} notifications marked as read`
       });
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to mark all notifications as read'
@@ -245,7 +238,6 @@ class SuperAdminNotificationController {
         message: 'Notification deleted successfully'
       });
     } catch (error) {
-      console.error('Error deleting notification:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to delete notification'
@@ -268,7 +260,6 @@ class SuperAdminNotificationController {
         count: result[0].count
       });
     } catch (error) {
-      console.error('Error getting unread count:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to get unread count'
@@ -312,14 +303,12 @@ class SuperAdminNotificationController {
         notificationId: result.insertId
       };
     } catch (error) {
-      console.error('Error creating superadmin notification:', error);
       return {
         success: false,
         error: error.message
       };
     }
   }
-
 
   // Helper method to format time ago
   static getTimeAgo(createdAt) {

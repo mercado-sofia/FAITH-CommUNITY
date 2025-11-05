@@ -1,9 +1,10 @@
 //db table: admins
 import jwt from "jsonwebtoken"
 import { SessionSecurity } from "../../utils/sessionSecurity.js"
+import { getClientIpAddress } from "../../utils/ipAddressHelper.js"
 
 // JWT secret for admin (should match the one used in admin login)
-const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
+const JWT_SECRET = process.env.JWT_SECRET
 
 // JWT verification middleware for admin with session security
 export const verifyAdminToken = async (req, res, next) => {
@@ -24,7 +25,7 @@ export const verifyAdminToken = async (req, res, next) => {
     try {
       const sessionCheck = await SessionSecurity.verifyAdminSession(
         token,
-        req.ip || req.connection.remoteAddress,
+        getClientIpAddress(req),
         req.headers['user-agent']
       )
 

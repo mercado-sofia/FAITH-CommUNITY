@@ -178,6 +178,94 @@ export default function SkeletonLoader({ type = 'section', count = 1, className 
           </div>
         )
       
+      case 'approvals':
+        return (
+          <div className={styles.approvalsSkeleton}>
+            <div className={styles.headerSkeleton}>
+              <div className={styles.titleSkeleton} />
+            </div>
+            <div className={styles.tableSkeleton}>
+              <div className={styles.tableHeaderSkeleton}>
+                <div className={styles.headerCellSkeleton} />
+                <div className={styles.headerCellSkeleton} />
+                <div className={styles.headerCellSkeleton} />
+                <div className={styles.headerCellSkeleton} />
+                <div className={styles.headerCellSkeleton} />
+                <div className={styles.headerCellSkeleton} />
+              </div>
+              {Array.from({ length: count }).map((_, index) => (
+                <div key={index} className={styles.tableRowSkeleton}>
+                  <div className={styles.cellSkeleton}>
+                    <div className={styles.checkboxSkeleton} />
+                  </div>
+                  <div className={styles.cellSkeleton}>
+                    <div className={styles.textSkeleton} />
+                  </div>
+                  <div className={styles.cellSkeleton}>
+                    <div className={styles.textSkeleton} />
+                  </div>
+                  <div className={styles.cellSkeleton}>
+                    <div className={styles.textSkeleton} />
+                  </div>
+                  <div className={styles.cellSkeleton}>
+                    <div className={styles.badgeSkeleton} />
+                  </div>
+                  <div className={styles.cellSkeleton}>
+                    <div className={styles.actionButtonSkeleton} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      
+      case 'invites':
+        return (
+          <div className={styles.invitesSkeleton}>
+            <div className={styles.headerSkeleton}>
+              <div className={styles.titleSkeleton} />
+            </div>
+            <div className={styles.tableSkeleton}>
+              <div className={styles.tableHeaderSkeleton}>
+                <div className={styles.headerCellSkeleton} />
+                <div className={styles.headerCellSkeleton} />
+                <div className={styles.headerCellSkeleton} />
+                <div className={styles.headerCellSkeleton} />
+                <div className={styles.headerCellSkeleton} />
+                <div className={styles.headerCellSkeleton} />
+              </div>
+              {Array.from({ length: count }).map((_, index) => (
+                <div key={index} className={styles.tableRowSkeleton}>
+                  <div className={styles.cellSkeleton}>
+                    <div className={styles.checkboxSkeleton} />
+                  </div>
+                  <div className={styles.cellSkeleton}>
+                    <div className={styles.emailSkeleton} />
+                  </div>
+                  <div className={styles.cellSkeleton}>
+                    <div className={styles.dateTimeSkeleton}>
+                      <div className={styles.dateSkeleton} />
+                      <div className={styles.timeSkeleton} />
+                    </div>
+                  </div>
+                  <div className={styles.cellSkeleton}>
+                    <div className={styles.dateTimeSkeleton}>
+                      <div className={styles.dateSkeleton} />
+                      <div className={styles.timeSkeleton} />
+                    </div>
+                  </div>
+                  <div className={styles.cellSkeleton}>
+                    <div className={styles.badgeSkeleton} />
+                  </div>
+                  <div className={styles.cellSkeleton}>
+                    <div className={styles.actionButtonSkeleton} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      
       case 'section':
       default:
         return (

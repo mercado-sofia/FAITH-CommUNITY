@@ -6,7 +6,8 @@ import Link from 'next/link';
 import styles from './NewsSection.module.css';
 import { usePublicOrganizations, usePublicNews } from '../../hooks/usePublicData';
 import { formatDateLong } from '@/utils/dateUtils';
-import { getOrganizationImageUrl } from '@/utils/uploadPaths';
+import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
+import { UnavailableImagePlaceholder } from '@/components';
 
 export default function NewsSection() {
   const orgNavRef = useRef(null);
@@ -16,6 +17,9 @@ export default function NewsSection() {
   // Swipe functionality states
   const [touchStartX, setTouchStartX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Responsive display count
+  const [isMobile, setIsMobile] = useState(false);
 
   // Use SWR hooks for data fetching
   const { organizations: orgsData, isLoading: orgLoading } = usePublicOrganizations();
@@ -61,6 +65,22 @@ export default function NewsSection() {
     
     return sortedOrgs;
   }, [orgsData, news]);
+
+  // Handle screen size detection for responsive display count
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    // Check on mount
+    checkScreenSize();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkScreenSize);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   // Handle initial organization selection - always reset to first organization
   useEffect(() => {
@@ -140,7 +160,7 @@ export default function NewsSection() {
     }
   };
 
-  const maxDisplay = 6;
+  const maxDisplay = isMobile ? 3 : 6;
 
   // Using centralized date utility - format remains exactly the same
   const formatDate = (dateString) => {
@@ -203,17 +223,32 @@ export default function NewsSection() {
                   onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && handleOrgClick(orgObj)}
                   className={`${styles.orgItem} ${isActive ? styles.active : ""}`}
                 >
-                  <Image
-                    src={getOrganizationImageUrl(orgObj.logo, 'logo')}
-                    alt={`${orgObj.acronym || orgObj.name} logo`}
-                    width={30}
-                    height={30}
-                    className={styles.orgLogo}
-                    onError={(e) => {
-                      // Use a default logo if the specific one doesn't exist
-                      e.target.src = '/assets/icons/placeholder.svg';
-                    }}
-                  />
+                  {(() => {
+                    const orgImageUrl = getOrganizationImageUrl(orgObj.logo, 'logo');
+                    if (isUnavailableImage(orgImageUrl)) {
+                      return (
+                        <UnavailableImagePlaceholder 
+                          width="30px" 
+                          height="30px" 
+                          text="Logo"
+                          className={styles.orgLogo}
+                        />
+                      );
+                    }
+                    return (
+                      <Image
+                        src={orgImageUrl}
+                        alt={`${orgObj.acronym || orgObj.name} logo`}
+                        width={30}
+                        height={30}
+                        className={styles.orgLogo}
+                        onError={(e) => {
+                          // Use a default logo if the specific one doesn't exist
+                          e.target.src = '/assets/icons/placeholder.svg';
+                        }}
+                      />
+                    );
+                  })()}
                   <span>{orgObj.acronym || orgObj.name}</span>
                 </div>
               );

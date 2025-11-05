@@ -2,10 +2,6 @@
 
 import Image from 'next/image';
 import styles from './OfficerSection.module.css';
-import {
-  FaEnvelope,
-  FaPhone,
-} from 'react-icons/fa';
 import { usePublicHeadsFaces } from '../../hooks/usePublicData';
 import Loader from '../../../../components/ui/Loader/Loader';
 
@@ -49,12 +45,14 @@ export default function OfficerSection() {
           <div className={styles.portfolioContent}>
             {/* Left side - Text content */}
             <div className={styles.textContent}>
-              <div className={styles.greeting}>
-                <h1 className={styles.adviserName}>{primaryAdviser.name}</h1>
-              </div>
-              
-              <div className={styles.roleContainer}>
-                <span className={styles.roleText}>{primaryAdviser.position}</span>
+              <div className={styles.nameRoleWrapper}>
+                <div className={styles.greeting}>
+                  <h1 className={styles.adviserName}>{primaryAdviser.name}</h1>
+                </div>
+                
+                <div className={styles.roleContainer}>
+                  <span className={styles.roleText}>{primaryAdviser.position}</span>
+                </div>
               </div>
 
               {primaryAdviser.description && (
@@ -63,22 +61,6 @@ export default function OfficerSection() {
                 </p>
               )}
 
-              <div className={styles.contactSection}>
-                <div className={styles.contactButtons}>
-                  {primaryAdviser.email && (
-                    <a href={`mailto:${primaryAdviser.email}`} className={styles.contactBtn}>
-                      <FaEnvelope className={styles.btnIcon} />
-                      Contact Me
-                    </a>
-                  )}
-                  {primaryAdviser.phone && (
-                    <a href={`tel:${primaryAdviser.phone}`} className={styles.phoneBtn}>
-                      <FaPhone className={styles.btnIcon} />
-                      Call Me
-                    </a>
-                  )}
-                </div>
-              </div>
             </div>
 
             {/* Right side - Image */}
@@ -89,7 +71,7 @@ export default function OfficerSection() {
                   alt={primaryAdviser.name}
                   fill
                   className={styles.adviserImage}
-                  sizes="(max-width: 768px) 300px, 400px"
+                  sizes="450px"
                 />
               </div>
             </div>

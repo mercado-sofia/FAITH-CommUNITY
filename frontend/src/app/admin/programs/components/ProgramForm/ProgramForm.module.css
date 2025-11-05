@@ -74,6 +74,123 @@
   border-color: #dc2626;
 }
 
+/* Custom Dropdown Styles */
+.customDropdownContainer {
+  position: relative;
+  width: 100%;
+}
+
+.customDropdownButton {
+  width: 100%;
+  padding: 12px 16px;
+  padding-right: 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: var(--font-inter);
+  background: #fff;
+  color: #1f2937;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  text-align: left;
+  appearance: none;
+  outline: none;
+}
+
+.customDropdownButton:hover {
+  border-color: #9ca3af;
+}
+
+.customDropdownButton:focus,
+.customDropdownButton.dropdownOpen {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.dropdownButtonText {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdownArrow {
+  flex-shrink: 0;
+  margin-left: 10px;
+  margin-right: 0;
+  color: #666;
+  font-size: 12px;
+  transition: transform 0.2s ease;
+  transform: rotate(-90deg);
+}
+
+.dropdownArrowOpen {
+  transform: rotate(0deg);
+}
+
+.customDropdownMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownList {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+}
+
+.dropdownItem {
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: var(--font-inter);
+  color: #1f2937;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+  user-select: none;
+}
+
+.dropdownItem:hover,
+.dropdownItemHighlighted {
+  background-color: #f3f4f6;
+}
+
+.dropdownItemSelected {
+  background-color: #eff6ff;
+  color: #1e40af;
+  font-weight: 500;
+}
+
+.dropdownItemSelected:hover,
+.dropdownItemSelected.dropdownItemHighlighted {
+  background-color: #dbeafe;
+}
+
 .textarea {
   resize: vertical;
   min-height: 100px;
@@ -117,9 +234,9 @@
 
 .containerTitle {
   margin: 0 0 16px 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  color: #1e293b;
+  color: #000;
   font-family: var(--font-inter);
 }
 
@@ -486,6 +603,13 @@
   font-size: 14px;
 }
 
+.collaboratorInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .collaboratorEmail {
   font-weight: 500;
   color: #06100f;
@@ -493,8 +617,50 @@
 
 .collaboratorOrg {
   color: #6b7280;
-  margin-left: 8px;
   font-size: 12px;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 14px;
+}
+
+.statusBadge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.statusPending {
+  color: #6b7280;
+}
+
+.statusPending::before {
+  background-color: #6b7280;
+}
+
+.statusAccepted {
+  color: #0ead56;
+}
+
+.statusAccepted::before {
+  background-color: #0ead56;
+}
+
+.statusDeclined {
+  color: #c21313;
+}
+
+.statusDeclined::before {
+  background-color: #c21313;
 }
 
 .removeCollaboratorButton {
@@ -505,6 +671,11 @@
   padding: 4px 8px;
   cursor: pointer;
   font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.removeCollaboratorButton:hover {
+  background-color: #fee2e2;
 }
 
 .removeCollaboratorButton svg {
@@ -641,4 +812,146 @@
     flex-direction: column;
     gap: 8px;
   }
+}
+
+/* Volunteer Acceptance Toggle Styles */
+.toggleContainer {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.toggleWrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.toggleInput {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggleLabel {
+  display: block;
+  width: 50px;
+  height: 28px;
+  background: #e5e7eb;
+  border-radius: 14px;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.toggleLabel:hover {
+  background: #d1d5db;
+}
+
+.toggleInput:checked + .toggleLabel {
+  background: #10b981;
+}
+
+.toggleInput:checked + .toggleLabel:hover {
+  background: #059669;
+}
+
+.toggleSlider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggleInput:checked + .toggleLabel .toggleSlider {
+  transform: translateX(22px);
+}
+
+.toggleText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Submitted By Section Styles */
+.submittedByFields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.submittedByNameField {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.submittedByRoleField {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.inlineLabel {
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #06100f;
+  font-family: var(--font-inter);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  width: 60px;
+}
+
+.inputWrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.roleInputGroup {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.customRoleInput {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.toggleTextActive {
+  font-weight: 600;
+  color: #10b981;
+  font-size: 14px;
+}
+
+.toggleTextInactive {
+  font-weight: 600;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.toggleDescription {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.4;
 }

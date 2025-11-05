@@ -3,7 +3,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 export const organizationsApi = createApi({
   reducerPath: "organizationsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:8080/api",
+    baseUrl: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api`,
     prepareHeaders: (headers) => {
       headers.set('Content-Type', 'application/json')
       return headers

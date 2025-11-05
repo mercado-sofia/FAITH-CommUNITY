@@ -102,7 +102,9 @@ const FeaturedProjects = ({ searchQuery = '' }) => {
             organization_color: project.orgColor,
             event_start_date: project.event_start_date,
             event_end_date: project.event_end_date,
-            created_at: project.created_at
+            created_at: project.created_at,
+            is_collaborative: project.is_collaborative || false,
+            collaborators: project.collaborators || []
           }
 
           return (

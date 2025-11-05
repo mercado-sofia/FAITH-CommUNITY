@@ -160,6 +160,20 @@ export const useImageUpload = () => {
     }
   }, [handleAdditionalImagesChange]);
 
+  // Reset all image uploads
+  const resetImageUploads = useCallback(() => {
+    setImagePreview(null);
+    setAdditionalImagePreviews([]);
+    setDragActive(false);
+    setAdditionalDragActive(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    if (additionalImagesRef.current) {
+      additionalImagesRef.current.value = '';
+    }
+  }, []);
+
   return {
     // State
     imagePreview,
@@ -174,6 +188,7 @@ export const useImageUpload = () => {
     handleAdditionalImagesChange,
     removeImage,
     removeAdditionalImage,
+    resetImageUploads,
     
     // Drag and drop handlers
     handleDragEnter,

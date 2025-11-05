@@ -15,6 +15,7 @@ import crypto from 'crypto';
 import db from '../../database.js';
 import { LoginAttemptTracker } from '../../utils/loginAttemptTracker.js';
 import { SecurityMonitoring } from '../../utils/securityMonitoring.js';
+import { getClientIpAddress } from '../../utils/ipAddressHelper.js';
 
 // User registration
 export const registerUser = async (req, res) => {
@@ -125,7 +126,7 @@ export const registerUser = async (req, res) => {
     try {
       const { sendMail } = await import('../../utils/mailer.js');
       
-      const verificationLink = `http://localhost:3000/signup?token=${verificationToken}`;
+      const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/signup?token=${verificationToken}`;
       
       await sendMail({
         to: email,
@@ -198,16 +199,22 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const ipAddress = req.ip || req.connection.remoteAddress;
+    const ipAddress = getClientIpAddress(req);
 
-    // Check failed login attempts for user type only
+    // Check failed login attempts BEFORE attempting login
     const failedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'user');
     
     // Block for 5 minutes after 5 failed attempts
     if (failedAttempts >= 5) {
+      const remainingSeconds = await LoginAttemptTracker.getLockoutTimeRemaining(email, ipAddress, 'user');
+      const remainingMinutes = Math.ceil(remainingSeconds / 60);
+      
       return res.status(429).json({ 
-        error: 'Too many failed login attempts. Please wait 5 minutes before trying again.',
-        retryAfter: '5 minutes'
+        error: `Too many failed login attempts. Please wait ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''} before trying again.`,
+        retryAfter: `${remainingMinutes} minutes`,
+        remainingSeconds: remainingSeconds,
+        attempts: failedAttempts,
+        maxAttempts: 5
       });
     }
 
@@ -218,9 +225,15 @@ export const loginUser = async (req, res) => {
     );
 
     if (users.length === 0) {
+      // Track failed attempt - user not found
       await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'user');
       await SecurityMonitoring.logSecurityEvent('failed_login', 'warn', { email, reason: 'user_not_found' }, req);
-      return res.status(401).json({ error: 'Invalid email or password' });
+      const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'user');
+      return res.status(401).json({ 
+        error: 'Invalid email or password',
+        attempts: newFailedAttempts,
+        remainingAttempts: Math.max(0, 5 - newFailedAttempts)
+      });
     }
 
     const user = users[0];
@@ -228,9 +241,15 @@ export const loginUser = async (req, res) => {
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
+      // Track failed attempt - invalid password
       await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'user');
       await SecurityMonitoring.logSecurityEvent('failed_login', 'warn', { email, reason: 'invalid_password' }, req);
-      return res.status(401).json({ error: 'Invalid email or password' });
+      const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'user');
+      return res.status(401).json({ 
+        error: 'Invalid email or password',
+        attempts: newFailedAttempts,
+        remainingAttempts: Math.max(0, 5 - newFailedAttempts)
+      });
     }
 
     // Check if email is verified
@@ -245,10 +264,10 @@ export const loginUser = async (req, res) => {
     const accessToken = signAccessToken({ id: user.id, email: user.email, role: 'user' })
     const { token: refreshToken, expiresAt } = await issueRefreshToken(user.id, {
       userAgent: req.headers['user-agent'],
-      ipAddress: req.ip,
+      ipAddress: getClientIpAddress(req),
     })
 
-    // Clear failed login attempts on successful login
+    // Clear failed login attempts on successful login (reset counter)
     await LoginAttemptTracker.clearFailedAttempts(email, ipAddress, 'user');
     
     // Log successful login
@@ -281,7 +300,6 @@ export const loginUser = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -362,7 +380,6 @@ export const updateUserProfile = async (req, res) => {
 export const uploadProfilePhoto = async (req, res) => {
   try {
     const userId = req.user.id;
-    
 
     // Check if file exists
     if (!req.file) {
@@ -434,9 +451,8 @@ export const uploadProfilePhoto = async (req, res) => {
       throw new Error(`Cloudinary upload failed: ${cloudinaryError.message}`);
     }
 
-
     const profilePhotoUrl = uploadResult.url;
-    
+
     // Update user's profile_photo_url in database
     try {
       await db.query(
@@ -685,7 +701,6 @@ export const verifyEmailChangeOTP = async (req, res) => {
     // Clean up expired OTPs
     await EmailChangeOTP.cleanupExpiredOTPs();
 
-    
     res.json({ 
       message: 'Email changed successfully',
       newEmail: verificationResult.newEmail,
@@ -711,11 +726,6 @@ export const verifyEmailChangeOTP = async (req, res) => {
   }
 };
 
-// Legacy change email function (kept for backward compatibility)
-export const changeEmail = async (req, res) => {
-  // Redirect to new secure flow
-  return requestEmailChange(req, res);
-};
 
 // Change password
 export const changePassword = async (req, res) => {
@@ -955,7 +965,7 @@ export const refreshAccessToken = async (req, res) => {
     // Rotate refresh token and issue new access
     const { token: newRefresh } = await rotateRefreshToken(presented, record.user_id, {
       userAgent: req.headers['user-agent'],
-      ipAddress: req.ip,
+      ipAddress: getClientIpAddress(req),
     })
     const accessToken = signAccessToken({ id: record.user_id, email: users[0].email, role: 'user' })
     res.cookie('refresh_token', newRefresh, getRefreshCookieOptions())
@@ -969,7 +979,6 @@ export const refreshAccessToken = async (req, res) => {
 export const verifyEmail = async (req, res) => {
   try {
     const { token } = req.query;
-
 
     if (!token) {
       return res.status(400).json({ error: 'Verification token is required' });
@@ -1047,7 +1056,7 @@ export const resendVerificationEmail = async (req, res) => {
     try {
       const { sendMail } = await import('../../utils/mailer.js');
       
-      const verificationLink = `http://localhost:3000/signup?token=${verificationToken}`;
+      const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/signup?token=${verificationToken}`;
       
       await sendMail({
         to: email,

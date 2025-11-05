@@ -32,7 +32,6 @@ export const getAdminHighlights = async (req, res) => {
     
     res.json({ highlights });
   } catch (error) {
-    console.error('Error fetching admin highlights:', error);
     res.status(500).json({ error: 'Failed to fetch highlights' });
   }
 };
@@ -70,7 +69,6 @@ export const getHighlightById = async (req, res) => {
     
     res.json({ highlight });
   } catch (error) {
-    console.error('Error fetching highlight:', error);
     res.status(500).json({ error: 'Failed to fetch highlight' });
   }
 };
@@ -139,7 +137,6 @@ export const createHighlight = async (req, res) => {
     });
   } catch (error) {
     await connection.rollback();
-    console.error('Error creating highlight:', error);
     res.status(500).json({ error: 'Failed to create highlight' });
   } finally {
     connection.release();
@@ -160,6 +157,11 @@ export const updateHighlight = async (req, res) => {
     // Validate required fields
     if (!title || !description) {
       return res.status(400).json({ error: 'Title and description are required' });
+    }
+    
+    // Validate ID parameter
+    if (!id || id === '0' || isNaN(parseInt(id))) {
+      return res.status(400).json({ error: 'Invalid highlight ID' });
     }
     
     // Check if highlight exists and belongs to organization, get current data
@@ -223,7 +225,6 @@ export const updateHighlight = async (req, res) => {
     });
   } catch (error) {
     await connection.rollback();
-    console.error('Error updating highlight:', error);
     res.status(500).json({ error: 'Failed to update highlight' });
   } finally {
     connection.release();
@@ -239,6 +240,11 @@ export const deleteHighlight = async (req, res) => {
     
     const { id } = req.params;
     const { organization_id: orgId } = req.admin;
+    
+    // Validate ID parameter
+    if (!id || id === '0' || isNaN(parseInt(id))) {
+      return res.status(400).json({ error: 'Invalid highlight ID' });
+    }
     
     // Check if highlight exists and belongs to organization, get current data
     const checkQuery = 'SELECT * FROM admin_highlights WHERE id = ? AND organization_id = ?';
@@ -270,15 +276,26 @@ export const deleteHighlight = async (req, res) => {
       req.admin.id
     ]);
     
-    // Delete highlight (media files are stored as JSON, so no separate deletion needed)
-    await connection.execute('DELETE FROM admin_highlights WHERE id = ? AND organization_id = ?', [id, orgId]);
+    // Only delete immediately if the highlight is pending (not yet approved/public)
+    // If the highlight is approved, wait for superadmin approval before deleting
+    if (currentHighlight.status === 'pending') {
+      // Pending highlights can be deleted immediately since they're not public yet
+      await connection.execute('DELETE FROM admin_highlights WHERE id = ? AND organization_id = ?', [id, orgId]);
+    } else if (currentHighlight.status === 'approved') {
+      // Approved highlights require superadmin approval before deletion
+      // Don't delete immediately - keep it as 'approved' until superadmin approves/rejects the deletion
+      // The highlight will be deleted when superadmin approves the deletion submission
+      // If rejected, the highlight stays approved and visible on the public portal
+    } else {
+      // For rejected or other statuses, delete immediately
+      await connection.execute('DELETE FROM admin_highlights WHERE id = ? AND organization_id = ?', [id, orgId]);
+    }
     
     await connection.commit();
     
     res.json({ message: 'Highlight deleted successfully' });
   } catch (error) {
     await connection.rollback();
-    console.error('Error deleting highlight:', error);
     res.status(500).json({ error: 'Failed to delete highlight' });
   } finally {
     connection.release();
@@ -356,7 +373,6 @@ export const getAllHighlightsForApproval = async (req, res) => {
     
     res.json({ highlights });
   } catch (error) {
-    console.error('Error fetching highlights for approval:', error);
     res.status(500).json({ error: 'Failed to fetch highlights for approval' });
   }
 };
@@ -398,7 +414,6 @@ export const updateHighlightStatus = async (req, res) => {
     // If rejected, store rejection reason (you might want to add a rejection_reason column)
     if (status === 'rejected' && rejection_reason) {
       // For now, we'll just log it. You can add a rejection_reason column later if needed
-      console.log(`Highlight ${id} rejected. Reason: ${rejection_reason}`);
     }
     
     await connection.commit();
@@ -409,7 +424,6 @@ export const updateHighlightStatus = async (req, res) => {
     });
   } catch (error) {
     await connection.rollback();
-    console.error('Error updating highlight status:', error);
     res.status(500).json({ error: 'Failed to update highlight status' });
   } finally {
     connection.release();
@@ -445,7 +459,6 @@ export const getApprovedHighlights = async (req, res) => {
     
     res.json({ highlights });
   } catch (error) {
-    console.error('Error fetching approved highlights:', error);
     res.status(500).json({ error: 'Failed to fetch approved highlights' });
   }
 };

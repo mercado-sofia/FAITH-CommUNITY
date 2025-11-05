@@ -13,6 +13,7 @@ import InviteModal from "./components/InviteModal"
 import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowLeftDoubleFill, RiArrowRightDoubleFill } from "react-icons/ri";
 import { ConfirmationModal } from '@/components'
 import { SuccessModal } from '@/components'
+import { SkeletonLoader } from '../components'
 import styles from "./invites.module.css"
 
 const ManageProfiles = () => {
@@ -103,7 +104,10 @@ const ManageProfiles = () => {
   if (isFetchingInvitations) {
     return (
       <div className={styles.mainArea}>
-        <div className={styles.loading}>Loading invitations...</div>
+        <div className={styles.header}>
+          <h1 className={styles.pageTitle}>Admin Management</h1>
+        </div>
+        <SkeletonLoader type="invites" count={5} />
       </div>
     )
   }

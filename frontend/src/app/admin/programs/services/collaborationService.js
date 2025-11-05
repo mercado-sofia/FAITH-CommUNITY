@@ -33,7 +33,13 @@ export const fetchAvailableAdmins = async (isEditMode = false, programId = null)
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const result = await response.json();
+    // Parse JSON with error handling
+    let result;
+    try {
+      result = await response.json();
+    } catch (parseError) {
+      throw new Error('Invalid JSON response from server');
+    }
     return result.data || [];
   } catch (error) {
     throw error;
@@ -58,11 +64,23 @@ export const addCollaboratorToProgram = async (programId, collaboratorAdminId) =
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      let errorData = {};
+      try {
+        errorData = await response.json();
+      } catch (parseError) {
+        // If JSON parsing fails, use empty object
+        errorData = {};
+      }
       throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const result = await response.json();
+    // Parse JSON with error handling
+    let result;
+    try {
+      result = await response.json();
+    } catch (parseError) {
+      throw new Error('Invalid JSON response from server');
+    }
     return result;
   } catch (error) {
     throw error;
@@ -85,11 +103,23 @@ export const fetchProgramCollaborators = async (programId) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      let errorData = {};
+      try {
+        errorData = await response.json();
+      } catch (parseError) {
+        // If JSON parsing fails, use empty object
+        errorData = {};
+      }
       throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const result = await response.json();
+    // Parse JSON with error handling
+    let result;
+    try {
+      result = await response.json();
+    } catch (parseError) {
+      throw new Error('Invalid JSON response from server');
+    }
     return result.data || [];
   } catch (error) {
     throw error;
@@ -113,12 +143,23 @@ export const removeCollaboratorFromProgram = async (programId, adminId) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      // Log error details for debugging
+      let errorData = {};
+      try {
+        errorData = await response.json();
+      } catch (parseError) {
+        // If JSON parsing fails, use empty object
+        errorData = {};
+      }
       throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const result = await response.json();
+    // Parse JSON with error handling
+    let result;
+    try {
+      result = await response.json();
+    } catch (parseError) {
+      throw new Error('Invalid JSON response from server');
+    }
     return result;
   } catch (error) {
     throw error;
@@ -142,12 +183,23 @@ export const optOutCollaboration = async (collaborationId) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      // Log error details for debugging
+      let errorData = {};
+      try {
+        errorData = await response.json();
+      } catch (parseError) {
+        // If JSON parsing fails, use empty object
+        errorData = {};
+      }
       throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const result = await response.json();
+    // Parse JSON with error handling
+    let result;
+    try {
+      result = await response.json();
+    } catch (parseError) {
+      throw new Error('Invalid JSON response from server');
+    }
     return result;
   } catch (error) {
     throw error;

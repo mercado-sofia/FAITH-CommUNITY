@@ -8,7 +8,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
 import { formatDateShort, formatApplicationProgramDates } from '@/utils/dateUtils';
-import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
+import { getProgramImageUrl, getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
+import { UnavailableImagePlaceholder } from '@/components';
 import ApplicationDetailsModal from './ApplicationDetailsModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import styles from './MyApplications.module.css';
@@ -67,6 +68,7 @@ export default function MyApplications() {
     switch (status.toLowerCase()) {
       case 'approved':
         return 'Approved';
+      case 'rejected':
       case 'declined':
         return 'Declined';
       case 'cancelled':
@@ -91,14 +93,20 @@ export default function MyApplications() {
 
   const canDeleteApplication = (status) => {
     const lowerStatus = status.toLowerCase();
-    // Only pending and declined applications can be deleted
+    // Only pending and declined/rejected applications can be deleted
     // Cancelled and completed applications are kept for historical records
-    return lowerStatus === 'pending' || lowerStatus === 'declined';
+    return lowerStatus === 'pending' || lowerStatus === 'declined' || lowerStatus === 'rejected';
   };
 
 
   const filteredApplications = applications.filter(app => {
     if (filter === 'all') return true;
+    
+    // Handle declined/rejected status mapping
+    if (filter === 'declined') {
+      return app.status.toLowerCase() === 'declined' || app.status.toLowerCase() === 'rejected';
+    }
+    
     return app.status.toLowerCase() === filter.toLowerCase();
   });
 
@@ -386,7 +394,7 @@ export default function MyApplications() {
           className={`${styles.filterTab} ${filter === 'declined' ? styles.active : ''}`}
           onClick={() => setFilter('declined')}
         >
-          Declined ({applications.filter(app => app.status.toLowerCase() === 'declined').length})
+          Declined ({applications.filter(app => app.status.toLowerCase() === 'declined' || app.status.toLowerCase() === 'rejected').length})
         </button>
         <button
           className={`${styles.filterTab} ${filter === 'cancelled' ? styles.active : ''}`}
@@ -532,24 +540,56 @@ export default function MyApplications() {
                     {application.organizationName && (
                       <div className={styles.organizationInfo}>
                         {application.orgLogo ? (
-                          <Image 
-                            src={getOrganizationImageUrl(application.orgLogo)}
-                            alt={`${application.organizationName} logo`}
-                            width={20}
-                            height={20}
+                          (() => {
+                            const orgImageUrl = getOrganizationImageUrl(application.orgLogo);
+                            if (isUnavailableImage(orgImageUrl)) {
+                              return (
+                                <UnavailableImagePlaceholder 
+                                  width="20px" 
+                                  height="20px" 
+                                  text="Logo"
+                                  className={styles.organizationLogo}
+                                  style={{
+                                    borderRadius: '50%',
+                                    objectFit: 'cover',
+                                    overflow: 'hidden'
+                                  }}
+                                />
+                              );
+                            }
+                            return (
+                              <Image 
+                                src={orgImageUrl}
+                                alt={`${application.organizationName} logo`}
+                                width={20}
+                                height={20}
+                                className={styles.organizationLogo}
+                                style={{
+                                  borderRadius: '50%',
+                                  objectFit: 'cover',
+                                  overflow: 'hidden'
+                                }}
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'block';
+                                }}
+                              />
+                            );
+                          })()
+                        ) : (
+                          <UnavailableImagePlaceholder 
+                            width="20px" 
+                            height="20px" 
+                            text="Logo"
                             className={styles.organizationLogo}
                             style={{
                               borderRadius: '50%',
                               objectFit: 'cover',
                               overflow: 'hidden'
                             }}
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'block';
-                            }}
                           />
-                        ) : null}
-                        <div className={styles.orgLogoFallback} style={{ display: application.orgLogo ? 'none' : 'block' }}></div>
+                        )}
+                        <div className={styles.orgLogoFallback} style={{ display: 'none' }}></div>
                         <Link 
                           href={`/programs/org/${application.organizationAcronym}`}
                           className={styles.organizationLink}
@@ -582,7 +622,7 @@ export default function MyApplications() {
 
                     {/* Status Badge - Bottom Right */}
                     <div className={styles.statusContainer}>
-                      <span className={`${styles.statusBadge} ${styles[`status${application.status.charAt(0).toUpperCase() + application.status.slice(1).toLowerCase()}`]}`}>
+                      <span className={`${styles.statusBadge} ${styles[`status${application.status.charAt(0).toUpperCase() + application.status.slice(1)}`]}`}>
                         {getStatusText(application.status)}
                       </span>
                     </div>

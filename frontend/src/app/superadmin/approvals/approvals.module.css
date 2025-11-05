@@ -268,20 +268,7 @@
 }
 
 
-/* Loading and Error States */
-.loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem;
-  font-size: 1rem;
-  color: #6b7280;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e5e7eb;
-  font-weight: 500;
-}
+/* Error States */
 
 .error {
   display: flex;

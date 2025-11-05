@@ -110,9 +110,9 @@ export default function Sidebar() {
           </Link>
 
           <Link
-            href="/admin/faithree/highlights"
-            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith("/admin/faithree/highlights") ? styles.active : ""}`}
-            onClick={() => handleNavigation("/admin/faithree/highlights")}
+            href="/admin/highlights"
+            className={`${styles.navBase} ${styles.navItem} ${pathname.startsWith("/admin/highlights") ? styles.active : ""}`}
+            onClick={() => handleNavigation("/admin/highlights")}
             prefetch={true}
           >
             <HiOutlineStar className={styles.icon} />

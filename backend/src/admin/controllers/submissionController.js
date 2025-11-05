@@ -150,6 +150,40 @@ export const submitChanges = async (req, res) => {
             const proposedData = JSON.parse(item.proposed_data)
             if (proposedData.title) {
               message = `${orgAcronym} has submitted a new program "${proposedData.title}" for approval.`
+              
+              // Handle collaboration requests for collaborative programs
+              if (proposedData.collaborators && Array.isArray(proposedData.collaborators) && proposedData.collaborators.length > 0) {
+                message = `${orgAcronym} has submitted a collaborative program "${proposedData.title}" for approval. Collaboration requests will be sent to invited organizations after superadmin approval.`
+                
+                // Create collaboration request records (notifications will be sent only after superadmin approval)
+                for (const collaborator of proposedData.collaborators) {
+                  try {
+                    const collaboratorId = typeof collaborator === 'object' ? collaborator.id : collaborator;
+                    
+                    // Skip self-collaboration
+                    if (collaboratorId === item.submitted_by) {
+                      continue;
+                    }
+                    
+                    // Check if collaboration request already exists
+                    const [existingCollaboration] = await db.execute(`
+                      SELECT id FROM program_collaborations 
+                      WHERE submission_id = ? AND collaborator_admin_id = ?
+                    `, [submissionId, collaboratorId]);
+                    
+                    if (existingCollaboration.length === 0) {
+                      // Create collaboration request linked to submission (not program yet)
+                      // Notifications will be sent only after superadmin approves the program
+                      await db.execute(`
+                        INSERT INTO program_collaborations (submission_id, collaborator_admin_id, invited_by_admin_id, status, program_title)
+                        VALUES (?, ?, ?, 'pending', ?)
+                      `, [submissionId, collaboratorId, item.submitted_by, proposedData.title]);
+                    }
+                  } catch (collabError) {
+                    // Continue with other collaborators even if one fails
+                  }
+                }
+              }
             }
           } catch (parseError) {
           }
@@ -303,8 +337,8 @@ export const cancelSubmission = async (req, res) => {
   }
 
   try {
-    // First check if submission exists
-    const [existing] = await db.execute("SELECT id, status, section FROM submissions WHERE id = ?", [id])
+    // First check if submission exists and get its data
+    const [existing] = await db.execute("SELECT id, status, section, proposed_data FROM submissions WHERE id = ?", [id])
 
     if (existing.length === 0) {
       return res.status(404).json({
@@ -312,6 +346,11 @@ export const cancelSubmission = async (req, res) => {
         message: "Submission not found",
       })
     }
+
+    const submission = existing[0];
+
+    // If it's a Post Act Report submission, keep the file in S3 for audit purposes
+    // Files are intentionally retained when submissions are cancelled for audit trail
 
     // Delete the submission (allow deletion regardless of status)
     const [result] = await db.execute('DELETE FROM submissions WHERE id = ?', [id])
@@ -325,7 +364,7 @@ export const cancelSubmission = async (req, res) => {
 
     res.json({
       success: true,
-      message: `Submission for ${existing[0].section} deleted successfully`,
+      message: `Submission for ${submission.section} deleted successfully`,
     })
   } catch (error) {
     res.status(500).json({
@@ -527,7 +566,6 @@ export const getSubmissionById = async (req, res) => {
               // If collaborators are already objects, keep them as is
             }
           } catch (collabError) {
-            console.error('Error fetching collaborator details:', collabError);
             // Keep original collaborator data if fetch fails
           }
         }

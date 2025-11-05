@@ -10,6 +10,9 @@ export default function BannerSection() {
 
   // Check user authentication status
   useEffect(() => {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') return;
+    
     const checkAuth = async () => {
       const token = localStorage.getItem('userToken');
       const storedUserData = localStorage.getItem('userData');
@@ -28,8 +31,6 @@ export default function BannerSection() {
     
     checkAuth();
   }, []);
-
-
 
   return (
     <section className={styles.inviteSection}>

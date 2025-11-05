@@ -62,20 +62,13 @@ export default function NewsDetailPage({ params }) {
 
   if (error) {
     return (
-      <main style={{ maxWidth: "800px", margin: "2rem auto", padding: "0 1rem" }}>
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#dc3545' }}>
+      <main className={styles.container}>
+        <h1 className={styles.heading}>Article Error</h1>
+        <div className={styles.errorContainer}>
           <p>{error}</p>
           <button 
             onClick={() => window.location.reload()}
-            style={{
-              padding: '0.75rem 1.5rem',
-              background: '#167c59',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              marginTop: '1rem'
-            }}
+            className={styles.retryButton}
           >
             Try Again
           </button>
@@ -87,22 +80,14 @@ export default function NewsDetailPage({ params }) {
   // Additional safety check - this should not be reached due to earlier check
   if (!news) {
     return (
-      <main style={{ maxWidth: "800px", margin: "2rem auto", padding: "0 1rem" }}>
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#dc3545' }}>
+      <main className={styles.container}>
+        <h1 className={styles.heading}>Article Not Found</h1>
+        <div className={styles.errorContainer}>
           <p>Article not found</p>
           <Link 
             href="/news"
-            style={{
-              padding: '0.75rem 1.5rem',
-              background: '#167c59',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              marginTop: '1rem',
-              textDecoration: 'none',
-              display: 'inline-block'
-            }}
+            className={styles.retryButton}
+            style={{ textDecoration: 'none', display: 'inline-block' }}
           >
             Back to News
           </Link>

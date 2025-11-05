@@ -17,13 +17,18 @@ export default function ConfirmationModal({
 }) {
   // Lock body scroll when modal is open
   useEffect(() => {
-    if (isOpen) {
-      const prev = document.body.style.overflow
-      document.body.style.overflow = 'hidden'
-      return () => {
-        document.body.style.overflow = prev
-      }
+    // Check for document to avoid SSR errors
+    if (!isOpen || typeof document === 'undefined' || !document.body) {
+      return;
     }
+
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      if (typeof document !== 'undefined' && document.body) {
+        document.body.style.overflow = prev;
+      }
+    };
   }, [isOpen])
 
   if (!isOpen) return null
@@ -193,8 +198,8 @@ export default function ConfirmationModal({
             }
             disabled={isDeleting}
           >
-            {isDeleting ? <FaSpinner className={styles.spinner} /> : null}
             {actionContent.buttonText}
+            {isDeleting ? <FaSpinner className={styles.spinner} /> : null}
           </button>
         </div>
       </div>

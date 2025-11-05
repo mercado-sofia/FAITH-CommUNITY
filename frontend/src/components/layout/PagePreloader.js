@@ -34,7 +34,7 @@ export default function PagePreloader() {
     const preloadImages = [
       '/samples/sample8.jpg', // About page banner
       '/samples/sample4.jpg', // Programs page
-      '/assets/logos/faith_community_logo.png', // Common logo
+      '/defaults/default-profile.png', // Common fallback image
     ];
     preloadImages.forEach((src) => {
       const img = new Image();
@@ -49,6 +49,11 @@ export default function PagePreloader() {
 
   // Lazy preloading based on links entering the viewport
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {

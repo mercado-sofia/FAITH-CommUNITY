@@ -2,8 +2,8 @@
 
 import React from 'react'
 import Image from 'next/image'
-import { FaTimes, FaTag, FaCalendar, FaEye } from 'react-icons/fa'
-import { getProgramImageUrl } from '@/utils/uploadPaths'
+import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding } from 'react-icons/fa'
+import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths'
 import { useGetProgramByIdQuery } from '@/rtk/superadmin/programsApi'
 import { formatProgramDates, formatDateShort } from '@/utils/dateUtils.js'
 import styles from './styles/ProgramDetailsModal.module.css'
@@ -147,6 +147,64 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
                 {programData.description || 'No description provided'}
               </p>
             </div>
+
+            {/* Collaborator Section - Only show if program is collaborative */}
+            {programData.is_collaborative && programData.collaborators && programData.collaborators.length > 0 && (() => {
+              // Filter out the primary organization (the one that created the program)
+              // Only show actual collaborators, not the primary organization
+              const actualCollaborators = programData.collaborators.filter(collab => collab.role !== 'primary');
+              
+              // If no actual collaborators after filtering, don't show the section
+              if (actualCollaborators.length === 0) {
+                return null;
+              }
+              
+              return (
+                <div className={styles.collaboratorSection}>
+                  <h4 className={styles.sectionTitle}>Collaborator</h4>
+                  <div className={styles.organizationInfo}>
+                    {actualCollaborators.map((collab, index) => {
+                    const logoUrl = collab.organization_logo 
+                      ? getOrganizationImageUrl(collab.organization_logo, 'logo')
+                      : null;
+                    
+                    return (
+                      <div key={index} className={styles.orgCard}>
+                        <div className={styles.orgDetails}>
+                          {/* Logo container */}
+                          <div className={styles.orgLogoContainer}>
+                            {logoUrl && logoUrl !== 'ORGANIZATION_LOGO_UNAVAILABLE' ? (
+                              <Image
+                                src={logoUrl}
+                                alt={`${collab.organization_name} logo`}
+                                width={48}
+                                height={48}
+                                className={styles.orgLogo}
+                              />
+                            ) : (
+                              <div className={styles.orgLogoPlaceholder}>
+                                <FaBuilding />
+                              </div>
+                            )}
+                          </div>
+                          <div className={styles.orgTextContainer}>
+                            <div className={styles.orgName}>
+                              {collab.organization_name} {collab.organization_acronym && `(${collab.organization_acronym})`}
+                            </div>
+                            {collab.admin_email && (
+                              <div className={styles.adminEmail}>
+                                {collab.admin_email}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Additional Images - Full Width Below - Only show if there are additional images */}

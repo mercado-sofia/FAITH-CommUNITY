@@ -5,13 +5,14 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 export const adminApi = createApi({
   reducerPath: "adminApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:8080/api/admins",
+    baseUrl: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admins`,
     prepareHeaders: (headers, { getState }) => {
       headers.set("Content-Type", "application/json")
 
       // Add JWT token for authentication - check for both admin and superadmin tokens
-      const adminToken = getState().admin?.token || localStorage.getItem("adminToken")
-      const superadminToken = getState().superadmin?.token || localStorage.getItem("superAdminToken")
+      // Check for window to avoid SSR errors
+      const adminToken = getState().admin?.token || (typeof window !== 'undefined' ? localStorage.getItem("adminToken") : null)
+      const superadminToken = getState().superadmin?.token || (typeof window !== 'undefined' ? localStorage.getItem("superAdminToken") : null)
       
       // Use superadmin token if available, otherwise use admin token
       const token = superadminToken || adminToken

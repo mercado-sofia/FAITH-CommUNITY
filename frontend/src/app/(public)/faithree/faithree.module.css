@@ -2,9 +2,7 @@
 .faithreeContainer {
   position: relative;
   width: 100%;
-  height: calc(100vh - 80px);
-  min-height: calc(100vh - 80px);
-  overflow: hidden;
+  height: 100vh;
   background: linear-gradient(
     180deg,
     #87ceeb 0%,
@@ -12,6 +10,27 @@
     #ffffff 100%
   );
   z-index: 0;
+  overflow: hidden;
+  transition: background 0.5s ease;
+}
+
+/* Rainy theme container */
+.faithreeContainer.rainy {
+  background: linear-gradient(
+    180deg,
+    #1a252f 0%,
+    #2c3e50 30%,
+    #34495e 60%,
+    #2c3e50 100%
+  );
+}
+
+/* First Section */
+.firstSection {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* Eco-themed background - covers the entire main content area */
@@ -43,6 +62,20 @@
   );
   overflow: hidden;
   z-index: 1;
+  transition: background 0.5s ease;
+}
+
+/* Rainy sky - dark and bluish */
+.skyRainy {
+  background: linear-gradient(
+    180deg,
+    #2c3e50 0%,
+    #34495e 20%,
+    #3498db 40%,
+    #2980b9 50%,
+    #34495e 70%,
+    #2c3e50 100%
+  );
 }
 
 /* Animated clouds */
@@ -327,13 +360,55 @@
   transform: rotate(90deg);
 }
 
-/* Content area styles moved to highlights.module.css */
 
-/* Breadcrumbs - moved to highlights.module.css */
+/* Butterfly Container */
+.butterflyContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
 
-/* Page header styles - moved to highlights.module.css */
+/* Butterfly */
+.butterfly {
+  position: absolute;
+  width: 60px;
+  height: 50px;
+  opacity: 0;
+}
 
-/* Story-related styles - moved to highlights.module.css */
+/* Butterfly SVG */
+.butterflySvg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* First butterfly - starts from left */
+.butterfly:nth-child(1) {
+  top: 35%;
+  left: -100px;
+  animation: 
+    flyToCenterFromLeft 3s ease-in-out forwards,
+    flutter 0.4s ease-in-out infinite alternate;
+  animation-delay: 0.5s, 0.5s;
+}
+
+/* Second butterfly - starts from right */
+.butterfly:nth-child(2) {
+  top: 35%;
+  right: -100px;
+  animation: 
+    flyToCenterFromRight 3s ease-in-out forwards,
+    flutterRight 0.4s ease-in-out infinite alternate;
+  animation-delay: 1s, 1s;
+}
 
 /* Animations */
 @keyframes float {
@@ -345,12 +420,218 @@
   }
 }
 
+@keyframes flyToCenterFromLeft {
+  0% {
+    left: -100px;
+    top: 35%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    left: calc(50% - 80px);
+    top: 30%;
+    opacity: 1;
+  }
+}
+
+@keyframes flyToCenterFromRight {
+  0% {
+    right: -100px;
+    top: 35%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    right: calc(50% - 80px);
+    top: 40%;
+    opacity: 1;
+  }
+}
+
+@keyframes flutter {
+  0% {
+    transform: translateY(0px) rotate(-2deg);
+  }
+  100% {
+    transform: translateY(-5px) rotate(2deg);
+  }
+}
+
+@keyframes flutterRight {
+  0% {
+    transform: scaleX(-1) translateY(0px) rotate(-2deg);
+  }
+  100% {
+    transform: scaleX(-1) translateY(-5px) rotate(2deg);
+  }
+}
+
+/* Rain Container and Animation */
+.rainContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.raindrop {
+  position: absolute;
+  top: -10px;
+  width: 2px;
+  height: 20px;
+  background: linear-gradient(
+    180deg,
+    rgba(135, 206, 250, 0.8) 0%,
+    rgba(135, 206, 250, 0.4) 50%,
+    rgba(255, 255, 255, 0.6) 100%
+  );
+  animation: rainFall linear infinite;
+  border-radius: 50% 50% 0 0;
+}
+
+@keyframes rainFall {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) translateX(20px);
+    opacity: 0.3;
+  }
+}
+
+/* Theme Toggle Button */
+.themeToggleContainer {
+  position: fixed;
+  top: 2rem;
+  right: 2rem;
+  z-index: 20;
+}
+
+.themeToggleButton {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
+  backdrop-filter: blur(15px);
+  border: 2px solid rgba(76, 175, 80, 0.3);
+  border-radius: 16px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 4px 16px rgba(76, 175, 80, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2e7d32;
+}
+
+.themeToggleButton:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(248, 255, 248, 0.95) 100%);
+  border-color: rgba(76, 175, 80, 0.5);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.15),
+    0 6px 20px rgba(76, 175, 80, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.themeIcon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+/* Floating Ground with Tree */
+.floatingGround {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 4;
+  pointer-events: none;
+  will-change: transform;
+  transition: transform 0.1s ease-out;
+}
+
+.groundPlatform {
+  position: relative;
+  width: 300px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.groundSvg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+.tree {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  animation: gentleSway 3s ease-in-out infinite alternate;
+}
+
+.treeSvg {
+  width: 80px;
+  height: 100px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+@keyframes gentleSway {
+  0% {
+    transform: translateX(-50%) rotate(-1deg);
+  }
+  100% {
+    transform: translateX(-50%) rotate(1deg);
+  }
+}
+
+
 /* Responsive design */
 @media (max-width: 768px) {
-  .faithreeContainer {
-    height: calc(100vh - 70px);
-    min-height: calc(100vh - 70px);
+  .themeToggleContainer {
+    top: 1rem;
+    right: 1rem;
   }
+  
+  .themeToggleButton {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .themeIcon {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .groundPlatform {
+    width: 250px;
+    height: 70px;
+  }
+  
+  .treeSvg {
+    width: 60px;
+    height: 80px;
+  }
+  
   
   .toggleButtonContainer {
     top: 1rem;
@@ -372,6 +653,26 @@
 }
 
 @media (max-width: 480px) {
+  .themeToggleContainer {
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+  
+  .themeToggleButton {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.85rem;
+    gap: 0.5rem;
+  }
+  
+  .themeIcon {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .themeToggleButton span {
+    display: none;
+  }
+  
   .toggleButtonContainer {
     top: 0.5rem;
     left: 0;
@@ -384,7 +685,14 @@
     height: calc(100% - 1rem);
   }
   
-  /* Content area responsive styles moved to highlights.module.css */
+  .groundPlatform {
+    width: 200px;
+    height: 60px;
+  }
   
-  /* Responsive styles moved to highlights.module.css */
+  .treeSvg {
+    width: 50px;
+    height: 70px;
+  }
+  
 }

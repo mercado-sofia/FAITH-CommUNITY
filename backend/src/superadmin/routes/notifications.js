@@ -1,7 +1,11 @@
 import express from 'express';
 import SuperAdminNotificationController from '../controllers/superadminNotificationController.js';
+import { verifySuperadminToken } from '../controllers/superadminAuthController.js';
 
 const router = express.Router();
+
+// SECURITY FIX: All notification routes require superadmin authentication
+router.use(verifySuperadminToken);
 
 // Test endpoint
 router.get('/test/:superAdminId', SuperAdminNotificationController.testNotifications);

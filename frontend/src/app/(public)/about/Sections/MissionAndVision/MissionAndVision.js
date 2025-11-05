@@ -32,7 +32,7 @@ export default function MissionAndVision() {
       <div className={styles.cardWrapper}>
         <div className={styles.card}>
           <div className={styles.iconCircle}>
-            <FaRegHeart className={styles.iconReact} style={{ fontSize: "35px" }} />
+            <FaRegHeart className={styles.iconReact} />
           </div>
           <h4>Mission</h4>
           <p>
@@ -43,7 +43,7 @@ export default function MissionAndVision() {
 
         <div className={styles.card}>
           <div className={styles.iconCircle}>
-            <MdPersonOutline className={styles.iconReact} style={{ fontSize: "40px" }} />
+            <MdPersonOutline className={styles.iconReact} />
           </div>
           <h4>Vision</h4>
           <p>

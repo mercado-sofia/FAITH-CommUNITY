@@ -1,7 +1,8 @@
 import styles from './OrgInfoCard.module.css';
 import Image from 'next/image';
 import { FaFacebookF, FaEnvelope } from 'react-icons/fa';
-import { getOrganizationImageUrl } from '@/utils/uploadPaths';
+import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
+import { UnavailableImagePlaceholder } from '@/components';
 
 export default function OrgInfoCard({ data }) {
   const { name, acronym, description, facebook, email, logo } = data;
@@ -10,17 +11,32 @@ export default function OrgInfoCard({ data }) {
     <section className={styles.orgSection}>
       <div className={styles.orgCard}>
         <div className={styles.logoWrapper}>
-          <Image
-            src={getOrganizationImageUrl(logo, 'logo')}
-            alt={`${name} Logo`}
-            width={220}
-            height={220}
-            className={styles.orgLogo}
-            priority
-            onError={(e) => {
-              e.target.src = '/defaults/default.png';
-            }}
-          />
+          {(() => {
+            const orgImageUrl = getOrganizationImageUrl(logo, 'logo');
+            if (isUnavailableImage(orgImageUrl)) {
+              return (
+                <UnavailableImagePlaceholder 
+                  width="220px" 
+                  height="220px" 
+                  text="Logo Unavailable"
+                  className={styles.orgLogo}
+                />
+              );
+            }
+            return (
+              <Image
+                src={orgImageUrl}
+                alt={`${name} Logo`}
+                width={220}
+                height={220}
+                className={styles.orgLogo}
+                priority
+                onError={(e) => {
+                  e.target.src = '/defaults/default.png';
+                }}
+              />
+            );
+          })()}
         </div>
         <div className={styles.orgText}>
           <p className={styles.orgTag}>{acronym}</p>

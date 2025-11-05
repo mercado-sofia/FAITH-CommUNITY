@@ -8,10 +8,7 @@ import {
   deleteSubmission,
   bulkApproveSubmissions,
   bulkRejectSubmissions,
-  bulkDeleteSubmissions,
-  getPendingCollaborativePrograms,
-  approveCollaborativeProgram,
-  rejectCollaborativeProgram
+  bulkDeleteSubmissions
 } from '../controllers/approvalController.js';
 
 const router = express.Router();
@@ -43,13 +40,7 @@ router.post('/bulk/reject', bulkRejectSubmissions);
 // POST bulk delete submissions
 router.post('/bulk/delete', bulkDeleteSubmissions);
 
-// GET pending collaborative programs
-router.get('/collaborative-programs', getPendingCollaborativePrograms);
-
-// PUT approve collaborative program
-router.put('/collaborative-programs/:programId/approve', approveCollaborativeProgram);
-
-// PUT reject collaborative program
-router.put('/collaborative-programs/:programId/reject', rejectCollaborativeProgram);
+// Note: Collaborative program routes removed as they're no longer needed
+// Collaborative programs are now handled as regular submissions
 
 export default router;

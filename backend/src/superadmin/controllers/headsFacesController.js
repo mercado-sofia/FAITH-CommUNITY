@@ -5,9 +5,9 @@ import { CLOUDINARY_FOLDERS } from '../../utils/cloudinaryConfig.js';
 
 export const getHeadsFaces = async (req, res) => {
   try {
-    // Get only the primary head (first by display_order)
+    // Get the active head of FACES
     const [results] = await db.query(
-      "SELECT * FROM heads_faces WHERE status = 'ACTIVE' ORDER BY display_order ASC, created_at ASC LIMIT 1"
+      "SELECT * FROM heads_faces WHERE status = 'ACTIVE' LIMIT 1"
     );
     res.status(200).json({ success: true, data: results });
   } catch (err) {
@@ -36,7 +36,7 @@ export const getHeadsFacesById = async (req, res) => {
 // Create or update the single head of FACES
 export const createOrUpdateHeadFaces = async (req, res) => {
   try {
-    const { name, description, email, phone, image_url, position } = req.body;
+    const { name, description, image_url, position } = req.body;
     
     // Validate required fields
     if (!name) {
@@ -45,15 +45,15 @@ export const createOrUpdateHeadFaces = async (req, res) => {
     
     // Check if a head already exists
     const [existingHeads] = await db.query(
-      "SELECT * FROM heads_faces WHERE status = 'ACTIVE' ORDER BY display_order ASC, created_at ASC LIMIT 1"
+      "SELECT * FROM heads_faces WHERE status = 'ACTIVE' LIMIT 1"
     );
     
     if (existingHeads.length > 0) {
       // Update existing head
       const existingHead = existingHeads[0];
       await db.query(
-        "UPDATE heads_faces SET name = ?, description = ?, email = ?, phone = ?, image_url = ?, position = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        [name, description || null, email || null, phone || null, image_url || null, position || 'Head of FACES', existingHead.id]
+        "UPDATE heads_faces SET name = ?, description = ?, image_url = ?, position = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [name, description || null, image_url || null, position || 'Head of FACES', existingHead.id]
       );
       
       // Fetch the updated record
@@ -70,8 +70,8 @@ export const createOrUpdateHeadFaces = async (req, res) => {
     } else {
       // Create new head
       const [result] = await db.query(
-        "INSERT INTO heads_faces (name, description, email, phone, image_url, position, display_order) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [name, description || null, email || null, phone || null, image_url || null, position || 'Head of FACES', 1]
+        "INSERT INTO heads_faces (name, description, image_url, position) VALUES (?, ?, ?, ?)",
+        [name, description || null, image_url || null, position || 'Head of FACES']
       );
       
       // Fetch the created record
@@ -93,7 +93,7 @@ export const createOrUpdateHeadFaces = async (req, res) => {
 
 export const createHeadsFaces = async (req, res) => {
   try {
-    const { name, description, email, phone, image_url, position, display_order } = req.body;
+    const { name, description, image_url, position } = req.body;
     
     // Validate required fields
     if (!name) {
@@ -101,8 +101,8 @@ export const createHeadsFaces = async (req, res) => {
     }
     
     const [result] = await db.query(
-      "INSERT INTO heads_faces (name, description, email, phone, image_url, position, display_order) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [name, description || null, email || null, phone || null, image_url || null, position || 'Head of FACES', display_order || 0]
+      "INSERT INTO heads_faces (name, description, image_url, position) VALUES (?, ?, ?, ?)",
+      [name, description || null, image_url || null, position || 'Head of FACES']
     );
     
     // Fetch the created record
@@ -124,7 +124,7 @@ export const createHeadsFaces = async (req, res) => {
 export const updateHeadsFaces = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, email, phone, image_url, position, display_order, status } = req.body;
+    const { name, description, image_url, position, status } = req.body;
     
     // Check if record exists
     const [existingRecord] = await db.query(
@@ -142,8 +142,8 @@ export const updateHeadsFaces = async (req, res) => {
     }
     
     await db.query(
-      "UPDATE heads_faces SET name = ?, description = ?, email = ?, phone = ?, image_url = ?, position = ?, display_order = ?, status = ? WHERE id = ?",
-      [name, description || null, email || null, phone || null, image_url || null, position || 'Head of FACES', display_order || 0, status || 'ACTIVE', id]
+      "UPDATE heads_faces SET name = ?, description = ?, image_url = ?, position = ?, status = ? WHERE id = ?",
+      [name, description || null, image_url || null, position || 'Head of FACES', status || 'ACTIVE', id]
     );
     
     // Fetch the updated record
@@ -156,35 +156,6 @@ export const updateHeadsFaces = async (req, res) => {
       success: true, 
       message: 'Head of FACES updated successfully', 
       data: updatedRecord[0] 
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-};
-
-export const deleteHeadsFaces = async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    // Check if record exists
-    const [existingRecord] = await db.query(
-      "SELECT * FROM heads_faces WHERE id = ?",
-      [id]
-    );
-    
-    if (existingRecord.length === 0) {
-      return res.status(404).json({ success: false, error: 'Head of FACES not found' });
-    }
-    
-    // Soft delete by setting status to INACTIVE
-    await db.query(
-      "UPDATE heads_faces SET status = 'INACTIVE' WHERE id = ?",
-      [id]
-    );
-    
-    res.status(200).json({ 
-      success: true, 
-      message: 'Head of FACES deleted successfully' 
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -222,7 +193,7 @@ export const uploadHeadsFacesImage = async (req, res) => {
 
     // Check if a head already exists
     const [existingHeads] = await db.query(
-      "SELECT * FROM heads_faces WHERE status = 'ACTIVE' ORDER BY display_order ASC, created_at ASC LIMIT 1"
+      "SELECT * FROM heads_faces WHERE status = 'ACTIVE' LIMIT 1"
     );
 
     if (existingHeads.length > 0) {
@@ -232,11 +203,11 @@ export const uploadHeadsFacesImage = async (req, res) => {
         [imageUrl, existingHeads[0].id]
       );
     } else {
-      // Create new head with uploaded image
-      await db.query(
-        "INSERT INTO heads_faces (name, image_url, position, display_order) VALUES (?, ?, ?, ?)",
-        ['Head of FACES', imageUrl, 'Head of FACES', 1]
-      );
+      // Don't auto-create head when uploading image - user should create head first
+      return res.status(400).json({
+        success: false,
+        message: 'No head of FACES exists. Please create a head first before uploading an image.'
+      });
     }
 
     res.status(200).json({
@@ -254,7 +225,6 @@ export const uploadHeadsFacesImage = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error uploading heads of FACES image:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to upload heads of FACES image: ' + error.message

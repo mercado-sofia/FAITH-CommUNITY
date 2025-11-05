@@ -14,15 +14,8 @@ export const useInvitationSubmission = (API_BASE_URL) => {
     try {
       // Handle logo upload - logo is required
       let logoPath = null
-      logger.info('Starting invitation acceptance process', { 
-        org: form.org, 
-        orgName: form.orgName,
-        hasLogo: !!form.logo,
-        logoType: typeof form.logo
-      })
       
       if (form.logo && form.logo instanceof File) {
-        logger.info('Uploading logo file', { fileName: form.logo.name, size: form.logo.size })
         const formData = new FormData()
         formData.append('logo', form.logo)
         
@@ -34,7 +27,6 @@ export const useInvitationSubmission = (API_BASE_URL) => {
           
           if (uploadResponse.ok) {
             const uploadData = await uploadResponse.json()
-            logger.info('Logo upload successful', { logoPath: uploadData.logoPath })
             logoPath = uploadData.logoPath
           } else {
             let uploadError
@@ -60,10 +52,8 @@ export const useInvitationSubmission = (API_BASE_URL) => {
           throw uploadErr
         }
       } else if (typeof form.logo === 'string') {
-        logger.info('Using existing logo path', { logoPath: form.logo })
         logoPath = form.logo
       } else {
-        logger.error('Logo is required but not provided', { logoType: typeof form.logo })
         throw new Error("Logo is required")
       }
 
@@ -75,12 +65,6 @@ export const useInvitationSubmission = (API_BASE_URL) => {
         password: form.password,
       }
       
-      logger.info('Sending invitation acceptance request', { 
-        org: form.org, 
-        orgName: form.orgName,
-        hasLogo: !!logoPath,
-        token: token.substring(0, 8) + '...'
-      })
 
       const response = await fetch(`${API_BASE_URL}/api/invitations/accept`, {
         method: "POST",
@@ -102,20 +86,12 @@ export const useInvitationSubmission = (API_BASE_URL) => {
       }
 
       if (response.ok) {
-        logger.info('Invitation accepted successfully', { 
-          adminId: data.admin?.id,
-          organizationId: data.admin?.organization_id
-        })
         
         // Fetch organization data to get the org acronym
         try {
           const orgResponse = await fetch(`${API_BASE_URL}/api/organization/org/${form.org}`)
           if (orgResponse.ok) {
             const orgData = await orgResponse.json()
-            logger.info('Organization data fetched', { 
-              org: orgData.data?.org,
-              orgName: orgData.data?.orgName
-            })
           }
         } catch (orgError) {
           logger.apiError(`${API_BASE_URL}/api/organization/org/${form.org}`, orgError, {

@@ -55,7 +55,6 @@ export const addAdvocacy = async (req, res) => {
       })
     }
   } catch (error) {
-    console.error("Add/Update advocacy error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to save advocacy",
@@ -81,7 +80,6 @@ export const getAdvocacies = async (req, res) => {
       data: rows,
     })
   } catch (error) {
-    console.error("Get advocacies error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to retrieve advocacies",
@@ -115,7 +113,6 @@ export const deleteAdvocacy = async (req, res) => {
       message: "Advocacy deleted successfully",
     })
   } catch (error) {
-    console.error("Delete advocacy error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to delete advocacy",
@@ -137,7 +134,6 @@ export const getAllAdvocacies = async (req, res) => {
       data: rows,
     })
   } catch (error) {
-    console.error("Get all advocacies error:", error)
     res.status(500).json({
       success: false,
       message: "Failed to retrieve advocacies",

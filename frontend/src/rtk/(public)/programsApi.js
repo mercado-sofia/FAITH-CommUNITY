@@ -3,7 +3,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 export const programsApi = createApi({
   reducerPath: "programsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:8080/api",
+    baseUrl: process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api` : "http://localhost:8080/api",
     prepareHeaders: (headers) => {
       headers.set("Content-Type", "application/json")
       return headers
@@ -60,7 +60,9 @@ export const programsApi = createApi({
             orgColor: project.orgColor,
             category: project.category,
             created_at: project.created_at,
-            slug: project.slug
+            slug: project.slug,
+            is_collaborative: project.is_collaborative,
+            collaborators: project.collaborators
           }))
         }
         return []

@@ -1,32 +1,21 @@
 'use client';
 
 import { Navbar, Footer, FloatingMessage, ToastContainer, GlobalLoginModal } from './components';
-import { Loader, PagePreloader } from '@/components';
+import { Loader, PagePreloader, DynamicFavicon } from '@/components';
 import '../globals.css';
-import Head from 'next/head';
 import { useEffect, useRef, useState } from 'react';
 import styles from './styles/publicLayout.module.css';
-import { Poppins, Inter } from 'next/font/google';
-import { usePublicBranding } from './hooks/usePublicData';
-
-const poppins = Poppins({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800', '900'],
-  variable: '--font-poppins',
-});
-
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-inter',
-});
 
 export default function PublicLayout({ children }) {
   const navbarRef = useRef(null);
   const [showLogoutLoader, setShowLogoutLoader] = useState(false);
-  const { brandingData } = usePublicBranding();
 
   useEffect(() => {
+    // Check for window and document to avoid SSR errors
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
     // Preload critical resources
     const preloadCriticalResources = () => {
       // Preload critical images
@@ -42,8 +31,19 @@ export default function PublicLayout({ children }) {
         link.rel = 'preload';
         link.as = 'image';
         link.href = src;
-        document.head.appendChild(link);
+        if (document.head) {
+          document.head.appendChild(link);
+        }
       });
+      
+      // Preload sample4.jpg
+      const preloadLink = document.createElement('link');
+      preloadLink.rel = 'preload';
+      preloadLink.href = '/samples/sample4.jpg';
+      preloadLink.as = 'image';
+      if (document.head) {
+        document.head.appendChild(preloadLink);
+      }
     };
 
     preloadCriticalResources();
@@ -71,12 +71,19 @@ export default function PublicLayout({ children }) {
     window.addEventListener('scroll', throttledScroll, { passive: true });
 
     return () => {
-      window.removeEventListener('scroll', throttledScroll);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('scroll', throttledScroll);
+      }
     };
   }, []);
 
   // Handle global logout loader
   useEffect(() => {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     const handleShowLogoutLoader = () => {
       setShowLogoutLoader(true);
     };
@@ -90,8 +97,10 @@ export default function PublicLayout({ children }) {
     window.addEventListener('hideLogoutLoader', handleHideLogoutLoader);
 
     return () => {
-      window.removeEventListener('showLogoutLoader', handleShowLogoutLoader);
-      window.removeEventListener('hideLogoutLoader', handleHideLogoutLoader);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('showLogoutLoader', handleShowLogoutLoader);
+        window.removeEventListener('hideLogoutLoader', handleHideLogoutLoader);
+      }
     };
   }, []);
 
@@ -102,36 +111,14 @@ export default function PublicLayout({ children }) {
 
   return (
     <>
-      <Head>
-        {/* Dynamic Favicon */}
-        {brandingData?.favicon_url && (
-          <link
-            rel="icon"
-            href={brandingData.favicon_url}
-            type="image/x-icon"
-          />
-        )}
-        
-        <link
-          rel="preload"
-          href="/samples/sample4.jpg"
-          as="image"
-        />
-        {/* Preload critical fonts */}
-        <link
-          rel="preload"
-          href="/fonts/inter-var.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-      </Head>
+      {/* Dynamic Favicon - uses client-side DOM manipulation for App Router */}
+      <DynamicFavicon />
       
       {/* Page preloader for instant navigation */}
       <PagePreloader />
       
       {/* Optimized layout container */}
-      <div className={`${styles['public-layout-container']} ${poppins.variable} ${inter.variable}`}>
+      <div className={styles['public-layout-container']}>
         {/* Fixed navbar */}
         <div ref={navbarRef} className={styles['public-navbar-wrapper']}>
           <Navbar />

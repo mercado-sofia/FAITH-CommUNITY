@@ -17,13 +17,18 @@ export const applyApi = createApi({
     // Submit a new volunteer application
     submitApplication: builder.mutation({
       query: (formData) => {
+        // Check for window to avoid SSR errors
+        const token = typeof window !== 'undefined' ? localStorage.getItem('userToken') : null;
+        const headers = {
+          'Content-Type': 'application/json'
+        };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
         return {
           url: "/apply",
           method: "POST",
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('userToken')}`
-          },
+          headers,
           body: formData
         }
       },

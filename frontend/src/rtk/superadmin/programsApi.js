@@ -8,7 +8,8 @@ export const superadminProgramsApi = createApi({
       headers.set("Content-Type", "application/json")
 
       // Add JWT token for superadmin authentication
-      const token = getState().superadmin?.token || localStorage.getItem("superAdminToken")
+      // Check for window to avoid SSR errors
+      const token = getState().superadmin?.token || (typeof window !== 'undefined' ? localStorage.getItem("superAdminToken") : null)
       if (token) {
         headers.set("Authorization", `Bearer ${token}`)
       }
@@ -53,7 +54,13 @@ export const superadminProgramsApi = createApi({
               event_end_date: program.event_end_date,
               multiple_dates: program.multiple_dates || [],
               created_at: program.created_at,
-              updated_at: program.updated_at
+              updated_at: program.updated_at,
+              // Preserve is_collaborative from backend (already converted to boolean)
+              is_collaborative: program.is_collaborative === true || program.is_collaborative === 1 || program.is_collaborative === '1' || Boolean(program.is_collaborative),
+              collaborators: program.collaborators || [],
+              organization_name: program.organization_name,
+              organization_acronym: program.organization_acronym,
+              organization_color: program.organization_color
             };
 
             // Categorize by status
@@ -128,7 +135,9 @@ export const superadminProgramsApi = createApi({
             organization_id: program.organization_id,
             organization_name: program.organization_name,
             organization_acronym: program.organization_acronym,
-            orgLogo: program.orgLogo
+            orgLogo: program.orgLogo,
+            is_collaborative: program.is_collaborative || false,
+            collaborators: program.collaborators || []
           };
         }
         return null;
@@ -158,7 +167,9 @@ export const superadminProgramsApi = createApi({
             orgName: project.orgName,
             orgColor: project.orgColor,
             category: project.category,
-            slug: project.slug
+            slug: project.slug,
+            is_collaborative: project.is_collaborative || false,
+            collaborators: project.collaborators || []
           }))
         }
         return []

@@ -2,6 +2,7 @@
 import db from '../../database.js';
 import NotificationController from '../../admin/controllers/notificationController.js';
 import { logSuperadminAction } from '../../utils/audit.js';
+import { logError, logWarn, logInfo } from '../../utils/logger.js';
 
 export const getPendingSubmissions = async (req, res) => {
   try {
@@ -9,7 +10,7 @@ export const getPendingSubmissions = async (req, res) => {
       SELECT s.*, 
              o.orgName, o.org, 
              submitted_admin.email as submitted_by_email,
-             submitted_org.orgName as submitted_by_name 
+             submitted_org.orgName as submitted_by_org_name 
       FROM submissions s 
       LEFT JOIN organizations o ON o.id = s.organization_id 
       LEFT JOIN admins submitted_admin ON s.submitted_by = submitted_admin.id 
@@ -18,13 +19,44 @@ export const getPendingSubmissions = async (req, res) => {
       ORDER BY s.submitted_at DESC
     `);
 
-    // Parse JSON data for each submission
-    const submissions = rows.map(submission => {
+    // Parse JSON data for each submission and enrich collaborator data
+    const submissions = await Promise.all(rows.map(async (submission) => {
       try {
+        const previousData = JSON.parse(submission.previous_data || '{}');
+        let proposedData = JSON.parse(submission.proposed_data || '{}');
+        
+        // For program submissions, enrich collaborator data with organization information
+        if (submission.section === 'programs' && proposedData.collaborators && Array.isArray(proposedData.collaborators)) {
+          try {
+            const collaborators = proposedData.collaborators;
+            if (collaborators.length > 0) {
+              // Check if collaborators are stored as IDs (numbers) or objects
+              const firstCollaborator = collaborators[0];
+              if (typeof firstCollaborator === 'number' || (typeof firstCollaborator === 'string' && !isNaN(firstCollaborator))) {
+                // Collaborators are stored as IDs, fetch full details
+                const placeholders = collaborators.map(() => '?').join(',');
+                const [collaboratorRows] = await db.execute(`
+                  SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
+                  FROM admins a
+                  LEFT JOIN organizations o ON a.organization_id = o.id
+                  WHERE a.id IN (${placeholders})
+                `, collaborators);
+                
+                // Replace collaborator IDs with full collaborator objects
+                proposedData.collaborators = collaboratorRows;
+              }
+              // If collaborators are already objects, keep them as is
+            }
+          } catch (collabError) {
+            logWarn('Failed to enrich collaborator data', { error: collabError.message, submissionId: submission.id });
+            // Keep original collaborator data if fetch fails
+          }
+        }
+        
         return {
           ...submission,
-          previous_data: JSON.parse(submission.previous_data || '{}'),
-          proposed_data: JSON.parse(submission.proposed_data || '{}')
+          previous_data: previousData,
+          proposed_data: proposedData
         };
       } catch (parseError) {
         return {
@@ -33,7 +65,7 @@ export const getPendingSubmissions = async (req, res) => {
           proposed_data: {}
         };
       }
-    });
+    }));
 
     res.json({
       success: true,
@@ -54,7 +86,7 @@ export const getAllSubmissions = async (req, res) => {
       SELECT s.*, 
              o.orgName, o.org, 
              submitted_admin.email as submitted_by_email,
-             submitted_org.orgName as submitted_by_name 
+             submitted_org.orgName as submitted_by_org_name 
       FROM submissions s 
       LEFT JOIN organizations o ON o.id = s.organization_id 
       LEFT JOIN admins submitted_admin ON s.submitted_by = submitted_admin.id 
@@ -62,13 +94,44 @@ export const getAllSubmissions = async (req, res) => {
       ORDER BY s.submitted_at DESC
     `);
 
-    // Parse JSON data for each submission
-    const submissions = rows.map(submission => {
+    // Parse JSON data for each submission and enrich collaborator data
+    const submissions = await Promise.all(rows.map(async (submission) => {
       try {
+        const previousData = JSON.parse(submission.previous_data || '{}');
+        let proposedData = JSON.parse(submission.proposed_data || '{}');
+        
+        // For program submissions, enrich collaborator data with organization information
+        if (submission.section === 'programs' && proposedData.collaborators && Array.isArray(proposedData.collaborators)) {
+          try {
+            const collaborators = proposedData.collaborators;
+            if (collaborators.length > 0) {
+              // Check if collaborators are stored as IDs (numbers) or objects
+              const firstCollaborator = collaborators[0];
+              if (typeof firstCollaborator === 'number' || (typeof firstCollaborator === 'string' && !isNaN(firstCollaborator))) {
+                // Collaborators are stored as IDs, fetch full details
+                const placeholders = collaborators.map(() => '?').join(',');
+                const [collaboratorRows] = await db.execute(`
+                  SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
+                  FROM admins a
+                  LEFT JOIN organizations o ON a.organization_id = o.id
+                  WHERE a.id IN (${placeholders})
+                `, collaborators);
+                
+                // Replace collaborator IDs with full collaborator objects
+                proposedData.collaborators = collaboratorRows;
+              }
+              // If collaborators are already objects, keep them as is
+            }
+          } catch (collabError) {
+            logWarn('Failed to enrich collaborator data', { error: collabError.message, submissionId: submission.id });
+            // Keep original collaborator data if fetch fails
+          }
+        }
+        
         return {
           ...submission,
-          previous_data: JSON.parse(submission.previous_data || '{}'),
-          proposed_data: JSON.parse(submission.proposed_data || '{}')
+          previous_data: previousData,
+          proposed_data: proposedData
         };
       } catch (parseError) {
         return {
@@ -77,7 +140,7 @@ export const getAllSubmissions = async (req, res) => {
           proposed_data: {}
         };
       }
-    });
+    }));
 
     res.json({
       success: true,
@@ -94,34 +157,58 @@ export const getAllSubmissions = async (req, res) => {
 
 export const approveSubmission = async (req, res) => {
   const { id } = req.params;
+  let connection;
 
   try {
-    console.log(`🔍 Starting approval process for submission ID: ${id}`);
     
-    const [rows] = await db.execute('SELECT * FROM submissions WHERE id = ?', [id]);
+    // Get a connection from the pool for the entire transaction
+    try {
+      connection = await db.getConnection();
+      logInfo('Database connection acquired successfully', { context: 'approval_controller' });
+    } catch (connectionError) {
+      logError('Failed to acquire database connection', connectionError, { context: 'approval_controller' });
+      throw new Error(`Database connection failed: ${connectionError.message}`);
+    }
+    
+     // Start database transaction
+     try {
+       await connection.beginTransaction();
+       logInfo('Database transaction started', { context: 'approval_controller' });
+     } catch (transactionError) {
+       logError('Failed to start transaction', transactionError, { context: 'approval_controller' });
+       throw new Error(`Transaction start failed: ${transactionError.message}`);
+     }
+    
+    const [rows] = await connection.execute('SELECT * FROM submissions WHERE id = ?', [id]);
     if (rows.length === 0) {
-      console.log(`❌ Submission not found: ${id}`);
       return res.status(404).json({ message: 'Submission not found' });
     }
 
     const submission = rows[0];
-    console.log(`📋 Processing submission: ${submission.section} for org ${submission.organization_id}`);
-    console.log(`📋 Submission data:`, {
-      id: submission.id,
-      section: submission.section,
-      organization_id: submission.organization_id,
-      submitted_by: submission.submitted_by,
-      status: submission.status,
-      proposed_data_length: submission.proposed_data?.length || 0
-    });
     
     // Validate and parse the proposed data
     let data;
     try {
       data = JSON.parse(submission.proposed_data);
     } catch (parseError) {
-      console.error(`❌ Failed to parse proposed_data for submission ${id}:`, parseError);
+      logError('Failed to parse submission data', parseError, { context: 'approval_controller' });
       throw new Error(`Invalid submission data: ${parseError.message}`);
+    }
+    
+    // For deletions, proposed_data is empty {}, so we need to check previous_data for the action
+    // If proposed_data is empty and previous_data exists, parse it to get the deletion info
+    let previousData = null;
+    if ((!data || Object.keys(data).length === 0) && submission.previous_data) {
+      try {
+        previousData = JSON.parse(submission.previous_data);
+        // If previous_data has an action field, use it to determine if this is a deletion
+        if (previousData && previousData.action === 'delete') {
+          data = previousData; // Use previous_data for deletion approvals
+        }
+      } catch (prevParseError) {
+        // If parsing previous_data fails, continue with empty data
+        logError('Failed to parse previous_data for deletion', prevParseError, { context: 'approval_controller' });
+      }
     }
     
     const section = submission.section;
@@ -137,14 +224,11 @@ export const approveSubmission = async (req, res) => {
     if (!submission.submitted_by) {
       throw new Error('Submitted by field is missing');
     }
-    
-    console.log(`📊 Section: ${section}, Org ID: ${orgId}`);
-    console.log(`📊 Parsed data keys:`, Object.keys(data));
 
     // Apply changes based on section
     if (section === 'organization') {
       // Update organizations table with all organization data including org/orgName
-      await db.execute(
+      await connection.execute(
         `UPDATE organizations SET org = ?, orgName = ?, logo = ?, facebook = ?, description = ? WHERE id = ?`,
         [data.org, data.orgName, data.logo, data.facebook, data.description, orgId]
       );
@@ -152,7 +236,7 @@ export const approveSubmission = async (req, res) => {
 
     if (section === 'advocacy') {
       // Check if advocacy record exists
-      const [existingAdvocacy] = await db.execute(
+      const [existingAdvocacy] = await connection.execute(
         'SELECT id FROM advocacies WHERE organization_id = ?',
         [orgId]
       );
@@ -162,13 +246,13 @@ export const approveSubmission = async (req, res) => {
       
       if (existingAdvocacy.length > 0) {
         // Update existing record
-        await db.execute(
+        await connection.execute(
           'UPDATE advocacies SET advocacy = ? WHERE organization_id = ?',
           [advocacyData, orgId]
         );
       } else {
         // Insert new record
-        await db.execute(
+        await connection.execute(
           'INSERT INTO advocacies (organization_id, advocacy) VALUES (?, ?)',
           [orgId, advocacyData]
         );
@@ -177,7 +261,7 @@ export const approveSubmission = async (req, res) => {
 
     if (section === 'competency') {
       // Check if competency record exists
-      const [existingCompetency] = await db.execute(
+      const [existingCompetency] = await connection.execute(
         'SELECT id FROM competencies WHERE organization_id = ?',
         [orgId]
       );
@@ -187,13 +271,13 @@ export const approveSubmission = async (req, res) => {
       
       if (existingCompetency.length > 0) {
         // Update existing record
-        await db.execute(
+        await connection.execute(
           'UPDATE competencies SET competency = ? WHERE organization_id = ?',
           [competencyData, orgId]
         );
       } else {
         // Insert new record
-        await db.execute(
+        await connection.execute(
           'INSERT INTO competencies (organization_id, competency) VALUES (?, ?)',
           [orgId, competencyData]
         );
@@ -201,7 +285,7 @@ export const approveSubmission = async (req, res) => {
     }
 
     if (section === 'org_heads') {
-      await db.execute(`DELETE FROM organization_heads WHERE organization_id = ?`, [orgId]);
+      await connection.execute(`DELETE FROM organization_heads WHERE organization_id = ?`, [orgId]);
       for (let head of data) {
         // Handle head photo upload to Cloudinary
         let cloudinaryPhotoUrl = head.photo;
@@ -235,7 +319,7 @@ export const approveSubmission = async (req, res) => {
           }
         }
         
-        await db.execute(
+        await connection.execute(
           `INSERT INTO organization_heads (organization_id, head_name, role, facebook, email, photo)
            VALUES (?, ?, ?, ?, ?, ?)`,
           [orgId, head.name, head.position, head.facebook, head.email, cloudinaryPhotoUrl]
@@ -244,20 +328,21 @@ export const approveSubmission = async (req, res) => {
     }
 
     if (section === 'programs') {
-      console.log(`🎯 Processing programs section for submission ${id}`);
       
       // Validate required program data
-      if (!data.title) {
-        throw new Error('Program title is required');
+      if (!data.title || typeof data.title !== 'string' || data.title.trim().length === 0) {
+        logError('Program title is missing or invalid', null, { context: 'approval_controller', title: data.title });
+        throw new Error('Program title is required and must be a non-empty string');
       }
-      if (!data.description) {
-        throw new Error('Program description is required');
+      if (!data.description || typeof data.description !== 'string' || data.description.trim().length === 0) {
+        logError('Program description is missing or invalid', null, { context: 'approval_controller', description: data.description });
+        throw new Error('Program description is required and must be a non-empty string');
+      }
+      if (!data.category || typeof data.category !== 'string' || data.category.trim().length === 0) {
+        logError('Program category is missing or invalid', null, { context: 'approval_controller', category: data.category });
+        throw new Error('Program category is required and must be a non-empty string');
       }
       
-      // For collaborative programs, ensure they go through the proper workflow
-      if (data.collaborators && data.collaborators.length > 0) {
-        console.log(`🤝 Collaborative program detected - will be set to pending_collaboration status`);
-      }
       
       try {
         // Generate slug from title
@@ -272,7 +357,7 @@ export const approveSubmission = async (req, res) => {
         let finalSlug = slug;
         let counter = 1;
         while (true) {
-          const [existingSlug] = await db.execute(
+          const [existingSlug] = await connection.execute(
             'SELECT id FROM programs_projects WHERE slug = ?',
             [finalSlug]
           );
@@ -286,21 +371,25 @@ export const approveSubmission = async (req, res) => {
 
         // Handle main image upload to Cloudinary
         let cloudinaryImageUrl = data.image;
-        if (data.image && data.image.startsWith('data:image/')) {
+        
+        // Clean the image data - JSON_EXTRACT returns quoted strings, so we need to remove quotes
+        const { cleanImageData, isBase64Image } = await import('../../utils/jsonUtils.js');
+        const cleanedImageData = cleanImageData(data.image);
+        
+        if (isBase64Image(cleanedImageData)) {
           try {
-            console.log(`📸 Uploading main image to Cloudinary for program: ${data.title}`);
             const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
             const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
             
             // Convert base64 to buffer
-            const base64Data = data.image.replace(/^data:image\/\w+;base64,/, '');
+            const base64Data = cleanedImageData.replace(/^data:image\/\w+;base64,/, '');
             const buffer = Buffer.from(base64Data, 'base64');
             
             // Create a file-like object for Cloudinary upload
             const file = {
               buffer: buffer,
               originalname: `program-${Date.now()}.jpg`,
-              mimetype: data.image.match(/data:image\/(\w+);/)[0].replace('data:', '').replace(';', ''),
+              mimetype: cleanedImageData.match(/data:image\/(\w+);/)[0].replace('data:', '').replace(';', ''),
               size: buffer.length
             };
             
@@ -312,164 +401,301 @@ export const approveSubmission = async (req, res) => {
             );
             
             cloudinaryImageUrl = uploadResult.url;
-            console.log(`✅ Main image uploaded successfully: ${cloudinaryImageUrl}`);
           } catch (uploadError) {
-            console.error('❌ Error uploading main image to Cloudinary:', uploadError);
-            // Continue with base64 as fallback
-            console.log(`⚠️ Using base64 image as fallback for program: ${data.title}`);
+            logError('Cloudinary upload failed for main image', uploadError, { context: 'approval_controller' });
+            // Continue with cleaned base64 as fallback
+            cloudinaryImageUrl = cleanedImageData;
           }
+        } else {
         }
 
-        // Insert new program into programs_projects table
-        // For collaborative programs, set status to pending_collaboration and is_approved to false
-        // The program will be approved by superadmin only after collaborators accept
-        console.log(`💾 Inserting program into database: ${data.title}`);
-        const [result] = await db.execute(
-          `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            orgId,
-            data.title,
-            data.description,
-            data.category,
-            data.collaborators && data.collaborators.length > 0 ? 'pending_collaboration' : 'pending', // Set status based on collaborators
-            cloudinaryImageUrl, // Use Cloudinary URL instead of base64
-            data.event_start_date || null,
-            data.event_end_date || null,
-            finalSlug,
-            data.collaborators && data.collaborators.length > 0 ? false : true, // Only auto-approve if no collaborators
-            data.collaborators && data.collaborators.length > 0
-          ]
-        );
-        console.log(`✅ Program inserted successfully with ID: ${result.insertId}`);
-        
-        const programId = result.insertId;
-        
-        // Handle collaboration invitations if provided
+        // For collaborative programs, create the program immediately but mark as pending collaboration
         if (data.collaborators && Array.isArray(data.collaborators) && data.collaborators.length > 0) {
-          console.log(`🤝 Processing ${data.collaborators.length} collaboration invitations`);
-          // Extract collaborator IDs (handle both object format and ID format)
-          const collaboratorIds = data.collaborators.map(collab => {
-            // If collaborator is an object with id property, extract the id
-            if (typeof collab === 'object' && collab.id) {
-              return collab.id;
-            }
-            // If collaborator is already just an ID, use it directly
-            return collab;
-          }).filter(id => id && id !== submission.submitted_by);
           
-          console.log(`🤝 Valid collaborator IDs: ${collaboratorIds.join(', ')}`);
+          // Create the program immediately
           
-          for (const collaboratorId of collaboratorIds) {
-              try {
-                await db.execute(`
-                  INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status)
-                  VALUES (?, ?, ?, 'pending')
-                `, [programId, collaboratorId, submission.submitted_by]);
-                
-                // Notify collaborator about the collaboration request
-                try {
-                  const NotificationController = (await import('../../admin/controllers/notificationController.js')).default;
-                  await NotificationController.createNotification({
-                    admin_id: collaboratorId,
-                    title: 'New Collaboration Request',
-                    message: `You have received a collaboration request for "${data.title}". Please review and respond.`,
-                    type: 'collaboration_request',
-                    submission_id: programId
-                  });
-                } catch (notificationError) {
-                  console.error('Failed to send collaboration request notification:', notificationError);
-                  // Don't fail the main operation if notification fails
-                }
-              } catch (collabError) {
-                console.error('Failed to add collaborator during approval:', collabError);
+          const [result] = await connection.execute(
+            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override, submitted_by_name, submitted_by_role)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              orgId,
+              data.title,
+              data.description,
+              data.category,
+              'Upcoming',
+              cloudinaryImageUrl,
+              data.event_start_date || null,
+              data.event_end_date || null,
+              finalSlug,
+              true, // Approved by superadmin
+              true, // Collaborative - will be updated based on collaborator responses
+              data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
+              false, // New approved programs start with automatic status (no manual override)
+              data.submitted_by_name || null,
+              data.submitted_by_role || null
+            ]
+          );
+          
+          const programId = result.insertId;
+          
+          // Update existing collaboration requests to link to the new program
+          const [updateResult] = await connection.execute(`
+            UPDATE program_collaborations 
+            SET program_id = ?, status = 'pending', program_title = ?
+            WHERE submission_id = ? AND program_id IS NULL
+          `, [programId, data.title, id]);
+          
+          // If no existing collaboration requests were updated, create new ones
+          if (updateResult.affectedRows === 0) {
+            // Extract collaborator IDs (handle both object format and ID format)
+            const collaboratorIds = data.collaborators.map(collab => {
+              // If collaborator is an object with id property, extract the id
+              if (typeof collab === 'object' && collab.id) {
+                return collab.id;
               }
-          }
-        }
-        
-        // If multiple dates are provided, insert them into program_event_dates table
-        if (data.multiple_dates && Array.isArray(data.multiple_dates) && data.multiple_dates.length > 0) {
-          
-          for (const date of data.multiple_dates) {
-            await db.execute(
-              `INSERT INTO program_event_dates (program_id, event_date) VALUES (?, ?)`,
-              [programId, date]
-            );
-          }
-        }
-
-        // Handle additional images upload to Cloudinary
-        if (data.additionalImages && Array.isArray(data.additionalImages) && data.additionalImages.length > 0) {
-          const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
-          const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
-          
-          for (let i = 0; i < data.additionalImages.length; i++) {
-            const imageData = data.additionalImages[i];
+              // If collaborator is already just an ID, use it directly
+              return collab;
+            }).filter(id => id && id !== submission.submitted_by);
             
-            if (imageData && imageData.startsWith('data:image/')) {
+            // Create new collaboration requests
+            for (const collaboratorId of collaboratorIds) {
               try {
-                // Convert base64 to buffer
-                const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
-                const buffer = Buffer.from(base64Data, 'base64');
-                
-                // Create a file-like object for Cloudinary upload
-                const file = {
-                  buffer: buffer,
-                  originalname: `additional-${i}.jpg`,
-                  mimetype: imageData.match(/data:image\/(\w+);/)[1],
-                  size: buffer.length
-                };
-                
-                // Upload to Cloudinary
-                const uploadResult = await uploadSingleToCloudinary(
-                  file, 
-                  CLOUDINARY_FOLDERS.PROGRAMS.ADDITIONAL,
-                  { prefix: 'prog_add_' }
-                );
-                
-                // Store Cloudinary URL in database
-                await db.execute(
-                  `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
-                  [programId, uploadResult.url, i]
-                );
-                
-              } catch (uploadError) {
-                // Continue with base64 as fallback
-                await db.execute(
-                  `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
-                  [programId, imageData, i]
-                );
+                await connection.execute(`
+                  INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status, program_title)
+                  VALUES (?, ?, ?, 'pending', ?)
+                `, [programId, collaboratorId, submission.submitted_by, data.title]);
+              } catch (collabError) {
+                // Error creating collaboration request
               }
-            } else {
-              // If it's not base64, store as is (might already be a Cloudinary URL)
-              await db.execute(
-                `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
-                [programId, imageData, i]
+            }
+          }
+          
+          // Send notifications to collaborators about the approved program
+          // Get all collaboration records for this program (both updated and newly created)
+          const [allCollaborations] = await connection.execute(`
+            SELECT collaborator_admin_id FROM program_collaborations 
+            WHERE program_id = ? AND status = 'pending'
+          `, [programId]);
+          
+          // Send notifications to each collaborator
+          for (const collab of allCollaborations) {
+            try {
+              await NotificationController.createNotification(
+                collab.collaborator_admin_id,
+                'collaboration_request',
+                'New Collaboration Request',
+                `You have received a collaboration request for "${data.title}". Please review and respond in the Collaboration section.`,
+                'programs',
+                programId
+              );
+            } catch (notificationError) {
+              // Error sending collaboration request notification
+            }
+          }
+          
+          // Handle multiple dates for collaborative programs
+          if (data.multiple_dates && Array.isArray(data.multiple_dates) && data.multiple_dates.length > 0) {
+            for (const date of data.multiple_dates) {
+              await connection.execute(
+                `INSERT INTO program_event_dates (program_id, event_date) VALUES (?, ?)`,
+                [programId, date]
+              );
+            }
+          }
+          
+        // Additional images will be handled in the general section below
+          // Note: Collaborators receive collaboration request notifications ONLY after superadmin approval.
+          // During submission, collaboration records are created but no notifications are sent.
+          // Notifications are sent here (in approvalController.js) after the program is approved.
+          
+        } else {
+          // For non-collaborative programs, create the program immediately
+          
+          const [result] = await connection.execute(
+            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override, submitted_by_name, submitted_by_role)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              orgId,
+              data.title,
+              data.description,
+              data.category,
+              'Upcoming', // Default status for approved programs
+              cloudinaryImageUrl, // Use Cloudinary URL instead of base64
+              data.event_start_date || null,
+              data.event_end_date || null,
+              finalSlug,
+              true, // SECURITY FIX: Always approve when superadmin approves (this is the approval process)
+              false, // Not collaborative
+              data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
+              false, // New approved programs start with automatic status (no manual override)
+              data.submitted_by_name || null,
+              data.submitted_by_role || null
+            ]
+          );
+          
+          const programId = result.insertId;
+          
+          // Handle multiple dates for non-collaborative programs
+          if (data.multiple_dates && Array.isArray(data.multiple_dates) && data.multiple_dates.length > 0) {
+            for (const date of data.multiple_dates) {
+              await connection.execute(
+                `INSERT INTO program_event_dates (program_id, event_date) VALUES (?, ?)`,
+                [programId, date]
               );
             }
           }
         }
+
+          // Handle additional images upload to Cloudinary
+          if (data.additionalImages && Array.isArray(data.additionalImages) && data.additionalImages.length > 0) {
+            const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
+            const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
+            
+            for (let i = 0; i < data.additionalImages.length; i++) {
+              const imageData = data.additionalImages[i];
+              
+              if (!imageData) {
+                continue; // Skip empty entries
+              }
+              
+              // Check if it's a new base64 image that needs to be uploaded
+              if (typeof imageData === 'string' && imageData.startsWith('data:image/')) {
+                try {
+                  // Convert base64 to buffer
+                  const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+                  const buffer = Buffer.from(base64Data, 'base64');
+                  
+                  // Create a file-like object for Cloudinary upload
+                  const file = {
+                    buffer: buffer,
+                    originalname: `additional-${i}.jpg`,
+                    mimetype: imageData.match(/data:image\/(\w+);/)?.[1] || 'jpg',
+                    size: buffer.length
+                  };
+                  
+                  // Upload to Cloudinary
+                  const uploadResult = await uploadSingleToCloudinary(
+                    file, 
+                    CLOUDINARY_FOLDERS.PROGRAMS.ADDITIONAL,
+                    { prefix: 'prog_add_' }
+                  );
+                  
+                  if (!uploadResult || !uploadResult.url) {
+                    logError(`Cloudinary upload failed for additional image ${i}: No URL returned`, null, { context: 'approval_controller', imageIndex: i });
+                    continue;
+                  }
+                  
+                  // Store Cloudinary URL in database
+                  await connection.execute(
+                    `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
+                    [programId, uploadResult.url, i]
+                  );
+                  
+                } catch (uploadError) {
+                  logError(`Cloudinary upload failed for additional image ${i}`, uploadError, { context: 'approval_controller', imageIndex: i });
+                  // Fallback: Store base64 in database if Cloudinary fails (for resilience)
+                  // This ensures images aren't lost if Cloudinary is temporarily unavailable
+                  try {
+                    await connection.execute(
+                      `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
+                      [programId, imageData, i]
+                    );
+                  } catch (dbError) {
+                    logError(`Failed to store base64 fallback for image ${i}`, dbError, { context: 'approval_controller', imageIndex: i });
+                  }
+                }
+              } else if (typeof imageData === 'string' && (imageData.startsWith('http://') || imageData.startsWith('https://'))) {
+                // It's an existing Cloudinary URL - store it directly
+                try {
+                  await connection.execute(
+                    `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
+                    [programId, imageData, i]
+                  );
+                } catch (dbError) {
+                  logError(`Failed to store existing image ${i}`, dbError, { context: 'approval_controller', imageIndex: i });
+                }
+              }
+              // Skip any invalid formats
+            }
+          }
 
         // Note: For collaborative programs, they are set to pending_collaboration status
         // and will only be approved by superadmin after collaborators accept
         // Collaborators are notified individually when collaboration requests are created
         
       } catch (insertError) {
-        console.error(`❌ Error in programs section processing:`, insertError);
         throw insertError;
       }
     }
 
+    // Handle Post Act Report approval
+    if (section === 'Post Act Report') {
+      // Extract report_id and program_id from proposed_data
+      const reportId = data.report_id;
+      const programId = data.program_id;
 
-    await db.execute(`UPDATE submissions SET status = 'approved' WHERE id = ?`, [id]);
+      if (!reportId || !programId) {
+        throw new Error('Post Act Report submission missing report_id or program_id');
+      }
+
+      // Check if report exists and is pending
+      const [reportRows] = await connection.execute(
+        `SELECT id, program_id, status FROM program_post_act_reports WHERE id = ? FOR UPDATE`,
+        [reportId]
+      );
+
+      if (reportRows.length === 0) {
+        throw new Error('Post Act Report not found');
+      }
+
+      const report = reportRows[0];
+      
+      // Verify the program_id matches
+      if (report.program_id !== programId) {
+        throw new Error('Post Act Report program_id mismatch');
+      }
+
+      if (report.status !== 'pending') {
+        throw new Error(`Post Act Report is not pending (current status: ${report.status})`);
+      }
+
+      // Update post act report status to approved
+      await connection.execute(
+        `UPDATE program_post_act_reports SET status = 'approved', reviewed_by_superadmin_id = ?, reviewed_at = NOW() WHERE id = ?`,
+        [req.superadmin?.id || null, reportId]
+      );
+
+      // Update program status to Completed with manual override
+      await connection.execute(
+        `UPDATE programs_projects SET status = 'Completed', manual_status_override = TRUE WHERE id = ?`,
+        [programId]
+      );
+    }
+
+    // Update submission status to approved
+    await connection.execute(`UPDATE submissions SET status = 'approved' WHERE id = ?`, [id]);
     
     // Create dynamic notification message based on section and data
     let notificationMessage = `Your submission for ${section} has been approved by SuperAdmin`;
     
+    // Add specific details for Post Act Report
+    if (section === 'Post Act Report') {
+      // Get program title for the notification message
+      try {
+        const [programRows] = await connection.execute(
+          `SELECT title FROM programs_projects WHERE id = ?`,
+          [data.program_id]
+        );
+        const programTitle = programRows.length > 0 ? programRows[0].title : 'program';
+        notificationMessage = `Your Post Act Report was approved. The program "${programTitle}" is now marked as Completed.`;
+      } catch (err) {
+        notificationMessage = 'Your Post Act Report was approved. The program is now marked as Completed.';
+      }
+    }
     // Add specific details for programs
-    if (section === 'programs' && data.title) {
+    else if (section === 'programs' && data.title) {
       if (data.collaborators && data.collaborators.length > 0) {
-        notificationMessage = `Your collaborative program "${data.title}" has been submitted and collaboration requests have been sent to the invited organizations. The program will be sent to the superadmin for final approval only after collaborators accept the requests.`;
+        notificationMessage = `Your collaborative program "${data.title}" has been approved by SuperAdmin. Collaboration requests have been sent to the invited organizations.`;
       } else {
         notificationMessage = `Your program "${data.title}" has been approved by SuperAdmin`;
       }
@@ -478,30 +704,34 @@ export const approveSubmission = async (req, res) => {
     else if (section === 'news' && data.title) {
       notificationMessage = `Your news "${data.title}" has been approved by SuperAdmin`;
     }
+    // Add specific details for highlights
+    else if (section === 'highlights' && data) {
+      if (data.action === 'delete' && data.title) {
+        notificationMessage = `Your deletion request for highlight "${data.title}" has been approved by SuperAdmin. The highlight has been removed.`;
+      } else if (data.title) {
+        notificationMessage = `Your highlight "${data.title}" has been approved by SuperAdmin`;
+      }
+    }
     // Add specific details for organization
     else if (section === 'organization' && data.orgName) {
       notificationMessage = `Your organization "${data.orgName}" has been approved by SuperAdmin`;
     }
     
     // Create notification for the admin
-    console.log(`📧 Creating notification for admin ${submission.submitted_by}`);
     try {
-      const notificationResult = await NotificationController.createNotification({
-        admin_id: submission.submitted_by,
-        type: 'approval',
-        title: 'Submission Approved',
-        message: notificationMessage,
-        section: section,
-        related_id: id
-      });
-      console.log(`📧 Notification result:`, notificationResult);
+      const notificationResult = await NotificationController.createNotification(
+        submission.submitted_by,
+        'approval',
+        'Submission Approved',
+        notificationMessage,
+        section,
+        id
+      );
 
       if (!notificationResult.success) {
-        console.error('Failed to create notification:', notificationResult.error);
         // Don't fail the main operation if notification fails
       }
     } catch (notificationError) {
-      console.error('❌ Error creating notification:', notificationError);
       // Don't fail the main operation if notification fails
     }
 
@@ -511,15 +741,25 @@ export const approveSubmission = async (req, res) => {
     try {
       await logSuperadminAction(req.superadmin?.id, 'approve_submission', `Approved submission ${id} (${section}) for org ${orgId}`, req);
     } catch (auditError) {
-      console.error('❌ Error logging superadmin action:', auditError);
       // Don't fail the main operation if audit logging fails
     }
 
-    console.log(`✅ Successfully approved submission ${id}`);
+     // Commit transaction
+     await connection.commit();
+    
     res.json({ success: true, message: 'Submission approved and applied.' });
   } catch (err) {
-    console.error(`❌ Error approving submission ${id}:`, err);
+    // Rollback transaction on error
+    if (connection) {
+      await connection.rollback();
+    }
+    logError(`Error approving submission ${id}`, err, { context: 'approval_controller', submissionId: id });
     res.status(500).json({ success: false, message: 'Failed to apply submission', error: err.message });
+  } finally {
+    // Always release the connection back to the pool
+    if (connection) {
+      connection.release();
+    }
   }
 };
 
@@ -542,8 +782,41 @@ export const rejectSubmission = async (req, res) => {
     // Handle highlights rejection by updating highlight status
     if (submission.section === 'highlights') {
       try {
-        const data = JSON.parse(submission.proposed_data);
-        if (data.highlight_id) {
+        let data;
+        try {
+          data = JSON.parse(submission.proposed_data);
+        } catch (parseError) {
+          // For deletions, proposed_data is empty {}, so check previous_data
+          if (submission.previous_data) {
+            try {
+              data = JSON.parse(submission.previous_data);
+            } catch (prevParseError) {
+              // Continue if parsing fails
+            }
+          }
+        }
+        
+        // If this is a deletion rejection, ensure the highlight stays approved (don't delete)
+        if (data && data.action === 'delete') {
+          const highlightId = data.highlight_id || (typeof data.highlight_id === 'string' ? parseInt(data.highlight_id) : null);
+          if (highlightId) {
+            // Check if highlight exists and ensure it stays approved
+            const [existingHighlight] = await db.execute(
+              'SELECT id, status FROM admin_highlights WHERE id = ?',
+              [highlightId]
+            );
+            
+            if (existingHighlight.length > 0) {
+              // Highlight exists - ensure it's approved (if it was approved before deletion request)
+              // The highlight should remain approved since deletion was rejected
+              await db.execute(
+                'UPDATE admin_highlights SET status = ? WHERE id = ? AND status != ?',
+                ['approved', highlightId, 'approved']
+              );
+            }
+          }
+        } else if (data && data.highlight_id) {
+          // For create/update rejections, mark as rejected
           await db.execute(
             'UPDATE admin_highlights SET status = ? WHERE id = ?',
             ['rejected', data.highlight_id]
@@ -551,6 +824,26 @@ export const rejectSubmission = async (req, res) => {
         }
       } catch (parseError) {
         // Continue with submission rejection even if highlight update fails
+      }
+    }
+
+    // Handle Post Act Report rejection
+    if (submission.section === 'Post Act Report') {
+      try {
+        const data = JSON.parse(submission.proposed_data);
+        const reportId = data.report_id;
+        
+        if (reportId) {
+          // Update post act report status to rejected
+          await db.execute(
+            `UPDATE program_post_act_reports 
+             SET status = 'rejected', reviewed_by_superadmin_id = ?, reviewed_at = NOW()
+             WHERE id = ? AND status = 'pending'`,
+            [req.superadmin?.id || null, reportId]
+          );
+        }
+      } catch (parseError) {
+        // Continue with submission rejection even if report update fails
       }
     }
 
@@ -565,19 +858,48 @@ export const rejectSubmission = async (req, res) => {
     
     // Parse the proposed data to get specific details
     try {
-      const data = JSON.parse(submission.proposed_data);
+      let data;
+      try {
+        data = JSON.parse(submission.proposed_data);
+      } catch (parseError) {
+        // For deletions, proposed_data is empty {}, so check previous_data
+        if (submission.previous_data) {
+          try {
+            data = JSON.parse(submission.previous_data);
+          } catch (prevParseError) {
+            // Keep the generic message if parsing fails
+          }
+        }
+      }
       
+      // Add specific details for Post Act Report
+      if (submission.section === 'Post Act Report') {
+        try {
+          const [programRows] = await db.execute(
+            `SELECT title FROM programs_projects WHERE id = ?`,
+            [data.program_id]
+          );
+          const programTitle = programRows.length > 0 ? programRows[0].title : 'program';
+          notificationMessage = `Your Post Act Report for "${programTitle}" has been declined by SuperAdmin. Please review the note and re-upload.`;
+        } catch (err) {
+          notificationMessage = 'Your Post Act Report has been declined by SuperAdmin. Please review the note and re-upload.';
+        }
+      }
       // Add specific details for programs
-      if (submission.section === 'programs' && data.title) {
+      else if (submission.section === 'programs' && data.title) {
         notificationMessage = `Your program "${data.title}" has been declined by SuperAdmin`;
       }
       // Add specific details for organization
-      else if (submission.section === 'organization' && data.orgName) {
+      else if (submission.section === 'organization' && data && data.orgName) {
         notificationMessage = `Your organization "${data.orgName}" has been declined by SuperAdmin`;
       }
       // Add specific details for highlights
-      else if (submission.section === 'highlights' && data.title) {
-        notificationMessage = `Your highlight "${data.title}" has been declined by SuperAdmin`;
+      else if (submission.section === 'highlights' && data) {
+        if (data.action === 'delete' && data.title) {
+          notificationMessage = `Your deletion request for highlight "${data.title}" has been declined by SuperAdmin. The highlight remains visible.`;
+        } else if (data.title) {
+          notificationMessage = `Your highlight "${data.title}" has been declined by SuperAdmin`;
+        }
       }
     } catch (parseError) {
       // Keep the generic message if parsing fails
@@ -594,7 +916,7 @@ export const rejectSubmission = async (req, res) => {
     );
 
     if (!notificationResult.success) {
-      console.error('Failed to create notification:', notificationResult.error);
+      logError('Failed to create notification', notificationResult.error, { context: 'approval_controller' });
       // Don't fail the main operation if notification fails
     }
 
@@ -617,6 +939,7 @@ export const rejectSubmission = async (req, res) => {
 // Bulk approve submissions
 export const bulkApproveSubmissions = async (req, res) => {
   const { ids } = req.body;
+  let connection;
 
   if (!ids || !Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({
@@ -626,13 +949,19 @@ export const bulkApproveSubmissions = async (req, res) => {
   }
 
   try {
+    // Get a connection from the pool for the entire transaction
+    connection = await db.getConnection();
+    
+     // Start database transaction for bulk operations
+     await connection.beginTransaction();
+    
     let successCount = 0;
     let errorCount = 0;
     const errors = [];
 
     for (const id of ids) {
       try {
-        const [rows] = await db.execute('SELECT * FROM submissions WHERE id = ?', [id]);
+        const [rows] = await connection.execute('SELECT * FROM submissions WHERE id = ?', [id]);
         
         if (rows.length === 0) {
           errors.push(`Submission ${id} not found`);
@@ -648,21 +977,47 @@ export const bulkApproveSubmissions = async (req, res) => {
           continue;
         }
 
-        const data = JSON.parse(submission.proposed_data);
+        let data;
+        try {
+          data = JSON.parse(submission.proposed_data);
+        } catch (parseError) {
+          errors.push(`Submission ${id} has invalid proposed_data`);
+          errorCount++;
+          continue;
+        }
+        
+        // For deletions, proposed_data is empty {}, so we need to check previous_data for the action
+        // If proposed_data is empty and previous_data exists, parse it to get the deletion info
+        let previousData = null;
+        if ((!data || Object.keys(data).length === 0) && submission.previous_data) {
+          try {
+            previousData = JSON.parse(submission.previous_data);
+            // If previous_data has an action field, use it to determine if this is a deletion
+            if (previousData && previousData.action === 'delete') {
+              data = previousData; // Use previous_data for deletion approvals
+            }
+          } catch (prevParseError) {
+            // If parsing previous_data fails, continue with empty data
+            errors.push(`Submission ${id} has invalid previous_data for deletion`);
+            errorCount++;
+            continue;
+          }
+        }
+        
         const section = submission.section;
         const orgId = submission.organization_id;
 
         // Apply changes based on section - same logic as individual approveSubmission
         if (section === 'organization') {
           // Update organizations table with all organization data including org/orgName
-          await db.execute(
+          await connection.execute(
             `UPDATE organizations SET org = ?, orgName = ?, logo = ?, facebook = ?, description = ? WHERE id = ?`,
             [data.org, data.orgName, data.logo, data.facebook, data.description, orgId]
           );
         }
 
         if (section === 'advocacy') {
-          const [existingAdvocacy] = await db.execute(
+          const [existingAdvocacy] = await connection.execute(
             'SELECT id FROM advocacies WHERE organization_id = ?',
             [orgId]
           );
@@ -670,12 +1025,12 @@ export const bulkApproveSubmissions = async (req, res) => {
           const advocacyData = typeof data === 'string' ? data.trim() : JSON.stringify(data).trim();
           
           if (existingAdvocacy.length > 0) {
-            await db.execute(
+            await connection.execute(
               'UPDATE advocacies SET advocacy = ? WHERE organization_id = ?',
               [advocacyData, orgId]
             );
           } else {
-            await db.execute(
+            await connection.execute(
               'INSERT INTO advocacies (organization_id, advocacy) VALUES (?, ?)',
               [orgId, advocacyData]
             );
@@ -683,7 +1038,7 @@ export const bulkApproveSubmissions = async (req, res) => {
         }
 
         if (section === 'competency') {
-          const [existingCompetency] = await db.execute(
+          const [existingCompetency] = await connection.execute(
             'SELECT id FROM competencies WHERE organization_id = ?',
             [orgId]
           );
@@ -691,12 +1046,12 @@ export const bulkApproveSubmissions = async (req, res) => {
           const competencyData = typeof data === 'string' ? data.trim() : JSON.stringify(data).trim();
           
           if (existingCompetency.length > 0) {
-            await db.execute(
+            await connection.execute(
               'UPDATE competencies SET competency = ? WHERE organization_id = ?',
               [competencyData, orgId]
             );
           } else {
-            await db.execute(
+            await connection.execute(
               'INSERT INTO competencies (organization_id, competency) VALUES (?, ?)',
               [orgId, competencyData]
             );
@@ -704,7 +1059,7 @@ export const bulkApproveSubmissions = async (req, res) => {
         }
 
         if (section === 'org_heads') {
-          await db.execute(`DELETE FROM organization_heads WHERE organization_id = ?`, [orgId]);
+          await connection.execute(`DELETE FROM organization_heads WHERE organization_id = ?`, [orgId]);
           for (let head of data) {
             // Handle head photo upload to Cloudinary
             let cloudinaryPhotoUrl = head.photo;
@@ -734,12 +1089,11 @@ export const bulkApproveSubmissions = async (req, res) => {
                 
                 cloudinaryPhotoUrl = uploadResult.url;
               } catch (uploadError) {
-                console.error('❌ Error uploading organization head photo to Cloudinary:', uploadError);
                 // Continue with base64 as fallback
               }
             }
             
-            await db.execute(
+            await connection.execute(
               `INSERT INTO organization_heads (organization_id, head_name, role, facebook, email, photo)
                VALUES (?, ?, ?, ?, ?, ?)`,
               [orgId, head.name, head.position, head.facebook, head.email, cloudinaryPhotoUrl]
@@ -748,6 +1102,17 @@ export const bulkApproveSubmissions = async (req, res) => {
         }
 
         if (section === 'programs') {
+          // Validate required program data
+          if (!data.title || typeof data.title !== 'string' || data.title.trim().length === 0) {
+            throw new Error('Program title is required and must be a non-empty string');
+          }
+          if (!data.description || typeof data.description !== 'string' || data.description.trim().length === 0) {
+            throw new Error('Program description is required and must be a non-empty string');
+          }
+          if (!data.category || typeof data.category !== 'string' || data.category.trim().length === 0) {
+            throw new Error('Program category is required and must be a non-empty string');
+          }
+          
           // Generate slug from title
           const slug = data.title
             .toLowerCase()
@@ -760,7 +1125,7 @@ export const bulkApproveSubmissions = async (req, res) => {
           let finalSlug = slug;
           let counter = 1;
           while (true) {
-            const [existingSlug] = await db.execute(
+            const [existingSlug] = await connection.execute(
               'SELECT id FROM programs_projects WHERE slug = ?',
               [finalSlug]
             );
@@ -774,20 +1139,25 @@ export const bulkApproveSubmissions = async (req, res) => {
 
           // Handle main image upload to Cloudinary
           let cloudinaryImageUrl = data.image;
-          if (data.image && data.image.startsWith('data:image/')) {
+          
+          // Clean the image data - JSON_EXTRACT returns quoted strings, so we need to remove quotes
+          const { cleanImageData, isBase64Image } = await import('../../utils/jsonUtils.js');
+          const cleanedImageData = cleanImageData(data.image);
+          
+          if (isBase64Image(cleanedImageData)) {
             try {
               const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
               const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
               
               // Convert base64 to buffer
-              const base64Data = data.image.replace(/^data:image\/\w+;base64,/, '');
+              const base64Data = cleanedImageData.replace(/^data:image\/\w+;base64,/, '');
               const buffer = Buffer.from(base64Data, 'base64');
               
               // Create a file-like object for Cloudinary upload
               const file = {
                 buffer: buffer,
                 originalname: `program-${Date.now()}.jpg`,
-                mimetype: data.image.match(/data:image\/(\w+);/)[0].replace('data:', '').replace(';', ''),
+                mimetype: cleanedImageData.match(/data:image\/(\w+);/)[0].replace('data:', '').replace(';', ''),
                 size: buffer.length
               };
               
@@ -800,26 +1170,30 @@ export const bulkApproveSubmissions = async (req, res) => {
               
               cloudinaryImageUrl = uploadResult.url;
             } catch (uploadError) {
-              console.error('❌ Error uploading main program image to Cloudinary:', uploadError);
-              // Continue with base64 as fallback
+              // Continue with cleaned base64 as fallback
+              cloudinaryImageUrl = cleanedImageData;
             }
           }
 
-          const [result] = await db.execute(
-            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          const [result] = await connection.execute(
+            `INSERT INTO programs_projects (organization_id, title, description, category, status, image, event_start_date, event_end_date, slug, is_approved, is_collaborative, accepts_volunteers, manual_status_override, submitted_by_name, submitted_by_role)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               orgId,
               data.title,
               data.description,
               data.category,
-              data.collaborators && data.collaborators.length > 0 ? 'pending_collaboration' : 'pending', // Set status based on collaborators
+              'Upcoming', // Default status for approved programs
               cloudinaryImageUrl, // Use Cloudinary URL instead of base64
               data.event_start_date || null,
               data.event_end_date || null,
               finalSlug,
-              data.collaborators && data.collaborators.length > 0 ? false : true, // Only auto-approve if no collaborators
-              data.collaborators && data.collaborators.length > 0
+              true, // SECURITY FIX: Always approve when superadmin approves (this is the approval process)
+              data.collaborators && data.collaborators.length > 0,
+              data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
+              false, // New approved programs start with automatic status (no manual override)
+              data.submitted_by_name || null,
+              data.submitted_by_role || null
             ]
           );
           
@@ -827,46 +1201,62 @@ export const bulkApproveSubmissions = async (req, res) => {
           
           // Handle collaboration invitations if provided
           if (data.collaborators && Array.isArray(data.collaborators) && data.collaborators.length > 0) {
-            // Extract collaborator IDs (handle both object format and ID format)
-            const collaboratorIds = data.collaborators.map(collab => {
-              // If collaborator is an object with id property, extract the id
-              if (typeof collab === 'object' && collab.id) {
-                return collab.id;
-              }
-              // If collaborator is already just an ID, use it directly
-              return collab;
-            }).filter(id => id && id !== submission.submitted_by);
+            // First, try to update existing collaboration requests from submission
+            const [updateResult] = await connection.execute(`
+              UPDATE program_collaborations 
+              SET program_id = ?, status = 'pending', program_title = ?
+              WHERE submission_id = ? AND program_id IS NULL
+            `, [programId, data.title, id]);
             
-            for (const collaboratorId of collaboratorIds) {
-              try {
-                await db.execute(`
-                  INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status)
-                  VALUES (?, ?, ?, 'pending')
-                `, [programId, collaboratorId, submission.submitted_by]);
-                
-                // Notify collaborator about the collaboration request
-                try {
-                  const NotificationController = (await import('../../admin/controllers/notificationController.js')).default;
-                  await NotificationController.createNotification({
-                    admin_id: collaboratorId,
-                    title: 'New Collaboration Request',
-                    message: `You have received a collaboration request for "${data.title}". Please review and respond.`,
-                    type: 'collaboration_request',
-                    submission_id: programId
-                  });
-                } catch (notificationError) {
-                  console.error('Failed to send collaboration request notification:', notificationError);
-                  // Don't fail the main operation if notification fails
+            // If no existing collaboration requests were updated, create new ones
+            if (updateResult.affectedRows === 0) {
+              // Extract collaborator IDs (handle both object format and ID format)
+              const collaboratorIds = data.collaborators.map(collab => {
+                // If collaborator is an object with id property, extract the id
+                if (typeof collab === 'object' && collab.id) {
+                  return collab.id;
                 }
-              } catch (collabError) {
-                console.error('Failed to add collaborator during bulk approval:', collabError);
+                // If collaborator is already just an ID, use it directly
+                return collab;
+              }).filter(id => id && id !== submission.submitted_by);
+              
+              for (const collaboratorId of collaboratorIds) {
+                try {
+                  await connection.execute(`
+                    INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status, program_title)
+                    VALUES (?, ?, ?, 'pending', ?)
+                  `, [programId, collaboratorId, submission.submitted_by, data.title]);
+                } catch (collabError) {
+                  // Continue if collaborator addition fails
+                }
+              }
+            }
+            
+            // Send notifications to all collaborators (both updated and newly created)
+            const [allCollaborations] = await connection.execute(`
+              SELECT collaborator_admin_id FROM program_collaborations 
+              WHERE program_id = ? AND status = 'pending'
+            `, [programId]);
+            
+            for (const collab of allCollaborations) {
+              try {
+                await NotificationController.createNotification(
+                  collab.collaborator_admin_id,
+                  'collaboration_request',
+                  'New Collaboration Request',
+                  `You have received a collaboration request for "${data.title}". Please review and respond in the Collaboration section.`,
+                  'programs',
+                  programId
+                );
+              } catch (notificationError) {
+                // Error sending collaboration request notification
               }
             }
           }
           
           if (data.multiple_dates && Array.isArray(data.multiple_dates) && data.multiple_dates.length > 0) {
             for (const date of data.multiple_dates) {
-              await db.execute(
+              await connection.execute(
                 `INSERT INTO program_event_dates (program_id, event_date) VALUES (?, ?)`,
                 [programId, date]
               );
@@ -881,7 +1271,12 @@ export const bulkApproveSubmissions = async (req, res) => {
             for (let i = 0; i < data.additionalImages.length; i++) {
               const imageData = data.additionalImages[i];
               
-              if (imageData && imageData.startsWith('data:image/')) {
+              if (!imageData) {
+                continue; // Skip empty entries
+              }
+              
+              // Check if it's a new base64 image that needs to be uploaded
+              if (typeof imageData === 'string' && imageData.startsWith('data:image/')) {
                 try {
                   // Convert base64 to buffer
                   const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
@@ -891,7 +1286,7 @@ export const bulkApproveSubmissions = async (req, res) => {
                   const file = {
                     buffer: buffer,
                     originalname: `additional-${i}.jpg`,
-                    mimetype: imageData.match(/data:image\/(\w+);/)[1],
+                    mimetype: imageData.match(/data:image\/(\w+);/)?.[1] || 'jpg',
                     size: buffer.length
                   };
                   
@@ -902,27 +1297,42 @@ export const bulkApproveSubmissions = async (req, res) => {
                     { prefix: 'prog_add_' }
                   );
                   
+                  if (!uploadResult || !uploadResult.url) {
+                    logError(`Cloudinary upload failed for additional image ${i}: No URL returned`, null, { context: 'bulk_approval_controller', imageIndex: i });
+                    continue;
+                  }
+                  
                   // Store Cloudinary URL in database
-                  await db.execute(
+                  await connection.execute(
                     `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
                     [programId, uploadResult.url, i]
                   );
                   
                 } catch (uploadError) {
-                  console.error(`❌ Error uploading additional image ${i + 1} to Cloudinary:`, uploadError);
-                  // Continue with base64 as fallback
-                  await db.execute(
+                  logError(`Cloudinary upload failed for additional image ${i}`, uploadError, { context: 'bulk_approval_controller', imageIndex: i });
+                  // Fallback: Store base64 in database if Cloudinary fails (for resilience)
+                  // This ensures images aren't lost if Cloudinary is temporarily unavailable
+                  try {
+                    await connection.execute(
+                      `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
+                      [programId, imageData, i]
+                    );
+                  } catch (dbError) {
+                    logError(`Failed to store base64 fallback for image ${i}`, dbError, { context: 'bulk_approval_controller', imageIndex: i });
+                  }
+                }
+              } else if (typeof imageData === 'string' && (imageData.startsWith('http://') || imageData.startsWith('https://'))) {
+                // It's an existing Cloudinary URL - store it directly
+                try {
+                  await connection.execute(
                     `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
                     [programId, imageData, i]
                   );
+                } catch (dbError) {
+                  logError(`Failed to store existing image ${i}`, dbError, { context: 'bulk_approval_controller', imageIndex: i });
                 }
-              } else {
-                // If it's not base64, store as is (might already be a Cloudinary URL)
-                await db.execute(
-                  `INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)`,
-                  [programId, imageData, i]
-                );
               }
+              // Skip any invalid formats
             }
           }
         }
@@ -936,32 +1346,148 @@ export const bulkApproveSubmissions = async (req, res) => {
       
       if (action === 'create') {
         // For new highlights, update the status to approved
-        await db.execute(
+        const [updateResult] = await connection.execute(
           'UPDATE admin_highlights SET status = ? WHERE id = ?',
           ['approved', data.highlight_id]
         );
+        
+        if (updateResult.affectedRows === 0) {
+          console.error(`Failed to update highlight ${data.highlight_id} - no rows affected`);
+          // Try to find the highlight by title as fallback
+          const [fallbackResult] = await connection.execute(
+            'UPDATE admin_highlights SET status = ? WHERE title = ? AND status = ?',
+            ['approved', data.title, 'pending']
+          );
+          if (fallbackResult.affectedRows > 0) {
+            console.log(`Updated highlight by title fallback: ${data.title}`);
+          }
+        }
       } else if (action === 'update') {
         // For updates, the highlight is already updated, just change status to approved
-        await db.execute(
+        const [updateResult] = await connection.execute(
           'UPDATE admin_highlights SET status = ? WHERE id = ?',
           ['approved', data.highlight_id]
         );
+        
+        if (updateResult.affectedRows === 0) {
+          console.error(`Failed to update highlight ${data.highlight_id} - no rows affected`);
+          // Try to find the highlight by title as fallback
+          const [fallbackResult] = await connection.execute(
+            'UPDATE admin_highlights SET status = ? WHERE title = ? AND status = ?',
+            ['approved', data.title, 'pending']
+          );
+          if (fallbackResult.affectedRows > 0) {
+            console.log(`Updated highlight by title fallback: ${data.title}`);
+          }
+        }
       } else if (action === 'delete') {
-        // For deletions, the highlight is already deleted, no additional action needed
-        // The submission record will show the deletion was approved
+        // For deletions, ensure the highlight is actually deleted
+        // The highlight might have been deleted by admin already, but verify and clean up
+        const highlightId = data.highlight_id || (typeof data.highlight_id === 'string' ? parseInt(data.highlight_id) : null);
+        
+        if (highlightId) {
+          // Check if highlight still exists
+          const [existingHighlight] = await connection.execute(
+            'SELECT id FROM admin_highlights WHERE id = ?',
+            [highlightId]
+          );
+          
+          if (existingHighlight.length > 0) {
+            // Highlight still exists, delete it now (approved deletion)
+            const [deleteResult] = await connection.execute(
+              'DELETE FROM admin_highlights WHERE id = ?',
+              [highlightId]
+            );
+            
+            if (deleteResult.affectedRows > 0) {
+              console.log(`Highlight ${highlightId} deleted after bulk approval`);
+            }
+          } else {
+            // Highlight already deleted, just log it
+            console.log(`Highlight ${highlightId} was already deleted, approving deletion submission`);
+          }
+        } else {
+          console.error(`Invalid highlight_id in deletion submission ${id}: ${highlightId}`);
+        }
       }
     }
 
+        // Handle Post Act Report approval
+        if (section === 'Post Act Report') {
+          // Extract report_id and program_id from proposed_data
+          const reportId = data.report_id;
+          const programId = data.program_id;
+
+          if (!reportId || !programId) {
+            errors.push(`Submission ${id} missing report_id or program_id`);
+            errorCount++;
+            continue;
+          }
+
+          // Check if report exists and is pending
+          const [reportRows] = await connection.execute(
+            `SELECT id, program_id, status FROM program_post_act_reports WHERE id = ? FOR UPDATE`,
+            [reportId]
+          );
+
+          if (reportRows.length === 0) {
+            errors.push(`Submission ${id}: Post Act Report not found`);
+            errorCount++;
+            continue;
+          }
+
+          const report = reportRows[0];
+          
+          // Verify the program_id matches
+          if (report.program_id !== programId) {
+            errors.push(`Submission ${id}: Post Act Report program_id mismatch`);
+            errorCount++;
+            continue;
+          }
+
+          if (report.status !== 'pending') {
+            errors.push(`Submission ${id}: Post Act Report is not pending (current status: ${report.status})`);
+            errorCount++;
+            continue;
+          }
+
+          // Update post act report status to approved
+          await connection.execute(
+            `UPDATE program_post_act_reports SET status = 'approved', reviewed_by_superadmin_id = ?, reviewed_at = NOW() WHERE id = ?`,
+            [req.superadmin?.id || null, reportId]
+          );
+
+          // Update program status to Completed with manual override
+          await connection.execute(
+            `UPDATE programs_projects SET status = 'Completed', manual_status_override = TRUE WHERE id = ?`,
+            [programId]
+          );
+        }
+
         // Update submission status
-        await db.execute(`UPDATE submissions SET status = 'approved' WHERE id = ?`, [id]);
+        await connection.execute(`UPDATE submissions SET status = 'approved' WHERE id = ?`, [id]);
 
         // Create individual notification for this submission
         let notificationMessage = `Your submission for ${section} has been approved by SuperAdmin`;
         
+        // Add specific details for Post Act Report
+        if (section === 'Post Act Report') {
+          // Get program title for the notification message
+          try {
+            const [programRows] = await connection.execute(
+              `SELECT title FROM programs_projects WHERE id = ?`,
+              [data.program_id]
+            );
+            const programTitle = programRows.length > 0 ? programRows[0].title : 'program';
+            notificationMessage = `Your Post Act Report was approved. The program "${programTitle}" is now marked as Completed.`;
+          } catch (err) {
+            notificationMessage = 'Your Post Act Report was approved. The program is now marked as Completed.';
+          }
+        }
         // Add specific details for programs
-        if (section === 'programs' && data.title) {
+        else if (section === 'programs' && data.title) {
           if (data.collaborators && data.collaborators.length > 0) {
-            notificationMessage = `Your collaborative program "${data.title}" has been submitted and collaboration requests have been sent to the invited organizations. The program will be sent to the superadmin for final approval only after collaborators accept the requests.`;
+            notificationMessage = `Your collaborative program "${data.title}" has been approved by SuperAdmin. Collaboration requests have been sent to the invited organizations.`;
           } else {
             notificationMessage = `Your program "${data.title}" has been approved by SuperAdmin`;
           }
@@ -975,8 +1501,12 @@ export const bulkApproveSubmissions = async (req, res) => {
           notificationMessage = `Your organization "${data.orgName}" has been approved by SuperAdmin`;
         }
         // Add specific details for highlights
-        else if (section === 'highlights' && data.title) {
-          notificationMessage = `Your highlight "${data.title}" has been approved by SuperAdmin`;
+        else if (section === 'highlights' && data) {
+          if (data.action === 'delete' && data.title) {
+            notificationMessage = `Your deletion request for highlight "${data.title}" has been approved by SuperAdmin. The highlight has been removed.`;
+          } else if (data.title) {
+            notificationMessage = `Your highlight "${data.title}" has been approved by SuperAdmin`;
+          }
         }
         
         // Create notification for the admin
@@ -990,7 +1520,6 @@ export const bulkApproveSubmissions = async (req, res) => {
         );
 
         if (!notificationResult.success) {
-          console.error('Failed to create notification:', notificationResult.error);
           // Don't fail the main operation if notification fails
         }
 
@@ -1002,6 +1531,9 @@ export const bulkApproveSubmissions = async (req, res) => {
       }
     }
 
+     // Commit transaction if all operations succeeded
+     await connection.commit();
+    
     res.json({
       success: true,
       message: `Bulk approval completed: ${successCount} approved, ${errorCount} failed`,
@@ -1012,11 +1544,20 @@ export const bulkApproveSubmissions = async (req, res) => {
       }
     });
   } catch (error) {
+    // Rollback transaction on error
+    if (connection) {
+      await connection.rollback();
+    }
     res.status(500).json({
       success: false,
       message: 'Failed to bulk approve submissions',
       error: error.message
     });
+  } finally {
+    // Always release the connection back to the pool
+    if (connection) {
+      connection.release();
+    }
   }
 };
 
@@ -1069,6 +1610,26 @@ export const bulkRejectSubmissions = async (req, res) => {
           }
         }
 
+        // Handle Post Act Report rejection
+        if (submission.section === 'Post Act Report') {
+          try {
+            const data = JSON.parse(submission.proposed_data);
+            const reportId = data.report_id;
+            
+            if (reportId) {
+              // Update post act report status to rejected
+              await db.execute(
+                `UPDATE program_post_act_reports 
+                 SET status = 'rejected', reviewed_by_superadmin_id = ?, reviewed_at = NOW()
+                 WHERE id = ? AND status = 'pending'`,
+                [req.superadmin?.id || null, reportId]
+              );
+            }
+          } catch (parseError) {
+            // Continue with submission rejection even if report update fails
+          }
+        }
+
         // Update submission status to rejected
         await db.execute(
           'UPDATE submissions SET status = ?, rejection_reason = ? WHERE id = ?',
@@ -1082,8 +1643,21 @@ export const bulkRejectSubmissions = async (req, res) => {
         try {
           const data = JSON.parse(submission.proposed_data);
           
+          // Add specific details for Post Act Report
+          if (submission.section === 'Post Act Report') {
+            try {
+              const [programRows] = await db.execute(
+                `SELECT title FROM programs_projects WHERE id = ?`,
+                [data.program_id]
+              );
+              const programTitle = programRows.length > 0 ? programRows[0].title : 'program';
+              notificationMessage = `Your Post Act Report for "${programTitle}" has been declined by SuperAdmin. Please review the note and re-upload.`;
+            } catch (err) {
+              notificationMessage = 'Your Post Act Report has been declined by SuperAdmin. Please review the note and re-upload.';
+            }
+          }
           // Add specific details for programs
-          if (submission.section === 'programs' && data.title) {
+          else if (submission.section === 'programs' && data.title) {
             notificationMessage = `Your program "${data.title}" has been declined by SuperAdmin`;
           }
           // Add specific details for organization
@@ -1109,7 +1683,6 @@ export const bulkRejectSubmissions = async (req, res) => {
         );
 
         if (!notificationResult.success) {
-          console.error('Failed to create notification:', notificationResult.error);
           // Don't fail the main operation if notification fails
         }
 
@@ -1215,279 +1788,8 @@ export const bulkDeleteSubmissions = async (req, res) => {
   }
 };
 
-// Get pending collaborative programs that need superadmin approval
-export const getPendingCollaborativePrograms = async (req, res) => {
-  try {
-    const [rows] = await db.execute(`
-      SELECT 
-        pp.id,
-        pp.title,
-        pp.description,
-        pp.category,
-        pp.status,
-        pp.image,
-        pp.event_start_date,
-        pp.event_end_date,
-        pp.created_at,
-        pp.updated_at,
-        pp.organization_id,
-        pp.is_collaborative,
-        o.orgName as organization_name,
-        o.org as organization_acronym,
-        o.logo as orgLogo,
-        o.org_color as organization_color,
-        COUNT(pc.id) as collaboration_count
-      FROM programs_projects pp
-      LEFT JOIN organizations o ON pp.organization_id = o.id
-      LEFT JOIN program_collaborations pc ON pp.id = pc.program_id AND pc.status = 'accepted'
-      WHERE pp.status = 'pending_superadmin_approval' AND pp.is_collaborative = 1
-      GROUP BY pp.id
-      ORDER BY pp.created_at DESC
-    `);
+// Note: getPendingCollaborativePrograms function removed as it's no longer needed
+// Collaborative programs are now created immediately when superadmin approves the submission
 
-    // Get collaboration details for each program
-    const programsWithCollaborations = await Promise.all(rows.map(async (program) => {
-      const [collaborations] = await db.execute(`
-        SELECT 
-          pc.id,
-          pc.status,
-          pc.responded_at,
-          inviter.email as inviter_email,
-          inviter_org.orgName as inviter_org_name,
-          invitee.email as invitee_email,
-          invitee_org.orgName as invitee_org_name
-        FROM program_collaborations pc
-        LEFT JOIN admins inviter ON pc.invited_by_admin_id = inviter.id
-        LEFT JOIN organizations inviter_org ON inviter.organization_id = inviter_org.id
-        LEFT JOIN admins invitee ON pc.collaborator_admin_id = invitee.id
-        LEFT JOIN organizations invitee_org ON invitee.organization_id = invitee_org.id
-        WHERE pc.program_id = ? AND pc.status = 'accepted'
-      `, [program.id]);
-
-      return {
-        ...program,
-        collaborations: collaborations
-      };
-    }));
-
-    res.json({
-      success: true,
-      data: programsWithCollaborations
-    });
-  } catch (error) {
-    console.error('Error fetching pending collaborative programs:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch pending collaborative programs',
-      error: error.message
-    });
-  }
-};
-
-// Approve collaborative program
-export const approveCollaborativeProgram = async (req, res) => {
-  try {
-    const { programId } = req.params;
-    const currentSuperadminId = req.superadmin?.id;
-
-    // Get program details and verify it has accepted collaborations
-    const [programRows] = await db.execute(`
-      SELECT pp.id, pp.title, pp.status, pp.is_approved, pp.is_collaborative,
-             COUNT(pc.id) as accepted_collaborations
-      FROM programs_projects pp
-      LEFT JOIN program_collaborations pc ON pp.id = pc.program_id AND pc.status = 'accepted'
-      WHERE pp.id = ? AND pp.status = 'pending_superadmin_approval' AND pp.is_collaborative = 1
-      GROUP BY pp.id
-    `, [programId]);
-
-    if (programRows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Collaborative program not found or already processed'
-      });
-    }
-
-    const program = programRows[0];
-    
-    // Ensure the program has at least one accepted collaboration
-    if (program.accepted_collaborations === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot approve collaborative program without accepted collaborations'
-      });
-    }
-
-    // Update program status to approved
-    await db.execute(`
-      UPDATE programs_projects 
-      SET status = 'approved', is_approved = 1, updated_at = NOW()
-      WHERE id = ?
-    `, [programId]);
-
-    // Notify all collaborators about the approval
-    try {
-      const [collaborators] = await db.execute(`
-        SELECT 
-          pc.collaborator_admin_id,
-          pc.invited_by_admin_id,
-          a.email as collaborator_email,
-          inviter.email as inviter_email
-        FROM program_collaborations pc
-        LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
-        LEFT JOIN admins inviter ON pc.invited_by_admin_id = inviter.id
-        WHERE pc.program_id = ? AND pc.status = 'accepted'
-      `, [programId]);
-
-      const NotificationController = (await import('../../admin/controllers/notificationController.js')).default;
-      
-      // Notify all collaborators
-      for (const collaborator of collaborators) {
-        await NotificationController.createNotification({
-          admin_id: collaborator.collaborator_admin_id,
-          title: 'Collaborative Program Approved',
-          message: `The collaborative program "${program.title}" has been approved by the superadmin and is now live.`,
-          type: 'program_approval',
-          submission_id: programId
-        });
-      }
-
-      // Notify the creator
-      if (collaborators.length > 0) {
-        await NotificationController.createNotification({
-          admin_id: collaborators[0].invited_by_admin_id,
-          title: 'Collaborative Program Approved',
-          message: `Your collaborative program "${program.title}" has been approved by the superadmin and is now live.`,
-          type: 'program_approval',
-          submission_id: programId
-        });
-      }
-    } catch (notificationError) {
-      console.error('Failed to send approval notifications:', notificationError);
-      // Don't fail the main operation if notification fails
-    }
-
-    // Log the approval action
-    await logSuperadminAction(
-      currentSuperadminId,
-      'approve_collaborative_program',
-      `Approved collaborative program: ${program.title}`,
-      { program_id: programId, program_title: program.title }
-    );
-
-    res.json({
-      success: true,
-      message: 'Collaborative program approved successfully'
-    });
-  } catch (error) {
-    console.error('Error approving collaborative program:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to approve collaborative program',
-      error: error.message
-    });
-  }
-};
-
-// Reject collaborative program
-export const rejectCollaborativeProgram = async (req, res) => {
-  try {
-    const { programId } = req.params;
-    const currentSuperadminId = req.superadmin?.id;
-
-    // Get program details and verify it has accepted collaborations
-    const [programRows] = await db.execute(`
-      SELECT pp.id, pp.title, pp.status, pp.is_approved, pp.is_collaborative,
-             COUNT(pc.id) as accepted_collaborations
-      FROM programs_projects pp
-      LEFT JOIN program_collaborations pc ON pp.id = pc.program_id AND pc.status = 'accepted'
-      WHERE pp.id = ? AND pp.status = 'pending_superadmin_approval' AND pp.is_collaborative = 1
-      GROUP BY pp.id
-    `, [programId]);
-
-    if (programRows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Collaborative program not found or already processed'
-      });
-    }
-
-    const program = programRows[0];
-    
-    // Ensure the program has at least one accepted collaboration
-    if (program.accepted_collaborations === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot process collaborative program without accepted collaborations'
-      });
-    }
-
-    // Update program status to declined
-    await db.execute(`
-      UPDATE programs_projects 
-      SET status = 'declined', is_approved = 0, updated_at = NOW()
-      WHERE id = ?
-    `, [programId]);
-
-    // Notify all collaborators about the rejection
-    try {
-      const [collaborators] = await db.execute(`
-        SELECT 
-          pc.collaborator_admin_id,
-          pc.invited_by_admin_id,
-          a.email as collaborator_email,
-          inviter.email as inviter_email
-        FROM program_collaborations pc
-        LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
-        LEFT JOIN admins inviter ON pc.invited_by_admin_id = inviter.id
-        WHERE pc.program_id = ? AND pc.status = 'accepted'
-      `, [programId]);
-
-      const NotificationController = (await import('../../admin/controllers/notificationController.js')).default;
-      
-      // Notify all collaborators
-      for (const collaborator of collaborators) {
-        await NotificationController.createNotification({
-          admin_id: collaborator.collaborator_admin_id,
-          title: 'Collaborative Program Declined',
-          message: `The collaborative program "${program.title}" has been declined by the superadmin.`,
-          type: 'program_declined',
-          submission_id: programId
-        });
-      }
-
-      // Notify the creator
-      if (collaborators.length > 0) {
-        await NotificationController.createNotification({
-          admin_id: collaborators[0].invited_by_admin_id,
-          title: 'Collaborative Program Declined',
-          message: `Your collaborative program "${program.title}" has been declined by the superadmin.`,
-          type: 'program_declined',
-          submission_id: programId
-        });
-      }
-    } catch (notificationError) {
-      console.error('Failed to send rejection notifications:', notificationError);
-      // Don't fail the main operation if notification fails
-    }
-
-    // Log the rejection action
-    await logSuperadminAction(
-      currentSuperadminId,
-      'reject_collaborative_program',
-      `Rejected collaborative program: ${program.title}`,
-      { program_id: programId, program_title: program.title }
-    );
-
-    res.json({
-      success: true,
-      message: 'Collaborative program rejected successfully'
-    });
-  } catch (error) {
-    console.error('Error rejecting collaborative program:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to reject collaborative program',
-      error: error.message
-    });
-  }
-};
+// Note: Collaborative program approval/rejection functions removed as they're no longer needed
+// Collaborative programs are now created immediately when superadmin approves the submission

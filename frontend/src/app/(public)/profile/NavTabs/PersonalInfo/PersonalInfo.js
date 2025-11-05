@@ -8,7 +8,7 @@ import CustomSelect from './CustomSelect/CustomSelect';
 import DeleteAccount from './DeleteAccount/DeleteAccount';
 import { useFormValidation } from '../../hooks/useFormValidation';
 import { useProfileApi } from '../../hooks/useApiCall';
-import { useToast } from '../../components/Toast';
+import { useToast } from '../../../components/Toast';
 import { formatBirthDate, formatDateForInput } from '@/utils/dateUtils';
 import { getProfilePhotoUrl } from '@/utils/uploadPaths';
 import styles from './PersonalInfo.module.css';
@@ -378,7 +378,7 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
       <div className={styles.personalInfoForm}>
         <div className={styles.formRow}>
           <div className={styles.formField}>
-            <label>First Name <span className={styles.required}>*</span></label>
+            <label>First Name</label>
             {isEditMode ? (
               <>
                 <input
@@ -401,7 +401,7 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
             )}
           </div>
           <div className={styles.formField}>
-            <label>Last Name <span className={styles.required}>*</span></label>
+            <label>Last Name</label>
             {isEditMode ? (
               <>
                 <input
@@ -427,7 +427,7 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
 
         <div className={styles.formRow}>
           <div className={styles.formField}>
-            <label>Contact Number <span className={styles.required}>*</span></label>
+            <label>Contact Number</label>
             {isEditMode ? (
               <>
                 <input
@@ -510,7 +510,7 @@ const PersonalInfo = memo(function PersonalInfo({ userData, setUserData }) {
 
         <div className={styles.formRow}>
           <div className={styles.formField}>
-            <label>Address <span className={styles.required}>*</span></label>
+            <label>Address</label>
             {isEditMode ? (
               <>
                 <textarea

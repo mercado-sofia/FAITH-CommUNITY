@@ -3,12 +3,13 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 export const faqApi = createApi({
   reducerPath: "faqApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:8080/api/faqs",
+    baseUrl: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/faqs`,
     prepareHeaders: (headers, { getState }) => {
       headers.set("Content-Type", "application/json")
 
       // Add JWT token for admin authentication if needed
-      const token = getState().admin?.token || localStorage.getItem("adminToken")
+      // Check for window to avoid SSR errors
+      const token = getState().admin?.token || (typeof window !== 'undefined' ? localStorage.getItem("adminToken") : null)
       if (token) {
         headers.set("Authorization", `Bearer ${token}`)
       }

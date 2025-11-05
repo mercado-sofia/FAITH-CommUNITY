@@ -85,7 +85,7 @@ export default function AdminNewsPage() {
   if (error && currentAdmin?.org) {
     return (
       <div className={styles.container}>
-        <div className={styles.errorMessage}>
+        <div className={styles.errorMessage} role="alert" aria-live="assertive">
           Error loading news: {error.message}
         </div>
       </div>
@@ -96,7 +96,7 @@ export default function AdminNewsPage() {
   if (!currentAdmin?.org) {
     return (
       <div className={styles.container}>
-        <div className={styles.loadingMessage}>
+        <div className={styles.loadingMessage} aria-live="polite">
           Loading admin data...
         </div>
       </div>
@@ -105,10 +105,11 @@ export default function AdminNewsPage() {
 
   // Loading state
   if (!currentAdmin) {
+    const hasToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : false;
     return (
       <div className={styles.container}>
-        <div className={styles.loading}>
-          {localStorage.getItem('adminToken') ? 'Loading admin session...' : 'Please log in to access this page.'}
+        <div className={styles.loading} aria-live="polite">
+          {hasToken ? 'Loading admin session...' : 'Please log in to access this page.'}
         </div>
       </div>
     );
@@ -125,7 +126,7 @@ export default function AdminNewsPage() {
                 <button
                   onClick={modals.handleCreateMode}
                   className={styles.addButton}
-                  disabled={newsOperations.isSubmitting}
+                  disabled={newsOperations.isSubmitting || loading}
                 >
                   <FaPlus /> New Post
                 </button>
@@ -159,7 +160,7 @@ export default function AdminNewsPage() {
 
             {error && (
               <div className={styles.errorContainer}>
-                <p className={styles.errorMessage}>
+                <p className={styles.errorMessage} role="alert" aria-live="assertive">
                   {error instanceof Error ? error.message : String(error)}
                 </p>
               </div>

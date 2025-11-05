@@ -69,11 +69,7 @@ export default function TopBar() {
       case 'volunteers': return { category: 'Management', section: 'Volunteers' };
       case 'organization': return { category: 'Management', section: 'Organization' };
       case 'programs': return { category: 'Management', section: 'Programs' };
-      case 'faithree': 
-        if (pathSegments[2] === 'highlights') {
-          return { category: 'Management', section: 'Highlights' };
-        }
-        return { category: 'Management', section: 'Faithree' };
+      case 'highlights': return { category: 'Management', section: 'Highlights' };
       case 'news': return { category: 'Management', section: 'News' };
       case 'submissions': return { category: 'Management', section: 'Submissions' };
       case 'inbox': return { category: 'General', section: 'Inbox' };

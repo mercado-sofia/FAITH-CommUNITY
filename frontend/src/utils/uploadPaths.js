@@ -94,7 +94,7 @@ export const getOrganizationImageUrl = (imagePath, subType = 'logo') => {
   try {
     // Handle null, undefined, or empty values
     if (!imagePath || imagePath === '' || imagePath === null || imagePath === undefined) {
-      return subType === 'head' ? '/defaults/default-profile.png' : '/assets/logos/faith_community_logo.png';
+      return subType === 'head' ? '/defaults/default-profile.png' : 'ORGANIZATION_LOGO_UNAVAILABLE';
     }
     
     // If it's already a full URL or base64, return as is
@@ -109,10 +109,10 @@ export const getOrganizationImageUrl = (imagePath, subType = 'logo') => {
     }
     
     // If it's not a Cloudinary URL, return fallback
-    return subType === 'head' ? '/defaults/default-profile.png' : '/assets/logos/faith_community_logo.png';
+    return subType === 'head' ? '/defaults/default-profile.png' : 'ORGANIZATION_LOGO_UNAVAILABLE';
   } catch (error) {
     logger.error('Error in getOrganizationImageUrl', error, { imagePath, subType });
-    return subType === 'head' ? '/defaults/default-profile.png' : '/assets/logos/faith_community_logo.png';
+    return subType === 'head' ? '/defaults/default-profile.png' : 'ORGANIZATION_LOGO_UNAVAILABLE';
   }
 };
 
@@ -226,6 +226,16 @@ export const isValidImageUrl = (url) => {
 };
 
 /**
+ * Check if an image URL indicates unavailable content
+ * @param {string} url - Image URL to check
+ * @returns {boolean} True if unavailable
+ */
+export const isUnavailableImage = (url) => {
+  if (!url) return true;
+  return url === 'IMAGE_UNAVAILABLE' || url === 'ORGANIZATION_LOGO_UNAVAILABLE';
+};
+
+/**
  * Get fallback image URL
  * @param {string} type - Type of fallback image
  * @returns {string} Fallback image URL
@@ -234,7 +244,7 @@ export const getFallbackImageUrl = (type = 'default') => {
   const fallbackImages = {
     default: '/defaults/default-profile.png',
     program: '/samples/sample1.jpg',
-    organization: '/assets/logos/faith_community_logo.png',
+    organization: 'ORGANIZATION_LOGO_UNAVAILABLE',
     volunteer: '/defaults/default-profile.png'
   };
   

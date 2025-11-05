@@ -144,97 +144,6 @@ app.get("/api/health", (req, res) => {
   })
 })
 
-// Test route
-app.get("/api/test", (req, res) => {
-  res.json({ success: true, message: "API is running" })
-})
-
-// Debug routes (only in non-production)
-if (process.env.NODE_ENV !== "production") {
-  app.get("/api/debug/tables", async (req, res) => {
-    try {
-      const db = await import("./src/database.js")
-      const [tables] = await db.default.execute("SHOW TABLES")
-      res.json({ success: true, tables: tables })
-    } catch (error) {
-      res.status(500).json({ success: false, error: error.message })
-    }
-  })
-
-  app.get("/api/debug/verification-tokens", async (req, res) => {
-    try {
-      const db = await import("./src/database.js")
-      const [tokens] = await db.default.execute(`
-        SELECT id, email, verification_token, verification_token_expires, email_verified 
-        FROM users 
-        WHERE verification_token IS NOT NULL
-      `)
-      res.json({ success: true, tokens: tokens })
-    } catch (error) {
-      res.status(500).json({ success: false, error: error.message })
-    }
-  })
-
-  app.get("/api/debug/check-token/:token", async (req, res) => {
-    try {
-      const { token } = req.params
-      const db = await import("./src/database.js")
-      const [exactMatch] = await db.default.execute(
-        `SELECT id, email, verification_token, verification_token_expires, email_verified FROM users WHERE verification_token = ?`,
-        [token]
-      )
-      const [partialMatches] = await db.default.execute(
-        `SELECT id, email, LEFT(verification_token, 20) as token_start, verification_token_expires, email_verified FROM users WHERE verification_token LIKE ?`,
-        [`${token.substring(0, 10)}%`]
-      )
-      const [allTokens] = await db.default.execute(
-        `SELECT id, email, LEFT(verification_token, 20) as token_start, verification_token_expires, email_verified FROM users WHERE verification_token IS NOT NULL`
-      )
-      res.json({ success: true, searchedToken: token, exactMatch, partialMatches, allTokens })
-    } catch (error) {
-      res.status(500).json({ success: false, error: error.message })
-    }
-  })
-
-  app.get("/api/debug/collaborations/:programId", async (req, res) => {
-    try {
-      const { programId } = req.params
-      const db = await import("./src/database.js")
-      const [collaborations] = await db.default.execute(`
-        SELECT 
-          pc.id,
-          pc.program_id,
-          pc.collaborator_admin_id,
-          pc.invited_by_admin_id,
-          pc.status,
-          pc.invited_at,
-          pc.responded_at,
-          a.email as collaborator_email,
-          o.orgName as collaborator_org
-        FROM program_collaborations pc
-        LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
-        LEFT JOIN organizations o ON a.organization_id = o.id
-        WHERE pc.program_id = ?
-        ORDER BY pc.invited_at DESC
-      `, [programId])
-      
-      const [program] = await db.default.execute(`
-        SELECT id, title, organization_id, is_collaborative
-        FROM programs_projects 
-        WHERE id = ?
-      `, [programId])
-      
-      res.json({ 
-        success: true, 
-        programId, 
-        program: program[0] || null,
-        collaborations 
-      })
-    } catch (error) {
-      res.status(500).json({ success: false, error: error.message })
-    }
-  })
-}
 
 // Public Routes
 import applyRoutes from "./src/(public)/routes/apply.js"
@@ -289,7 +198,7 @@ app.get("/api/highlights/public/approved", async (req, res) => {
     const { getApprovedHighlights } = await import("./src/admin/controllers/highlightsController.js");
     await getApprovedHighlights(req, res);
   } catch (error) {
-    console.error('Error in public highlights route:', error);
+    logger.error('Error in public highlights route', error, { context: 'public_highlights' });
     res.status(500).json({ error: 'Failed to fetch highlights' });
   }
 });
@@ -383,9 +292,11 @@ app.post('/api/users/refresh', doubleCsrfProtection)
 // Error Handling
 // General server error handler
 app.use((err, req, res, next) => {
-  if (process.env.NODE_ENV === "development") {
-    console.error("Server error:", err)
-  }
+  logger.error("Server error", err, {
+    path: req.path,
+    method: req.method,
+    ip: req.ip
+  })
   res.status(500).json({
     success: false,
     message: "Server error",
@@ -404,6 +315,10 @@ app.use((req, res) => {
 })
 
 // Start Server
+// Store interval reference for cleanup (important for graceful shutdown)
+let cleanupInterval = null;
+let initialCleanupTimeout = null;
+
 app.listen(PORT, async () => {
   if (process.env.NODE_ENV === "development") {
     console.log(`Server running at http://localhost:${PORT}`)
@@ -417,22 +332,68 @@ app.listen(PORT, async () => {
     console.error('❌ Database initialization failed:', error);
   }
  
-  // Set up daily cleanup job for deleted news (runs every 24 hours)
-  setInterval(async () => {
-    try {
-      await cleanupDeletedNews();
-    } catch (error) {
-      console.error('Error in scheduled cleanup:', error);
-    }
-  }, 24 * 60 * 60 * 1000); // 24 hours in milliseconds
- 
-  // Run initial cleanup on server start (with delay to ensure DB is ready)
-  setTimeout(async () => {
-    try {
-      await cleanupDeletedNews();
-      console.log('✅ Initial cleanup completed successfully');
-    } catch (error) {
-      console.error('Initial cleanup failed:', error);
-    }
-  }, 2000); // 2 second delay to ensure database is fully initialized
+  // IMPORTANT: For serverless environments (Vercel, AWS Lambda, etc.):
+  // setInterval and setTimeout may not work reliably as functions can be frozen/restarted.
+  // For production, use external cron jobs or platform-specific scheduled functions.
+  // Only run scheduled tasks in traditional server environments (not serverless)
+  
+  // Only set up scheduled cleanup if NOT in serverless environment
+  // Check if we're in a serverless environment (Vercel sets VERCEL env var)
+  const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.FUNCTION_NAME;
+  
+  if (!isServerless) {
+    // Set up daily cleanup job for deleted news (runs every 24 hours)
+    // Store interval reference for potential cleanup on graceful shutdown
+    cleanupInterval = setInterval(async () => {
+      try {
+        await cleanupDeletedNews();
+      } catch (error) {
+        console.error('Error in scheduled cleanup:', error);
+      }
+    }, 24 * 60 * 60 * 1000); // 24 hours in milliseconds
+    
+    // Run initial cleanup on server start (with delay to ensure DB is ready)
+    initialCleanupTimeout = setTimeout(async () => {
+      try {
+        await cleanupDeletedNews();
+        console.log('✅ Initial cleanup completed successfully');
+      } catch (error) {
+        console.error('Initial cleanup failed:', error);
+      }
+      initialCleanupTimeout = null;
+    }, 2000); // 2 second delay to ensure database is fully initialized
+  } else {
+    // In serverless environments, cleanup should be triggered via:
+    // - API endpoint (e.g., /api/admin/cleanup)
+    // - External cron service (e.g., Vercel Cron Jobs, AWS EventBridge)
+    // - Platform-specific scheduled functions
+    console.log('⚠️  Serverless environment detected - scheduled cleanup disabled');
+    console.log('   Use external cron jobs or API endpoints for cleanup tasks');
+  }
 })
+
+// Graceful shutdown handler
+// Clean up intervals and timeouts on server shutdown
+const gracefulShutdown = () => {
+  console.log('🛑 Shutting down gracefully...');
+  
+  // Clear cleanup interval
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+    cleanupInterval = null;
+    console.log('✅ Cleanup interval cleared');
+  }
+  
+  // Clear initial cleanup timeout
+  if (initialCleanupTimeout) {
+    clearTimeout(initialCleanupTimeout);
+    initialCleanupTimeout = null;
+    console.log('✅ Initial cleanup timeout cleared');
+  }
+  
+  process.exit(0);
+};
+
+// Handle graceful shutdown signals
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);

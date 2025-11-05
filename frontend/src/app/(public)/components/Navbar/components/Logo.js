@@ -29,6 +29,7 @@ export default function Logo() {
         width={45}
         height={45}
         priority
+        className={styles.logoImage}
       />
 
       {/* Logo Name - uploaded image only */}

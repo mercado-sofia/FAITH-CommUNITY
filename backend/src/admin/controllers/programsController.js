@@ -41,19 +41,42 @@ export const getAdminPrograms = async (req, res) => {
     
     const adminOrgId = adminRows[0].organization_id;
     
-    // Get programs where admin is creator (from their organization) OR collaborator (from other organizations)
-    // Include ALL collaboration statuses to ensure visibility throughout the workflow
-    const [programRows] = await db.execute(`
-      SELECT DISTINCT p.*, o.org as orgAcronym, o.orgName as orgName, o.logo as orgLogo
+    // Determine if post-act reports table exists to avoid SQL errors in environments without migration
+    const [tableCheckRows] = await db.execute(
+      `SELECT COUNT(*) as cnt FROM information_schema.tables 
+        WHERE table_schema = DATABASE() AND table_name = 'program_post_act_reports'`
+    );
+    const hasPostActTable = tableCheckRows?.[0]?.cnt > 0;
+
+    // Build SELECT with optional flags depending on table availability
+    const selectFlags = hasPostActTable
+      ? `
+        , EXISTS(SELECT 1 FROM program_post_act_reports r WHERE r.program_id = p.id AND r.status = 'pending') AS has_pending_post_act_report
+        , EXISTS(SELECT 1 FROM program_post_act_reports r2 WHERE r2.program_id = p.id AND r2.status = 'approved') AS has_approved_post_act_report
+      `
+      : `
+        , FALSE AS has_pending_post_act_report
+        , FALSE AS has_approved_post_act_report
+      `;
+
+    const baseQuery = `
+      SELECT DISTINCT 
+        p.*, 
+        o.org as orgAcronym, 
+        o.orgName as orgName, 
+        o.logo as orgLogo
+        ${selectFlags}
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
       WHERE p.organization_id = ? 
          OR p.id IN (
            SELECT program_id FROM program_collaborations 
-           WHERE collaborator_admin_id = ? AND status IN ('accepted', 'pending', 'declined')
+           WHERE collaborator_admin_id = ? AND status = 'accepted'
          )
       ORDER BY p.created_at DESC
-    `, [adminOrgId, currentAdminId]);
+    `;
+
+    const [programRows] = await db.execute(baseQuery, [adminOrgId, currentAdminId]);
 
     // Get collaboration data for each program
     const programsWithCollaboration = await Promise.all(programRows.map(async (program) => {
@@ -100,7 +123,7 @@ export const getAdminPrograms = async (req, res) => {
         collaborationStatus = collaborationRows[0].collaboration_status;
       }
 
-      // Get all collaborators for this program (including all statuses for visibility)
+      // Get all collaborators for this program (excluding declined/opted-out ones)
       const [allCollaborators] = await db.execute(`
         SELECT 
           a.id,
@@ -111,7 +134,7 @@ export const getAdminPrograms = async (req, res) => {
         FROM program_collaborations pc
         LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
         LEFT JOIN organizations o ON a.organization_id = o.id
-        WHERE pc.program_id = ? AND pc.status IN ('accepted', 'pending', 'declined')
+        WHERE pc.program_id = ? AND pc.status IN ('accepted', 'pending')
       `, [program.id]);
 
       let logoUrl;
@@ -126,7 +149,7 @@ export const getAdminPrograms = async (req, res) => {
         title: program.title,
         description: program.description,
         category: program.category,
-        status: program.status || 'active',
+        status: program.status || 'Upcoming',
         image: program.image,
         additional_images: additionalImages,
         event_start_date: program.event_start_date,
@@ -139,10 +162,14 @@ export const getAdminPrograms = async (req, res) => {
         slug: program.slug,
         is_approved: program.is_approved,
         is_collaborative: program.is_collaborative,
+        accepts_volunteers: program.accepts_volunteers !== undefined ? program.accepts_volunteers : true,
         user_role: userRole,
         collaboration_status: collaborationStatus,
         collaboration_id: collaborationRows.length > 0 ? collaborationRows[0].collaboration_id : null,
-        collaborators: allCollaborators
+        collaborators: allCollaborators,
+        has_pending_post_act_report: program.has_pending_post_act_report === 1 || program.has_pending_post_act_report === true,
+        has_approved_post_act_report: program.has_approved_post_act_report === 1 || program.has_approved_post_act_report === true,
+        manual_status_override: program.manual_status_override === 1 || program.manual_status_override === true
       };
     }));
 
@@ -196,11 +223,19 @@ export const getProgramsByOrg = async (req, res) => {
     const organization = orgRows[0];
 
     // Get only approved programs from programs_projects table
+    // Exclude programs that have pending collaboration requests (they should appear in Collaborations tab)
     const [approvedRows] = await db.execute(
       `SELECT p.*, 'approved' as source_type, o.org as orgAcronym, o.orgName as orgName, o.logo as orgLogo
        FROM programs_projects p
        LEFT JOIN organizations o ON p.organization_id = o.id
-       WHERE p.organization_id = ? AND p.is_approved = TRUE
+       WHERE p.organization_id = ? 
+       AND p.is_approved = TRUE
+       AND p.id NOT IN (
+         SELECT DISTINCT program_id 
+         FROM program_collaborations 
+         WHERE program_id IS NOT NULL 
+         AND status = 'pending'
+       )
        ORDER BY p.created_at DESC`,
       [organization.id]
     );
@@ -254,7 +289,7 @@ export const getProgramsByOrg = async (req, res) => {
         title: program.title,
         description: program.description,
         category: program.category,
-        status: program.status || 'active',
+        status: program.status || 'Upcoming',
         date: program.date || program.date_completed || program.date_created || program.created_at,
         image: program.image,
         additional_images: program.additional_images,
@@ -265,7 +300,9 @@ export const getProgramsByOrg = async (req, res) => {
         orgID: program.orgAcronym || organization.org,
         orgName: program.orgName || organization.orgName,
         orgLogo: logoUrl,
-        slug: program.slug
+        slug: program.slug,
+        is_collaborative: program.is_collaborative,
+        collaborators: program.collaborators
       };
     });
 
@@ -494,7 +531,9 @@ export const getApprovedProgramsByOrg = async (req, res) => {
         orgName: program.orgName,
         orgLogo: logoUrl,
         created_at: program.created_at,
-        slug: program.slug
+        slug: program.slug,
+        is_collaborative: program.is_collaborative,
+        collaborators: program.collaborators
       };
     });
 
@@ -576,7 +615,7 @@ export const deleteProgramSubmission = async (req, res) => {
 // Update an approved program (admin only)
 export const updateProgram = async (req, res) => {
   const { id } = req.params;
-  const { title, description, category, status, image, additionalImages, event_start_date, event_end_date, multiple_dates } = req.body;
+  const { title, description, category, status, image, additionalImages, event_start_date, event_end_date, multiple_dates, collaborators, accepts_volunteers } = req.body;
 
   // Update program request received
 
@@ -595,9 +634,9 @@ export const updateProgram = async (req, res) => {
   }
 
   try {
-    // Check if program exists
+    // Check if program exists and get current status/override flag
     const [existingProgram] = await db.execute(
-      'SELECT id, organization_id, image FROM programs_projects WHERE id = ?',
+      'SELECT id, organization_id, image, status, manual_status_override FROM programs_projects WHERE id = ?',
       [id]
     );
 
@@ -610,6 +649,17 @@ export const updateProgram = async (req, res) => {
     }
 
     // Program found
+    const currentStatus = existingProgram[0].status;
+    const currentManualOverride = existingProgram[0].manual_status_override === 1 || existingProgram[0].manual_status_override === true;
+    const newStatus = status || 'active';
+    
+    // Preserve manual_status_override if:
+    // 1. Status is "Completed" (likely from Post Act Report approval) - don't reset it
+    // 2. Status hasn't changed and was previously manually overridden
+    // Only reset to FALSE if admin is explicitly changing the status away from Completed
+    const shouldPreserveOverride = (currentStatus === 'Completed' && currentManualOverride && newStatus === 'Completed') ||
+                                   (currentStatus === newStatus && currentManualOverride);
+    
     let imagePath = existingProgram[0].image; // Keep existing image by default
 
     // Handle main image if provided (base64 or Cloudinary URL)
@@ -651,12 +701,14 @@ export const updateProgram = async (req, res) => {
     // If image is null, keep the existing image (imagePath already set to existingProgram[0].image)
 
     // Updating program in database
-    // Update the program
+    // Preserve manual_status_override for Completed programs (from Post Act Report approval)
+    // Only reset if admin is explicitly changing status away from current status
+    const manualOverrideValue = shouldPreserveOverride ? 1 : 0;
     const [result] = await db.execute(
       `UPDATE programs_projects 
-       SET title = ?, description = ?, category = ?, status = ?, image = ?, event_start_date = ?, event_end_date = ?
+       SET title = ?, description = ?, category = ?, status = ?, image = ?, event_start_date = ?, event_end_date = ?, accepts_volunteers = ?, manual_status_override = ?
        WHERE id = ?`,
-      [title, description, category, status || 'active', imagePath, event_start_date || null, event_end_date || null, id]
+      [title, description, category, newStatus, imagePath, event_start_date || null, event_end_date || null, accepts_volunteers !== undefined ? accepts_volunteers : true, manualOverrideValue, id]
     );
 
     if (result.affectedRows === 0) {
@@ -688,20 +740,25 @@ export const updateProgram = async (req, res) => {
     }
 
     // Handle additional images if provided
-    if (additionalImages && Array.isArray(additionalImages)) {
+    if (additionalImages !== undefined) {
       // Processing additional images
       // First, delete existing additional images for this program
       await db.execute('DELETE FROM program_additional_images WHERE program_id = ?', [id]);
       
       // Then insert new additional images
-      if (additionalImages.length > 0) {
+      if (Array.isArray(additionalImages) && additionalImages.length > 0) {
         const { CLOUDINARY_FOLDERS } = await import('../../utils/cloudinaryConfig.js');
         const { uploadSingleToCloudinary } = await import('../../utils/cloudinaryUpload.js');
 
         for (let i = 0; i < additionalImages.length; i++) {
           const imageData = additionalImages[i];
           
-          if (imageData && imageData.startsWith('data:image/')) {
+          if (!imageData) {
+            continue; // Skip empty entries
+          }
+          
+          // Check if it's a new base64 image that needs to be uploaded
+          if (typeof imageData === 'string' && imageData.startsWith('data:image/')) {
             try {
               // Convert base64 to buffer
               const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
@@ -711,7 +768,7 @@ export const updateProgram = async (req, res) => {
               const file = {
                 buffer: buffer,
                 originalname: `additional-${i}.jpg`,
-                mimetype: imageData.match(/data:image\/(\w+);/)[1],
+                mimetype: imageData.match(/data:image\/(\w+);/)?.[1] || 'jpg',
                 size: buffer.length
               };
               
@@ -722,6 +779,11 @@ export const updateProgram = async (req, res) => {
                 { prefix: 'prog_add_' }
               );
               
+              if (!uploadResult || !uploadResult.url) {
+                console.error(`Failed to upload additional image ${i}: No URL returned`);
+                continue;
+              }
+              
               // Store Cloudinary URL in database
               await db.execute(
                 'INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)',
@@ -729,11 +791,52 @@ export const updateProgram = async (req, res) => {
               );
             } catch (uploadError) {
               // Continue with other images even if one fails
+              console.error(`Failed to upload additional image ${i}:`, uploadError);
+            }
+          } else if (typeof imageData === 'string' && (imageData.startsWith('http://') || imageData.startsWith('https://'))) {
+            // It's an existing Cloudinary URL - store it directly
+            try {
+              await db.execute(
+                'INSERT INTO program_additional_images (program_id, image_data, image_order) VALUES (?, ?, ?)',
+                [id, imageData, i]
+              );
+            } catch (dbError) {
+              console.error(`Failed to store existing image ${i}:`, dbError);
             }
           }
         }
       }
       // Additional images updated
+    }
+
+    // Handle collaborators if provided
+    if (collaborators !== undefined) {
+      // Processing collaborators update
+      // First, delete existing collaborators for this program
+      await db.execute('DELETE FROM program_collaborations WHERE program_id = ?', [id]);
+      
+      // Then insert new collaborators if any
+      if (collaborators && Array.isArray(collaborators) && collaborators.length > 0) {
+        // Get the current admin ID from the request (assuming it's available in req.user)
+        const currentAdminId = req.user?.id || req.user?.admin_id;
+        
+        if (!currentAdminId) {
+          return res.status(400).json({
+            success: false,
+            message: "Admin ID is required for collaboration updates",
+          });
+        }
+        
+        for (const collaboratorId of collaborators) {
+          if (collaboratorId && typeof collaboratorId === 'number') {
+            await db.execute(
+              'INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status, program_title) VALUES (?, ?, ?, ?, ?)',
+              [id, collaboratorId, currentAdminId, 'pending', title]
+            );
+          }
+        }
+      }
+      // Collaborators updated
     }
 
     // Program update completed successfully
@@ -897,10 +1000,91 @@ export const getAllFeaturedPrograms = async (req, res) => {
       );
       const additionalImages = imageRows.map(row => row.image_data);
 
+      // Get collaboration data if program is collaborative
+      let collaborators = [];
+      if (program.is_collaborative) {
+        // Get all organizations involved in the collaboration
+        const [collaborationRows] = await db.execute(`
+          SELECT DISTINCT
+            o.orgName as organization_name,
+            o.org as organization_acronym,
+            o.org_color as organization_color,
+            o.logo as organization_logo,
+            CASE 
+              WHEN o.id = ? THEN 'primary'
+              ELSE 'collaborator'
+            END as role
+          FROM (
+            -- Primary organization (the one that created the program)
+            SELECT ? as org_id, 'primary' as role
+            
+            UNION ALL
+            
+            -- Collaborator organizations (those who accepted collaboration)
+            SELECT o.id as org_id, 'collaborator' as role
+            FROM program_collaborations pc
+            LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+            LEFT JOIN organizations o ON a.organization_id = o.id
+            WHERE pc.program_id = ? AND pc.status = 'accepted'
+          ) org_roles
+          LEFT JOIN organizations o ON org_roles.org_id = o.id
+          WHERE o.id IS NOT NULL
+          ORDER BY 
+            CASE WHEN org_roles.role = 'primary' THEN 0 ELSE 1 END,
+            o.orgName ASC
+        `, [program.organization_id, program.organization_id, program.id]);
+        
+        // Get admin details for each collaborator organization
+        const collaboratorsWithAdmins = await Promise.all(collaborationRows.map(async (collab) => {
+          if (collab.role === 'primary') {
+            // For primary, get the admin who created the program
+            const [adminRows] = await db.execute(`
+              SELECT a.id, a.email
+              FROM admins a
+              WHERE a.organization_id = ? AND a.is_active = TRUE
+              LIMIT 1
+            `, [program.organization_id]);
+            return {
+              organization_name: collab.organization_name,
+              organization_acronym: collab.organization_acronym,
+              organization_color: collab.organization_color,
+              organization_logo: collab.organization_logo,
+              admin_id: adminRows[0]?.id || null,
+              admin_email: adminRows[0]?.email || null,
+              role: collab.role
+              // Primary doesn't need collaboration_status
+            };
+          } else {
+            // For collaborators, get the admin who accepted the collaboration
+            const [adminRows] = await db.execute(`
+              SELECT a.id, a.email
+              FROM program_collaborations pc
+              LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+              LEFT JOIN organizations o ON a.organization_id = o.id
+              WHERE pc.program_id = ? AND o.orgName = ? AND pc.status = 'accepted'
+              LIMIT 1
+            `, [program.id, collab.organization_name]);
+            return {
+              organization_name: collab.organization_name,
+              organization_acronym: collab.organization_acronym,
+              organization_color: collab.organization_color,
+              organization_logo: collab.organization_logo,
+              admin_id: adminRows[0]?.id || null,
+              admin_email: adminRows[0]?.email || null,
+              role: collab.role,
+              collaboration_status: 'accepted' // All collaborators are accepted
+            };
+          }
+        }));
+        
+        collaborators = collaboratorsWithAdmins;
+      }
+
       return {
         ...program,
         multiple_dates: multipleDates,
-        additional_images: additionalImages
+        additional_images: additionalImages,
+        collaborators: collaborators
       };
     }));
 
@@ -932,7 +1116,9 @@ export const getAllFeaturedPrograms = async (req, res) => {
         orgColor: program.orgColor,
         orgLogo: logoUrl,
         created_at: program.created_at,
-        slug: program.slug
+        slug: program.slug,
+        is_collaborative: program.is_collaborative,
+        collaborators: program.collaborators
       };
     });
 
@@ -960,7 +1146,7 @@ export const getFeaturedPrograms = async (req, res) => {
       ORDER BY p.created_at DESC
     `);
 
-    // Get multiple dates and additional images for each program
+    // Get multiple dates, additional images, and collaboration data for each program
     const programsWithDates = await Promise.all(rows.map(async (program) => {
       let multipleDates = [];
       
@@ -986,10 +1172,53 @@ export const getFeaturedPrograms = async (req, res) => {
       );
       const additionalImages = imageRows.map(row => row.image_data);
 
+      // Get collaboration data if program is collaborative
+      let collaborators = [];
+      if (program.is_collaborative) {
+        // Get all organizations involved in the collaboration
+        // This includes both the primary organization and accepted collaborators
+        const [collaborationRows] = await db.execute(`
+          SELECT DISTINCT
+            o.orgName as organization_name,
+            o.org as organization_acronym,
+            o.org_color as organization_color,
+            CASE 
+              WHEN o.id = ? THEN 'primary'
+              ELSE 'collaborator'
+            END as role
+          FROM (
+            -- Primary organization (the one that created the program)
+            SELECT ? as org_id, 'primary' as role
+            
+            UNION ALL
+            
+            -- Collaborator organizations (those who accepted collaboration)
+            SELECT o.id as org_id, 'collaborator' as role
+            FROM program_collaborations pc
+            LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+            LEFT JOIN organizations o ON a.organization_id = o.id
+            WHERE pc.program_id = ? AND pc.status = 'accepted'
+          ) org_roles
+          LEFT JOIN organizations o ON org_roles.org_id = o.id
+          WHERE o.id IS NOT NULL
+          ORDER BY 
+            CASE WHEN org_roles.role = 'primary' THEN 0 ELSE 1 END,
+            o.orgName ASC
+        `, [program.organization_id, program.organization_id, program.id]);
+        
+        collaborators = collaborationRows.map(collab => ({
+          organization_name: collab.organization_name,
+          organization_acronym: collab.organization_acronym,
+          organization_color: collab.organization_color,
+          role: collab.role
+        }));
+      }
+
       return {
         ...program,
         multiple_dates: multipleDates,
-        additional_images: additionalImages
+        additional_images: additionalImages,
+        collaborators: collaborators
       };
     }));
 
@@ -1021,7 +1250,9 @@ export const getFeaturedPrograms = async (req, res) => {
         orgColor: program.orgColor,
         orgLogo: logoUrl,
         created_at: program.created_at,
-        slug: program.slug
+        slug: program.slug,
+        is_collaborative: program.is_collaborative,
+        collaborators: program.collaborators
       };
     });
 
@@ -1058,6 +1289,7 @@ export const getProgramBySlug = async (req, res) => {
         pp.organization_id,
         pp.slug,
         pp.is_collaborative,
+        pp.accepts_volunteers,
         o.orgName as organization_name,
         o.org as organization_acronym,
         o.logo as orgLogo,
@@ -1157,8 +1389,8 @@ export const getProgramBySlug = async (req, res) => {
   }
 };
 
-// Get other programs from the same organization (excluding current program)
-export const getOtherProgramsByOrganization = async (req, res) => {
+// Get related programs from the same organization (excluding current program)
+export const getRelatedProgramsByOrganization = async (req, res) => {
   try {
     const { organizationId, excludeProgramId } = req.params;
     
@@ -1172,6 +1404,7 @@ export const getOtherProgramsByOrganization = async (req, res) => {
         pp.image,
         pp.slug,
         pp.created_at,
+        pp.accepts_volunteers,
         o.orgName as organization_name,
         o.org as organization_acronym,
         o.logo as orgLogo
@@ -1212,6 +1445,8 @@ export const getOtherProgramsByOrganization = async (req, res) => {
 };
 
 // ---------------- Add new program (from programProjectsController) ----------------
+// SECURITY NOTE: This function should only be used by superadmins or through the approval process
+// The direct route has been removed to enforce submission workflow
 export const addProgramProject = async (req, res) => {
   const { 
     title, 
@@ -1233,7 +1468,6 @@ export const addProgramProject = async (req, res) => {
         collaborators = collaboratorsRaw;
       }
     } catch (error) {
-      console.error('Error parsing collaborators:', error);
       collaborators = [];
     }
   }
@@ -1310,8 +1544,8 @@ export const addProgramProject = async (req, res) => {
     }
 
     const [result] = await db.execute(
-      `INSERT INTO programs_projects (organization_id, title, description, category, event_start_date, event_end_date, image, status, slug, is_approved, is_collaborative)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO programs_projects (organization_id, title, description, category, event_start_date, event_end_date, image, status, slug, is_approved, is_collaborative, manual_status_override, submitted_by_name, submitted_by_role)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         adminOrgId, 
         title, 
@@ -1320,10 +1554,13 @@ export const addProgramProject = async (req, res) => {
         event_start_date ?? null,
         event_end_date ?? null,
         image ?? null, 
-        collaborators && collaborators.length > 0 ? 'pending_collaboration' : 'pending', 
+        'Upcoming', // Default status for new programs 
         finalSlug, 
-        collaborators && collaborators.length > 0 ? false : true, 
-        collaborators && collaborators.length > 0
+        false, // SECURITY FIX: Always require superadmin approval - never auto-approve
+        collaborators && collaborators.length > 0,
+        false, // New programs start with automatic status (no manual override)
+        null, // submitted_by_name not available for direct program creation (only via submissions)
+        null // submitted_by_role not available for direct program creation (only via submissions)
       ]
     );
 
@@ -1347,24 +1584,23 @@ export const addProgramProject = async (req, res) => {
           // Notify collaborator about the collaboration request
           try {
             const NotificationController = (await import('./notificationController.js')).default;
-            await NotificationController.createNotification({
-              admin_id: collaboratorId,
-              title: 'New Collaboration Request',
-              message: `You have received a collaboration request for "${title}". Please review and respond.`,
-              type: 'collaboration_request',
-              submission_id: newId
-            });
+            await NotificationController.createNotification(
+              collaboratorId,
+              'collaboration_request',
+              'New Collaboration Request',
+              `You have received a collaboration request for "${title}". Please review and respond.`,
+              'programs',
+              newId
+            );
           } catch (notificationError) {
-            console.error('Failed to send collaboration request notification:', notificationError);
             // Don't fail the main operation if notification fails
           }
         } catch (collabError) {
-          console.error('Failed to add collaborator during program creation:', collabError);
           // Continue with other collaborators even if one fails
         }
       }
     }
-    const appBase = process.env.APP_BASE_URL || 'http://localhost:3000';
+    const appBase = process.env.APP_BASE_URL;
     const programUrl = `${appBase}/programs/${finalSlug}`;
 
     // 🔔 Email subscribers (non-blocking but awaited here for logs)
@@ -1449,7 +1685,7 @@ export const updateProgramProject = async (req, res) => {
 
     await db.execute(
       `UPDATE programs_projects
-       SET title = ?, description = ?, image = COALESCE(?, image), status = ?${slugUpdate}
+       SET title = ?, description = ?, image = COALESCE(?, image), status = ?, manual_status_override = FALSE${slugUpdate}
        WHERE id = ?`,
       title ? [title, description ?? null, image, status ?? 'pending', slugValue, id] 
             : [title, description ?? null, image, status ?? 'pending', id]
@@ -1462,7 +1698,7 @@ export const updateProgramProject = async (req, res) => {
     );
     const currentSlug = programRows[0]?.slug || id;
 
-    const appBase = process.env.APP_BASE_URL || 'http://localhost:3000';
+    const appBase = process.env.APP_BASE_URL;
     const programUrl = `${appBase}/programs/${currentSlug}`;
 
     // 🔔 Email subscribers about the update
@@ -1497,6 +1733,13 @@ export const getProgramProjects = async (req, res) => {
 
 // ---------------- Get all programs with organization details for superadmin (from programProjectsController) ----------------
 export const getAllProgramsForSuperadmin = async (req, res) => {
+  // Disable caching to ensure fresh data (especially for collaboration data)
+  res.set({
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+
   try {
     const query = `
       SELECT 
@@ -1511,6 +1754,7 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
         pp.created_at,
         pp.updated_at,
         pp.organization_id,
+        pp.is_collaborative,
         o.orgName as organization_name,
         o.org as organization_acronym,
         o.logo as orgLogo,
@@ -1538,6 +1782,101 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
           multipleDates = dateRows.map((row) => row.event_date);
         }
 
+        // Get additional images for this program
+        const [imageRows] = await db.execute(
+          'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
+          [program.id]
+        );
+        const additionalImages = imageRows.map(row => row.image_data);
+
+        // Get collaboration data if program is collaborative
+        let collaborators = [];
+        
+        // Check if program is collaborative (handle both 0/1 from MySQL and boolean)
+        const isCollaborativeProgram = program.is_collaborative === 1 || 
+                                       program.is_collaborative === true || 
+                                       program.is_collaborative === '1' ||
+                                       Boolean(program.is_collaborative);
+        
+        if (isCollaborativeProgram) {
+          // Get all organizations involved in the collaboration
+          // This includes both the primary organization and accepted collaborators
+          const [collaborationRows] = await db.execute(`
+            SELECT DISTINCT
+              o.orgName as organization_name,
+              o.org as organization_acronym,
+              o.org_color as organization_color,
+              o.logo as organization_logo,
+              CASE 
+                WHEN o.id = ? THEN 'primary'
+                ELSE 'collaborator'
+              END as role
+            FROM (
+              -- Primary organization (the one that created the program)
+              SELECT ? as org_id, 'primary' as role
+              
+              UNION ALL
+              
+              -- Collaborator organizations (those who accepted collaboration)
+              SELECT o.id as org_id, 'collaborator' as role
+              FROM program_collaborations pc
+              LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+              LEFT JOIN organizations o ON a.organization_id = o.id
+              WHERE pc.program_id = ? AND pc.status = 'accepted'
+            ) org_roles
+            LEFT JOIN organizations o ON org_roles.org_id = o.id
+            WHERE o.id IS NOT NULL
+            ORDER BY 
+              CASE WHEN org_roles.role = 'primary' THEN 0 ELSE 1 END,
+              o.orgName ASC
+          `, [program.organization_id, program.organization_id, program.id]);
+          
+          // Get admin details for each collaborator organization
+          const collaboratorsWithAdmins = await Promise.all(collaborationRows.map(async (collab) => {
+            if (collab.role === 'primary') {
+              // For primary, get the admin who created the program
+              const [adminRows] = await db.execute(`
+                SELECT a.id, a.email
+                FROM admins a
+                WHERE a.organization_id = ? AND a.is_active = TRUE
+                LIMIT 1
+              `, [program.organization_id]);
+              return {
+                organization_name: collab.organization_name,
+                organization_acronym: collab.organization_acronym,
+                organization_color: collab.organization_color,
+                organization_logo: collab.organization_logo,
+                admin_id: adminRows[0]?.id || null,
+                admin_email: adminRows[0]?.email || null,
+                role: collab.role
+                // Primary doesn't need collaboration_status
+              };
+            } else {
+              // For collaborators, get the admin who accepted the collaboration
+              const [adminRows] = await db.execute(`
+                SELECT a.id, a.email
+                FROM program_collaborations pc
+                LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+                LEFT JOIN organizations o ON a.organization_id = o.id
+                WHERE pc.program_id = ? AND o.orgName = ? AND pc.status = 'accepted'
+                LIMIT 1
+              `, [program.id, collab.organization_name]);
+              return {
+                organization_name: collab.organization_name,
+                organization_acronym: collab.organization_acronym,
+                organization_color: collab.organization_color,
+                organization_logo: collab.organization_logo,
+                admin_id: adminRows[0]?.id || null,
+                admin_email: adminRows[0]?.email || null,
+                role: collab.role,
+                collaboration_status: 'accepted' // All collaborators in superadmin are accepted
+              };
+            }
+          }));
+          
+          collaborators = collaboratorsWithAdmins;
+        }
+
         let logoUrl;
         if (program.orgLogo) {
           logoUrl = getOrganizationLogoUrl(program.orgLogo);
@@ -1545,13 +1884,32 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
           logoUrl = `/logo/faith_community_logo.png`;
         }
 
+        // Ensure is_collaborative is explicitly set (handle MySQL returning 0/1 as Buffer or number)
+        // MySQL TINYINT(1) returns 0 or 1 as numbers
+        // Convert to boolean explicitly
+        let isCollaborativeValue = false;
+        if (program.is_collaborative === 1 || 
+            program.is_collaborative === true || 
+            program.is_collaborative === '1' ||
+            String(program.is_collaborative) === '1' ||
+            (program.is_collaborative && program.is_collaborative !== 0)) {
+          isCollaborativeValue = true;
+        }
+
         return {
           ...program,
           orgLogo: logoUrl,
           multiple_dates: multipleDates,
+          additional_images: additionalImages,
+          collaborators: collaborators,
+          // Override is_collaborative to ensure it's set correctly (use the same value we checked)
+          is_collaborative: isCollaborativeValue
         };
       })
     );
+    
+    // Remove ETag to prevent 304 responses (already set cache headers at start)
+    res.removeHeader('ETag');
     
     res.json({
       success: true,
@@ -1595,55 +1953,6 @@ export const getProgramsStatistics = async (req, res) => {
   }
 };
 
-// Mark program as completed
-export const markProgramAsCompleted = async (req, res) => {
-  const { id } = req.params;
-
-  if (!id) {
-    return res.status(400).json({
-      success: false,
-      message: "Program ID is required",
-    });
-  }
-
-  try {
-    // Check if program exists
-    const [programRows] = await db.execute(
-      "SELECT id, title, status FROM programs_projects WHERE id = ?",
-      [id]
-    );
-
-    if (programRows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Program not found",
-      });
-    }
-
-    // Update program status to completed
-    await db.execute(
-      "UPDATE programs_projects SET status = 'Completed' WHERE id = ?",
-      [id]
-    );
-
-    res.json({
-      success: true,
-      message: "Program marked as completed successfully",
-      data: {
-        id: id,
-        title: programRows[0].title,
-        status: 'Completed'
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to mark program as completed",
-      error: error.message
-    });
-  }
-};
-
 // Mark program as active
 export const markProgramAsActive = async (req, res) => {
   const { id } = req.params;
@@ -1669,9 +1978,9 @@ export const markProgramAsActive = async (req, res) => {
       });
     }
 
-    // Update program status to active
+    // Update program status to active and mark as manually set
     await db.execute(
-      "UPDATE programs_projects SET status = 'Active' WHERE id = ?",
+      "UPDATE programs_projects SET status = 'Active', manual_status_override = TRUE WHERE id = ?",
       [id]
     );
 
@@ -1688,6 +1997,60 @@ export const markProgramAsActive = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to mark program as active",
+      error: error.message
+    });
+  }
+};
+
+// Toggle volunteer acceptance for a program
+export const toggleVolunteerAcceptance = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { accepts_volunteers } = req.body;
+
+    // Validate input
+    if (typeof accepts_volunteers !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: "accepts_volunteers must be a boolean value"
+      });
+    }
+
+    // Check if program exists and admin has permission
+    const [programRows] = await db.execute(`
+      SELECT p.*, o.orgName 
+      FROM programs_projects p
+      LEFT JOIN organizations o ON p.organization_id = o.id
+      WHERE p.id = ? AND p.organization_id = ?
+    `, [id, req.admin.organization_id]);
+
+    if (programRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Program not found or you don't have permission to modify it"
+      });
+    }
+
+    // Update volunteer acceptance status
+    await db.execute(
+      "UPDATE programs_projects SET accepts_volunteers = ? WHERE id = ?",
+      [accepts_volunteers, id]
+    );
+
+    const action = accepts_volunteers ? 'accepting' : 'not accepting';
+    res.json({
+      success: true,
+      message: `Program is now ${action} volunteer applications`,
+      data: {
+        id: id,
+        title: programRows[0].title,
+        accepts_volunteers: accepts_volunteers
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to update volunteer acceptance status",
       error: error.message
     });
   }

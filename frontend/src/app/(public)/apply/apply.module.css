@@ -7,7 +7,9 @@
 
 .applyContainer {
   width: 100%;
-  padding: 0 2rem;
+  padding: 0 1rem;
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 /* Two Panel Layout */
@@ -24,18 +26,20 @@
 
 .rightPanel {
   width: 100%;
-  position: sticky;
-  top: 2rem;
+  position: relative;
+  top: 0;
 }
 
 .loginPrompt {
   text-align: center;
-  padding: 3rem 1rem;
+  padding: 2rem 1rem;
 }
 
 .loginPromptTitle {
   color: #6b7280;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 .loginButton {
@@ -47,21 +51,78 @@
   font-weight: 600;
   cursor: pointer;
   font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+  width: 100%;
+  max-width: 280px;
 }
 
-/* Responsive styles */
-@media (min-width: 768px) {
+.loginButton:hover {
+  background: #166534;
+}
+
+/* Mobile Responsive - Base styles are mobile-first */
+@media (max-width: 479px) {
   .applySection {
-    padding: 4rem 1rem !important;
+    padding: 1.5rem 0.75rem;
   }
   
   .applyContainer {
-    padding: 0 1rem;
+    padding: 0 0.75rem;
   }
   
+  .twoPanelLayout {
+    gap: 1.5rem;
+  }
+  
+  .loginPrompt {
+    padding: 1.5rem 0.75rem;
+  }
+  
+  .loginPromptTitle {
+    font-size: 0.95rem;
+    margin-bottom: 1.25rem;
+  }
+  
+  .loginButton {
+    font-size: 0.875rem;
+    padding: 0.625rem 1.25rem;
+  }
 }
 
+/* Tablet Responsive */
+@media (min-width: 480px) and (max-width: 1023px) {
+  .applySection {
+    padding: 3rem 1.5rem;
+  }
+  
+  .applyContainer {
+    padding: 0 1.5rem;
+    max-width: 900px;
+  }
+  
+  .twoPanelLayout {
+    gap: 2.5rem;
+  }
+  
+  .loginPrompt {
+    padding: 3rem 2rem;
+  }
+  
+  .loginPromptTitle {
+    font-size: 1.1rem;
+  }
+  
+  .loginButton {
+    max-width: 320px;
+  }
+}
+
+/* Desktop Responsive - Preserve existing desktop layout */
 @media (min-width: 1024px) {
+  .applySection {
+    padding: 4rem 1rem;
+  }
+  
   .applyContainer {
     padding: 0 1.5rem;
   }
@@ -75,6 +136,19 @@
     position: sticky;
     top: 2rem;
     height: fit-content;
+  }
+  
+  .loginPrompt {
+    padding: 3rem 1rem;
+  }
+  
+  .loginPromptTitle {
+    font-size: 1.25rem;
+  }
+  
+  .loginButton {
+    max-width: none;
+    width: auto;
   }
 }
 

@@ -136,7 +136,6 @@ export const submitMessage = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Error submitting message:", error);
     res.status(500).json({
       success: false,
       message: "Failed to send message",

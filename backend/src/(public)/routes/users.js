@@ -10,7 +10,6 @@ import {
   updateUserProfile, 
   uploadProfilePhoto, 
   removeProfilePhoto,
-  changeEmail,
   requestEmailChange,
   verifyEmailChangeOTP,
   changePassword,
@@ -68,7 +67,6 @@ router.delete('/profile/photo', verifyToken, removeProfilePhoto);
 // Email change routes (secure flow)
 router.post('/email/request-change', verifyToken, requestEmailChange);
 router.post('/email/verify-otp', verifyToken, verifyEmailChangeOTP);
-router.put('/email', verifyToken, changeEmail); // Legacy endpoint
 
 router.put('/password', verifyToken, changePassword);
 router.post('/delete-account', verifyToken, deleteAccount);

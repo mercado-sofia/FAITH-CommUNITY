@@ -4,6 +4,16 @@
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   padding: 4rem 2rem 2rem;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  height: fit-content;
+  min-height: auto;
+  box-sizing: border-box;
 }
 
 .sectionHeader {
@@ -17,7 +27,7 @@
 
 .sectionHeader h2 {
   margin: 0;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
   color: #000;
 }
@@ -28,6 +38,9 @@
   border-radius: 8px;
   padding: 0.85rem 1.6rem;
   background: white;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .profilePhotoSection {
@@ -57,7 +70,6 @@
   cursor: pointer;
   transition: all 0.3s ease;
 }
-
 
 .profileImageContainer.editMode {
   cursor: pointer;
@@ -227,6 +239,11 @@
   align-items: center;
 }
 
+.formField p {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .editInput,
 .editTextarea {
   width: 100%;
@@ -391,5 +408,135 @@
   .formRow {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+  
+  /* Keep first name and last name in the same row on mobile */
+  .formRow:first-of-type {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .personalInfoSection {
+    padding: 0.25rem 1rem 1.25rem;
+    align-items: flex-start;
+    justify-content: flex-start;
+    margin-top: 0;
+    height: auto;
+    min-height: auto;
+    margin-left: 0;
+    margin-right: 0;
+    overflow-x: visible;
+  }
+
+  .sectionHeader {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.625rem;
+    padding-top: 0;
+    margin-top: 0;
+  }
+
+  .personalInfoContainer {
+    padding: 1rem 1rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .profilePhotoContainer {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .photoActionsContainer {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 0.75rem;
+  }
+
+  .changePhotoButton,
+  .removePhotoButton {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .sectionHeader {
+    margin-bottom: 0.75rem;
+  }
+
+  .actionButton {
+    font-size: 13px;
+  }
+
+  .editButton {
+    font-size: 13px;
+  }
+
+  /* Hide icons for Save and Cancel on mobile */
+  .saveButton svg,
+  .cancelButton svg {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .personalInfoSection {
+    padding: 0.25rem 0.75rem 1rem;
+    align-items: flex-start;
+    justify-content: flex-start;
+    margin-top: 0;
+    height: auto;
+    min-height: auto;
+    margin-left: 0;
+    margin-right: 0;
+    overflow-x: visible;
+  }
+
+  .sectionHeader {
+    margin-bottom: 0.625rem;
+    padding-bottom: 0.5rem;
+    padding-top: 0;
+    margin-top: 0;
+  }
+
+  .sectionHeader h2 {
+    font-size: 16px;
+  }
+
+  .personalInfoContainer {
+    padding: 0.875rem 0.875rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .editButton,
+  .actionButton {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .actionButton {
+    font-size: 12px;
+  }
+
+  .editButton {
+    font-size: 12px;
+  }
+
+  /* Hide icons for Save and Cancel on small mobile */
+  .saveButton svg,
+  .cancelButton svg {
+    display: none;
+  }
+
+  .editInput,
+  .editTextarea {
+    font-size: 13px;
+  }
+  
+  /* Keep first name and last name in the same row on small mobile */
+  .formRow:first-of-type {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.625rem;
   }
 }

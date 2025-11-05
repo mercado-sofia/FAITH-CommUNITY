@@ -4,7 +4,7 @@ import * as bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 
 // JWT secret for admin (should match the one used in admin login)
-const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
+const JWT_SECRET = process.env.JWT_SECRET
 
 // Get admin's own profile
 export const getAdminProfile = async (req, res) => {
@@ -34,7 +34,6 @@ export const getAdminProfile = async (req, res) => {
       data: admin
     })
   } catch (err) {
-    console.error("Error fetching admin profile:", err)
     res.status(500).json({ error: "Internal server error" })
   }
 }
@@ -106,7 +105,6 @@ export const updateAdminProfile = async (req, res) => {
       data: { email }
     })
   } catch (err) {
-    console.error("Error updating admin profile:", err)
     res.status(500).json({ error: "Internal server error" })
   }
 }
@@ -179,7 +177,6 @@ export const requestAdminEmailChange = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("Error requesting admin email change:", err)
     res.status(500).json({ error: "Internal server error" })
   }
 }
@@ -265,16 +262,10 @@ export const verifyAdminEmailChangeOTP = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("Error verifying admin email change OTP:", err)
     res.status(500).json({ error: "Internal server error" })
   }
 }
 
-// Legacy update admin email function (kept for backward compatibility)
-export const updateAdminEmail = async (req, res) => {
-  // Redirect to new secure flow
-  return requestAdminEmailChange(req, res);
-}
 
 // Update admin's password
 export const updateAdminPassword = async (req, res) => {
@@ -339,7 +330,6 @@ export const updateAdminPassword = async (req, res) => {
       message: "Password updated successfully"
     })
   } catch (err) {
-    console.error("Error updating admin password:", err)
     res.status(500).json({ error: "Internal server error" })
   }
 }
@@ -373,8 +363,6 @@ export const verifyPasswordForEmailChange = async (req, res) => {
       message: "Password verified successfully"
     })
   } catch (err) {
-    console.error("Error verifying password:", err)
     res.status(500).json({ error: "Internal server error" })
   }
 }
-

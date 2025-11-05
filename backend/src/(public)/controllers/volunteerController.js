@@ -61,14 +61,14 @@ export const submitVolunteer = async (req, res) => {
       return res.status(409).json({ error: 'You have already applied for this program' });
     }
 
-    // Verify the program exists and is approved
+    // Verify the program exists, is approved, and accepts volunteers
     const [programRows] = await db.execute(
-      'SELECT id, status FROM programs_projects WHERE id = ? AND status = "Upcoming" AND is_approved = TRUE',
+      'SELECT id, status FROM programs_projects WHERE id = ? AND status = "Upcoming" AND is_approved = TRUE AND accepts_volunteers = TRUE',
       [program_id]
     );
 
     if (programRows.length === 0) {
-      return res.status(404).json({ error: 'Program not found or not available for applications' });
+      return res.status(404).json({ error: 'Program not found or not accepting volunteer applications' });
     }
 
     const sql = `
@@ -125,7 +125,6 @@ export const submitVolunteer = async (req, res) => {
       id: volunteerId,
     });
   } catch (err) {
-    console.error("Database error:", err);
     res.status(500).json({
       error: "Database error",
       details: err.message,
@@ -182,7 +181,6 @@ export const applyVolunteer = async (req, res) => {
       id: result.insertId 
     });
   } catch (error) {
-    console.error('Error in applyVolunteer:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -236,7 +234,6 @@ export const getAllVolunteers = async (req, res) => {
 
     res.json({ data: volunteersWithAge });
   } catch (error) {
-    console.error('Error in getAllVolunteers:', error);
     res.status(500).json({ error: 'Failed to retrieve volunteers' });
   }
 };
@@ -296,7 +293,6 @@ export const getVolunteersByOrganization = async (req, res) => {
       data: volunteersWithAge,
     });
   } catch (err) {
-    console.error("Error fetching volunteers by organization:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -374,7 +370,6 @@ export const getVolunteersByAdminOrg = async (req, res) => {
       data: volunteersWithAge,
     });
   } catch (err) {
-    console.error("Error fetching volunteers by admin organization:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -429,7 +424,6 @@ export const getVolunteerById = async (req, res) => {
 
     res.json(volunteer);
   } catch (error) {
-    console.error('Error in getVolunteerById:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -523,7 +517,6 @@ export const updateVolunteerStatus = async (req, res) => {
       }
     });
   } catch (err) {
-    console.error("Error updating volunteer status:", err);
     res.status(500).json({ 
       success: false,
       error: err.message 
@@ -568,7 +561,6 @@ export const softDeleteVolunteer = async (req, res) => {
       message: "Volunteer cancelled successfully"
     });
   } catch (err) {
-    console.error("Error soft deleting volunteer:", err);
     res.status(500).json({ 
       success: false,
       error: err.message 
@@ -679,7 +671,6 @@ export const getVolunteersByProgram = async (req, res) => {
       data: volunteersWithAge
     });
   } catch (error) {
-    console.error('Error in getVolunteersByProgram:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch volunteers for program',
@@ -713,7 +704,6 @@ export const getApprovedUpcomingPrograms = async (req, res) => {
       data: rows
     });
   } catch (err) {
-    console.error("Error fetching approved upcoming programs:", err);
     res.status(500).json({ 
       success: false,
       error: err.message 

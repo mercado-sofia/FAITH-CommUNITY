@@ -15,7 +15,9 @@ export const clearAuthAndRedirect = (userType = 'admin') => {
   // Use centralized immediate cleanup for security
   const userTypeEnum = userType === 'admin' ? USER_TYPES.ADMIN : USER_TYPES.SUPERADMIN;
   clearAuthImmediate(userTypeEnum);
-  window.location.href = '/login';
+  if (typeof window !== 'undefined') {
+    window.location.href = '/login';
+  }
 };
 
 /**
@@ -56,8 +58,13 @@ export const getUserTypeFromToken = (token) => {
  * Make authenticated API request with automatic token validation
  */
 export const makeAuthenticatedRequest = async (url, options = {}, userType = 'admin') => {
+  // Check for window to avoid SSR errors
+  if (typeof window === 'undefined') {
+    throw new Error('Cannot make authenticated request on server side');
+  }
+
   const tokenKey = userType === 'admin' ? 'adminToken' : 'superAdminToken';
-  const token = localStorage.getItem(tokenKey);
+  const token = typeof window !== 'undefined' ? localStorage.getItem(tokenKey) : null;
   
   // Check if token exists
   if (!token) {
@@ -100,6 +107,9 @@ export const makeAuthenticatedRequest = async (url, options = {}, userType = 'ad
  * Validate token and get user data
  */
 export const validateTokenAndGetUser = async (userType = 'admin') => {
+  // Check for window to avoid SSR errors
+  if (typeof window === 'undefined') return null;
+  
   const tokenKey = userType === 'admin' ? 'adminToken' : 'superAdminToken';
   const dataKey = userType === 'admin' ? 'adminData' : 'superAdminData';
   const token = localStorage.getItem(tokenKey);
@@ -128,16 +138,20 @@ export const validateTokenAndGetUser = async (userType = 'admin') => {
   
   // If no user data, try to fetch it from the server
   try {
+    // Safely get user data for superadmin profile URL
+    const storedData = localStorage.getItem(dataKey);
+    const userId = storedData ? JSON.parse(storedData)?.id : null;
+    
     const profileUrl = userType === 'admin' 
       ? `${API_BASE_URL}/api/admin/profile`
-      : `${API_BASE_URL}/api/superadmin/auth/profile/${JSON.parse(localStorage.getItem(dataKey))?.id}`;
+      : `${API_BASE_URL}/api/superadmin/auth/profile/${userId}`;
     
     const response = await makeAuthenticatedRequest(profileUrl, { method: 'GET' }, userType);
     if (!response) return null;
     
     const data = await response.json();
     if (response.ok) {
-      // Store the updated user data
+      // Store the updated user data (window check already done at function start)
       localStorage.setItem(dataKey, JSON.stringify(data));
       return data;
     }
@@ -153,38 +167,51 @@ export const validateTokenAndGetUser = async (userType = 'admin') => {
 export const showAuthError = (message = 'Your session has expired. Please log in again.') => {
   // You can customize this to show a modal, toast, or other UI element
   // For now, using a more user-friendly approach
-  if (typeof window !== 'undefined') {
-    // Create a temporary notification element
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #f44336;
-      color: white;
-      padding: 16px 24px;
-      border-radius: 4px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      z-index: 10000;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      max-width: 400px;
-    `;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification);
-      }
-    }, 5000);
+  if (typeof window === 'undefined' || typeof document === 'undefined' || !document.body) {
+    return null; // Return cleanup function for consistency
   }
+  
+  // Create a temporary notification element
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #f44336;
+    color: white;
+    padding: 16px 24px;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10000;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    max-width: 400px;
+  `;
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  
+  // Auto-remove after 5 seconds with cleanup support
+  const timeoutId = setTimeout(() => {
+    if (notification.parentNode) {
+      notification.parentNode.removeChild(notification);
+    }
+  }, 5000);
+  
+  // Return cleanup function for manual cleanup if needed
+  return () => {
+    clearTimeout(timeoutId);
+    if (notification.parentNode) {
+      notification.parentNode.removeChild(notification);
+    }
+  };
 };
 
 /**
  * Check authentication status on page load
  */
 export const checkAuthStatus = (userType = 'admin') => {
+  // Check for window to avoid SSR errors
+  if (typeof window === 'undefined') return false;
+  
   const tokenKey = userType === 'admin' ? 'adminToken' : 'superAdminToken';
   const token = localStorage.getItem(tokenKey);
   

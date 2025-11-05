@@ -100,9 +100,21 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
       return;
     }
 
-    // Sanitize and strip HTML tags
-    const sanitized = DOMPurify.sanitize(formData.content, { ALLOWED_TAGS: [] });
-    const plainText = sanitized.replace(/\s+/g, ' ').trim();
+    // Check for document to avoid SSR errors
+    if (typeof document === 'undefined') {
+      setErrors(prev => ({ ...prev, content: 'Cannot generate excerpt in server environment' }));
+      return;
+    }
+
+    // Sanitize HTML and extract text while preserving logical spaces for line breaks
+    const container = document.createElement('div');
+    container.innerHTML = DOMPurify.sanitize(formData.content);
+    // textContent captures line breaks from <br> and block elements as newlines
+    const rawText = (container.textContent || container.innerText || '')
+      .replace(/\u00A0/g, ' '); // convert non-breaking spaces
+
+    // Collapse any sequence of whitespace/newlines into single spaces
+    const plainText = rawText.replace(/\s+/g, ' ').trim();
     
     if (plainText.length === 0) {
       setErrors(prev => ({ ...prev, content: 'Content must contain text to generate excerpt' }));
@@ -243,7 +255,7 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
             {/* Title */}
             <div className={styles.field}>
               <label className={styles.label}>
-                Title <span className={styles.required}>*</span>
+                Title
                 {isCheckingTitle && <span className={styles.checkingIndicator}>Checking...</span>}
               </label>
               <input
@@ -260,7 +272,7 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
             {/* Slug */}
             <div className={styles.field}>
               <label className={styles.label}>
-                Slug <span className={styles.required}>*</span>
+                Slug
               </label>
               <input
                 type="text"
@@ -275,7 +287,7 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
             {/* Content */}
             <div className={styles.field}>
               <label className={styles.label}>
-                Content <span className={styles.required}>*</span>
+                Content
               </label>
               <div className={errors.content ? styles.editorError : ''}>
                 <ContentEditor
@@ -290,7 +302,7 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
             {/* Excerpt */}
             <div className={styles.field}>
               <label className={styles.label}>
-                Excerpt <span className={styles.required}>*</span>
+                Excerpt
               </label>
               <textarea
                 value={formData.excerpt}
@@ -342,7 +354,7 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
           {/* Featured Image Container */}
           <div className={styles.container}>
             <h3 className={styles.containerTitle}>
-              Featured Image <span className={styles.required}>*</span>
+              Featured Image
             </h3>
             <div
               className={`${styles.uploadArea} ${dragActive ? styles.dragActive : ''} ${errors.featuredImage ? styles.uploadError : ''}`}
@@ -396,7 +408,7 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
           {/* Published At Container */}
           <div className={styles.container}>
             <h3 className={styles.containerTitle}>
-              Published at <span className={styles.required}>*</span>
+              Published at
             </h3>
             <DatePickerPopover
               value={formData.publishedAt}

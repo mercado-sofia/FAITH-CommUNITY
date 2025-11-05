@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { FaCheckCircle, FaTimes, FaShieldAlt, FaLock, FaExclamationTriangle } from 'react-icons/fa';
 import { createPortal } from 'react-dom';
 
@@ -15,10 +16,32 @@ export default function ChangeSuccessModal({
   newEmail, 
   oldEmail 
 }) {
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Set initial value
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   if (!isOpen) return null;
 
   const isEmailChange = changeType === 'email';
   const isPasswordChange = changeType === 'password';
+  const isMobile = windowWidth <= 640;
+  const isSmallMobile = windowWidth <= 480;
+
+  // Ensure document.body exists before creating portal (SSR safety)
+  if (typeof document === 'undefined' || !document.body) {
+    return null;
+  }
 
   return createPortal(
     <div 
@@ -33,7 +56,7 @@ export default function ChangeSuccessModal({
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 9999,
-        padding: '1rem'
+        padding: isMobile ? '0.5rem' : '1rem'
       }} 
       onClick={onClose}
     >
@@ -44,9 +67,10 @@ export default function ChangeSuccessModal({
           boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
           maxWidth: '500px',
           width: '100%',
-          maxHeight: '90vh',
+          maxHeight: isMobile ? 'calc(100vh - 4rem)' : '90vh',
           overflowY: 'auto',
-          position: 'relative'
+          position: 'relative',
+          padding: isMobile ? '1.25rem' : undefined
         }} 
         onClick={(e) => e.stopPropagation()}
       >
@@ -55,19 +79,21 @@ export default function ChangeSuccessModal({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '1.5rem 1.5rem 0',
+            padding: isMobile 
+              ? '1rem 2.5rem 0' 
+              : '1.5rem 1.5rem 0',
             position: 'relative'
           }}
         >
           <div 
             style={{
               color: '#28a745',
-              fontSize: '3.5rem',
+              fontSize: isMobile ? '2.5rem' : '3.5rem',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginTop: '1rem',
-              marginBottom: '1rem'
+              marginTop: isMobile ? '0.5rem' : '1rem',
+              marginBottom: isMobile ? '0.5rem' : '1rem'
             }}
           >
             <FaCheckCircle />
@@ -75,12 +101,12 @@ export default function ChangeSuccessModal({
           <button 
             style={{
               position: 'absolute',
-              top: '1.5rem',
-              right: '1.5rem',
+              top: isMobile ? '0.75rem' : '1.5rem',
+              right: isMobile ? '0.75rem' : '1.5rem',
               background: 'none',
               border: 'none',
               color: '#d1d5db',
-              fontSize: '1.2rem',
+              fontSize: isMobile ? '1.5rem' : '1.2rem',
               cursor: 'pointer',
               padding: '0.5rem',
               borderRadius: '50%',
@@ -88,8 +114,10 @@ export default function ChangeSuccessModal({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '2rem',
-              height: '2rem'
+              width: isMobile ? '2.5rem' : '2rem',
+              height: isMobile ? '2.5rem' : '2rem',
+              minWidth: '44px',
+              minHeight: '44px'
             }}
             onClick={onClose}
             type="button"
@@ -108,13 +136,13 @@ export default function ChangeSuccessModal({
         
         <div 
           style={{
-            padding: '1rem 1.5rem'
+            padding: isMobile ? '0.75rem 1rem' : '1rem 1.5rem'
           }}
         >
           <h2 
             style={{
-              margin: '0 0 1rem 0',
-              fontSize: '1.5rem',
+              margin: '0 0 0.75rem 0',
+              fontSize: isMobile ? '1.25rem' : '1.5rem',
               fontWeight: 600,
               color: '#1A685B',
               textAlign: 'center'
@@ -124,8 +152,8 @@ export default function ChangeSuccessModal({
           </h2>
           <p 
             style={{
-              margin: '0 0 1.5rem 0',
-              fontSize: '15px',
+              margin: '0 0 1rem 0',
+              fontSize: isMobile ? '14px' : '15px',
               color: '#6c757d',
               textAlign: 'center',
               lineHeight: 1.5
@@ -142,16 +170,18 @@ export default function ChangeSuccessModal({
               style={{
                 background: '#f8f9fa',
                 borderRadius: '8px',
-                padding: '1rem',
-                margin: '1rem 0',
+                padding: isMobile ? '0.75rem' : '1rem',
+                margin: isMobile ? '0.75rem 0' : '1rem 0',
                 border: '1px solid #e9ecef'
               }}
             >
               <div 
                 style={{
                   display: 'flex',
+                  flexDirection: isSmallMobile ? 'column' : 'row',
                   justifyContent: 'space-between',
-                  alignItems: 'center',
+                  alignItems: isSmallMobile ? 'flex-start' : 'center',
+                  gap: isSmallMobile ? '0.25rem' : '0',
                   padding: '0.5rem 0',
                   borderBottom: '1px solid #e9ecef'
                 }}
@@ -160,7 +190,7 @@ export default function ChangeSuccessModal({
                   style={{
                     fontWeight: 600,
                     color: '#495057',
-                    fontSize: '0.9rem'
+                    fontSize: isMobile ? '0.85rem' : '0.9rem'
                   }}
                 >
                   Previous Email:
@@ -169,8 +199,9 @@ export default function ChangeSuccessModal({
                   style={{
                     color: '#1A685B',
                     fontWeight: 500,
-                    fontSize: '0.9rem',
-                    wordBreak: 'break-all'
+                    fontSize: isMobile ? '0.85rem' : '0.9rem',
+                    wordBreak: 'break-all',
+                    textAlign: isSmallMobile ? 'left' : 'right'
                   }}
                 >
                   {oldEmail}
@@ -179,8 +210,10 @@ export default function ChangeSuccessModal({
               <div 
                 style={{
                   display: 'flex',
+                  flexDirection: isSmallMobile ? 'column' : 'row',
                   justifyContent: 'space-between',
-                  alignItems: 'center',
+                  alignItems: isSmallMobile ? 'flex-start' : 'center',
+                  gap: isSmallMobile ? '0.25rem' : '0',
                   padding: '0.5rem 0'
                 }}
               >
@@ -188,7 +221,7 @@ export default function ChangeSuccessModal({
                   style={{
                     fontWeight: 600,
                     color: '#495057',
-                    fontSize: '0.9rem'
+                    fontSize: isMobile ? '0.85rem' : '0.9rem'
                   }}
                 >
                   New Email:
@@ -197,8 +230,9 @@ export default function ChangeSuccessModal({
                   style={{
                     color: '#1A685B',
                     fontWeight: 500,
-                    fontSize: '0.9rem',
-                    wordBreak: 'break-all'
+                    fontSize: isMobile ? '0.85rem' : '0.9rem',
+                    wordBreak: 'break-all',
+                    textAlign: isSmallMobile ? 'left' : 'right'
                   }}
                 >
                   {newEmail}
@@ -212,8 +246,8 @@ export default function ChangeSuccessModal({
               style={{
                 background: '#f8f9fa',
                 borderRadius: '8px',
-                padding: '1rem',
-                margin: '1rem 0',
+                padding: isMobile ? '0.75rem' : '1rem',
+                margin: isMobile ? '0.75rem 0' : '1rem 0',
                 border: '1px solid #e9ecef'
               }}
             >
@@ -228,14 +262,14 @@ export default function ChangeSuccessModal({
                   style={{
                     color: '#28a745',
                     marginRight: '0.5rem',
-                    fontSize: '1.1rem'
+                    fontSize: isMobile ? '1rem' : '1.1rem'
                   }}
                 />
                 <span 
                   style={{
                     fontWeight: 600,
                     color: '#495057',
-                    fontSize: '0.95rem'
+                    fontSize: isMobile ? '0.9rem' : '0.95rem'
                   }}
                 >
                   Security Update Complete
@@ -254,13 +288,13 @@ export default function ChangeSuccessModal({
                   style={{
                     color: '#1A685B',
                     marginRight: '0.5rem',
-                    fontSize: '0.9rem'
+                    fontSize: isMobile ? '0.85rem' : '0.9rem'
                   }}
                 />
                 <span 
                   style={{
                     color: '#495057',
-                    fontSize: '0.9rem'
+                    fontSize: isMobile ? '0.85rem' : '0.9rem'
                   }}
                 >
                   Your password has been securely updated
@@ -278,13 +312,13 @@ export default function ChangeSuccessModal({
                   style={{
                     color: '#28a745',
                     marginRight: '0.5rem',
-                    fontSize: '0.9rem'
+                    fontSize: isMobile ? '0.85rem' : '0.9rem'
                   }}
                 />
                 <span 
                   style={{
                     color: '#495057',
-                    fontSize: '0.9rem'
+                    fontSize: isMobile ? '0.85rem' : '0.9rem'
                   }}
                 >
                   All active sessions have been updated
@@ -298,8 +332,8 @@ export default function ChangeSuccessModal({
               background: isPasswordChange ? '#fff3cd' : '#e7f3ff',
               border: isPasswordChange ? '1px solid #ffeaa7' : '1px solid #b3d9ff',
               borderRadius: '8px',
-              padding: '1rem',
-              margin: '1rem 0'
+              padding: isMobile ? '0.75rem' : '1rem',
+              margin: isMobile ? '0.75rem 0' : '1rem 0'
             }}
           >
             {isEmailChange ? (
@@ -307,8 +341,9 @@ export default function ChangeSuccessModal({
                 style={{
                   margin: 0,
                   color: '#0066cc',
-                  fontSize: '0.9rem',
-                  textAlign: 'left'
+                  fontSize: isMobile ? '0.85rem' : '0.9rem',
+                  textAlign: 'left',
+                  lineHeight: 1.5
                 }}
               >
                 Please use your new email address for future logins and communications.
@@ -318,8 +353,9 @@ export default function ChangeSuccessModal({
                 style={{
                   margin: 0,
                   color: '#856404',
-                  fontSize: '0.9rem',
-                  textAlign: 'left'
+                  fontSize: isMobile ? '0.85rem' : '0.9rem',
+                  textAlign: 'left',
+                  lineHeight: 1.5
                 }}
               >
                 Please use your new password for future logins.
@@ -330,7 +366,7 @@ export default function ChangeSuccessModal({
         
         <div 
           style={{
-            padding: '0 1.5rem 1.5rem',
+            padding: isMobile ? '0 1rem 1rem' : '0 1.5rem 1.5rem',
             display: 'flex',
             justifyContent: 'center'
           }}
@@ -342,12 +378,14 @@ export default function ChangeSuccessModal({
               color: 'white',
               border: 'none',
               borderRadius: '8px',
-              padding: '12px 24px',
-              fontSize: '1rem',
+              padding: isMobile ? '14px 24px' : '12px 24px',
+              fontSize: isMobile ? '0.95rem' : '1rem',
               fontWeight: 500,
               cursor: 'pointer',
               transition: 'all 0.2s ease',
-              minWidth: '120px'
+              minWidth: isMobile ? '140px' : '120px',
+              minHeight: '44px',
+              width: isMobile ? '100%' : 'auto'
             }}
             onClick={onClose}
             onMouseEnter={(e) => {

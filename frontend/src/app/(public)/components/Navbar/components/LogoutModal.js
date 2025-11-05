@@ -8,10 +8,15 @@ export default function LogoutModal({ isOpen, onClose, onConfirm, isMounted }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   // Handle escape key
   useEffect(() => {
-    if (!isOpen) return;
+    // Check for window to avoid SSR errors
+    if (!isOpen || typeof window === 'undefined') return;
     const onKey = (e) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('keydown', onKey);
+      }
+    };
   }, [isOpen, onClose]);
 
   const handleOverlayClick = () => {
@@ -26,6 +31,11 @@ export default function LogoutModal({ isOpen, onClose, onConfirm, isMounted }) {
   };
 
   if (!isOpen || !isMounted) {
+    return null;
+  }
+
+  // Ensure document.body exists before creating portal (SSR safety)
+  if (typeof document === 'undefined' || !document.body) {
     return null;
   }
 

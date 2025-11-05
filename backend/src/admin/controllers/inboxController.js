@@ -91,7 +91,6 @@ export const getMessagesByOrg = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Error fetching messages:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch messages",
@@ -160,7 +159,6 @@ export const markMessageAsRead = async (req, res) => {
       message: "Message marked as read"
     });
   } catch (error) {
-    console.error("Error marking message as read:", error);
     res.status(500).json({
       success: false,
       message: "Failed to mark message as read",
@@ -214,7 +212,6 @@ export const markAllMessagesAsRead = async (req, res) => {
       message: `${result.affectedRows} messages marked as read`
     });
   } catch (error) {
-    console.error("Error marking all messages as read:", error);
     res.status(500).json({
       success: false,
       message: "Failed to mark messages as read",
@@ -283,7 +280,6 @@ export const deleteMessage = async (req, res) => {
       message: "Message deleted successfully"
     });
   } catch (error) {
-    console.error("Error deleting message:", error);
     res.status(500).json({
       success: false,
       message: "Failed to delete message",
@@ -339,7 +335,6 @@ export const getUnreadCount = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Error getting unread count:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get unread count",

@@ -33,7 +33,8 @@ export default function Tooltip({
   };
 
   const calculatePosition = useCallback(() => {
-    if (!triggerRef.current || !tooltipRef.current) return;
+    // Check for window to avoid SSR errors
+    if (!triggerRef.current || !tooltipRef.current || typeof window === 'undefined') return;
 
     const triggerRect = triggerRef.current.getBoundingClientRect();
     const tooltipRect = tooltipRef.current.getBoundingClientRect();
@@ -84,6 +85,11 @@ export default function Tooltip({
   }, [position]);
 
   useEffect(() => {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     if (isVisible) {
       calculatePosition();
       
@@ -94,8 +100,10 @@ export default function Tooltip({
       window.addEventListener('scroll', handleScroll, true);
       
       return () => {
-        window.removeEventListener('resize', handleResize);
-        window.removeEventListener('scroll', handleScroll, true);
+        if (typeof window !== 'undefined') {
+          window.removeEventListener('resize', handleResize);
+          window.removeEventListener('scroll', handleScroll, true);
+        }
       };
     }
   }, [isVisible, calculatePosition]);

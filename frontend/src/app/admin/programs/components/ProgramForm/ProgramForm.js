@@ -5,7 +5,10 @@ import { FaSpinner } from 'react-icons/fa';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import { useProgramForm, useImageUpload, useCollaboration } from '../../hooks';
 import { FormFields, ImageUpload, AdditionalImagesUpload, CollaboratorSection } from './components';
+import CustomDropdown from './components/CustomDropdown';
 import { UnsaveChangesModal } from '../index';
+import { ROLE_OPTIONS } from '@/app/admin/organization/utils/roleHierarchy';
+import logger from '@/utils/logger';
 import styles from './ProgramForm.module.css';
 
 const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRefreshCollaborators }) => {
@@ -18,13 +21,11 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
     formData,
     errors,
     hasChanges,
-    isEditMode: formIsEditMode,
     updateFormData,
     validateForm,
     clearError,
     clearAllErrors,
-    setFormData,
-    setHasChanges
+    resetForm
   } = useProgramForm(mode, program);
 
   const {
@@ -47,7 +48,8 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
     handleAdditionalDragOver,
     handleAdditionalDrop,
     setImagePreview,
-    setAdditionalImagePreviews
+    setAdditionalImagePreviews,
+    resetImageUploads
   } = useImageUpload();
 
   const {
@@ -62,8 +64,46 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
     addCollaborator,
     removeCollaborator,
     loadExistingCollaborators,
-    refreshCollaborators
+    refreshCollaborators,
+    resetCollaboration,
+    sendInvitesForNewCollaborators
   } = useCollaboration(isEditMode, program?.id);
+
+  // State for custom role input (only shown when "Others" is selected)
+  const [customRole, setCustomRole] = useState('');
+
+  // Handle role change
+  const handleRoleChange = useCallback((selectedRole) => {
+    if (selectedRole === 'Others') {
+      updateFormData({ submitted_by_role: 'Others' });
+      setCustomRole('');
+    } else {
+      updateFormData({ submitted_by_role: selectedRole });
+      setCustomRole('');
+    }
+    
+    // Clear role error when user selects a role
+    if (errors.submitted_by_role) clearError('submitted_by_role');
+  }, [updateFormData, errors.submitted_by_role, clearError]);
+
+  // Handle custom role change
+  const handleCustomRoleChange = useCallback((value) => {
+    setCustomRole(value);
+    // Update formData with custom role
+    updateFormData({ submitted_by_role: value });
+    
+    // Clear role error when user starts typing
+    if (errors.submitted_by_role) clearError('submitted_by_role');
+  }, [updateFormData, errors.submitted_by_role, clearError]);
+
+  // Initialize custom role if existing role is not in predefined options
+  useEffect(() => {
+    if (formData.submitted_by_role && !ROLE_OPTIONS.find(option => option.value === formData.submitted_by_role)) {
+      setCustomRole(formData.submitted_by_role);
+    } else {
+      setCustomRole('');
+    }
+  }, [formData.submitted_by_role]);
 
   // Initialize existing images in edit mode
   useEffect(() => {
@@ -73,17 +113,33 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
         setImagePreview(getProgramImageUrl(program.image));
       }
       
-      // Set existing additional images previews
-      if (program.additional_images && program.additional_images.length > 0 && additionalImagePreviews.length === 0) {
-        const existingPreviews = program.additional_images.map((imagePath, index) => ({
-          id: `existing-${index}`,
-          url: getProgramImageUrl(imagePath, 'additional'),
-          name: `Additional Image ${index + 1}`
-        }));
-        setAdditionalImagePreviews(existingPreviews);
+      // Set existing additional images previews AND form data
+      if (program.additional_images && program.additional_images.length > 0) {
+        // Initialize previews if not already set
+        if (additionalImagePreviews.length === 0) {
+          const existingPreviews = program.additional_images.map((imagePath, index) => ({
+            id: `existing-${index}`,
+            url: getProgramImageUrl(imagePath, 'additional'),
+            name: `Additional Image ${index + 1}`
+          }));
+          setAdditionalImagePreviews(existingPreviews);
+        }
+        
+        // Always initialize formData.additionalImages with existing Cloudinary URLs if it's empty
+        // This ensures existing images are preserved when updating
+        if (!formData.additionalImages || formData.additionalImages.length === 0) {
+          const existingImageUrls = program.additional_images.map(imagePath => {
+            // Check if it's already a full URL or needs the helper function
+            if (imagePath && (imagePath.startsWith('http://') || imagePath.startsWith('https://'))) {
+              return imagePath;
+            }
+            return getProgramImageUrl(imagePath, 'additional');
+          });
+          updateFormData({ additionalImages: existingImageUrls });
+        }
       }
     }
-  }, [isEditMode, program, imagePreview, additionalImagePreviews.length, setImagePreview, setAdditionalImagePreviews]);
+  }, [isEditMode, program, imagePreview, additionalImagePreviews.length, formData.additionalImages, setImagePreview, setAdditionalImagePreviews, updateFormData]);
 
   // Load existing collaborators in edit mode
   useEffect(() => {
@@ -93,13 +149,6 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
       });
     }
   }, [isEditMode, program?.id, loadExistingCollaborators, updateFormData]);
-
-  // Also load collaborators from program data if available
-  useEffect(() => {
-    if (isEditMode && program?.collaborators && Array.isArray(program.collaborators)) {
-      updateFormData({ collaborators: program.collaborators });
-    }
-  }, [isEditMode, program?.collaborators, updateFormData]);
 
   // Handle form data changes
   const handleFormDataChange = useCallback((updates) => {
@@ -128,7 +177,9 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
     if (validPreviews.length > 0) {
       // Extract just the base64 URLs from preview objects for form data
       const base64Images = validPreviews.map(preview => preview.url);
-      updateFormData({ additionalImages: [...formData.additionalImages, ...base64Images] });
+      const currentAdditionalImages = Array.isArray(formData.additionalImages) ? formData.additionalImages : [];
+      const newAdditionalImages = [...currentAdditionalImages, ...base64Images];
+      updateFormData({ additionalImages: newAdditionalImages });
     }
   }, [handleAdditionalImagesChange, updateFormData, formData.additionalImages]);
 
@@ -192,47 +243,70 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
     clearAllErrors();
 
     try {
-      // Prepare form data for submission
+      // Prepare form data for submission - simplified and more reliable
       const submissionData = {
-        ...formData,
-        status: formData.status, // Status is calculated automatically
-        // Keep full collaborator objects for display in submission modal, but also include IDs for backend processing
-        collaborators: Array.isArray(formData.collaborators) 
-          ? formData.collaborators.filter(collab => collab && collab.id)
-          : [],
-        // Keep the File object for the main image
-        image: formData.image instanceof File ? formData.image : null,
-        // Ensure additionalImages contains only base64 strings (for now, as backend doesn't handle additional images yet)
-        additionalImages: Array.isArray(formData.additionalImages) 
-          ? formData.additionalImages.filter(img => typeof img === 'string' && img.startsWith('data:image/'))
-          : []
+        title: formData.title?.trim() || '',
+        description: formData.description?.trim() || '',
+        category: formData.category?.trim() || '',
+        event_start_date: formData.event_start_date || null,
+        event_end_date: formData.event_end_date || null,
+        multiple_dates: formData.multiple_dates || null,
+        status: isEditMode ? (formData.status || 'active') : 'pending',
+        accepts_volunteers: formData.accepts_volunteers !== undefined ? formData.accepts_volunteers : false,
+        // Only send collaborators in create mode - in edit mode they are handled separately via invite endpoint
+        collaborators: isEditMode ? undefined : (
+          Array.isArray(formData.collaborators) 
+            ? formData.collaborators.map(collab => collab.id).filter(id => id && typeof id === 'number')
+            : []
+        ),
+        // Handle image properly for both create and edit modes
+        image: null,
+        // Include additional images from formData
+        additionalImages: Array.isArray(formData.additionalImages) ? formData.additionalImages : [],
+        // Officer information - only for create mode
+        submitted_by_name: !isEditMode ? (formData.submitted_by_name?.trim() || '') : undefined,
+        submitted_by_role: !isEditMode ? (formData.submitted_by_role?.trim() || '') : undefined
       };
 
-      // Handle existing images in edit mode
-      if (isEditMode && program) {
-        // Keep existing image if no new one is uploaded
-        if (!formData.image && program.image) {
-          submissionData.image = program.image;
-        }
-        // Keep existing additional images if no new ones are uploaded
-        if (formData.additionalImages.length === 0 && program.additional_images) {
-          submissionData.additionalImages = program.additional_images;
-        } else if (formData.additionalImages.length > 0) {
-          // In edit mode, we might have a mix of existing and new images
-          // Filter to ensure we only send base64 strings
-          submissionData.additionalImages = formData.additionalImages.filter(img => 
-            typeof img === 'string' && img.startsWith('data:image/')
-          );
+      // Handle image data properly
+      if (formData.image instanceof File) {
+        // For File objects, we'll let the parent component handle upload
+        submissionData.image = formData.image;
+      } else if (typeof formData.image === 'string' && formData.image.startsWith('data:image/')) {
+        // For base64 strings, send as is
+        submissionData.image = formData.image;
+      } else if (isEditMode && program && program.image) {
+        // In edit mode, if no new image is provided, send undefined to keep existing
+        submissionData.image = undefined;
+      } else {
+        // No image provided
+        submissionData.image = null;
+      }
+
+      // In Edit mode, send invites for newly added collaborators before submitting
+      if (isEditMode && sendInvitesForNewCollaborators) {
+        try {
+          await sendInvitesForNewCollaborators(formData.collaborators);
+        } catch (error) {
+          logger.error('Failed to send some collaborator invites', error, { context: 'ProgramForm' });
+          // Continue with form submission even if some invites fail
         }
       }
 
       await onSubmit(submissionData);
+      
+      // Reset form after successful submission (only for create mode)
+      if (!isEditMode) {
+        resetForm();
+        resetImageUploads();
+        resetCollaboration();
+      }
     } catch (error) {
       updateFormData({ submit: error.message || 'Failed to submit form' });
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateForm, formData, isEditMode, program, onSubmit, clearAllErrors, updateFormData]);
+  }, [validateForm, formData, isEditMode, program, onSubmit, clearAllErrors, updateFormData, resetForm, resetImageUploads, resetCollaboration, sendInvitesForNewCollaborators]);
 
   // Handle form key down
   const handleFormKeyDown = useCallback((e) => {
@@ -298,6 +372,68 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
             onRemoveCollaborator={handleRemoveCollaborator}
           />
 
+          {/* Submitted By Section - Only shown in create mode */}
+          {!isEditMode && (
+            <div className={styles.container}>
+              <h3 className={styles.containerTitle}>Submitted by</h3>
+              <div className={styles.submittedByFields}>
+                <div className={styles.submittedByNameField}>
+                  <label className={styles.inlineLabel}>
+                    Name
+                  </label>
+                  <div className={styles.inputWrapper}>
+                    <input
+                      type="text"
+                      className={`${styles.input} ${errors.submitted_by_name ? styles.inputError : ''}`}
+                      value={formData.submitted_by_name || ''}
+                      onChange={(e) => {
+                        updateFormData({ submitted_by_name: e.target.value });
+                        if (errors.submitted_by_name) clearError('submitted_by_name');
+                      }}
+                      placeholder="Enter name"
+                    />
+                    {errors.submitted_by_name && <span className={styles.errorText}>{errors.submitted_by_name}</span>}
+                  </div>
+                </div>
+                <div className={styles.submittedByRoleField}>
+                  <label className={styles.inlineLabel}>
+                    Position
+                  </label>
+                  <div className={styles.roleInputGroup}>
+                    <div className={styles.inputWrapper}>
+                      <CustomDropdown
+                        options={ROLE_OPTIONS}
+                        value={ROLE_OPTIONS.find(option => option.value === formData.submitted_by_role) 
+                          ? formData.submitted_by_role 
+                          : (formData.submitted_by_role && !ROLE_OPTIONS.find(option => option.value === formData.submitted_by_role) 
+                            ? 'Others' 
+                            : '')}
+                        onChange={(selectedValue) => handleRoleChange(selectedValue)}
+                        placeholder="Select a role"
+                        error={!!errors.submitted_by_role}
+                        required
+                      />
+                    </div>
+                    {/* Custom role input - only show when "Others" is selected or when role is not in predefined options */}
+                    {(formData.submitted_by_role === 'Others' || (formData.submitted_by_role && !ROLE_OPTIONS.find(option => option.value === formData.submitted_by_role))) && (
+                      <div className={styles.customRoleInput}>
+                        <input
+                          type="text"
+                          value={customRole}
+                          onChange={(e) => handleCustomRoleChange(e.target.value)}
+                          className={`${styles.input} ${errors.submitted_by_role ? styles.inputError : ''}`}
+                          placeholder="Enter custom role/position"
+                          required
+                        />
+                      </div>
+                    )}
+                  </div>
+                  {errors.submitted_by_role && <span className={styles.errorText}>{errors.submitted_by_role}</span>}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className={styles.formActions}>
             <button
@@ -315,8 +451,8 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
               className={styles.submitButton}
               disabled={isSubmitting}
             >
-              {isSubmitting ? <FaSpinner className={styles.spinner} /> : null}
               {isEditMode ? "Save Changes" : "Submit for Approval"}
+              {isSubmitting ? <FaSpinner className={styles.spinner} /> : null}
             </button>
           </div>
               

@@ -14,12 +14,13 @@ import { FaBars } from 'react-icons/fa';
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isAuthenticated, isLoading: authLoading } = useAuthState();
+  const { user, isAuthenticated } = useAuthState();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isSlidingOut, setIsSlidingOut] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const resizeTimeoutRef = useRef(null);
+  const sidebarTimeoutRef = useRef(null);
 
   // Dropdowns
   const profileDropdown = useDropdown(false);
@@ -28,17 +29,28 @@ export default function Navbar() {
   const handleApplyClick = (e) => {
     if (!isAuthenticated) {
       e.preventDefault();
-      window.dispatchEvent(new CustomEvent('showLoginModal'));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('showLoginModal'));
+      }
     }
   };
 
   // Sidebar open/close
   const handleCloseSidebar = useCallback(() => {
+    // Clear any existing timeout
+    if (sidebarTimeoutRef.current) {
+      clearTimeout(sidebarTimeoutRef.current);
+    }
+
     setIsSlidingOut(true);
-    setTimeout(() => {
-      setMenuOpen(false);
-      setIsSlidingOut(false);
-    }, 300);
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      sidebarTimeoutRef.current = setTimeout(() => {
+        setMenuOpen(false);
+        setIsSlidingOut(false);
+        sidebarTimeoutRef.current = null;
+      }, 300);
+    }
   }, []);
 
   const toggleMenu = useCallback(() => {
@@ -50,7 +62,9 @@ export default function Navbar() {
   const handleResize = useCallback(() => {
     if (resizeTimeoutRef.current) clearTimeout(resizeTimeoutRef.current);
     resizeTimeoutRef.current = setTimeout(() => {
-      if (window.innerWidth > 1180) setMenuOpen(false);
+      if (typeof window !== 'undefined' && window.innerWidth > 1180) {
+        setMenuOpen(false);
+      }
     }, 100);
   }, []);
 
@@ -58,10 +72,25 @@ export default function Navbar() {
     setIsMounted(true);
   }, []);
 
+  // Cleanup timeouts on unmount
   useEffect(() => {
+    return () => {
+      if (resizeTimeoutRef.current) clearTimeout(resizeTimeoutRef.current);
+      if (sidebarTimeoutRef.current) clearTimeout(sidebarTimeoutRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Check for window to avoid SSR errors
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     window.addEventListener('resize', handleResize, { passive: true });
     return () => {
-      window.removeEventListener('resize', handleResize);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', handleResize);
+      }
       if (resizeTimeoutRef.current) clearTimeout(resizeTimeoutRef.current);
     };
   }, [handleResize]);
@@ -90,18 +119,8 @@ export default function Navbar() {
   };
 
 
-  // Loading state while auth initializes
-  if (authLoading) {
-    return (
-      <div className={styles.navbarWrapper}>
-        <nav className={styles.navbar}>
-          <div className={styles.loadingNavbar}>
-            <div className={styles.loadingSpinner}></div>
-          </div>
-        </nav>
-      </div>
-    );
-  }
+  // No loading state - navbar renders immediately
+  // Auth loading is handled by page-level loaders
 
   return (
     <div className={styles.navbarWrapper}>

@@ -222,6 +222,9 @@ export const usePublicBranding = () => {
     fetcher,
     {
       dedupingInterval: 300000, // Cache for 5 minutes (branding doesn't change often)
+      revalidateOnFocus: false, // Don't revalidate on window focus
+      revalidateOnReconnect: false, // Don't revalidate on reconnect
+      revalidateIfStale: false, // Don't revalidate if stale
       onError: (error) => {
         logger.swrError(`${API_BASE_URL}/api/superadmin/branding/public`, error);
       }

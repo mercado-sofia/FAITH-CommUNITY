@@ -5,7 +5,7 @@
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   flex-wrap: wrap;
 }
  
@@ -52,4 +52,34 @@
 .emptyText {
   color: #6b7280;
   font-size: 14px;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .orgSection {
+    top: 0;
+    margin: 0.75rem 0;
+    padding: 0 1rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .orgLabel {
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .orgList {
+    width: auto;
+    justify-content: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .orgItem {
+    font-size: 14px;
+  }
 }

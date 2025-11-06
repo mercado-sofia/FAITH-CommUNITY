@@ -10,6 +10,8 @@
     "tailwind:init": "tailwindcss init -p"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.6",
+    "@react-three/fiber": "^9.4.0",
     "@reduxjs/toolkit": "^2.8.2",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
@@ -24,7 +26,8 @@
     "react-icons": "^5.5.0",
     "react-multi-date-picker": "^4.5.2",
     "react-redux": "^9.2.0",
-    "swr": "^2.3.6"
+    "swr": "^2.3.6",
+    "three": "^0.181.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

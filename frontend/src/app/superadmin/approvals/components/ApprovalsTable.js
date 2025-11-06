@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { HiOutlineDotsHorizontal } from 'react-icons/hi';
 import { formatDateShort } from '../../../../utils/dateUtils';
 import { getStatusBadgeConfig } from '@/utils/collaborationStatusUtils';
+import { getOrganizationImageUrl } from '@/utils/uploadPaths';
 import ViewDetailsModal from './ViewDetailsModal';
 import styles from './styles/ApprovalsTable.module.css';
 
@@ -66,7 +68,7 @@ export default function ApprovalsTable({
               <th className={styles.selectColumn}>
                 <input
                   type="checkbox"
-                  checked={selectedItems.size === approvals.length && approvals.length > 0}
+                  checked={approvals.length > 0 && approvals.every(item => selectedItems.has(item.uniqueKey || item.id))}
                   onChange={onSelectAll}
                   className={styles.checkbox}
                 />
@@ -102,9 +104,46 @@ export default function ApprovalsTable({
                     />
                   </td>
                   <td className={styles.organizationCell}>
-                    <span className={styles.orgAcronym}>
-                      {item.organization_acronym || item.org || 'N/A'}
-                    </span>
+                    <div className={styles.orgInfo}>
+                      <div className={styles.orgLogoContainer}>
+                        {item.organization_logo ? (() => {
+                          const logoUrl = getOrganizationImageUrl(item.organization_logo, 'logo');
+                          if (logoUrl && logoUrl !== 'ORGANIZATION_LOGO_UNAVAILABLE') {
+                            return (
+                              <Image
+                                src={logoUrl}
+                                alt={`${item.organization_acronym || item.org || 'Organization'} logo`}
+                                width={40}
+                                height={40}
+                                className={styles.orgLogo}
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  if (e.target.nextSibling) {
+                                    e.target.nextSibling.style.display = 'flex';
+                                  }
+                                }}
+                              />
+                            );
+                          }
+                          return null;
+                        })() : null}
+                        <div 
+                          className={styles.orgLogoPlaceholder}
+                          style={{ 
+                            display: (() => {
+                              if (!item.organization_logo) return 'flex';
+                              const logoUrl = getOrganizationImageUrl(item.organization_logo, 'logo');
+                              return (logoUrl && logoUrl !== 'ORGANIZATION_LOGO_UNAVAILABLE') ? 'none' : 'flex';
+                            })()
+                          }}
+                        >
+                          {(item.organization_acronym || item.org || '?').charAt(0).toUpperCase()}
+                        </div>
+                      </div>
+                      <span className={styles.orgAcronym}>
+                        {item.organization_acronym || item.org || 'N/A'}
+                      </span>
+                    </div>
                   </td>
                   <td className={styles.sectionCell}>
                     {item.section?.charAt(0).toUpperCase() + item.section?.slice(1) || 'N/A'}

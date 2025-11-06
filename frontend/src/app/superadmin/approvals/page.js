@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { FiCheck, FiX, FiTrash2 } from 'react-icons/fi';
+import { FiCheck, FiX, FiTrash2, FiAlertTriangle, FiInfo } from 'react-icons/fi';
 import { IoCloseOutline } from 'react-icons/io5';
 import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowLeftDoubleFill, RiArrowRightDoubleFill } from "react-icons/ri";
 import BulkActionConfirmationModal from './components/BulkActionConfirmationModal';
@@ -87,13 +87,11 @@ export default function PendingApprovalsPage() {
   // Dropdown state
   const [showDropdown, setShowDropdown] = useState(null);
   const [dropdownPosition, setDropdownPosition] = useState({});
-  
-  
+
   // Bulk action confirmation modal state
   const [showBulkConfirmation, setShowBulkConfirmation] = useState(false);
   const [pendingBulkAction, setPendingBulkAction] = useState(null);
-  
-  
+
   // Individual action modal state
   const [showIndividualModal, setShowIndividualModal] = useState(false);
   const [selectedItemForAction, setSelectedItemForAction] = useState(null);
@@ -156,7 +154,6 @@ export default function PendingApprovalsPage() {
       const allApprovals = submissionsResult.data.map((item) => ({
         ...item,
         submitted_at: new Date(item.submitted_at),
-        type: 'submission',
         uniqueKey: `submission-${item.id}` // Create unique key
       }));
       
@@ -173,7 +170,7 @@ export default function PendingApprovalsPage() {
     }
   }, []);
 
-  const fetchOrganizations = async () => {
+  const fetchOrganizations = useCallback(async () => {
     try {
       setOrgsLoading(true);
       
@@ -192,7 +189,7 @@ export default function PendingApprovalsPage() {
     } finally {
       setOrgsLoading(false);
     }
-  };
+  }, []);
 
   // Success modal handlers
   const showSuccessModal = useCallback((message, type = 'success') => {
@@ -206,7 +203,7 @@ export default function PendingApprovalsPage() {
   useEffect(() => {
     fetchApprovals();
     fetchOrganizations();
-  }, [fetchApprovals]);
+  }, [fetchApprovals, fetchOrganizations]);
 
   // Function to update URL parameters
   const updateURLParams = useCallback((newParams) => {
@@ -311,16 +308,33 @@ export default function PendingApprovalsPage() {
 
     const handleScroll = (e) => {
       // Only close dropdowns if scrolling outside of dropdown containers
-      if (showDropdown && e.target && e.target.closest) {
-        if (!e.target.closest(`.${styles.dropdownWrapper}`) && 
-            !e.target.closest(`.${styles.actionDropdownWrapper}`)) {
+      // Don't close if scrolling inside SearchAndFilterControls or its dropdowns
+      if (showDropdown) {
+        if (e.target && e.target.closest) {
+          // Check if scroll is inside SearchAndFilterControls dropdowns
+          const searchFilterControls = e.target.closest('[data-search-filter-controls]');
+          if (searchFilterControls) {
+            // Check if scrolling inside the options list or dropdown wrapper within SearchAndFilterControls
+            const optionsList = e.target.closest('[class*="options"]');
+            const dropdownWrapper = e.target.closest('[class*="dropdownWrapper"]');
+            if (optionsList || dropdownWrapper) {
+              // Don't close if scrolling inside dropdown options
+              return;
+            }
+          }
+          
+          // Check if scrolling inside action dropdowns (table row actions)
+          if (!e.target.closest(`.${styles.dropdownWrapper}`) && 
+              !e.target.closest(`.${styles.actionDropdownWrapper}`) &&
+              !e.target.closest('[data-search-filter-controls]')) {
+            setShowDropdown(null);
+            setDropdownPosition({});
+          }
+        } else if (e.target && e.target.nodeType === Node.DOCUMENT_NODE) {
+          // If scrolling the document/page itself (not inside a dropdown), close dropdowns
           setShowDropdown(null);
           setDropdownPosition({});
         }
-      } else if (showDropdown) {
-        // If we can't determine the target, close dropdowns to be safe
-        setShowDropdown(null);
-        setDropdownPosition({});
       }
     };
 
@@ -335,6 +349,20 @@ export default function PendingApprovalsPage() {
     };
   }, [showDropdown]);
 
+  // Extract unique sections from approvals data
+  const availableSections = useMemo(() => {
+    const sections = new Set();
+    approvals.forEach(approval => {
+      if (approval.section) {
+        sections.add(approval.section);
+      }
+    });
+    // Sort sections alphabetically for consistent display
+    return Array.from(sections).sort((a, b) => {
+      return a.toLowerCase().localeCompare(b.toLowerCase());
+    });
+  }, [approvals]);
+
   // Filter and search logic
   useEffect(() => {
     let filtered = [...approvals];
@@ -346,10 +374,10 @@ export default function PendingApprovalsPage() {
       );
     }
 
-    // Filter by section
+    // Filter by section (case-insensitive matching)
     if (selectedSection !== 'all') {
       filtered = filtered.filter(approval => 
-        approval.section === selectedSection
+        approval.section && approval.section.toLowerCase() === selectedSection.toLowerCase()
       );
     }
 
@@ -534,7 +562,6 @@ export default function PendingApprovalsPage() {
     }
   }, [showSuccessModal, fetchApprovals]);
 
-
   // Individual action handlers
   const handleApproveClick = useCallback((approval) => {
     setSelectedItemForAction(approval);
@@ -657,7 +684,6 @@ export default function PendingApprovalsPage() {
     setSelectedItemForAction(null);
   };
 
-
   // Pagination logic
   const totalPages = Math.ceil(filteredApprovals.length / showEntries);
   const startIndex = (currentPage - 1) * showEntries;
@@ -673,9 +699,44 @@ export default function PendingApprovalsPage() {
     }
   }, [currentApprovals]);
 
-  // Get pending items from current approvals for bulk actions
-  const pendingApprovals = currentApprovals.filter(approval => approval.status === 'pending');
-  const hasPendingItems = pendingApprovals.length > 0;
+  // Analyze selected items by status
+  const getSelectedItemsStatus = useCallback(() => {
+    const selectedItemsArray = Array.from(selectedItems).map(key => {
+      // Find the item in all approvals (not just current page)
+      return approvals.find(approval => (approval.uniqueKey || approval.id) === key);
+    }).filter(Boolean); // Remove undefined items
+
+    const statusCounts = {
+      pending: 0,
+      approved: 0,
+      rejected: 0,
+      total: selectedItemsArray.length
+    };
+
+    selectedItemsArray.forEach(item => {
+      if (item.status === 'pending' || item.status === 'pending_superadmin_approval') {
+        statusCounts.pending++;
+      } else if (item.status === 'approved') {
+        statusCounts.approved++;
+      } else if (item.status === 'rejected') {
+        statusCounts.rejected++;
+      }
+    });
+
+    return {
+      ...statusCounts,
+      hasPending: statusCounts.pending > 0,
+      hasApproved: statusCounts.approved > 0,
+      hasRejected: statusCounts.rejected > 0,
+      hasMixed: statusCounts.pending > 0 && (statusCounts.approved > 0 || statusCounts.rejected > 0),
+      canApprove: statusCounts.pending > 0,
+      canReject: statusCounts.pending > 0,
+      allApproved: statusCounts.pending === 0 && statusCounts.approved > 0 && statusCounts.rejected === 0,
+      allRejected: statusCounts.pending === 0 && statusCounts.rejected > 0 && statusCounts.approved === 0
+    };
+  }, [selectedItems, approvals]);
+
+  const selectedStatusInfo = getSelectedItemsStatus();
 
   const handleSelectItem = useCallback((id) => {
     setSelectedItems(prev => {
@@ -688,7 +749,6 @@ export default function PendingApprovalsPage() {
       return newSelected;
     });
   }, []);
-
 
   const handleBulkApproveSelected = useCallback(() => {
     if (selectedItems.size === 0 || isBulkActionLoading) return;
@@ -724,27 +784,55 @@ export default function PendingApprovalsPage() {
     setShowBulkConfirmation(false);
     
     try {
+      // Get current status info
+      const statusInfo = getSelectedItemsStatus();
+      
+      // Filter to only pending items for approve/reject actions
       const selectedIds = Array.from(selectedItems);
       
-      switch (pendingBulkAction) {
-        case 'approve':
-          await handleBulkApprove(selectedIds);
-          break;
-        case 'reject':
-          await handleBulkReject(selectedIds, rejectComment || 'Bulk rejection');
-          break;
-        default:
-          throw new Error('Invalid bulk action');
+      if (pendingBulkAction === 'approve' || pendingBulkAction === 'reject') {
+        // Only process pending items
+        const actionableIds = selectedIds.filter(key => {
+          const item = approvals.find(approval => (approval.uniqueKey || approval.id) === key);
+          return item && (item.status === 'pending' || item.status === 'pending_superadmin_approval');
+        });
+        
+        // If there are non-pending items selected, show feedback
+        if (actionableIds.length < selectedIds.length) {
+          const skipped = selectedIds.length - actionableIds.length;
+          showSuccessModal(
+            `${pendingBulkAction === 'approve' ? 'Approved' : 'Rejected'} ${actionableIds.length} pending item(s). ${skipped} item(s) were skipped (already ${statusInfo.allApproved ? 'approved' : statusInfo.allRejected ? 'rejected' : 'processed'}).`,
+            'success'
+          );
+        }
+        
+        if (actionableIds.length === 0) {
+          showSuccessModal('No pending items to process. Please select pending items.', 'error');
+          setIsBulkActionLoading(false);
+          setPendingBulkAction(null);
+          return;
+        }
+        
+        switch (pendingBulkAction) {
+          case 'approve':
+            await handleBulkApprove(actionableIds);
+            break;
+          case 'reject':
+            await handleBulkReject(actionableIds, rejectComment || 'Bulk rejection');
+            break;
+          default:
+            throw new Error('Invalid bulk action');
+        }
+        
+        setSelectedItems(new Set());
       }
-      
-      setSelectedItems(new Set());
     } catch (error) {
       // Error handling is already done in the individual handlers
     } finally {
       setIsBulkActionLoading(false);
       setPendingBulkAction(null);
     }
-  }, [pendingBulkAction, selectedItems, handleBulkApprove, handleBulkReject]);
+  }, [pendingBulkAction, selectedItems, getSelectedItemsStatus, approvals, handleBulkApprove, handleBulkReject, showSuccessModal]);
 
   // Event handlers
   const handleOrganizationChange = useCallback((e) => {
@@ -800,7 +888,10 @@ export default function PendingApprovalsPage() {
 
   if (error) {
     return (
-      <div className={styles.container}>
+      <div className={styles.mainArea}>
+        <div className={styles.header}>
+          <h1 className={styles.pageTitle}>Approvals</h1>
+        </div>
         <div className={styles.error}>Error: {error}</div>
       </div>
     );
@@ -831,6 +922,7 @@ export default function PendingApprovalsPage() {
         showEntries={showEntries}
         organizations={organizations}
         orgsLoading={orgsLoading}
+        availableSections={availableSections}
         showDropdown={showDropdown}
         setShowDropdown={setShowDropdown}
         onOrganizationChange={handleOrganizationChange}
@@ -845,50 +937,79 @@ export default function PendingApprovalsPage() {
 
       {/* Bulk Actions Bar */}
       {isBulkActionsVisible && (
-        <div className={styles.bulkActionsBar}>
-          <div className={styles.bulkActionsLeft}>
-            <span className={styles.selectedCount}>
-              {selectedItems.size} item{selectedItems.size !== 1 ? 's' : ''} selected
-            </span>
+        <>
+          <div className={styles.bulkActionsBar}>
+            <div className={styles.bulkActionsLeft}>
+              <span className={styles.selectedCount}>
+                {selectedItems.size} item{selectedItems.size !== 1 ? 's' : ''} selected
+                {selectedStatusInfo.total > 0 && (
+                  <>
+                    {selectedStatusInfo.pending > 0 && ` • ${selectedStatusInfo.pending} pending`}
+                    {selectedStatusInfo.approved > 0 && ` • ${selectedStatusInfo.approved} approved`}
+                    {selectedStatusInfo.rejected > 0 && ` • ${selectedStatusInfo.rejected} rejected`}
+                  </>
+                )}
+              </span>
+            </div>
+            <div className={styles.bulkActionsRight}>
+              <button 
+                onClick={handleBulkApproveSelected}
+                disabled={isBulkActionLoading || !selectedStatusInfo.canApprove}
+                className={`${styles.bulkActionBtn} ${styles.bulkApproveBtn} ${isBulkActionLoading ? styles.loading : ''} ${!selectedStatusInfo.canApprove ? styles.disabled : ''}`}
+                title={!selectedStatusInfo.canApprove ? 'No pending items selected' : selectedStatusInfo.hasMixed ? `Approve ${selectedStatusInfo.pending} pending item${selectedStatusInfo.pending !== 1 ? 's' : ''}` : 'Approve all selected items'}
+              >
+                <FiCheck />
+                {isBulkActionLoading ? 'Processing...' : (
+                  selectedStatusInfo.hasMixed 
+                    ? `Approve ${selectedStatusInfo.pending} Pending`
+                    : selectedStatusInfo.pending === selectedItems.size 
+                      ? 'Approve All'
+                      : `Approve ${selectedStatusInfo.pending} Pending`
+                )}
+              </button>
+              <button 
+                onClick={handleBulkRejectSelected}
+                disabled={isBulkActionLoading || !selectedStatusInfo.canReject}
+                className={`${styles.bulkActionBtn} ${styles.bulkRejectBtn} ${isBulkActionLoading ? styles.loading : ''} ${!selectedStatusInfo.canReject ? styles.disabled : ''}`}
+                title={!selectedStatusInfo.canReject ? 'No pending items selected' : selectedStatusInfo.hasMixed ? `Reject ${selectedStatusInfo.pending} pending item${selectedStatusInfo.pending !== 1 ? 's' : ''}` : 'Reject all selected items'}
+              >
+                <FiX />
+                {isBulkActionLoading ? 'Processing...' : (
+                  selectedStatusInfo.hasMixed 
+                    ? `Reject ${selectedStatusInfo.pending} Pending`
+                    : selectedStatusInfo.pending === selectedItems.size 
+                      ? 'Reject All'
+                      : `Reject ${selectedStatusInfo.pending} Pending`
+                )}
+              </button>
+              <button 
+                onClick={handleBulkDeleteSelected}
+                disabled={isBulkActionLoading}
+                className={`${styles.bulkActionBtn} ${styles.bulkDeleteBtn} ${isBulkActionLoading ? styles.loading : ''}`}
+                title="Delete selected items"
+              >
+                <FiTrash2 />
+              </button>
+              <button 
+                className={styles.cancelButton}
+                onClick={cancelSelection}
+                title="Cancel selection"
+              >
+                <IoCloseOutline />
+              </button>
+            </div>
           </div>
-          <div className={styles.bulkActionsRight}>
-            {hasPendingItems && (
-              <>
-                <button 
-                  onClick={handleBulkApproveSelected}
-                  disabled={isBulkActionLoading}
-                  className={`${styles.bulkActionBtn} ${styles.bulkApproveBtn} ${isBulkActionLoading ? styles.loading : ''}`}
-                >
-                  <FiCheck />
-                  {isBulkActionLoading ? 'Processing...' : 'Approve All'}
-                </button>
-                <button 
-                  onClick={handleBulkRejectSelected}
-                  disabled={isBulkActionLoading}
-                  className={`${styles.bulkActionBtn} ${styles.bulkRejectBtn} ${isBulkActionLoading ? styles.loading : ''}`}
-                >
-                  <FiX />
-                  {isBulkActionLoading ? 'Processing...' : 'Reject All'}
-                </button>
-              </>
-            )}
-            <button 
-              onClick={handleBulkDeleteSelected}
-              disabled={isBulkActionLoading}
-              className={`${styles.bulkActionBtn} ${styles.bulkDeleteBtn} ${isBulkActionLoading ? styles.loading : ''}`}
-            >
-              <FiTrash2 />
-              {isBulkActionLoading ? 'Processing...' : 'Delete All'}
-            </button>
-            <button 
-              className={styles.cancelButton}
-              onClick={cancelSelection}
-              title="Cancel selection"
-            >
-              <IoCloseOutline />
-            </button>
-          </div>
-        </div>
+          {/* Mixed Status Caution Banner */}
+          {selectedStatusInfo.hasMixed && (
+            <div className={styles.mixedStatusCaution}>
+              <FiInfo className={styles.cautionIcon} />
+              <span className={styles.cautionText}>
+                Only {selectedStatusInfo.pending} pending item{selectedStatusInfo.pending !== 1 ? 's' : ''} will be affected by approve/reject actions.
+                {selectedStatusInfo.approved > 0 && ` ${selectedStatusInfo.approved} approved`}{selectedStatusInfo.approved > 0 && selectedStatusInfo.rejected > 0 ? ' and' : ''}{selectedStatusInfo.rejected > 0 && ` ${selectedStatusInfo.rejected} rejected`} item{selectedStatusInfo.approved + selectedStatusInfo.rejected !== 1 ? 's' : ''} will be skipped.
+              </span>
+            </div>
+          )}
+        </>
       )}
 
       {/* Table Section */}
@@ -912,7 +1033,8 @@ export default function PendingApprovalsPage() {
         {filteredApprovals.length > 0 && (
           <div className={styles.pagination}>
             <div className={styles.paginationInfo}>
-              Showing {startIndex + 1} to {Math.min(endIndex, filteredApprovals.length)} of {filteredApprovals.length} entries
+              <span>{filteredApprovals.length} total entries • Showing {currentApprovals.length} entries on this page</span>
+              <span className={styles.pageIndicator}>Page {currentPage} of {totalPages}</span>
             </div>
             <div className={styles.paginationControls}>
               {/* First Page Button */}
@@ -981,6 +1103,8 @@ export default function PendingApprovalsPage() {
         isOpen={showBulkConfirmation}
         actionType={pendingBulkAction}
         selectedCount={selectedItems.size}
+        actionableCount={selectedStatusInfo.canApprove || selectedStatusInfo.canReject ? selectedStatusInfo.pending : selectedItems.size}
+        hasMixedStatus={selectedStatusInfo.hasMixed}
         onConfirm={handleBulkConfirmationConfirm}
         onCancel={handleBulkConfirmationCancel}
         isProcessing={isBulkActionLoading}
@@ -1001,6 +1125,8 @@ export default function PendingApprovalsPage() {
         isOpen={showIndividualModal}
         actionType={pendingIndividualAction}
         selectedCount={1}
+        actionableCount={selectedItemForAction && (selectedItemForAction.status === 'pending' || selectedItemForAction.status === 'pending_superadmin_approval') ? 1 : 0}
+        hasMixedStatus={false}
         selectedItem={selectedItemForAction}
         onConfirm={handleIndividualActionConfirm}
         onCancel={handleIndividualActionCancel}

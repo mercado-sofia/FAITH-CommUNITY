@@ -37,13 +37,33 @@ const authenticateAdmin = (req, res, next) => {
 // Using Cloudinary for file storage - no local uploads directory needed
 
 // Generic upload handler that processes any file type
-router.post('/', verifyAdminOrSuperadmin, cloudinaryUploadConfigs.programMain.single('file'), async (req, res, next) => {
+// Use dynamic middleware based on upload type from query params
+router.post('/', verifyAdminOrSuperadmin, (req, res, next) => {
+  // Check query params first (since body needs multer to parse)
+  const uploadType = req.query.type || 'program';
+  
+  // Select appropriate multer config based on upload type
+  let uploadMiddleware;
+  if (uploadType === 'highlight') {
+    uploadMiddleware = cloudinaryUploadConfigs.highlight.single('file');
+  } else {
+    uploadMiddleware = cloudinaryUploadConfigs.programMain.single('file');
+  }
+  
+  // Apply the middleware
+  uploadMiddleware(req, res, (err) => {
+    if (err) {
+      return next(err);
+    }
+    next();
+  });
+}, async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
     
-    // Determine upload type from request body or query params
+    // Determine upload type from request body or query params (body is now parsed)
     const uploadType = req.body.uploadType || req.query.type || 'program';
     
     // Use appropriate folder and prefix based on upload type
@@ -110,7 +130,10 @@ router.post('/', verifyAdminOrSuperadmin, cloudinaryUploadConfigs.programMain.si
 router.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ error: 'File too large. Maximum size is 5MB.' });
+      // Determine upload type to provide accurate error message
+      const uploadType = req.query.type || req.body?.uploadType || 'program';
+      const maxSize = uploadType === 'highlight' ? '100MB' : '5MB';
+      return res.status(400).json({ error: `File too large. Maximum size is ${maxSize}.` });
     }
     if (error.code === 'LIMIT_FILE_COUNT') {
       return res.status(400).json({ error: 'Too many files. Only one file allowed.' });

@@ -163,7 +163,8 @@ export const registerUser = async (req, res) => {
       });
 
     } catch (emailError) {
-      // If email fails, still return success but inform user to contact support
+      console.error('❌ Failed to send verification email:', emailError.message);
+      
       res.status(201).json({
         message: 'Registration successful! However, we could not send the verification email. Please contact support to verify your account.',
         user: {

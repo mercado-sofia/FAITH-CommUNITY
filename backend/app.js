@@ -331,6 +331,20 @@ app.listen(PORT, async () => {
   } catch (error) {
     console.error('❌ Database initialization failed:', error);
   }
+
+  // Verify SMTP configuration
+  try {
+    const { verifySMTPConnection, getSMTPStatus } = await import("./src/utils/mailer.js");
+    const status = getSMTPStatus();
+    
+    if (!status.configured) {
+      console.warn('⚠️  SMTP not configured. Email features will not work.');
+    } else {
+      verifySMTPConnection().catch(() => {});
+    }
+  } catch (error) {
+    console.error('❌ Failed to check SMTP configuration:', error.message);
+  }
  
   // IMPORTANT: For serverless environments (Vercel, AWS Lambda, etc.):
   // setInterval and setTimeout may not work reliably as functions can be frozen/restarted.

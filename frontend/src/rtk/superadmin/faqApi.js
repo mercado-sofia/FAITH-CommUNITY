@@ -7,9 +7,14 @@ export const faqApi = createApi({
     prepareHeaders: (headers, { getState }) => {
       headers.set("Content-Type", "application/json")
 
-      // Add JWT token for admin authentication if needed
+      // Add JWT token for authentication - check for both admin and superadmin tokens
       // Check for window to avoid SSR errors
-      const token = getState().admin?.token || (typeof window !== 'undefined' ? localStorage.getItem("adminToken") : null)
+      const adminToken = getState().admin?.token || (typeof window !== 'undefined' ? localStorage.getItem("adminToken") : null)
+      const superadminToken = typeof window !== 'undefined' ? localStorage.getItem("superAdminToken") : null
+      
+      // Use superadmin token if available, otherwise use admin token
+      const token = superadminToken || adminToken
+      
       if (token) {
         headers.set("Authorization", `Bearer ${token}`)
       }

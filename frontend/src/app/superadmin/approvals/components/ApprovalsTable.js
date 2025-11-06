@@ -255,6 +255,8 @@ export default function ApprovalsTable({
         isOpen={showDetailsModal}
         onClose={handleDetailsClose}
         submissionData={selectedItemForDetails}
+        onApprove={onApprove}
+        onReject={onRejectClick}
       />
     </>
   );

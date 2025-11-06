@@ -10,7 +10,8 @@ import {
   useMarkAllSuperAdminAsReadMutation,
   useDeleteSuperAdminNotificationMutation 
 } from '../../../rtk/superadmin/superadminNotificationsApi';
-import { FiX, FiTrash2 } from 'react-icons/fi';
+import { FiTrash2 } from 'react-icons/fi';
+import { IoCloseOutline } from 'react-icons/io5';
 import { PiChecksBold } from 'react-icons/pi';
 import { ConfirmationModal } from '@/components';
 import SkeletonLoader from '../../admin/components/SkeletonLoader/SkeletonLoader';
@@ -100,6 +101,38 @@ export default function SuperAdminNotificationsPage() {
     );
   };
 
+  // Handle select all notifications
+  const handleSelectAll = () => {
+    if (!sampleNotificationsData?.notifications) return;
+    
+    const notifications = sampleNotificationsData.notifications;
+    
+    // Filter notifications based on current tab
+    const filtered = notifications.filter(notification => {
+      switch (currentTab) {
+        case 'unread':
+          return !notification.is_read;
+        case 'all':
+        default:
+          return true;
+      }
+    });
+    
+    // Get all notification IDs
+    const allIds = filtered.map(n => n.id);
+    
+    // Check if all are already selected
+    const allSelected = allIds.length > 0 && allIds.every(id => selectedNotifications.includes(id));
+    
+    if (allSelected) {
+      // Deselect all
+      setSelectedNotifications([]);
+    } else {
+      // Select all
+      setSelectedNotifications(allIds);
+    }
+  };
+
   // Handle cancel selection
   const handleCancelSelection = () => {
     setSelectedNotifications([]);
@@ -176,24 +209,28 @@ export default function SuperAdminNotificationsPage() {
         <div className={styles.headerTop}>
           <h1 className={styles.pageTitle}>Notifications</h1>
           <div className={styles.headerActions}>
-            {selectedNotifications.length > 0 && (
-              <div className={styles.bulkActionsContainer}>
-                <button 
-                  className={styles.deleteSelectedBtn}
-                  onClick={() => setShowDeleteModal(true)}
-                >
-                  <FiTrash2 size={16} />
-                  Delete Selected ({selectedNotifications.length})
-                </button>
-                <button 
-                  className={styles.cancelSelectionBtn}
-                  onClick={handleCancelSelection}
-                  title="Cancel selection"
-                >
-                  <FiX size={16} />
-                </button>
-              </div>
-            )}
+            <button 
+              className={styles.selectAllBtn}
+              onClick={handleSelectAll}
+            >
+              <PiChecksBold size={16} />
+              {(() => {
+                if (!sampleNotificationsData?.notifications) return 'Select All';
+                const notifications = sampleNotificationsData.notifications;
+                const filtered = notifications.filter(notification => {
+                  switch (currentTab) {
+                    case 'unread':
+                      return !notification.is_read;
+                    case 'all':
+                    default:
+                      return true;
+                  }
+                });
+                const allIds = filtered.map(n => n.id);
+                const allSelected = allIds.length > 0 && allIds.every(id => selectedNotifications.includes(id));
+                return allSelected ? 'Deselect All' : 'Select All';
+              })()}
+            </button>
             {unreadCountData?.count > 0 && (
               <button 
                 className={styles.markAllReadBtn}
@@ -234,12 +271,41 @@ export default function SuperAdminNotificationsPage() {
       </div>
 
       <div className={styles.content}>
+        {/* Bulk Actions Bar */}
+        {selectedNotifications.length > 0 && (
+          <div className={styles.bulkActionsBar}>
+            <div className={styles.bulkActionsLeft}>
+              <span className={styles.selectedCount}>
+                {selectedNotifications.length} notification{selectedNotifications.length !== 1 ? 's' : ''} selected
+              </span>
+            </div>
+            <div className={styles.bulkActionsRight}>
+              <button 
+                className={`${styles.bulkButton} ${styles.deleteButton}`}
+                onClick={() => setShowDeleteModal(true)}
+                title="Delete selected notifications"
+              >
+                <FiTrash2 size={16} />
+                Delete Selected
+              </button>
+              <button 
+                className={styles.cancelSelectionBtn}
+                onClick={handleCancelSelection}
+                title="Cancel selection"
+              >
+                <IoCloseOutline />
+              </button>
+            </div>
+          </div>
+        )}
+
         <InfiniteScrollSuperAdminNotifications
           currentTab={currentTab}
           onNotificationSelect={handleNotificationSelect}
           selectedNotifications={selectedNotifications}
           onMarkAsRead={handleMarkAsRead}
           onDeleteClick={handleIndividualDeleteClick}
+          allNotifications={sampleNotificationsData?.notifications || []}
         />
       </div>
 

@@ -158,14 +158,14 @@ export default function InvitationsTable({
     }
   };
 
-  // Custom function to preserve exact date/time split format for UI
+  // Format date as "Mon DD, YYYY HH:MM AM/PM"
   const formatDate = (dateString) => {
-    if (!dateString) return { datePart: 'N/A', timePart: 'N/A' };
+    if (!dateString) return 'N/A';
     try {
       const date = new Date(dateString);
       const datePart = date.toLocaleDateString('en-US', {
-        month: '2-digit',
-        day: '2-digit',
+        month: 'short',
+        day: 'numeric',
         year: 'numeric'
       });
       const timePart = date.toLocaleTimeString('en-US', {
@@ -173,9 +173,9 @@ export default function InvitationsTable({
         minute: '2-digit',
         hour12: true
       });
-      return { datePart, timePart };
+      return `${datePart} ${timePart}`;
     } catch (error) {
-      return { datePart: 'Invalid', timePart: 'Invalid' };
+      return 'Invalid';
     }
   };
 
@@ -247,7 +247,6 @@ export default function InvitationsTable({
               title="Delete selected invitations and admin accounts"
             >
               <FiTrash2 size={16} />
-              Delete Selected
             </button>
             <button 
               className={styles.cancelSelectionButton}
@@ -306,14 +305,12 @@ export default function InvitationsTable({
                   </td>
                   <td className={styles.sentColumn}>
                     <div className={styles.dateText}>
-                      <span>{formatDate(invitation.created_at).datePart}</span>
-                      <span>{formatDate(invitation.created_at).timePart}</span>
+                      {formatDate(invitation.created_at)}
                     </div>
                   </td>
                   <td className={styles.expiresColumn}>
                     <div className={styles.dateText}>
-                      <span>{formatDate(invitation.expires_at).datePart}</span>
-                      <span>{formatDate(invitation.expires_at).timePart}</span>
+                      {formatDate(invitation.expires_at)}
                     </div>
                   </td>
                   <td className={styles.statusColumn}>

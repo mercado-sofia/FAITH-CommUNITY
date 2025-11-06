@@ -9,6 +9,8 @@ export default function BulkActionConfirmationModal({
   isOpen,
   actionType, // 'approve', 'reject', 'delete'
   selectedCount,
+  actionableCount, // Number of items that can actually be processed
+  hasMixedStatus, // Whether selection contains mixed statuses
   selectedItem, // For individual actions
   onConfirm,
   onCancel,
@@ -45,26 +47,34 @@ export default function BulkActionConfirmationModal({
     
     switch (actionType) {
       case 'approve':
+        const approveCount = actionableCount !== undefined ? actionableCount : selectedCount;
+        const hasSkipped = hasMixedStatus && actionableCount !== undefined && actionableCount < selectedCount;
         return {
           title: `Approve ${actionText} Selected ${itemText}`,
           message: isIndividual 
             ? `Are you sure you want to approve ${itemName}'s submission?`
-            : `Are you sure you want to approve ${selectedCount} selected submission${selectedCount !== 1 ? 's' : ''}?`,
+            : `Are you sure you want to approve ${approveCount} pending submission${approveCount !== 1 ? 's' : ''}?`,
           details: isIndividual 
             ? 'This will approve the submission and it will be processed immediately.'
-            : 'This will approve all selected submissions and they will be processed immediately.',
+            : hasSkipped
+              ? `This will approve ${approveCount} pending submission${approveCount !== 1 ? 's' : ''}. ${selectedCount - approveCount} already processed item${selectedCount - approveCount !== 1 ? 's' : ''} will be skipped.`
+              : 'This will approve all selected pending submissions and they will be processed immediately.',
           buttonText: isMultiple ? 'Approve All' : 'Approve',
           buttonClass: styles.approveBtn
         };
       case 'reject':
+        const rejectCount = actionableCount !== undefined ? actionableCount : selectedCount;
+        const hasRejectSkipped = hasMixedStatus && actionableCount !== undefined && actionableCount < selectedCount;
         return {
           title: `Reject ${actionText} Selected ${itemText}`,
           message: isIndividual 
             ? `Are you sure you want to reject ${itemName}'s submission?`
-            : `Are you sure you want to reject ${selectedCount} selected submission${selectedCount !== 1 ? 's' : ''}?`,
+            : `Are you sure you want to reject ${rejectCount} pending submission${rejectCount !== 1 ? 's' : ''}?`,
           details: isIndividual 
             ? 'This will reject the submission and it will be returned to the organization.'
-            : 'This will reject all selected submissions and they will be returned to the organization.',
+            : hasRejectSkipped
+              ? `This will reject ${rejectCount} pending submission${rejectCount !== 1 ? 's' : ''}. ${selectedCount - rejectCount} already processed item${selectedCount - rejectCount !== 1 ? 's' : ''} will be skipped.`
+              : 'This will reject all selected pending submissions and they will be returned to the organization.',
           buttonText: isMultiple ? 'Reject All' : 'Reject',
           buttonClass: styles.rejectBtn,
           showComment: true

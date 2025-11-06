@@ -58,6 +58,32 @@
   color: #06100f;
 }
 
+.mixedStatusCaution {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background-color: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #92400e;
+  font-family: var(--font-inter);
+}
+
+.cautionIcon {
+  flex-shrink: 0;
+  color: #d97706;
+  margin-top: 2px;
+  font-size: 16px;
+}
+
+.cautionText {
+  flex: 1;
+  line-height: 1.5;
+}
+
 .bulkActionsRight {
   display: flex;
   gap: 8px;
@@ -103,25 +129,30 @@
   background-color: #fff;
   color: #dc2626;
   border-color: #dc2626;
+  padding: 8px 10px;
 }
 
 .bulkDeleteBtn:hover {
   background-color: #fef2f2;
 }
 
-.bulkActionBtn:disabled {
+.bulkActionBtn:disabled,
+.bulkActionBtn.disabled {
   background-color: #f3f4f6 !important;
   color: #9ca3af !important;
   border-color: #d1d5db !important;
   cursor: not-allowed !important;
   pointer-events: auto;
+  opacity: 0.6;
 }
 
-.bulkActionBtn:disabled:hover {
+.bulkActionBtn:disabled:hover,
+.bulkActionBtn.disabled:hover {
   background-color: #f3f4f6 !important;
   color: #9ca3af !important;
   border-color: #d1d5db !important;
   cursor: not-allowed !important;
+  opacity: 0.6;
 }
 
 .bulkActionBtn.loading {
@@ -178,6 +209,14 @@
 .paginationInfo {
   font-size: 0.875rem;
   color: #6b7280;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pageIndicator {
+  font-weight: 600;
+  color: #374151;
 }
 
 .paginationControls {

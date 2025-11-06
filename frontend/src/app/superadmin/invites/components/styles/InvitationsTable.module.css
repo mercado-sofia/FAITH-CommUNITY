@@ -56,6 +56,8 @@
   background-color: #fff;
   color: #dc2626;
   border-color: #dc2626;
+  padding: 8px;
+  justify-content: center;
 }
 
 .deleteButton:hover {
@@ -176,7 +178,20 @@
   width: 16px;
   height: 16px;
   cursor: pointer;
-  accent-color: #1d9782;
+  accent-color: #3b82f6;
+  border-radius: 3px;
+  border: 1px solid #d1d5db;
+  transition: all 0.15s ease;
+}
+
+.checkbox:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.checkbox:checked {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
 }
 
 /* Text Content */
@@ -195,10 +210,8 @@
   font-size: 13px;
   font-weight: 500;
   display: flex;
-  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
   height: 100%;
   padding: 0.5rem 0;
 }

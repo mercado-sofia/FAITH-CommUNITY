@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link'
+import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
 import { FiEye, FiChevronDown } from 'react-icons/fi';
 import { formatDateShort } from '../../../../utils/dateUtils';
+import { getOrganizationImageUrl } from '@/utils/uploadPaths';
 import styles from './styles/PendingApprovalsTable.module.css';
 import { useGetRecentApprovalsQuery, useGetOrganizationsForFilterQuery } from '../../../../rtk/superadmin/dashboardApi';
 
@@ -67,16 +69,9 @@ export default function PendingApprovalsTable() {
 
   const displayList = organizationFilteredList.slice(0, Math.max(5, organizationFilteredList.length));
 
-  // Format date for display - handle string dates from API
-  // Custom function to preserve exact ISO date format for UI
+  // Format date for display - using same format as approvals page
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    try {
-      const date = new Date(dateString);
-      return date.toISOString().split('T')[0];
-    } catch (error) {
-      return 'Invalid';
-    }
+    return formatDateShort(dateString);
   };
 
   // Get section display name
@@ -228,7 +223,48 @@ export default function PendingApprovalsTable() {
         <tbody>
           {displayList.map((approval) => (
             <tr key={approval.id}>
-              <td>{approval.organization_acronym || 'N/A'}</td>
+              <td>
+                <div className={styles.orgInfo}>
+                  <div className={styles.orgLogoContainer}>
+                    {approval.organization_logo ? (() => {
+                      const logoUrl = getOrganizationImageUrl(approval.organization_logo, 'logo');
+                      if (logoUrl && logoUrl !== 'ORGANIZATION_LOGO_UNAVAILABLE') {
+                        return (
+                          <Image
+                            src={logoUrl}
+                            alt={`${approval.organization_acronym || approval.org || 'Organization'} logo`}
+                            width={40}
+                            height={40}
+                            className={styles.orgLogo}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              if (e.target.nextSibling) {
+                                e.target.nextSibling.style.display = 'flex';
+                              }
+                            }}
+                          />
+                        );
+                      }
+                      return null;
+                    })() : null}
+                    <div 
+                      className={styles.orgLogoPlaceholder}
+                      style={{ 
+                        display: (() => {
+                          if (!approval.organization_logo) return 'flex';
+                          const logoUrl = getOrganizationImageUrl(approval.organization_logo, 'logo');
+                          return (logoUrl && logoUrl !== 'ORGANIZATION_LOGO_UNAVAILABLE') ? 'none' : 'flex';
+                        })()
+                      }}
+                    >
+                      {(approval.organization_acronym || approval.org || '?').charAt(0).toUpperCase()}
+                    </div>
+                  </div>
+                  <span className={styles.orgAcronym}>
+                    {approval.organization_acronym || approval.org || 'N/A'}
+                  </span>
+                </div>
+              </td>
               <td>{getSectionName(approval.section)}</td>
               <td>{formatDate(approval.submitted_at)}</td>
               <td>

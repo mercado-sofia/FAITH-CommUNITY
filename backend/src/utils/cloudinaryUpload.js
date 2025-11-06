@@ -33,6 +33,41 @@ const documentFileFilter = (req, file, cb) => {
   }
 };
 
+// File filter for videos
+const videoFileFilter = (req, file, cb) => {
+  const allowedTypes = [
+    "video/mp4", "video/mpeg", "video/quicktime", // MOV
+    "video/x-msvideo", // AVI
+    "video/x-ms-wmv", // WMV
+    "video/x-flv", // FLV
+    "video/webm"
+  ];
+  
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only MP4, MOV, AVI, WMV, FLV, and WebM videos are allowed"), false);
+  }
+};
+
+// File filter for highlights (images and videos)
+const highlightFileFilter = (req, file, cb) => {
+  const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "image/svg+xml", "image/avif"];
+  const allowedVideoTypes = [
+    "video/mp4", "video/mpeg", "video/quicktime", // MOV
+    "video/x-msvideo", // AVI
+    "video/x-ms-wmv", // WMV
+    "video/x-flv", // FLV
+    "video/webm"
+  ];
+  
+  if (allowedImageTypes.includes(file.mimetype) || allowedVideoTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only images (JPEG, PNG, GIF, WebP) and videos (MP4, MOV, AVI, WMV, FLV, WebM) are allowed"), false);
+  }
+};
+
 // Generate unique filename for Cloudinary
 const generateUniqueFilename = (originalname, prefix = '') => {
   const timestamp = Date.now();
@@ -161,8 +196,18 @@ export const cloudinaryUploadConfigs = {
     prefix: 'prog_add_',
     files: 10, // Allow up to 10 additional images
     fileSize: 5 * 1024 * 1024 // 5MB for additional images
+  }),
+  
+  // Highlight uploads (images and videos)
+  highlight: createCloudinaryUploadConfig(CLOUDINARY_FOLDERS.HIGHLIGHTS, {
+    fileFilter: highlightFileFilter,
+    prefix: 'highlight_',
+    fileSize: 100 * 1024 * 1024 // 100MB for highlights (to support videos)
   })
 };
+
+// Export file filters for use in routes
+export { imageFileFilter, videoFileFilter, highlightFileFilter, documentFileFilter };
 
 // Helper function to get optimized image URL
 export const getOptimizedImageUrl = (publicId, options = {}) => {

@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { FaSpinner, FaTimes, FaUpload, FaImage, FaVideo, FaFile, FaEye } from 'react-icons/fa';
+import { FaSpinner, FaTimes, FaUpload, FaImage, FaVideo, FaFile, FaEye, FaExclamationTriangle, FaCheckCircle } from 'react-icons/fa';
 import { FiArrowLeft } from 'react-icons/fi';
 import styles from './HighlightForm.module.css';
 
@@ -19,6 +19,7 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
   const [errors, setErrors] = useState({});
   const [dragActive, setDragActive] = useState({ images: false, videos: false });
   const [uploadingFiles, setUploadingFiles] = useState([]);
+  const [uploadComplete, setUploadComplete] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
@@ -93,7 +94,8 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
     }
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/upload`, {
+      // Send uploadType in query params for multer to use before parsing body
+      const response = await fetch(`${API_BASE_URL}/api/upload?type=highlight`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -102,7 +104,14 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
       });
 
       if (!response.ok) {
-        throw new Error('Upload failed');
+        let errorMessage = 'Upload failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          errorMessage = `Upload failed: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
@@ -140,6 +149,7 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
     setUploadingFiles(prev => [...prev, ...validFiles.map(f => f.name)]);
 
     try {
+      setUploadComplete(false);
       const uploadPromises = validFiles.map(file => uploadFile(file));
       const uploadedFiles = await Promise.all(uploadPromises);
       
@@ -147,8 +157,18 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
         ...prev,
         media: [...prev.media, ...uploadedFiles]
       }));
+      
+      // Show success message after upload completes
+      setUploadComplete(true);
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setUploadComplete(false);
+      }, 3000);
     } catch (error) {
-      // Files failed to upload
+      // Files failed to upload - show error message
+      console.error('Image upload failed:', error);
+      alert(`Failed to upload image(s): ${error.message || 'Unknown error'}`);
+      setUploadComplete(false);
     } finally {
       setUploadingFiles(prev => prev.filter(name => !validFiles.some(f => f.name === name)));
     }
@@ -157,23 +177,38 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
   // Handle file selection for videos
   const handleVideoFiles = useCallback(async (files) => {
     const fileArray = Array.from(files);
-    const validFiles = fileArray.filter(file => {
-      // Check file size (5MB minimum for videos)
-      if (file.size < 5 * 1024 * 1024) {
-        return false;
-      }
-      
-      // Check file type (videos only)
+    const validFiles = [];
+    const errors = [];
+    
+    fileArray.forEach(file => {
+      // Check file type (videos only) - use correct browser MIME types
       const validVideoTypes = [
-        'video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm'
+        'video/mp4', 'video/mpeg', // MP4
+        'video/quicktime', // MOV (QuickTime)
+        'video/x-msvideo', // AVI
+        'video/x-ms-wmv', // WMV
+        'video/x-flv', // FLV
+        'video/webm' // WebM
       ];
       
       if (!validVideoTypes.includes(file.type)) {
-        return false;
+        errors.push(`${file.name}: Invalid video format. Allowed: MP4, MOV, AVI, WMV, FLV, WebM`);
+        return;
       }
       
-      return true;
+      // Check file size (5MB minimum for videos)
+      if (file.size < 5 * 1024 * 1024) {
+        errors.push(`${file.name}: Video must be at least 5MB`);
+        return;
+      }
+      
+      validFiles.push(file);
     });
+
+    // Show errors if any
+    if (errors.length > 0) {
+      alert('Video upload errors:\n' + errors.join('\n'));
+    }
 
     if (validFiles.length === 0) return;
 
@@ -181,6 +216,7 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
     setUploadingFiles(prev => [...prev, ...validFiles.map(f => f.name)]);
 
     try {
+      setUploadComplete(false);
       const uploadPromises = validFiles.map(file => uploadFile(file));
       const uploadedFiles = await Promise.all(uploadPromises);
       
@@ -188,8 +224,18 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
         ...prev,
         media: [...prev.media, ...uploadedFiles]
       }));
+      
+      // Show success message after upload completes
+      setUploadComplete(true);
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setUploadComplete(false);
+      }, 3000);
     } catch (error) {
-      // Files failed to upload
+      // Files failed to upload - show error message
+      console.error('Video upload failed:', error);
+      alert(`Failed to upload video(s): ${error.message || 'Unknown error'}`);
+      setUploadComplete(false);
     } finally {
       setUploadingFiles(prev => prev.filter(name => !validFiles.some(f => f.name === name)));
     }
@@ -471,13 +517,32 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
             {/* Uploading Files */}
             {uploadingFiles.length > 0 && (
               <div className={styles.uploadingSection}>
-                <h4 className={styles.uploadingTitle}>Uploading files...</h4>
+                <div className={styles.uploadingHeader}>
+                  <FaExclamationTriangle className={styles.cautionIcon} />
+                  <h4 className={styles.uploadingTitle}>Uploading files...</h4>
+                </div>
+                <p className={styles.uploadingCaution}>
+                  Please wait while your files are being uploaded. Do not close this page or navigate away.
+                </p>
                 {uploadingFiles.map((fileName, index) => (
                   <div key={index} className={styles.uploadingItem}>
                     <FaSpinner className={styles.uploadingSpinner} />
                     <span className={styles.uploadingName}>{fileName}</span>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Upload Complete Message */}
+            {uploadComplete && uploadingFiles.length === 0 && (
+              <div className={styles.uploadCompleteSection}>
+                <div className={styles.uploadCompleteHeader}>
+                  <FaCheckCircle className={styles.successIcon} />
+                  <h4 className={styles.uploadCompleteTitle}>Upload complete!</h4>
+                </div>
+                <p className={styles.uploadCompleteMessage}>
+                  Your files have been successfully uploaded and are ready to use.
+                </p>
               </div>
             )}
 

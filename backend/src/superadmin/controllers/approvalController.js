@@ -9,7 +9,7 @@ export const getPendingSubmissions = async (req, res) => {
     // Get all pending submissions, but exclude collaborative programs that haven't been accepted by all collaborators yet
     const [rows] = await db.execute(`
       SELECT s.*, 
-             o.orgName, o.org, 
+             o.orgName, o.org, o.logo as organization_logo,
              submitted_admin.email as submitted_by_email,
              submitted_org.orgName as submitted_by_org_name 
       FROM submissions s 
@@ -125,7 +125,7 @@ export const getAllSubmissions = async (req, res) => {
     // Get all submissions, but exclude pending collaborative programs that haven't been accepted by all collaborators yet
     const [rows] = await db.execute(`
       SELECT s.*, 
-             o.orgName, o.org, 
+             o.orgName, o.org, o.logo as organization_logo,
              submitted_admin.email as submitted_by_email,
              submitted_org.orgName as submitted_by_org_name 
       FROM submissions s 

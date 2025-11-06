@@ -177,19 +177,23 @@
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: #000000;
   cursor: pointer;
   font-size: 16px;
   user-select: none;
 }
 
 .clearIcon:hover {
-  color: #6b7280;
+  color: #374151;
 }
 
 .searchInput:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #000000;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+.searchInputContainer:has(.searchInput:focus) .searchIcon {
+  color: #000000;
 }
 
 /* Responsive Design */

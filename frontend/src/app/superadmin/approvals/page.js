@@ -1141,6 +1141,7 @@ export default function PendingApprovalsPage() {
           dropdownPosition={dropdownPosition}
           setDropdownPosition={setDropdownPosition}
           calculateDropdownPosition={calculateDropdownPosition}
+          startIndex={startIndex}
         />
 
         {/* Pagination - Only show if there are items */}

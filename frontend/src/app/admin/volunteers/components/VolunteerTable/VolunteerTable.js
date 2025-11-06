@@ -10,6 +10,7 @@ import Image from "next/image";
 import PaginationControls from "../../../components/PaginationControls/PaginationControls"
 import ViewDetailsModal from "../ViewDetailsModal/ViewDetailsModal"
 import { getProfilePhotoUrl } from "@/utils/uploadPaths"
+import { formatDateShort } from "@/utils/dateUtils"
 import styles from "./VolunteerTable.module.css"
 
 // Security utilities
@@ -301,6 +302,7 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
         <table className={styles.table}>
           <thead className={styles.tableHeader}>
             <tr>
+              <th className={styles.numberColumn}>#</th>
               <th>
                 <input type="checkbox" checked={isAllSelected} onChange={toggleSelectAll} />
               </th>
@@ -314,11 +316,11 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
           <tbody className={styles.tableBody}>
             {currentVolunteers.length === 0 ? (
               <tr>
-                <td colSpan="6" className={styles.noApplicants}>
+                <td colSpan="7" className={styles.noApplicants}>
                   No applicants found
                 </td>
               </tr>
-            ) : currentVolunteers.map((volunteer) => {
+            ) : currentVolunteers.map((volunteer, index) => {
               // Validate volunteer data before rendering
               if (!validateVolunteerData(volunteer)) {
                 return null;
@@ -328,10 +330,13 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
               const sanitizedName = sanitizeInput(volunteer.name);
               const sanitizedEmail = sanitizeInput(volunteer.email);
               const sanitizedProgram = sanitizeInput(volunteer.program);
-              const sanitizedDate = sanitizeInput(volunteer.date);
+              const formattedDate = formatDateShort(volunteer.date);
 
               return (
                 <tr key={volunteer.id}>
+                  <td className={styles.numberCell}>
+                    {startIndex + index + 1}
+                  </td>
                   <td>
                     <input
                       type="checkbox"
@@ -355,7 +360,7 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
                   <td className={styles.truncatedText} style={{ color: "#2e3136", fontWeight: "500" }}>
                     {sanitizedProgram}
                   </td>
-                  <td style={{ color: "#8a919c", fontWeight: "400" }}>{sanitizedDate}</td>
+                  <td style={{ color: "#8a919c", fontWeight: "400" }}>{formattedDate}</td>
                   <td>
                     <span className={`${styles.statusBadge} ${styles[volunteer.status.toLowerCase()]}`}>
                       {volunteer.status}

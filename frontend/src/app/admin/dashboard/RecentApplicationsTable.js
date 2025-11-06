@@ -7,7 +7,7 @@ import { FiEye } from 'react-icons/fi';
 import { CgOptions } from "react-icons/cg";
 import { FaUser } from "react-icons/fa";
 import Image from "next/image";
-import { formatDateForAPI } from '@/utils/dateUtils';
+import { formatDateForAPI, formatDateShort } from '@/utils/dateUtils';
 import { getProfilePhotoUrl } from '@/utils/uploadPaths';
 import styles from './styles/RecentTables.module.css';
 
@@ -164,6 +164,7 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
           </div>
           <table className={styles.table}>
             <colgroup>
+              <col style={{ width: '50px' }} />
               <col style={{ width: '160px' }} />
               <col style={{ width: '200px' }} />
               <col style={{ width: '135px' }} />
@@ -171,6 +172,7 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
             </colgroup>
             <thead>
               <tr>
+                <th className={styles.numberColumn}>#</th>
                 <th>Name</th>
                 <th>Program</th>
                 <th>Date</th>
@@ -180,6 +182,7 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
             <tbody>
               {[1, 2, 3, 4, 5].map((index) => (
                 <tr key={index}>
+                  <td className={styles.numberCell}>{index}</td>
                   <td>
                     <div className={styles.skeletonText} style={{ width: '80%' }}></div>
                   </td>
@@ -273,14 +276,16 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
 
           <table className={styles.table}>
             <colgroup>
-              <col style={{ width: '240px' }} />
-              <col style={{ width: '200px' }} />
+              <col style={{ width: '50px' }} />
+              <col style={{ width: '220px' }} />
+              <col style={{ width: '180px' }} />
               <col style={{ width: '135px' }} />
               <col style={{ width: '100px' }} />
               {hasActionHandlers && <col style={{ width: '50px' }} />}
             </colgroup>
             <thead>
               <tr>
+                <th className={styles.numberColumn}>#</th>
                 <th>Volunteer</th>
                 <th>Program</th>
                 <th>Date</th>
@@ -289,8 +294,11 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
               </tr>
             </thead>
             <tbody>
-              {displayList.map((volunteer) => (
+              {displayList.map((volunteer, index) => (
                 <tr key={volunteer.id}>
+                  <td className={styles.numberCell}>
+                    {index + 1}
+                  </td>
                   <td className={styles.volunteerCell}>
                     <div className={styles.volunteerInfo}>
                       <VolunteerAvatar volunteer={volunteer} size={32} />
@@ -298,7 +306,7 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
                     </div>
                   </td>
                   <td className={styles.truncate}>{volunteer.program}</td>
-                  <td>{volunteer.date}</td>
+                  <td>{formatDateShort(volunteer.date)}</td>
                   <td>
                     <span
                       className={`${styles.statusBadge} ${
@@ -358,7 +366,7 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
               ))}
               {displayList.length === 0 && (
                 <tr>
-                  <td colSpan={hasActionHandlers ? 5 : 4} style={{ textAlign: 'center', padding: '1rem' }}>
+                  <td colSpan={hasActionHandlers ? 6 : 5} style={{ textAlign: 'center', padding: '1rem' }}>
                     No {filter.toLowerCase()} applications found.
                   </td>
                 </tr>

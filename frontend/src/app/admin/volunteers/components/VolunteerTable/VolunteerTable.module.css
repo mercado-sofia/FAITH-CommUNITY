@@ -225,27 +225,31 @@
 }
 
 /* Adjust column widths for better layout */
-.tableHeader th:nth-child(1) { /* Checkbox */
+.tableHeader th:nth-child(1) { /* Number */
   width: 50px;
 }
 
-.tableHeader th:nth-child(2) { /* Volunteer */
-  width: 280px;
+.tableHeader th:nth-child(2) { /* Checkbox */
+  width: 50px;
 }
 
-.tableHeader th:nth-child(3) { /* Program */
-  width: 200px;
+.tableHeader th:nth-child(3) { /* Volunteer */
+  width: 260px;
 }
 
-.tableHeader th:nth-child(4) { /* Date */
+.tableHeader th:nth-child(4) { /* Program */
+  width: 180px;
+}
+
+.tableHeader th:nth-child(5) { /* Date */
   width: 120px;
 }
 
-.tableHeader th:nth-child(5) { /* Status */
+.tableHeader th:nth-child(6) { /* Status */
   width: 100px;
 }
 
-.tableHeader th:nth-child(6) { /* Actions */
+.tableHeader th:nth-child(7) { /* Actions */
   width: 60px;
 }
 
@@ -254,11 +258,38 @@
   color: #2e3136;
   padding: 12px 14px;
   border-top: 1px solid #e5e7eb;
-  background-color: #fff;
 }
 
 .tableBody tr {
   position: relative;
+}
+
+/* Row striping - alternating backgrounds */
+.tableBody tr:nth-child(even) td {
+  background-color: #fafbfc;
+}
+
+.tableBody tr:nth-child(odd) td {
+  background-color: #fff;
+}
+
+.tableBody tr:hover td {
+  background-color: #f9fbfd;
+}
+
+/* Numbering column */
+.numberColumn {
+  width: 4%;
+  text-align: center !important;
+  min-width: 50px;
+}
+
+.numberCell {
+  text-align: center;
+  padding: 12px 14px !important;
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 13px;
 }
 
 .truncatedText {

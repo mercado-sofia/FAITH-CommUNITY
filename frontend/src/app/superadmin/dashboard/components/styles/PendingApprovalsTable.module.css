@@ -72,6 +72,34 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Row striping - alternating backgrounds */
+.approvalsTable tbody tr:nth-child(even) td {
+  background-color: #fafbfc;
+}
+
+.approvalsTable tbody tr:nth-child(odd) td {
+  background-color: #fff;
+}
+
+.approvalsTable tbody tr:hover td {
+  background-color: #f9fafb;
+}
+
+/* Numbering column */
+.numberColumn {
+  width: 4%;
+  text-align: center !important;
+  min-width: 50px;
+}
+
+.numberCell {
+  text-align: center;
+  padding: 0.75rem 1rem !important;
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
 .orgInfo {
   display: flex;
   align-items: center;
@@ -119,10 +147,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.approvalsTable tr:hover {
-  background: #f9fafb;
 }
 
 .statusBadge {

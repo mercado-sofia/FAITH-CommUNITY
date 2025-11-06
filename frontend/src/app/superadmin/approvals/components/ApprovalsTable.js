@@ -21,7 +21,8 @@ export default function ApprovalsTable({
   setShowDropdown,
   dropdownPosition,
   setDropdownPosition,
-  calculateDropdownPosition
+  calculateDropdownPosition,
+  startIndex = 0
 }) {
   // Local modal state
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -65,6 +66,7 @@ export default function ApprovalsTable({
         <table className={styles.table}>
           <thead>
             <tr>
+              <th className={styles.numberColumn}>#</th>
               <th className={styles.selectColumn}>
                 <input
                   type="checkbox"
@@ -83,7 +85,7 @@ export default function ApprovalsTable({
           <tbody>
             {approvals.length === 0 ? (
               <tr>
-                <td colSpan="6" className={styles.emptyStateCell}>
+                <td colSpan="7" className={styles.emptyStateCell}>
                   <div className={styles.emptyState}>
                     <h3 className={styles.emptyStateTitle}>No submissions found</h3>
                     <p className={styles.emptyStateText}>
@@ -93,8 +95,11 @@ export default function ApprovalsTable({
                 </td>
               </tr>
             ) : (
-              approvals.map((item) => (
+              approvals.map((item, index) => (
                 <tr key={item.uniqueKey || item.id} className={styles.tableRow}>
+                  <td className={styles.numberCell}>
+                    {startIndex + index + 1}
+                  </td>
                   <td className={styles.selectCell}>
                     <input
                       type="checkbox"

@@ -241,6 +241,7 @@ export default function PendingApprovalsTable() {
         <table className={styles.approvalsTable}>
           <thead>
             <tr>
+              <th className={styles.numberColumn}>#</th>
               <th>Organization</th>
               <th>Section</th>
               <th>Date</th>
@@ -250,6 +251,7 @@ export default function PendingApprovalsTable() {
           <tbody>
             {[1, 2, 3, 4, 5].map((index) => (
               <tr key={index}>
+                <td className={styles.numberCell}>{index}</td>
                 <td>Loading...</td>
                 <td>Loading...</td>
                 <td>Loading...</td>
@@ -325,6 +327,7 @@ export default function PendingApprovalsTable() {
       <table className={styles.approvalsTable}>
         <thead>
           <tr>
+            <th className={styles.numberColumn}>#</th>
             <th>Organization</th>
             <th>Section</th>
             <th>Date</th>
@@ -332,8 +335,11 @@ export default function PendingApprovalsTable() {
           </tr>
         </thead>
         <tbody>
-          {displayList.map((approval) => (
+          {displayList.map((approval, index) => (
             <tr key={approval.id}>
+              <td className={styles.numberCell}>
+                {index + 1}
+              </td>
               <td>
                 <div className={styles.orgInfo}>
                   <div className={styles.orgLogoContainer}>
@@ -393,7 +399,7 @@ export default function PendingApprovalsTable() {
           ))}
           {displayList.length === 0 && (
             <tr>
-              <td colSpan={4} style={{ textAlign: 'center', padding: '1rem' }}>
+              <td colSpan={5} style={{ textAlign: 'center', padding: '1rem' }}>
                 No {filter.toLowerCase()} approvals found.
               </td>
             </tr>

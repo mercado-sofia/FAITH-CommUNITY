@@ -130,8 +130,32 @@
   padding: 0.6rem 1rem;
 }
 
-.table tbody tr:hover {
+/* Row striping - alternating backgrounds */
+.table tbody tr:nth-child(even) td {
+  background-color: #fafbfc;
+}
+
+.table tbody tr:nth-child(odd) td {
+  background-color: #fff;
+}
+
+.table tbody tr:hover td {
   background-color: #f9fbfd;
+}
+
+/* Numbering column */
+.numberColumn {
+  width: 4%;
+  text-align: center !important;
+  min-width: 50px;
+}
+
+.numberCell {
+  text-align: center;
+  padding: 0.65rem 1rem !important;
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 13px;
 }
 
 /* ✅ Status Badges */

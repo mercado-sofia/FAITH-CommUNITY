@@ -560,6 +560,7 @@
   pointer-events: none;
   will-change: transform;
   transition: transform 0.1s ease-out;
+  overflow: visible;
 }
 
 .groundPlatform {
@@ -569,6 +570,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: visible;
 }
 
 .groundSvg {
@@ -587,12 +589,26 @@
   transform: translateX(-50%);
   z-index: 5;
   animation: gentleSway 3s ease-in-out infinite alternate;
+  display: none; /* Hide the old SVG tree */
 }
 
 .treeSvg {
   width: 80px;
   height: 100px;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* 3D Tree Model Container */
+.tree3D {
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 800px;
+  height: 1100px;
+  z-index: 5;
+  pointer-events: auto;
+  overflow: visible;
 }
 
 @keyframes gentleSway {
@@ -632,6 +648,10 @@
     height: 80px;
   }
   
+  .tree3D {
+    width: 650px;
+    height: 950px;
+  }
   
   .toggleButtonContainer {
     top: 1rem;
@@ -693,6 +713,11 @@
   .treeSvg {
     width: 50px;
     height: 70px;
+  }
+  
+  .tree3D {
+    width: 550px;
+    height: 800px;
   }
   
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import styles from './faithree.module.css';
 import { Highlights, HeroSection } from './sections';
+import { TreeModel } from './components';
 
 export default function FAITHreePage() {
   const [isContentVisible, setIsContentVisible] = useState(false);
@@ -163,21 +164,9 @@ export default function FAITHreePage() {
                     stroke="#2E7D32" strokeWidth="1" fill="none" opacity="0.6"/>
             </svg>
             
-            {/* Tree in center */}
-            <div className={styles.tree}>
-              <svg className={styles.treeSvg} viewBox="0 0 120 150">
-                {/* Tree trunk */}
-                <rect x="55" y="80" width="10" height="70" fill="#8B4513" rx="2"/>
-                <rect x="57" y="80" width="6" height="70" fill="#A0522D" rx="1" opacity="0.7"/>
-                
-                {/* Tree crown/foliage */}
-                <circle cx="60" cy="60" r="25" fill="#2E7D32"/>
-                <circle cx="60" cy="50" r="22" fill="#4CAF50"/>
-                <circle cx="60" cy="45" r="20" fill="#66BB6A"/>
-                <circle cx="50" cy="55" r="18" fill="#4CAF50"/>
-                <circle cx="70" cy="55" r="18" fill="#4CAF50"/>
-                <circle cx="60" cy="35" r="15" fill="#66BB6A"/>
-              </svg>
+            {/* 3D Tree Model in center */}
+            <div className={styles.tree3D}>
+              <TreeModel theme={theme} treePosition={[0, -1.2, 0]} />
             </div>
           </div>
         </div>

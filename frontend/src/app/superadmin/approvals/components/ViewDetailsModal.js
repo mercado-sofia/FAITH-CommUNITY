@@ -10,7 +10,9 @@ import styles from './styles/ViewDetailsModal.module.css';
 const ViewDetailsModal = ({ 
   isOpen, 
   onClose, 
-  submissionData 
+  submissionData,
+  onApprove,
+  onReject
 }) => {
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -219,62 +221,15 @@ const ViewDetailsModal = ({
                 </div>
               )}
 
-              {/* Program Details Summary */}
-              <div className={styles.contentSection}>
-                <h4 className={styles.sectionTitle}>PROGRAM DETAILS:</h4>
-                <div className={styles.programSummary}>
-                  <div className={styles.summaryItem}>
-                    <strong>Title:</strong> {programData.title || 'N/A'}
+              {/* Title Section */}
+              {programData.title && (
+                <div className={styles.contentSection}>
+                  <h4 className={styles.sectionTitle}>TITLE:</h4>
+                  <div className={styles.titleBox}>
+                    {programData.title}
                   </div>
-                  <div className={styles.summaryRow}>
-                    <div className={styles.summaryItem}>
-                      <strong>Category:</strong> {programData.category || 'N/A'}
-                    </div>
-                    <div className={styles.summaryItem}>
-                      <strong>Status:</strong> {programData.status || 'N/A'}
-                    </div>
-                    <div className={styles.summaryItem}>
-                      <strong>Collaboration:</strong> 
-                      {(programData.is_collaborative || (programData.collaborators && Array.isArray(programData.collaborators) && programData.collaborators.length > 0)) 
-                        ? <span className={styles.collabBadge}>Collaborative Program</span>
-                        : <span className={styles.nonCollabBadge}>Single Organization</span>
-                      }
-                    </div>
-                  </div>
-                  {(() => {
-                    // Format event dates for display
-                    if (programData.multiple_dates && Array.isArray(programData.multiple_dates) && programData.multiple_dates.length > 0) {
-                      return (
-                        <div className={styles.summaryItem}>
-                          <strong>Event Dates:</strong>
-                          <div className={styles.eventDatesList}>
-                            {programData.multiple_dates.map((date, index) => (
-                              <span key={index} className={styles.eventDateTag}>
-                                {formatDate(date)}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    } else if (programData.event_start_date && programData.event_end_date) {
-                      if (programData.event_start_date === programData.event_end_date) {
-                        return (
-                          <div className={styles.summaryItem}>
-                            <strong>Event Date:</strong> {formatDate(programData.event_start_date)}
-                          </div>
-                        );
-                      } else {
-                        return (
-                          <div className={styles.summaryItem}>
-                            <strong>Event Date Range:</strong> {formatDate(programData.event_start_date)} - {formatDate(programData.event_end_date)}
-                          </div>
-                        );
-                      }
-                    }
-                    return null;
-                  })()}
                 </div>
-              </div>
+              )}
 
               {/* Description Section */}
               {programData.description && (
@@ -289,7 +244,7 @@ const ViewDetailsModal = ({
               {/* Collaboration Section - Show admin users collaborating */}
               {((programData.is_collaborative || (programData.collaborators && Array.isArray(programData.collaborators) && programData.collaborators.length > 0)) && programData.collaborators && Array.isArray(programData.collaborators) && programData.collaborators.length > 0) && (
                 <div className={styles.contentSection}>
-                  <h4 className={styles.sectionTitle}>COLLABORATING ADMIN USERS ({programData.collaborators.length}):</h4>
+                  <h4 className={styles.sectionTitle}>COLLABORATING ADMIN USERS:</h4>
                   <div className={styles.collaboratorsContainer}>
                     {programData.collaborators.map((collaborator, index) => {
                       // Handle both ID and object formats
@@ -342,6 +297,60 @@ const ViewDetailsModal = ({
                   </div>
                 </div>
               )}
+
+              {/* Program Details Summary - Last Section */}
+              <div className={styles.contentSection}>
+                <h4 className={styles.sectionTitle}>PROGRAM DETAILS:</h4>
+                <div className={styles.programSummary}>
+                  <div className={styles.summaryRow}>
+                    <div className={styles.summaryItem}>
+                      <strong>Category:</strong> {programData.category || 'N/A'}
+                    </div>
+                    <div className={styles.summaryItem}>
+                      <strong>Status:</strong> {submissionData.status || programData.status || 'N/A'}
+                    </div>
+                    <div className={styles.summaryItem}>
+                      <strong>Collaboration:</strong> 
+                      {(programData.is_collaborative || (programData.collaborators && Array.isArray(programData.collaborators) && programData.collaborators.length > 0)) 
+                        ? <span className={styles.collabBadge}>Collaborative Program</span>
+                        : <span className={styles.nonCollabBadge}>Single Organization</span>
+                      }
+                    </div>
+                  </div>
+                  {(() => {
+                    // Format event dates for display
+                    if (programData.multiple_dates && Array.isArray(programData.multiple_dates) && programData.multiple_dates.length > 0) {
+                      return (
+                        <div className={styles.summaryItem}>
+                          <strong>Event Dates:</strong>
+                          <div className={styles.eventDatesList}>
+                            {programData.multiple_dates.map((date, index) => (
+                              <span key={index} className={styles.eventDateTag}>
+                                {formatDate(date)}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    } else if (programData.event_start_date && programData.event_end_date) {
+                      if (programData.event_start_date === programData.event_end_date) {
+                        return (
+                          <div className={styles.summaryItem}>
+                            <strong>Event Date:</strong> {formatDate(programData.event_start_date)}
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <div className={styles.summaryItem}>
+                            <strong>Event Date Range:</strong> {formatDate(programData.event_start_date)} - {formatDate(programData.event_end_date)}
+                          </div>
+                        );
+                      }
+                    }
+                    return null;
+                  })()}
+                </div>
+              </div>
 
             </div>
           ) : submissionData.section === 'highlights' && highlightsData ? (
@@ -568,12 +577,46 @@ const ViewDetailsModal = ({
         </div>
         
         <div className={styles.modalFooter}>
-          <button 
-            onClick={onClose}
-            className={styles.modalCloseFooterBtn}
-          >
-            Close
-          </button>
+          <div className={styles.modalFooterActions}>
+            {(submissionData.status === 'pending' || submissionData.status === 'pending_superadmin_approval') && (
+              <>
+                <button 
+                  onClick={() => {
+                    if (onReject) {
+                      onClose(); // Close the details modal first
+                      // Small delay to ensure modal closes before confirmation modal opens
+                      setTimeout(() => {
+                        onReject(submissionData);
+                      }, 100);
+                    }
+                  }}
+                  className={styles.modalRejectBtn}
+                >
+                  Reject
+                </button>
+                <button 
+                  onClick={() => {
+                    if (onApprove) {
+                      onClose(); // Close the details modal first
+                      // Small delay to ensure modal closes before confirmation modal opens
+                      setTimeout(() => {
+                        onApprove(submissionData);
+                      }, 100);
+                    }
+                  }}
+                  className={styles.modalApproveBtn}
+                >
+                  Approve
+                </button>
+              </>
+            )}
+            <button 
+              onClick={onClose}
+              className={styles.modalCloseFooterBtn}
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
 

@@ -59,6 +59,120 @@ const makeAuthenticatedRequest = async (url, options = {}) => {
   return response;
 };
 
+// Helper function to normalize organization acronym for comparison (case-insensitive, trim spaces)
+const normalizeOrgAcronym = (acronym) => {
+  if (!acronym) return '';
+  return String(acronym).trim().toLowerCase();
+};
+
+// Helper function to check if approval matches selected organization (including collaborators)
+const matchesOrganization = (approval, orgAcronym) => {
+  if (!orgAcronym || orgAcronym === 'all') return true;
+  
+  const normalizedOrgAcronym = normalizeOrgAcronym(orgAcronym);
+  
+  // Special case: "Collab Admin" or "Collaboration Administrator" - filter for collaborative programs
+  const isCollabAdmin = normalizedOrgAcronym === 'collab admin' || 
+                        normalizedOrgAcronym === 'collaboration administrator' ||
+                        normalizedOrgAcronym.includes('collab admin') ||
+                        normalizedOrgAcronym.includes('collaboration administrator');
+  
+  if (isCollabAdmin) {
+    // Only filter collaborative programs for program submissions
+    if (approval.section === 'programs' && approval.proposed_data) {
+      try {
+        const proposedData = typeof approval.proposed_data === 'string' 
+          ? JSON.parse(approval.proposed_data) 
+          : approval.proposed_data;
+        
+        if (proposedData) {
+          // Check if program is collaborative (has is_collaborative flag set to true/1)
+          const isCollaborative = proposedData.is_collaborative === true || 
+                                  proposedData.is_collaborative === 1 ||
+                                  proposedData.is_collaborative === '1';
+          
+          // Check if program has collaborators array with at least one collaborator
+          const hasCollaborators = proposedData.collaborators && 
+                                   Array.isArray(proposedData.collaborators) && 
+                                   proposedData.collaborators.length > 0;
+          
+          // Return true if program is collaborative (either by flag or has collaborators)
+          return isCollaborative || hasCollaborators;
+        }
+      } catch (error) {
+        // If parsing fails, don't include this approval
+        console.warn('Error parsing proposed_data for approval:', approval.id, error);
+        return false;
+      }
+    }
+    // For non-program submissions, don't match when Collab Admin is selected
+    return false;
+  }
+  
+  // Regular organization filtering
+  // Check main organization (case-insensitive)
+  const mainOrgAcronym = normalizeOrgAcronym(
+    approval.org || 
+    approval.organization_acronym || 
+    approval.organization?.acronym ||
+    ''
+  );
+  
+  if (mainOrgAcronym === normalizedOrgAcronym) {
+    return true;
+  }
+
+  // For program submissions, check collaborators
+  if (approval.section === 'programs' && approval.proposed_data) {
+    try {
+      const proposedData = typeof approval.proposed_data === 'string' 
+        ? JSON.parse(approval.proposed_data) 
+        : approval.proposed_data;
+      
+      if (proposedData) {
+        // Check if program has collaborators array
+        if (proposedData.collaborators && Array.isArray(proposedData.collaborators) && proposedData.collaborators.length > 0) {
+          // Check if any collaborator belongs to the selected organization
+          const hasMatchingCollaborator = proposedData.collaborators.some(collaborator => {
+            // Handle both ID format and object format
+            if (typeof collaborator === 'object' && collaborator !== null) {
+              const collaboratorOrgAcronym = normalizeOrgAcronym(
+                collaborator.organization_acronym ||
+                collaborator.org ||
+                collaborator.org_acronym ||
+                collaborator.organization?.acronym ||
+                collaborator.organization?.org ||
+                collaborator.organization?.org_acronym ||
+                ''
+              );
+              
+              return collaboratorOrgAcronym === normalizedOrgAcronym;
+            }
+            return false;
+          });
+          
+          if (hasMatchingCollaborator) {
+            return true;
+          }
+        }
+        
+        // Also check if program is marked as collaborative (is_collaborative flag)
+        // This handles cases where collaboration might be stored differently
+        if (proposedData.is_collaborative === true || proposedData.is_collaborative === 1) {
+          // If it's collaborative, we should still check if this org is involved
+          // But if we can't determine, we'll be conservative and not include it
+          // unless we have explicit collaborator data
+        }
+      }
+    } catch (error) {
+      // If parsing fails, just check main organization (already done above)
+      console.warn('Error parsing proposed_data for approval:', approval.id, error);
+    }
+  }
+
+  return false;
+};
+
 export default function PendingApprovalsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -367,10 +481,10 @@ export default function PendingApprovalsPage() {
   useEffect(() => {
     let filtered = [...approvals];
 
-    // Filter by organization
+    // Filter by organization (including collaborators)
     if (selectedOrganization !== 'all') {
       filtered = filtered.filter(approval => 
-        approval.org === selectedOrganization
+        matchesOrganization(approval, selectedOrganization)
       );
     }
 

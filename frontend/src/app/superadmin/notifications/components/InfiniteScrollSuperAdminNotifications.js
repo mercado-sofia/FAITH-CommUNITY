@@ -295,7 +295,7 @@ export default function InfiniteScrollSuperAdminNotifications({
                   {notification.organization_acronym || 'Unknown Organization'}
                 </span>
                 <span className={`${styles.statusBadge} ${notification.is_read ? styles.readStatus : styles.unreadStatus}`}>
-                  {notification.is_read ? 'Read' : 'New'}
+                  {notification.is_read ? 'Seen' : 'New'}
                 </span>
               </div>
             </div>

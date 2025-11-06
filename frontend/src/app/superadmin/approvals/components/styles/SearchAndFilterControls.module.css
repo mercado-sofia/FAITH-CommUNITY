@@ -177,7 +177,7 @@
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #000000;
+  color: #6b7280;
   cursor: pointer;
   font-size: 16px;
   user-select: none;
@@ -188,12 +188,12 @@
 }
 
 .searchInput:focus {
-  border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+  border-color: #d1d5db;
+  box-shadow: none;
 }
 
 .searchInputContainer:has(.searchInput:focus) .searchIcon {
-  color: #000000;
+  color: #6b7280;
 }
 
 /* Responsive Design */

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useDispatch } from "react-redux"
 import { loginAdmin, loginSuperAdmin, logoutAdmin } from "../../../rtk/superadmin/adminSlice"
 import styles from "./login.module.css"
-import { FaUser, FaSpinner, FaArrowLeft } from "react-icons/fa"
+import { FaUser, FaSpinner } from "react-icons/fa"
 import { AuthLeftPanel, ForgotPasswordModal, OtpInput, PasswordField } from "../components"
 import { postJson } from "../api/authClient"
 import { usePublicSiteName } from "@/app/(public)/hooks/usePublicData"
@@ -341,16 +341,6 @@ export default function LoginPage() {
     <div className={styles.container}>
       <AuthLeftPanel labelText="Log In" />
       <div className={styles.rightPane}>
-        <div className={styles.backLink}>
-          <button
-            type="button"
-            onClick={() => router.push('/')}
-            className={styles.backButton}
-          >
-            <FaArrowLeft className={styles.backIcon} />
-            Go Back
-          </button>
-        </div>
         <form onSubmit={handleLogin} className={styles.form} noValidate>
           <h2 className={styles.title}>Log In</h2>
 
@@ -440,6 +430,15 @@ export default function LoginPage() {
             <p>Don&apos;t have an account? <button type="button" onClick={() => router.push('/signup')} className={styles.signupButton}>Sign Up</button></p>
           </div>
         </form>
+        <div className={styles.backLink}>
+          <button
+            type="button"
+            onClick={() => router.push('/')}
+            className={styles.backButton}
+          >
+            Go Back to {siteName}
+          </button>
+        </div>
       </div>
 
       <ForgotPasswordModal

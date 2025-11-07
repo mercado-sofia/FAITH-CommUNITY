@@ -4,26 +4,22 @@ import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSelector } from 'react-redux'
 import { SearchAndFilterControls, VolunteerTable } from './components'
-import { SuccessModal, ConfirmationModal } from '@/components'
+import { SuccessModal, ConfirmationModal, ErrorBoundary } from '@/components'
 import { useAdminVolunteers, useAdminPrograms } from '../hooks/useAdminData'
 import { selectCurrentAdmin, selectIsAuthenticated } from '@/rtk/superadmin/adminSlice'
 import { SkeletonLoader } from '../components'
+import { getAdminTokenOrRedirect, handleApiError, RATE_LIMITS, API_CONFIG, STATUS, sanitizeInput } from '../utils'
 import styles from './volunteers.module.css'
 
-// Essential security utilities
-const sanitizeInput = (input) => {
-  if (typeof input !== 'string') return '';
-  return input.trim().replace(/[<>]/g, '').substring(0, 100); // Basic XSS protection + length limit
-};
-
+// Validate status
 const validateStatus = (status) => {
-  const validStatuses = ['Pending', 'Approved', 'Declined', 'Cancelled', 'Completed'];
+  const validStatuses = Object.values(STATUS).map(s => s.charAt(0).toUpperCase() + s.slice(1));
   return validStatuses.includes(status);
 };
 
 // Simple rate limiter for API calls
 class RateLimiter {
-  constructor(maxCalls = 10, windowMs = 60000) { // 10 calls per minute
+  constructor(maxCalls = RATE_LIMITS.STATUS_UPDATE.maxCalls, windowMs = RATE_LIMITS.STATUS_UPDATE.windowMs) {
     this.maxCalls = maxCalls;
     this.windowMs = windowMs;
     this.calls = new Map();
@@ -48,40 +44,6 @@ class RateLimiter {
   }
 }
 
-// Enhanced error handler
-const handleApiError = (error, context) => {
-  if (error.status === 401) {
-    return {
-      type: 'authentication',
-      message: 'Your session has expired. Please log in again.',
-      action: 'redirect_to_login'
-    };
-  } else if (error.status === 403) {
-    return {
-      type: 'authorization',
-      message: 'You do not have permission to perform this action.',
-      action: 'show_error'
-    };
-  } else if (error.status === 429) {
-    return {
-      type: 'rate_limit',
-      message: 'Too many requests. Please wait a moment and try again.',
-      action: 'show_error'
-    };
-  } else if (error.status >= 500) {
-    return {
-      type: 'server_error',
-      message: 'Server error. Please try again later.',
-      action: 'show_error'
-    };
-  } else {
-    return {
-      type: 'unknown',
-      message: 'An unexpected error occurred. Please try again.',
-      action: 'show_error'
-    };
-  }
-};
 
 export default function VolunteersPage() {
   const router = useRouter()
@@ -92,7 +54,7 @@ export default function VolunteersPage() {
   const isAuthenticated = useSelector(selectIsAuthenticated)
 
   // Rate limiter instance
-  const rateLimiter = useRef(new RateLimiter(10, 60000)); // 10 calls per minute
+  const rateLimiter = useRef(new RateLimiter());
 
   // Memoized skeleton components to prevent unnecessary re-renders
   const TableSkeleton = useMemo(() => <SkeletonLoader type="table" count={10} />, []);
@@ -174,12 +136,12 @@ export default function VolunteersPage() {
     }
 
     try {
-      const adminToken = localStorage.getItem('adminToken');
+      const adminToken = getAdminTokenOrRedirect();
       if (!adminToken) {
-        throw new Error('No admin token found. Please log in again.');
+        return; // Redirect handled by getAdminTokenOrRedirect
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/volunteers/${id}/status`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/volunteers/${id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -190,7 +152,10 @@ export default function VolunteersPage() {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorInfo = handleApiError({ status: response.status, message: errorData.message }, 'status_update');
+        const errorInfo = handleApiError({ status: response.status, message: errorData.message }, 'status_update', {
+          redirectOnAuth: true,
+          logError: true
+        });
         throw new Error(errorInfo.message);
       }
       
@@ -237,12 +202,12 @@ export default function VolunteersPage() {
     }
 
     try {
-      const adminToken = localStorage.getItem('adminToken');
+      const adminToken = getAdminTokenOrRedirect();
       if (!adminToken) {
-        throw new Error('No admin token found. Please log in again.');
+        return; // Redirect handled by getAdminTokenOrRedirect
       }
 
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/volunteers/${volunteer.id}/soft-delete`;
+      const apiUrl = `${API_CONFIG.BASE_URL}/api/volunteers/${volunteer.id}/soft-delete`;
       
       const response = await fetch(apiUrl, {
         method: 'PUT',
@@ -254,7 +219,10 @@ export default function VolunteersPage() {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorInfo = handleApiError({ status: response.status, message: errorData.message }, 'soft_delete');
+        const errorInfo = handleApiError({ status: response.status, message: errorData.message }, 'soft_delete', {
+          redirectOnAuth: true,
+          logError: true
+        });
         throw new Error(errorInfo.message);
       }
       
@@ -307,14 +275,14 @@ export default function VolunteersPage() {
     setIsDeleting(true);
     
     try {
-      const adminToken = localStorage.getItem('adminToken');
+      const adminToken = getAdminTokenOrRedirect();
       if (!adminToken) {
-        throw new Error('No admin token found. Please log in again.');
+        return; // Redirect handled by getAdminTokenOrRedirect
       }
 
       // Delete each volunteer
       const deletePromises = volunteerIds.map(async (volunteerId) => {
-        const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/volunteers/${volunteerId}/soft-delete`;
+        const apiUrl = `${API_CONFIG.BASE_URL}/api/volunteers/${volunteerId}/soft-delete`;
         
         const response = await fetch(apiUrl, {
           method: 'PUT',
@@ -360,12 +328,12 @@ export default function VolunteersPage() {
     searchParams.get('search') || ''
   )
   const [statusFilter, setStatusFilter] = useState(
-    searchParams.get('filter') ? capitalizeFirstLetter(searchParams.get('filter')) : 'All status'
+    searchParams.get('filter') ? capitalizeFirstLetter(searchParams.get('filter')) : 'All'
   )
   const [sortOrder, setSortOrder] = useState(
     searchParams.get('sort') === 'oldest' ? 'oldest' : 'latest'
   )
-  const [programFilter, setProgramFilter] = useState('All Programs')
+  const [programFilter, setProgramFilter] = useState('All')
   const [showCount, setShowCount] = useState(
     parseInt(searchParams.get('show')) || 10
   )
@@ -392,17 +360,23 @@ export default function VolunteersPage() {
   // Handle error display with enhanced error handling
   useEffect(() => {
     if (volunteersError) {
-      handleApiError(volunteersError, 'volunteers_fetch');
+      handleApiError(volunteersError, 'volunteers_fetch', {
+        redirectOnAuth: true,
+        logError: true
+      });
     }
     if (programsError) {
-      handleApiError(programsError, 'programs_fetch');
+      handleApiError(programsError, 'programs_fetch', {
+        redirectOnAuth: true,
+        logError: true
+      });
     }
   }, [volunteersError, programsError]);
 
   useEffect(() => {
     const params = new URLSearchParams()
 
-    if (statusFilter.toLowerCase() !== 'all status') {
+    if (statusFilter.toLowerCase() !== 'all') {
       params.set('filter', statusFilter.toLowerCase())
     }
 
@@ -431,11 +405,11 @@ export default function VolunteersPage() {
         volunteer.program?.toLowerCase().includes(searchQuery.toLowerCase())
 
       const matchesStatus =
-        statusFilter.toLowerCase() === 'all status' ||
+        statusFilter.toLowerCase() === 'all' ||
         volunteer.status?.toLowerCase() === statusFilter.toLowerCase()
 
       const matchesProgram =
-        programFilter === 'All Programs' || volunteer.program === programFilter
+        programFilter === 'All' || volunteer.program === programFilter
 
       return matchesSearch && matchesStatus && matchesProgram
     })
@@ -487,7 +461,10 @@ export default function VolunteersPage() {
 
   // Show error state with enhanced error handling
   if (volunteersError) {
-    const errorInfo = handleApiError(volunteersError, 'volunteers_display');
+    const errorInfo = handleApiError(volunteersError, 'volunteers_display', {
+      redirectOnAuth: true,
+      logError: true
+    });
     return (
       <div className={styles.container}>
         <div className={styles.header}>
@@ -518,6 +495,7 @@ export default function VolunteersPage() {
   }
 
   return (
+    <ErrorBoundary>
     <div className={styles.container}>
       <div className={styles.header}>
         <h1>Volunteer Applications</h1>
@@ -580,5 +558,6 @@ export default function VolunteersPage() {
         autoHideDuration={4000}
       />
     </div>
+    </ErrorBoundary>
   )
 }

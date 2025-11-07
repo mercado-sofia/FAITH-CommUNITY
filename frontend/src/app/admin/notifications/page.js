@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { 
@@ -14,7 +14,8 @@ import { FiX, FiXCircle, FiTrash2 } from 'react-icons/fi';
 import { PiChecksBold } from 'react-icons/pi';
 import { MdCancel } from 'react-icons/md';
 import { SkeletonLoader } from '../components';
-import { ConfirmationModal } from '@/components';
+import { ConfirmationModal, ErrorBoundary } from '@/components';
+import { handleApiError } from '../utils';
 import InfiniteScrollNotifications from './components/InfiniteScrollNotifications';
 import styles from './notifications.module.css';
 
@@ -100,36 +101,45 @@ export default function NotificationsPage() {
   };
 
   // Handle mark as read
-  const handleMarkAsRead = async (notificationId) => {
+  const handleMarkAsRead = useCallback(async (notificationId) => {
     try {
       await markAsRead({ notificationId, adminId: currentAdmin?.id });
       // The mutation will automatically invalidate the cache and refresh the data
     } catch (error) {
-      // Handle error silently in production
+      handleApiError(error, 'notifications_mark_read', {
+        redirectOnAuth: true,
+        logError: true
+      });
     }
-  };
+  }, [markAsRead, currentAdmin?.id]);
 
   // Handle mark all as read
-  const handleMarkAllAsRead = async () => {
+  const handleMarkAllAsRead = useCallback(async () => {
     try {
       await markAllAsRead(currentAdmin?.id);
       // The mutation will automatically invalidate the cache and refresh the data
     } catch (error) {
-      // Handle error silently in production
+      handleApiError(error, 'notifications_mark_all_read', {
+        redirectOnAuth: true,
+        logError: true
+      });
     }
-  };
+  }, [markAllAsRead, currentAdmin?.id]);
 
   // Handle delete notification
-  const handleDeleteNotification = async (notificationId) => {
+  const handleDeleteNotification = useCallback(async (notificationId) => {
     try {
       await deleteNotification({ notificationId, adminId: currentAdmin?.id });
       // The mutation will automatically invalidate the cache and refresh the data
       setShowIndividualDeleteModal(false);
       setNotificationToDelete(null);
     } catch (error) {
-      // Handle error silently in production
+      handleApiError(error, 'notifications_delete', {
+        redirectOnAuth: true,
+        logError: true
+      });
     }
-  };
+  }, [deleteNotification, currentAdmin?.id]);
 
   // Handle individual delete confirmation
   const handleIndividualDeleteClick = (notification) => {
@@ -138,7 +148,7 @@ export default function NotificationsPage() {
   };
 
   // Handle bulk delete
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = useCallback(async () => {
     try {
       for (const notificationId of selectedNotifications) {
         await deleteNotification({ notificationId, adminId: currentAdmin?.id });
@@ -147,12 +157,15 @@ export default function NotificationsPage() {
       setShowDeleteModal(false);
       // The mutation will automatically invalidate the cache and refresh the data
     } catch (error) {
-      // Handle error silently in production
+      handleApiError(error, 'notifications_bulk_delete', {
+        redirectOnAuth: true,
+        logError: true
+      });
     }
-  };
+  }, [deleteNotification, selectedNotifications, currentAdmin?.id]);
 
-  // Get notification icon based on type
-  const getNotificationIcon = (type) => {
+  // Get notification icon based on type (memoized)
+  const getNotificationIcon = useCallback((type) => {
     switch (type) {
       case 'approval':
         return (
@@ -203,7 +216,7 @@ export default function NotificationsPage() {
           </svg>
         );
     }
-  };
+  }, []);
 
   // Loading state for when admin is not available
   if (!currentAdmin) {
@@ -218,6 +231,7 @@ export default function NotificationsPage() {
   }
 
   return (
+    <ErrorBoundary>
     <div className={styles.container}>
       <div className={styles.header}>
         <div className={styles.headerContent}>
@@ -329,5 +343,6 @@ export default function NotificationsPage() {
         isDeleting={false}
       />
     </div>
+    </ErrorBoundary>
   );
 }

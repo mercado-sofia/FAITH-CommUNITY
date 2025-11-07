@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState, useCallback } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, useGLTF, Environment } from '@react-three/drei'
 import * as THREE from 'three'
@@ -53,6 +53,8 @@ function AutoReturnControls({
 
   useEffect(() => {
     let cleanup = null
+    // Capture the current timeout ref value at the start of the effect
+    const initialTimeoutId = returnTimeoutRef.current
     
     // Wait a bit for controls to be ready
     const timer = setTimeout(() => {
@@ -148,8 +150,10 @@ function AutoReturnControls({
         domElement.removeEventListener('mouseup', handleEnd)
         domElement.removeEventListener('touchstart', handleStart)
         domElement.removeEventListener('touchend', handleEnd)
-        if (returnTimeoutRef.current) {
-          clearTimeout(returnTimeoutRef.current)
+        // Capture the current timeout ref value to avoid stale closure
+        const timeoutId = returnTimeoutRef.current
+        if (timeoutId) {
+          clearTimeout(timeoutId)
         }
       }
     }, 100)
@@ -157,11 +161,12 @@ function AutoReturnControls({
     return () => {
       clearTimeout(timer)
       if (cleanup) cleanup()
-      if (returnTimeoutRef.current) {
-        clearTimeout(returnTimeoutRef.current)
+      // Use the captured timeout ref value from the start of the effect
+      if (initialTimeoutId) {
+        clearTimeout(initialTimeoutId)
       }
     }
-  }, [treePosition, cameraOffset])
+  }, [treePosition, cameraOffset, onPositionChange])
 
   useFrame(() => {
     if (!controlsRef.current) return
@@ -273,7 +278,7 @@ export default function TreeModel({
   }, [initialTreePosition])
 
   // Handle position changes from controls
-  const handlePositionChange = (newPosition) => {
+  const handlePositionChange = useCallback((newPosition) => {
     setTreePosition(newPosition)
     // Update camera position based on new tree position
     setCameraPosition([
@@ -281,7 +286,7 @@ export default function TreeModel({
       newPosition[1] + cameraOffset[1],
       newPosition[2] + cameraOffset[2]
     ])
-  }
+  }, [cameraOffset])
 
   // Calculate initial camera position - use saved position if available
   const savedPos = getSavedCameraPosition()

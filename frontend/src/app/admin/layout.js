@@ -6,8 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { initializeAuth } from "../../rtk/superadmin/adminSlice";
 import { NavigationProvider } from "../../contexts/NavigationContext";
 import { clearAuthImmediate, USER_TYPES } from "../../utils/authService";
-import Sidebar from "./components/Sidebar/Sidebar";
-import TopBar from "./components/TopBar/TopBar";
+import { Sidebar, adminNavLinks, TopBar } from "@/components";
 import { ErrorBoundary, Loader, DynamicFavicon } from "@/components";
 import { FiSmartphone } from 'react-icons/fi';
 import styles from "./dashboard/styles/dashboard.module.css";
@@ -178,9 +177,16 @@ function AdminLayoutContent({ children }) {
       {/* Dynamic Favicon - optimized to prevent navigation delays */}
       <DynamicFavicon />
       <div className={styles.adminLayout}>
-        <Sidebar />
+        <Sidebar 
+          userType={USER_TYPES.ADMIN}
+          basePath="/admin"
+          navLinks={adminNavLinks}
+        />
         <div className={styles.mainContent}>
-          <TopBar />
+          <TopBar 
+            userType={USER_TYPES.ADMIN}
+            basePath="/admin"
+          />
           <main className={styles.content}>
             <ErrorBoundary>
               {children}

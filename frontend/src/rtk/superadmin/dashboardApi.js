@@ -33,23 +33,78 @@ export const dashboardApi = createApi({
       },
     }),
 
-    // Get all organizations count
+    // Get all organizations count with active/inactive breakdown
     getOrganizationsCount: builder.query({
-      query: () => "/organizations",
+      query: () => "/admins",
       providesTags: ["Dashboard"],
       transformResponse: (response) => {
-        const organizations = response.success ? response.data : response;
-        return Array.isArray(organizations) ? organizations.length : 0;
+        const admins = Array.isArray(response) ? response : [];
+        
+        // Group admins by organization_id and determine if org is active
+        // An organization is active if at least one admin is active
+        const orgStatusMap = new Map();
+        
+        admins.forEach(admin => {
+          if (admin.organization_id) {
+            const orgId = admin.organization_id;
+            if (!orgStatusMap.has(orgId)) {
+              orgStatusMap.set(orgId, false);
+            }
+            // If any admin for this org is active, mark org as active
+            if (admin.is_active) {
+              orgStatusMap.set(orgId, true);
+            }
+          }
+        });
+        
+        const total = orgStatusMap.size;
+        let active = 0;
+        let inactive = 0;
+        
+        orgStatusMap.forEach((isActive) => {
+          if (isActive) {
+            active++;
+          } else {
+            inactive++;
+          }
+        });
+        
+        return {
+          total,
+          active,
+          inactive
+        };
       },
     }),
 
-    // Get pending approvals count
+    // Get pending approvals count with unique organizations count
     getPendingApprovalsCount: builder.query({
       query: () => "/approvals/pending",
       providesTags: ["Dashboard"],
       transformResponse: (response) => {
         const approvals = response.success ? response.data : response;
-        return Array.isArray(approvals) ? approvals.length : 0;
+        if (!Array.isArray(approvals)) {
+          return {
+            total: 0,
+            organizationsCount: 0
+          };
+        }
+        
+        // Count unique organizations based on which organization submitted the approval
+        // Use submitted_by_org_id to identify unique organizations that have pending approvals
+        const uniqueOrganizations = new Set();
+        
+        approvals.forEach(approval => {
+          // Use submitted_by_org_id (organization ID of the admin who submitted) to identify unique organizations
+          if (approval.submitted_by_org_id) {
+            uniqueOrganizations.add(approval.submitted_by_org_id);
+          }
+        });
+        
+        return {
+          total: approvals.length,
+          organizationsCount: uniqueOrganizations.size
+        };
       },
     }),
 
@@ -80,6 +135,63 @@ export const dashboardApi = createApi({
           return response.data.active_programs || 0;
         }
         return 0;
+      },
+    }),
+
+    // Get all programs statistics (upcoming, active, completed)
+    getProgramsStatistics: builder.query({
+      query: () => "/projects/superadmin/statistics",
+      providesTags: ["Dashboard"],
+      transformResponse: (response) => {
+        if (response.success && response.data) {
+          const upcoming = parseInt(response.data.upcoming_programs) || 0;
+          const active = parseInt(response.data.active_programs) || 0;
+          const completed = parseInt(response.data.completed_programs) || 0;
+          const total = upcoming + active;
+          
+          return {
+            upcoming,
+            active,
+            completed,
+            total,
+            completedThisYear: parseInt(response.data.completed_this_year) || 0,
+            completedPreviousYear: parseInt(response.data.completed_previous_year) || 0,
+            percentageChange: parseFloat(response.data.percentage_change) || 0
+          };
+        }
+        return {
+          upcoming: 0,
+          active: 0,
+          completed: 0,
+          total: 0,
+          completedThisYear: 0,
+          completedPreviousYear: 0,
+          percentageChange: 0
+        };
+      },
+    }),
+
+    // Get program completion trends (time-series data for charts)
+    getProgramCompletionTrends: builder.query({
+      query: () => "/projects/superadmin/completion-trends",
+      providesTags: ["Dashboard"],
+      transformResponse: (response) => {
+        if (response.success && response.data) {
+          return response.data || [];
+        }
+        return [];
+      },
+    }),
+
+    // Get top organizations by program count
+    getTopOrganizationsByProgramCount: builder.query({
+      query: (limit = 10) => `/projects/superadmin/top-organizations?limit=${limit}`,
+      providesTags: ["Dashboard"],
+      transformResponse: (response) => {
+        if (response.success && response.data) {
+          return response.data || [];
+        }
+        return [];
       },
     }),
 
@@ -164,6 +276,9 @@ export const {
   useGetUpcomingProgramsCountQuery,
   useGetTotalProgramsCountQuery,
   useGetActiveProgramsCountQuery,
+  useGetProgramsStatisticsQuery,
+  useGetProgramCompletionTrendsQuery,
+  useGetTopOrganizationsByProgramCountQuery,
   useGetRecentPendingApprovalsQuery,
   useGetRecentApprovalsQuery,
   useGetOrganizationsForFilterQuery,

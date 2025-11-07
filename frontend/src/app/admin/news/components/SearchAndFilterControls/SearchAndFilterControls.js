@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FiChevronDown, FiSearch, FiX, FiTrash2 } from 'react-icons/fi';
+import { BsSortUp, BsSortDown } from 'react-icons/bs';
 import styles from './SearchAndFilterControls.module.css';
 
 const SearchAndFilterControls = ({
@@ -37,7 +38,6 @@ const SearchAndFilterControls = ({
     setLocalQuery(searchQuery || '');
   }, [searchQuery]);
 
-  const sortOptions = ['Newest', 'Oldest'];
   const showCountOptions = [5, 10, 15, 20];
 
   return (
@@ -48,7 +48,7 @@ const SearchAndFilterControls = ({
           <span className={styles.inlineLabel}>Show</span>
           <div className={styles.dropdownButtonWrapper}>
             <div
-              className={styles.dropdown}
+              className={`${styles.dropdown} ${showDropdown === "show" ? styles.open : ""}`}
               onClick={() => toggleDropdown("show")}
             >
               {showCount}
@@ -93,28 +93,21 @@ const SearchAndFilterControls = ({
           )}
         </div>
 
-        {/* Sort Dropdown */}
-        <div className={styles.dropdownWrapper}>
-          <div
-            className={styles.dropdown}
-            onClick={() => toggleDropdown("sort")}
-          >
-            Sort: {sortBy}
-            <FiChevronDown className={styles.icon} />
-          </div>
-          {showDropdown === "sort" && (
-            <ul className={styles.options}>
-              {sortOptions.map((option) => (
-                <li key={option} onClick={() => {
-                  onSortChange(option.toLowerCase());
-                  setShowDropdown(null);
-                }}>
-                  {option}
-                </li>
-              ))}
-            </ul>
+        {/* Sort Button */}
+        <button
+          className={styles.sortButton}
+          onClick={() => {
+            const newSort = sortBy === 'newest' ? 'oldest' : 'newest';
+            onSortChange(newSort);
+          }}
+          title={sortBy === 'newest' ? 'Sort: Newest First' : 'Sort: Oldest First'}
+        >
+          {sortBy === 'newest' ? (
+            <BsSortUp className={styles.sortIcon} />
+          ) : (
+            <BsSortDown className={styles.sortIcon} />
           )}
-        </div>
+        </button>
       </div>
 
       {/* Recently Deleted Button */}

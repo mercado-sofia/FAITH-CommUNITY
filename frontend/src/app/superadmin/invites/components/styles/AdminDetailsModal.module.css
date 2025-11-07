@@ -104,8 +104,8 @@
 }
 
 .pending {
-  background: #fdf2e2;
-  color: #e8901c;
+  background: #F7F7F7;
+  color: #6b7280;
 }
 
 .accepted {
@@ -232,9 +232,9 @@
 }
 
 .cancelButton {
-  background-color: #06100f;
+  background-color: #000;
   color: white;
-  border-color: #06100f;
+  border-color: #000;
 }
 
 .cancelButton:hover:not(:disabled) {

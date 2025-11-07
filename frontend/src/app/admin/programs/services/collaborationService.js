@@ -1,26 +1,16 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
-// Get admin token from localStorage
-const getAdminToken = () => {
-  if (typeof window === 'undefined') return null;
-  try {
-    return localStorage.getItem('adminToken');
-  } catch (error) {
-    return null;
-  }
-};
+import { getAdminTokenOrRedirect, API_CONFIG } from '../../utils';
 
 // Fetch available admins for collaboration
 export const fetchAvailableAdmins = async (isEditMode = false, programId = null) => {
-  try {
-    const token = getAdminToken();
-    if (!token) {
-      throw new Error('No admin token found. Please log in again.');
-    }
+  const token = getAdminTokenOrRedirect();
+  if (!token) {
+    return []; // Redirect handled by getAdminTokenOrRedirect
+  }
 
+  try {
     const endpoint = isEditMode && programId
-      ? `${API_BASE_URL}/api/collaborations/programs/${programId}/available-admins`
-      : `${API_BASE_URL}/api/collaborations/available-admins`;
+      ? `${API_CONFIG.BASE_URL}/api/collaborations/programs/${programId}/available-admins`
+      : `${API_CONFIG.BASE_URL}/api/collaborations/available-admins`;
         
     const response = await fetch(endpoint, {
       headers: {
@@ -48,13 +38,13 @@ export const fetchAvailableAdmins = async (isEditMode = false, programId = null)
 
 // Add collaborator to existing program
 export const addCollaboratorToProgram = async (programId, collaboratorAdminId) => {
-  try {
-    const token = getAdminToken();
-    if (!token) {
-      throw new Error('No admin token found. Please log in again.');
-    }
+  const token = getAdminTokenOrRedirect();
+  if (!token) {
+    throw new Error('Authentication required');
+  }
 
-    const response = await fetch(`${API_BASE_URL}/api/collaborations/programs/${programId}/invite-collaborator`, {
+  try {
+    const response = await fetch(`${API_CONFIG.BASE_URL}/api/collaborations/programs/${programId}/invite-collaborator`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -89,13 +79,13 @@ export const addCollaboratorToProgram = async (programId, collaboratorAdminId) =
 
 // Fetch existing collaborators for a program
 export const fetchProgramCollaborators = async (programId) => {
-  try {
-    const token = getAdminToken();
-    if (!token) {
-      throw new Error('No admin token found. Please log in again.');
-    }
+  const token = getAdminTokenOrRedirect();
+  if (!token) {
+    return []; // Redirect handled by getAdminTokenOrRedirect
+  }
 
-    const response = await fetch(`${API_BASE_URL}/api/collaborations/programs/${programId}/collaborators`, {
+  try {
+    const response = await fetch(`${API_CONFIG.BASE_URL}/api/collaborations/programs/${programId}/collaborators`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -128,13 +118,13 @@ export const fetchProgramCollaborators = async (programId) => {
 
 // Remove collaborator from program
 export const removeCollaboratorFromProgram = async (programId, adminId) => {
-  try {
-    const token = getAdminToken();
-    if (!token) {
-      throw new Error('No admin token found. Please log in again.');
-    }
+  const token = getAdminTokenOrRedirect();
+  if (!token) {
+    throw new Error('Authentication required');
+  }
 
-    const response = await fetch(`${API_BASE_URL}/api/collaborations/programs/${programId}/collaborators/${adminId}`, {
+  try {
+    const response = await fetch(`${API_CONFIG.BASE_URL}/api/collaborations/programs/${programId}/collaborators/${adminId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -168,13 +158,13 @@ export const removeCollaboratorFromProgram = async (programId, adminId) => {
 
 // Opt out of collaboration (for collaborators)
 export const optOutCollaboration = async (collaborationId) => {
-  try {
-    const token = getAdminToken();
-    if (!token) {
-      throw new Error('No admin token found. Please log in again.');
-    }
+  const token = getAdminTokenOrRedirect();
+  if (!token) {
+    throw new Error('Authentication required');
+  }
 
-    const response = await fetch(`${API_BASE_URL}/api/collaborations/collaborations/${collaborationId}/opt-out`, {
+  try {
+    const response = await fetch(`${API_CONFIG.BASE_URL}/api/collaborations/collaborations/${collaborationId}/opt-out`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,

@@ -844,18 +844,27 @@ export default function FooterContentManagement({ showSuccessModal }) {
             </div>
             
             <div className={styles.inputGroup}>
-              <input
-                type="text"
-                id="copyright"
-                value={isEditingCopyright ? tempCopyright : copyright}
-                onChange={(e) => isEditingCopyright ? 
-                  setTempCopyright(e.target.value) :
-                  setCopyright(e.target.value)
-                }
-                className={styles.textInput}
-                placeholder="Enter copyright text"
-                disabled={!isEditingCopyright}
-              />
+              <label htmlFor="copyright" className={styles.inputLabel}>Copyright Text</label>
+              {!isEditingCopyright && !copyright ? (
+                <div className={styles.emptyState}>
+                  <p className={styles.emptyStateText}>
+                    No copyright text set. The public footer will display: &quot;© Copyright 2025 FAITH CommUNITY. All Rights Reserved.&quot;
+                  </p>
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  id="copyright"
+                  value={isEditingCopyright ? tempCopyright : copyright}
+                  onChange={(e) => isEditingCopyright ? 
+                    setTempCopyright(e.target.value) :
+                    setCopyright(e.target.value)
+                  }
+                  className={styles.textInput}
+                  placeholder="Enter copyright text (e.g., © Copyright 2025 FAITH CommUNITY. All Rights Reserved.)"
+                  disabled={!isEditingCopyright}
+                />
+              )}
             </div>
             
           </div>

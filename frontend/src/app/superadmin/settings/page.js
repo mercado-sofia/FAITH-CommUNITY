@@ -64,6 +64,15 @@ export default function SuperAdminSettings() {
   const [activeTab, setActiveTab] = useState('account');
   const [siteContentLoading, setSiteContentLoading] = useState(true);
 
+  // Success modal handlers (defined early to be available in useEffect)
+  const showSuccessModal = (message) => {
+    setSuccessModal({ isVisible: true, message });
+  };
+
+  const closeSuccessModal = () => {
+    setSuccessModal({ isVisible: false, message: '' });
+  };
+
   // Load current user data
   useEffect(() => {
     const loadUserData = async () => {
@@ -122,15 +131,6 @@ export default function SuperAdminSettings() {
       setSiteContentLoading(false);
     }
   }, [activeTab]);
-
-  // Success modal handlers
-  const showSuccessModal = (message) => {
-    setSuccessModal({ isVisible: true, message });
-  };
-
-  const closeSuccessModal = () => {
-    setSuccessModal({ isVisible: false, message: '' });
-  };
 
   // Handle successful updates
   const handleUpdateSuccess = () => {

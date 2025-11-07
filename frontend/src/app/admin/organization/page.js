@@ -9,11 +9,9 @@ import { EditModal, OrgInfoSection, SummaryModal } from "./OrgInfo";
 import { Section, SectionEditModal, SectionSummaryModal } from "./AdvocacyCompetency";
 import { OrgHeadsSection, AddOrgHeadModal, OrgHeadsEditModal } from "./OrgHeads";
 import { SkeletonLoader } from "../components";
-import { ConfirmationModal } from '@/components';
-import { SuccessModal } from '@/components';
+import { ConfirmationModal, ErrorBoundary, SuccessModal } from '@/components';
+import { getAdminTokenOrRedirect, handleApiError, API_CONFIG, TIMEOUTS } from '../utils';
 import pageStyles from "./page.module.css";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 // Track if organization page has been visited
 let hasVisitedOrganization = false;
@@ -262,9 +260,33 @@ export default function OrganizationPage() {
   // Handle error display
   useEffect(() => {
     if (orgError && admin?.organization_id) {
-      showMessage("Failed to load organization data", "error");
+      const errorInfo = handleApiError(orgError, 'organization_load', {
+        redirectOnAuth: true,
+        logError: true
+      });
+      showMessage(errorInfo.message, "error");
     }
-    // Handle other errors silently in production
+    if (advocaciesError && admin?.organization_id) {
+      const errorInfo = handleApiError(advocaciesError, 'advocacies_load', {
+        redirectOnAuth: true,
+        logError: true
+      });
+      // Log but don't show to user to avoid spam
+    }
+    if (competenciesError && admin?.organization_id) {
+      const errorInfo = handleApiError(competenciesError, 'competencies_load', {
+        redirectOnAuth: true,
+        logError: true
+      });
+      // Log but don't show to user to avoid spam
+    }
+    if (headsError && admin?.organization_id) {
+      const errorInfo = handleApiError(headsError, 'heads_load', {
+        redirectOnAuth: true,
+        logError: true
+      });
+      // Log but don't show to user to avoid spam
+    }
   }, [orgError, advocaciesError, competenciesError, headsError, admin?.organization_id]);
 
   // Handle re-edit from submissions page
@@ -296,7 +318,11 @@ export default function OrganizationPage() {
           showMessage(`Re-editing ${submission.section} submission`, "info", submission.section);
           
         } catch (error) {
-          showMessage('Error loading submission for re-edit', "error");
+          const errorInfo = handleApiError(error, 'submission_load_re_edit', {
+            redirectOnAuth: true,
+            logError: true
+          });
+          showMessage(errorInfo.message || 'Error loading submission for re-edit', "error");
         }
       }
     }
@@ -339,16 +365,12 @@ export default function OrganizationPage() {
       formData.append("file", file);
       formData.append("uploadType", "organization-logo");
       
-      const adminToken = localStorage.getItem("adminToken");
+      const adminToken = getAdminTokenOrRedirect();
       if (!adminToken) {
-        // Use centralized immediate cleanup for security
-        const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
-        clearAuthImmediate(USER_TYPES.ADMIN);
-        window.location.href = '/login';
-        return;
+        return; // Redirect handled by getAdminTokenOrRedirect
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/upload`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/upload`, {
         method: "POST",
         headers: {
           'Authorization': `Bearer ${adminToken}`
@@ -369,18 +391,19 @@ export default function OrganizationPage() {
           setModalMessage({ text: "", type: "" });
         }, 3000);
       } else {
-        if (response.status === 401) {
-          // Token expired or invalid - use centralized cleanup
-          const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
-          clearAuthImmediate(USER_TYPES.ADMIN);
-          window.location.href = '/login';
-          return;
-        }
-        const errorText = await response.text();
-        throw new Error(`Upload failed: ${response.status} - ${errorText}`);
+        const errorInfo = handleApiError({ status: response.status }, 'organization_logo_upload', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        const errorText = await response.text().catch(() => '');
+        throw new Error(errorInfo.message || `Upload failed: ${response.status}`);
       }
     } catch (error) {
-      setModalMessage({ text: `Failed to upload logo: ${error.message}`, type: "error" });
+      const errorInfo = handleApiError(error, 'organization_logo_upload', {
+        redirectOnAuth: true,
+        logError: true
+      });
+      setModalMessage({ text: errorInfo.message, type: "error" });
     } finally {
       updateUiState({ uploading: false });
     }
@@ -445,8 +468,8 @@ export default function OrganizationPage() {
       
       const method = pendingChanges.id ? "PUT" : "POST";
       const url = pendingChanges.id
-        ? `${API_BASE_URL}/api/organization/${pendingChanges.id}`
-        : `${API_BASE_URL}/api/organization`;
+        ? `${API_CONFIG.BASE_URL}/api/organization/${pendingChanges.id}`
+        : `${API_CONFIG.BASE_URL}/api/organization`;
 
       const requestBody = {
         logo: pendingChanges.logo || "",
@@ -458,7 +481,11 @@ export default function OrganizationPage() {
         status: "ACTIVE"
       };
 
-      const adminToken = localStorage.getItem("adminToken");
+      const adminToken = getAdminTokenOrRedirect();
+      if (!adminToken) {
+        return; // Redirect handled by getAdminTokenOrRedirect
+      }
+
       const response = await fetch(url, {
         method,
         headers: { 
@@ -469,8 +496,12 @@ export default function OrganizationPage() {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
+        const errorInfo = handleApiError({ status: response.status }, 'organization_save', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        const errorText = await response.text().catch(() => '');
+        throw new Error(errorInfo.message || `HTTP ${response.status}: ${errorText}`);
       }
       
       const result = await response.json();
@@ -520,7 +551,11 @@ export default function OrganizationPage() {
         throw new Error(result.message || "Failed to save organization information");
       }
     } catch (error) {
-      showMessage(error.message || "Failed to save organization information", "error");
+      const errorInfo = handleApiError(error, 'organization_save', {
+        redirectOnAuth: true,
+        logError: true
+      });
+      showMessage(errorInfo.message, "error");
       updateUiState({ showSummaryModal: true });
     } finally {
       updateUiState({ saving: false });
@@ -583,10 +618,14 @@ export default function OrganizationPage() {
         throw new Error('No changes to submit');
       }
       
-      const adminToken = localStorage.getItem("adminToken");
+      const adminToken = getAdminTokenOrRedirect();
+      if (!adminToken) {
+        return; // Redirect handled by getAdminTokenOrRedirect
+      }
+
       let response;
       if (reEditSubmissionId) {
-        response = await fetch(`${API_BASE_URL}/api/submissions/${reEditSubmissionId}`, {
+        response = await fetch(`${API_CONFIG.BASE_URL}/api/submissions/${reEditSubmissionId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -598,7 +637,7 @@ export default function OrganizationPage() {
           })
         });
       } else {
-        response = await fetch(`${API_BASE_URL}/api/submissions`, {
+        response = await fetch(`${API_CONFIG.BASE_URL}/api/submissions`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -611,7 +650,11 @@ export default function OrganizationPage() {
       const result = await response.json();
       
       if (!response.ok || !result.success) {
-        throw new Error(result.message || 'Failed to submit changes for approval');
+        const errorInfo = handleApiError({ status: response.status, message: result.message }, 'submission_save', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        throw new Error(errorInfo.message || 'Failed to submit changes for approval');
       }
       
       updateUiState({ isEditing: false });
@@ -626,7 +669,11 @@ export default function OrganizationPage() {
       showMessage(`${currentSection.charAt(0).toUpperCase() + currentSection.slice(1)} changes ${actionText} for approval successfully`, "success", currentSection);
       
     } catch (error) {
-      showMessage(error.message || "Failed to submit changes for approval", "error", currentSection);
+      const errorInfo = handleApiError(error, 'section_submit_approval', {
+        redirectOnAuth: true,
+        logError: true
+      });
+      showMessage(errorInfo.message || error.message || "Failed to submit changes for approval", "error", currentSection);
       updateUiState({ showSectionSummaryModal: true });
     } finally {
       updateUiState({ saving: false });
@@ -660,12 +707,12 @@ export default function OrganizationPage() {
         photo: newHeadData.photo && newHeadData.photo.startsWith('data:') ? null : newHeadData.photo
       };
       
-      const adminToken = localStorage.getItem("adminToken");
+      const adminToken = getAdminTokenOrRedirect();
       if (!adminToken) {
-        throw new Error('No admin token found');
+        return; // Redirect handled by getAdminTokenOrRedirect
       }
       
-      const response = await fetch(`${API_BASE_URL}/api/heads`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/heads`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -678,8 +725,12 @@ export default function OrganizationPage() {
       });
       
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Backend error: ${response.status} - ${errorText}`);
+        const errorInfo = handleApiError({ status: response.status }, 'org_head_add', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        const errorText = await response.text().catch(() => '');
+        throw new Error(errorInfo.message || `Backend error: ${response.status}`);
       }
       
       const result = await response.json();
@@ -697,10 +748,18 @@ export default function OrganizationPage() {
         }, 500);
         
       } else {
-        throw new Error(result.message || 'Failed to add organization head');
+        const errorInfo = handleApiError({ status: response.status, message: result.message }, 'org_head_add', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        throw new Error(errorInfo.message || 'Failed to add organization head');
       }
     } catch (error) {
-      showMessage(error.message || 'Failed to add organization head', 'error', 'orgHeads');
+      const errorInfo = handleApiError(error, 'org_head_add', {
+        redirectOnAuth: true,
+        logError: true
+      });
+      showMessage(errorInfo.message, 'error', 'orgHeads');
       updateUiState({ showAddOrgHeadModal: true });
     } finally {
       updateUiState({ saving: false });
@@ -737,12 +796,12 @@ export default function OrganizationPage() {
         photo: updatedHead.photo && updatedHead.photo.startsWith('data:') ? null : updatedHead.photo
       };
       
-      const adminToken = localStorage.getItem("adminToken");
+      const adminToken = getAdminTokenOrRedirect();
       if (!adminToken) {
-        throw new Error('No admin token found');
+        return; // Redirect handled by getAdminTokenOrRedirect
       }
       
-      const response = await fetch(`${API_BASE_URL}/api/heads/${updatedHead.id}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/heads/${updatedHead.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -755,8 +814,12 @@ export default function OrganizationPage() {
       });
       
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Backend error: ${response.status} - ${errorText}`);
+        const errorInfo = handleApiError({ status: response.status }, 'org_head_update', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        const errorText = await response.text().catch(() => '');
+        throw new Error(errorInfo.message || `Backend error: ${response.status}`);
       }
       
       const result = await response.json();
@@ -775,10 +838,18 @@ export default function OrganizationPage() {
         }, 500);
         
       } else {
-        throw new Error(result.message || 'Failed to update organization head');
+        const errorInfo = handleApiError({ status: response.status, message: result.message }, 'org_head_update', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        throw new Error(errorInfo.message || 'Failed to update organization head');
       }
     } catch (error) {
-      showMessage(error.message || 'Failed to update organization head', 'error', 'orgHeads');
+      const errorInfo = handleApiError(error, 'org_head_update', {
+        redirectOnAuth: true,
+        logError: true
+      });
+      showMessage(errorInfo.message, 'error', 'orgHeads');
       updateUiState({ showIndividualHeadEditModal: true });
     } finally {
       updateUiState({ saving: false });
@@ -812,12 +883,12 @@ export default function OrganizationPage() {
         throw new Error('Invalid head data provided');
       }
       
-      const adminToken = localStorage.getItem("adminToken");
+      const adminToken = getAdminTokenOrRedirect();
       if (!adminToken) {
-        throw new Error('No admin token found');
+        return; // Redirect handled by getAdminTokenOrRedirect
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/heads/${selectedHeadForDelete.id}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/heads/${selectedHeadForDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -826,8 +897,12 @@ export default function OrganizationPage() {
       });
       
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Backend error: ${response.status} - ${errorText}`);
+        const errorInfo = handleApiError({ status: response.status }, 'org_head_delete', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        const errorText = await response.text().catch(() => '');
+        throw new Error(errorInfo.message || `Backend error: ${response.status}`);
       }
       
       const result = await response.json();
@@ -844,10 +919,18 @@ export default function OrganizationPage() {
         }, 500);
         
       } else {
-        throw new Error(result.message || 'Failed to delete organization head');
+        const errorInfo = handleApiError({ status: response.status, message: result.message }, 'org_head_delete', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        throw new Error(errorInfo.message || 'Failed to delete organization head');
       }
     } catch (error) {
-      showMessage(error.message || 'Failed to delete organization head', 'error', 'orgHeads');
+      const errorInfo = handleApiError(error, 'org_head_delete', {
+        redirectOnAuth: true,
+        logError: true
+      });
+      showMessage(errorInfo.message, 'error', 'orgHeads');
     } finally {
       updateUiState({ saving: false });
       updateUiState({ showDeleteConfirmationModal: false });
@@ -865,12 +948,12 @@ export default function OrganizationPage() {
     try {
       updateUiState({ saving: true });
       
-      const adminToken = localStorage.getItem("adminToken");
+      const adminToken = getAdminTokenOrRedirect();
       if (!adminToken) {
-        throw new Error('No admin token found');
+        return; // Redirect handled by getAdminTokenOrRedirect
       }
       
-      const response = await fetch(`${API_BASE_URL}/api/heads/reorder`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/heads/reorder`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -880,8 +963,12 @@ export default function OrganizationPage() {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Backend error: ${response.status} - ${errorText}`);
+        const errorInfo = handleApiError({ status: response.status }, 'org_head_reorder', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        const errorText = await response.text().catch(() => '');
+        throw new Error(errorInfo.message || `Backend error: ${response.status}`);
       }
 
       const result = await response.json();
@@ -896,10 +983,18 @@ export default function OrganizationPage() {
         }, 500);
         
       } else {
-        throw new Error(result.message || 'Failed to reorder organization heads');
+        const errorInfo = handleApiError({ status: response.status, message: result.message }, 'org_head_reorder', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        throw new Error(errorInfo.message || 'Failed to reorder organization heads');
       }
     } catch (error) {
-      showMessage(error.message || 'Failed to reorder organization heads', 'error', 'orgHeads');
+      const errorInfo = handleApiError(error, 'org_head_reorder', {
+        redirectOnAuth: true,
+        logError: true
+      });
+      showMessage(errorInfo.message, 'error', 'orgHeads');
       throw error;
     } finally {
       updateUiState({ saving: false });
@@ -931,6 +1026,7 @@ export default function OrganizationPage() {
   }
 
   return (
+    <ErrorBoundary>
     <div>
       <div className={pageStyles.header}>
         <h1>Organization Information</h1>
@@ -1098,7 +1194,9 @@ export default function OrganizationPage() {
         message={successModal.message}
         type={successModal.type}
         onClose={closeSuccessModal}
+        autoHideDuration={TIMEOUTS.SUCCESS_MODAL}
       />
     </div>
+    </ErrorBoundary>
   );
 }

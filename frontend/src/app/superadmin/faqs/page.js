@@ -150,7 +150,8 @@ export default function ManageFaqs() {
       setShowCreateModal(false);
       refetch();
     } catch (error) {
-      showSuccessModal('Failed to create FAQ');
+      const errorMessage = error?.data?.error || error?.data?.message || error?.message || 'Failed to create FAQ';
+      showSuccessModal(errorMessage);
     }
   };
 
@@ -161,7 +162,8 @@ export default function ManageFaqs() {
       setEditingFaq(null);
       refetch();
     } catch (error) {
-      showSuccessModal('Failed to update FAQ');
+      const errorMessage = error?.data?.error || error?.data?.message || error?.message || 'Failed to update FAQ';
+      showSuccessModal(errorMessage);
     }
   };
 
@@ -171,7 +173,8 @@ export default function ManageFaqs() {
       showSuccessModal('FAQ deleted successfully!');
       refetch();
     } catch (error) {
-      showSuccessModal('Failed to delete FAQ');
+      const errorMessage = error?.data?.error || error?.data?.message || error?.message || 'Failed to delete FAQ';
+      showSuccessModal(errorMessage);
     }
   };
 
@@ -304,6 +307,7 @@ export default function ManageFaqs() {
         isDeleting={isDeleting}
         isUpdating={isUpdating}
         itemsPerPage={showEntries}
+        startIndex={startIndex}
       />
 
       {/* Pagination */}

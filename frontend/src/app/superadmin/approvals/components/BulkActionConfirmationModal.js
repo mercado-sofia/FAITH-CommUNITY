@@ -117,8 +117,6 @@ export default function BulkActionConfirmationModal({
     
     if (onConfirm && typeof onConfirm === 'function') {
       onConfirm(actionType === 'reject' ? rejectComment : undefined);
-    } else {
-      console.error('onConfirm is not a function:', onConfirm);
     }
   };
 

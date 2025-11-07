@@ -249,15 +249,17 @@
 }
 
 .backLink {
-  position: absolute;
-  top: 3rem;
-  left: 2rem;
-  text-align: left;
+  margin-top: 2.5rem;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-width: 350px;
 }
 
 .backButton {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   background: none;
   border: none;

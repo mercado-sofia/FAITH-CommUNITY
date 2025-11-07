@@ -1,5 +1,5 @@
 .container {
-  background-color: #F0F4F7;
+  background-color: #FFFFFF;
   overflow-x: hidden;
 }
 
@@ -13,7 +13,7 @@
 }
 
 .headerContent h1 {
-  font-size: 1.4rem;
+  font-size: 1.25rem;
   font-weight: 700;
   font-family: var(--font-poppins), sans-serif;
   color: #06100f;
@@ -30,7 +30,7 @@
 /* Navigation Tabs */
 .navTabs {
   display: flex;
-  background: #e9eef3;
+  background: #f3f4f6;
   border-radius: 0.5rem;
   padding: 5px;
   margin-bottom: 1.5rem;

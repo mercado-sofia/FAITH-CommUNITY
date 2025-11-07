@@ -2,10 +2,7 @@
 .tableContainer {
   background-color: #fff;
   border-radius: 6px;
-  box-shadow:
-    0 8px 20px rgba(83, 96, 97, 0.06),
-    0 4px 10px rgba(83, 96, 97, 0.04);
-  border: none;
+  border: 1px solid #e5e5e5;
   overflow: visible;
   padding: 4px 1rem;
   font-family: var(--font-inter);

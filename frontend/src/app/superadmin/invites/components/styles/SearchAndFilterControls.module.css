@@ -24,7 +24,7 @@
 .inlineLabel {
   font-size: 12px;
   font-weight: 500;
-  color: #0c1b1a;
+  color: #000;
   margin-right: 2px;
 }
 
@@ -36,21 +36,21 @@
 
 .dropdown {
   background: #fff;
-  padding: 0.45rem 0.9rem;
-  min-width: 60px;
-  min-height: 2.5rem;
+  padding: 0.4rem 0.9rem;
+  min-height: 2.25rem;
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: 500;
   font-family: var(--font-inter);
-  color: #06100f;
-  border: 2px solid #06100f;
+  color: #000;
+  border: 1px solid #e5e5e5;
   display: flex;
   align-items: center;
   justify-content: space-between;
   transition: all 0.2s ease-in-out;
   user-select: none;
+  white-space: nowrap;
 }
 
 .dropdown:hover {
@@ -59,7 +59,7 @@
 
 .icon {
   margin-left: 8px;
-  color: #06100f;
+  color: #000;
   transition: transform 0.2s ease;
 }
 
@@ -83,6 +83,9 @@
   max-height: 200px;
   overflow-y: auto;
   animation: fadeIn 0.2s ease-in-out;
+  /* Firefox scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
 }
 
 .options li {
@@ -102,6 +105,25 @@
   background-color: #f3f3f3;
 }
 
+/* Custom small scrollbar for dropdown (Chrome/Safari/Edge) */
+.options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.options::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.options::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.options::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -119,23 +141,23 @@
   position: relative;
   width: 300px;
   max-width: 100%;
-  height: 2.5rem;
+  height: 2.25rem;
   display: flex;
   align-items: center;
 }
 
 .searchInput {
   width: 100%;
-  padding: 0.45rem 2.6rem 0.45rem 1rem;
+  padding: 0.4rem 2.6rem 0.4rem 1rem;
   border-radius: 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #e5e5e5;
   background: #fff;
   font-size: 0.85rem;
-  color: #06100f;
+  color: #000;
   outline: none;
   transition: all 0.2s ease;
   height: 100%;
-  min-height: 2.5rem;
+  min-height: 2.25rem;
 }
 
 .searchInput::placeholder {
@@ -161,9 +183,14 @@
   color: #6b7280;
 }
 
+.searchInput:focus {
+  border-color: #e5e5e5;
+  box-shadow: none;
+}
+
 /* Add New Button */
 .addButton {
-  background: #06100f;
+  background: #000;
   color: white;
   border: none;
   padding: 0.65rem 1.2rem;
@@ -182,7 +209,7 @@
 
 .addButton:hover:not(:disabled) {
   background: #142220;
-  border-color: #06100f;
+  border-color: #000;
 }
 
 .addButton:disabled {
@@ -190,6 +217,34 @@
   cursor: not-allowed;
 }
 
+/* Sort Button */
+.sortButton {
+  background: #fff;
+  padding: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  color: #000;
+  border: 1px solid #e5e5e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-in-out;
+  user-select: none;
+}
+
+.sortButton:hover {
+  background: #f3f3f3;
+}
+
+.sortIcon {
+  font-size: 18px;
+  color: #000;
+}
 
 /* Responsive Design */
 @media (max-width: 768px) {

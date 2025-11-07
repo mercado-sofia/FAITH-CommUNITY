@@ -226,8 +226,8 @@
 }
 
 .statusPending {
-  background: #fdf2e2;
-  color: #e8901c;
+  background: #F7F7F7;
+  color: #6b7280;
 }
 
 .statusApproved {
@@ -299,7 +299,7 @@
 
 .actionDropdownOptions li {
   padding: 0.6rem 1.2rem;
-  color: #06100f;
+  color: #000;
   cursor: pointer;
   font-size: 12.5px;
   font-weight: 500;

@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { getAdminTokenOrRedirect, handleApiError, API_CONFIG } from '../../utils';
 
 export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessModal, resetPageMode, clearDeletingProgram) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,14 +35,9 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       }
       
       // Get admin token for authentication
-      const token = localStorage.getItem('adminToken');
+      const token = getAdminTokenOrRedirect();
       if (!token) {
-        setSuccessModal({ 
-          isVisible: true, 
-          message: 'Authentication token not found. Please log in again.', 
-          type: 'error' 
-        });
-        return;
+        return; // Redirect handled by getAdminTokenOrRedirect
       }
 
       // Validate required fields
@@ -94,7 +88,7 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
           const imageFormData = new FormData();
           imageFormData.append('file', programData.image);
           
-          const imageResponse = await fetch(`${API_BASE_URL}/api/upload?type=program`, {
+          const imageResponse = await fetch(`${API_CONFIG.BASE_URL}/api/upload?type=program`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -135,7 +129,7 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         }]
       };
       
-      const response = await fetch(`${API_BASE_URL}/api/submissions`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/submissions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -145,8 +139,12 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to submit program: ${response.status} ${errorText}`);
+        const errorInfo = handleApiError({ status: response.status }, 'program_submit', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        const errorText = await response.text().catch(() => '');
+        throw new Error(errorInfo.message || `Failed to submit program: ${response.status}`);
       }
 
       const responseData = await response.json();
@@ -171,7 +169,7 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       // Also refresh submissions data if available
       if (typeof window !== 'undefined' && window.swrCache) {
         // Invalidate submissions cache to refresh submissions page
-        const submissionsKey = `${API_BASE_URL}/api/submissions/${currentAdmin.org}`;
+        const submissionsKey = `${API_CONFIG.BASE_URL}/api/submissions/${currentAdmin.org}`;
         window.swrCache.delete(submissionsKey);
       }
       
@@ -180,9 +178,13 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         resetPageMode();
       }
     } catch (error) {
+      const errorInfo = handleApiError(error, 'program_submit', {
+        redirectOnAuth: true,
+        logError: true
+      });
       setSuccessModal({ 
         isVisible: true, 
-        message: `Failed to submit program: ${error.message}`, 
+        message: errorInfo.message, 
         type: 'error' 
       });
     } finally {
@@ -213,14 +215,9 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       }
 
       // Get admin token for authentication
-      const token = localStorage.getItem('adminToken');
+      const token = getAdminTokenOrRedirect();
       if (!token) {
-        setSuccessModal({ 
-          isVisible: true, 
-          message: 'Authentication token not found. Please log in again.', 
-          type: 'error' 
-        });
-        return;
+        return; // Redirect handled by getAdminTokenOrRedirect
       }
 
       // Handle image upload if it's a File object
@@ -230,7 +227,7 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
           const imageFormData = new FormData();
           imageFormData.append('file', programData.image);
           
-          const imageResponse = await fetch(`${API_BASE_URL}/api/upload?type=program`, {
+          const imageResponse = await fetch(`${API_CONFIG.BASE_URL}/api/upload?type=program`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -268,7 +265,7 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         additionalImages: programData.additionalImages || []
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/programs/${editingProgram.id}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/programs/${editingProgram.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -278,8 +275,12 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        throw new Error(errorData.message || `HTTP ${response.status}: Failed to update program`);
+        const errorInfo = handleApiError({ status: response.status }, 'program_update', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        const errorData = await response.json().catch(() => ({ message: errorInfo.message }));
+        throw new Error(errorData.message || errorInfo.message);
       }
 
       const result = await response.json();
@@ -297,9 +298,13 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         resetPageMode();
       }
     } catch (error) {
+      const errorInfo = handleApiError(error, 'program_update', {
+        redirectOnAuth: true,
+        logError: true
+      });
       setSuccessModal({ 
         isVisible: true, 
-        message: `Failed to update program: ${error.message}`, 
+        message: errorInfo.message, 
         type: 'error' 
       });
     }
@@ -319,14 +324,9 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
 
     try {
       // Get admin token for authentication
-      const token = localStorage.getItem('adminToken');
+      const token = getAdminTokenOrRedirect();
       if (!token) {
-        setSuccessModal({ 
-          isVisible: true, 
-          message: 'Authentication token not found. Please log in again.', 
-          type: 'error' 
-        });
-        return;
+        return; // Redirect handled by getAdminTokenOrRedirect
       }
 
       let effectiveFile = reportFile;
@@ -349,7 +349,7 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       const formData = new FormData();
       formData.append('file', effectiveFile);
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/programs/${program.id}/post-act-report`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/programs/${program.id}/post-act-report`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -358,8 +358,12 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        throw new Error(errorData.message || `HTTP ${response.status}: Failed to submit Post Act Report`);
+        const errorInfo = handleApiError({ status: response.status }, 'program_post_act_report', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        const errorData = await response.json().catch(() => ({ message: errorInfo.message }));
+        throw new Error(errorData.message || errorInfo.message);
       }
 
       // Optimistically update UI to reflect pending state to avoid duplicate submissions
@@ -378,9 +382,13 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       });
       // Revalidation already requested above
     } catch (error) {
+      const errorInfo = handleApiError(error, 'program_post_act_report', {
+        redirectOnAuth: true,
+        logError: true
+      });
       setSuccessModal({ 
         isVisible: true, 
-        message: `Failed to submit Post Act Report: ${error.message}`, 
+        message: errorInfo.message, 
         type: 'error' 
       });
     }
@@ -399,14 +407,9 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
     }
 
     // Get admin token for authentication
-    const token = localStorage.getItem('adminToken');
+    const token = getAdminTokenOrRedirect();
     if (!token) {
-      setSuccessModal({ 
-        isVisible: true, 
-        message: 'Authentication token not found. Please log in again.', 
-        type: 'error' 
-      });
-      return;
+      return; // Redirect handled by getAdminTokenOrRedirect
     }
 
     // Store the original data for potential rollback
@@ -434,7 +437,7 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       }, { revalidate: false });
 
       // Make the API call
-      const response = await fetch(`${API_BASE_URL}/api/admin/programs/${program.id}/mark-active`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/programs/${program.id}/mark-active`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -443,8 +446,12 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        throw new Error(errorData.message || `HTTP ${response.status}: Failed to mark program as active`);
+        const errorInfo = handleApiError({ status: response.status }, 'program_mark_active', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        const errorData = await response.json().catch(() => ({ message: errorInfo.message }));
+        throw new Error(errorData.message || errorInfo.message);
       }
 
       setSuccessModal({ 
@@ -462,9 +469,14 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       }
       refreshPrograms(undefined, { revalidate: true });
       
+      const errorInfo = handleApiError(error, 'program_mark_active', {
+        redirectOnAuth: true,
+        logError: true
+      });
+      
       setSuccessModal({ 
         isVisible: true, 
-        message: `Failed to mark program as active: ${error.message}`, 
+        message: errorInfo.message || `Failed to mark program as active: ${error.message}`, 
         type: 'error' 
       });
     }
@@ -488,17 +500,12 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
     setIsDeleting(true);
     try {
       // Get admin token for authentication
-      const token = localStorage.getItem('adminToken');
+      const token = getAdminTokenOrRedirect();
       if (!token) {
-        setSuccessModal({ 
-          isVisible: true, 
-          message: 'Authentication token not found. Please log in again.', 
-          type: 'error' 
-        });
-        return;
+        return; // Redirect handled by getAdminTokenOrRedirect
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/programs/${deletingProgram.id}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/programs/${deletingProgram.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -506,7 +513,11 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete program');
+        const errorInfo = handleApiError({ status: response.status }, 'program_delete', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        throw new Error(errorInfo.message || 'Failed to delete program');
       }
 
       setSuccessModal({ 
@@ -522,9 +533,13 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       
       refreshPrograms();
     } catch (error) {
+      const errorInfo = handleApiError(error, 'program_delete', {
+        redirectOnAuth: true,
+        logError: true
+      });
       setSuccessModal({ 
         isVisible: true, 
-        message: 'Failed to delete program. Please try again.', 
+        message: errorInfo.message, 
         type: 'error' 
       });
       // Clear the deleting program state even on error to close the confirmation modal
@@ -550,17 +565,12 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
 
     try {
       // Get admin token for authentication
-      const token = localStorage.getItem('adminToken');
+      const token = getAdminTokenOrRedirect();
       if (!token) {
-        setSuccessModal({ 
-          isVisible: true, 
-          message: 'Authentication token not found. Please log in again.', 
-          type: 'error' 
-        });
-        return;
+        return; // Redirect handled by getAdminTokenOrRedirect
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/programs/${program.id}/toggle-volunteers`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/programs/${program.id}/toggle-volunteers`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -570,8 +580,12 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        throw new Error(errorData.message || `HTTP ${response.status}: Failed to update volunteer acceptance`);
+        const errorInfo = handleApiError({ status: response.status }, 'program_toggle_volunteers', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        const errorData = await response.json().catch(() => ({ message: errorInfo.message }));
+        throw new Error(errorData.message || errorInfo.message);
       }
 
       const result = await response.json();
@@ -584,9 +598,13 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       
       refreshPrograms();
     } catch (error) {
+      const errorInfo = handleApiError(error, 'program_toggle_volunteers', {
+        redirectOnAuth: true,
+        logError: true
+      });
       setSuccessModal({ 
         isVisible: true, 
-        message: `Failed to update volunteer acceptance: ${error.message}`, 
+        message: errorInfo.message, 
         type: 'error' 
       });
     }

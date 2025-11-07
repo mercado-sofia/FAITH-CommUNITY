@@ -16,7 +16,8 @@ export default function FAQTable({
   onSelectAll,
   onSelectItem,
   isDeleting,
-  isUpdating
+  isUpdating,
+  startIndex = 0
 }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedItemForDelete, setSelectedItemForDelete] = useState(null);
@@ -137,6 +138,7 @@ export default function FAQTable({
         <table className={styles.faqTable}>
           <thead>
             <tr>
+              <th className={styles.numberColumn}>#</th>
               <th className={styles.checkboxColumn}>
                 <input
                   type="checkbox"
@@ -154,7 +156,7 @@ export default function FAQTable({
           <tbody>
             {faqs.length === 0 ? (
               <tr>
-                <td colSpan="5" className={styles.emptyState}>
+                <td colSpan="6" className={styles.emptyState}>
                   <div className={styles.emptyContent}>
                     <div className={styles.emptyIcon}>
                       <FiClipboard />
@@ -165,8 +167,11 @@ export default function FAQTable({
                 </td>
               </tr>
             ) : (
-              faqs.map((faq) => (
+              faqs.map((faq, index) => (
                 <tr key={faq.id} className={styles.tableRow}>
+                  <td className={styles.numberCell}>
+                    {startIndex + index + 1}
+                  </td>
                   <td className={styles.checkboxColumn}>
                     <input
                       type="checkbox"

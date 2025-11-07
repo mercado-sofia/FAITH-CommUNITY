@@ -203,21 +203,62 @@ export const getAllProgramsByOrganization = async (req, res) => {
 // Get programs statistics for superadmin dashboard
 export const getProgramsStatistics = async (req, res) => {
   try {
+    const currentYear = new Date().getFullYear();
+    const previousYear = currentYear - 1;
+    
     const statisticsQuery = `
       SELECT 
         COUNT(*) as total_programs,
         SUM(CASE WHEN LOWER(status) = 'upcoming' THEN 1 ELSE 0 END) as upcoming_programs,
         SUM(CASE WHEN LOWER(status) = 'active' THEN 1 ELSE 0 END) as active_programs,
         SUM(CASE WHEN LOWER(status) = 'completed' THEN 1 ELSE 0 END) as completed_programs,
-        COUNT(DISTINCT organization_id) as total_organizations
+        COUNT(DISTINCT organization_id) as total_organizations,
+        -- Completed programs in current year
+        SUM(CASE 
+          WHEN LOWER(status) = 'completed' 
+          AND (
+            (date_completed IS NOT NULL AND YEAR(date_completed) = ?)
+            OR (date_completed IS NULL AND YEAR(updated_at) = ? AND LOWER(status) = 'completed')
+          )
+          THEN 1 
+          ELSE 0 
+        END) as completed_this_year,
+        -- Completed programs in previous year
+        SUM(CASE 
+          WHEN LOWER(status) = 'completed' 
+          AND (
+            (date_completed IS NOT NULL AND YEAR(date_completed) = ?)
+            OR (date_completed IS NULL AND YEAR(updated_at) = ? AND LOWER(status) = 'completed')
+          )
+          THEN 1 
+          ELSE 0 
+        END) as completed_previous_year
       FROM programs_projects
     `;
     
-    const [results] = await db.execute(statisticsQuery);
+    const [results] = await db.execute(statisticsQuery, [currentYear, currentYear, previousYear, previousYear]);
+    
+    const data = results[0];
+    const completedThisYear = parseInt(data.completed_this_year) || 0;
+    const completedPreviousYear = parseInt(data.completed_previous_year) || 0;
+    
+    // Calculate percentage change
+    let percentageChange = 0;
+    if (completedPreviousYear > 0) {
+      percentageChange = ((completedThisYear - completedPreviousYear) / completedPreviousYear) * 100;
+    } else if (completedThisYear > 0) {
+      // If previous year had 0, but current year has programs, it's 100% increase
+      percentageChange = 100;
+    }
     
     res.json({
       success: true,
-      data: results[0]
+      data: {
+        ...data,
+        completed_this_year: completedThisYear,
+        completed_previous_year: completedPreviousYear,
+        percentage_change: Math.round(percentageChange * 10) / 10 // Round to 1 decimal place
+      }
     });
   } catch (error) {
     res.status(500).json({
@@ -481,6 +522,97 @@ export const getProgramsByOrganizationId = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch programs by organization',
+      error: error.message
+    });
+  }
+};
+
+// Get program completion trends (time-series data for charts)
+export const getProgramCompletionTrends = async (req, res) => {
+  try {
+    // Get completion trends for the last 12 months
+    const query = `
+      SELECT 
+        DATE_FORMAT(
+          COALESCE(date_completed, updated_at), 
+          '%Y-%m'
+        ) as month,
+        COUNT(*) as count
+      FROM programs_projects
+      WHERE LOWER(status) = 'completed'
+        AND (
+          (date_completed IS NOT NULL AND date_completed >= DATE_SUB(NOW(), INTERVAL 12 MONTH))
+          OR (date_completed IS NULL AND updated_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH) AND LOWER(status) = 'completed')
+        )
+      GROUP BY DATE_FORMAT(
+        COALESCE(date_completed, updated_at), 
+        '%Y-%m'
+      )
+      ORDER BY month ASC
+    `;
+    
+    const [results] = await db.execute(query);
+    
+    // Format the data for frontend consumption
+    // Filter out any rows with invalid month values
+    const trends = results
+      .filter(row => row.month && typeof row.month === 'string' && row.month.length > 0)
+      .map(row => ({
+        month: String(row.month).trim(),
+        count: parseInt(row.count) || 0
+      }));
+    
+    res.json({
+      success: true,
+      data: trends
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch program completion trends',
+      error: error.message
+    });
+  }
+};
+
+// Get top organizations by program count
+export const getTopOrganizationsByProgramCount = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10; // Default to top 10
+    
+    const query = `
+      SELECT 
+        o.id,
+        o.org as acronym,
+        o.orgName as name,
+        COUNT(pp.id) as program_count
+      FROM organizations o
+      LEFT JOIN programs_projects pp ON o.id = pp.organization_id
+      WHERE o.status = 'ACTIVE'
+      GROUP BY o.id, o.org, o.orgName
+      HAVING program_count > 0
+      ORDER BY program_count DESC
+      LIMIT ?
+    `;
+    
+    const [results] = await db.execute(query, [limit]);
+    
+    // Format the data for frontend consumption
+    const organizations = results.map(row => ({
+      id: row.id,
+      acronym: row.acronym || 'N/A',
+      name: row.name || 'Unknown Organization',
+      programCount: parseInt(row.program_count) || 0
+    }));
+    
+    res.json({
+      success: true,
+      data: organizations
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch top organizations by program count',
       error: error.message
     });
   }

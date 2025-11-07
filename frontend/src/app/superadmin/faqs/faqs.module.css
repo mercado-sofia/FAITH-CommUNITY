@@ -2,7 +2,7 @@
 .container {
   padding: 0 3rem 2rem 3rem;
   min-height: calc(100vh - 55px);
-  background: #F0F4F7;
+  background: #FFFFFF;
 }
 
 .headerTop {
@@ -11,10 +11,10 @@
 }
 
 .headerTop h1 {
-  font-size: 1.4rem;
+  font-size: 1.25rem;
   font-weight: 700;
   font-family: var(--font-poppins), sans-serif;
-  color: #06100f;
+  color: #000;
   user-select: none;
   margin: 0;
   line-height: 1.2;
@@ -96,10 +96,10 @@
 .paginationButton {
   padding: 0.25rem;
   font-size: 12px;
-  border: 2px solid #06100f;
+  border: 2px solid #000;
   border-radius: 4px;
   background-color: #ffffff;
-  color: #06100f;
+  color: #000;
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: 500;
@@ -130,14 +130,14 @@
 
 .paginationButton.active {
   background-color: #fff;
-  color: #06100f;
-  border-color: #06100f;
+  color: #000;
+  border-color: #000;
   font-weight: 600;
 }
 
 .paginationButton.active:hover {
-  background-color: #06100f;
-  border-color: #06100f;
+  background-color: #000;
+  border-color: #000;
   color: white;
 }
 
@@ -148,7 +148,7 @@
   border: none;
   border-radius: 4px;
   background-color: transparent;
-  color: #06100f;
+  color: #000;
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: 500;

@@ -6,35 +6,41 @@ import Link from 'next/link';
 import { 
   useGetOrganizationsCountQuery,
   useGetPendingApprovalsCountQuery,
-  useGetUpcomingProgramsCountQuery,
-  useGetActiveProgramsCountQuery
+  useGetProgramsStatisticsQuery
 } from '../../../../rtk/superadmin/dashboardApi';
 
 export default function StatCardSection() {
   // Fetch dashboard statistics
   const { 
-    data: organizationsCount = 0, 
+    data: organizationsData = { total: 0, active: 0, inactive: 0 }, 
     isLoading: organizationsLoading 
   } = useGetOrganizationsCountQuery();
+  
+  const organizationsCount = organizationsData.total || 0;
+  const activeCount = organizationsData.active || 0;
+  const inactiveCount = organizationsData.inactive || 0;
 
   const { 
-    data: pendingApprovalsCount = 0, 
+    data: pendingApprovalsData = { total: 0, organizationsCount: 0 }, 
     isLoading: pendingLoading 
   } = useGetPendingApprovalsCountQuery();
+  
+  const pendingApprovalsCount = pendingApprovalsData.total || 0;
+  const pendingOrganizationsCount = pendingApprovalsData.organizationsCount || 0;
 
   const { 
-    data: upcomingProgramsCount = 0, 
-    isLoading: upcomingProgramsLoading 
-  } = useGetUpcomingProgramsCountQuery();
-
-  const { 
-    data: activeProgramsCount = 0, 
+    data: programsData = { upcoming: 0, active: 0, completed: 0, total: 0, completedThisYear: 0, percentageChange: 0 }, 
     isLoading: programsLoading 
-  } = useGetActiveProgramsCountQuery();
-
+  } = useGetProgramsStatisticsQuery();
+  
+  const programsTotal = programsData.total || 0;
+  const upcomingCount = programsData.upcoming || 0;
+  const programsActiveCount = programsData.active || 0;
+  const completedCount = programsData.completedThisYear || 0;
+  const percentageChange = programsData.percentageChange || 0;
 
   // Show loading state if any data is still loading
-  const isLoading = organizationsLoading || pendingLoading || upcomingProgramsLoading || programsLoading;
+  const isLoading = organizationsLoading || pendingLoading || programsLoading;
 
   return (
     <div className={styles.cardGrid}>
@@ -44,6 +50,8 @@ export default function StatCardSection() {
           count={isLoading ? "—" : organizationsCount}
           isLoading={organizationsLoading}
           iconKey="organizations"
+          activeCount={isLoading ? "—" : activeCount}
+          inactiveCount={isLoading ? "—" : inactiveCount}
         />
       </Link>
       <Link href="/superadmin/approvals?status=pending" className={styles.cardWrapper}>
@@ -52,22 +60,26 @@ export default function StatCardSection() {
           count={isLoading ? "—" : pendingApprovalsCount}
           isLoading={pendingLoading}
           iconKey="pending"
+          organizationsCount={isLoading ? "—" : pendingOrganizationsCount}
         />
       </Link>
-      <Link href="/superadmin/programs?tab=upcoming" className={styles.cardWrapper}>
+      <Link href="/superadmin/programs" className={styles.cardWrapper}>
         <StatCard
-          label="Upcoming Programs"
-          count={isLoading ? "—" : upcomingProgramsCount}
-          isLoading={upcomingProgramsLoading}
-          iconKey="upcoming"
-        />
-      </Link>
-      <Link href="/superadmin/programs?tab=active" className={styles.cardWrapper}>
-        <StatCard
-          label="Active Programs"
-          count={isLoading ? "—" : activeProgramsCount}
+          label="Programs"
+          count={isLoading ? "—" : programsTotal}
           isLoading={programsLoading}
           iconKey="programs"
+          upcomingCount={isLoading ? "—" : upcomingCount}
+          programsActiveCount={isLoading ? "—" : programsActiveCount}
+        />
+      </Link>
+      <Link href="/superadmin/programs?tab=completed" className={styles.cardWrapper}>
+        <StatCard
+          label="Completed Programs"
+          count={isLoading ? "—" : completedCount}
+          isLoading={programsLoading}
+          iconKey="programs"
+          percentageChange={isLoading ? "—" : percentageChange}
         />
       </Link>
     </div>

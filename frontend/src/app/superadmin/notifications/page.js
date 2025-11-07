@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { selectCurrentSuperAdmin } from '../../../rtk/superadmin/adminSlice';
 import { 
   useGetSuperAdminNotificationsQuery, 
   useGetSuperAdminUnreadCountQuery,
@@ -14,8 +12,9 @@ import { FiTrash2 } from 'react-icons/fi';
 import { IoCloseOutline } from 'react-icons/io5';
 import { PiChecksBold } from 'react-icons/pi';
 import { ConfirmationModal } from '@/components';
-import SkeletonLoader from '../../admin/components/SkeletonLoader/SkeletonLoader';
+import { SkeletonLoader } from '../components';
 import InfiniteScrollSuperAdminNotifications from './components/InfiniteScrollSuperAdminNotifications';
+import { logError } from '@/config/api';
 import styles from './notifications.module.css';
 
 export default function SuperAdminNotificationsPage() {
@@ -23,8 +22,6 @@ export default function SuperAdminNotificationsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showIndividualDeleteModal, setShowIndividualDeleteModal] = useState(false);
   const [notificationToDelete, setNotificationToDelete] = useState(null);
-  
-  const currentSuperAdmin = useSelector(selectCurrentSuperAdmin);
   
   // Track current tab state
   const [currentTab, setCurrentTab] = useState('all');
@@ -44,7 +41,8 @@ export default function SuperAdminNotificationsPage() {
           const parsedData = JSON.parse(superAdminData);
           setSuperAdminId(parsedData.id);
         } catch (error) {
-          // Handle error silently in production
+          logError(error, { context: 'parseSuperAdminData' });
+          // Failed to parse superAdminData, will show loading state
         }
       }
     }
@@ -144,7 +142,8 @@ export default function SuperAdminNotificationsPage() {
       await markAsRead({ notificationId, superAdminId: superAdminId });
       // The mutation will automatically invalidate the cache and refresh the data
     } catch (error) {
-      // Handle error silently in production
+      logError(error, { context: 'handleMarkAsRead', notificationId });
+      // Error is handled by RTK Query, user will see it in the UI
     }
   };
 
@@ -154,7 +153,8 @@ export default function SuperAdminNotificationsPage() {
       await markAllAsRead(superAdminId);
       // The mutation will automatically invalidate the cache and refresh the data
     } catch (error) {
-      // Handle error silently in production
+      logError(error, { context: 'handleMarkAllAsRead', superAdminId });
+      // Error is handled by RTK Query, user will see it in the UI
     }
   };
 
@@ -166,7 +166,8 @@ export default function SuperAdminNotificationsPage() {
       setShowIndividualDeleteModal(false);
       setNotificationToDelete(null);
     } catch (error) {
-      // Handle error silently in production
+      logError(error, { context: 'handleDeleteNotification', notificationId });
+      // Error is handled by RTK Query, user will see it in the UI
     }
   };
 
@@ -186,7 +187,8 @@ export default function SuperAdminNotificationsPage() {
       setShowDeleteModal(false);
       // The mutation will automatically invalidate the cache and refresh the data
     } catch (error) {
-      // Handle error silently in production
+      logError(error, { context: 'handleBulkDelete', notificationIds: selectedNotifications });
+      // Error is handled by RTK Query, user will see it in the UI
     }
   };
 

@@ -370,7 +370,6 @@ app.listen(PORT, async () => {
     initialCleanupTimeout = setTimeout(async () => {
       try {
         await cleanupDeletedNews();
-        console.log('✅ Initial cleanup completed successfully');
       } catch (error) {
         console.error('Initial cleanup failed:', error);
       }
@@ -381,28 +380,22 @@ app.listen(PORT, async () => {
     // - API endpoint (e.g., /api/admin/cleanup)
     // - External cron service (e.g., Vercel Cron Jobs, AWS EventBridge)
     // - Platform-specific scheduled functions
-    console.log('⚠️  Serverless environment detected - scheduled cleanup disabled');
-    console.log('   Use external cron jobs or API endpoints for cleanup tasks');
   }
 })
 
 // Graceful shutdown handler
 // Clean up intervals and timeouts on server shutdown
 const gracefulShutdown = () => {
-  console.log('🛑 Shutting down gracefully...');
-  
   // Clear cleanup interval
   if (cleanupInterval) {
     clearInterval(cleanupInterval);
     cleanupInterval = null;
-    console.log('✅ Cleanup interval cleared');
   }
   
   // Clear initial cleanup timeout
   if (initialCleanupTimeout) {
     clearTimeout(initialCleanupTimeout);
     initialCleanupTimeout = null;
-    console.log('✅ Initial cleanup timeout cleared');
   }
   
   process.exit(0);

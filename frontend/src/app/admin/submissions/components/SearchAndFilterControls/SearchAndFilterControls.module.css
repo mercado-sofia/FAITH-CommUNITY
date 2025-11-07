@@ -12,7 +12,7 @@
 .filtersRow {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .inlineLabelDropdown {
@@ -26,6 +26,28 @@
   font-weight: 500;
   color: #0c1b1a;
   margin-right: 8px;
+}
+
+.statusLabel {
+  color: #9ca3af;
+  font-weight: 400;
+  margin-right: 0.25rem;
+}
+
+.statusValue {
+  color: #0c1b1a;
+  font-weight: 500;
+}
+
+.sectionLabel {
+  color: #9ca3af;
+  font-weight: 400;
+  margin-right: 0.25rem;
+}
+
+.sectionValue {
+  color: #0c1b1a;
+  font-weight: 500;
 }
 
 .dropdownWrapper {
@@ -48,7 +70,7 @@
   font-weight: 500;
   font-family: var(--font-inter);
   color: #0c1b1a;
-  box-shadow: 0 6px 12px rgba(7, 42, 46, 0.06);
+  border: 1px solid #e5e5e5;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -59,6 +81,11 @@
 .icon {
   margin-left: 8px;
   color: #9ca3af;
+  transition: transform 0.2s ease;
+}
+
+.dropdown.open .icon {
+  transform: rotate(180deg);
 }
 
 .options {
@@ -74,7 +101,12 @@
   padding: 0.5rem 0;
   width: 100%;
   min-width: 60px;
+  max-height: 200px;
+  overflow-y: auto;
   animation: fadeIn 0.2s ease-in-out;
+  /* Firefox scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
 }
 
 .options li {
@@ -86,6 +118,25 @@
 
 .options li:hover {
   background-color: #f3f3f3;
+}
+
+/* Custom small scrollbar for dropdown (Chrome/Safari/Edge) */
+.options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.options::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.options::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.options::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 @keyframes fadeIn {
@@ -105,6 +156,7 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  gap: 0.85rem;
 }
 
 /* Wrap input and icons together */
@@ -118,8 +170,7 @@
   width: 100%;
   padding: 0.6rem 2.6rem 0.6rem 1rem;
   border-radius: 6px;
-  border: none;
-  box-shadow: 0 6px 12px rgba(7, 42, 46, 0.06);
+  border: 1px solid #e5e5e5;
   font-size: 13px;
   outline: none;
   transition: border 0.2s;
@@ -145,4 +196,33 @@
   color: #9ca3af;
   cursor: pointer;
   font-size: 16px;
+}
+
+/* Sort Button */
+.sortButton {
+  background: #fff;
+  padding: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  color: #000;
+  border: 1px solid #e5e5e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-in-out;
+  user-select: none;
+}
+
+.sortButton:hover {
+  background: #f3f3f3;
+}
+
+.sortIcon {
+  font-size: 18px;
+  color: #000;
 }

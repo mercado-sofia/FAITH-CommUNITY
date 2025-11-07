@@ -2,7 +2,7 @@
 .container {
   padding: 0 3rem 2rem 3rem;
   min-height: calc(100vh - 55px);
-  background: #F0F4F7;
+  background: #FFFFFF;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -21,10 +21,10 @@
 }
 
 .pageTitle {
-  font-size: 1.4rem;
+  font-size: 1.25rem;
   font-weight: 700;
   font-family: var(--font-poppins), sans-serif;
-  color: #06100f;
+  color: #000;
   user-select: none;
   margin: 0;
   line-height: 1.2;
@@ -40,7 +40,7 @@
 /* Navigation Tabs */
 .navTabs {
   display: flex;
-  background: #e9eef3;
+  background: #f3f4f6;
   border-radius: 0.5rem;
   padding: 5px;
   margin-bottom: 1.5rem;
@@ -66,12 +66,12 @@
 }
 
 .navTab:hover {
-  color: #06100f;
+  color: #000;
 }
 
 .navTab.active {
   background: #ffffff;
-  color: #06100f;
+  color: #000;
   font-weight: 600;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
 }
@@ -83,7 +83,7 @@
   min-width: 1.5rem;
   height: 1.5rem;
   background: #f8fafc;
-  color: #06100f;
+  color: #000;
   border-radius: 50%;
   font-size: 0.75rem;
   font-weight: 600;
@@ -196,7 +196,7 @@
 .selectedCount {
   font-size: 14px;
   font-weight: 700;
-  color: #06100f;
+  color: #000;
 }
 
 .bulkActionsRight {
@@ -435,7 +435,7 @@
 .notificationTitle {
   font-size: 14px;
   font-weight: 600;
-  color: #06100f;
+  color: #000;
   margin: 0;
   line-height: 1.4;
 }

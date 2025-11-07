@@ -6,6 +6,7 @@ import { FiImage } from 'react-icons/fi'
 import { getOrganizationImageUrl } from '@/utils/uploadPaths'
 import styles from './OrgHeadModal.module.css'
 import { PhotoUtils, applyRoleHierarchyOrdering, ROLE_OPTIONS } from '../../utils'
+import { getAdminTokenOrRedirect, API_CONFIG, handleApiError } from '../../../utils'
 import LazyImage from '../components/LazyImage/LazyImage'
 
 export default function AddOrgHeadModal({
@@ -146,12 +147,12 @@ export default function AddOrgHeadModal({
       formData.append('file', compressedFile)
       formData.append('uploadType', 'organization-head')
 
-      const adminToken = localStorage.getItem('adminToken');
+      const adminToken = getAdminTokenOrRedirect();
       if (!adminToken) {
-        throw new Error('No admin token found. Please log in again.');
+        return; // Redirect handled by getAdminTokenOrRedirect
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/upload`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${adminToken}`

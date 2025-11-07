@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { FiSearch, FiChevronDown, FiX } from 'react-icons/fi';
+import { BsSortUp, BsSortDown } from 'react-icons/bs';
 import styles from './SearchAndFilterControls.module.css';
 
 export default function SearchAndFilterControls({
@@ -15,12 +16,6 @@ export default function SearchAndFilterControls({
 }) {
   const [localQuery, setLocalQuery] = useState(searchQuery);
   const [showDropdown, setShowDropdown] = useState(null);
-
-  const sortOptions = [
-    { value: 'newest', label: 'Newest' },
-    { value: 'oldest', label: 'Oldest' },
-    { value: 'title', label: 'Title A-Z' }
-  ];
 
   const toggleDropdown = (type) => {
     setShowDropdown(showDropdown === type ? null : type);
@@ -54,28 +49,23 @@ export default function SearchAndFilterControls({
           )}
         </div>
 
-        {/* Sort Dropdown */}
-        <div className={styles.dropdownWrapper}>
-          <div
-            className={styles.dropdown}
-            onClick={() => toggleDropdown("sort")}
-          >
-            Sort: {sortOptions.find(opt => opt.value === sortBy)?.label || 'Newest'}
-            <FiChevronDown className={styles.icon} />
-          </div>
-          {showDropdown === "sort" && (
-            <ul className={styles.options}>
-              {sortOptions.map((option) => (
-                <li key={option.value} onClick={() => {
-                  onFilterChange('sort', option.value);
-                  setShowDropdown(null);
-                }}>
-                  {option.label}
-                </li>
-              ))}
-            </ul>
+        {/* Sort Button */}
+        <button
+          className={styles.sortButton}
+          onClick={() => {
+            // Toggle between newest and oldest, default to newest if current is title
+            const currentSort = sortBy === 'newest' || sortBy === 'oldest' ? sortBy : 'newest';
+            const newSort = currentSort === 'newest' ? 'oldest' : 'newest';
+            onFilterChange('sort', newSort);
+          }}
+          title={sortBy === 'newest' ? 'Sort: Newest First' : sortBy === 'oldest' ? 'Sort: Oldest First' : 'Sort: Newest First'}
+        >
+          {sortBy === 'newest' ? (
+            <BsSortUp className={styles.sortIcon} />
+          ) : (
+            <BsSortDown className={styles.sortIcon} />
           )}
-        </div>
+        </button>
       </div>
 
       {/* Results Count on the right */}

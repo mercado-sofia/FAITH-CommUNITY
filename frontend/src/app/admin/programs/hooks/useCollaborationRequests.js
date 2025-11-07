@@ -1,26 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
-// Get admin token from localStorage
-const getAdminToken = () => {
-  if (typeof window === 'undefined') return null;
-  try {
-    return localStorage.getItem('adminToken');
-  } catch (error) {
-    return null;
-  }
-};
+import { getAdminTokenOrRedirect, API_CONFIG } from '../../utils';
 
 // Fetch collaboration requests
 const fetchCollaborationRequests = async () => {
-  try {
-    const token = getAdminToken();
-    if (!token) {
-      throw new Error('No admin token found. Please log in again.');
-    }
+  const token = getAdminTokenOrRedirect();
+  if (!token) {
+    return []; // Redirect handled by getAdminTokenOrRedirect
+  }
 
-    const response = await fetch(`${API_BASE_URL}/api/collaborations/collaboration-requests`, {
+  try {
+    const response = await fetch(`${API_CONFIG.BASE_URL}/api/collaborations/collaboration-requests`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -41,13 +30,13 @@ const fetchCollaborationRequests = async () => {
 
 // Accept collaboration request
 const acceptCollaborationRequest = async (collaborationId) => {
-  try {
-    const token = getAdminToken();
-    if (!token) {
-      throw new Error('No admin token found. Please log in again.');
-    }
+  const token = getAdminTokenOrRedirect();
+  if (!token) {
+    throw new Error('Authentication required');
+  }
 
-    const response = await fetch(`${API_BASE_URL}/api/collaborations/collaborations/${collaborationId}/accept`, {
+  try {
+    const response = await fetch(`${API_CONFIG.BASE_URL}/api/collaborations/collaborations/${collaborationId}/accept`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -69,13 +58,13 @@ const acceptCollaborationRequest = async (collaborationId) => {
 
 // Decline collaboration request
 const declineCollaborationRequest = async (collaborationId) => {
-  try {
-    const token = getAdminToken();
-    if (!token) {
-      throw new Error('No admin token found. Please log in again.');
-    }
+  const token = getAdminTokenOrRedirect();
+  if (!token) {
+    throw new Error('Authentication required');
+  }
 
-    const response = await fetch(`${API_BASE_URL}/api/collaborations/collaborations/${collaborationId}/decline`, {
+  try {
+    const response = await fetch(`${API_CONFIG.BASE_URL}/api/collaborations/collaborations/${collaborationId}/decline`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,

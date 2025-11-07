@@ -159,6 +159,7 @@ const ManageProfiles = () => {
         isDeleting={isDeletingInvitation}
         isDeactivating={isDeactivatingFromInvitation}
         itemsPerPage={params.show}
+        startIndex={startIndex}
       />
 
       {/* Pagination */}

@@ -27,7 +27,7 @@
 .panelTitle h2 {
   font-size: 14px;
   font-weight: 600;
-  color: #06100f;
+  color: #000;
   margin: 0 0 4px 0;
   font-family: var(--font-poppins), sans-serif;
 }
@@ -148,8 +148,8 @@
   font-size: 12px;
   font-weight: 500;
   color: white;
-  background: #06100f;
-  border: 1px solid #06100f;
+  background: #000;
+  border: 1px solid #000;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -433,6 +433,22 @@
   font-weight: 600;
   color: #374151;
   font-family: var(--font-poppins), sans-serif;
+}
+
+.emptyState {
+  padding: 1rem;
+  background: #f8f9fa;
+  border: 1px dashed #d1d5db;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+}
+
+.emptyStateText {
+  font-size: 13px;
+  color: #6b7280;
+  font-family: var(--font-poppins), sans-serif;
+  line-height: 1.5;
+  margin: 0;
 }
 
 /* Responsive design for footer sections */

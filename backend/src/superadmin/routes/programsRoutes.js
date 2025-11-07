@@ -3,7 +3,9 @@ import {
   getAllProgramsByOrganization,
   getProgramsStatistics,
   getProgramById,
-  getProgramsByOrganizationId
+  getProgramsByOrganizationId,
+  getProgramCompletionTrends,
+  getTopOrganizationsByProgramCount
 } from '../controllers/programsController.js';
 import { verifySuperadminToken } from '../controllers/superadminAuthController.js';
 
@@ -15,6 +17,8 @@ router.use(verifySuperadminToken);
 // Routes for superadmin programs management
 router.get('/all', getAllProgramsByOrganization);
 router.get('/statistics', getProgramsStatistics);
+router.get('/completion-trends', getProgramCompletionTrends);
+router.get('/top-organizations', getTopOrganizationsByProgramCount);
 router.get('/organization/:orgId', getProgramsByOrganizationId);
 router.get('/:id', getProgramById);
 

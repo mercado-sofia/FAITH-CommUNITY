@@ -4,7 +4,7 @@
 }
 
 .headerTop h1 {
-  font-size: 1.4rem;
+  font-size: 1.25rem;
   font-weight: 700;
   font-family: var(--font-poppins), sans-serif;
   color: #06100f;
@@ -51,7 +51,7 @@
 
 .createPostHeader h1 {
   margin: 0;
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 600;
   color: #1e293b;
   font-family: var(--font-poppins);

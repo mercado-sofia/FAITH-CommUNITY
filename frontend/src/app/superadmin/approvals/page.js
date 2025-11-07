@@ -11,12 +11,12 @@ import { SuccessModal } from '@/components';
 import ApprovalsTable from './components/ApprovalsTable';
 import SearchAndFilterControls from './components/SearchAndFilterControls';
 import { SkeletonLoader } from '../components';
+import { API_BASE_URL, logError } from '@/config/api';
+import { clearAuthImmediate, USER_TYPES } from '@/utils/authService';
 import styles from './approvals.module.css';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-
 // Helper function to make authenticated API calls
-const makeAuthenticatedRequest = async (url, options = {}) => {
+const makeAuthenticatedRequest = async (url, options = {}, router = null) => {
   // Check for window to avoid SSR errors
   if (typeof window === 'undefined') {
     throw new Error('Cannot make authenticated request on server side');
@@ -25,9 +25,12 @@ const makeAuthenticatedRequest = async (url, options = {}) => {
   const token = localStorage.getItem('superAdminToken');
   if (!token) {
     // Use centralized immediate cleanup for security
-    const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
     clearAuthImmediate(USER_TYPES.SUPERADMIN);
-    window.location.href = '/login';
+    if (router) {
+      router.push('/login');
+    } else {
+      window.location.href = '/login';
+    }
     return null;
   }
 
@@ -40,20 +43,34 @@ const makeAuthenticatedRequest = async (url, options = {}) => {
     }
   });
 
-  // Check if response is JSON before parsing
+  // Check if response is JSON before parsing (only if content-type header exists)
   const contentType = response.headers.get('content-type');
-  if (!contentType || !contentType.includes('application/json')) {
+  if (contentType && !contentType.includes('application/json')) {
     throw new Error('Server returned an invalid response. Please try again.');
   }
 
+  // Handle different HTTP status codes
   if (response.status === 401) {
-    // Token expired or invalid - use centralized cleanup
-    const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
+    // Unauthorized - token expired or invalid
     clearAuthImmediate(USER_TYPES.SUPERADMIN);
-    if (typeof window !== 'undefined') {
+    if (router) {
+      router.push('/login');
+    } else if (typeof window !== 'undefined') {
       window.location.href = '/login';
     }
     return null;
+  } else if (response.status === 403) {
+    // Forbidden - user doesn't have permission
+    throw new Error('You do not have permission to perform this action.');
+  } else if (response.status === 404) {
+    // Not found
+    throw new Error('The requested resource was not found.');
+  } else if (response.status >= 500) {
+    // Server error
+    throw new Error('Server error. Please try again later.');
+  } else if (!response.ok) {
+    // Other client errors (400-499)
+    throw new Error(`Request failed with status ${response.status}. Please try again.`);
   }
 
   return response;
@@ -101,7 +118,6 @@ const matchesOrganization = (approval, orgAcronym) => {
         }
       } catch (error) {
         // If parsing fails, don't include this approval
-        console.warn('Error parsing proposed_data for approval:', approval.id, error);
         return false;
       }
     }
@@ -111,6 +127,7 @@ const matchesOrganization = (approval, orgAcronym) => {
   
   // Regular organization filtering
   // Check main organization (case-insensitive)
+  // The approval data from backend has 'org' field (from o.org in SQL query)
   const mainOrgAcronym = normalizeOrgAcronym(
     approval.org || 
     approval.organization_acronym || 
@@ -118,58 +135,67 @@ const matchesOrganization = (approval, orgAcronym) => {
     ''
   );
   
-  if (mainOrgAcronym === normalizedOrgAcronym) {
+  // Direct comparison of normalized acronyms - if main org matches, return true immediately
+  if (mainOrgAcronym && mainOrgAcronym === normalizedOrgAcronym) {
+    // Debug: Log successful match (remove in production)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Filter Match] Approval ID: ${approval.id}, Org: "${approval.org}", Normalized: "${mainOrgAcronym}", Selected: "${normalizedOrgAcronym}"`);
+    }
     return true;
   }
+  
+  // Debug: Log non-match (remove in production)
+  if (process.env.NODE_ENV === 'development' && mainOrgAcronym) {
+    console.log(`[Filter No Match] Approval ID: ${approval.id}, Org: "${approval.org}", Normalized: "${mainOrgAcronym}", Selected: "${normalizedOrgAcronym}"`);
+  }
 
-  // For program submissions, check collaborators
+  // For program submissions ONLY, check if the selected organization is a collaborator
+  // This allows showing programs where the selected org is involved as a collaborator
+  // even if another org is the main organization
   if (approval.section === 'programs' && approval.proposed_data) {
     try {
       const proposedData = typeof approval.proposed_data === 'string' 
         ? JSON.parse(approval.proposed_data) 
         : approval.proposed_data;
       
-      if (proposedData) {
-        // Check if program has collaborators array
-        if (proposedData.collaborators && Array.isArray(proposedData.collaborators) && proposedData.collaborators.length > 0) {
-          // Check if any collaborator belongs to the selected organization
-          const hasMatchingCollaborator = proposedData.collaborators.some(collaborator => {
-            // Handle both ID format and object format
-            if (typeof collaborator === 'object' && collaborator !== null) {
-              const collaboratorOrgAcronym = normalizeOrgAcronym(
-                collaborator.organization_acronym ||
-                collaborator.org ||
-                collaborator.org_acronym ||
-                collaborator.organization?.acronym ||
-                collaborator.organization?.org ||
-                collaborator.organization?.org_acronym ||
-                ''
-              );
-              
-              return collaboratorOrgAcronym === normalizedOrgAcronym;
-            }
-            return false;
-          });
-          
-          if (hasMatchingCollaborator) {
-            return true;
+      if (proposedData && proposedData.collaborators && Array.isArray(proposedData.collaborators) && proposedData.collaborators.length > 0) {
+        // Check if the selected organization is explicitly listed as a collaborator
+        const hasMatchingCollaborator = proposedData.collaborators.some(collaborator => {
+          // Handle both ID format and object format
+          if (typeof collaborator === 'object' && collaborator !== null) {
+            const collaboratorOrgAcronym = normalizeOrgAcronym(
+              collaborator.organization_acronym ||
+              collaborator.org ||
+              collaborator.org_acronym ||
+              collaborator.organization?.acronym ||
+              collaborator.organization?.org ||
+              collaborator.organization?.org_acronym ||
+              ''
+            );
+            
+            // Only return true if this collaborator's org matches the selected org
+            return collaboratorOrgAcronym && collaboratorOrgAcronym === normalizedOrgAcronym;
           }
-        }
+          return false;
+        });
         
-        // Also check if program is marked as collaborative (is_collaborative flag)
-        // This handles cases where collaboration might be stored differently
-        if (proposedData.is_collaborative === true || proposedData.is_collaborative === 1) {
-          // If it's collaborative, we should still check if this org is involved
-          // But if we can't determine, we'll be conservative and not include it
-          // unless we have explicit collaborator data
+        // Only return true if we found a matching collaborator
+        if (hasMatchingCollaborator) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[Filter Match - Collaborator] Approval ID: ${approval.id}, Main Org: "${mainOrgAcronym}", Selected Org (as collaborator): "${normalizedOrgAcronym}"`);
+          }
+          return true;
         }
       }
     } catch (error) {
-      // If parsing fails, just check main organization (already done above)
-      console.warn('Error parsing proposed_data for approval:', approval.id, error);
+      // If parsing fails, don't include this approval (main org didn't match)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Filter Error] Approval ID: ${approval.id}, Error parsing proposed_data:`, error);
+      }
     }
   }
 
+  // If main org doesn't match and selected org is not a collaborator, exclude this approval
   return false;
 };
 
@@ -254,7 +280,7 @@ export default function PendingApprovalsPage() {
       setIsLoading(true);
       
       // Fetch submissions only (collaborative programs are now handled as regular submissions)
-      const submissionsRes = await makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals`);
+      const submissionsRes = await makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals`, {}, router);
       
       if (!submissionsRes) return; // Helper function handled redirect
       
@@ -277,18 +303,19 @@ export default function PendingApprovalsPage() {
       setApprovals(allApprovals);
       setError(null);
     } catch (err) {
+      logError(err, { context: 'fetchApprovals' });
       setError(err.message || 'Failed to load approvals');
       setApprovals([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [router]);
 
   const fetchOrganizations = useCallback(async () => {
     try {
       setOrgsLoading(true);
       
-      const res = await makeAuthenticatedRequest(`${API_BASE_URL}/api/organizations`);
+      const res = await makeAuthenticatedRequest(`${API_BASE_URL}/api/organizations`, {}, router);
       if (!res) return; // Helper function handled redirect
       
       const result = await res.json();
@@ -299,11 +326,12 @@ export default function PendingApprovalsPage() {
 
       setOrganizations(result.data);
     } catch (err) {
-      // Handle error silently in production
+      logError(err, { context: 'fetchOrganizations' });
+      // Organizations filter is optional, so we don't show error to user
     } finally {
       setOrgsLoading(false);
     }
-  }, []);
+  }, [router]);
 
   // Success modal handlers
   const showSuccessModal = useCallback((message, type = 'success') => {
@@ -347,7 +375,7 @@ export default function PendingApprovalsPage() {
     router.replace(newURL, { scroll: false });
   }, [searchParams, pathname, router]);
 
-  // Handle URL parameters for all filters
+  // Handle URL parameters for all filters (only on mount or when URL actually changes)
   useEffect(() => {
     const urlParams = {
       organization: searchParams.get('organization'),
@@ -360,26 +388,34 @@ export default function PendingApprovalsPage() {
     };
 
     // Set filters based on URL parameters
-    if (urlParams.organization) {
-      setSelectedOrganization(urlParams.organization);
+    // Only update if URL param exists and is different from current state
+    if (urlParams.organization !== null) {
+      const orgValue = urlParams.organization || 'all';
+      setSelectedOrganization(prev => prev !== orgValue ? orgValue : prev);
     }
-    if (urlParams.section) {
-      setSelectedSection(urlParams.section);
+    if (urlParams.section !== null) {
+      const sectionValue = urlParams.section || 'all';
+      setSelectedSection(prev => prev !== sectionValue ? sectionValue : prev);
     }
-    if (urlParams.status) {
-      setSelectedStatus(urlParams.status);
+    if (urlParams.status !== null) {
+      const statusValue = urlParams.status || 'all';
+      setSelectedStatus(prev => prev !== statusValue ? statusValue : prev);
     }
-    if (urlParams.search) {
-      setSearchTerm(urlParams.search);
+    if (urlParams.search !== null) {
+      const searchValue = urlParams.search || '';
+      setSearchTerm(prev => prev !== searchValue ? searchValue : prev);
     }
-    if (urlParams.sort) {
-      setSortBy(urlParams.sort);
+    if (urlParams.sort !== null) {
+      const sortValue = urlParams.sort || 'latest';
+      setSortBy(prev => prev !== sortValue ? sortValue : prev);
     }
-    if (urlParams.show) {
-      setShowEntries(parseInt(urlParams.show));
+    if (urlParams.show !== null) {
+      const showValue = urlParams.show ? parseInt(urlParams.show) : 10;
+      setShowEntries(prev => prev !== showValue ? showValue : prev);
     }
-    if (urlParams.page) {
-      setCurrentPage(parseInt(urlParams.page));
+    if (urlParams.page !== null) {
+      const pageValue = urlParams.page ? parseInt(urlParams.page) : 1;
+      setCurrentPage(prev => prev !== pageValue ? pageValue : prev);
     }
   }, [searchParams]);
 
@@ -482,21 +518,27 @@ export default function PendingApprovalsPage() {
     let filtered = [...approvals];
 
     // Filter by organization (including collaborators)
-    if (selectedOrganization !== 'all') {
-      filtered = filtered.filter(approval => 
-        matchesOrganization(approval, selectedOrganization)
-      );
+    if (selectedOrganization && selectedOrganization !== 'all') {
+      const beforeFilterCount = filtered.length;
+      filtered = filtered.filter(approval => {
+        const matches = matchesOrganization(approval, selectedOrganization);
+        return matches;
+      });
+      // Debug: Log filter results (remove in production)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Filter] Organization: "${selectedOrganization}", Before: ${beforeFilterCount}, After: ${filtered.length}`);
+      }
     }
 
     // Filter by section (case-insensitive matching)
-    if (selectedSection !== 'all') {
+    if (selectedSection && selectedSection !== 'all') {
       filtered = filtered.filter(approval => 
         approval.section && approval.section.toLowerCase() === selectedSection.toLowerCase()
       );
     }
 
     // Filter by status
-    if (selectedStatus !== 'all') {
+    if (selectedStatus && selectedStatus !== 'all') {
       filtered = filtered.filter(approval => 
         approval.status === selectedStatus
       );
@@ -526,7 +568,7 @@ export default function PendingApprovalsPage() {
       return 0;
     });
 
-      setFilteredApprovals(filtered);
+    setFilteredApprovals(filtered);
     setCurrentPage(1); // Reset to first page when filters change
   }, [approvals, selectedOrganization, selectedSection, selectedStatus, searchTerm, sortBy]);
 
@@ -537,7 +579,7 @@ export default function PendingApprovalsPage() {
       const res = await makeAuthenticatedRequest(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-      });
+      }, router);
 
       if (!res) return; // Helper function handled redirect
 
@@ -552,10 +594,10 @@ export default function PendingApprovalsPage() {
       showSuccessModal('Changes have been approved and applied.');
       fetchApprovals(); // Refresh the list
     } catch (err) {
-      console.error('Approval error:', err);
+      logError(err, { context: 'handleApprove', itemId: item.id });
       showSuccessModal('Failed to approve changes: ' + err.message, 'error');
     }
-  }, [showSuccessModal, fetchApprovals]);
+  }, [showSuccessModal, fetchApprovals, router]);
 
   const handleReject = useCallback(async (item, rejectComment = '') => {
     try {
@@ -565,7 +607,7 @@ export default function PendingApprovalsPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rejection_comment: rejectComment })
-      });
+      }, router);
 
       if (!res) return; // Helper function handled redirect
 
@@ -578,9 +620,10 @@ export default function PendingApprovalsPage() {
       showSuccessModal('Item has been rejected.');
       fetchApprovals();
     } catch (err) {
+      logError(err, { context: 'handleReject', itemId: item.id });
       showSuccessModal('Failed to reject item: ' + err.message, 'error');
     }
-  }, [showSuccessModal, fetchApprovals]);
+  }, [showSuccessModal, fetchApprovals, router]);
 
   // Bulk action handlers
   const handleBulkApprove = useCallback(async (uniqueKeys) => {
@@ -597,7 +640,7 @@ export default function PendingApprovalsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: originalIds })
-      });
+      }, router);
 
       if (!res) return; // Helper function handled redirect
 
@@ -610,9 +653,10 @@ export default function PendingApprovalsPage() {
       showSuccessModal(`Bulk approval completed: ${result.details.successCount} approved`);
       fetchApprovals();
     } catch (err) {
+      logError(err, { context: 'handleBulkApprove', ids: uniqueKeys });
       showSuccessModal('Failed to bulk approve approvals: ' + err.message, 'error');
     }
-  }, [showSuccessModal, fetchApprovals]);
+  }, [showSuccessModal, fetchApprovals, router]);
 
   const handleBulkReject = useCallback(async (uniqueKeys, rejectComment = '') => {
     try {
@@ -628,7 +672,7 @@ export default function PendingApprovalsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: originalIds, rejection_comment: rejectComment })
-      });
+      }, router);
 
       if (!res) return; // Helper function handled redirect
 
@@ -641,9 +685,10 @@ export default function PendingApprovalsPage() {
       showSuccessModal(`Bulk rejection completed: ${result.details.successCount} rejected`);
       fetchApprovals();
     } catch (err) {
+      logError(err, { context: 'handleBulkReject', ids: uniqueKeys });
       showSuccessModal('Failed to bulk reject approvals: ' + err.message, 'error');
     }
-  }, [showSuccessModal, fetchApprovals]);
+  }, [showSuccessModal, fetchApprovals, router]);
 
   const handleBulkDelete = useCallback(async (uniqueKeys) => {
     try {
@@ -659,7 +704,7 @@ export default function PendingApprovalsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: originalIds })
-      });
+      }, router);
 
       if (!res) return; // Helper function handled redirect
 
@@ -672,9 +717,10 @@ export default function PendingApprovalsPage() {
       showSuccessModal(`Bulk deletion completed: ${result.details.successCount} deleted`);
       fetchApprovals();
     } catch (err) {
+      logError(err, { context: 'handleBulkDelete', ids: uniqueKeys });
       showSuccessModal('Failed to bulk delete approvals: ' + err.message, 'error');
     }
-  }, [showSuccessModal, fetchApprovals]);
+  }, [showSuccessModal, fetchApprovals, router]);
 
   // Individual action handlers
   const handleApproveClick = useCallback((approval) => {
@@ -693,10 +739,6 @@ export default function PendingApprovalsPage() {
 
   const handleIndividualActionConfirm = useCallback(async (rejectComment) => {
     if (!selectedItemForAction || !pendingIndividualAction) {
-      console.error('Cannot confirm action: missing selectedItemForAction or pendingIndividualAction', {
-        selectedItemForAction,
-        pendingIndividualAction
-      });
       return;
     }
     
@@ -718,7 +760,6 @@ export default function PendingApprovalsPage() {
       setSelectedItemForAction(null);
       setPendingIndividualAction(null);
     } catch (error) {
-      console.error('Error in handleIndividualActionConfirm:', error);
       showSuccessModal('An error occurred: ' + (error.message || 'Unknown error'), 'error');
     } finally {
       setIsProcessing(false);
@@ -753,7 +794,8 @@ export default function PendingApprovalsPage() {
       setShowBulkDeleteModal(false);
       setSelectedItems(new Set());
     } catch (error) {
-      // Handle error silently in production
+      logError(error, { context: 'handleBulkDeleteConfirm' });
+      // Error is already handled in handleBulkDelete
     } finally {
       setIsBulkDeleting(false);
     }
@@ -772,7 +814,7 @@ export default function PendingApprovalsPage() {
       const res = await makeAuthenticatedRequest(`${API_BASE_URL}/api/approvals/${selectedItemForAction.id}/delete`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' }
-      });
+      }, router);
 
       if (!res) return; // Helper function handled redirect
 
@@ -787,6 +829,7 @@ export default function PendingApprovalsPage() {
       setShowIndividualDeleteModal(false);
       setSelectedItemForAction(null);
     } catch (error) {
+      logError(error, { context: 'handleIndividualDeleteConfirm', itemId: selectedItemForAction?.id });
       showSuccessModal('Failed to delete submission: ' + error.message, 'error');
     } finally {
       setIsIndividualDeleting(false);

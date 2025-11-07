@@ -7,10 +7,9 @@ import { useAdminSubmissions } from '../hooks/useAdminData';
 import { formatDateShort } from '@/utils/dateUtils.js';
 import { SearchAndFilterControls, SubmissionTable, BulkActionsBar } from './components';
 import { PaginationControls, SkeletonLoader } from '../components';
-import { SuccessModal } from '@/components';
+import { SuccessModal, ErrorBoundary } from '@/components';
+import { getAdminTokenOrRedirect, handleApiError, API_CONFIG, PAGINATION, TIMEOUTS } from '../utils';
 import styles from './submissions.module.css';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 // Track if submissions page has been visited
 let hasVisitedSubmissions = false;
@@ -25,16 +24,22 @@ export default function SubmissionsPage() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(
-    searchParams.get('filter') ? capitalizeFirstLetter(searchParams.get('filter')) : 'All status'
+    searchParams.get('filter') ? capitalizeFirstLetter(searchParams.get('filter')) : 'All'
   );
   const [sortOrder, setSortOrder] = useState(
     searchParams.get('sort') === 'oldest' ? 'oldest' : 'latest'
   );
-  const [sectionFilter, setSectionFilter] = useState(
-    searchParams.get('section') ? capitalizeFirstLetter(searchParams.get('section')) : 'All Sections'
-  );
+  const [sectionFilter, setSectionFilter] = useState(() => {
+    const sectionParam = searchParams.get('section');
+    if (!sectionParam) return 'All';
+    // Handle migration from "all sections" to "all"
+    if (sectionParam.toLowerCase() === 'all sections' || sectionParam.toLowerCase() === 'all') {
+      return 'All';
+    }
+    return capitalizeFirstLetter(sectionParam);
+  });
   const [showCount, setShowCount] = useState(
-    parseInt(searchParams.get('show')) || 10
+    parseInt(searchParams.get('show')) || PAGINATION.DEFAULT_PAGE_SIZE
   );
   const [currentPage, setCurrentPage] = useState(1);
   const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
@@ -71,7 +76,11 @@ export default function SubmissionsPage() {
   // Handle error display
   useEffect(() => {
     if (error) {
-      showToast('Failed to load submissions. Please try again.', 'error');
+      const errorInfo = handleApiError(error, 'submissions_load', {
+        redirectOnAuth: true,
+        logError: true
+      });
+      showToast(errorInfo.message, 'error');
     }
   }, [error, showToast]);
 
@@ -85,7 +94,7 @@ export default function SubmissionsPage() {
   useEffect(() => {
     const params = new URLSearchParams();
 
-    if (statusFilter.toLowerCase() !== 'all status') {
+    if (statusFilter.toLowerCase() !== 'all') {
       params.set('filter', statusFilter.toLowerCase());
     }
 
@@ -93,7 +102,7 @@ export default function SubmissionsPage() {
       params.set('sort', sortOrder);
     }
 
-    if (sectionFilter.toLowerCase() !== 'all sections') {
+    if (sectionFilter.toLowerCase() !== 'all') {
       params.set('section', sectionFilter.toLowerCase());
     }
 
@@ -114,11 +123,11 @@ export default function SubmissionsPage() {
         formatDateShort(submission.submitted_at).includes(searchQuery.toLowerCase());
 
       const matchesStatus =
-        statusFilter.toLowerCase() === 'all status' ||
+        statusFilter.toLowerCase() === 'all' ||
         submission.status?.toLowerCase() === statusFilter.toLowerCase();
 
       const matchesSection =
-        sectionFilter === 'All Sections' || 
+        sectionFilter.toLowerCase() === 'all' || 
         submission.section?.toLowerCase() === sectionFilter.toLowerCase();
 
       return matchesSearch && matchesStatus && matchesSection;
@@ -167,11 +176,16 @@ export default function SubmissionsPage() {
         return;
       }
       
+      const adminToken = getAdminTokenOrRedirect();
+      if (!adminToken) {
+        return; // Redirect handled by getAdminTokenOrRedirect
+      }
+      
       const promises = pendingIds.map(id => 
-        fetch(`${API_BASE_URL}/api/submissions/${id}`, { 
+        fetch(`${API_CONFIG.BASE_URL}/api/submissions/${id}`, { 
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+            'Authorization': `Bearer ${adminToken}`
           }
         })
       );
@@ -187,11 +201,16 @@ export default function SubmissionsPage() {
 
   const handleBulkDelete = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/submissions/bulk-delete`, {
+      const adminToken = getAdminTokenOrRedirect();
+      if (!adminToken) {
+        return; // Redirect handled by getAdminTokenOrRedirect
+      }
+
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/submissions/bulk-delete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Authorization': `Bearer ${adminToken}`
         },
         body: JSON.stringify({ ids: Array.from(selectedItems) })
       });
@@ -236,6 +255,7 @@ export default function SubmissionsPage() {
   }
 
   return (
+    <ErrorBoundary>
     <div className={styles.container}>
       <div className={styles.header}>
         <h1>Submissions</h1>
@@ -299,8 +319,9 @@ export default function SubmissionsPage() {
         isVisible={successModal.isVisible}
         onClose={hideToast}
         type={successModal.type}
-        autoHideDuration={3000}
+        autoHideDuration={TIMEOUTS.TOAST_AUTO_HIDE}
       />
     </div>
+    </ErrorBoundary>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FiChevronDown, FiSearch, FiX } from 'react-icons/fi';
+import { BsSortUp, BsSortDown } from 'react-icons/bs';
 import styles from './SearchAndFilterControls.module.css';
 
 const SearchAndFilterControls = ({
@@ -35,13 +36,9 @@ const SearchAndFilterControls = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const sortOptions = [
-    { value: 'newest', label: 'Newest' },
-    { value: 'oldest', label: 'Oldest' }
-  ];
 
   const collaborationStatusOptions = [
-    { value: 'all', label: 'All Collaborations' },
+    { value: 'all', label: 'All' },
     { value: 'pending', label: 'Pending Response' },
     { value: 'accepted', label: 'Accepted' },
     { value: 'declined', label: 'Declined' }
@@ -75,37 +72,33 @@ const SearchAndFilterControls = ({
           )}
         </div>
 
-        {/* Sort Dropdown */}
-        <div className={styles.dropdownWrapper}>
-          <div
-            className={styles.dropdown}
-            onClick={() => toggleDropdown("sort")}
-          >
-            Sort: {sortOptions.find(opt => opt.value === sortBy)?.label || 'Newest'}
-            <FiChevronDown className={styles.icon} />
-          </div>
-          {showDropdown === "sort" && (
-            <ul className={styles.options}>
-              {sortOptions.map((option) => (
-                <li key={option.value} onClick={() => {
-                  onFilterChange('sort', option.value);
-                  setShowDropdown(null);
-                }}>
-                  {option.label}
-                </li>
-              ))}
-            </ul>
+        {/* Sort Button */}
+        <button
+          className={styles.sortButton}
+          onClick={() => {
+            const newSort = sortBy === 'newest' ? 'oldest' : 'newest';
+            onFilterChange('sort', newSort);
+          }}
+          title={sortBy === 'newest' ? 'Sort: Newest First' : 'Sort: Oldest First'}
+        >
+          {sortBy === 'newest' ? (
+            <BsSortUp className={styles.sortIcon} />
+          ) : (
+            <BsSortDown className={styles.sortIcon} />
           )}
-        </div>
+        </button>
 
         {/* Collaboration Status Filter - Only show for collaboration tab */}
         {isCollaborationTab && (
           <div className={styles.dropdownWrapper}>
             <div
-              className={styles.dropdown}
+              className={`${styles.dropdown} ${showDropdown === "collaborationStatus" ? styles.open : ""}`}
               onClick={() => toggleDropdown("collaborationStatus")}
             >
-              Status: {collaborationStatusOptions.find(opt => opt.value === collaborationStatusFilter)?.label || 'All Collaborations'}
+              <span className={styles.statusLabel}>Status:</span>
+              <span className={styles.statusValue}>
+                {collaborationStatusOptions.find(opt => opt.value === collaborationStatusFilter)?.label || 'All'}
+              </span>
               <FiChevronDown className={styles.icon} />
             </div>
             {showDropdown === "collaborationStatus" && (

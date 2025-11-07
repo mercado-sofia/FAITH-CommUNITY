@@ -1,20 +1,20 @@
 /* Approvals Section */
 .pendingApprovalsSection {
   background: white;
-  border-radius: 20px;
+  border-radius: 10px;
   padding: 1.5rem;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e5e5;
 }
 
 .sectionHeader {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
+  align-items: flex-start;
+  margin-bottom: 1.2rem;
 }
 
 .sectionTitle {
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #000;
   margin: 0;
@@ -33,12 +33,12 @@
   gap: 0.4rem;
   text-decoration: none;
   background: white;
-  border: 2px solid #06100f;
+  border: 1px solid #e5e5e5;
   padding: 0.45rem 0.9rem;
   border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 500;
-  color: #06100f;
+  color: #000;
   transition: all 0.2s ease;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
@@ -159,20 +159,23 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-width: 85px;
+  width: 85px;
+  box-sizing: border-box;
 }
 
 .statusBadge.pending {
-  background: #fdf2e2;
-  color: #e8901c;
+  background: #F7F7F7;
+  color: #6b7280;
 }
 
 .statusBadge.approved {
-  background: #d1fae5;
+  background: #edfcf5;
   color: #058964;
 }
 
 .statusBadge.rejected {
-  background: #fee2e2;
+  background: #feefef;
   color: #b61212;
 }
 
@@ -208,7 +211,7 @@
   background: white;
   padding: 0.45rem 0.9rem;
   min-width: 200px;
-  border: 2px solid #06100f;
+  border: 1px solid #e5e5e5;
   border-radius: 8px;
   cursor: pointer;
   display: flex;
@@ -216,7 +219,7 @@
   justify-content: space-between;
   font-size: 0.85rem;
   font-weight: 500;
-  color: #06100f;
+  color: #000;
   transition: all 0.2s ease;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
@@ -233,12 +236,12 @@
 .organizationDropdown .icon {
   margin-left: 0.5rem;
   font-size: 16px;
-  color: #06100f;
+  color: #000;
   transition: transform 0.2s ease;
 }
 
 .organizationDropdown.open .icon {
-  color: #06100f;
+  color: #000;
   transform: rotate(180deg);
 }
 
@@ -257,6 +260,28 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  /* Firefox scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+/* Custom small scrollbar for dropdown (Chrome/Safari/Edge) */
+.options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.options::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.options::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.options::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 .options li {

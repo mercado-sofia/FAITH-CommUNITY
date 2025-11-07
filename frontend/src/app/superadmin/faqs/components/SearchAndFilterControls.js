@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FiChevronDown, FiSearch, FiX, FiPlus } from 'react-icons/fi';
+import { BsSortDown, BsSortUp } from 'react-icons/bs';
 import styles from './styles/SearchAndFilterControls.module.css';
 
 const SearchAndFilterControls = ({
@@ -38,7 +39,6 @@ const SearchAndFilterControls = ({
     setLocalQuery(searchQuery || '');
   }, [searchQuery]);
 
-  const sortOptions = ['newest', 'oldest'];
   const showCountOptions = [10, 25, 50, 100];
 
   return (
@@ -90,27 +90,20 @@ const SearchAndFilterControls = ({
           )}
         </div>
 
-        <div className={styles.dropdownWrapper}>
-          <div
-            className={`${styles.dropdown} ${showDropdown === "sort" ? styles.open : ""}`}
-            onClick={() => setShowDropdown(showDropdown === "sort" ? null : "sort")}
-          >
-            Sort: {sortBy.charAt(0).toUpperCase() + sortBy.slice(1)}
-            <FiChevronDown className={styles.icon} />
-          </div>
-          {showDropdown === "sort" && (
-            <ul className={styles.options}>
-              {sortOptions.map((option) => (
-                <li key={option} onClick={() => {
-                  onSortChange(option);
-                  setShowDropdown(null);
-                }}>
-                  {option.charAt(0).toUpperCase() + option.slice(1)}
-                </li>
-              ))}
-            </ul>
+        <button
+          className={styles.sortButton}
+          onClick={() => {
+            const newSort = sortBy === 'newest' ? 'oldest' : 'newest';
+            onSortChange(newSort);
+          }}
+          title={sortBy === 'newest' ? 'Sort: Newest First' : 'Sort: Oldest First'}
+        >
+          {sortBy === 'newest' ? (
+            <BsSortUp className={styles.sortIcon} />
+          ) : (
+            <BsSortDown className={styles.sortIcon} />
           )}
-        </div>
+        </button>
       </div>
 
       <div className={styles.controlsRight}>

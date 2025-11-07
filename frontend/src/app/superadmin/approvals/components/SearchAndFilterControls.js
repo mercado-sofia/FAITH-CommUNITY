@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FiChevronDown, FiSearch, FiX } from 'react-icons/fi';
+import { BsSortDown, BsSortUp } from 'react-icons/bs';
 import styles from './styles/SearchAndFilterControls.module.css';
 
 const SearchAndFilterControls = ({
@@ -180,7 +181,16 @@ const SearchAndFilterControls = ({
             className={`${styles.organizationDropdown} ${showDropdown === "organization" ? styles.open : ""}`}
             onClick={() => handleDropdownClick("organization")}
           >
-            {orgsLoading ? "Loading..." : selectedOrganization === "all" ? "All Organizations" : selectedOrganization}
+            {orgsLoading ? (
+              "Loading..."
+            ) : (
+              <>
+                <span className={styles.organizationLabel}>Organization:</span>
+                <span className={styles.organizationValue}>
+                  {selectedOrganization === "all" ? "All" : selectedOrganization}
+                </span>
+              </>
+            )}
             <FiChevronDown className={styles.icon} />
           </div>
           {showDropdown === "organization" && (
@@ -194,7 +204,7 @@ const SearchAndFilterControls = ({
                 onOrganizationChange({ target: { value: "all" } });
                 setShowDropdown(null);
               }}>
-                All Organizations
+                All
               </li>
               {organizations.map(org => (
                 <li key={org.id} onClick={(e) => {
@@ -202,7 +212,7 @@ const SearchAndFilterControls = ({
                   onOrganizationChange({ target: { value: org.acronym } });
                   setShowDropdown(null);
                 }}>
-                  {org.acronym} - {org.name.length > 30 ? org.name.substring(0, 30) + "..." : org.name}
+                  {org.acronym}
                 </li>
               ))}
             </ul>
@@ -214,10 +224,13 @@ const SearchAndFilterControls = ({
             className={`${styles.dropdown} ${showDropdown === "section" ? styles.open : ""}`}
             onClick={() => handleDropdownClick("section")}
           >
-            {selectedSection === "all" ? "All Section" : selectedSection
+            <span className={styles.sectionLabel}>Section:</span>
+            <span className={styles.sectionValue}>
+              {selectedSection === "all" ? "All" : selectedSection
               .split(' ')
               .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
               .join(' ')}
+            </span>
             <FiChevronDown className={styles.icon} />
           </div>
           {showDropdown === "section" && (
@@ -231,7 +244,7 @@ const SearchAndFilterControls = ({
                 onSectionChange({ target: { value: "all" } });
                 setShowDropdown(null);
               }}>
-                All Section
+                All
               </li>
               {(() => {
                 // Default sections that should always be available
@@ -279,7 +292,10 @@ const SearchAndFilterControls = ({
             className={`${styles.dropdown} ${showDropdown === "status" ? styles.open : ""}`}
             onClick={() => handleDropdownClick("status")}
           >
-            {selectedStatus === "all" ? "All Status" : selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)}
+            <span className={styles.statusLabel}>Status:</span>
+            <span className={styles.statusValue}>
+              {selectedStatus === "all" ? "All" : selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)}
+            </span>
             <FiChevronDown className={styles.icon} />
           </div>
           {showDropdown === "status" && (
@@ -293,7 +309,7 @@ const SearchAndFilterControls = ({
                 onStatusChange({ target: { value: "all" } });
                 setShowDropdown(null);
               }}>
-                All Status
+                All
               </li>
               {["pending", "approved", "rejected"].map((status) => (
                 <li key={status} onClick={(e) => {
@@ -325,32 +341,20 @@ const SearchAndFilterControls = ({
           )}
         </div>
 
-        <div className={styles.dropdownWrapper}>
-          <div
-            className={`${styles.dropdown} ${showDropdown === "sort" ? styles.open : ""}`}
-            onClick={() => handleDropdownClick("sort")}
-          >
-            Sort: {sortBy.charAt(0).toUpperCase() + sortBy.slice(1)}
-            <FiChevronDown className={styles.icon} />
-          </div>
-          {showDropdown === "sort" && (
-            <ul 
-              className={styles.options}
-              onWheel={(e) => e.stopPropagation()}
-              onScroll={(e) => e.stopPropagation()}
+        <button
+          className={styles.sortButton}
+          onClick={() => {
+            const newSort = sortBy === 'latest' ? 'oldest' : 'latest';
+            onSortChange({ target: { value: newSort } });
+          }}
+          title={sortBy === 'latest' ? 'Sort: Newest First' : 'Sort: Oldest First'}
             >
-              {["latest", "oldest"].map((option) => (
-                <li key={option} onClick={(e) => {
-                  e.stopPropagation();
-                  onSortChange({ target: { value: option } });
-                  setShowDropdown(null);
-                }}>
-                  {option.charAt(0).toUpperCase() + option.slice(1)}
-                </li>
-              ))}
-            </ul>
+          {sortBy === 'latest' ? (
+            <BsSortUp className={styles.sortIcon} />
+          ) : (
+            <BsSortDown className={styles.sortIcon} />
           )}
-        </div>
+        </button>
       </div>
     </div>
   );

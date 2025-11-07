@@ -58,7 +58,6 @@ export async function verifySMTPConnection() {
 
   try {
     await mailer.verify();
-    console.log('✅ SMTP connection verified successfully');
     return true;
   } catch (error) {
     console.error('❌ SMTP verification failed:', error.message);

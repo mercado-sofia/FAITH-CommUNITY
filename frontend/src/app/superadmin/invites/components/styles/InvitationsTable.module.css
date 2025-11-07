@@ -19,7 +19,7 @@
 .selectedCount {
   font-size: 14px;
   font-weight: 700;
-  color: #06100f;
+  color: #000;
 }
 
 .bulkActionsRight {
@@ -133,10 +133,17 @@
 }
 
 /* Column Widths */
+.numberColumn {
+  width: 4%;
+  text-align: center !important;
+  min-width: 50px;
+  padding-left: 1.5rem !important;
+}
+
 .checkboxColumn {
-  width: 60px;
-  text-align: center;
-  vertical-align: middle;
+  width: 4%;
+  text-align: center !important;
+  min-width: 50px;
 }
 
 .emailColumn {
@@ -171,6 +178,15 @@
   vertical-align: middle;
   padding-right: 0;
   white-space: nowrap;
+}
+
+/* Number Cell */
+.numberCell {
+  text-align: center;
+  padding: 0.45rem 1rem 0.45rem 1.5rem !important;
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 13px;
 }
 
 /* Checkbox Styles */
@@ -231,8 +247,8 @@
 }
 
 .pending {
-  background: #fdf2e2;
-  color: #e8901c;
+  background: #F7F7F7;
+  color: #6b7280;
 }
 
 .accepted {

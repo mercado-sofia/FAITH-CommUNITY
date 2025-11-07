@@ -3,10 +3,10 @@
 import Link from 'next/link'
 import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
-import { FiEye, FiChevronDown } from 'react-icons/fi';
+import { FiChevronDown } from 'react-icons/fi';
 import { formatDateShort } from '../../../../utils/dateUtils';
 import { getOrganizationImageUrl } from '@/utils/uploadPaths';
-import styles from './styles/PendingApprovalsTable.module.css';
+import styles from './styles/RecentApprovalsTable.module.css';
 import { useGetRecentApprovalsQuery, useGetOrganizationsForFilterQuery } from '../../../../rtk/superadmin/dashboardApi';
 
 // Helper function to normalize organization acronym for comparison (case-insensitive, trim spaces)
@@ -51,7 +51,6 @@ const matchesOrganization = (approval, orgAcronym) => {
         }
       } catch (error) {
         // If parsing fails, don't include this approval
-        console.warn('Error parsing proposed_data for approval:', approval.id, error);
         return false;
       }
     }
@@ -116,7 +115,6 @@ const matchesOrganization = (approval, orgAcronym) => {
       }
     } catch (error) {
       // If parsing fails, just check main organization (already done above)
-      console.warn('Error parsing proposed_data for approval:', approval.id, error);
     }
   }
 
@@ -124,34 +122,23 @@ const matchesOrganization = (approval, orgAcronym) => {
 };
 
 export default function PendingApprovalsTable() {
-  const [filter, setFilter] = useState('All');
   const [selectedOrganization, setSelectedOrganization] = useState('all');
-  const [showOptions, setShowOptions] = useState(false);
   const [showDropdown, setShowDropdown] = useState(null);
   const dropdownRef = useRef(null);
 
   const { 
     data: approvals = [], 
-    isLoading, 
-    error 
+    isLoading
   } = useGetRecentApprovalsQuery();
 
   const {
     data: organizations = [],
-    isLoading: orgsLoading,
-    error: orgsError
+    isLoading: orgsLoading
   } = useGetOrganizationsForFilterQuery();
-
-
-  const handleFilterChange = (status) => {
-    setFilter(status);
-    setShowOptions(false);
-  };
 
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowOptions(false);
         setShowDropdown(null);
       }
     }
@@ -162,19 +149,10 @@ export default function PendingApprovalsTable() {
     };
   }, []);
 
-  const filteredList = filter === 'All' 
-    ? approvals 
-    : approvals.filter((approval) => {
-        if (filter === 'Organization') return approval.section === 'organization';
-        if (filter === 'Programs') return approval.section === 'programs';
-        if (filter === 'News') return approval.section === 'news';
-        return true;
-      });
-
-  // Apply organization filter to the already filtered list (including collaborators)
+  // Apply organization filter to the approvals list (including collaborators)
   const organizationFilteredList = selectedOrganization === 'all'
-    ? filteredList 
-    : filteredList.filter(approval => 
+    ? approvals 
+    : approvals.filter(approval => 
         matchesOrganization(approval, selectedOrganization)
       );
 
@@ -233,7 +211,6 @@ export default function PendingApprovalsTable() {
             )}
           </div>
           <Link href="/superadmin/approvals" className={styles.viewAllButton}>
-            <FiEye />
             View All
           </Link>
         </div>
@@ -272,7 +249,6 @@ export default function PendingApprovalsTable() {
           <h2 className={styles.sectionTitle}>Recent Approvals</h2>
           <div className={styles.filterControls}>
             <Link href="/superadmin/approvals" className={styles.viewAllButton}>
-              <FiEye />
               View All
             </Link>
           </div>
@@ -318,7 +294,6 @@ export default function PendingApprovalsTable() {
             )}
           </div>
           <Link href="/superadmin/approvals" className={styles.viewAllButton}>
-            <FiEye />
             View All
           </Link>
         </div>
@@ -400,7 +375,7 @@ export default function PendingApprovalsTable() {
           {displayList.length === 0 && (
             <tr>
               <td colSpan={5} style={{ textAlign: 'center', padding: '1rem' }}>
-                No {filter.toLowerCase()} approvals found.
+                No approvals found.
               </td>
             </tr>
           )}

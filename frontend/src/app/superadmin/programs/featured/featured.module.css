@@ -16,10 +16,10 @@
 }
 
 .pageTitle {
-  font-size: 1.4rem;
+  font-size: 1.25rem;
   font-weight: 700;
   font-family: 'Poppins', sans-serif;
-  color: #06100f;
+  color: #000;
   margin: 0;
   user-select: none;
 }

@@ -11,7 +11,8 @@ export const getPendingSubmissions = async (req, res) => {
       SELECT s.*, 
              o.orgName, o.org, o.logo as organization_logo,
              submitted_admin.email as submitted_by_email,
-             submitted_org.orgName as submitted_by_org_name 
+             submitted_org.orgName as submitted_by_org_name,
+             submitted_org.id as submitted_by_org_id
       FROM submissions s 
       LEFT JOIN organizations o ON o.id = s.organization_id 
       LEFT JOIN admins submitted_admin ON s.submitted_by = submitted_admin.id 
@@ -127,7 +128,8 @@ export const getAllSubmissions = async (req, res) => {
       SELECT s.*, 
              o.orgName, o.org, o.logo as organization_logo,
              submitted_admin.email as submitted_by_email,
-             submitted_org.orgName as submitted_by_org_name 
+             submitted_org.orgName as submitted_by_org_name,
+             submitted_org.id as submitted_by_org_id
       FROM submissions s 
       LEFT JOIN organizations o ON o.id = s.organization_id 
       LEFT JOIN admins submitted_admin ON s.submitted_by = submitted_admin.id 
@@ -1579,9 +1581,7 @@ export const bulkApproveSubmissions = async (req, res) => {
             'UPDATE admin_highlights SET status = ? WHERE title = ? AND status = ?',
             ['approved', data.title, 'pending']
           );
-          if (fallbackResult.affectedRows > 0) {
-            console.log(`Updated highlight by title fallback: ${data.title}`);
-          }
+          // Fallback update successful
         }
       } else if (action === 'update') {
         // For updates, the highlight is already updated, just change status to approved
@@ -1597,9 +1597,7 @@ export const bulkApproveSubmissions = async (req, res) => {
             'UPDATE admin_highlights SET status = ? WHERE title = ? AND status = ?',
             ['approved', data.title, 'pending']
           );
-          if (fallbackResult.affectedRows > 0) {
-            console.log(`Updated highlight by title fallback: ${data.title}`);
-          }
+          // Fallback update successful
         }
       } else if (action === 'delete') {
         // For deletions, ensure the highlight is actually deleted
@@ -1620,12 +1618,9 @@ export const bulkApproveSubmissions = async (req, res) => {
               [highlightId]
             );
             
-            if (deleteResult.affectedRows > 0) {
-              console.log(`Highlight ${highlightId} deleted after bulk approval`);
-            }
+            // Highlight deleted after bulk approval
           } else {
-            // Highlight already deleted, just log it
-            console.log(`Highlight ${highlightId} was already deleted, approving deletion submission`);
+            // Highlight already deleted
           }
         } else {
           console.error(`Invalid highlight_id in deletion submission ${id}: ${highlightId}`);

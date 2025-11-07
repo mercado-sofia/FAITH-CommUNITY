@@ -379,7 +379,21 @@ const SuperadminProgramsPage = () => {
               </div>
               <div className={styles.rightColumn}>
                 <div className={styles.statsContainer}>
-                  {/* Empty stats during loading */}
+                  <div className={styles.statCard}>
+                    <div className={styles.cardContent}>
+                      <div className={styles.textContent}>
+                        <h2 className={styles.count}>—</h2>
+                        <p className={styles.label}>Total Programs</p>
+                        <div className={styles.extraInfo}>
+                          <div className={styles.statusCounts}>
+                            <span className={styles.activeCount}>— Active</span>
+                            <span className={styles.upcomingCount}>— Upcoming</span>
+                            <span className={styles.completedCount}>— Completed</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -404,7 +418,21 @@ const SuperadminProgramsPage = () => {
               </div>
               <div className={styles.rightColumn}>
                 <div className={styles.statsContainer}>
-                  {/* Empty stats during error */}
+                  <div className={styles.statCard}>
+                    <div className={styles.cardContent}>
+                      <div className={styles.textContent}>
+                        <h2 className={styles.count}>—</h2>
+                        <p className={styles.label}>Total Programs</p>
+                        <div className={styles.extraInfo}>
+                          <div className={styles.statusCounts}>
+                            <span className={styles.activeCount}>— Active</span>
+                            <span className={styles.upcomingCount}>— Upcoming</span>
+                            <span className={styles.completedCount}>— Completed</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -440,24 +468,27 @@ const SuperadminProgramsPage = () => {
             <div className={styles.rightColumn}>
               <div className={styles.statsContainer}>
                 {!statsLoading && (
-                  <>
-                    <div className={styles.statCard}>
-                      <span className={styles.statNumber}>{statistics.totalPrograms}</span>
-                      <span className={styles.statLabel}>Total Programs</span>
+                  <div className={styles.statCard}>
+                    <div className={styles.cardContent}>
+                      <div className={styles.textContent}>
+                        <h2 className={styles.count}>{statistics.totalPrograms}</h2>
+                        <p className={styles.label}>Total Programs</p>
+                        <div className={styles.extraInfo}>
+                          <div className={styles.statusCounts}>
+                            <span className={styles.activeCount}>
+                              {statistics.activePrograms} Active
+                            </span>
+                            <span className={styles.upcomingCount}>
+                              {statistics.upcomingPrograms} Upcoming
+                            </span>
+                            <span className={styles.completedCount}>
+                              {statistics.completedPrograms} Completed
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className={styles.statCard}>
-                      <span className={styles.statNumber}>{statistics.upcomingPrograms}</span>
-                      <span className={styles.statLabel}>Upcoming</span>
-                    </div>
-                    <div className={styles.statCard}>
-                      <span className={styles.statNumber}>{statistics.activePrograms}</span>
-                      <span className={styles.statLabel}>Active</span>
-                    </div>
-                    <div className={styles.statCard}>
-                      <span className={styles.statNumber}>{statistics.completedPrograms}</span>
-                      <span className={styles.statLabel}>Completed</span>
-                    </div>
-                  </>
+                  </div>
                 )}
               </div>
             </div>
@@ -560,8 +591,8 @@ const SuperadminProgramsPage = () => {
                         src={getOrganizationImageUrl(org.orgLogo, 'logo')}
                         alt={`${org.organizationName} logo`}
                         className={styles.orgLogo}
-                        width={60}
-                        height={60}
+                        width={80}
+                        height={80}
                         onError={(e) => e.target.style.display = 'none'}
                       />
                     )}

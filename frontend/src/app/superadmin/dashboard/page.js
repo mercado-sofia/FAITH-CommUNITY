@@ -2,7 +2,8 @@
 
 import styles from './dashboard.module.css';
 import StatCardSection from './components/StatCardSection';
-import PendingApprovalsTable from './components/PendingApprovalsTable';
+import ChartsSection from './components/ChartsSection';
+import RecentApprovalsTable from './components/RecentApprovalsTable';
 
 export default function SuperAdminDashboard() {
   return (
@@ -13,8 +14,10 @@ export default function SuperAdminDashboard() {
 
       <StatCardSection />
 
+      <ChartsSection />
+
       <div className={styles.recentRow}>
-        <PendingApprovalsTable />
+        <RecentApprovalsTable />
       </div>
     </div>
   );

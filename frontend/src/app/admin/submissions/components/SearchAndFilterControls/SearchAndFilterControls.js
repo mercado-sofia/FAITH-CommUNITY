@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { FiChevronDown, FiSearch, FiX } from "react-icons/fi"
+import { BsSortUp, BsSortDown } from "react-icons/bs"
 import styles from "./SearchAndFilterControls.module.css"
 
 export default function SearchAndFilterControls({
@@ -18,9 +19,8 @@ export default function SearchAndFilterControls({
 }) {
   const [showDropdown, setShowDropdown] = useState(null)
   const [localQuery, setLocalQuery] = useState(searchQuery || '')
-  const sortOptions = ['Latest', 'Oldest']
-  const statusOptions = ['All status', 'Pending', 'Approved', 'Rejected']
-  const sectionOptions = ['All Sections', 'Advocacy', 'Competency', 'Programs', 'Highlights']
+  const statusOptions = ['All', 'Pending', 'Approved', 'Rejected']
+  const sectionOptions = ['All', 'Advocacy', 'Competency', 'Programs', 'Highlights']
 
   const toggleDropdown = (key) => {
     setShowDropdown((prev) => (prev === key ? null : key))
@@ -45,7 +45,7 @@ export default function SearchAndFilterControls({
           <span className={styles.inlineLabel}>Show</span>
           <div className={styles.dropdownButtonWrapper}>
             <div
-              className={styles.dropdown}
+              className={`${styles.dropdown} ${showDropdown === "show" ? styles.open : ""}`}
               onClick={() => toggleDropdown("show")}
             >
               {showCount}
@@ -69,10 +69,11 @@ export default function SearchAndFilterControls({
         {/* Section filter */}
         <div className={styles.dropdownWrapper}>
           <div
-            className={styles.dropdown}
+            className={`${styles.dropdown} ${showDropdown === "section" ? styles.open : ""}`}
             onClick={() => toggleDropdown("section")}
           >
-            {sectionFilter}
+            <span className={styles.sectionLabel}>Section:</span>
+            <span className={styles.sectionValue}>{sectionFilter}</span>
             <FiChevronDown className={styles.icon} />
           </div>
           {showDropdown === "section" && (
@@ -92,10 +93,11 @@ export default function SearchAndFilterControls({
         {/* Status filter */}
         <div className={styles.dropdownWrapper}>
           <div
-            className={styles.dropdown}
+            className={`${styles.dropdown} ${showDropdown === "status" ? styles.open : ""}`}
             onClick={() => toggleDropdown("status")}
           >
-            {statusFilter}
+            <span className={styles.statusLabel}>Status:</span>
+            <span className={styles.statusValue}>{statusFilter}</span>
             <FiChevronDown className={styles.icon} />
           </div>
           {showDropdown === "status" && (
@@ -139,28 +141,21 @@ export default function SearchAndFilterControls({
           )}
         </div>
 
-        {/* Sort Dropdown */}
-        <div className={styles.dropdownWrapper} style={{ marginLeft: '1rem' }}>
-          <div
-            className={styles.dropdown}
-            onClick={() => toggleDropdown("sort")}
-          >
-            Sort: {sortOrder}
-            <FiChevronDown className={styles.icon} />
-          </div>
-          {showDropdown === "sort" && (
-            <ul className={styles.options}>
-              {sortOptions.map((option) => (
-                <li key={option} onClick={() => {
-                  onSortOrderChange(option.toLowerCase())
-                  setShowDropdown(null)
-                }}>
-                  {option}
-                </li>
-              ))}
-            </ul>
+        {/* Sort Button */}
+        <button
+          className={styles.sortButton}
+          onClick={() => {
+            const newSort = sortOrder === 'latest' ? 'oldest' : 'latest';
+            onSortOrderChange(newSort);
+          }}
+          title={sortOrder === 'latest' ? 'Sort: Newest First' : 'Sort: Oldest First'}
+        >
+          {sortOrder === 'latest' ? (
+            <BsSortUp className={styles.sortIcon} />
+          ) : (
+            <BsSortDown className={styles.sortIcon} />
           )}
-        </div>
+        </button>
       </div>
     </div>
   )

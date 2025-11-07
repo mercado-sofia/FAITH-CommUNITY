@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { NavigationProvider } from "../../contexts/NavigationContext";
 import { clearAuthImmediate, USER_TYPES } from "../../utils/authService";
-import Sidebar from "./components/Sidebar/Sidebar"
-import TopBar from "./components/TopBar/TopBar"
+import { Sidebar, superadminNavLinks, TopBar } from "@/components";
 import { Loader, DynamicFavicon } from "@/components";
 import { FiSmartphone } from 'react-icons/fi';
 import styles from "./styles/layout.module.css"
@@ -137,9 +136,16 @@ function SuperAdminLayoutContent({ children }) {
       {/* Dynamic Favicon - optimized to prevent navigation delays */}
       <DynamicFavicon />
       <div className={styles.superAdminLayout}>
-        <Sidebar />
+        <Sidebar 
+          userType={USER_TYPES.SUPERADMIN}
+          basePath="/superadmin"
+          navLinks={superadminNavLinks}
+        />
         <div className={styles.mainContent}>
-          <TopBar />
+          <TopBar 
+            userType={USER_TYPES.SUPERADMIN}
+            basePath="/superadmin"
+          />
           <main className={styles.content}>
             {children}
           </main>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { FiChevronDown, FiSearch, FiX } from "react-icons/fi"
+import { BsSortUp, BsSortDown } from "react-icons/bs"
 import styles from "./SearchAndFilterControls.module.css"
 
 // Input sanitization utility
@@ -26,8 +27,7 @@ export default function SearchAndFilterControls({
 }) {
   const [showDropdown, setShowDropdown] = useState(null)
   const [localQuery, setLocalQuery] = useState(searchQuery || '')
-  const sortOptions = ['Latest', 'Oldest']
-  const statusOptions = ['All status', 'Pending', 'Approved', 'Declined', 'Cancelled']
+  const statusOptions = ['All', 'Pending', 'Approved', 'Declined', 'Cancelled']
 
   const toggleDropdown = (key) => {
     setShowDropdown((prev) => (prev === key ? null : key))
@@ -68,7 +68,7 @@ export default function SearchAndFilterControls({
           <span className={styles.inlineLabel}>Show</span>
           <div className={styles.dropdownButtonWrapper}>
             <div
-              className={styles.dropdown}
+              className={`${styles.dropdown} ${showDropdown === "show" ? styles.open : ""}`}
               onClick={() => toggleDropdown("show")}
             >
               {showCount}
@@ -92,19 +92,22 @@ export default function SearchAndFilterControls({
         {/* Program filter */}
         <div className={styles.dropdownWrapper}>
           <div
-            className={styles.programDropdown}
+            className={`${styles.programDropdown} ${showDropdown === "program" ? styles.open : ""}`}
             onClick={() => toggleDropdown("program")}
           >
+            <span className={styles.programLabel}>Programs:</span>
+            <span className={styles.programValue}>
             {programsLoading ? "Loading..." : programFilter}
+            </span>
             <FiChevronDown className={styles.icon} />
           </div>
           {showDropdown === "program" && (
             <ul className={styles.options}>
               <li key="all" onClick={() => {
-                onProgramFilterChange("All Programs")
+                onProgramFilterChange("All")
                 setShowDropdown(null)
               }}>
-                All Programs
+                All
               </li>
               {programsLoading ? (
                 <li style={{ color: '#666', fontStyle: 'italic' }}>Loading programs...</li>
@@ -127,10 +130,11 @@ export default function SearchAndFilterControls({
         {/* Status filter */}
         <div className={styles.dropdownWrapper}>
           <div
-            className={styles.dropdown}
+            className={`${styles.dropdown} ${showDropdown === "status" ? styles.open : ""}`}
             onClick={() => toggleDropdown("status")}
           >
-            {statusFilter}
+            <span className={styles.statusLabel}>Status:</span>
+            <span className={styles.statusValue}>{statusFilter}</span>
             <FiChevronDown className={styles.icon} />
           </div>
           {showDropdown === "status" && (
@@ -172,28 +176,21 @@ export default function SearchAndFilterControls({
           )}
         </div>
 
-        {/* Sort Dropdown */}
-        <div className={styles.dropdownWrapper} style={{ marginLeft: '1rem' }}>
-          <div
-            className={styles.dropdown}
-            onClick={() => toggleDropdown("sort")}
-          >
-            Sort: {sortOrder.charAt(0).toUpperCase() + sortOrder.slice(1)}
-            <FiChevronDown className={styles.icon} />
-          </div>
-          {showDropdown === "sort" && (
-            <ul className={styles.options}>
-              {sortOptions.map((option) => (
-                <li key={option} onClick={() => {
-                  onSortOrderChange(option.toLowerCase())
-                  setShowDropdown(null)
-                }}>
-                  {option}
-                </li>
-              ))}
-            </ul>
+        {/* Sort Button */}
+        <button
+          className={styles.sortButton}
+          onClick={() => {
+            const newSort = sortOrder === 'latest' ? 'oldest' : 'latest';
+            onSortOrderChange(newSort);
+          }}
+          title={sortOrder === 'latest' ? 'Sort: Newest First' : 'Sort: Oldest First'}
+        >
+          {sortOrder === 'latest' ? (
+            <BsSortUp className={styles.sortIcon} />
+          ) : (
+            <BsSortDown className={styles.sortIcon} />
           )}
-        </div>
+        </button>
       </div>
     </div>
   )

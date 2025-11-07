@@ -2014,22 +2014,63 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
 // ---------------- Programs statistics (from programProjectsController) ----------------
 export const getProgramsStatistics = async (req, res) => {
   try {
+    const currentYear = new Date().getFullYear();
+    const previousYear = currentYear - 1;
+    
     const statisticsQuery = `
       SELECT 
         COUNT(*) as total_programs,
         SUM(CASE WHEN LOWER(status) = 'upcoming' THEN 1 ELSE 0 END) as upcoming_programs,
         SUM(CASE WHEN LOWER(status) = 'active' THEN 1 ELSE 0 END) as active_programs,
         SUM(CASE WHEN LOWER(status) = 'completed' THEN 1 ELSE 0 END) as completed_programs,
-        COUNT(DISTINCT organization_id) as total_organizations
+        COUNT(DISTINCT organization_id) as total_organizations,
+        -- Completed programs in current year
+        SUM(CASE 
+          WHEN LOWER(status) = 'completed' 
+          AND (
+            (date_completed IS NOT NULL AND YEAR(date_completed) = ?)
+            OR (date_completed IS NULL AND YEAR(updated_at) = ? AND LOWER(status) = 'completed')
+          )
+          THEN 1 
+          ELSE 0 
+        END) as completed_this_year,
+        -- Completed programs in previous year
+        SUM(CASE 
+          WHEN LOWER(status) = 'completed' 
+          AND (
+            (date_completed IS NOT NULL AND YEAR(date_completed) = ?)
+            OR (date_completed IS NULL AND YEAR(updated_at) = ? AND LOWER(status) = 'completed')
+          )
+          THEN 1 
+          ELSE 0 
+        END) as completed_previous_year
        FROM programs_projects
        WHERE organization_id IS NOT NULL
     `;
     
-    const [results] = await db.execute(statisticsQuery);
+    const [results] = await db.execute(statisticsQuery, [currentYear, currentYear, previousYear, previousYear]);
+    
+    const data = results[0];
+    const completedThisYear = parseInt(data.completed_this_year) || 0;
+    const completedPreviousYear = parseInt(data.completed_previous_year) || 0;
+    
+    // Calculate percentage change
+    let percentageChange = 0;
+    if (completedPreviousYear > 0) {
+      percentageChange = ((completedThisYear - completedPreviousYear) / completedPreviousYear) * 100;
+    } else if (completedThisYear > 0) {
+      // If previous year had 0, but current year has programs, it's 100% increase
+      percentageChange = 100;
+    }
     
     res.json({
       success: true,
-      data: results[0],
+      data: {
+        ...data,
+        completed_this_year: completedThisYear,
+        completed_previous_year: completedPreviousYear,
+        percentage_change: Math.round(percentageChange * 10) / 10 // Round to 1 decimal place
+      },
     });
   } catch (error) {
     res.status(500).json({

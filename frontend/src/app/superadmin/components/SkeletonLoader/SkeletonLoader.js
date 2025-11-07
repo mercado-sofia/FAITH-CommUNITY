@@ -2,7 +2,7 @@
 
 import styles from './SkeletonLoader.module.css'
 
-export default function SkeletonLoader({ type = 'section', count = 1, className = '' }) {
+export default function SkeletonLoader({ type = 'section', count = 1, className = '', columns = [] }) {
   const renderSkeleton = () => {
     switch (type) {
       case 'siteContent':
@@ -263,6 +263,42 @@ export default function SkeletonLoader({ type = 'section', count = 1, className 
                 </div>
               ))}
             </div>
+          </div>
+        )
+      
+      case 'table':
+        return (
+          <div className={styles.tableSkeleton}>
+            <div className={styles.tableHeaderSkeleton}>
+              <div className={styles.headerCellSkeleton} />
+              <div className={styles.headerCellSkeleton} />
+              <div className={styles.headerCellSkeleton} />
+              <div className={styles.headerCellSkeleton} />
+              <div className={styles.headerCellSkeleton} />
+              <div className={styles.headerCellSkeleton} />
+            </div>
+            {Array.from({ length: count }).map((_, index) => (
+              <div key={index} className={styles.tableRowSkeleton}>
+                <div className={styles.cellSkeleton}>
+                  <div className={styles.checkboxSkeleton} />
+                </div>
+                <div className={styles.cellSkeleton}>
+                  <div className={styles.textSkeleton} />
+                </div>
+                <div className={styles.cellSkeleton}>
+                  <div className={styles.textSkeleton} />
+                </div>
+                <div className={styles.cellSkeleton}>
+                  <div className={styles.textSkeleton} />
+                </div>
+                <div className={styles.cellSkeleton}>
+                  <div className={styles.badgeSkeleton} />
+                </div>
+                <div className={styles.cellSkeleton}>
+                  <div className={styles.actionButtonSkeleton} />
+                </div>
+              </div>
+            ))}
           </div>
         )
       

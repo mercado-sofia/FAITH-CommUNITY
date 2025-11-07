@@ -263,7 +263,6 @@ const runIncrementalMigrations = async (connection) => {
       `);
     } catch (enumError) {
       // If the enum update fails, it might already be updated or there might be existing data
-      console.log('Admin notifications enum update skipped (may already be updated)');
     }
 
     // Update programs_projects status enum to only include program lifecycle statuses
@@ -275,7 +274,6 @@ const runIncrementalMigrations = async (connection) => {
       // Programs status enum updated successfully
     } catch (enumError) {
       // If the enum update fails, it might already be updated or there might be existing data
-      console.log('Programs status enum update skipped (may already be updated)');
     }
 
     // manual_status_override field is already included in the initial table creation
@@ -283,24 +281,42 @@ const runIncrementalMigrations = async (connection) => {
 
     // Add status column to admin_highlights if it doesn't exist
     try {
-      await connection.query(`
-        ALTER TABLE admin_highlights 
-        ADD COLUMN IF NOT EXISTS status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending'
+      const [statusColumnCheck] = await connection.query(`
+        SELECT COUNT(*) as count 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'admin_highlights' 
+        AND COLUMN_NAME = 'status'
       `);
-      console.log('Admin highlights status column added successfully');
+      
+      if (statusColumnCheck[0].count === 0) {
+        await connection.query(`
+          ALTER TABLE admin_highlights 
+          ADD COLUMN status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending'
+        `);
+      }
     } catch (statusError) {
-      console.log('Admin highlights status column already exists or update failed');
+      // Column might already exist or other error - silently skip
     }
 
     // Add index for status column
     try {
-      await connection.query(`
-        ALTER TABLE admin_highlights 
-        ADD INDEX IF NOT EXISTS idx_status (status)
+      const [indexCheck] = await connection.query(`
+        SELECT COUNT(*) as count 
+        FROM INFORMATION_SCHEMA.STATISTICS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'admin_highlights' 
+        AND INDEX_NAME = 'idx_status'
       `);
-      console.log('Admin highlights status index added successfully');
+      
+      if (indexCheck[0].count === 0) {
+        await connection.query(`
+          ALTER TABLE admin_highlights 
+          ADD INDEX idx_status (status)
+        `);
+      }
     } catch (indexError) {
-      console.log('Admin highlights status index already exists or update failed');
+      // Index might already exist or other error - silently skip
     }
 
     // Fix admin_highlights id column to ensure AUTO_INCREMENT and PRIMARY KEY are properly set
@@ -319,19 +335,85 @@ const runIncrementalMigrations = async (connection) => {
         const hasPrimaryKey = columnInfo[0].COLUMN_KEY === 'PRI';
         
         if (!hasAutoIncrement || !hasPrimaryKey) {
-          console.log('Fixing admin_highlights id column: ensuring AUTO_INCREMENT and PRIMARY KEY...');
-          
-          // First, ensure the column is INT AUTO_INCREMENT
-          await connection.query(`
-            ALTER TABLE admin_highlights 
-            MODIFY COLUMN id INT AUTO_INCREMENT PRIMARY KEY
+          // First, check for and fix any duplicate IDs or problematic data
+          const [duplicateCheck] = await connection.query(`
+            SELECT id, COUNT(*) as count 
+            FROM admin_highlights 
+            WHERE id > 0 
+            GROUP BY id 
+            HAVING count > 1
           `);
           
-          console.log('Admin highlights id column fixed successfully');
+          if (duplicateCheck.length > 0) {
+            // Get max ID to start reassigning from
+            const [maxIdResult] = await connection.query(`
+              SELECT MAX(id) as max_id FROM admin_highlights WHERE id > 0
+            `);
+            let nextId = (maxIdResult[0].max_id || 0) + 1;
+            
+            // Fix each duplicate ID group
+            for (const dup of duplicateCheck) {
+              // Get all records with this duplicate ID, ordered by created_at
+              const [records] = await connection.query(`
+                SELECT id, created_at, title 
+                FROM admin_highlights 
+                WHERE id = ? 
+                ORDER BY created_at ASC
+              `, [dup.id]);
+              
+              // Keep the first record, reassign the rest using unique identifiers
+              for (let i = 1; i < records.length; i++) {
+                const record = records[i];
+                await connection.query(`
+                  UPDATE admin_highlights 
+                  SET id = ? 
+                  WHERE id = ? 
+                  AND created_at = ? 
+                  AND title = ?
+                  LIMIT 1
+                `, [nextId, dup.id, record.created_at, record.title]);
+                nextId++;
+              }
+            }
+            
+            // Reset auto-increment to avoid conflicts
+            await connection.query(`
+              ALTER TABLE admin_highlights AUTO_INCREMENT = ?
+            `, [nextId]);
+          }
+          
+          // Now safely modify the column
+          // If it doesn't have PRIMARY KEY, add it first
+          if (!hasPrimaryKey) {
+            await connection.query(`
+              ALTER TABLE admin_highlights 
+              ADD PRIMARY KEY (id)
+            `);
+          }
+          
+          // If it doesn't have AUTO_INCREMENT, add it
+          if (!hasAutoIncrement) {
+            // Get the current max ID to set AUTO_INCREMENT properly
+            const [maxIdResult] = await connection.query(`
+              SELECT MAX(id) as max_id FROM admin_highlights WHERE id > 0
+            `);
+            const maxId = maxIdResult[0].max_id || 0;
+            const nextAutoIncrement = maxId + 1;
+            
+            await connection.query(`
+              ALTER TABLE admin_highlights 
+              MODIFY COLUMN id INT AUTO_INCREMENT
+            `);
+            
+            // Set AUTO_INCREMENT to the next value after max ID
+            await connection.query(`
+              ALTER TABLE admin_highlights AUTO_INCREMENT = ?
+            `, [nextAutoIncrement]);
+          }
         }
       }
     } catch (idColumnFixError) {
-      console.log('Admin highlights id column fix skipped or failed:', idColumnFixError.message);
+      // Column fix skipped or failed - silently continue
     }
 
     // Fix any records with ID=0 by updating them to have proper auto-increment IDs
@@ -341,8 +423,6 @@ const runIncrementalMigrations = async (connection) => {
       `);
       
       if (zeroIdRecords[0].count > 0) {
-        console.log(`Found ${zeroIdRecords[0].count} records with ID=0, fixing...`);
-        
         // Get the next available ID
         const [maxIdResult] = await connection.query(`
           SELECT MAX(id) as max_id FROM admin_highlights WHERE id > 0
@@ -379,11 +459,9 @@ const runIncrementalMigrations = async (connection) => {
         await connection.query(`
           ALTER TABLE admin_highlights AUTO_INCREMENT = ?
         `, [finalNextId]);
-        
-        console.log(`Fixed ${allZeroRecords.length} ID=0 records in admin_highlights table, assigned IDs ${nextId} to ${finalNextId - 1}`);
       }
     } catch (idFixError) {
-      console.log('ID=0 fix skipped or failed:', idFixError.message);
+      // ID=0 fix skipped or failed - silently continue
     }
 
     // Ensure all existing highlights have a status (default to 'pending' if NULL)
@@ -393,9 +471,8 @@ const runIncrementalMigrations = async (connection) => {
         SET status = 'pending' 
         WHERE status IS NULL
       `);
-      console.log('Updated NULL status records to pending');
     } catch (statusUpdateError) {
-      console.log('Status update skipped or failed:', statusUpdateError.message);
+      // Silently skip if update fails
     }
 
   } catch (error) {

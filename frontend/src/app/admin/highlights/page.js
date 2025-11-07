@@ -5,12 +5,11 @@ import { useSelector } from 'react-redux';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { FaPlus } from 'react-icons/fa';
-import { ConfirmationModal, SuccessModal } from '@/components';
+import { ConfirmationModal, SuccessModal, ErrorBoundary } from '@/components';
 import { SkeletonLoader } from '../components';
 import { SearchAndFilterControls, HighlightCard, ViewDetailsModal, HighlightForm } from './components';
+import { getAdminTokenOrRedirect, handleApiError, API_CONFIG, TIMEOUTS } from '../utils';
 import styles from './highlights.module.css';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 export default function AdminHighlightsPage() {
   const currentAdmin = useSelector(selectCurrentAdmin);
@@ -85,13 +84,13 @@ export default function AdminHighlightsPage() {
         throw new Error('Cannot fetch highlights on server side');
       }
       
-      // Get admin token from localStorage
-      const token = localStorage.getItem('adminToken');
+      // Get admin token using centralized utility
+      const token = getAdminTokenOrRedirect();
       if (!token) {
         throw new Error('No admin token found. Please log in again.');
       }
       
-      const response = await fetch(`${API_BASE_URL}/api/admin/highlights`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/highlights`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -99,7 +98,11 @@ export default function AdminHighlightsPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch highlights');
+        const errorInfo = handleApiError({ status: response.status }, 'highlights_fetch', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        throw new Error(errorInfo.message);
       }
 
       const data = await response.json();
@@ -107,7 +110,11 @@ export default function AdminHighlightsPage() {
       
       setHighlights(highlightsData);
     } catch (err) {
-      setError(err.message);
+      const errorInfo = handleApiError(err, 'highlights_load', {
+        redirectOnAuth: true,
+        logError: true
+      });
+      setError(errorInfo.message);
     } finally {
       if (isRefresh) {
         setIsRefreshing(false);
@@ -248,12 +255,12 @@ export default function AdminHighlightsPage() {
     try {
       setIsDeleting(true);
       
-      const token = localStorage.getItem('adminToken');
+      const token = getAdminTokenOrRedirect();
       if (!token) {
         throw new Error('No admin token found. Please log in again.');
       }
       
-      const response = await fetch(`${API_BASE_URL}/api/admin/highlights/${deletingHighlight.id}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/highlights/${deletingHighlight.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -262,7 +269,11 @@ export default function AdminHighlightsPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete highlight');
+        const errorInfo = handleApiError({ status: response.status }, 'highlights_delete', {
+          redirectOnAuth: true,
+          logError: true
+        });
+        throw new Error(errorInfo.message);
       }
 
       // Refresh the highlights list to ensure we have the latest data
@@ -291,12 +302,12 @@ export default function AdminHighlightsPage() {
       const isEdit = pageMode === 'edit';
       
       const url = isEdit 
-        ? `${API_BASE_URL}/api/admin/highlights/${editingHighlight.id}`
-        : `${API_BASE_URL}/api/admin/highlights`;
+        ? `${API_CONFIG.BASE_URL}/api/admin/highlights/${editingHighlight.id}`
+        : `${API_CONFIG.BASE_URL}/api/admin/highlights`;
       
       const method = isEdit ? 'PUT' : 'POST';
 
-      const token = localStorage.getItem('adminToken');
+      const token = getAdminTokenOrRedirect();
       if (!token) {
         throw new Error('No admin token found. Please log in again.');
       }
@@ -311,7 +322,11 @@ export default function AdminHighlightsPage() {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to ${isEdit ? 'update' : 'create'} highlight`);
+        const errorInfo = handleApiError({ status: response.status }, `highlights_${isEdit ? 'update' : 'create'}`, {
+          redirectOnAuth: true,
+          logError: true
+        });
+        throw new Error(errorInfo.message);
       }
 
       const result = await response.json();
@@ -369,6 +384,7 @@ export default function AdminHighlightsPage() {
   }
 
   return (
+    <ErrorBoundary>
     <div className={styles.container}>
       {pageMode === 'list' ? (
         <>
@@ -478,8 +494,9 @@ export default function AdminHighlightsPage() {
         isVisible={successModal.isVisible}
         onClose={hideSuccessModal}
         type={successModal.type}
-        autoHideDuration={3000}
+        autoHideDuration={TIMEOUTS.TOAST_AUTO_HIDE}
       />
     </div>
+    </ErrorBoundary>
   );
 }

@@ -34,7 +34,7 @@
 .panelTitle h2 {
   font-size: 14px;
   font-weight: 600;
-  color: #06100f;
+  color: #000;
   margin: 0 0 4px 0;
   font-family: var(--font-poppins), sans-serif;
 }
@@ -107,7 +107,7 @@
 
 .textInput:focus {
   outline: none;
-  border-color: #06100f;
+  border-color: #000;
   box-shadow: 0 0 0 3px rgba(6, 16, 15, 0.1);
 }
 
@@ -130,7 +130,7 @@
 
 .textArea:focus {
   outline: none;
-  border-color: #06100f;
+  border-color: #000;
   box-shadow: 0 0 0 3px rgba(6, 16, 15, 0.1);
 }
 
@@ -159,7 +159,7 @@
 
 .selectInput:focus {
   outline: none;
-  border-color: #06100f;
+  border-color: #000;
   box-shadow: 0 0 0 3px rgba(6, 16, 15, 0.1);
 }
 
@@ -245,7 +245,7 @@
 
 .dropdownButton:focus {
   outline: none;
-  border-color: #06100f;
+  border-color: #000;
   box-shadow: 0 0 0 3px rgba(6, 16, 15, 0.1);
 }
 
@@ -299,7 +299,7 @@
 
 .dropdownOption.selected {
   background: #f1f5f9 !important;
-  color: #06100f !important;
+  color: #000 !important;
   font-weight: 600;
 }
 
@@ -323,7 +323,7 @@
   padding: 0.5rem 1rem;
   font-size: 12px;
   font-weight: 500;
-  color: #06100f;
+  color: #000;
   background: #f1f5f9;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
@@ -473,8 +473,8 @@
   font-size: 12px;
   font-weight: 500;
   color: white;
-  background: #06100f;
-  border: 1px solid #06100f;
+  background: #000;
+  border: 1px solid #000;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -551,7 +551,7 @@
 .modalHeader h3 {
   font-size: 14px;
   font-weight: 600;
-  color: #06100f;
+  color: #000;
   margin: 0;
   font-family: var(--font-poppins), sans-serif;
 }

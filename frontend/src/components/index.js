@@ -9,3 +9,7 @@ export { EmailChange, useEmailChange, PasswordChange, StepUpModal } from './auth
 
 // UI components
 export { Loader, LoaderWrapper, ErrorBoundary, OptimizedImage, SuccessModal, ConfirmationModal, UnavailableImagePlaceholder, Tooltip } from './ui';
+
+// Portal components
+export { Sidebar, LogoutModalTrigger, superadminNavLinks, adminNavLinks } from './portal';
+export { TopBar, adminBreadcrumbConfig, superadminBreadcrumbConfig } from './portal';

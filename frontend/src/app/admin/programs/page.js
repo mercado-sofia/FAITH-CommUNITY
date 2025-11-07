@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { useAdminPrograms } from '../hooks/useAdminData';
@@ -8,8 +8,8 @@ import { useCollaborationRequests } from './hooks';
 import { ViewDetailsModal, ProgramsContainer, CollaborationsContainer, SearchAndFilterControls } from './components';
 import ProgramForm from './components/ProgramForm/ProgramForm';
 import { SkeletonLoader } from '../components';
-import { ConfirmationModal } from '@/components';
-import { SuccessModal } from '@/components';
+import { ConfirmationModal, ErrorBoundary, SuccessModal } from '@/components';
+import { handleApiError, TIMEOUTS } from '../utils';
 import { useProgramsManagement, useProgramFilters, useModalManagement, useCollaborationManagement } from './hooks';
 import styles from './programs.module.css';
 import { FaPlus } from 'react-icons/fa';
@@ -45,9 +45,13 @@ export default function AdminProgramsPage() {
   // Handle error display
   useEffect(() => {
     if (error) {
+      const errorInfo = handleApiError(error, 'programs_load', {
+        redirectOnAuth: true,
+        logError: true
+      });
       setSuccessModal({ 
         isVisible: true, 
-        message: 'Failed to load programs. Please try again.', 
+        message: errorInfo.message, 
         type: 'error' 
       });
     }
@@ -56,9 +60,13 @@ export default function AdminProgramsPage() {
   // Handle collaboration error display
   useEffect(() => {
     if (collaborationsError) {
+      const errorInfo = handleApiError(collaborationsError, 'collaborations_load', {
+        redirectOnAuth: true,
+        logError: true
+      });
       setSuccessModal({ 
         isVisible: true, 
-        message: 'Failed to load collaborations. Please try again.', 
+        message: errorInfo.message, 
         type: 'error' 
       });
     }
@@ -76,21 +84,21 @@ export default function AdminProgramsPage() {
     setSuccessModal
   );
 
-  // Close success modal
-  const closeSuccessModal = () => {
+  // Close success modal (memoized)
+  const closeSuccessModal = useCallback(() => {
     setSuccessModal({ isVisible: false, message: '', type: 'success' });
-  };
+  }, []);
 
-  // Handle opt-out callback - refresh both programs and collaborators
-  const handleOptOut = (programIdToRemove) => {
+  // Handle opt-out callback - refresh both programs and collaborators (memoized)
+  const handleOptOut = useCallback((programIdToRemove) => {
     collaborationManagement.handleOptOut(programIdToRemove, modals.refreshCollaboratorsFn, modals.pageMode);
-  };
+  }, [collaborationManagement, modals.refreshCollaboratorsFn, modals.pageMode]);
 
-  // Handle collaboration action with modal close
-  const handleCollaborationActionWithClose = (collaborationId, action) => {
+  // Handle collaboration action with modal close (memoized)
+  const handleCollaborationActionWithClose = useCallback((collaborationId, action) => {
     collaborationManagement.handleCollaborationAction(collaborationId, action);
     modals.closeCollaborationModal();
-  };
+  }, [collaborationManagement, modals]);
 
   // Show skeleton immediately on first load or when loading
   if (!hasInitiallyLoaded || isLoading || (filters.activeTab === 'collaborations' && collaborationsLoading)) {
@@ -108,6 +116,7 @@ export default function AdminProgramsPage() {
   }
 
   return (
+    <ErrorBoundary>
     <div className={styles.container}>
       {modals.pageMode === 'list' ? (
         <>
@@ -244,8 +253,9 @@ export default function AdminProgramsPage() {
         isVisible={successModal.isVisible}
         onClose={closeSuccessModal}
         type={successModal.type}
-        autoHideDuration={4000}
+        autoHideDuration={TIMEOUTS.SUCCESS_MODAL}
       />
     </div>
+    </ErrorBoundary>
   );
 }

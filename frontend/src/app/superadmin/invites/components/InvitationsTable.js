@@ -21,7 +21,8 @@ export default function InvitationsTable({
   onSelectItem,
   isCancelling,
   isDeleting,
-  isDeactivating
+  isDeactivating,
+  startIndex = 0
 }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedItemForDelete, setSelectedItemForDelete] = useState(null);
@@ -263,6 +264,7 @@ export default function InvitationsTable({
         <table className={styles.invitationsTable}>
           <thead>
             <tr>
+              <th className={styles.numberColumn}>#</th>
               <th className={styles.checkboxColumn}>
                 <input
                   type="checkbox"
@@ -281,15 +283,18 @@ export default function InvitationsTable({
           <tbody>
             {invitations.length === 0 ? (
               <tr>
-                <td colSpan="6" className={styles.emptyState}>
+                <td colSpan="7" className={styles.emptyState}>
                   <div className={styles.emptyContent}>
                     <p>No invitations have been sent yet.</p>
                   </div>
                 </td>
               </tr>
             ) : (
-              invitations.map((invitation) => (
+              invitations.map((invitation, index) => (
                 <tr key={invitation.id} className={styles.tableRow}>
+                  <td className={styles.numberCell}>
+                    {startIndex + index + 1}
+                  </td>
                   <td className={styles.checkboxColumn}>
                     <input
                       type="checkbox"

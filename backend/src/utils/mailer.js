@@ -175,38 +175,39 @@ export async function verifySMTPConnection(retries = 2) {
       }
       
       // Only log full error details on final failure
-      console.error('❌ SMTP verification failed:', error.message);
+      // Note: This is a warning, not a critical error - server will continue to run
+      console.warn('⚠️  SMTP verification failed (server will continue running):', error.message);
+      console.warn('   → Email features may not work until SMTP is properly configured');
       
       // Show current configuration
       const status = getSMTPStatus();
-      console.error(`   → Current config: ${status.host}:${status.port} (user: ${status.user})`);
-      console.error(`   → Timeout used: ${verificationTimeout}ms`);
+      console.warn(`   → Current config: ${status.host}:${status.port} (user: ${status.user})`);
+      console.warn(`   → Timeout used: ${verificationTimeout}ms`);
       
       // Handle specific error types
       if (error.code === 'EAUTH' || error.message.includes('Invalid login') || error.message.includes('BadCredentials')) {
-        console.error('   → Authentication failed. Check SMTP_USER and SMTP_PASS');
-        console.error('   → For Gmail, use an App Password (not your regular password)');
-        console.error('   → Make sure 2-Step Verification is enabled and App Password is generated');
+        console.warn('   → Authentication failed. Check SMTP_USER and SMTP_PASS');
+        console.warn('   → For Gmail, use an App Password (not your regular password)');
+        console.warn('   → Make sure 2-Step Verification is enabled and App Password is generated');
       } else if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT') || error.code === 'ETIMEDOUT') {
-        console.error('   → Connection timeout. Possible issues:');
-        console.error('      • SMTP_HOST is incorrect or unreachable');
-        console.error('      • SMTP_PORT is incorrect (common ports: 587, 465, 25)');
-        console.error('      • Firewall or network blocking SMTP connection');
-        console.error('      • SMTP server is down or slow to respond');
-        console.error('      • Corporate proxy or VPN blocking SMTP connections');
-        console.error(`   → Try increasing timeout: SMTP_VERIFICATION_TIMEOUT=90000 (current: ${verificationTimeout}ms)`);
-        console.error('   → Or skip verification in development: Set SMTP_SKIP_VERIFY=true');
-        console.error('   → For Gmail, try port 465 with secure=true: SMTP_PORT=465');
+        console.warn('   → Connection timeout. This is often a network/firewall issue.');
+        console.warn('   → Quick fixes:');
+        console.warn('      • Skip verification in development: Set SMTP_SKIP_VERIFY=true in .env');
+        console.warn('      • Try Gmail port 465: Set SMTP_PORT=465 in .env');
+        console.warn('      • Check Windows Firewall/Antivirus isn\'t blocking SMTP');
+        console.warn('      • Try a different network (some ISPs block port 587)');
+        console.warn(`   → Or increase timeout: SMTP_VERIFICATION_TIMEOUT=90000 (current: ${verificationTimeout}ms)`);
+        console.warn('   → Run test script: node scripts/test-smtp.js');
       } else if (error.code === 'ECONNREFUSED' || error.message.includes('ECONNREFUSED')) {
-        console.error('   → Connection refused. Check:');
-        console.error('      • SMTP_HOST and SMTP_PORT are correct');
-        console.error('      • SMTP server is running and accessible');
-        console.error('      • Network/firewall allows outbound connections on SMTP port');
+        console.warn('   → Connection refused. Check:');
+        console.warn('      • SMTP_HOST and SMTP_PORT are correct');
+        console.warn('      • SMTP server is running and accessible');
+        console.warn('      • Network/firewall allows outbound connections on SMTP port');
       } else if (error.code === 'ENOTFOUND' || error.message.includes('ENOTFOUND')) {
-        console.error('   → Host not found. Check SMTP_HOST is correct');
+        console.warn('   → Host not found. Check SMTP_HOST is correct');
       } else if (error.code === 'ECONNRESET' || error.message.includes('ECONNRESET')) {
-        console.error('   → Connection reset. Possible TLS/SSL issues.');
-        console.error('   → Try: SMTP_TLS_REJECT_UNAUTHORIZED=false (for development only)');
+        console.warn('   → Connection reset. Possible TLS/SSL issues.');
+        console.warn('   → Try: SMTP_TLS_REJECT_UNAUTHORIZED=false (for development only)');
       }
       
       return false;

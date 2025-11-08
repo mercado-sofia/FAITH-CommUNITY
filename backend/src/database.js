@@ -1291,7 +1291,7 @@ const initializeDatabase = async () => {
           id INT AUTO_INCREMENT PRIMARY KEY,
           heading TEXT NULL,
           description TEXT NULL,
-          extension_categories JSON DEFAULT '[{"name": "Extension For Education", "icon": "education", "color": "green"}, {"name": "Extension For Medical", "icon": "medical", "color": "red"}, {"name": "Extension For Community", "icon": "community", "color": "orange"}, {"name": "Extension For Foods", "icon": "food", "color": "green"}]',
+          extension_categories JSON NULL,
           image_url VARCHAR(500) DEFAULT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -1481,6 +1481,17 @@ const initializeDatabase = async () => {
         ('mission', 'To provide quality education and community service through innovative programs and partnerships.'),
         ('vision', 'To be a leading institution in community development and social transformation.')
       `);
+
+      // Insert default extension_categories for about_us table (can't use DEFAULT on JSON column)
+      await connection.query(`
+        INSERT IGNORE INTO about_us (extension_categories) VALUES
+        (?)
+      `, [JSON.stringify([
+        {"name": "Extension For Education", "icon": "education", "color": "green"},
+        {"name": "Extension For Medical", "icon": "medical", "color": "red"},
+        {"name": "Extension For Community", "icon": "community", "color": "orange"},
+        {"name": "Extension For Foods", "icon": "food", "color": "green"}
+      ])]);
       
       // Handle existing data migrations for news table
       const [existingNews] = await connection.query(`

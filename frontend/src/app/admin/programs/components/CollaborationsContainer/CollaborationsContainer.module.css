@@ -59,38 +59,3 @@
   line-height: 1.5;
 }
 
-/* Mobile Responsive */
-@media (max-width: 1024px) {
-  .programsGrid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 20px;
-  }
-}
-
-@media (max-width: 900px) {
-  .programsGrid {
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 18px;
-  }
-}
-
-@media (max-width: 768px) {
-  .programsGrid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
-  .emptyState {
-    padding: 60px 20px;
-  }
-}
-
-@media (max-width: 480px) {
-  .emptyState {
-    padding: 40px 16px;
-  }
-  
-  .collaborationTitle {
-    font-size: 18px;
-  }
-}

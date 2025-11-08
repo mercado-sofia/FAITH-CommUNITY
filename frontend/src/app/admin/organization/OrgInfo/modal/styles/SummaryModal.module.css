@@ -327,10 +327,3 @@
   cursor: not-allowed;
   transform: none;
 }
-
-/* Responsive */
-@media (max-width: 768px) {
-  .comparison {
-    grid-template-columns: 1fr;
-  }
-}

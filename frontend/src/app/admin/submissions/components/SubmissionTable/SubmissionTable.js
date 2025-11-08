@@ -248,6 +248,7 @@ export default function SubmissionTable({
         <table className={styles.table}>
           <thead className={styles.tableHeader}>
             <tr>
+              <th className={styles.numberColumn}>#</th>
               <th className={styles.selectColumn}>
                 <input 
                   type="checkbox" 
@@ -262,7 +263,6 @@ export default function SubmissionTable({
               <th>Status</th>
               <th></th>
               <th>Actions</th>
-              <th></th>
             </tr>
           </thead>
           <tbody className={styles.tableBody}>
@@ -273,8 +273,14 @@ export default function SubmissionTable({
                 </td>
               </tr>
             ) : (
-              currentSubmissions.map((s) => (
+              currentSubmissions.map((s, index) => {
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const rowNumber = startIndex + index + 1;
+                return (
               <tr key={s.id}>
+                <td className={styles.numberCell}>
+                  {rowNumber}
+                </td>
                 <td className={styles.selectColumn}>
                   <input 
                     type="checkbox" 
@@ -341,9 +347,6 @@ export default function SubmissionTable({
                         <FiX size={14} />
                       )}
                     </button>
-                  </div>
-                </td>
-                <td className={styles.deleteColumn}>
                   <button 
                     className={styles.deleteBtn} 
                     onClick={() => setDeleteId(s.id)}
@@ -356,9 +359,11 @@ export default function SubmissionTable({
                       <FiTrash2 size={14} />
                     )}
                   </button>
+                  </div>
                 </td>
               </tr>
-              ))
+              );
+              })
             )}
           </tbody>
         </table>

@@ -21,44 +21,7 @@ const matchesOrganization = (approval, orgAcronym) => {
   
   const normalizedOrgAcronym = normalizeOrgAcronym(orgAcronym);
   
-  // Special case: "Collab Admin" or "Collaboration Administrator" - filter for collaborative programs
-  const isCollabAdmin = normalizedOrgAcronym === 'collab admin' || 
-                        normalizedOrgAcronym === 'collaboration administrator' ||
-                        normalizedOrgAcronym.includes('collab admin') ||
-                        normalizedOrgAcronym.includes('collaboration administrator');
-  
-  if (isCollabAdmin) {
-    // Only filter collaborative programs for program submissions
-    if (approval.section === 'programs' && approval.proposed_data) {
-      try {
-        const proposedData = typeof approval.proposed_data === 'string' 
-          ? JSON.parse(approval.proposed_data) 
-          : approval.proposed_data;
-        
-        if (proposedData) {
-          // Check if program is collaborative (has is_collaborative flag set to true/1)
-          const isCollaborative = proposedData.is_collaborative === true || 
-                                  proposedData.is_collaborative === 1 ||
-                                  proposedData.is_collaborative === '1';
-          
-          // Check if program has collaborators array with at least one collaborator
-          const hasCollaborators = proposedData.collaborators && 
-                                   Array.isArray(proposedData.collaborators) && 
-                                   proposedData.collaborators.length > 0;
-          
-          // Return true if program is collaborative (either by flag or has collaborators)
-          return isCollaborative || hasCollaborators;
-        }
-      } catch (error) {
-        // If parsing fails, don't include this approval
-        return false;
-      }
-    }
-    // For non-program submissions, don't match when Collab Admin is selected
-    return false;
-  }
-  
-  // Regular organization filtering
+  // Regular organization filtering - treat all organizations the same, including "Collab Admin"
   // Check main organization (case-insensitive)
   const mainOrgAcronym = normalizeOrgAcronym(
     approval.org || 

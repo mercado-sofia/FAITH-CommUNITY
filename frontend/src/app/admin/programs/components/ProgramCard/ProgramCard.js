@@ -7,8 +7,6 @@ import { TbListDetails } from 'react-icons/tb';
 import { FiTrash2 } from 'react-icons/fi';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import { formatProgramDates, formatProgramDatesForCard, formatDateShort } from '@/utils/dateUtils.js';
-import { getProgramStatusByDates } from '@/utils/programStatusUtils';
-import { hasActiveCollaborations as checkHasActiveCollaborations } from '@/utils/collaborationStatusUtils';
 import CollaborationBadge from '../CollaborationBadge/CollaborationBadge';
 import ProgramActions from './ProgramActions';
 import ProgramModals from './ProgramModals';
@@ -104,8 +102,8 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
       // For collaboration cards, use the collaboration status directly
       return normalizedData.status || 'pending';
     } else {
-      // For regular program cards, use the shared status calculation utility
-      return getProgramStatusByDates(normalizedData);
+      // For regular program cards, use the program_projects.status field directly
+      return normalizedData.status || 'Upcoming';
     }
   };
 
@@ -163,7 +161,7 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
                   {normalizedData.user_role === 'creator' ? (
                     <>
                       {/* Only show volunteer acceptance functions for upcoming programs */}
-                      {getProgramStatusByDates(normalizedData) === 'Upcoming' && (
+                      {(normalizedData.status || 'Upcoming') === 'Upcoming' && (
                         normalizedData.accepts_volunteers ? (
                           <button
                             className={styles.dropdownItem}
@@ -254,7 +252,7 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
                   {normalizedData.user_role === 'creator' ? (
                     <>
                       {/* Only show volunteer acceptance functions for upcoming programs */}
-                      {getProgramStatusByDates(normalizedData) === 'Upcoming' && (
+                      {(normalizedData.status || 'Upcoming') === 'Upcoming' && (
                         normalizedData.accepts_volunteers ? (
                           <button
                             className={styles.dropdownItem}
@@ -339,13 +337,9 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
           return (
             <div className={`${styles.statusBadge} ${styles[displayStatus]}`}>
               {(() => {
-                // Handle special status display for collaborative programs
-                // Check if program has any active collaborations
-                const hasActiveCollaborations = checkHasActiveCollaborations(normalizedData);
-                
-                if (hasActiveCollaborations) {
-                  // Use collaboration_status if available, otherwise fall back to status
-                  const collaborationStatus = normalizedData.collaboration_status || normalizedData.status;
+                // For collaboration cards, show collaboration status
+                if (isCollaborationCard) {
+                  const collaborationStatus = normalizedData.status || 'pending';
                   switch (collaborationStatus) {
                     case 'accepted':
                       return 'Collaborators Accepted';
@@ -358,9 +352,10 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
                     case 'pending':
                       return 'Pending Response';
                     default:
-                      return displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1);
+                      return collaborationStatus.charAt(0).toUpperCase() + collaborationStatus.slice(1);
                   }
                 }
+                // For regular program cards, show program_projects.status
                 const baseText = displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1);
                 return baseText;
               })()}
@@ -400,7 +395,6 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
         <ProgramActions
           normalizedData={normalizedData}
           isCollaborationCard={isCollaborationCard}
-          getProgramStatusByDates={getProgramStatusByDates}
           actions={actions}
         />
       </div>

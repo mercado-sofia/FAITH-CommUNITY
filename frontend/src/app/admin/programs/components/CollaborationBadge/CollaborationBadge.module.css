@@ -35,19 +35,3 @@
   color: #374151;
   border: 1px solid #d1d5db;
 }
-
-/* Responsive */
-@media (max-width: 640px) {
-  .badge {
-    font-size: 10px;
-    padding: 3px 6px;
-  }
-  
-  .badgeText {
-    font-size: 10px;
-  }
-  
-  .collaboratorCount {
-    font-size: 9px;
-  }
-}

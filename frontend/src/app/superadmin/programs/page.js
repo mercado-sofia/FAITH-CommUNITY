@@ -313,11 +313,22 @@ const SuperadminProgramsPage = () => {
   })
 
   // Get all unique organizations for filter dropdown
-  const organizationOptions = organizationPrograms.map(org => ({
-    id: org.organizationId,
-    name: org.organizationName,
-    acronym: org.organizationAcronym
-  }))
+  // Filter to only include organizations with valid data
+  const organizationOptions = organizationPrograms
+    .filter(org => {
+      // Ensure organization has required fields
+      return org && 
+             org.organizationId && 
+             org.organizationAcronym && 
+             org.organizationAcronym.trim() !== '' && 
+             org.organizationName && 
+             org.organizationName.trim() !== '';
+    })
+    .map(org => ({
+      id: org.organizationId,
+      name: org.organizationName,
+      acronym: org.organizationAcronym
+    }))
 
   // Search handler
   const handleSearchChange = (query) => {

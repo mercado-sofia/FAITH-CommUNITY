@@ -24,7 +24,7 @@
 .inlineLabel {
   font-size: 12px;
   font-weight: 500;
-  color: #0c1b1a;
+  color: #000;
   margin-right: 8px;
 }
 
@@ -35,7 +35,7 @@
 }
 
 .statusValue {
-  color: #0c1b1a;
+  color: #000;
   font-weight: 500;
 }
 
@@ -46,7 +46,7 @@
 }
 
 .sectionValue {
-  color: #0c1b1a;
+  color: #000;
   font-weight: 500;
 }
 
@@ -69,7 +69,7 @@
   font-size: 13px;
   font-weight: 500;
   font-family: var(--font-inter);
-  color: #0c1b1a;
+  color: #000;
   border: 1px solid #e5e5e5;
   display: flex;
   align-items: center;

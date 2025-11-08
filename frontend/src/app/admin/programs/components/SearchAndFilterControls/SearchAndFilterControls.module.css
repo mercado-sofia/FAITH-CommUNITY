@@ -28,7 +28,7 @@
 }
 
 .statusValue {
-  color: #0c1b1a;
+  color: #000;
   font-weight: 500;
 }
 
@@ -47,7 +47,7 @@
   font-size: 13px;
   font-weight: 500;
   font-family: var(--font-inter);
-  color: #0c1b1a;
+  color: #000;
   border: 1px solid #e5e5e5;
   display: flex;
   align-items: center;
@@ -196,20 +196,4 @@
 .sortIcon {
   font-size: 18px;
   color: #000;
-}
-
-/* Mobile Responsive */
-@media (max-width: 768px) {
-  .controlsRow {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
-  }
-}
-
-@media (max-width: 480px) {
-  .searchInput {
-    padding: 10px 14px 10px 40px;
-    font-size: 16px; /* Prevents zoom on iOS */
-  }
 }

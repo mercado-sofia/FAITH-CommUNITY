@@ -325,28 +325,3 @@
   display: block;
   font-style: italic;
 }
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .dropdownRow {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-  
-  .dropdownContainer {
-    width: 100%;
-  }
-  
-  .datePickerRow {
-    flex: none;
-  }
-  
-  .selectedDatesGrid {
-    flex-direction: column;
-  }
-  
-  .selectedDateTag {
-    justify-content: space-between;
-  }
-}

@@ -539,29 +539,3 @@
   border-width: 0 !important;
   border-color: transparent !important;
 }
-
-/* Mobile Responsive - calendar-draft style */
-@media (max-width: 450px), (max-height: 450px) {
-  .rmdp-day,
-  .rmdp-week-day {
-    height: 28px !important;
-    width: 28px !important;
-  }
-
-  .rmdp-day span {
-    padding-left: 0.5px !important;
-    font-size: 12px !important;
-  }
-
-  .rmdp-header {
-    padding: 3px 0 0 0 !important;
-    font-size: 12px !important;
-  }
-
-  .react-datepicker__day {
-    width: 28px !important;
-    height: 28px !important;
-    line-height: 28px !important;
-    font-size: 12px !important;
-  }
-}

@@ -27,18 +27,19 @@ async function createSuperadmin() {
   try {
     console.log('🔧 Creating superadmin account...');
     
-    // Check if superadmin already exists
-    const [existing] = await db.execute('SELECT id FROM superadmin WHERE id = 1');
+    // Check if ANY superadmin exists (enforce single account rule)
+    const [existing] = await db.execute('SELECT id, username FROM superadmin LIMIT 1');
     
     if (existing.length > 0) {
       console.log('✅ Superadmin account already exists!');
-      console.log('📧 Email: superadmin@faith-community.com');
-      console.log('🔑 Password: admin123');
+      console.log(`📧 Email: ${existing[0].username}`);
+      console.log('⚠️  Only one superadmin account is allowed.');
+      console.log('📝 Use the update endpoints to change credentials.');
       console.log('🌐 Login URL: http://localhost:3000/superadmin/login');
       return;
     }
     
-    // Create superadmin account
+    // Create superadmin account with fixed id=1
     const hashedPassword = await bcrypt.hash('admin123', 10);
     
     await db.execute(`
@@ -53,7 +54,15 @@ async function createSuperadmin() {
     console.log('⚠️  Please change the password after first login!');
     
   } catch (error) {
-    console.error('❌ Error creating superadmin:', error.message);
+    if (error.message.includes('Only one superadmin account is allowed')) {
+      console.log('✅ Superadmin account already exists (enforced by database constraint)');
+      const [existing] = await db.execute('SELECT username FROM superadmin LIMIT 1');
+      if (existing.length > 0) {
+        console.log(`📧 Email: ${existing[0].username}`);
+      }
+    } else {
+      console.error('❌ Error creating superadmin:', error.message);
+    }
   }
 }
 

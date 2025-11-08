@@ -7,6 +7,8 @@ This directory contains essential utility scripts for database management and de
 - `utilities.js` - Consolidated utility script with multiple functions (production-safe)
 - `databaseMerger.js` - Database merger class
 - `mergeDatabases.js` - Interactive database merger tool
+- `resetAdminPassword.js` - Admin password reset utility
+- `test-superadmin-single-account.js` - Test script for single superadmin enforcement
 
 ## Utilities Script
 
@@ -287,13 +289,16 @@ node scripts/utilities.js help
 
 ```
 backend/scripts/
-├── README.md              # This file
-├── utilities.js           # Main utility script
-├── databaseMerger.js      # Database merger class
-├── mergeDatabases.js      # Interactive merger tool
-└── backups/               # Backup files and merge reports
-    ├── backup_*.sql       # Database backups
-    └── merge_report_*.json # Merge reports
+├── README.md                        # This file
+├── utilities.js                     # Main utility script
+├── databaseMerger.js                # Database merger class
+├── mergeDatabases.js                # Interactive merger tool
+├── resetAdminPassword.js            # Admin password reset utility
+├── test-superadmin-single-account.js # Test script for single superadmin enforcement
+├── TEST_SUPERADMIN_README.md        # Test script documentation
+└── backups/                         # Backup files and merge reports
+    ├── backup_*.sql                 # Database backups
+    └── merge_report_*.json          # Merge reports
 ```
 
 ## Environment Variables

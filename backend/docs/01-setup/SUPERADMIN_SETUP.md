@@ -54,14 +54,29 @@ This script will prompt you for:
 ## Database Structure
 
 The superadmin table includes:
-- `id`: Primary key
+- `id`: Primary key (fixed value: 1) - **Only one superadmin account is allowed**
 - `username`: Email address (used for login)
 - `password`: Bcrypt hashed password
-- `mfa_enabled`: Multi-factor authentication status
-- `mfa_secret`: TOTP secret for MFA
+- `twofa_enabled`: Multi-factor authentication status
+- `twofa_secret`: TOTP secret for MFA
 - `password_changed_at`: Last password change timestamp
 - `created_at`: Account creation timestamp
 - `updated_at`: Last update timestamp
+
+### Single Superadmin Account Enforcement
+
+**Important**: The database enforces a single superadmin account through multiple layers:
+
+1. **Fixed ID Constraint**: The `id` column is fixed to `1` (not AUTO_INCREMENT)
+2. **CHECK Constraint**: Database-level CHECK constraint ensures `id = 1` (MySQL 8.0.16+)
+3. **Database Trigger**: Prevents multiple inserts (fallback for older MySQL versions)
+4. **Application-Level Validation**: Creation script checks for existing accounts before creating
+
+**Key Points**:
+- Only **one** superadmin account can exist in the system
+- The account cannot be deleted (it's a system requirement)
+- Credentials (email/password) can be updated through the API endpoints
+- The account is created during initial setup and persists throughout the system lifecycle
 
 ## Troubleshooting
 

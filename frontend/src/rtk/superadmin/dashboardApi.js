@@ -257,12 +257,23 @@ export const dashboardApi = createApi({
         const organizations = response.success ? response.data : response;
         if (!Array.isArray(organizations)) return [];
         
-        // Return organizations directly as they're already formatted correctly
-        return organizations.map(org => ({
-          id: org.id,
-          acronym: org.acronym,
-          name: org.name
-        }));
+        // Filter to only include active organizations with valid data
+        // Backend already filters by status='ACTIVE', but add extra validation here
+        return organizations
+          .filter(org => {
+            // Ensure organization has required fields
+            return org && 
+                   org.id && 
+                   org.acronym && 
+                   org.acronym.trim() !== '' && 
+                   org.name && 
+                   org.name.trim() !== '';
+          })
+          .map(org => ({
+            id: org.id,
+            acronym: org.acronym,
+            name: org.name
+          }));
       },
     }),
 

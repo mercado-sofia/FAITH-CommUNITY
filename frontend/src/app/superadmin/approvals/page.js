@@ -88,46 +88,7 @@ const matchesOrganization = (approval, orgAcronym) => {
   
   const normalizedOrgAcronym = normalizeOrgAcronym(orgAcronym);
   
-  // Special case: "Collab Admin" or "Collaboration Administrator" - filter for collaborative programs
-  const isCollabAdmin = normalizedOrgAcronym === 'collab admin' || 
-                        normalizedOrgAcronym === 'collaboration administrator' ||
-                        normalizedOrgAcronym.includes('collab admin') ||
-                        normalizedOrgAcronym.includes('collaboration administrator');
-  
-  if (isCollabAdmin) {
-    // Only filter collaborative programs for program submissions
-    if (approval.section === 'programs' && approval.proposed_data) {
-      try {
-        const proposedData = typeof approval.proposed_data === 'string' 
-          ? JSON.parse(approval.proposed_data) 
-          : approval.proposed_data;
-        
-        if (proposedData) {
-          // Check if program is collaborative (has is_collaborative flag set to true/1)
-          const isCollaborative = proposedData.is_collaborative === true || 
-                                  proposedData.is_collaborative === 1 ||
-                                  proposedData.is_collaborative === '1';
-          
-          // Check if program has collaborators array with at least one collaborator
-          const hasCollaborators = proposedData.collaborators && 
-                                   Array.isArray(proposedData.collaborators) && 
-                                   proposedData.collaborators.length > 0;
-          
-          // Return true if program is collaborative (either by flag or has collaborators)
-          return isCollaborative || hasCollaborators;
-        }
-      } catch (error) {
-        // If parsing fails, don't include this approval
-        return false;
-      }
-    }
-    // For non-program submissions, don't match when Collab Admin is selected
-    return false;
-  }
-  
-  // Regular organization filtering
-  // For regular organizations, ONLY match if the selected org is the main organization
-  // Do NOT check for collaborators - that functionality is only in "Collab Admin"
+  // Regular organization filtering - treat all organizations the same, including "Collab Admin"
   // Check main organization (case-insensitive)
   // The approval data from backend has 'org' field (from o.org in SQL query)
   const mainOrgAcronym = normalizeOrgAcronym(
@@ -137,7 +98,7 @@ const matchesOrganization = (approval, orgAcronym) => {
     ''
   );
   
-  // Only return true if main org matches - no collaborator checking for regular org filters
+  // Only return true if main org matches
   if (mainOrgAcronym && mainOrgAcronym === normalizedOrgAcronym) {
     // Debug: Log successful match (remove in production)
     if (process.env.NODE_ENV === 'development') {
@@ -147,7 +108,6 @@ const matchesOrganization = (approval, orgAcronym) => {
   }
   
   // Main org doesn't match - exclude this approval
-  // Note: We don't check collaborators here - collaborator filtering is only for "Collab Admin"
   if (process.env.NODE_ENV === 'development' && mainOrgAcronym) {
     console.log(`[Filter No Match] Approval ID: ${approval.id}, Org: "${approval.org}", Normalized: "${mainOrgAcronym}", Selected: "${normalizedOrgAcronym}"`);
   }
@@ -279,7 +239,20 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Failed to fetch organizations');
       }
 
-      setOrganizations(result.data);
+      // Filter to only include active organizations with valid data
+      // Backend already filters by status='ACTIVE', but add extra validation here
+      const validOrganizations = (result.data || [])
+        .filter(org => {
+          // Ensure organization has required fields
+          return org && 
+                 org.id && 
+                 org.acronym && 
+                 org.acronym.trim() !== '' && 
+                 org.name && 
+                 org.name.trim() !== '';
+        });
+
+      setOrganizations(validOrganizations);
     } catch (err) {
       logError(err, { context: 'fetchOrganizations' });
       // Organizations filter is optional, so we don't show error to user

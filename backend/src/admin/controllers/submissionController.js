@@ -162,9 +162,9 @@ export const submitChanges = async (req, res) => {
               // Handle collaboration requests for collaborative programs
               if (proposedData.collaborators && Array.isArray(proposedData.collaborators) && proposedData.collaborators.length > 0) {
                 isCollaborativeProgram = true;
-                message = `${orgAcronym} has submitted a collaborative program "${proposedData.title}". Collaboration requests have been sent to invited organizations. The program will be submitted for superadmin approval after all collaborators accept.`
+                message = `${orgAcronym} has submitted a collaborative program "${proposedData.title}" for approval. Collaboration requests will be sent to invited organizations after superadmin approval.`
                 
-                // Create collaboration request records and send notifications immediately
+                // Create collaboration request records (notifications will be sent only after superadmin approval)
                 for (const collaborator of proposedData.collaborators) {
                   try {
                     const collaboratorId = typeof collaborator === 'object' && collaborator !== null ? collaborator.id : collaborator;
@@ -182,25 +182,13 @@ export const submitChanges = async (req, res) => {
                     
                     if (existingCollaboration.length === 0) {
                       // Create collaboration request linked to submission (not program yet)
+                      // program_id will be NULL until superadmin approves
+                      // Notifications will be sent only after superadmin approves the program
                       await db.execute(`
                         INSERT INTO program_collaborations (submission_id, collaborator_admin_id, invited_by_admin_id, status, program_title)
                         VALUES (?, ?, ?, 'pending', ?)
                       `, [submissionId, collaboratorId, item.submitted_by, proposedData.title]);
-                      
-                      // Send notification to collaborator immediately
-                      try {
-                        const AdminNotificationController = (await import('./notificationController.js')).default;
-                        await AdminNotificationController.createNotification(
-                          collaboratorId,
-                          'collaboration_request',
-                          'New Collaboration Request',
-                          `You have received a collaboration request for "${proposedData.title}". Please review and respond.`,
-                          'programs',
-                          submissionId
-                        );
-                      } catch (notificationError) {
-                        // Continue even if notification fails
-                      }
+                      // Do NOT send notification here - wait for superadmin approval
                     }
                   } catch (collabError) {
                     // Continue with other collaborators even if one fails

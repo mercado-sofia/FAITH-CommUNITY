@@ -367,29 +367,7 @@
   box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
 }
 
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .formLayout {
-    flex-direction: column;
-    gap: 24px;
-  }
-  
-  .rightPanel {
-    flex-direction: row;
-    gap: 24px;
-  }
-  
-  .container {
-    flex: 1;
-  }
-}
-
 @media (max-width: 768px) {
-  .rightPanel {
-    flex-direction: column;
-    gap: 20px;
-  }
-  
   .uploadArea {
     min-height: 180px;
   }

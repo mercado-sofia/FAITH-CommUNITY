@@ -358,35 +358,3 @@
   }
 }
 
-/* Responsive Design */
-@media (max-width: 640px) {
-  .modalContainer {
-    margin: 16px;
-    max-width: calc(100% - 32px);
-    max-height: calc(100vh - 32px);
-  }
-  
-  .modalHeader {
-    padding: 20px 20px 0 20px;
-  }
-  
-  .modalContent {
-    padding: 20px;
-  }
-  
-  .modalActions {
-    padding: 16px 20px 20px 20px;
-    flex-direction: column;
-  }
-  
-  .saveButton,
-  .cancelButton {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .submissionMeta {
-    flex-direction: column;
-    gap: 16px;
-  }
-}

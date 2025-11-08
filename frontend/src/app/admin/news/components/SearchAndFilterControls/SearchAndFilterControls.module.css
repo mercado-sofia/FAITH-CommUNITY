@@ -24,7 +24,7 @@
 .inlineLabel {
   font-size: 12px;
   font-weight: 500;
-  color: #0c1b1a;
+  color: #000;
   margin-right: 8px;
 }
 
@@ -47,7 +47,7 @@
   font-size: 13px;
   font-weight: 500;
   font-family: var(--font-inter);
-  color: #0c1b1a;
+  color: #000;
   border: 1px solid #e5e5e5;
   display: flex;
   align-items: center;
@@ -239,46 +239,4 @@
 
 .recentlyDeletedButton:active {
   transform: translateY(1px);
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .controlsRow {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-  }
-
-  .filtersRow {
-    justify-content: flex-start;
-  }
-
-  .searchWrapper {
-    justify-content: stretch;
-  }
-
-  .searchInputContainer {
-    width: 100%;
-  }
-
-  .recentlyDeletedWrapper {
-    align-self: flex-end;
-  }
-}
-
-@media (max-width: 480px) {
-  .filtersRow {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-  }
-
-  .dropdownWrapper {
-    width: 100%;
-  }
-
-  .dropdown {
-    width: 100%;
-    justify-content: space-between;
-  }
 }

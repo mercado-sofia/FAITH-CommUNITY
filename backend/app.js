@@ -26,6 +26,19 @@ const __dirname = path.dirname(__filename)
 // Initialize Express
 const app = express()
 const PORT = process.env.PORT || 8080
+
+// Trust proxy - Required when behind a reverse proxy (Railway, Heroku, etc.)
+// This allows Express to correctly identify client IPs from X-Forwarded-For headers
+if (process.env.TRUST_PROXY !== 'false') {
+  // In production or when explicitly enabled, trust proxy
+  if (process.env.NODE_ENV === 'production' || process.env.TRUST_PROXY === 'true') {
+    app.set('trust proxy', true);
+  } else {
+    // In development, trust first proxy (useful for local reverse proxies)
+    app.set('trust proxy', 1);
+  }
+}
+
 // Logger (structured, with redaction)
 const logger = pino({
   level: process.env.LOG_LEVEL || (process.env.NODE_ENV === "production" ? "info" : "debug"),

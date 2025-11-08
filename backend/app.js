@@ -388,9 +388,14 @@ app.listen(PORT, async () => {
       console.warn('⚠️  SMTP verification skipped (SMTP_SKIP_VERIFY=true). Email features may not work if SMTP is misconfigured.');
     } else {
       // Run verification in background, don't block startup
+      // Note: Verification failure is not critical - server will continue running
       verifySMTPConnection().then(success => {
         if (success) {
-          console.log('✅ SMTP verification successful');
+          console.log('✅ SMTP verification successful - email features are ready');
+        } else {
+          console.warn('⚠️  SMTP verification failed - server is running but email features may not work');
+          console.warn('   → To skip verification: Set SMTP_SKIP_VERIFY=true in .env');
+          console.warn('   → To test manually: Run node scripts/test-smtp.js');
         }
       }).catch(() => {
         // Error already logged in verifySMTPConnection

@@ -384,8 +384,17 @@ app.listen(PORT, async () => {
         ? status.missing.join(', ') 
         : 'SMTP_HOST, SMTP_USER, SMTP_PASS';
       console.warn(`⚠️  SMTP not configured. Missing: ${missingList}. Email features will not work.`);
+    } else if (process.env.SMTP_SKIP_VERIFY === 'true') {
+      console.warn('⚠️  SMTP verification skipped (SMTP_SKIP_VERIFY=true). Email features may not work if SMTP is misconfigured.');
     } else {
-      verifySMTPConnection().catch(() => {});
+      // Run verification in background, don't block startup
+      verifySMTPConnection().then(success => {
+        if (success) {
+          console.log('✅ SMTP verification successful');
+        }
+      }).catch(() => {
+        // Error already logged in verifySMTPConnection
+      });
     }
   } catch (error) {
     console.error('❌ Failed to check SMTP configuration:', error.message);

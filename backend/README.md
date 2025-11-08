@@ -336,6 +336,14 @@ Detailed documentation is available in the `docs/` directory:
 - **Cloudinary Integration**: Cloud file storage setup and configuration
 - **Profile Photo Upload**: User profile photo management system
 
+### Deployment Documentation (`docs/04-deployment/`)
+- **Deployment Guide**: General deployment instructions for various platforms
+- **Railway Deployment**: Complete guide for deploying to Railway
+- **Railway Environment Checklist**: Environment variable checklist for Railway
+- **Deployment Readiness**: Deployment readiness report and checklist
+- **Deployment Checklist**: Comprehensive pre-deployment checklist
+- **Generate Secrets**: Guide for generating secure secrets
+
 ## 🤝 Contributing
 
 1. Follow the existing code structure

@@ -16,6 +16,9 @@ import { fileURLToPath } from "url"
 // Import cleanup function for deleted news
 import cleanupDeletedNews from "./src/utils/cleanupDeletedNews.js"
 
+// Validate environment variables
+import { logEnvironmentValidation, validateEnvironment } from "./src/utils/envValidation.js"
+
 // Get current directory
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -324,12 +327,29 @@ app.listen(PORT, async () => {
     console.log(`Server running at http://localhost:${PORT}`)
   }
 
+  // Validate environment variables (strict in production)
+  try {
+    if (process.env.NODE_ENV === "production") {
+      validateEnvironment(true); // Fail if required vars are missing in production
+    } else {
+      logEnvironmentValidation(); // Warn in development
+    }
+  } catch (error) {
+    console.error('❌ Environment validation failed:', error.message);
+    if (process.env.NODE_ENV === "production") {
+      process.exit(1);
+    }
+  }
+
   // Initialize database first
   try {
     const db = await import("./src/database.js");
     console.log('✅ Database initialized successfully');
   } catch (error) {
     console.error('❌ Database initialization failed:', error);
+    if (process.env.NODE_ENV === "production") {
+      process.exit(1);
+    }
   }
 
   // Verify SMTP configuration

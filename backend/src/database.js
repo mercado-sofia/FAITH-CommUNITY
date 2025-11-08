@@ -416,7 +416,10 @@ const runIncrementalMigrations = async (connection) => {
     
     if (aboutUsRows.length > 0) {
       for (const row of aboutUsRows) {
-        const categories = JSON.parse(row.extension_categories);
+        // typeCast already parses JSON, so check if it's already an object
+        const categories = typeof row.extension_categories === 'string' 
+          ? JSON.parse(row.extension_categories) 
+          : row.extension_categories;
         const needsUpdate = categories.some(cat => !cat.icon);
         
         if (needsUpdate) {

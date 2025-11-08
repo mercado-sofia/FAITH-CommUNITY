@@ -4,6 +4,20 @@ import NotificationController from '../../admin/controllers/notificationControll
 import { logSuperadminAction } from '../../utils/audit.js';
 import { logError, logWarn, logInfo } from '../../utils/logger.js';
 
+// Helper function to safely parse JSON (typeCast already parses JSON columns, so check if it's already an object)
+const safeParseJSON = (value, defaultValue = null) => {
+  if (!value) return defaultValue;
+  if (typeof value === 'object') return value; // Already parsed by typeCast
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value); // Still a string, parse it
+    } catch (e) {
+      return defaultValue;
+    }
+  }
+  return value;
+};
+
 export const getPendingSubmissions = async (req, res) => {
   try {
     // Get all pending submissions, but exclude collaborative programs that haven't been accepted by all collaborators yet
@@ -52,8 +66,8 @@ export const getPendingSubmissions = async (req, res) => {
     // Parse JSON data for each submission and enrich collaborator data
     const submissions = await Promise.all(rows.map(async (submission) => {
       try {
-        const previousData = JSON.parse(submission.previous_data || '{}');
-        let proposedData = JSON.parse(submission.proposed_data || '{}');
+        const previousData = safeParseJSON(submission.previous_data, {});
+        let proposedData = safeParseJSON(submission.proposed_data, {});
         
         // For program submissions, enrich collaborator data with organization information
         if (submission.section === 'programs' && proposedData.collaborators && Array.isArray(proposedData.collaborators)) {
@@ -166,8 +180,8 @@ export const getAllSubmissions = async (req, res) => {
     // Parse JSON data for each submission and enrich collaborator data
     const submissions = await Promise.all(rows.map(async (submission) => {
       try {
-        const previousData = JSON.parse(submission.previous_data || '{}');
-        let proposedData = JSON.parse(submission.proposed_data || '{}');
+        const previousData = safeParseJSON(submission.previous_data, {});
+        let proposedData = safeParseJSON(submission.proposed_data, {});
         
         // For program submissions, enrich collaborator data with organization information
         if (submission.section === 'programs' && proposedData.collaborators && Array.isArray(proposedData.collaborators)) {
@@ -267,7 +281,7 @@ export const approveSubmission = async (req, res) => {
     // Validate and parse the proposed data
     let data;
     try {
-      data = JSON.parse(submission.proposed_data);
+      data = safeParseJSON(submission.proposed_data, {});
     } catch (parseError) {
       logError('Failed to parse submission data', parseError, { context: 'approval_controller' });
       throw new Error(`Invalid submission data: ${parseError.message}`);
@@ -278,7 +292,7 @@ export const approveSubmission = async (req, res) => {
     let previousData = null;
     if ((!data || Object.keys(data).length === 0) && submission.previous_data) {
       try {
-        previousData = JSON.parse(submission.previous_data);
+        previousData = safeParseJSON(submission.previous_data, {});
         // If previous_data has an action field, use it to determine if this is a deletion
         if (previousData && previousData.action === 'delete') {
           data = previousData; // Use previous_data for deletion approvals
@@ -1083,12 +1097,12 @@ export const rejectSubmission = async (req, res) => {
       try {
         let data;
         try {
-          data = JSON.parse(submission.proposed_data);
+          data = safeParseJSON(submission.proposed_data, {});
         } catch (parseError) {
           // For deletions, proposed_data is empty {}, so check previous_data
           if (submission.previous_data) {
             try {
-              data = JSON.parse(submission.previous_data);
+              data = safeParseJSON(submission.previous_data, {});
             } catch (prevParseError) {
               // Continue if parsing fails
             }
@@ -1129,7 +1143,7 @@ export const rejectSubmission = async (req, res) => {
     // Handle Post Act Report rejection
     if (submission.section === 'Post Act Report') {
       try {
-        const data = JSON.parse(submission.proposed_data);
+        const data = safeParseJSON(submission.proposed_data, {});
         const reportId = data.report_id;
         
         if (reportId) {
@@ -1149,7 +1163,7 @@ export const rejectSubmission = async (req, res) => {
     // Handle program rejection - clean up unapproved programs and collaboration records
     if (submission.section === 'programs') {
       try {
-        const data = JSON.parse(submission.proposed_data);
+        const data = safeParseJSON(submission.proposed_data, {});
         const programId = data.program_id;
         
         if (programId) {
@@ -1232,12 +1246,12 @@ export const rejectSubmission = async (req, res) => {
     try {
       let data;
       try {
-        data = JSON.parse(submission.proposed_data);
+        data = safeParseJSON(submission.proposed_data, {});
       } catch (parseError) {
         // For deletions, proposed_data is empty {}, so check previous_data
         if (submission.previous_data) {
           try {
-            data = JSON.parse(submission.previous_data);
+            data = safeParseJSON(submission.previous_data, {});
           } catch (prevParseError) {
             // Keep the generic message if parsing fails
           }
@@ -1351,7 +1365,7 @@ export const bulkApproveSubmissions = async (req, res) => {
 
         let data;
         try {
-          data = JSON.parse(submission.proposed_data);
+          data = safeParseJSON(submission.proposed_data, {});
         } catch (parseError) {
           errors.push(`Submission ${id} has invalid proposed_data`);
           errorCount++;
@@ -1363,7 +1377,7 @@ export const bulkApproveSubmissions = async (req, res) => {
         let previousData = null;
         if ((!data || Object.keys(data).length === 0) && submission.previous_data) {
           try {
-            previousData = JSON.parse(submission.previous_data);
+            previousData = safeParseJSON(submission.previous_data, {});
             // If previous_data has an action field, use it to determine if this is a deletion
             if (previousData && previousData.action === 'delete') {
               data = previousData; // Use previous_data for deletion approvals
@@ -2082,7 +2096,7 @@ export const bulkRejectSubmissions = async (req, res) => {
         // Handle highlights rejection by updating highlight status
         if (submission.section === 'highlights') {
           try {
-            const data = JSON.parse(submission.proposed_data);
+            const data = safeParseJSON(submission.proposed_data, {});
             if (data.highlight_id) {
               await db.execute(
                 'UPDATE admin_highlights SET status = ? WHERE id = ?',
@@ -2097,7 +2111,7 @@ export const bulkRejectSubmissions = async (req, res) => {
         // Handle Post Act Report rejection
         if (submission.section === 'Post Act Report') {
           try {
-            const data = JSON.parse(submission.proposed_data);
+            const data = safeParseJSON(submission.proposed_data, {});
             const reportId = data.report_id;
             
             if (reportId) {
@@ -2117,7 +2131,7 @@ export const bulkRejectSubmissions = async (req, res) => {
         // Handle program rejection - clean up unapproved programs and collaboration records
         if (submission.section === 'programs') {
           try {
-            const data = JSON.parse(submission.proposed_data);
+            const data = safeParseJSON(submission.proposed_data, {});
             const programId = data.program_id;
             
             if (programId) {
@@ -2198,7 +2212,7 @@ export const bulkRejectSubmissions = async (req, res) => {
         
         // Parse the proposed data to get specific details
         try {
-          const data = JSON.parse(submission.proposed_data);
+          const data = safeParseJSON(submission.proposed_data, {});
           
           // Add specific details for Post Act Report
           if (submission.section === 'Post Act Report') {

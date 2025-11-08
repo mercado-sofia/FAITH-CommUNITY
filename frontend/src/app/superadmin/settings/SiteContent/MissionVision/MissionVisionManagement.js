@@ -41,7 +41,16 @@ export default function MissionVisionManagement({ showSuccessModal }) {
           setTempVision(visionItem?.content || '');
         }
       } catch (error) {
-        showAuthError('Failed to load mission and vision data. Please try again.');
+        console.error('Load error:', error);
+        let errorMessage = 'Failed to load mission and vision data';
+        
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+        }
+        
+        showAuthError(errorMessage);
       } finally {
       }
     };
@@ -141,7 +150,16 @@ export default function MissionVisionManagement({ showSuccessModal }) {
         setIsEditing(false);
       }
     } catch (error) {
-      showAuthError('Failed to update mission and vision. Please try again.');
+      console.error('Update error:', error);
+      let errorMessage = 'Failed to update mission and vision';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+      }
+      
+      showAuthError(errorMessage);
     } finally {
       setIsUpdating(false);
     }

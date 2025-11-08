@@ -158,7 +158,16 @@ export default function AboutUsManagement({ showSuccessModal }) {
             finalImageUrl = await handleImageUpload(selectedFile);
             setSelectedFile(null); // Clear selected file after successful upload
           } catch (error) {
-            showSuccessModal('Failed to upload image. Please try again.');
+            console.error('Image upload error:', error);
+            let errorMessage = 'Failed to upload image';
+            
+            if (error.message) {
+              errorMessage = error.message;
+            } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+              errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+            }
+            
+            showSuccessModal(errorMessage);
             return;
           }
         }
@@ -187,11 +196,28 @@ export default function AboutUsManagement({ showSuccessModal }) {
           setIsEditingAboutUs(false);
           showSuccessModal('About us content updated successfully! The changes will be visible on the public site immediately.');
         } else {
-          const errorData = await response.json();
-          showSuccessModal(errorData.message || 'Failed to update about us content');
+          let errorMessage = 'Failed to update about us content';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+            console.error('Update error response:', errorData);
+          } catch (e) {
+            errorMessage = response.statusText || `Server error (${response.status})`;
+            console.error('Non-JSON error response:', response.status, response.statusText);
+          }
+          showSuccessModal(`${errorMessage} (Status: ${response.status})`);
         }
       } catch (error) {
-        showSuccessModal('Failed to update about us content. Please try again.');
+        console.error('Update error:', error);
+        let errorMessage = 'Failed to update about us content';
+        
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+        }
+        
+        showSuccessModal(errorMessage);
       } finally {
         setIsUpdatingAboutUs(false);
         setShowAboutUsModal(false);
@@ -308,10 +334,35 @@ export default function AboutUsManagement({ showSuccessModal }) {
         const data = await response.json();
         return data.imageUrl; // Return the Cloudinary URL from the response
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to upload image');
+        // Handle 401 responses
+        if (response.status === 401) {
+          throw new Error('Authentication expired. Please log in again.');
+        }
+        
+        // Handle CORS errors (status 0)
+        if (response.status === 0) {
+          throw new Error(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+        }
+        
+        let errorMessage = 'Failed to upload image';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+          console.error('Upload error response:', errorData);
+        } catch (e) {
+          errorMessage = response.statusText || `Server error (${response.status})`;
+          console.error('Non-JSON error response:', response.status, response.statusText);
+        }
+        throw new Error(`${errorMessage} (Status: ${response.status})`);
       }
     } catch (error) {
+      console.error('Upload error:', error);
+      
+      // Network errors, CORS errors, etc.
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error(`Network error: Cannot connect to backend at ${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`);
+      }
+      
       throw error;
     } finally {
       setUploadingImage(false);

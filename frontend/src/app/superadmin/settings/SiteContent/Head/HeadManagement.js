@@ -24,6 +24,7 @@ export default function HeadManagement({ showSuccessModal }) {
   // File upload state
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null); // For immediate preview of selected file
 
   // Load head data
   useEffect(() => {
@@ -50,7 +51,16 @@ export default function HeadManagement({ showSuccessModal }) {
           }
         }
       } catch (error) {
-        showAuthError('Failed to load head data. Please try again.');
+        console.error('Load error:', error);
+        let errorMessage = 'Failed to load head data';
+        
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+        }
+        
+        showAuthError(errorMessage);
       } finally {
         setIsLoading(false);
       }
@@ -63,13 +73,23 @@ export default function HeadManagement({ showSuccessModal }) {
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        showSuccessModal('Please select an image file');
+        return;
+      }
+      
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        showSuccessModal('File size must be less than 5MB');
+        return;
+      }
+      
       setSelectedFile(file);
-      // Create preview URL
-      const previewUrl = URL.createObjectURL(file);
-      setFormData(prev => ({
-        ...prev,
-        image_url: previewUrl
-      }));
+      
+      // Create preview URL for immediate display
+      const preview = URL.createObjectURL(file);
+      setPreviewUrl(preview);
     }
   };
 
@@ -83,7 +103,15 @@ export default function HeadManagement({ showSuccessModal }) {
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
       const token = localStorage.getItem('superAdminToken');
       
-      const response = await fetch(`${baseUrl}/api/superadmin/heads-faces/upload-image`, {
+      if (!token) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+
+      const uploadUrl = `${baseUrl}/api/superadmin/heads-faces/upload-image`;
+      console.log('Uploading to:', uploadUrl);
+      console.log('File size:', file.size, 'bytes');
+
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -95,9 +123,35 @@ export default function HeadManagement({ showSuccessModal }) {
         const data = await response.json();
         return data.data.url;
       } else {
-        throw new Error('Failed to upload image');
+        // Handle 401 responses
+        if (response.status === 401) {
+          throw new Error('Authentication expired. Please log in again.');
+        }
+        
+        // Handle CORS errors (status 0)
+        if (response.status === 0) {
+          throw new Error(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+        }
+        
+        let errorMessage = 'Failed to upload image';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+          console.error('Upload error response:', errorData);
+        } catch (e) {
+          errorMessage = response.statusText || `Server error (${response.status})`;
+          console.error('Non-JSON error response:', response.status, response.statusText);
+        }
+        throw new Error(`${errorMessage} (Status: ${response.status})`);
       }
     } catch (error) {
+      console.error('Upload error:', error);
+      
+      // Network errors, CORS errors, etc.
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error(`Network error: Cannot connect to backend at ${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`);
+      }
+      
       throw error;
     } finally {
       setUploadingImage(false);
@@ -113,7 +167,19 @@ export default function HeadManagement({ showSuccessModal }) {
       
       // Upload image if a new file is selected
       if (selectedFile) {
-        imageUrl = await uploadImage(selectedFile);
+        try {
+          imageUrl = await uploadImage(selectedFile);
+          // Clear preview URL after successful upload
+          if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+            setPreviewUrl(null);
+          }
+        } catch (uploadError) {
+          console.error('Image upload error:', uploadError);
+          showSuccessModal(uploadError.message || 'Failed to upload image. Please try again.');
+          setIsUpdating(false);
+          return;
+        }
       }
       
       const submitData = {
@@ -143,15 +209,38 @@ export default function HeadManagement({ showSuccessModal }) {
           position: data.data.position || 'Head of FACES',
           image_url: data.data.image_url || ''
         });
+        
+        // Clean up preview URL if it still exists
+        if (previewUrl) {
+          URL.revokeObjectURL(previewUrl);
+          setPreviewUrl(null);
+        }
         setSelectedFile(null);
         setIsEditing(false);
         showSuccessModal('Head of FACES updated successfully!');
       } else {
-        const errorData = await response.json();
-        showSuccessModal(errorData.message || 'Failed to update head of FACES');
+        let errorMessage = 'Failed to update head of FACES';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+          console.error('Update error response:', errorData);
+        } catch (e) {
+          errorMessage = response.statusText || `Server error (${response.status})`;
+          console.error('Non-JSON error response:', response.status, response.statusText);
+        }
+        showSuccessModal(`${errorMessage} (Status: ${response.status})`);
       }
     } catch (error) {
-      showSuccessModal('Failed to save head data. Please try again.');
+      console.error('Save error:', error);
+      let errorMessage = 'Failed to save head data';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+      }
+      
+      showSuccessModal(errorMessage);
     } finally {
       setIsUpdating(false);
     }
@@ -160,6 +249,12 @@ export default function HeadManagement({ showSuccessModal }) {
 
   // Handle cancel
   const handleCancel = () => {
+    // Clean up preview URL if it exists
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+    
     if (headData) {
       setFormData({
         name: headData.name || '',
@@ -178,6 +273,15 @@ export default function HeadManagement({ showSuccessModal }) {
     setSelectedFile(null);
     setIsEditing(false);
   };
+  
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   if (isLoading) {
     return (
@@ -229,7 +333,7 @@ export default function HeadManagement({ showSuccessModal }) {
                 onClick={handleSave}
                 disabled={isUpdating || uploadingImage}
               >
-                {isUpdating ? 'Saving...' : 'Save Changes'}
+                {uploadingImage ? 'Uploading Image...' : isUpdating ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           )}
@@ -254,20 +358,37 @@ export default function HeadManagement({ showSuccessModal }) {
             {/* Profile Image Section */}
             <div className={styles.imageSection}>
               <div className={styles.imageContainer}>
-                {formData.image_url ? (
+                {uploadingImage ? (
+                  <div className={styles.uploadingState}>
+                    <div className={styles.loadingSpinner}></div>
+                    <p>Uploading image...</p>
+                  </div>
+                ) : previewUrl ? (
+                  // Show preview of selected file immediately
+                  <Image
+                    src={previewUrl}
+                    alt="Head of FACES Preview"
+                    width={200}
+                    height={200}
+                    className={styles.profileImage}
+                    unoptimized
+                  />
+                ) : formData.image_url ? (
+                  // Show existing image from database
                   <Image
                     src={getOrganizationImageUrl(formData.image_url, 'head')}
                     alt="Head of FACES"
                     width={200}
                     height={200}
                     className={styles.profileImage}
+                    unoptimized
                   />
                 ) : (
                   <div className={styles.placeholderImage}>
                     <span>{formData.name.charAt(0).toUpperCase() || 'H'}</span>
                   </div>
                 )}
-                {isEditing && (
+                {isEditing && !uploadingImage && (
                   <div className={styles.imageOverlay}>
                     <label htmlFor="image-upload" className={styles.uploadButton}>
                       <FiUpload />
@@ -279,6 +400,7 @@ export default function HeadManagement({ showSuccessModal }) {
                       accept="image/*"
                       onChange={handleFileSelect}
                       className={styles.fileInput}
+                      disabled={uploadingImage}
                     />
                   </div>
                 )}

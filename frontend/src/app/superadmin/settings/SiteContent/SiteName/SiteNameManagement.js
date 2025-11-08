@@ -34,7 +34,16 @@ export default function SiteNameManagement({ showSuccessModal }) {
           setTempSiteName(data.data.site_name || '');
         }
       } catch (error) {
-        showAuthError('Failed to load site name data. Please try again.');
+        console.error('Load error:', error);
+        let errorMessage = 'Failed to load site name data';
+        
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+        }
+        
+        showAuthError(errorMessage);
       }
     };
 
@@ -88,11 +97,28 @@ export default function SiteNameManagement({ showSuccessModal }) {
         setIsEditingSiteName(false);
         showSuccessModal('Site name updated successfully! The changes will be visible on the public site immediately.');
       } else {
-        const errorData = await response.json();
-        showSuccessModal(errorData.message || 'Failed to update site name');
+        let errorMessage = 'Failed to update site name';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+          console.error('Update error response:', errorData);
+        } catch (e) {
+          errorMessage = response.statusText || `Server error (${response.status})`;
+          console.error('Non-JSON error response:', response.status, response.statusText);
+        }
+        showSuccessModal(`${errorMessage} (Status: ${response.status})`);
       }
     } catch (error) {
-      showSuccessModal('Failed to update site name. Please try again.');
+      console.error('Update error:', error);
+      let errorMessage = 'Failed to update site name';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+      }
+      
+      showSuccessModal(errorMessage);
     } finally {
       setIsUpdatingSiteName(false);
       setShowSiteNameModal(false);

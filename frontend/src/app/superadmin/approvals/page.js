@@ -126,6 +126,8 @@ const matchesOrganization = (approval, orgAcronym) => {
   }
   
   // Regular organization filtering
+  // For regular organizations, ONLY match if the selected org is the main organization
+  // Do NOT check for collaborators - that functionality is only in "Collab Admin"
   // Check main organization (case-insensitive)
   // The approval data from backend has 'org' field (from o.org in SQL query)
   const mainOrgAcronym = normalizeOrgAcronym(
@@ -135,7 +137,7 @@ const matchesOrganization = (approval, orgAcronym) => {
     ''
   );
   
-  // Direct comparison of normalized acronyms - if main org matches, return true immediately
+  // Only return true if main org matches - no collaborator checking for regular org filters
   if (mainOrgAcronym && mainOrgAcronym === normalizedOrgAcronym) {
     // Debug: Log successful match (remove in production)
     if (process.env.NODE_ENV === 'development') {
@@ -144,58 +146,11 @@ const matchesOrganization = (approval, orgAcronym) => {
     return true;
   }
   
-  // Debug: Log non-match (remove in production)
+  // Main org doesn't match - exclude this approval
+  // Note: We don't check collaborators here - collaborator filtering is only for "Collab Admin"
   if (process.env.NODE_ENV === 'development' && mainOrgAcronym) {
     console.log(`[Filter No Match] Approval ID: ${approval.id}, Org: "${approval.org}", Normalized: "${mainOrgAcronym}", Selected: "${normalizedOrgAcronym}"`);
   }
-
-  // For program submissions ONLY, check if the selected organization is a collaborator
-  // This allows showing programs where the selected org is involved as a collaborator
-  // even if another org is the main organization
-  if (approval.section === 'programs' && approval.proposed_data) {
-    try {
-      const proposedData = typeof approval.proposed_data === 'string' 
-        ? JSON.parse(approval.proposed_data) 
-        : approval.proposed_data;
-      
-      if (proposedData && proposedData.collaborators && Array.isArray(proposedData.collaborators) && proposedData.collaborators.length > 0) {
-        // Check if the selected organization is explicitly listed as a collaborator
-        const hasMatchingCollaborator = proposedData.collaborators.some(collaborator => {
-          // Handle both ID format and object format
-          if (typeof collaborator === 'object' && collaborator !== null) {
-            const collaboratorOrgAcronym = normalizeOrgAcronym(
-              collaborator.organization_acronym ||
-              collaborator.org ||
-              collaborator.org_acronym ||
-              collaborator.organization?.acronym ||
-              collaborator.organization?.org ||
-              collaborator.organization?.org_acronym ||
-              ''
-            );
-            
-            // Only return true if this collaborator's org matches the selected org
-            return collaboratorOrgAcronym && collaboratorOrgAcronym === normalizedOrgAcronym;
-          }
-          return false;
-        });
-        
-        // Only return true if we found a matching collaborator
-        if (hasMatchingCollaborator) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`[Filter Match - Collaborator] Approval ID: ${approval.id}, Main Org: "${mainOrgAcronym}", Selected Org (as collaborator): "${normalizedOrgAcronym}"`);
-          }
-          return true;
-        }
-      }
-    } catch (error) {
-      // If parsing fails, don't include this approval (main org didn't match)
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[Filter Error] Approval ID: ${approval.id}, Error parsing proposed_data:`, error);
-      }
-    }
-  }
-
-  // If main org doesn't match and selected org is not a collaborator, exclude this approval
   return false;
 };
 

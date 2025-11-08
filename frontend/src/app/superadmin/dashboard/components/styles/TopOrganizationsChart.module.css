@@ -72,14 +72,4 @@
   font-weight: 600;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .chartCard {
-    padding: 1.25rem;
-  }
-  
-  .chartContainer {
-    min-height: 250px;
-  }
-}
 

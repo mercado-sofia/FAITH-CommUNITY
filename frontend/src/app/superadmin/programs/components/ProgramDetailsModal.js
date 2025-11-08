@@ -13,9 +13,7 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
 
   // Fetch complete program details when modal opens
   const { 
-    data: fullProgramData, 
-    isLoading: programLoading, 
-    error: programError 
+    data: fullProgramData
   } = useGetProgramByIdQuery(program?.id, {
     skip: !isOpen || !program?.id,
     refetchOnMountOrArgChange: true // Force refetch when modal opens

@@ -158,11 +158,6 @@ export default function PendingApprovalsTable() {
 
   const displayList = organizationFilteredList.slice(0, Math.max(5, organizationFilteredList.length));
 
-  // Format date for display - using same format as approvals page
-  const formatDate = (dateString) => {
-    return formatDateShort(dateString);
-  };
-
   // Get section display name
   const getSectionName = (section) => {
     switch (section) {
@@ -394,7 +389,7 @@ export default function PendingApprovalsTable() {
                 </td>
               )}
               <td>{getSectionName(approval.section)}</td>
-              <td>{formatDate(approval.submitted_at)}</td>
+              <td>{formatDateShort(approval.submitted_at)}</td>
               <td>
                 <span className={`${styles.statusBadge} ${
                   approval.status === 'approved' ? styles.approved : 

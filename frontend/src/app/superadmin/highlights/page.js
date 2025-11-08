@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FiChevronDown } from 'react-icons/fi'
 import { useGetAllHighlightsQuery, useGetHighlightsStatisticsQuery } from '@/rtk/superadmin/highlightsApi'
@@ -209,7 +209,6 @@ const SuperadminHighlightsPage = () => {
   // Process highlights based on active tab
   // Use refreshKey to force re-evaluation when starred highlights change
   let processedHighlights = highlights
-  const _refreshKey = refreshKey // Use refreshKey to trigger re-evaluation
 
   // Apply search filter
   if (searchQuery.trim()) {

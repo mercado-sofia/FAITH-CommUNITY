@@ -419,12 +419,6 @@ ul.options:focus-visible {
   }
 }
 
-@media (max-width: 768px) {
-  .featuredGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
 
 /* Programs Section */
 .programsSection {
@@ -484,23 +478,6 @@ ul.options:focus-visible {
   gap: 2rem;
   position: relative;
   z-index: 1;
-}
-
-.organizationLogo {
-  width: 80px;
-  height: 80px;
-  border-radius: 16px;
-  object-fit: cover;
-  border: 3px solid #e2e8f0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  background: white;
-}
-
-.organizationLogo:hover {
-  transform: scale(1.05);
-  border-color: #cbd5e0;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .orgLogo {
@@ -606,12 +583,6 @@ ul.options:focus-visible {
   }
 }
 
-@media (max-width: 768px) {
-  .programGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
 
 /* Loading and Error States */
 .loadingContainer, .errorContainer {
@@ -661,67 +632,7 @@ ul.options:focus-visible {
 
 /* Responsive Design */
 @media (max-width: 1200px) {
-  .headerRow {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1.5rem;
-  }
-  
   .statsContainer {
     justify-content: flex-end;
-  }
-}
-
-@media (max-width: 768px) {
-  .container {
-    padding: 0 1.5rem 2rem 1.5rem;
-  }
-  
-  .headerTop {
-    gap: 1rem;
-  }
-  
-  .headerRow {
-    gap: 1rem;
-  }
-  
-  .statsContainer {
-    gap: 0.75rem;
-  }
-  
-  .statCard {
-    padding: 1.25rem;
-  }
-  
-  .count {
-    font-size: 1.75rem;
-  }
-  
-  .label {
-    font-size: 0.8125rem;
-  }
-  
-  .navigationTabs {
-    overflow-x: auto;
-  }
-  
-  .navTab {
-    padding: 0.5rem 1rem;
-    white-space: nowrap;
-  }
-}
-
-@media (max-width: 480px) {
-  .statsContainer {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .statCard {
-    max-width: 100%;
-  }
-  
-  .count {
-    font-size: 1.5rem;
   }
 }

@@ -2,6 +2,7 @@
 export { default as PagePreloader } from './layout/PagePreloader';
 export { default as DisableTabOnButtonsLinks } from './layout/DisableTabOnButtonsLinks';
 export { default as SWRProvider } from './providers/SWRProvider';
+export { default as ReduxProvider } from './providers/ReduxProvider';
 export { default as DynamicFavicon } from './layout/DynamicFavicon';
 
 // Auth components

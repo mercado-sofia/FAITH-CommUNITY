@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiX } from 'react-icons/fi';
 import styles from './styles/CreateFAQModal.module.css';
 
@@ -13,7 +13,7 @@ export default function CreateFAQModal({ isOpen, onClose, onCreate, isCreating, 
   });
 
   // Update form when initialData changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialData) {
       setForm({
         question: initialData.question || '',
@@ -142,7 +142,6 @@ export default function CreateFAQModal({ isOpen, onClose, onCreate, isCreating, 
               <span className={styles.errorText}>{errors.answer}</span>
             )}
           </div>
-
 
           <div className={styles.formActions}>
             <button

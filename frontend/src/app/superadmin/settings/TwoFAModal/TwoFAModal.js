@@ -12,7 +12,6 @@ export default function TwoFAModal({
   currentUser 
 }) {
   const [secret, setSecret] = useState("");
-  const [otpauth, setOtpauth] = useState("");
   const [qrCode, setQrCode] = useState("");
   const [showQRCode, setShowQRCode] = useState(false);
   const [token, setToken] = useState("");
@@ -46,7 +45,6 @@ export default function TwoFAModal({
     if (isOpen) {
       setSetupStep(1);
       setSecret("");
-      setOtpauth("");
       setQrCode("");
       setToken("");
       setShowQRCode(false);
@@ -97,7 +95,6 @@ export default function TwoFAModal({
       if (!resp.ok) throw new Error(data?.error || 'Setup failed');
       
       setSecret(data.secret);
-      setOtpauth(data.otpauth);
       setQrCode(data.qrCode || "");
       setSetupStep(2);
       setMessage(data.message);
@@ -168,7 +165,6 @@ export default function TwoFAModal({
       setTwofaEnabled(false);
       setSetupStep(1);
       setSecret("");
-      setOtpauth("");
       setQrCode("");
       setToken("");
       setShowQRCode(false);
@@ -183,7 +179,6 @@ export default function TwoFAModal({
   const resetSetup = () => {
     setSetupStep(1);
     setSecret("");
-    setOtpauth("");
     setQrCode("");
     setToken("");
     setShowQRCode(false);

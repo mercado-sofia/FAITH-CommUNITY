@@ -361,7 +361,7 @@ export default function TopBar({
   };
 
   // Determine sidebar width based on user type
-  const sidebarWidth = userType === USER_TYPES.ADMIN ? '260' : '250';
+  const sidebarWidth = '260';
 
   return (
     <div className={styles.topBar} data-sidebar-width={sidebarWidth}>

@@ -1,7 +1,6 @@
 import "./globals.css";
 import { Inter, Poppins, Urbanist, Roboto } from "next/font/google";
-import { LoaderWrapper, DisableTabOnButtonsLinks, SWRProvider } from "@/components";
-import ReduxProvider from "./ReduxProvider";
+import { LoaderWrapper, DisableTabOnButtonsLinks, SWRProvider, ReduxProvider } from "@/components";
 import '../utils/devTools';
 
 const inter = Inter({ 

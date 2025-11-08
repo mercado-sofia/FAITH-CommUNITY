@@ -312,28 +312,3 @@
   font-size: 0.85rem;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .container {
-    padding: 1rem;
-  }
-  
-  .pageTitle {
-    font-size: 2rem;
-  }
-  
-  .headerTop {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-  }
-  
-  .projectsGrid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .projectCard {
-    margin: 0;
-  }
-}

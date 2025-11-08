@@ -97,13 +97,8 @@
 .warningIcon {
   display: flex;
   justify-content: center;
-  margin-bottom: 16px;
-}
-
-.warningIcon {
-  display: flex;
-  justify-content: center;
   align-items: center;
+  margin-bottom: 16px;
 }
 
 .warningIcon svg {
@@ -211,36 +206,3 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Mobile Responsive */
-@media (max-width: 768px) {
-  .modalOverlay {
-    padding: 16px;
-  }
-
-  .modalContent {
-    max-width: 100%;
-  }
-
-  .modalHeader {
-    padding: 20px 20px 0 20px;
-  }
-
-  .modalTitle {
-    font-size: 1.125rem;
-  }
-
-  .modalBody {
-    padding: 0 20px 20px 20px;
-  }
-
-  .modalFooter {
-    padding: 0 20px 20px 20px;
-    flex-direction: column;
-  }
-
-  .cancelButton,
-  .confirmButton {
-    width: 100%;
-    justify-content: center;
-  }
-}

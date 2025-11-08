@@ -191,30 +191,3 @@
   box-shadow: none;
 }
 
-/* Responsive Design */
-@media (max-width: 640px) {
-  .modalOverlay {
-    padding: 10px;
-  }
-
-  .modalContent {
-    max-width: 100%;
-  }
-
-  .modalHeader {
-    padding: 20px 20px 0 20px;
-  }
-
-  .modalBody {
-    padding: 0 20px 20px 20px;
-  }
-
-  .modalActions {
-    flex-direction: column;
-  }
-
-  .inviteButton {
-    width: 100%;
-    justify-content: center;
-  }
-}

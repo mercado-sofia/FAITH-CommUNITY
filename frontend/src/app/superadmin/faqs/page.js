@@ -253,11 +253,10 @@ export default function ManageFaqs() {
     updateURLParams({ page });
   }, [updateURLParams]);
 
-
   // Loading and error states
   if (isFetching) {
     return (
-      <div className={styles.mainArea}>
+      <div className={styles.container}>
         <div className={styles.loading}>Loading FAQs...</div>
       </div>
     );
@@ -265,7 +264,7 @@ export default function ManageFaqs() {
 
   if (fetchError) {
     return (
-      <div className={styles.mainArea}>
+      <div className={styles.container}>
         <div className={styles.error}>
           <h2>Error loading FAQs</h2>
           <p>{fetchError?.data?.error || fetchError?.message || 'Failed to fetch data'}</p>
@@ -306,7 +305,6 @@ export default function ManageFaqs() {
         onSelectItem={handleSelectItem}
         isDeleting={isDeleting}
         isUpdating={isUpdating}
-        itemsPerPage={showEntries}
         startIndex={startIndex}
       />
 

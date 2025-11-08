@@ -16,11 +16,6 @@ const AdminDetailsModal = ({
 
   if (!isOpen || !adminData) return null;
 
-  // Using centralized date utility - format remains exactly the same
-  const formatDate = (dateString) => {
-    return formatDateTime(dateString);
-  };
-
   const getStatusIcon = (adminData) => {
     // If invitation is accepted but admin is inactive, show inactive icon
     if (adminData.status === 'accepted' && (adminData.admin_is_active === false || adminData.admin_is_active === 0)) {
@@ -174,7 +169,7 @@ const AdminDetailsModal = ({
                       <FiCalendar className={styles.infoIcon} />
                       <div className={styles.infoContent}>
                         <label>Invitation Sent</label>
-                        <span className={styles.infoValue}>{formatDate(adminData.created_at)}</span>
+                        <span className={styles.infoValue}>{formatDateTime(adminData.created_at)}</span>
                       </div>
                     </div>
                   </div>
@@ -184,7 +179,7 @@ const AdminDetailsModal = ({
                       <FiCalendar className={styles.infoIcon} />
                       <div className={styles.infoContent}>
                         <label>Expires</label>
-                        <span className={styles.infoValue}>{formatDate(adminData.expires_at)}</span>
+                        <span className={styles.infoValue}>{formatDateTime(adminData.expires_at)}</span>
                       </div>
                     </div>
                   </div>
@@ -195,7 +190,7 @@ const AdminDetailsModal = ({
                         <FiCheckCircle className={styles.infoIcon} />
                         <div className={styles.infoContent}>
                           <label>Accepted</label>
-                          <span className={styles.infoValue}>{formatDate(adminData.accepted_at)}</span>
+                          <span className={styles.infoValue}>{formatDateTime(adminData.accepted_at)}</span>
                         </div>
                       </div>
                     </div>

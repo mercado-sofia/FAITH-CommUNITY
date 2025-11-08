@@ -58,8 +58,6 @@ const StarButton = ({ programId, programTitle }) => {
       refetchStatus()
     } catch (error) {
       // Handle error silently in production
-      // Show user-friendly error message
-      // Handle error silently in production
     } finally {
       setIsLoading(false)
     }
@@ -77,8 +75,6 @@ const StarButton = ({ programId, programTitle }) => {
       // Refetch status to ensure consistency
       refetchStatus()
     } catch (error) {
-      // Handle error silently in production
-      // Show user-friendly error message
       // Handle error silently in production
     } finally {
       setIsLoading(false)

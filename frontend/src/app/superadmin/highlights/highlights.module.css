@@ -379,12 +379,6 @@
   }
 }
 
-@media (max-width: 768px) {
-  .highlightsGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* Empty State */
 .emptyState {
   display: flex;
@@ -454,68 +448,8 @@
 
 /* Responsive Design */
 @media (max-width: 1200px) {
-  .headerRow {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1.5rem;
-  }
-  
   .statsContainer {
     justify-content: flex-end;
-  }
-}
-
-@media (max-width: 768px) {
-  .container {
-    padding: 0 1.5rem 2rem 1.5rem;
-  }
-  
-  .headerTop {
-    gap: 1rem;
-  }
-  
-  .headerRow {
-    gap: 1rem;
-  }
-  
-  .statsContainer {
-    gap: 0.75rem;
-  }
-  
-  .statCard {
-    padding: 1.25rem;
-  }
-  
-  .count {
-    font-size: 1.75rem;
-  }
-  
-  .label {
-    font-size: 0.8125rem;
-  }
-  
-  .navigationTabs {
-    overflow-x: auto;
-  }
-  
-  .navTab {
-    padding: 0.5rem 1rem;
-    white-space: nowrap;
-  }
-}
-
-@media (max-width: 480px) {
-  .statsContainer {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .statCard {
-    max-width: 100%;
-  }
-  
-  .count {
-    font-size: 1.5rem;
   }
 }
 

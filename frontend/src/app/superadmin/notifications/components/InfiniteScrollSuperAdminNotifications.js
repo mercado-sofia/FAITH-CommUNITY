@@ -1,11 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
-import { selectCurrentSuperAdmin } from '../../../../rtk/superadmin/adminSlice';
 import { useGetSuperAdminNotificationsQuery } from '../../../../rtk/superadmin/superadminNotificationsApi';
-import { FiTrash2, FiEye, FiClock, FiUser } from 'react-icons/fi';
+import { FiTrash2, FiEye, FiClock } from 'react-icons/fi';
 import Image from 'next/image';
 import { getOrganizationImageUrl } from '@/utils/uploadPaths';
 import { SkeletonLoader } from '../../components';
@@ -19,7 +17,6 @@ export default function InfiniteScrollSuperAdminNotifications({
   onMarkAsRead,
   onDeleteClick
 }) {
-  const currentSuperAdmin = useSelector(selectCurrentSuperAdmin);
   const router = useRouter();
   const [allNotifications, setAllNotifications] = useState([]);
   const [hasNextPage, setHasNextPage] = useState(true);

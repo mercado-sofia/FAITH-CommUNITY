@@ -63,7 +63,16 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           }
         }
       } catch (error) {
-        showAuthError('Failed to load hero section data. Please try again.');
+        console.error('Load error:', error);
+        let errorMessage = 'Failed to load hero section data';
+        
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+        }
+        
+        showAuthError(errorMessage);
       } finally {
       }
     };
@@ -128,11 +137,28 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         }));
         showSuccessModal(`${field === 'tag' ? 'Tag' : 'Heading'} updated successfully!`);
       } else {
-        const errorData = await response.json();
-        showSuccessModal(errorData.message || `Failed to update ${field}`);
+        let errorMessage = `Failed to update ${field}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+          console.error('Update error response:', errorData);
+        } catch (e) {
+          errorMessage = response.statusText || `Server error (${response.status})`;
+          console.error('Non-JSON error response:', response.status, response.statusText);
+        }
+        showSuccessModal(`${errorMessage} (Status: ${response.status})`);
       }
     } catch (error) {
-      showSuccessModal(`Failed to update ${field}. Please try again.`);
+      console.error('Update error:', error);
+      let errorMessage = `Failed to update ${field}`;
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+      }
+      
+      showSuccessModal(errorMessage);
     } finally {
       setIsUpdating(false);
     }
@@ -223,23 +249,43 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           return data.data[`${type}_url`];
         }
       } else {
+        // Handle 401 responses
         if (response.status === 401) {
           showSuccessModal('Authentication expired. Please log in again.');
+          return null;
+        }
+        
+        // Handle CORS errors (status 0)
+        if (response.status === 0) {
+          console.error('CORS or network error detected');
+          showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
           return null;
         }
         
         let errorMessage = `Failed to upload ${type}`;
         try {
           const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
+          errorMessage = errorData.message || errorData.error || errorMessage;
+          console.error('Upload error response:', errorData);
         } catch (e) {
-          errorMessage = response.statusText || errorMessage;
+          errorMessage = response.statusText || `Server error (${response.status})`;
+          console.error('Non-JSON error response:', response.status, response.statusText);
         }
-        showSuccessModal(errorMessage);
+        showSuccessModal(`${errorMessage} (Status: ${response.status})`);
         return null;
       }
     } catch (error) {
-      showSuccessModal(`Failed to upload ${type}. Please try again.`);
+      // Network errors, CORS errors, etc.
+      console.error('Upload error:', error);
+      let errorMessage = `Failed to upload ${type}`;
+      
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = `Network error: Cannot connect to backend at ${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+      } else if (error.message) {
+        errorMessage = `${errorMessage}: ${error.message}`;
+      }
+      
+      showSuccessModal(errorMessage);
       return null;
     } finally {
       // Clear loading state
@@ -317,11 +363,28 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           showSuccessModal(`${deleteType.type === 'video' ? 'Video' : 'File'} deleted successfully!`);
         }
       } else {
-        const errorData = await response.json();
-        showSuccessModal(errorData.message || `Failed to delete ${deleteType.type}`);
+        let errorMessage = `Failed to delete ${deleteType.type}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+          console.error('Delete error response:', errorData);
+        } catch (e) {
+          errorMessage = response.statusText || `Server error (${response.status})`;
+          console.error('Non-JSON error response:', response.status, response.statusText);
+        }
+        showSuccessModal(`${errorMessage} (Status: ${response.status})`);
       }
     } catch (error) {
-      showSuccessModal(`Failed to delete ${deleteType.type}. Please try again.`);
+      console.error('Delete error:', error);
+      let errorMessage = `Failed to delete ${deleteType.type}`;
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+      }
+      
+      showSuccessModal(errorMessage);
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
@@ -419,11 +482,28 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           setIsEditingHero(false);
           showSuccessModal('Hero section updated successfully! The changes will be visible on the public site immediately.');
         } else {
-          const errorData = await response.json();
-          showSuccessModal(errorData.message || 'Failed to update hero section');
+          let errorMessage = 'Failed to update hero section';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+            console.error('Update hero error response:', errorData);
+          } catch (e) {
+            errorMessage = response.statusText || `Server error (${response.status})`;
+            console.error('Non-JSON error response:', response.status, response.statusText);
+          }
+          showSuccessModal(`${errorMessage} (Status: ${response.status})`);
         }
       } catch (error) {
-        showSuccessModal('Failed to update hero section. Please try again.');
+        console.error('Update hero error:', error);
+        let errorMessage = 'Failed to update hero section';
+        
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+        }
+        
+        showSuccessModal(errorMessage);
       } finally {
         setIsUpdatingHero(false);
         setShowHeroModal(false);

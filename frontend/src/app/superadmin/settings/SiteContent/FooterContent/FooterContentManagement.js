@@ -128,7 +128,16 @@ export default function FooterContentManagement({ showSuccessModal }) {
           setTempServices(servicesData);
         }
       } catch (error) {
-        showAuthError('Failed to load footer data. Please try again.');
+        console.error('Load error:', error);
+        let errorMessage = 'Failed to load footer data';
+        
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+        }
+        
+        showAuthError(errorMessage);
       }
     };
 
@@ -225,11 +234,28 @@ export default function FooterContentManagement({ showSuccessModal }) {
         setNewService('');
         showSuccessModal('Service added successfully!');
       } else {
-        const errorData = await response.json();
-        showSuccessModal(errorData.message || 'Failed to add service');
+        let errorMessage = 'Failed to add service';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+          console.error('Add service error response:', errorData);
+        } catch (e) {
+          errorMessage = response.statusText || `Server error (${response.status})`;
+          console.error('Non-JSON error response:', response.status, response.statusText);
+        }
+        showSuccessModal(`${errorMessage} (Status: ${response.status})`);
       }
     } catch (error) {
-      showSuccessModal('Failed to add service. Please try again.');
+      console.error('Add service error:', error);
+      let errorMessage = 'Failed to add service';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+      }
+      
+      showSuccessModal(errorMessage);
     } finally {
       setIsUpdatingFooter(false);
     }
@@ -256,11 +282,28 @@ export default function FooterContentManagement({ showSuccessModal }) {
         setServices(prev => prev.filter(service => service.id !== serviceToDelete.id));
         showSuccessModal('Service deleted successfully!');
       } else {
-        const errorData = await response.json();
-        showSuccessModal(errorData.message || 'Failed to delete service');
+        let errorMessage = 'Failed to delete service';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+          console.error('Delete service error response:', errorData);
+        } catch (e) {
+          errorMessage = response.statusText || `Server error (${response.status})`;
+          console.error('Non-JSON error response:', response.status, response.statusText);
+        }
+        showSuccessModal(`${errorMessage} (Status: ${response.status})`);
       }
     } catch (error) {
-      showSuccessModal('Failed to delete service. Please try again.');
+      console.error('Delete service error:', error);
+      let errorMessage = 'Failed to delete service';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+      }
+      
+      showSuccessModal(errorMessage);
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
@@ -312,11 +355,28 @@ export default function FooterContentManagement({ showSuccessModal }) {
       if (response && response.ok) {
         showSuccessModal('Footer content updated successfully! The changes will be visible on the public site immediately.');
       } else {
-        const errorData = await response.json();
-        showSuccessModal(errorData.message || 'Failed to update footer content');
+        let errorMessage = 'Failed to update footer content';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+          console.error('Update error response:', errorData);
+        } catch (e) {
+          errorMessage = response.statusText || `Server error (${response.status})`;
+          console.error('Non-JSON error response:', response.status, response.statusText);
+        }
+        showSuccessModal(`${errorMessage} (Status: ${response.status})`);
       }
     } catch (error) {
-      showSuccessModal('Failed to update footer content. Please try again.');
+      console.error('Update error:', error);
+      let errorMessage = 'Failed to update footer content';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+      }
+      
+      showSuccessModal(errorMessage);
     } finally {
       setIsUpdatingFooter(false);
       setShowFooterModal(false);
@@ -433,7 +493,16 @@ export default function FooterContentManagement({ showSuccessModal }) {
       setIsEditingServices(false);
       showSuccessModal('Services updated successfully! The changes will be visible on the public site immediately.');
     } catch (error) {
-      showSuccessModal('Failed to update services. Please try again.');
+      console.error('Update services error:', error);
+      let errorMessage = 'Failed to update services';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+      }
+      
+      showSuccessModal(errorMessage);
     }
   };
 
@@ -496,11 +565,28 @@ export default function FooterContentManagement({ showSuccessModal }) {
         }
         showSuccessModal('Footer content updated successfully! The changes will be visible on the public site immediately.');
       } else {
-        const errorData = await response.json();
-        showSuccessModal(errorData.message || 'Failed to update footer content');
+        let errorMessage = 'Failed to update footer content';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+          console.error('Update footer error response:', errorData);
+        } catch (e) {
+          errorMessage = response.statusText || `Server error (${response.status})`;
+          console.error('Non-JSON error response:', response.status, response.statusText);
+        }
+        showSuccessModal(`${errorMessage} (Status: ${response.status})`);
       }
     } catch (error) {
-      showSuccessModal('Failed to update footer content. Please try again.');
+      console.error('Update footer error:', error);
+      let errorMessage = 'Failed to update footer content';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+      }
+      
+      showSuccessModal(errorMessage);
     } finally {
       setIsUpdatingFooter(false);
     }

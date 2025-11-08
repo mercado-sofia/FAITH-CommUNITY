@@ -5,16 +5,63 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true
-});
+// Check if Cloudinary is configured
+export const isCloudinaryConfigured = () => {
+  return !!(
+    process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
+    process.env.CLOUDINARY_API_KEY?.trim() &&
+    process.env.CLOUDINARY_API_SECRET?.trim()
+  );
+};
+
+// Get Cloudinary configuration status
+export const getCloudinaryStatus = () => {
+  const configured = isCloudinaryConfigured();
+  const missing = [];
+  
+  if (!process.env.CLOUDINARY_CLOUD_NAME?.trim()) missing.push('CLOUDINARY_CLOUD_NAME');
+  if (!process.env.CLOUDINARY_API_KEY?.trim()) missing.push('CLOUDINARY_API_KEY');
+  if (!process.env.CLOUDINARY_API_SECRET?.trim()) missing.push('CLOUDINARY_API_SECRET');
+  
+  return {
+    configured,
+    missing,
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME?.trim() || 'not set',
+    api_key: process.env.CLOUDINARY_API_KEY?.trim() ? '***' + process.env.CLOUDINARY_API_KEY.slice(-4) : 'not set',
+  };
+};
+
+// Configure Cloudinary (only if credentials are available)
+if (isCloudinaryConfigured()) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME?.trim(),
+    api_key: process.env.CLOUDINARY_API_KEY?.trim(),
+    api_secret: process.env.CLOUDINARY_API_SECRET?.trim(),
+    secure: true
+  });
+} else {
+  console.warn('⚠️  Cloudinary not configured. Missing:', getCloudinaryStatus().missing.join(', '));
+  console.warn('   → File upload features will not work until Cloudinary is configured');
+}
 
 // Test Cloudinary connection
 export const testCloudinaryConnection = async () => {
+  if (!isCloudinaryConfigured()) {
+    const status = getCloudinaryStatus();
+    console.error('Cloudinary not configured. Missing:', status.missing.join(', '));
+    return false;
+  }
+
+  // Reconfigure if needed
+  if (!cloudinary.config().api_key) {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME?.trim(),
+      api_key: process.env.CLOUDINARY_API_KEY?.trim(),
+      api_secret: process.env.CLOUDINARY_API_SECRET?.trim(),
+      secure: true
+    });
+  }
+
   try {
     const result = await cloudinary.api.ping();
     return true;
@@ -26,6 +73,25 @@ export const testCloudinaryConnection = async () => {
 
 // Upload buffer to Cloudinary
 export const uploadBufferToCloudinary = (buffer, options = {}) => {
+  // Check if Cloudinary is configured
+  if (!isCloudinaryConfigured()) {
+    const status = getCloudinaryStatus();
+    const error = new Error(`Cloudinary not configured. Missing: ${status.missing.join(', ')}`);
+    error.code = 'CLOUDINARY_NOT_CONFIGURED';
+    error.status = status;
+    return Promise.reject(error);
+  }
+
+  // Reconfigure if needed (in case env vars were loaded after module initialization)
+  if (!cloudinary.config().api_key) {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME?.trim(),
+      api_key: process.env.CLOUDINARY_API_KEY?.trim(),
+      api_secret: process.env.CLOUDINARY_API_SECRET?.trim(),
+      secure: true
+    });
+  }
+
   return new Promise((resolve, reject) => {
     // Use provided resource_type or default to 'auto'
     // 'auto' detects image/video/raw automatically
@@ -40,6 +106,7 @@ export const uploadBufferToCloudinary = (buffer, options = {}) => {
       },
       (error, result) => {
         if (error) {
+          console.error('Error uploading to Cloudinary:', error);
           reject(error);
         } else {
           resolve(result);
@@ -53,6 +120,25 @@ export const uploadBufferToCloudinary = (buffer, options = {}) => {
 
 // Upload file from path to Cloudinary
 export const uploadFileToCloudinary = (filePath, options = {}) => {
+  // Check if Cloudinary is configured
+  if (!isCloudinaryConfigured()) {
+    const status = getCloudinaryStatus();
+    const error = new Error(`Cloudinary not configured. Missing: ${status.missing.join(', ')}`);
+    error.code = 'CLOUDINARY_NOT_CONFIGURED';
+    error.status = status;
+    return Promise.reject(error);
+  }
+
+  // Reconfigure if needed
+  if (!cloudinary.config().api_key) {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME?.trim(),
+      api_key: process.env.CLOUDINARY_API_KEY?.trim(),
+      api_secret: process.env.CLOUDINARY_API_SECRET?.trim(),
+      secure: true
+    });
+  }
+
   return cloudinary.uploader.upload(filePath, {
     resource_type: 'auto',
     folder: options.folder || 'faith-community',
@@ -65,6 +151,25 @@ export const uploadFileToCloudinary = (filePath, options = {}) => {
 // Delete file from Cloudinary
 // If resource_type is not provided, try both 'image' and 'raw'
 export const deleteFromCloudinary = async (publicId, options = {}) => {
+  // Check if Cloudinary is configured
+  if (!isCloudinaryConfigured()) {
+    const status = getCloudinaryStatus();
+    const error = new Error(`Cloudinary not configured. Missing: ${status.missing.join(', ')}`);
+    error.code = 'CLOUDINARY_NOT_CONFIGURED';
+    error.status = status;
+    throw error;
+  }
+
+  // Reconfigure if needed
+  if (!cloudinary.config().api_key) {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME?.trim(),
+      api_key: process.env.CLOUDINARY_API_KEY?.trim(),
+      api_secret: process.env.CLOUDINARY_API_SECRET?.trim(),
+      secure: true
+    });
+  }
+
   try {
     // If resource_type is explicitly provided, use it
     if (options.resource_type) {

@@ -1,23 +1,28 @@
 import nodemailer from "nodemailer";
 
 function isSMTPConfigured() {
-  return !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+  return !!(
+    process.env.SMTP_HOST?.trim() && 
+    process.env.SMTP_USER?.trim() && 
+    process.env.SMTP_PASS?.trim()
+  );
 }
 
 export function getSMTPStatus() {
   const configured = isSMTPConfigured();
   const missing = [];
   
-  if (!process.env.SMTP_HOST) missing.push('SMTP_HOST');
-  if (!process.env.SMTP_USER) missing.push('SMTP_USER');
-  if (!process.env.SMTP_PASS) missing.push('SMTP_PASS');
+  // Check if each variable is set and not empty (after trimming whitespace)
+  if (!process.env.SMTP_HOST?.trim()) missing.push('SMTP_HOST');
+  if (!process.env.SMTP_USER?.trim()) missing.push('SMTP_USER');
+  if (!process.env.SMTP_PASS?.trim()) missing.push('SMTP_PASS');
   
   return {
     configured,
     missing,
-    host: process.env.SMTP_HOST || 'not set',
+    host: process.env.SMTP_HOST?.trim() || 'not set',
     port: process.env.SMTP_PORT || '587 (default)',
-    user: process.env.SMTP_USER || 'not set',
+    user: process.env.SMTP_USER?.trim() || 'not set',
   };
 }
 
@@ -29,7 +34,7 @@ function createTransporter() {
   }
 
   try {
-g    // Configurable timeout values (default: 15 seconds)
+    // Configurable timeout values (default: 15 seconds)
     const connectionTimeout = Number(process.env.SMTP_CONNECTION_TIMEOUT) || 15000;
     const greetingTimeout = Number(process.env.SMTP_GREETING_TIMEOUT) || 15000;
     const socketTimeout = Number(process.env.SMTP_SOCKET_TIMEOUT) || 15000;
@@ -61,7 +66,10 @@ mailer = createTransporter();
 export async function verifySMTPConnection() {
   if (!mailer) {
     const status = getSMTPStatus();
-    console.error('❌ SMTP not configured. Missing:', status.missing.join(', '));
+    const missingList = status.missing.length > 0 
+      ? status.missing.join(', ') 
+      : 'SMTP_HOST, SMTP_USER, SMTP_PASS';
+    console.error('❌ SMTP not configured. Missing:', missingList);
     return false;
   }
 

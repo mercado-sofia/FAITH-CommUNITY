@@ -62,7 +62,9 @@ export const upsertMissionVision = async (req, res) => {
     );
     
     let result;
-    if (existing.length > 0) {
+    const wasExisting = existing.length > 0;
+    
+    if (wasExisting) {
       // Update existing entry
       await db.query(
         "UPDATE mission_vision SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -71,6 +73,11 @@ export const upsertMissionVision = async (req, res) => {
       
       // Fetch updated data
       const [updated] = await db.query('SELECT * FROM mission_vision WHERE id = ?', [existing[0].id]);
+      
+      if (!updated || updated.length === 0) {
+        throw new Error('Failed to fetch updated mission/vision entry');
+      }
+      
       result = updated[0];
     } else {
       // Insert new entry
@@ -79,9 +86,22 @@ export const upsertMissionVision = async (req, res) => {
         [normalizedType, content || null]
       );
       
+      if (!insertResult || !insertResult.insertId) {
+        throw new Error('Failed to insert mission/vision entry');
+      }
+      
       // Fetch inserted data
       const [inserted] = await db.query('SELECT * FROM mission_vision WHERE id = ?', [insertResult.insertId]);
+      
+      if (!inserted || inserted.length === 0) {
+        throw new Error('Failed to fetch inserted mission/vision entry');
+      }
+      
       result = inserted[0];
+    }
+    
+    if (!result) {
+      throw new Error('Failed to retrieve mission/vision entry after operation');
     }
     
     // Capitalize type for frontend response
@@ -89,7 +109,7 @@ export const upsertMissionVision = async (req, res) => {
     
     res.json({ 
       success: true,
-      message: existing.length > 0 ? 'Entry updated' : 'Entry created', 
+      message: wasExisting ? 'Entry updated' : 'Entry created', 
       data: responseData
     });
   } catch (err) {

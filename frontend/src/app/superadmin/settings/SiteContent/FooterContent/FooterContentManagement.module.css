@@ -176,6 +176,7 @@
   font-family: var(--font-poppins), sans-serif;
   width: 100%;
   min-width: 0;
+  margin-top: 0.5rem;
 }
 
 .socialUrlInput:focus {
@@ -491,6 +492,10 @@
   gap: 1rem;
 }
 
+.socialMediaItem:has(.socialMediaHeader) {
+  align-items: flex-start;
+}
+
 .socialMediaItem:hover {
   border-color: #d1d5db;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -498,19 +503,26 @@
 
 .socialMediaInfo {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 0.75rem;
   flex: 1;
   min-width: 0;
+}
+
+.socialMediaHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 .socialMediaIcon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
   background: #f8f9fa;
   flex-shrink: 0;
 }
@@ -529,6 +541,7 @@
   font-weight: 600;
   color: #374151;
   font-family: var(--font-poppins), sans-serif;
+  white-space: nowrap;
 }
 
 .socialMediaUrl {
@@ -539,25 +552,25 @@
 }
 
 .removeSocialBtn {
-  color: #dc2626;
-  background-color: #fef2f2;
-  border: 2px solid #dc2626;
-  border-radius: 8px;
-  padding: 0.5rem;
+  color: #6b7280;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0.375rem;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 36px;
-  height: 36px;
+  min-width: 28px;
+  height: 28px;
   flex-shrink: 0;
 }
 
 .removeSocialBtn:hover {
-  background: #ffe1e1;
-  color: #dc2626;
-  border-color: #dc2626;
+  background: #e5e7eb;
+  color: #374151;
+  border-color: #9ca3af;
 }
 
 .addSocialBtn {

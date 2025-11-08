@@ -158,7 +158,7 @@
 .headCard {
   display: flex;
   gap: 2rem;
-  align-items: flex-start;
+  align-items: center;
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;

@@ -203,11 +203,11 @@ export const uploadHeadsFacesImage = async (req, res) => {
         [imageUrl, existingHeads[0].id]
       );
     } else {
-      // Don't auto-create head when uploading image - user should create head first
-      return res.status(400).json({
-        success: false,
-        message: 'No head of FACES exists. Please create a head first before uploading an image.'
-      });
+      // Auto-create head with default values if it doesn't exist (single profile approach)
+      await db.query(
+        "INSERT INTO heads_faces (name, description, image_url, position) VALUES (?, ?, ?, ?)",
+        ['Head of FACES', null, imageUrl, 'Head of FACES']
+      );
     }
 
     res.status(200).json({

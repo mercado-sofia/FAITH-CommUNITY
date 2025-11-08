@@ -808,12 +808,12 @@ const initializeDatabase = async () => {
           event_end_date DATE NULL,
           date_completed DATE NULL,
           is_featured BOOLEAN DEFAULT FALSE,
-          is_approved BOOLEAN DEFAULT FALSE, // SECURITY FIX: Require explicit approval
+          is_approved BOOLEAN DEFAULT FALSE,
           is_collaborative BOOLEAN DEFAULT FALSE,
-          accepts_volunteers BOOLEAN DEFAULT TRUE, // Controls whether program accepts volunteer applications
-          manual_status_override BOOLEAN DEFAULT FALSE, // Indicates if admin manually set the status
-          submitted_by_name VARCHAR(100) NULL, // Name of the officer who submitted the program
-          submitted_by_role VARCHAR(100) NULL, // Role/position of the officer who submitted the program
+          accepts_volunteers BOOLEAN DEFAULT TRUE,
+          manual_status_override BOOLEAN DEFAULT FALSE,
+          submitted_by_name VARCHAR(100) NULL,
+          submitted_by_role VARCHAR(100) NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,

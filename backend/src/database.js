@@ -1262,7 +1262,7 @@ const initializeDatabase = async () => {
         CREATE TABLE IF NOT EXISTS hero_section (
           id INT AUTO_INCREMENT PRIMARY KEY,
           tag VARCHAR(255) DEFAULT 'Welcome to FAITH CommUNITY',
-          heading TEXT DEFAULT 'A Unified Platform for Community Extension Programs',
+          heading TEXT NULL,
           video_url VARCHAR(500) NULL,
           video_link VARCHAR(500) NULL,
           video_type ENUM('upload', 'link') DEFAULT 'upload',
@@ -1289,14 +1289,9 @@ const initializeDatabase = async () => {
       await connection.query(`
         CREATE TABLE IF NOT EXISTS about_us (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          heading TEXT DEFAULT NULL,
-          description TEXT DEFAULT NULL,
-          extension_categories JSON DEFAULT '[
-            {"name": "Extension For Education", "icon": "education", "color": "green"},
-            {"name": "Extension For Medical", "icon": "medical", "color": "red"},
-            {"name": "Extension For Community", "icon": "community", "color": "orange"},
-            {"name": "Extension For Foods", "icon": "food", "color": "green"}
-          ]',
+          heading TEXT NULL,
+          description TEXT NULL,
+          extension_categories JSON DEFAULT '[{"name": "Extension For Education", "icon": "education", "color": "green"}, {"name": "Extension For Medical", "icon": "medical", "color": "red"}, {"name": "Extension For Community", "icon": "community", "color": "orange"}, {"name": "Extension For Foods", "icon": "food", "color": "green"}]',
           image_url VARCHAR(500) DEFAULT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

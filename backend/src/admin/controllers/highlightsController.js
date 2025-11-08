@@ -1,6 +1,20 @@
 //db table: admin_highlights
 import promisePool from '../../database.js';
 
+// Helper function to safely parse JSON (typeCast already parses JSON columns, so check if it's already an object)
+const safeParseJSON = (value, defaultValue = null) => {
+  if (!value) return defaultValue;
+  if (typeof value === 'object') return value; // Already parsed by typeCast
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value); // Still a string, parse it
+    } catch (e) {
+      return defaultValue;
+    }
+  }
+  return value;
+};
+
 // Get all highlights for an admin's organization
 export const getAdminHighlights = async (req, res) => {
   try {
@@ -27,7 +41,7 @@ export const getAdminHighlights = async (req, res) => {
     // Parse JSON media_files and format the data
     const highlights = rows.map(highlight => ({
       ...highlight,
-      media: highlight.media_files ? JSON.parse(highlight.media_files) : []
+      media: safeParseJSON(highlight.media_files, [])
     }));
     
     res.json({ highlights });
@@ -64,7 +78,7 @@ export const getHighlightById = async (req, res) => {
     
     const highlight = {
       ...rows[0],
-      media: rows[0].media_files ? JSON.parse(rows[0].media_files) : []
+      media: safeParseJSON(rows[0].media_files, [])
     };
     
     res.json({ highlight });
@@ -326,7 +340,7 @@ const getHighlightByIdInternal = async (connection, highlightId) => {
   
   return {
     ...rows[0],
-    media: rows[0].media_files ? JSON.parse(rows[0].media_files) : []
+    media: safeParseJSON(rows[0].media_files, [])
   };
 };
 
@@ -369,7 +383,7 @@ export const getAllHighlightsForApproval = async (req, res) => {
     // Parse JSON media_files and format the data
     const highlights = rows.map(highlight => ({
       ...highlight,
-      media: highlight.media_files ? JSON.parse(highlight.media_files) : []
+      media: safeParseJSON(highlight.media_files, [])
     }));
     
     res.json({ highlights });
@@ -455,7 +469,7 @@ export const getApprovedHighlights = async (req, res) => {
     // Parse JSON media_files and format the data
     const highlights = rows.map(highlight => ({
       ...highlight,
-      media: highlight.media_files ? JSON.parse(highlight.media_files) : []
+      media: safeParseJSON(highlight.media_files, [])
     }));
     
     res.json({ highlights });

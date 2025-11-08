@@ -2,6 +2,20 @@
 import db from "../../database.js"
 import SuperAdminNotificationController from "../../superadmin/controllers/superadminNotificationController.js"
 
+// Helper function to safely parse JSON (typeCast already parses JSON columns, so check if it's already an object)
+const safeParseJSON = (value, defaultValue = null) => {
+  if (!value) return defaultValue;
+  if (typeof value === 'object') return value; // Already parsed by typeCast
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value); // Still a string, parse it
+    } catch (e) {
+      return defaultValue;
+    }
+  }
+  return value;
+};
+
 // Validation helper for submission data
 const validateSubmissionItem = (item) => {
   const errors = []
@@ -150,11 +164,8 @@ export const submitChanges = async (req, res) => {
           try {
             // proposed_data might already be an object or a JSON string
             let proposedData;
-            if (typeof item.proposed_data === 'string') {
-              proposedData = JSON.parse(item.proposed_data);
-            } else {
-              proposedData = item.proposed_data;
-            }
+            // typeCast already parses JSON, so use helper
+            proposedData = safeParseJSON(item.proposed_data, {});
             
             if (proposedData && proposedData.title) {
               message = `${orgAcronym} has submitted a new program "${proposedData.title}" for approval.`
@@ -276,18 +287,18 @@ export const getSubmissionsByOrg = async (req, res) => {
       let proposed_data_parsed = {}
       let parse_error = false
 
-      try {
-        previous_data_parsed = JSON.parse(row.previous_data)
-      } catch (e) {
-        previous_data_parsed = { error: "Invalid JSON data" }
-        parse_error = true
+      // typeCast already parses JSON, so use helper
+      previous_data_parsed = safeParseJSON(row.previous_data, {});
+      proposed_data_parsed = safeParseJSON(row.proposed_data, {});
+      
+      // Check if parsing failed (only if it was a string and couldn't be parsed)
+      if (typeof row.previous_data === 'string' && !previous_data_parsed) {
+        previous_data_parsed = { error: "Invalid JSON data" };
+        parse_error = true;
       }
-
-      try {
-        proposed_data_parsed = JSON.parse(row.proposed_data)
-      } catch (e) {
-        proposed_data_parsed = { error: "Invalid JSON data" }
-        parse_error = true
+      if (typeof row.proposed_data === 'string' && !proposed_data_parsed) {
+        proposed_data_parsed = { error: "Invalid JSON data" };
+        parse_error = true;
       }
 
       // For program submissions, fetch collaborator details
@@ -553,11 +564,12 @@ export const getSubmissionById = async (req, res) => {
     
     // Parse JSON data
     try {
+      // typeCast already parses JSON, so use helper
       if (submission.previous_data) {
-        submission.previous_data = JSON.parse(submission.previous_data)
+        submission.previous_data = safeParseJSON(submission.previous_data, {});
       }
       if (submission.proposed_data) {
-        submission.proposed_data = JSON.parse(submission.proposed_data)
+        submission.proposed_data = safeParseJSON(submission.proposed_data, {});
         
         // For program submissions, fetch collaborator details if they are stored as IDs
         if (submission.section === 'programs' && submission.proposed_data.collaborators && Array.isArray(submission.proposed_data.collaborators)) {

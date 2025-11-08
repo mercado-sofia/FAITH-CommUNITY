@@ -2,6 +2,14 @@ import db from '../../database.js';
 import { uploadSingleToCloudinary } from '../../utils/cloudinaryUpload.js';
 import { deleteFromCloudinary, extractPublicIdFromUrl } from '../../utils/cloudinaryConfig.js';
 
+// Helper function to safely parse JSON (typeCast already parses JSON columns, so check if it's already an object)
+const safeParseJSON = (value) => {
+  if (!value) return null;
+  if (typeof value === 'object') return value; // Already parsed by typeCast
+  if (typeof value === 'string') return JSON.parse(value); // Still a string, parse it
+  return value;
+};
+
 // Get about us content
 export const getAboutUs = async (req, res) => {
   try {
@@ -17,7 +25,7 @@ export const getAboutUs = async (req, res) => {
     // Parse JSON fields
     const aboutUsData = {
       ...rows[0],
-      extension_categories: rows[0].extension_categories ? JSON.parse(rows[0].extension_categories) : []
+      extension_categories: safeParseJSON(rows[0].extension_categories) || []
     };
 
     res.json({
@@ -95,7 +103,7 @@ export const updateAboutUs = async (req, res) => {
     // Parse JSON fields
     const aboutUsData = {
       ...updatedRows[0],
-      extension_categories: updatedRows[0].extension_categories ? JSON.parse(updatedRows[0].extension_categories) : []
+      extension_categories: safeParseJSON(updatedRows[0].extension_categories) || []
     };
 
     res.json({
@@ -134,9 +142,8 @@ export const addExtensionCategory = async (req, res) => {
       });
     }
 
-    // Parse existing extension categories
-    const currentCategories = existingRows[0].extension_categories ? 
-      JSON.parse(existingRows[0].extension_categories) : [];
+    // Parse existing extension categories (typeCast already parses JSON, so use helper)
+    const currentCategories = safeParseJSON(existingRows[0].extension_categories) || [];
 
     // Check if category already exists
     const categoryExists = currentCategories.some(cat => 
@@ -169,7 +176,7 @@ export const addExtensionCategory = async (req, res) => {
     
     const aboutUsData = {
       ...updatedRows[0],
-      extension_categories: updatedRows[0].extension_categories ? JSON.parse(updatedRows[0].extension_categories) : []
+      extension_categories: safeParseJSON(updatedRows[0].extension_categories) || []
     };
 
     res.json({
@@ -217,9 +224,8 @@ export const updateExtensionCategory = async (req, res) => {
       });
     }
 
-    // Parse existing extension categories
-    const currentCategories = existingRows[0].extension_categories ? 
-      JSON.parse(existingRows[0].extension_categories) : [];
+    // Parse existing extension categories (typeCast already parses JSON, so use helper)
+    const currentCategories = safeParseJSON(existingRows[0].extension_categories) || [];
 
     if (index >= currentCategories.length) {
       return res.status(400).json({ 
@@ -245,7 +251,7 @@ export const updateExtensionCategory = async (req, res) => {
     
     const aboutUsData = {
       ...updatedRows[0],
-      extension_categories: updatedRows[0].extension_categories ? JSON.parse(updatedRows[0].extension_categories) : []
+      extension_categories: safeParseJSON(updatedRows[0].extension_categories) || []
     };
 
     res.json({
@@ -285,9 +291,8 @@ export const deleteExtensionCategory = async (req, res) => {
       });
     }
 
-    // Parse existing extension categories
-    const currentCategories = existingRows[0].extension_categories ? 
-      JSON.parse(existingRows[0].extension_categories) : [];
+    // Parse existing extension categories (typeCast already parses JSON, so use helper)
+    const currentCategories = safeParseJSON(existingRows[0].extension_categories) || [];
 
     if (index >= currentCategories.length) {
       return res.status(400).json({ 
@@ -317,7 +322,7 @@ export const deleteExtensionCategory = async (req, res) => {
     
     const aboutUsData = {
       ...updatedRows[0],
-      extension_categories: updatedRows[0].extension_categories ? JSON.parse(updatedRows[0].extension_categories) : []
+      extension_categories: safeParseJSON(updatedRows[0].extension_categories) || []
     };
 
     res.json({
@@ -374,7 +379,7 @@ export const uploadAboutUsImage = async (req, res) => {
     // Parse JSON fields
     const aboutUsData = {
       ...updatedRows[0],
-      extension_categories: updatedRows[0].extension_categories ? JSON.parse(updatedRows[0].extension_categories) : []
+      extension_categories: safeParseJSON(updatedRows[0].extension_categories) || []
     };
 
     res.json({
@@ -440,7 +445,7 @@ export const deleteAboutUsImage = async (req, res) => {
     // Parse JSON fields
     const aboutUsData = {
       ...updatedRows[0],
-      extension_categories: updatedRows[0].extension_categories ? JSON.parse(updatedRows[0].extension_categories) : []
+      extension_categories: safeParseJSON(updatedRows[0].extension_categories) || []
     };
 
     res.json({

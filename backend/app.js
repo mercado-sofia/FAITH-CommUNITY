@@ -380,7 +380,10 @@ app.listen(PORT, async () => {
     const status = getSMTPStatus();
     
     if (!status.configured) {
-      console.warn('⚠️  SMTP not configured. Email features will not work.');
+      const missingList = status.missing.length > 0 
+        ? status.missing.join(', ') 
+        : 'SMTP_HOST, SMTP_USER, SMTP_PASS';
+      console.warn(`⚠️  SMTP not configured. Missing: ${missingList}. Email features will not work.`);
     } else {
       verifySMTPConnection().catch(() => {});
     }

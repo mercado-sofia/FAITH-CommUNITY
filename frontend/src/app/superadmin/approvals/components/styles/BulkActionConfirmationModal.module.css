@@ -268,29 +268,3 @@
   }
 }
 
-/* Responsive Design */
-@media (max-width: 640px) {
-  .modal {
-    width: 95%;
-    margin: 1rem;
-  }
-  
-  .header {
-    padding: 1rem;
-  }
-  
-  .content {
-    padding: 1rem;
-  }
-  
-  .actions {
-    padding: 1rem;
-    flex-direction: column;
-  }
-  
-  .cancelBtn,
-  .confirmBtn {
-    width: 100%;
-    justify-content: center;
-  }
-}

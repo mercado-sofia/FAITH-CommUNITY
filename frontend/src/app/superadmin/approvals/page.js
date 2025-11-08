@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { FiCheck, FiX, FiTrash2, FiAlertTriangle, FiInfo } from 'react-icons/fi';
+import { FiCheck, FiX, FiTrash2, FiInfo } from 'react-icons/fi';
 import { IoCloseOutline } from 'react-icons/io5';
 import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowLeftDoubleFill, RiArrowRightDoubleFill } from "react-icons/ri";
 import BulkActionConfirmationModal from './components/BulkActionConfirmationModal';
@@ -1136,9 +1136,7 @@ export default function PendingApprovalsPage() {
         onSearchChange={handleSearchChange}
         onSortChange={handleSortChange}
         onShowEntriesChange={handleShowEntriesChange}
-        onUpdateURLParams={updateURLParams}
       />
-      
 
       {/* Bulk Actions Bar */}
       {isBulkActionsVisible && (

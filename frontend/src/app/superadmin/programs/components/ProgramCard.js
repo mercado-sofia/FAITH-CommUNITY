@@ -2,8 +2,8 @@
 
 import React from 'react'
 import Image from 'next/image'
-import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths'
-import { formatProgramDates, formatProgramDatesForCard } from '@/utils/dateUtils.js'
+import { getProgramImageUrl } from '@/utils/uploadPaths'
+import { formatProgramDatesForCard } from '@/utils/dateUtils.js'
 import StarButton from './StarButton'
 import CollaborationBadge from '@/app/admin/programs/components/CollaborationBadge/CollaborationBadge'
 import styles from './styles/ProgramCard.module.css'
@@ -16,33 +16,6 @@ const ProgramCard = ({
 }) => {
   // Use the new upload path utility
   const imageSource = getProgramImageUrl(program.image)
-
-  // Using centralized date utilities - formatProgramDates is now imported
-
-  const getCategoryLabel = (category) => {
-    const categoryMap = {
-      outreach: 'Outreach',
-      education: 'Education',
-      health: 'Health',
-      environment: 'Environment',
-      community: 'Community Development',
-      youth: 'Youth Programs',
-      women: 'Women Empowerment',
-      elderly: 'Elderly Care',
-      disaster: 'Disaster Relief',
-      other: 'Other'
-    }
-    return categoryMap[category] || category || 'Uncategorized'
-  }
-
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'upcoming': return '#1e40af'
-      case 'active': return '#065f46'
-      case 'completed': return '#374151'
-      default: return '#6b7280'
-    }
-  }
 
   // Get organization data for badge
   const orgData = organizationData || {

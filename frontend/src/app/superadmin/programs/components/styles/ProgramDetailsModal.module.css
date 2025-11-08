@@ -443,43 +443,6 @@
   margin: 0;
 }
 
-/* Responsive Modal */
-@media (max-width: 768px) {
-  .modalContent {
-    margin: 20px;
-    max-height: calc(100vh - 40px);
-  }
-  
-  .modalHeader {
-    padding: 20px 24px;
-  }
-  
-  .modalBody {
-    padding: 24px;
-  }
-  
-  .topSection {
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
-  
-  .imageSection {
-    min-height: 200px;
-  }
-  
-  .imageSection .imagePlaceholder {
-    height: 200px;
-  }
-  
-  .additionalImagesGrid {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 12px;
-  }
-  
-  .additionalImage {
-    height: 120px;
-  }
-}
 
 /* Activity Tracker Styles */
 .activityTrackerContent {
@@ -567,18 +530,6 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-}
-
-.activityDetailIcon {
-  font-size: 14px;
-  color: #6b7280;
-  flex-shrink: 0;
-}
-
-.activityDetailLabel {
-  font-size: 14px;
-  color: #6b7280;
-  font-weight: 500;
 }
 
 .activityDetailValue {

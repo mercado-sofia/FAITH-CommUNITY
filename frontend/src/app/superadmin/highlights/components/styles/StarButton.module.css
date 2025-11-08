@@ -64,18 +64,4 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .starButton {
-    width: 28px;
-    height: 28px;
-    top: 8px;
-    right: 8px;
-  }
-  
-  .starIcon {
-    width: 16px;
-    height: 16px;
-  }
-}
 

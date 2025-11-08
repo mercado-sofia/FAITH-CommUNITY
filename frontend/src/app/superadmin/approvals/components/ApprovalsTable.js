@@ -37,27 +37,14 @@ export default function ApprovalsTable({
     );
   };
 
-  const handleRejectClick = (item) => {
-    onRejectClick(item);
-  };
-
   const handleViewDetails = (item) => {
     setSelectedItemForDetails(item);
     setShowDetailsModal(true);
   };
 
-  const handleDeleteClick = (item) => {
-    onDeleteClick(item);
-  };
-
   const handleDetailsClose = () => {
     setShowDetailsModal(false);
     setSelectedItemForDetails(null);
-  };
-
-  // Using centralized date utility - format remains exactly the same
-  const formatDate = (date) => {
-    return formatDateShort(date);
   };
 
   // Check if any approval is a program submission to show Title column
@@ -184,7 +171,7 @@ export default function ApprovalsTable({
                     {item.section?.charAt(0).toUpperCase() + item.section?.slice(1) || 'N/A'}
                   </td>
                   <td className={styles.dateCell}>
-                    {formatDate(item.submitted_at)}
+                    {formatDateShort(item.submitted_at)}
                   </td>
                   <td className={styles.statusCell}>
                     {getStatusBadge(item.status)}
@@ -250,7 +237,7 @@ export default function ApprovalsTable({
                                     onMouseDown={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      handleRejectClick(item);
+                                      onRejectClick(item);
                                       setShowDropdown(null);
                                       setDropdownPosition({});
                                     }}
@@ -264,7 +251,7 @@ export default function ApprovalsTable({
                                 onMouseDown={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  handleDeleteClick(item);
+                                  onDeleteClick(item);
                                   setShowDropdown(null);
                                   setDropdownPosition({});
                                 }}

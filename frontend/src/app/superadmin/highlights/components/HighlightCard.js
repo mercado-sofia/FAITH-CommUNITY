@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
 import StarButton from './StarButton'
@@ -126,7 +126,6 @@ const HighlightCard = ({ highlight, onViewDetails }) => {
         {isApproved && (
           <StarButton 
             highlightId={highlight.id} 
-            highlightTitle={highlight.title}
             onStarChange={() => {
               // Trigger refresh when star changes
               if (typeof window !== 'undefined') {

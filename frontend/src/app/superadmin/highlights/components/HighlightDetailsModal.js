@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react'
 import Image from 'next/image'
 import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding } from 'react-icons/fa'
 import { formatDateShort } from '@/utils/dateUtils.js'

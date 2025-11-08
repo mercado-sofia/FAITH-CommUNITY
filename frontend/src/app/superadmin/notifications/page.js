@@ -49,12 +49,12 @@ export default function SuperAdminNotificationsPage() {
   }, []);
 
   // Get unread count from the API
-  const { data: unreadCountData, error: unreadCountError } = useGetSuperAdminUnreadCountQuery(superAdminId, {
+  const { data: unreadCountData } = useGetSuperAdminUnreadCountQuery(superAdminId, {
     skip: !superAdminId
   });
 
   // Get a small sample of notifications to calculate type-specific counts
-  const { data: sampleNotificationsData, error: sampleError } = useGetSuperAdminNotificationsQuery(
+  const { data: sampleNotificationsData } = useGetSuperAdminNotificationsQuery(
     { 
       superAdminId: superAdminId, 
       limit: 100, // Get more for better count accuracy

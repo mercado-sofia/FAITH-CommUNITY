@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useAddFeaturedHighlightMutation, useRemoveFeaturedHighlightMutation, useCheckFeaturedStatusQuery } from '@/rtk/superadmin/highlightsApi'
 import styles from './styles/StarButton.module.css'
 
@@ -32,7 +32,7 @@ const setStarredHighlight = (highlightId, isStarred) => {
   }
 }
 
-const StarButton = ({ highlightId, highlightTitle, onStarChange }) => {
+const StarButton = ({ highlightId, onStarChange }) => {
   const [isStarred, setIsStarred] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 

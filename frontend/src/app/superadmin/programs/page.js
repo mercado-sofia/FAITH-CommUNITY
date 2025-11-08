@@ -581,7 +581,6 @@ const SuperadminProgramsPage = () => {
           </div>
         ) : (
           filteredOrganizations.map(org => {
-            
             return (
               <div key={org.organizationId} className={styles.organizationSection}>
                 <div className={styles.organizationHeader}>

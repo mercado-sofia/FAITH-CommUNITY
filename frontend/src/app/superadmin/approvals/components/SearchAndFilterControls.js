@@ -31,8 +31,7 @@ const SearchAndFilterControls = ({
   onStatusChange,
   onSearchChange,
   onSortChange,
-  onShowEntriesChange,
-  onUpdateURLParams
+  onShowEntriesChange
 }) => {
   const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm || '');
 

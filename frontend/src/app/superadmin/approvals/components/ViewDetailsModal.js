@@ -20,11 +20,6 @@ const ViewDetailsModal = ({
   
   if (!isOpen || !submissionData) return null;
 
-  // Using centralized date utility - format remains exactly the same
-  const formatDate = (dateString) => {
-    return formatDateTime(dateString);
-  };
-
   const getSectionDisplayName = (section) => {
     const sectionMap = {
       'organization': 'Organization Information',
@@ -163,7 +158,7 @@ const ViewDetailsModal = ({
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Date:</span>
-              <span className={styles.infoValue}>{formatDate(submissionData.submitted_at)}</span>
+              <span className={styles.infoValue}>{formatDateTime(submissionData.submitted_at)}</span>
             </div>
           </div>
 
@@ -326,7 +321,7 @@ const ViewDetailsModal = ({
                           <div className={styles.eventDatesList}>
                             {programData.multiple_dates.map((date, index) => (
                               <span key={index} className={styles.eventDateTag}>
-                                {formatDate(date)}
+                                {formatDateTime(date)}
                               </span>
                             ))}
                           </div>
@@ -336,13 +331,13 @@ const ViewDetailsModal = ({
                       if (programData.event_start_date === programData.event_end_date) {
                         return (
                           <div className={styles.summaryItem}>
-                            <strong>Event Date:</strong> {formatDate(programData.event_start_date)}
+                            <strong>Event Date:</strong> {formatDateTime(programData.event_start_date)}
                           </div>
                         );
                       } else {
                         return (
                           <div className={styles.summaryItem}>
-                            <strong>Event Date Range:</strong> {formatDate(programData.event_start_date)} - {formatDate(programData.event_end_date)}
+                            <strong>Event Date Range:</strong> {formatDateTime(programData.event_start_date)} - {formatDateTime(programData.event_end_date)}
                           </div>
                         );
                       }

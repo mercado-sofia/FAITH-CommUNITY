@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { FiTrash2, FiMoreHorizontal, FiUserX, FiX, FiUserCheck, FiXCircle } from 'react-icons/fi';
 import { TbListDetails } from 'react-icons/tb';
 import { IoCloseOutline } from "react-icons/io5";
@@ -29,7 +29,6 @@ export default function InvitationsTable({
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedItemForDetails, setSelectedItemForDetails] = useState(null);
   const [activeDropdown, setActiveDropdown] = useState(null);
-  const dropdownRefs = useRef({});
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -145,10 +144,7 @@ export default function InvitationsTable({
 
   // Check if all selected items are accepted
   const selectedInvitations = invitations.filter(inv => selectedItems.has(inv.id));
-  const allSelectedAccepted = selectedInvitations.length > 0 && selectedInvitations.every(inv => inv.status === 'accepted');
   const hasPendingSelected = selectedInvitations.some(inv => inv.status === 'pending');
-  const hasActiveSelected = selectedInvitations.some(inv => inv.status === 'accepted' && inv.admin_is_active !== false && inv.admin_is_active !== 0);
-  const hasInactiveSelected = selectedInvitations.some(inv => inv.status === 'accepted' && (inv.admin_is_active === false || inv.admin_is_active === 0));
   
   // Count pending invitations for cancel action
   const pendingInvitationsCount = selectedInvitations.filter(inv => inv.status === 'pending').length;
@@ -158,28 +154,6 @@ export default function InvitationsTable({
       onSelectAll({ target: { checked: false } });
     }
   };
-
-  // Format date as "Mon DD, YYYY HH:MM AM/PM"
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    try {
-      const date = new Date(dateString);
-      const datePart = date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      });
-      const timePart = date.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      });
-      return `${datePart} ${timePart}`;
-    } catch (error) {
-      return 'Invalid';
-    }
-  };
-
 
   const getStatusColor = (invitation) => {
     // If invitation is accepted but admin is inactive, show as inactive
@@ -310,12 +284,12 @@ export default function InvitationsTable({
                   </td>
                   <td className={styles.sentColumn}>
                     <div className={styles.dateText}>
-                      {formatDate(invitation.created_at)}
+                      {formatDateTime(invitation.created_at)}
                     </div>
                   </td>
                   <td className={styles.expiresColumn}>
                     <div className={styles.dateText}>
-                      {formatDate(invitation.expires_at)}
+                      {formatDateTime(invitation.expires_at)}
                     </div>
                   </td>
                   <td className={styles.statusColumn}>
@@ -325,7 +299,7 @@ export default function InvitationsTable({
                   </td>
                   <td className={styles.actionsColumn}>
                     <div className={styles.actionButtons}>
-                      <div className={styles.dropdownContainer} ref={el => dropdownRefs.current[invitation.id] = el}>
+                      <div className={styles.dropdownContainer}>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

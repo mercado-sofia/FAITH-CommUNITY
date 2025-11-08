@@ -55,33 +55,35 @@
 /* Status Navigation Tabs */
 .statusTabs {
   display: flex;
-  gap: 0;
+  gap: 0.75rem;
   margin-bottom: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  width: 100%;
+  padding: 0;
 }
 
 .statusTab {
   background: none;
   border: none;
-  padding: 0.75rem 1.5rem;
+  padding: 0.65rem 1rem;
   font-size: 13px;
   font-weight: 500;
   font-family: var(--font-inter);
-  color: #6b7280;
+  color: #646872;
   cursor: pointer;
   position: relative;
-  transition: color 0.2s ease;
-  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
   user-select: none;
+  border-radius: 10px;
 }
 
 .statusTab:hover {
-  color: #06100f;
+  color: #000;
 }
 
 .statusTab.activeTab {
-  color: #06100f;
-  border-bottom-color: #06100f;
+  color: #000;
+  font-weight: 600;
+  background: #f3f4f6;
 }
 
 /* Highlights Section */
@@ -139,10 +141,29 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+
   .headerTop {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
+  }
+
+  .addButton {
+    align-self: flex-start;
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+
+  .statusTabs {
+    overflow-x: auto;
+  }
+
+  .statusTab {
+    padding: 0.5rem 1rem;
+    white-space: nowrap;
   }
 
   .programsGrid {
@@ -156,13 +177,17 @@
 }
 
 @media (max-width: 480px) {
+  .container {
+    padding: 12px;
+  }
+
   .header h1 {
     font-size: 1.2rem;
   }
 
   .addButton {
-    padding: 0.5rem 1rem;
-    font-size: 11px;
+    width: 100%;
+    justify-content: center;
   }
 
   .emptyActionButton {

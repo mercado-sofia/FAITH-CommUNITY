@@ -194,32 +194,3 @@
   }
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .cardGrid {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .statCard {
-    padding: 1.25rem;
-  }
-  
-  .count {
-    font-size: 1.75rem;
-  }
-  
-  .label {
-    font-size: 0.8125rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .statCard {
-    padding: 1rem;
-  }
-  
-  .count {
-    font-size: 1.5rem;
-  }
-}

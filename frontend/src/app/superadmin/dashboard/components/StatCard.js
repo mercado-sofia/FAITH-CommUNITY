@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './styles/StatCard.module.css';
-import { FiUsers, FiFileText, FiCheckCircle, FiCalendar, FiClock, FiStar } from 'react-icons/fi';
+import { FiFileText, FiCheckCircle, FiCalendar, FiClock, FiStar } from 'react-icons/fi';
 
 const icons = {
   organizations: <FiCalendar className={styles.icon} />,

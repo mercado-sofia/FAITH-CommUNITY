@@ -14,15 +14,13 @@ export default function StatCardSection() {
   // Fetch volunteers data for the current admin's organization using SWR
   const { 
     volunteers: volunteersData = [], 
-    isLoading: volunteersLoading,
-    error: volunteersError
+    isLoading: volunteersLoading
   } = useAdminVolunteers(currentAdmin?.id);
 
   // Fetch programs data for the current admin's organization using SWR
   const { 
     programs: programsData = [], 
-    isLoading: programsLoading,
-    error: programsError
+    isLoading: programsLoading
   } = useAdminPrograms();
 
   // Calculate counts from real data
@@ -30,16 +28,69 @@ export default function StatCardSection() {
     program.status && program.status.toLowerCase() === 'active'
   ).length;
 
+  const upcomingProgramsCount = programsData.filter(program => 
+    program.status && program.status.toLowerCase() === 'upcoming'
+  ).length;
+
   const completedProgramsCount = programsData.filter(program => 
     program.status && program.status.toLowerCase() === 'completed'
   ).length;
 
-  const totalProgramsCount = programsData.length;
+  // Calculate total programs (active + upcoming)
+  const totalProgramsCount = activeProgramsCount + upcomingProgramsCount;
+
+  // Calculate percentage change for completed programs comparing last year
+  const currentYear = new Date().getFullYear();
+  const previousYear = currentYear - 1;
+  
+  const completedThisYear = programsData.filter(program => {
+    if (program.status && program.status.toLowerCase() === 'completed') {
+      const completedDate = program.date_completed || program.updated_at;
+      if (completedDate) {
+        const year = new Date(completedDate).getFullYear();
+        return year === currentYear;
+      }
+    }
+    return false;
+  }).length;
+
+  const completedPreviousYear = programsData.filter(program => {
+    if (program.status && program.status.toLowerCase() === 'completed') {
+      const completedDate = program.date_completed || program.updated_at;
+      if (completedDate) {
+        const year = new Date(completedDate).getFullYear();
+        return year === previousYear;
+      }
+    }
+    return false;
+  }).length;
+
+  // Calculate percentage change
+  let percentageChange = 0;
+  if (completedPreviousYear > 0) {
+    percentageChange = ((completedThisYear - completedPreviousYear) / completedPreviousYear) * 100;
+  } else if (completedThisYear > 0) {
+    // If previous year had 0, but current year has programs, it's 100% increase
+    percentageChange = 100;
+  }
+  
+  // Round to 1 decimal place
+  percentageChange = Math.round(percentageChange * 10) / 10;
 
   // Calculate counts from real data
-  const pendingApplicationsCount = volunteersData.filter(volunteer => 
+  const pendingApplications = volunteersData.filter(volunteer => 
     volunteer.status && volunteer.status.toLowerCase() === 'pending'
-  ).length;
+  );
+
+  // Calculate unique users with pending applications
+  const uniqueUsersWithPending = new Set(
+    pendingApplications
+      .filter(volunteer => volunteer.user_id)
+      .map(volunteer => volunteer.user_id)
+  ).size;
+
+  const pendingUsersCount = uniqueUsersWithPending;
+  const pendingApplicationsCount = pendingApplications.length;
 
   const approvedApplicationsCount = volunteersData.filter(volunteer => 
     volunteer.status && volunteer.status.toLowerCase() === 'approved'
@@ -58,7 +109,8 @@ export default function StatCardSection() {
           count={isLoading ? "—" : pendingApplicationsCount}
           iconKey="pending"
           isLoading={isLoading}
-          pendingCount={isLoading ? "—" : pendingApplicationsCount}
+          pendingCount={isLoading ? "—" : pendingUsersCount}
+          showUsersLabel={true}
         />
       </Link>
       <Link href="/admin/volunteers" className={styles.cardWrapper}>
@@ -73,12 +125,12 @@ export default function StatCardSection() {
       </Link>
       <Link href="/admin/programs" className={styles.cardWrapper}>
         <StatCard
-          label="Active Programs"
-          count={isLoading ? "—" : activeProgramsCount}
+          label="Programs"
+          count={isLoading ? "—" : totalProgramsCount}
           iconKey="programs"
           isLoading={isLoading}
-          activeCount={isLoading ? "—" : activeProgramsCount}
-          completedCount={isLoading ? "—" : completedProgramsCount}
+          upcomingCount={isLoading ? "—" : upcomingProgramsCount}
+          programsActiveCount={isLoading ? "—" : activeProgramsCount}
         />
       </Link>
       <Link href="/admin/programs?status=Completed" className={styles.cardWrapper}>
@@ -87,7 +139,7 @@ export default function StatCardSection() {
           count={isLoading ? "—" : completedProgramsCount}
           iconKey="programs"
           isLoading={isLoading}
-          completedCount={isLoading ? "—" : completedProgramsCount}
+          percentageChange={isLoading ? "—" : percentageChange}
         />
       </Link>
     </div>

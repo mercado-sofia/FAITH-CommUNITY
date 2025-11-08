@@ -27,20 +27,3 @@
   width: 100%;
   margin-top: 2rem;
 }
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .mainArea {
-    padding: 1.5rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .mainArea {
-    padding: 1rem;
-  }
-  
-  .header h1 {
-    font-size: 1.5rem;
-  }
-}

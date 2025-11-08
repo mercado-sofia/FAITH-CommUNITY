@@ -51,15 +51,3 @@
   color: #6b7280;
 }
 
-/* Mobile Responsive */
-@media (max-width: 768px) {
-  .searchInputContainer {
-    width: 250px;
-  }
-}
-
-@media (max-width: 480px) {
-  .searchInputContainer {
-    width: 100%;
-  }
-}

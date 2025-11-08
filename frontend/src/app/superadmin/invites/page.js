@@ -50,7 +50,6 @@ const ManageProfiles = () => {
     handleCancelInvitation,
     handleDeleteInvitation,
     handleDeactivateAdminFromInvitation,
-    handleDeactivateAdmin,
   } = useInvitationsOperations()
 
   const {

@@ -29,6 +29,11 @@ function createTransporter() {
   }
 
   try {
+g    // Configurable timeout values (default: 15 seconds)
+    const connectionTimeout = Number(process.env.SMTP_CONNECTION_TIMEOUT) || 15000;
+    const greetingTimeout = Number(process.env.SMTP_GREETING_TIMEOUT) || 15000;
+    const socketTimeout = Number(process.env.SMTP_SOCKET_TIMEOUT) || 15000;
+    
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT) || 587,
@@ -37,9 +42,13 @@ function createTransporter() {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
+      connectionTimeout: connectionTimeout,
+      greetingTimeout: greetingTimeout,
+      socketTimeout: socketTimeout,
+      // Additional options for better connection handling
+      pool: true,
+      maxConnections: 1,
+      maxMessages: 3,
     });
   } catch (error) {
     console.error('❌ Failed to create SMTP transporter:', error.message);
@@ -57,14 +66,40 @@ export async function verifySMTPConnection() {
   }
 
   try {
-    await mailer.verify();
+    // Use Promise.race to add a custom timeout wrapper
+    const verificationTimeout = Number(process.env.SMTP_VERIFICATION_TIMEOUT) || 20000; // 20 seconds default
+    
+    const verifyPromise = mailer.verify();
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`SMTP verification timeout after ${verificationTimeout}ms`));
+      }, verificationTimeout);
+    });
+    
+    await Promise.race([verifyPromise, timeoutPromise]);
     return true;
   } catch (error) {
     console.error('❌ SMTP verification failed:', error.message);
+    
+    // Handle specific error types
     if (error.code === 'EAUTH' || error.message.includes('Invalid login') || error.message.includes('BadCredentials')) {
       console.error('   → Authentication failed. Check SMTP_USER and SMTP_PASS');
       console.error('   → For Gmail, use an App Password (not your regular password)');
+    } else if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT') || error.code === 'ETIMEDOUT') {
+      console.error('   → Connection timeout. Possible issues:');
+      console.error('      • SMTP_HOST is incorrect or unreachable');
+      console.error('      • SMTP_PORT is incorrect (common ports: 587, 465, 25)');
+      console.error('      • Firewall or network blocking SMTP connection');
+      console.error('      • SMTP server is down or slow to respond');
+      console.error('   → Try increasing timeout: SMTP_VERIFICATION_TIMEOUT=30000');
+    } else if (error.code === 'ECONNREFUSED' || error.message.includes('ECONNREFUSED')) {
+      console.error('   → Connection refused. Check:');
+      console.error('      • SMTP_HOST and SMTP_PORT are correct');
+      console.error('      • SMTP server is running and accessible');
+    } else if (error.code === 'ENOTFOUND' || error.message.includes('ENOTFOUND')) {
+      console.error('   → Host not found. Check SMTP_HOST is correct');
     }
+    
     return false;
   }
 }

@@ -1,3 +1,6 @@
+# Nixpacks configuration for Railway
+# This tells Nixpacks to install Node.js and run commands in the backend directory
+
 [phases.setup]
 nixPkgs = ["nodejs-18_x", "npm-9_x"]
 

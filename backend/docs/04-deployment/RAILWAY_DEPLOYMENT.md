@@ -14,7 +14,21 @@ This guide covers deploying the FAITH CommUNITY backend to Railway.
 2. Click "New Project"
 3. Select "Deploy from GitHub repo"
 4. Choose your repository
-5. Select the `backend` directory as the root
+
+### ⚠️ IMPORTANT: Set Root Directory
+
+After creating the project, you **MUST** configure the root directory:
+
+**Option 1: In Railway Dashboard (Recommended)**
+1. Click on your service
+2. Go to **Settings** tab
+3. Scroll to **Root Directory** section
+4. Set Root Directory to: `backend`
+5. Click **Save**
+
+**Option 2: Using railway.json (Alternative)**
+- A `railway.json` file has been created in the root directory
+- This will automatically set the build context to the `backend` directory
 
 ## Step 2: Add MySQL Database
 

@@ -42,6 +42,18 @@ export function validateEnvironment(strict = false) {
   
   // Check required variables
   for (const [key, value] of Object.entries(requiredEnvVars)) {
+    // MYSQL_PASSWORD can be empty for local development (no password MySQL)
+    if (key === 'MYSQL_PASSWORD') {
+      // Only require password in production (Railway, etc.)
+      if (isProduction && (!value || value.trim() === '')) {
+        missing.push(key);
+      } else if (!isProduction && value === undefined) {
+        // In development, warn if not set at all, but allow empty string
+        warnings.push(`${key} is not set. Using empty password (OK for local MySQL).`);
+      }
+      continue;
+    }
+    
     if (!value || value.trim() === '') {
       missing.push(key);
       

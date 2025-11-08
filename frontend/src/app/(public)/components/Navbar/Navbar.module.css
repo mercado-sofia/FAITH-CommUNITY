@@ -43,7 +43,7 @@
   font-size: 14px;
   text-decoration: none;
   cursor: pointer;
-  padding: 0.5rem 1.6rem;
+  padding: 0.5rem 1.4rem;
   width: auto;
   height: 40px;
 }
@@ -113,8 +113,8 @@
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 0.5rem 1rem !important;
-  border-radius: 6px !important;
+  padding: 0.5rem 1.4rem !important;
+  border-radius: 999px !important;
   font-size: 0.9rem !important;
   font-weight: 500 !important;
   text-decoration: none !important;
@@ -160,12 +160,15 @@
   .navbar {
     padding: 0.6rem 1.4rem;
     justify-content: space-between;
+    position: relative;
   }
 
   .rightActions {
     display: flex;
     align-items: center;
     gap: 0.4rem;
+    margin-left: auto;
+    flex-shrink: 0;
   }
   
   .faithBtn,
@@ -176,6 +179,7 @@
   .hamburgerBtn {
     display: flex;
     font-size: 1.4rem;
+    order: 999;
   }
 
   /* Hide desktop login button on mobile to prevent duplication */

@@ -54,8 +54,8 @@ export default function TopOrganizationsChart() {
     );
   }
 
-  // Show error message only if there's an actual API error and no data was returned
-  if (isError && (!organizationsData || organizationsData.length === 0)) {
+  // Show error message only if there's an actual API error
+  if (isError) {
     return (
       <div className={styles.chartCard}>
         <div className={styles.chartHeader}>

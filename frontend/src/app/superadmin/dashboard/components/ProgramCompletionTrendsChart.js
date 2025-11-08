@@ -73,6 +73,7 @@ export default function ProgramCompletionTrendsChart() {
     );
   }
 
+  // Show error message only if there's an actual API error
   if (isError) {
     return (
       <div className={styles.chartCard}>
@@ -86,6 +87,7 @@ export default function ProgramCompletionTrendsChart() {
     );
   }
 
+  // Show empty state if API succeeded but returned no data
   if (!chartData || chartData.length === 0) {
     return (
       <div className={styles.chartCard}>

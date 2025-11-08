@@ -517,7 +517,7 @@ export default function FooterContentManagement({ showSuccessModal }) {
             
             let errorMessage = 'Failed to update service';
             try {
-              const errorData = await response.json();
+            const errorData = await response.json();
               errorMessage = errorData.message || errorData.error || errorMessage;
               console.error('Update service error response:', errorData);
             } catch (e) {
@@ -556,7 +556,7 @@ export default function FooterContentManagement({ showSuccessModal }) {
             
             let errorMessage = 'Failed to delete service';
             try {
-              const errorData = await response.json();
+            const errorData = await response.json();
               errorMessage = errorData.message || errorData.error || errorMessage;
               console.error('Delete service error response:', errorData);
             } catch (e) {

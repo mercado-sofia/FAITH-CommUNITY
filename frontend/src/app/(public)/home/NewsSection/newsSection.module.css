@@ -339,7 +339,7 @@
   .seeAllLink {
     font-size: 13px;
     align-self: flex-end !important;
-    margin-top: 0;
+    margin-top: 1.5rem;
     margin-bottom: -0.5rem;
   }
   
@@ -435,7 +435,7 @@
   
   .seeAllLink {
     align-self: flex-end !important;
-    margin-top: 0;
+    margin-top: 1.5rem;
     margin-bottom: -0.5rem;
   }
   
@@ -532,7 +532,7 @@
   .seeAllLink {
     font-size: 13px;
     align-self: flex-end !important;
-    margin-top: 0;
+    margin-top: 1.5rem;
     margin-bottom: -0.5rem;
   }
   

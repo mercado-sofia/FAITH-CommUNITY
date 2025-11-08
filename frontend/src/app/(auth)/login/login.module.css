@@ -294,3 +294,10 @@
   line-height: 1.5;
   margin-bottom: 1.5rem;
 }
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .rightPane {
+    padding: 1rem 1.4rem;
+  }
+}

@@ -29,6 +29,12 @@ export const superadminNavLinks = [
     section: 'management'
   },
   {
+    href: '/superadmin/highlights',
+    label: 'Highlights',
+    icon: HiOutlineStar,
+    section: 'management'
+  },
+  {
     href: '/superadmin/invites',
     label: 'Invitations',
     icon: FaAddressCard,

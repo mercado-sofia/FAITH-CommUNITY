@@ -499,29 +499,122 @@ export default function PendingApprovalsPage() {
       );
     }
 
-    // Search filter
+    // Search filter with relevance scoring (only when searching)
     if (searchTerm) {
-      filtered = filtered.filter(approval => 
-        approval.org?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        approval.orgName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        approval.organization_acronym?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        approval.organization_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        approval.section?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        approval.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        approval.id?.toString().includes(searchTerm) ||
-        approval.submission_id?.toString().includes(searchTerm)
-      );
+      const searchLower = searchTerm.toLowerCase();
+      const searchTermExact = searchTerm.toLowerCase().trim();
+      
+      // Calculate relevance score for each approval
+      const approvalsWithScores = filtered.map(approval => {
+        let score = 0;
+        let hasMatch = false;
+        
+        // Helper function to check if string matches and calculate score
+        const checkMatch = (value, priorityScore, exactBonus = 0) => {
+          if (!value || typeof value !== 'string') return false;
+          const valueLower = value.toLowerCase();
+          if (valueLower.includes(searchLower)) {
+            hasMatch = true;
+            score += priorityScore;
+            // Bonus for exact match or starts with
+            if (valueLower === searchTermExact) {
+              score += exactBonus * 2;
+            } else if (valueLower.startsWith(searchTermExact)) {
+              score += exactBonus;
+            }
+            return true;
+          }
+          return false;
+        };
+        
+        // PRIORITY 1: Organization name and acronym (highest priority - 100 points)
+        if (checkMatch(approval.organization_name, 100, 20)) {}
+        if (checkMatch(approval.orgName, 100, 20)) {}
+        if (checkMatch(approval.organization_acronym, 100, 20)) {}
+        if (checkMatch(approval.org, 100, 20)) {}
+        
+        // PRIORITY 2: Program title from proposed_data (high priority - 80 points)
+        if (approval.proposed_data) {
+          try {
+            const proposedData = typeof approval.proposed_data === 'string' 
+              ? JSON.parse(approval.proposed_data) 
+              : approval.proposed_data;
+            
+            if (proposedData && typeof proposedData === 'object') {
+              // Program title (highest priority for program submissions)
+              if (checkMatch(proposedData.title, 80, 15)) {}
+              
+              // Other fields in proposed_data (lower priority)
+              if (checkMatch(proposedData.description, 20, 5)) {}
+              if (checkMatch(proposedData.category, 20, 5)) {}
+              
+              // Search other string fields in proposed_data
+              for (const key in proposedData) {
+                if (proposedData.hasOwnProperty(key) && key !== 'title' && key !== 'description' && key !== 'category') {
+                  const value = proposedData[key];
+                  if (typeof value === 'string' && value.toLowerCase().includes(searchLower)) {
+                    hasMatch = true;
+                    score += 10; // Lower priority for other fields
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            // Silently ignore JSON parse errors
+          }
+        }
+        
+        // PRIORITY 3: Direct title field (if exists)
+        if (checkMatch(approval.title, 60, 10)) {}
+        
+        // PRIORITY 4: Section (lower priority)
+        if (checkMatch(approval.section, 15, 3)) {}
+        
+        // PRIORITY 5: ID fields (lowest priority)
+        if (approval.id?.toString().includes(searchTerm)) {
+          hasMatch = true;
+          score += 5;
+        }
+        if (approval.submission_id?.toString().includes(searchTerm)) {
+          hasMatch = true;
+          score += 5;
+        }
+        
+        return { approval, score, hasMatch };
+      });
+      
+      // Filter out non-matching items and sort by score (highest first), then by date as tie-breaker
+      const filteredWithScores = approvalsWithScores
+        .filter(item => item.hasMatch);
+      
+      // Sort by score first, then by date as secondary sort
+      filteredWithScores.sort((a, b) => {
+        // Primary sort: by relevance score (descending)
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+        // Secondary sort: by date (when scores are equal)
+        if (sortBy === 'latest') {
+          return new Date(b.approval.submitted_at) - new Date(a.approval.submitted_at);
+        } else if (sortBy === 'oldest') {
+          return new Date(a.approval.submitted_at) - new Date(b.approval.submitted_at);
+        }
+        return 0;
+      });
+      
+      // Extract just the approval objects
+      filtered = filteredWithScores.map(item => item.approval);
+    } else {
+      // When not searching, sort only by date
+      filtered.sort((a, b) => {
+        if (sortBy === 'latest') {
+          return new Date(b.submitted_at) - new Date(a.submitted_at);
+        } else if (sortBy === 'oldest') {
+          return new Date(a.submitted_at) - new Date(b.submitted_at);
+        }
+        return 0;
+      });
     }
-
-    // Sort
-    filtered.sort((a, b) => {
-      if (sortBy === 'latest') {
-        return new Date(b.submitted_at) - new Date(a.submitted_at);
-      } else if (sortBy === 'oldest') {
-        return new Date(a.submitted_at) - new Date(b.submitted_at);
-      }
-      return 0;
-    });
 
     setFilteredApprovals(filtered);
     setCurrentPage(1); // Reset to first page when filters change

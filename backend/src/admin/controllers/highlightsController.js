@@ -348,6 +348,7 @@ export const getAllHighlightsForApproval = async (req, res) => {
         h.updated_at,
         o.orgName as organization_name,
         o.org as organization_acronym,
+        o.org_color as organization_color,
         a.email as admin_email
       FROM admin_highlights h
       LEFT JOIN organizations o ON h.organization_id = o.id

@@ -60,6 +60,26 @@ export default function ApprovalsTable({
     return formatDateShort(date);
   };
 
+  // Check if any approval is a program submission to show Title column
+  const hasProgramSubmissions = approvals.some(item => 
+    item.section && item.section.toLowerCase() === 'programs'
+  );
+
+  // Helper function to extract program title from proposed_data
+  const getProgramTitle = (item) => {
+    if (item.section && item.section.toLowerCase() === 'programs' && item.proposed_data) {
+      try {
+        const proposedData = typeof item.proposed_data === 'string' 
+          ? JSON.parse(item.proposed_data) 
+          : item.proposed_data;
+        return proposedData?.title || 'N/A';
+      } catch (error) {
+        return 'N/A';
+      }
+    }
+    return null;
+  };
+
   return (
     <>
       <div className={styles.tableContainer}>
@@ -76,6 +96,9 @@ export default function ApprovalsTable({
                 />
               </th>
               <th className={styles.organizationColumn}>Organization</th>
+              {hasProgramSubmissions && (
+                <th className={styles.titleColumn}>Title</th>
+              )}
               <th className={styles.sectionColumn}>Section</th>
               <th className={styles.dateColumn}>Date</th>
               <th className={styles.statusColumn}>Status</th>
@@ -85,7 +108,7 @@ export default function ApprovalsTable({
           <tbody>
             {approvals.length === 0 ? (
               <tr>
-                <td colSpan="7" className={styles.emptyStateCell}>
+                <td colSpan={hasProgramSubmissions ? "8" : "7"} className={styles.emptyStateCell}>
                   <div className={styles.emptyState}>
                     <h3 className={styles.emptyStateTitle}>No submissions found</h3>
                     <p className={styles.emptyStateText}>
@@ -95,7 +118,9 @@ export default function ApprovalsTable({
                 </td>
               </tr>
             ) : (
-              approvals.map((item, index) => (
+              approvals.map((item, index) => {
+                const programTitle = getProgramTitle(item);
+                return (
                 <tr key={item.uniqueKey || item.id} className={styles.tableRow}>
                   <td className={styles.numberCell}>
                     {startIndex + index + 1}
@@ -150,6 +175,11 @@ export default function ApprovalsTable({
                       </span>
                     </div>
                   </td>
+                  {hasProgramSubmissions && (
+                    <td className={styles.titleCell}>
+                      {programTitle || '-'}
+                    </td>
+                  )}
                   <td className={styles.sectionCell}>
                     {item.section?.charAt(0).toUpperCase() + item.section?.slice(1) || 'N/A'}
                   </td>
@@ -249,7 +279,8 @@ export default function ApprovalsTable({
                     </div>
                   </td>
                 </tr>
-              ))
+              );
+              })
             )}
           </tbody>
         </table>

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
+import { FaPlay } from 'react-icons/fa';
 import styles from './HeroSection.module.css';
 import { usePublicHeroSection } from '../../hooks/usePublicData';
 
@@ -153,7 +154,7 @@ export default function HeroSection() {
 
                 {(heroData?.video_url || heroData?.video_link) && (
                   <div className={styles.playCircle} onClick={() => setShowVideo(true)}>
-                    <span className={styles.playIcon}>▶</span>
+                    <FaPlay className={styles.playIcon} />
                   </div>
                 )}
               </div>

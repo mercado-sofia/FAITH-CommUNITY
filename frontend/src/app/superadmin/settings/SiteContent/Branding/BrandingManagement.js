@@ -64,7 +64,11 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
         return null;
       }
 
-      const response = await fetch(`${baseUrl}/api/superadmin/branding/upload-${type}`, {
+      const uploadUrl = `${baseUrl}/api/superadmin/branding/upload-${type}`;
+      console.log('Uploading to:', uploadUrl);
+      console.log('File type:', type, 'File size:', file.size, 'bytes');
+
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -92,19 +96,38 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
           return null;
         }
         
+        // Handle CORS errors (status 0 or network errors)
+        if (response.status === 0) {
+          console.error('CORS or network error detected');
+          showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+          return null;
+        }
+        
         let errorMessage = `Failed to upload ${type}`;
         try {
           const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
+          errorMessage = errorData.message || errorData.error || errorMessage;
+          console.error('Upload error response:', errorData);
         } catch (e) {
           // If response is not JSON, use status text
-          errorMessage = response.statusText || errorMessage;
+          errorMessage = response.statusText || `Server error (${response.status})`;
+          console.error('Non-JSON error response:', response.status, response.statusText);
         }
-        showSuccessModal(errorMessage);
+        showSuccessModal(`${errorMessage} (Status: ${response.status})`);
         return null;
       }
     } catch (error) {
-      showSuccessModal(`Failed to upload ${type}. Please try again.`);
+      // Network errors, CORS errors, etc.
+      console.error('Upload error:', error);
+      let errorMessage = `Failed to upload ${type}`;
+      
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = `Network error: Cannot connect to backend at ${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+      } else if (error.message) {
+        errorMessage = `${errorMessage}: ${error.message}`;
+      }
+      
+      showSuccessModal(errorMessage);
       return null;
     }
   };

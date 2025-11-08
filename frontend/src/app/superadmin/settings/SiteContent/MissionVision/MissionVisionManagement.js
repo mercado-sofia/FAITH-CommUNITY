@@ -72,183 +72,158 @@ export default function MissionVisionManagement({ showSuccessModal }) {
     setIsEditing(!isEditing);
   };
 
-  // Handle save changes - create if doesn't exist, update if exists
+  // Handle save changes - use UPSERT to ensure only one Mission and one Vision
   const handleSaveChanges = async () => {
     try {
       setIsUpdating(true);
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
       
-      // Find existing mission and vision items
-      const missionItem = missionVisionData.find(item => item.type === 'Mission');
-      const visionItem = missionVisionData.find(item => item.type === 'Vision');
+      // Normalize values for comparison (handle null/empty string)
+      const normalizeValue = (val) => (val || '').trim();
+      const normalizedTempMission = normalizeValue(tempMission);
+      const normalizedTempVision = normalizeValue(tempVision);
+      const normalizedMission = normalizeValue(mission);
+      const normalizedVision = normalizeValue(vision);
       
       const updates = [];
       const errors = [];
       
-      // Handle Mission - create or update
-      const missionChanged = tempMission !== mission;
+      // Handle Mission - use UPSERT (always update/create the single Mission entry)
+      const missionChanged = normalizedTempMission !== normalizedMission;
       if (missionChanged) {
         try {
-          if (missionItem) {
-            // Update existing mission
-        const response = await makeAuthenticatedRequest(
-          `${baseUrl}/api/mission-vision/${missionItem.id}`,
-          {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'Mission',
-                  content: tempMission.trim() || null,
-              status: 'ACTIVE'
-            })
-          },
-          'superadmin'
-        );
-        
-        if (response && response.ok) {
-          updates.push('Mission');
-            } else {
-              let errorMessage = 'Failed to update Mission';
-              try {
-                const errorData = await response.json();
-                errorMessage = errorData.message || errorData.error || errorMessage;
-                console.error('Update mission error response:', errorData);
-              } catch (e) {
-                errorMessage = response.statusText || `Server error (${response.status})`;
-                console.error('Non-JSON error response:', response.status, response.statusText);
-              }
-              errors.push(`Mission: ${errorMessage}`);
-            }
+          const response = await makeAuthenticatedRequest(
+            `${baseUrl}/api/mission-vision`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'Mission',
+                content: normalizedTempMission || null
+              })
+            },
+            'superadmin'
+          );
+          
+          if (response && response.ok) {
+            updates.push('Mission');
           } else {
-            // Create new mission if it doesn't exist
-            const response = await makeAuthenticatedRequest(
-              `${baseUrl}/api/mission-vision`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  type: 'Mission',
-                  content: tempMission.trim() || null
-                })
-              },
-              'superadmin'
-            );
-            
-            if (response && response.ok) {
-              updates.push('Mission');
-            } else {
-              let errorMessage = 'Failed to create Mission';
-              try {
-                const errorData = await response.json();
-                errorMessage = errorData.message || errorData.error || errorMessage;
-                console.error('Create mission error response:', errorData);
-              } catch (e) {
-                errorMessage = response.statusText || `Server error (${response.status})`;
-                console.error('Non-JSON error response:', response.status, response.statusText);
-              }
-              errors.push(`Mission: ${errorMessage}`);
+            // Handle 401 responses
+            if (response.status === 401) {
+              showSuccessModal('Authentication expired. Please log in again.');
+              return;
             }
+            
+            // Handle CORS errors (status 0)
+            if (response.status === 0) {
+              console.error('CORS or network error detected');
+              showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+              return;
+            }
+            
+            let errorMessage = 'Failed to save Mission';
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.message || errorData.error || errorMessage;
+              console.error('Save mission error response:', errorData);
+            } catch (e) {
+              errorMessage = response.statusText || `Server error (${response.status})`;
+              console.error('Non-JSON error response:', response.status, response.statusText);
+            }
+            errors.push(`Mission: ${errorMessage}`);
           }
         } catch (error) {
           console.error('Mission save error:', error);
-          errors.push(`Mission: ${error.message || 'Failed to save'}`);
+          let errorMessage = 'Failed to save Mission';
+          if (error.message) {
+            errorMessage = error.message;
+          } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+          }
+          errors.push(`Mission: ${errorMessage}`);
         }
       }
       
-      // Handle Vision - create or update
-      const visionChanged = tempVision !== vision;
+      // Handle Vision - use UPSERT (always update/create the single Vision entry)
+      const visionChanged = normalizedTempVision !== normalizedVision;
       if (visionChanged) {
         try {
-          if (visionItem) {
-            // Update existing vision
-        const response = await makeAuthenticatedRequest(
-          `${baseUrl}/api/mission-vision/${visionItem.id}`,
-          {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'Vision',
-                  content: tempVision.trim() || null,
-              status: 'ACTIVE'
-            })
-          },
-          'superadmin'
-        );
-        
-        if (response && response.ok) {
-          updates.push('Vision');
-            } else {
-              let errorMessage = 'Failed to update Vision';
-              try {
-                const errorData = await response.json();
-                errorMessage = errorData.message || errorData.error || errorMessage;
-                console.error('Update vision error response:', errorData);
-              } catch (e) {
-                errorMessage = response.statusText || `Server error (${response.status})`;
-                console.error('Non-JSON error response:', response.status, response.statusText);
-              }
-              errors.push(`Vision: ${errorMessage}`);
-            }
+          const response = await makeAuthenticatedRequest(
+            `${baseUrl}/api/mission-vision`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'Vision',
+                content: normalizedTempVision || null
+              })
+            },
+            'superadmin'
+          );
+          
+          if (response && response.ok) {
+            updates.push('Vision');
           } else {
-            // Create new vision if it doesn't exist
-            const response = await makeAuthenticatedRequest(
-              `${baseUrl}/api/mission-vision`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  type: 'Vision',
-                  content: tempVision.trim() || null
-                })
-              },
-              'superadmin'
-            );
-            
-            if (response && response.ok) {
-              updates.push('Vision');
-            } else {
-              let errorMessage = 'Failed to create Vision';
-              try {
-                const errorData = await response.json();
-                errorMessage = errorData.message || errorData.error || errorMessage;
-                console.error('Create vision error response:', errorData);
-              } catch (e) {
-                errorMessage = response.statusText || `Server error (${response.status})`;
-                console.error('Non-JSON error response:', response.status, response.statusText);
-              }
-              errors.push(`Vision: ${errorMessage}`);
+            // Handle 401 responses
+            if (response.status === 401) {
+              showSuccessModal('Authentication expired. Please log in again.');
+              return;
             }
+            
+            // Handle CORS errors (status 0)
+            if (response.status === 0) {
+              console.error('CORS or network error detected');
+              showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+              return;
+            }
+            
+            let errorMessage = 'Failed to save Vision';
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.message || errorData.error || errorMessage;
+              console.error('Save vision error response:', errorData);
+            } catch (e) {
+              errorMessage = response.statusText || `Server error (${response.status})`;
+              console.error('Non-JSON error response:', response.status, response.statusText);
+            }
+            errors.push(`Vision: ${errorMessage}`);
           }
         } catch (error) {
           console.error('Vision save error:', error);
-          errors.push(`Vision: ${error.message || 'Failed to save'}`);
+          let errorMessage = 'Failed to save Vision';
+          if (error.message) {
+            errorMessage = error.message;
+          } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
+          }
+          errors.push(`Vision: ${errorMessage}`);
         }
       }
       
-      // Show results
-      if (updates.length > 0) {
-        // Update local state
-        setMission(tempMission);
-        setVision(tempVision);
-        setIsEditing(false);
-        
-        // Reload data to ensure consistency
+      // Show results and reload data
+      if (updates.length > 0 || errors.length > 0) {
+        // Reload data to ensure consistency with database
         const loadData = async () => {
           try {
-          const response = await makeAuthenticatedRequest(
-            `${baseUrl}/api/mission-vision`,
-            { method: 'GET' },
-            'superadmin'
-          );
-          if (response && response.ok) {
-            const data = await response.json();
-            setMissionVisionData(data);
+            const response = await makeAuthenticatedRequest(
+              `${baseUrl}/api/mission-vision`,
+              { method: 'GET' },
+              'superadmin'
+            );
+            if (response && response.ok) {
+              const data = await response.json();
+              setMissionVisionData(data);
               
-              // Update form state with fresh data
+              // Update form state with fresh data from database
               const missionItem = data.find(item => item.type === 'Mission');
               const visionItem = data.find(item => item.type === 'Vision');
-              setMission(missionItem?.content || '');
-              setVision(visionItem?.content || '');
+              const freshMission = missionItem?.content || '';
+              const freshVision = visionItem?.content || '';
+              
+              setMission(freshMission);
+              setVision(freshVision);
+              setTempMission(freshMission);
+              setTempVision(freshVision);
             }
           } catch (error) {
             console.error('Error reloading data:', error);
@@ -256,13 +231,13 @@ export default function MissionVisionManagement({ showSuccessModal }) {
         };
         await loadData();
         
+        setIsEditing(false);
+        
         if (errors.length > 0) {
           showSuccessModal(`Partially saved: ${updates.join(' and ')} updated, but ${errors.join(', ')}`);
-      } else {
+        } else {
           showSuccessModal(`Successfully updated ${updates.join(' and ')}! The changes will be visible on the public site immediately.`);
         }
-      } else if (errors.length > 0) {
-        showSuccessModal(`Failed to save: ${errors.join(', ')}`);
       } else if (!missionChanged && !visionChanged) {
         // No changes made
         setIsEditing(false);

@@ -1,7 +1,7 @@
 import express from 'express';
 import {
   getMissionVision,
-  createMissionVision,
+  upsertMissionVision,
   updateMissionVision,
   deleteMissionVision
 } from '../controllers/missionVisionController.js';
@@ -13,7 +13,8 @@ const router = express.Router();
 router.get('/', getMissionVision);
 
 // Protected routes for superadmin management
-router.post('/', verifyAdminOrSuperadmin, createMissionVision);
+// Use UPSERT to ensure only one Mission and one Vision exist
+router.post('/', verifyAdminOrSuperadmin, upsertMissionVision);
 router.put('/:id', verifyAdminOrSuperadmin, updateMissionVision);
 router.delete('/:id', verifyAdminOrSuperadmin, deleteMissionVision);
 

@@ -8,7 +8,7 @@ import { selectCurrentAdmin, updateAdminEmail } from '@/rtk/superadmin/adminSlic
 import { SkeletonLoader } from '../components';
 import { EmailChange, PasswordChange, SuccessModal } from '@/components';
 import { makeAuthenticatedRequest, clearAuthAndRedirect, showAuthError } from '@/utils/adminAuth';
-import styles from './AdminSettings.module.css';
+import styles from './adminSettings.module.css';
 
 // Utility function for password change time
 const getPasswordChangeTime = (effectiveAdminData) => {

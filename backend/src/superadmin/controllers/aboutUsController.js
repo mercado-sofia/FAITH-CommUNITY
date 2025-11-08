@@ -20,7 +20,6 @@ export const getAboutUs = async (req, res) => {
       return res.json({
         success: true,
         data: {
-          heading: null,
           description: null,
           extension_categories: [],
           image_url: null
@@ -50,7 +49,7 @@ export const getAboutUs = async (req, res) => {
 // Update about us content - all fields optional
 export const updateAboutUs = async (req, res) => {
   try {
-    const { heading, description, extension_categories, image_url } = req.body;
+    const { description, extension_categories, image_url } = req.body;
 
     // All fields are optional - no validation required
     // Validate extension categories structure if provided
@@ -77,21 +76,20 @@ export const updateAboutUs = async (req, res) => {
     const [existingRows] = await db.query('SELECT * FROM about_us ORDER BY id DESC LIMIT 1');
     
     let result;
-    const headingValue = heading && heading.trim() ? heading.trim() : null;
     const descriptionValue = description && description.trim() ? description.trim() : null;
     const categoriesValue = extension_categories && extension_categories.length > 0 ? JSON.stringify(extension_categories) : JSON.stringify([]);
     
     if (existingRows.length === 0) {
       // Create new about us record - all fields optional
       [result] = await db.query(
-        'INSERT INTO about_us (heading, description, extension_categories, image_url) VALUES (?, ?, ?, ?)',
-        [headingValue, descriptionValue, categoriesValue, image_url || null]
+        'INSERT INTO about_us (description, extension_categories, image_url) VALUES (?, ?, ?)',
+        [descriptionValue, categoriesValue, image_url || null]
       );
     } else {
       // Update existing about us record - all fields optional
       [result] = await db.query(
-        'UPDATE about_us SET heading = ?, description = ?, extension_categories = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [headingValue, descriptionValue, categoriesValue, image_url || null, existingRows[0].id]
+        'UPDATE about_us SET description = ?, extension_categories = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [descriptionValue, categoriesValue, image_url || null, existingRows[0].id]
       );
     }
 

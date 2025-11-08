@@ -365,8 +365,8 @@ ul.options:focus-visible {
 }
 
 .emptyState p {
-  color: #6b7280;
-  font-size: 1rem;
+  color: #9ca3af;
+  font-size: 13px;
   margin: 0;
   font-weight: 500;
 }

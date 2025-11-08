@@ -340,7 +340,6 @@ async function createMissingTable(tableName) {
     'about_us': `
       CREATE TABLE about_us (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        heading TEXT DEFAULT NULL,
         description TEXT DEFAULT NULL,
         extension_categories JSON DEFAULT '[
           {"name": "Extension For Education", "icon": "education", "color": "green"},

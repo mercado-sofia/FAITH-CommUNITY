@@ -841,11 +841,13 @@ export default function FooterContentManagement({ showSuccessModal }) {
                           </>
                         ) : (
                           <>
-                            <div className={styles.socialMediaIcon} style={{ color: platformColor }}>
-                              {IconComponent && <IconComponent size={20} />}
+                            <div className={styles.socialMediaHeader}>
+                              <div className={styles.socialMediaIcon} style={{ color: platformColor }}>
+                                {IconComponent && <IconComponent size={16} />}
+                              </div>
+                              <span className={styles.socialMediaPlatform}>{social.platform}</span>
                             </div>
                             <div className={styles.socialMediaDetails}>
-                              <span className={styles.socialMediaPlatform}>{social.platform}</span>
                               <span className={styles.socialMediaUrl}>{social.url}</span>
                             </div>
                           </>

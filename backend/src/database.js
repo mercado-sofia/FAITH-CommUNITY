@@ -1357,7 +1357,6 @@ const initializeDatabase = async () => {
       await connection.query(`
         CREATE TABLE IF NOT EXISTS about_us (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          heading TEXT NULL,
           description TEXT NULL,
           extension_categories JSON NULL,
           image_url VARCHAR(500) DEFAULT NULL,
@@ -1365,19 +1364,43 @@ const initializeDatabase = async () => {
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )
       `);
+      
+      // Migration: Remove heading column from about_us
+      try {
+        await connection.query(`ALTER TABLE about_us DROP COLUMN heading`);
+      } catch (err) {
+        // Column might not exist, ignore error
+      }
 
       await connection.query(`
         CREATE TABLE IF NOT EXISTS mission_vision (
           id INT AUTO_INCREMENT PRIMARY KEY,
           type ENUM('mission', 'vision') NOT NULL,
-          content TEXT NOT NULL,
-          status ENUM('ACTIVE', 'INACTIVE') DEFAULT 'ACTIVE',
+          content TEXT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_type (type),
-          INDEX idx_status (status)
+          INDEX idx_type (type)
         )
       `);
+      
+      // Migration: Allow NULL content for mission_vision (for empty fields)
+      try {
+        await connection.query(`ALTER TABLE mission_vision MODIFY COLUMN content TEXT NULL`);
+      } catch (err) {
+        // Column might already be NULL, ignore error
+      }
+      
+      // Migration: Remove status column and index from mission_vision
+      try {
+        await connection.query(`ALTER TABLE mission_vision DROP INDEX idx_status`);
+      } catch (err) {
+        // Index might not exist, ignore error
+      }
+      try {
+        await connection.query(`ALTER TABLE mission_vision DROP COLUMN status`);
+      } catch (err) {
+        // Column might not exist, ignore error
+      }
       
       // 6. Security Tables
       await connection.query(`

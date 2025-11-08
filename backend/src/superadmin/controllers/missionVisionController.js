@@ -82,7 +82,7 @@ export const upsertMissionVision = async (req, res) => {
     } else {
       // Insert new entry
       const [insertResult] = await db.query(
-        "INSERT INTO mission_vision (type, content, status) VALUES (?, ?, 'ACTIVE')",
+        "INSERT INTO mission_vision (type, content) VALUES (?, ?)",
         [normalizedType, content || null]
       );
       
@@ -198,8 +198,8 @@ export const updateMissionVision = async (req, res) => {
 export const deleteMissionVision = async (req, res) => {
   const { id } = req.params;
   try {
-    await db.query("UPDATE mission_vision SET status = 'INACTIVE' WHERE id = ?", [id]);
-    res.json({ message: 'Entry deactivated' });
+    await db.query("DELETE FROM mission_vision WHERE id = ?", [id]);
+    res.json({ message: 'Entry deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

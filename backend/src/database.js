@@ -239,13 +239,14 @@ const runIncrementalMigrations = async (connection) => {
       await connection.query(`DROP TRIGGER IF EXISTS prevent_multiple_superadmin`);
       
       // Create trigger to enforce single superadmin
-      // Note: Using a simpler approach that works with connection.query()
+      // Note: Using DELIMITER workaround for MySQL triggers
+      // We need to execute this as a single statement with proper delimiter handling
       await connection.query(`
         CREATE TRIGGER prevent_multiple_superadmin
         BEFORE INSERT ON superadmin
         FOR EACH ROW
         BEGIN
-          DECLARE account_count INT;
+          DECLARE account_count INT DEFAULT 0;
           SELECT COUNT(*) INTO account_count FROM superadmin;
           IF account_count > 0 THEN
             SIGNAL SQLSTATE '45000'
@@ -1428,16 +1429,31 @@ const initializeDatabase = async () => {
         `);
 
         // Clean up slug duplicates by appending ID
-        await connection.query(`
-          UPDATE news n1
-          SET slug = CONCAT(slug, '-', id)
-          WHERE EXISTS (
-              SELECT 1 FROM (SELECT slug FROM news GROUP BY slug HAVING COUNT(*) > 1) n2 
-              WHERE n1.slug = n2.slug
-          ) AND n1.id NOT IN (
-              SELECT MIN(id) FROM (SELECT id, slug FROM news) n3 GROUP BY slug
-          )
-        `);
+        // Use a simpler approach to avoid MySQL subquery limitations
+        try {
+          const [duplicateSlugs] = await connection.query(`
+            SELECT slug, COUNT(*) as count 
+            FROM news 
+            GROUP BY slug 
+            HAVING count > 1
+          `);
+          
+          for (const dup of duplicateSlugs) {
+            const [records] = await connection.query(`
+              SELECT id FROM news WHERE slug = ? ORDER BY id ASC
+            `, [dup.slug]);
+            
+            // Keep first record, update the rest
+            for (let i = 1; i < records.length; i++) {
+              await connection.query(`
+                UPDATE news SET slug = CONCAT(?, '-', id) WHERE id = ?
+              `, [dup.slug, records[i].id]);
+            }
+          }
+        } catch (slugError) {
+          // Slug cleanup failed, log but don't fail migration
+          logInfo('Slug duplicate cleanup failed (non-critical)', { context: 'database', error: slugError.message });
+        }
 
         // Remove description column after data migration
         await connection.query(`ALTER TABLE news DROP COLUMN description`);

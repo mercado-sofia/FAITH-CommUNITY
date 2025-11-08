@@ -2,6 +2,7 @@ import mysql from "mysql2";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import * as bcrypt from "bcrypt";
 import { logError, logInfo, logWarn } from "./utils/logger.js";
 
 // Get the directory name properly in ES modules
@@ -697,6 +698,70 @@ const runIncrementalMigrations = async (connection) => {
       // Silently skip if update fails
     }
 
+    // Auto-insert/update superadmin account (for existing databases)
+    try {
+      const superadminEmail = 'faithcommunityfaces@gmail.com';
+      const superadminPassword = 'admin123'; // Easy password as requested
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(superadminPassword, saltRounds);
+
+      // Check if superadmin exists
+      const [existingSuperadmin] = await connection.query(
+        'SELECT id, username, password FROM superadmin WHERE id = 1'
+      );
+
+      if (existingSuperadmin.length === 0) {
+        // Insert new superadmin account
+        await connection.query(
+          `INSERT INTO superadmin (id, username, password, password_changed_at) 
+           VALUES (1, ?, ?, NOW()) 
+           ON DUPLICATE KEY UPDATE username = ?, password = ?, password_changed_at = NOW()`,
+          [superadminEmail, hashedPassword, superadminEmail, hashedPassword]
+        );
+        logInfo('Superadmin account created successfully (migration)', { 
+          context: 'database', 
+          email: superadminEmail 
+        });
+      } else {
+        // Update existing superadmin if password is NULL or empty
+        const existing = existingSuperadmin[0];
+        if (!existing.password || existing.password.trim() === '') {
+          await connection.query(
+            `UPDATE superadmin 
+             SET username = ?, password = ?, password_changed_at = NOW() 
+             WHERE id = 1`,
+            [superadminEmail, hashedPassword]
+          );
+          logInfo('Superadmin account password updated successfully (migration)', { 
+            context: 'database', 
+            email: superadminEmail 
+          });
+        } else {
+          // Update username if it doesn't match (but keep existing password)
+          if (existing.username !== superadminEmail) {
+            await connection.query(
+              `UPDATE superadmin SET username = ? WHERE id = 1`,
+              [superadminEmail]
+            );
+            logInfo('Superadmin account username updated (migration)', { 
+              context: 'database', 
+              email: superadminEmail 
+            });
+          } else {
+            logInfo('Superadmin account already exists with password (migration)', { 
+              context: 'database', 
+              email: superadminEmail 
+            });
+          }
+        }
+      }
+    } catch (superadminError) {
+      // Log error but don't fail migration
+      logError('Failed to setup superadmin account (migration)', superadminError, { 
+        context: 'database' 
+      });
+    }
+
   } catch (error) {
     logError('Incremental migrations failed', error, { context: 'database' });
     throw error;
@@ -1374,6 +1439,70 @@ const initializeDatabase = async () => {
           INDEX idx_username (username)
         )
       `);
+
+      // Auto-insert/update superadmin account
+      try {
+        const superadminEmail = 'faithcommunityfaces@gmail.com';
+        const superadminPassword = 'admin123'; // Easy password as requested
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(superadminPassword, saltRounds);
+
+        // Check if superadmin exists
+        const [existingSuperadmin] = await connection.query(
+          'SELECT id, username, password FROM superadmin WHERE id = 1'
+        );
+
+        if (existingSuperadmin.length === 0) {
+          // Insert new superadmin account
+          await connection.query(
+            `INSERT INTO superadmin (id, username, password, password_changed_at) 
+             VALUES (1, ?, ?, NOW()) 
+             ON DUPLICATE KEY UPDATE username = ?, password = ?, password_changed_at = NOW()`,
+            [superadminEmail, hashedPassword, superadminEmail, hashedPassword]
+          );
+          logInfo('Superadmin account created successfully', { 
+            context: 'database', 
+            email: superadminEmail 
+          });
+        } else {
+          // Update existing superadmin if password is NULL or empty
+          const existing = existingSuperadmin[0];
+          if (!existing.password || existing.password.trim() === '') {
+            await connection.query(
+              `UPDATE superadmin 
+               SET username = ?, password = ?, password_changed_at = NOW() 
+               WHERE id = 1`,
+              [superadminEmail, hashedPassword]
+            );
+            logInfo('Superadmin account password updated successfully', { 
+              context: 'database', 
+              email: superadminEmail 
+            });
+          } else {
+            // Update username if it doesn't match (but keep existing password)
+            if (existing.username !== superadminEmail) {
+              await connection.query(
+                `UPDATE superadmin SET username = ? WHERE id = 1`,
+                [superadminEmail]
+              );
+              logInfo('Superadmin account username updated', { 
+                context: 'database', 
+                email: superadminEmail 
+              });
+            } else {
+              logInfo('Superadmin account already exists with password', { 
+                context: 'database', 
+                email: superadminEmail 
+              });
+            }
+          }
+        }
+      } catch (superadminError) {
+        // Log error but don't fail initialization
+        logError('Failed to setup superadmin account', superadminError, { 
+          context: 'database' 
+        });
+      }
 
       await connection.query(`
         CREATE TABLE IF NOT EXISTS email_change_otps (

@@ -19,16 +19,20 @@ This guide covers deploying the FAITH CommUNITY backend to Railway.
 
 After creating the project, you **MUST** configure the root directory:
 
-**Option 1: In Railway Dashboard (Recommended)**
+**Option 1: In Railway Dashboard (Recommended - DO THIS FIRST!)**
 1. Click on your service
 2. Go to **Settings** tab
 3. Scroll to **Root Directory** section
 4. Set Root Directory to: `backend`
 5. Click **Save**
+6. Railway will automatically redeploy
 
-**Option 2: Using railway.json (Alternative)**
-- A `railway.json` file has been created in the root directory
-- This will automatically set the build context to the `backend` directory
+**Why this is important:** Railway needs to know where your `package.json` is located. Without setting the root directory, Railway will look in the repository root and won't find your Node.js project.
+
+**Option 2: Using nixpacks.toml (Alternative - if Option 1 doesn't work)**
+- A `nixpacks.toml` file has been created in the root directory
+- This tells Nixpacks to install Node.js and run commands in the `backend` directory
+- However, **Option 1 is still recommended** as it's cleaner
 
 ## Step 2: Add MySQL Database
 

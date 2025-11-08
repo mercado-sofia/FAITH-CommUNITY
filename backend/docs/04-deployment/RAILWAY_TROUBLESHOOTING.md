@@ -19,19 +19,21 @@ The app contents that Railpack analyzed contains:
 
 **Solution:**
 
-#### Option 1: Set Root Directory in Railway Dashboard (Recommended)
+#### Option 1: Set Root Directory in Railway Dashboard (MUST DO THIS!)
 
 1. Go to your Railway project
 2. Click on your backend service
 3. Go to **Settings** tab
 4. Scroll down to **Root Directory** section
-5. Enter: `backend`
+5. Enter: `backend` (without quotes, just the word backend)
 6. Click **Save**
-7. Railway will redeploy automatically
+7. Railway will automatically redeploy
 
-#### Option 2: Use railway.json in Root Directory
+**This is the most important step!** Without setting the root directory, Railway won't find your `package.json` and Node.js won't be installed.
 
-A `railway.json` file has been created in the root directory that automatically sets the build context. If this doesn't work, use Option 1.
+#### Option 2: Use nixpacks.toml (Alternative)
+
+A `nixpacks.toml` file has been created in the root directory that tells Nixpacks where to find Node.js. However, **Option 1 is still required** for the best results.
 
 #### Option 3: Create a Separate Repository
 

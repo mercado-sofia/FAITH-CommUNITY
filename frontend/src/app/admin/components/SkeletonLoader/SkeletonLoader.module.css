@@ -773,24 +773,7 @@
   will-change: background-position;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
-  .contentSkeleton {
-    flex-direction: column;
-    gap: 1.5rem;
-    align-items: center;
-  }
-  
-  .logoSkeleton {
-    width: 120px;
-    height: 120px;
-  }
-  
-  .headsGridSkeleton {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-  
   .headCardSkeleton {
     padding: 1.5rem;
     flex-direction: column;

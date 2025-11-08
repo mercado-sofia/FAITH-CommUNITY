@@ -211,21 +211,8 @@
   box-shadow: 0 0 10px rgba(22, 160, 133, 0.3);
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
   .headCard {
-    padding: 1.5rem;
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .dragHandle {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    width: 24px;
-    height: 24px;
-    background: rgba(148, 163, 184, 0.1);
     border-radius: 4px;
   }
   

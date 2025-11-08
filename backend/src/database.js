@@ -134,6 +134,127 @@ const runIncrementalMigrations = async (connection) => {
       await connection.query(`ALTER TABLE superadmin DROP COLUMN password_hash`);
     }
 
+    // Enforce single superadmin account constraint
+    try {
+      // Check if table exists and has AUTO_INCREMENT
+      const [columnInfo] = await connection.query(`
+        SELECT COLUMN_KEY, EXTRA, COLUMN_DEFAULT
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'superadmin' 
+        AND COLUMN_NAME = 'id'
+      `);
+      
+      if (columnInfo.length > 0 && columnInfo[0].EXTRA && columnInfo[0].EXTRA.includes('auto_increment')) {
+        // First, ensure we have at least one superadmin account (keep the first one)
+        const [existingSuperadmins] = await connection.query(`SELECT id FROM superadmin ORDER BY id LIMIT 1`);
+        
+        if (existingSuperadmins.length > 0) {
+          const keepId = existingSuperadmins[0].id;
+          
+          // Delete any superadmin accounts with id != keepId
+          if (keepId !== 1) {
+            // Update references in related tables before changing superadmin id
+            // Update superadmin_notifications table
+            try {
+              await connection.query(`
+                UPDATE superadmin_notifications 
+                SET superadmin_id = 1 
+                WHERE superadmin_id = ?
+              `, [keepId]);
+            } catch (err) {
+              // Table might not exist, ignore
+            }
+            
+            // Update program_post_act_reports table
+            try {
+              await connection.query(`
+                UPDATE program_post_act_reports 
+                SET reviewed_by_superadmin_id = 1 
+                WHERE reviewed_by_superadmin_id = ?
+              `, [keepId]);
+            } catch (err) {
+              // Table might not exist, ignore
+            }
+            
+            // Update audit_logs table (if it references superadmin)
+            try {
+              await connection.query(`
+                UPDATE audit_logs 
+                SET user_id = 1 
+                WHERE user_id = ? AND user_type = 'superadmin'
+              `, [keepId]);
+            } catch (err) {
+              // Table might not exist, ignore
+            }
+            
+            // Update the account we want to keep to id = 1
+            await connection.query(`UPDATE superadmin SET id = 1 WHERE id = ?`, [keepId]);
+          }
+          
+          // Delete any other superadmin accounts
+          await connection.query(`DELETE FROM superadmin WHERE id != 1`);
+        }
+        
+        // Remove AUTO_INCREMENT and set fixed ID
+        await connection.query(`
+          ALTER TABLE superadmin 
+          MODIFY COLUMN id INT NOT NULL DEFAULT 1
+        `);
+        
+        // Try to add CHECK constraint (MySQL 8.0.16+)
+        try {
+          // First check if constraint already exists
+          const [constraints] = await connection.query(`
+            SELECT CONSTRAINT_NAME 
+            FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'superadmin' 
+            AND CONSTRAINT_NAME = 'chk_single_superadmin'
+          `);
+          
+          if (constraints.length === 0) {
+            await connection.query(`
+              ALTER TABLE superadmin 
+              ADD CONSTRAINT chk_single_superadmin CHECK (id = 1)
+            `);
+          }
+        } catch (checkError) {
+          // CHECK constraint not supported (MySQL < 8.0.16), will use trigger instead
+          logInfo('CHECK constraint not supported, will use trigger for enforcement', { context: 'database', migration: 'superadmin_single_account' });
+        }
+      }
+    } catch (migrationError) {
+      logError('Superadmin single account migration failed', migrationError, { context: 'database', migration: 'superadmin_single_account' });
+    }
+
+    // Create trigger to prevent multiple superadmin accounts (fallback for older MySQL)
+    try {
+      // Drop existing trigger if it exists
+      await connection.query(`DROP TRIGGER IF EXISTS prevent_multiple_superadmin`);
+      
+      // Create trigger to enforce single superadmin
+      // Note: Using a simpler approach that works with connection.query()
+      await connection.query(`
+        CREATE TRIGGER prevent_multiple_superadmin
+        BEFORE INSERT ON superadmin
+        FOR EACH ROW
+        BEGIN
+          DECLARE account_count INT;
+          SELECT COUNT(*) INTO account_count FROM superadmin;
+          IF account_count > 0 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Only one superadmin account is allowed';
+          END IF;
+          SET NEW.id = 1;
+        END
+      `);
+    } catch (triggerError) {
+      // Trigger creation failed, log but don't fail migration
+      // This is non-critical as CHECK constraint or application logic will handle it
+      logInfo('Trigger creation failed (non-critical)', { context: 'database', migration: 'superadmin_single_account', error: triggerError.message });
+    }
+
     // Handle admins table password column migration
     const [adminsColumns] = await connection.query(`
       SELECT COLUMN_NAME 
@@ -1141,7 +1262,7 @@ const initializeDatabase = async () => {
 
       await connection.query(`
         CREATE TABLE IF NOT EXISTS superadmin (
-          id INT AUTO_INCREMENT PRIMARY KEY,
+          id INT PRIMARY KEY DEFAULT 1,
           username VARCHAR(100) NOT NULL UNIQUE,
           password VARCHAR(255) NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

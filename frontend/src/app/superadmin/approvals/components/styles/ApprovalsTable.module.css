@@ -344,7 +344,7 @@
 }
 
 .emptyStateTitle {
-  font-size: 1.125rem;
+  font-size: 14px;
   font-weight: 600;
   color: #374151;
   margin-bottom: 0.5rem;
@@ -352,7 +352,7 @@
 }
 
 .emptyStateText {
-  font-size: 0.875rem;
+  font-size: 13px;
   margin: 0;
   line-height: 1.5;
   color: #6b7280;

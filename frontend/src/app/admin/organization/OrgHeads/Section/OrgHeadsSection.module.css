@@ -503,30 +503,6 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .controlsSection {
-    padding: 0.75rem;
-  }
-  
-  .searchInputWrapper {
-    max-width: 100%;
-  }
-  
-  .bulkActions {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-  
-  .headsContainer {
-    grid-template-columns: 1fr;
-  }
-  
-  .headCard {
-    padding: 1rem;
-  }
-}
 
 /* Bulk Delete Confirmation Modal */
 .modalOverlay {
@@ -706,75 +682,3 @@
   box-shadow: none;
 }
 
-/* Mobile responsive modal */
-@media (max-width: 768px) {
-  .confirmModal {
-    width: 95%;
-    margin: 1rem;
-  }
-  
-  .modalHeader,
-  .modalBody,
-  .modalFooter {
-    padding: 1rem;
-  }
-  
-  .modalFooter {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .cancelButton,
-  .deleteButton {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .section {
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .headsContainer {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-
-  .headCard {
-    padding: 1.5rem;
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .headPhoto {
-    width: 100px;
-    height: 125px;
-  }
-
-  .photoPlaceholder {
-    width: 100px;
-    height: 125px;
-    font-size: 1.5rem;
-  }
-
-  .headInfo {
-    text-align: center;
-  }
-
-  .contactInfo {
-    align-items: center;
-  }
-
-  .header {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-  }
-
-  .editIcon {
-    align-self: center;
-  }
-}

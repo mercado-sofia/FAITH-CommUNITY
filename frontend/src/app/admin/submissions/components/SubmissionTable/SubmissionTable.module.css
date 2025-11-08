@@ -20,43 +20,42 @@
   padding: 14px;
   font-size: 12.5px;
   font-weight: 600;
-  color: #0c1b1a;
+  color: #000;
   background-color: #fff;
   border-bottom: 1px solid #e5e7eb;
   text-transform: uppercase;
 }
 
 /* Column width specifications */
-.tableHeader th:nth-child(1) { /* Selection */
+.tableHeader th:nth-child(1) { /* Number */
+  width: 40px;
+}
+
+.tableHeader th:nth-child(2) { /* Selection */
   width: 50px;
 }
 
-.tableHeader th:nth-child(2) { /* Section */
-  width: 25%;
+.tableHeader th:nth-child(3) { /* Section */
+  width: 22%;
 }
 
-.tableHeader th:nth-child(3) { /* Date Submitted */
-  width: 20%;
+.tableHeader th:nth-child(4) { /* Date Submitted */
+  width: 18%;
 }
 
-.tableHeader th:nth-child(4) { /* Status */
-  width: 15%;
-}
-
-.tableHeader th:nth-child(5) { /* View column */
-  width: 100px;
+.tableHeader th:nth-child(5) { /* Status */
+  width: 12%;
   text-align: center;
 }
 
-.tableHeader th:nth-child(6) { /* Actions (Edit, Cancel) */
-  width: 100px;
-  text-align: left;
+.tableHeader th:nth-child(6) { /* View column */
+  width: 90px;
+  text-align: center;
 }
 
-.tableHeader th:nth-child(7) { /* Delete column */
-  width: 50px;
+.tableHeader th:nth-child(7) { /* Actions (Edit, Cancel, Delete) */
+  width: 180px;
   text-align: center;
-  padding-left: 4px;
 }
 
 .tableBody td {
@@ -67,25 +66,18 @@
   background-color: #fff;
 }
 
-/* Align table body cells */
-.tableBody td:nth-child(5) { /* View column */
-  text-align: left;
-}
-
-.tableBody td:nth-child(6) { /* Actions column */
-  text-align: left;
-  padding-right: 8px;
-}
-
-.tableBody td:nth-child(7) { /* Delete column */
+.tableBody td:nth-child(5) { /* Status column */
   text-align: center;
-  padding-left: 4px;
 }
 
-/* Delete Column Styles */
-.deleteColumn {
+.tableBody td:nth-child(6) { /* View column */
   text-align: center;
-  padding: 12px 8px !important;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tableBody td:nth-child(7) { /* Actions column */
+  text-align: center;
 }
 
 .tableBody tr {
@@ -129,13 +121,29 @@
 .selectColumn {
   width: 40px;
   text-align: center;
-  padding: 12px 8px !important;
+  padding: 12px 8px 12px 4px !important;
+}
+
+/* Numbering column */
+.numberColumn {
+  width: 40px;
+  text-align: center !important;
+  min-width: 40px;
+  padding: 12px 4px 12px 8px !important;
+}
+
+.numberCell {
+  text-align: center;
+  padding: 12px 4px 12px 8px !important;
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 13px;
 }
 
 /* Header select column alignment */
-.tableHeader th:nth-child(1) {
+.tableHeader th:nth-child(2) {
   text-align: center;
-  padding: 14px 8px;
+  padding: 14px 8px 14px 4px;
 }
 
 .selectAllCheckbox,
@@ -217,8 +225,8 @@
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  flex-wrap: wrap;
-  justify-content: flex-start; /* Align buttons to the left */
+  flex-wrap: nowrap;
+  justify-content: flex-end;
 }
 
 /* Disabled button styles */
@@ -368,19 +376,6 @@
   border-color: #2563eb;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .pagination {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-  }
-  
-  .paginationControls {
-    justify-content: center;
-  }
-}
-
 /* No Submissions State */
 .noSubmissions {
   text-align: center;
@@ -401,38 +396,5 @@
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .searchWrapper {
-    max-width: 100%;
-  }
-  
-  .dropdownWrapper {
-    min-width: 100%;
-  }
-  
-  .table th,
-  .table td {
-    padding: 0.75rem 0.5rem;
-    font-size: 0.8rem;
-  }
-  
-  .actionButtons {
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-  
-  .viewBtn, .editBtn, .cancelBtn, .deleteBtn {
-    margin-right: 0;
-    width: 100%;
-    justify-content: center;
   }
 }

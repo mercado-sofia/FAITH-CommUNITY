@@ -230,21 +230,7 @@
   font-weight: 600 !important;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
-  .toolbar {
-    padding: 8px;
-    gap: 8px;
-  }
-  
-  .toolbarButton {
-    min-width: 28px;
-    height: 28px;
-    padding: 6px 8px;
-    font-size: 11px;
-  }
-  
-  
   .editor {
     padding: 12px;
     font-size: 13px;

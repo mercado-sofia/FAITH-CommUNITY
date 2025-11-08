@@ -237,46 +237,7 @@
   cursor: not-allowed;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
-  .modal {
-    margin: 1rem;
-    max-height: calc(100vh - 2rem);
-  }
-
-  .modalHeader {
-    padding: 1rem 1.25rem;
-  }
-
-  .modalTitle {
-    font-size: 16px;
-  }
-
-  .modalContent {
-    padding: 1.25rem;
-  }
-
-  .newsMeta {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .actions {
-    flex-direction: column;
-  }
-
-  .restoreButton,
-  .permanentDeleteButton {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .modalHeader {
-    padding: 0.875rem 1rem;
-  }
-
   .modalContent {
     padding: 1rem;
   }

@@ -15,7 +15,7 @@ const SuperadminHighlightsPage = () => {
   const searchParams = useSearchParams()
   const [selectedOrganization, setSelectedOrganization] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [refreshKey, setRefreshKey] = useState(0) // Force re-render when starred highlights change
+  const [refreshKey, setRefreshKey] = useState(0)
   const [selectedHighlight, setSelectedHighlight] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [showDropdown, setShowDropdown] = useState(null)
@@ -234,13 +234,8 @@ const SuperadminHighlightsPage = () => {
   }
 
   // Use organizations from API for filter dropdown
-  // Filter out "Collab Admin" as it's not a real organization but a collaboration condition
-  const organizationOptions = (organizations || []).filter(org => {
-    // Exclude organizations with "Collab Admin" in acronym or "Collaboration Administrator" in name
-    const acronym = (org.acronym || '').toLowerCase()
-    const name = (org.name || '').toLowerCase()
-    return !acronym.includes('collab admin') && !name.includes('collaboration administrator')
-  })
+  // Include all organizations, including "Collab Admin" as it's a real organization in the database
+  const organizationOptions = organizations || []
 
   // Search handler
   const handleSearchChange = (query) => {
@@ -496,4 +491,3 @@ const SuperadminHighlightsPage = () => {
 }
 
 export default SuperadminHighlightsPage
-

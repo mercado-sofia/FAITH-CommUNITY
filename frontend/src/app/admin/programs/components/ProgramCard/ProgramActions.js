@@ -6,7 +6,6 @@ import styles from './ProgramActions.module.css';
 const ProgramActions = ({
   normalizedData,
   isCollaborationCard,
-  getProgramStatusByDates,
   actions
 }) => {
   const {
@@ -21,7 +20,8 @@ const ProgramActions = ({
 
   // Regular program action buttons - Only show for creators and not for collaboration cards
   if (normalizedData.user_role === 'creator' && !isCollaborationCard) {
-    const displayStatus = getProgramStatusByDates(normalizedData);
+    // Use program_projects.status field directly
+    const displayStatus = normalizedData.status || 'Upcoming';
     
     // If a report is pending, show notice and hide both buttons
     if (normalizedData.has_pending_post_act_report) {

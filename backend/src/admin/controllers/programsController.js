@@ -1,7 +1,5 @@
 // db table: programs_projects
 import db from "../../database.js";
-import path from 'path';
-import fs from 'fs';
 import { sendToSubscribers } from './subscribersController.js';
 import { getOrganizationLogoUrl, getProgramImageUrl } from "../../utils/imageUrlUtils.js";
 
@@ -68,11 +66,14 @@ export const getAdminPrograms = async (req, res) => {
         ${selectFlags}
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
-      WHERE p.organization_id = ? 
+      WHERE (p.organization_id = ? 
          OR p.id IN (
            SELECT program_id FROM program_collaborations 
            WHERE collaborator_admin_id = ? AND status = 'accepted'
-         )
+         ))
+      -- CRITICAL: Only show APPROVED programs to admins
+      -- Programs must go through superadmin approval first
+      AND p.is_approved = TRUE
       ORDER BY p.created_at DESC
     `;
 
@@ -659,7 +660,7 @@ export const updateProgram = async (req, res) => {
   try {
     // Check if program exists and get current status/override flag
     const [existingProgram] = await db.execute(
-      'SELECT id, organization_id, image, status, manual_status_override FROM programs_projects WHERE id = ?',
+      'SELECT id, organization_id, image, status, manual_status_override, is_approved, title FROM programs_projects WHERE id = ?',
       [id]
     );
 
@@ -900,8 +901,8 @@ export const updateProgram = async (req, res) => {
       
       // Then insert new collaborators if any
       if (collaborators && Array.isArray(collaborators) && collaborators.length > 0) {
-        // Get the current admin ID from the request (assuming it's available in req.user)
-        const currentAdminId = req.user?.id || req.user?.admin_id;
+        // Get the current admin ID from the request
+        const currentAdminId = req.admin?.id || req.superadmin?.id;
         
         if (!currentAdminId) {
           return res.status(400).json({
@@ -910,12 +911,40 @@ export const updateProgram = async (req, res) => {
           });
         }
         
+        // Check if program is already approved
+        const isProgramApproved = existingProgram[0].is_approved === 1 || existingProgram[0].is_approved === true;
+        const programTitle = title || existingProgram[0].title;
+        
         for (const collaboratorId of collaborators) {
           if (collaboratorId && typeof collaboratorId === 'number') {
+            // Prevent self-collaboration
+            if (collaboratorId === currentAdminId) {
+              continue;
+            }
+            
             await db.execute(
               'INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status, program_title) VALUES (?, ?, ?, ?, ?)',
-              [id, collaboratorId, currentAdminId, 'pending', title]
+              [id, collaboratorId, currentAdminId, 'pending', programTitle]
             );
+            
+            // Notify collaborator if program is already approved
+            // For non-approved programs, notifications will be sent after superadmin approval
+            if (isProgramApproved) {
+              try {
+                const NotificationController = (await import('./notificationController.js')).default;
+                await NotificationController.createNotification(
+                  collaboratorId,
+                  'collaboration_request',
+                  'New Collaboration Request',
+                  `You have received a collaboration request for "${programTitle}". Please review and respond.`,
+                  'programs',
+                  id
+                );
+              } catch (notificationError) {
+                // Don't fail the main operation if notification fails
+                console.error('Failed to send collaborator notification:', notificationError);
+              }
+            }
           }
         }
       }
@@ -1653,7 +1682,30 @@ export const addProgramProject = async (req, res) => {
 
     const newId = result.insertId;
 
+    // Create a submission record so it appears in superadmin approvals
+    // This ensures the program goes through the approval workflow
+    const proposedData = JSON.stringify({
+      program_id: newId,
+      title,
+      description,
+      category,
+      event_start_date,
+      event_end_date,
+      image,
+      collaborators: collaborators || [],
+      action: 'create'
+    });
+
+    const [submissionResult] = await db.execute(`
+      INSERT INTO submissions (organization_id, section, previous_data, proposed_data, submitted_by, status, submitted_at)
+      VALUES (?, 'programs', '{}', ?, ?, 'pending', NOW())
+    `, [adminOrgId, proposedData, currentAdminId]);
+
+    const submissionId = submissionResult.insertId;
+
     // Handle collaboration invitations if provided
+    // NOTE: Do NOT send notifications to collaborators yet - wait for superadmin approval
+    // Notifications will be sent in approveSubmission after the program is approved
     if (collaborators && collaborators.length > 0) {
       
       // Filter out self-collaboration
@@ -1663,46 +1715,50 @@ export const addProgramProject = async (req, res) => {
       
       for (const collaboratorId of validCollaborators) {
         try {
+          // Create collaboration request linked to submission (not program yet)
+          // program_id will be NULL until superadmin approves
+          // When superadmin approves, the collaboration will be linked to program_id
           await db.execute(`
-            INSERT INTO program_collaborations (program_id, collaborator_admin_id, invited_by_admin_id, status)
-            VALUES (?, ?, ?, 'pending')
-          `, [newId, collaboratorId, currentAdminId]);
-
-          // Notify collaborator about the collaboration request
-          try {
-            const NotificationController = (await import('./notificationController.js')).default;
-            await NotificationController.createNotification(
-              collaboratorId,
-              'collaboration_request',
-              'New Collaboration Request',
-              `You have received a collaboration request for "${title}". Please review and respond.`,
-              'programs',
-              newId
-            );
-          } catch (notificationError) {
-            // Don't fail the main operation if notification fails
-          }
+            INSERT INTO program_collaborations (submission_id, collaborator_admin_id, invited_by_admin_id, status, program_title)
+            VALUES (?, ?, ?, 'pending', ?)
+          `, [submissionId, collaboratorId, currentAdminId, title]);
+          // Do NOT send notification here - wait for superadmin approval
         } catch (collabError) {
           // Continue with other collaborators even if one fails
         }
       }
     }
-    const appBase = process.env.APP_BASE_URL;
-    const programUrl = `${appBase}/programs/${finalSlug}`;
 
-    // 🔔 Email subscribers (non-blocking but awaited here for logs)
+    // Send superadmin notification for approval request
     try {
-      await sendToSubscribers({
-        subject: `New Program: ${title}`,
-        html: `
-          <h2>${escapeHtml(title)}</h2>
-          <p>${escapeHtml(description || "")}</p>
-          ${image ? `<p><img src="${escapeHtml(getProgramImageUrl(image))}" alt="${escapeHtml(title)}" style="max-width:100%;height:auto"/></p>` : ""}
-          <p><a href="${programUrl}">View details</a></p>
-        `,
-      });
-    } catch (mailErr) {
+      const SuperAdminNotificationController = (await import('../../superadmin/controllers/superadminNotificationController.js')).default;
+      
+      // Get superadmin ID
+      const [superadminRows] = await db.execute("SELECT id FROM superadmin LIMIT 1");
+      const superadminId = superadminRows.length > 0 ? superadminRows[0].id : null;
+      
+      if (superadminId) {
+        const message = collaborators && collaborators.length > 0
+          ? `A new collaborative program "${title}" has been submitted for approval.`
+          : `A new program "${title}" has been submitted for approval.`;
+        
+        await SuperAdminNotificationController.createNotification(
+          superadminId,
+          'approval_request',
+          `New Program Submission`,
+          message,
+          'programs',
+          submissionId,  // Use submission_id instead of program_id
+          adminOrgId  // Pass organization_id
+        );
+      }
+    } catch (notificationError) {
+      // Don't fail the main operation if notification fails
+      console.error('Failed to send superadmin notification:', notificationError);
     }
+
+    // Note: Email subscribers notification removed - should only be sent after superadmin approval
+    // Subscribers will be notified when the program is approved in approvalController.js
 
     return res
       .status(201)
@@ -1809,9 +1865,13 @@ export const updateProgramProject = async (req, res) => {
 };
 
 // ---------------- Get all program projects (from programProjectsController) ----------------
+// SECURITY: Only return approved programs to admins
+// This function should only be used for approved programs display
 export const getProgramProjects = async (req, res) => {
   try {
-    const [rows] = await db.execute('SELECT * FROM programs_projects');
+    // CRITICAL: Only show APPROVED programs to admins
+    // Programs must go through superadmin approval first
+    const [rows] = await db.execute('SELECT * FROM programs_projects WHERE is_approved = TRUE');
     res.json(rows);
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -522,33 +522,3 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .modalContainer {
-    margin: 10px;
-    max-width: calc(100vw - 20px);
-    max-height: calc(100vh - 20px);
-  }
-  
-  .modalContent {
-    height: auto;
-    max-height: calc(100vh - 140px);
-  }
-  
-  .modalFooter {
-    padding: 12px 16px;
-  }
-  
-  .logoSection {
-    margin-bottom: 20px;
-  }
-  
-  .formRow {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  
-  .mainContent {
-    padding: 16px 16px 0;
-  }
-}

@@ -108,19 +108,3 @@
   background-color: #fef2f2;
 }
 
-/* Responsive Design */
-@media (max-width: 640px) {
-  .bulkActionsBar {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-  }
-  
-  .selectionInfo {
-    justify-content: center;
-  }
-  
-  .actions {
-    justify-content: center;
-  }
-}

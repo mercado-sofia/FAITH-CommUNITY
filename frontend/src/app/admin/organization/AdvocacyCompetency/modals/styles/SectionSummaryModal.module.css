@@ -208,19 +208,9 @@
   }
 }
 
-/* Responsive Design */
-@media (max-width: 640px) {
-  .modalContainer {
-    max-width: 95vw;
-    margin: 10px;
-  }
-  
-  .comparison {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  
+@media (max-width: 768px) {
   .modalActions {
+    gap: 12px;
     flex-direction: column;
   }
   

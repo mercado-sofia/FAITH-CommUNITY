@@ -113,23 +113,7 @@
   text-decoration: underline;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
-  .contentLayout {
-    flex-direction: column;
-    gap: 1.5rem;
-    align-items: center;
-  }
-  
-  .detailsSection {
-    width: 100%;
-  }
-  
-  .inlineGroup {
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-  
   .inlineLabel {
     min-width: auto;
   }

@@ -146,12 +146,13 @@
 /* Numbering column */
 .numberColumn {
   width: 4%;
-  text-align: center !important;
+  text-align: left !important;
   min-width: 50px;
+  padding: 0.6rem 1rem !important;
 }
 
 .numberCell {
-  text-align: center;
+  text-align: left;
   padding: 0.65rem 1rem !important;
   font-weight: 500;
   color: #6b7280;

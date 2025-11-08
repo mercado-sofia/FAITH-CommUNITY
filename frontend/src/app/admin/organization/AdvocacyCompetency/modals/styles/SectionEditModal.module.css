@@ -149,24 +149,6 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .modalContainer {
-    margin: 10px;
-    max-width: calc(100vw - 20px);
-    max-height: calc(100vh - 20px);
-  }
-  
-  .modalContent {
-    flex: 1;
-  }
-  
-  .mainContent {
-    padding: 16px;
-  }
-  
-}
-
 /* Summary Modal Styles */
 .summarySection {
   margin-bottom: 24px;

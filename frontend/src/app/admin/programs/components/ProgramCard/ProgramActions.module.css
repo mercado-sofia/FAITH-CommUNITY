@@ -121,15 +121,3 @@
   transform: none;
 }
 
-@media (max-width: 768px) {
-  .actionButtons {
-    flex-direction: column;
-  }
-
-  .markActiveButton,
-  .markCompletedButton,
-  .acceptButton,
-  .declineButton {
-    width: 100%;
-  }
-}

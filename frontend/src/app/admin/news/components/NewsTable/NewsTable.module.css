@@ -403,34 +403,3 @@
     transform: translateY(0);
   }
 }
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .tableContainer {
-    overflow-x: auto;
-  }
-  
-  .table {
-    min-width: 600px;
-  }
-  
-  .bulkActionsBar {
-    flex-direction: column;
-    gap: 12px;
-    align-items: stretch;
-  }
-  
-  .bulkActionsRight {
-    justify-content: center;
-  }
-  
-  .actionsCell {
-    flex-direction: column;
-    gap: 4px;
-  }
-  
-  .actionButton {
-    width: 28px;
-    height: 28px;
-  }
-}

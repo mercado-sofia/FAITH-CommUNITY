@@ -24,9 +24,3 @@
   border-color: #9ca3af;
 }
 
-/* Responsive adjustments for textarea */
-@media (max-width: 768px) {
-  .textarea {
-    max-height: 300px;
-  }
-}

@@ -411,6 +411,13 @@
   color: #6b7280;
 }
 
+.emptyState p {
+  font-size: 15px;
+  color: #6b7280;
+  font-weight: 500;
+  margin: 0;
+}
+
 .emptyContent {
   display: flex;
   flex-direction: column;

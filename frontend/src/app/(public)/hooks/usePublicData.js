@@ -14,8 +14,18 @@ export const usePublicOrganizationData = (orgID) => {
     fetcher,
     {
       dedupingInterval: 60000, // Cache for 1 minute (to reflect admin changes quickly)
+      shouldRetryOnError: false, // Don't retry on error to prevent spam
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/organization/org/${orgID}`, error, { orgID });
+        // Handle network errors with better context
+        if (error?.isNetworkError) {
+          logger.warn(`Failed to fetch organization data: ${error.message}`, {
+            endpoint: `${API_BASE_URL}/api/organization/org/${orgID}`,
+            orgID,
+            type: 'network_error'
+          });
+        } else {
+          logger.swrError(`${API_BASE_URL}/api/organization/org/${orgID}`, error, { orgID });
+        }
       }
     }
   );
@@ -65,8 +75,17 @@ export const usePublicOrganizations = () => {
     fetcher,
     {
       dedupingInterval: 300000, // Cache for 5 minutes
+      shouldRetryOnError: false, // Don't retry on error to prevent spam
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/organizations`, error);
+        // Handle network errors with better context
+        if (error?.isNetworkError) {
+          logger.warn(`Failed to fetch organizations: ${error.message}`, {
+            endpoint: `${API_BASE_URL}/api/organizations`,
+            type: 'network_error'
+          });
+        } else {
+          logger.swrError(`${API_BASE_URL}/api/organizations`, error);
+        }
       }
     }
   );
@@ -87,8 +106,18 @@ export const usePublicPrograms = (orgID) => {
       revalidateOnFocus: false,
       dedupingInterval: 300000, // Cache for 5 minutes
       errorRetryCount: 2,
+      shouldRetryOnError: false, // Don't retry on error to prevent spam
       onError: (error) => {
-        logger.swrError(orgID ? `${API_BASE_URL}/api/programs/org/${orgID}` : `${API_BASE_URL}/api/programs`, error, { orgID });
+        // Handle network errors with better context
+        if (error?.isNetworkError) {
+          logger.warn(`Failed to fetch programs: ${error.message}`, {
+            endpoint: orgID ? `${API_BASE_URL}/api/programs/org/${orgID}` : `${API_BASE_URL}/api/programs`,
+            orgID,
+            type: 'network_error'
+          });
+        } else {
+          logger.swrError(orgID ? `${API_BASE_URL}/api/programs/org/${orgID}` : `${API_BASE_URL}/api/programs`, error, { orgID });
+        }
       }
     }
   );
@@ -107,8 +136,17 @@ export const usePublicNews = () => {
     fetcher,
     {
       dedupingInterval: 60000, // Cache for 1 minute (news updates more frequently)
+      shouldRetryOnError: false, // Don't retry on error to prevent spam
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/news`, error);
+        // Handle network errors with better context
+        if (error?.isNetworkError) {
+          logger.warn(`Failed to fetch news: ${error.message}`, {
+            endpoint: `${API_BASE_URL}/api/news`,
+            type: 'network_error'
+          });
+        } else {
+          logger.swrError(`${API_BASE_URL}/api/news`, error);
+        }
       }
     }
   );
@@ -131,8 +169,18 @@ export const usePublicNewsArticle = (slug) => {
       revalidateOnFocus: false,
       dedupingInterval: 600000, // Cache for 10 minutes (single articles don't change often)
       errorRetryCount: 2,
+      shouldRetryOnError: false, // Don't retry on error to prevent spam
       onError: (error) => {
-        logger.swrError(url, error, { slug });
+        // Handle network errors with better context
+        if (error?.isNetworkError) {
+          logger.warn(`Failed to fetch news article: ${error.message}`, {
+            endpoint: url,
+            slug,
+            type: 'network_error'
+          });
+        } else {
+          logger.swrError(url, error, { slug });
+        }
       }
     }
   );
@@ -154,8 +202,17 @@ export const usePublicFAQs = () => {
       revalidateOnFocus: false,
       dedupingInterval: 1800000, // Cache for 30 minutes (FAQs rarely change)
       errorRetryCount: 2,
+      shouldRetryOnError: false, // Don't retry on error to prevent spam
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/faqs/active`, error);
+        // Handle network errors with better context
+        if (error?.isNetworkError) {
+          logger.warn(`Failed to fetch FAQs: ${error.message}`, {
+            endpoint: `${API_BASE_URL}/api/faqs/active`,
+            type: 'network_error'
+          });
+        } else {
+          logger.swrError(`${API_BASE_URL}/api/faqs/active`, error);
+        }
       }
     }
   );
@@ -184,12 +241,47 @@ export const usePublicApprovedPrograms = () => {
 
       if (!response.ok) {
         const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
+        error.status = response.status;
+        error.statusText = response.statusText;
+        error._alreadyLogged = true; // Mark as already logged
         logger.apiError(url, error, { status: response.status });
         throw error;
       }
 
-      return response.json();
+      // Parse JSON with error handling
+      try {
+        return await response.json();
+      } catch (parseError) {
+        const error = new Error('Invalid JSON response from server');
+        error.originalError = parseError;
+        error._alreadyLogged = true; // Mark as already logged
+        logger.apiError(url, error, { parseError: parseError.message });
+        throw error;
+      }
     } catch (error) {
+      // Skip logging if error was already logged
+      if (error._alreadyLogged) {
+        throw error;
+      }
+      
+      // Handle network errors (connection refused, CORS, timeout, etc.)
+      if (
+        error instanceof TypeError || 
+        error.name === 'NetworkError' ||
+        error.message.includes('fetch') ||
+        error.message.includes('Failed to fetch') ||
+        error.message.includes('NetworkError') ||
+        error.message.includes('Network request failed')
+      ) {
+        const networkError = new Error(`Network error: Unable to connect to ${url}`);
+        networkError.originalError = error;
+        networkError.isNetworkError = true;
+        networkError.name = error.name || 'NetworkError';
+        networkError.message = error.message || networkError.message;
+        throw networkError;
+      }
+      
+      // For other unexpected errors, log them
       logger.apiError(url, error);
       throw error;
     }
@@ -202,8 +294,17 @@ export const usePublicApprovedPrograms = () => {
       revalidateOnFocus: false,
       dedupingInterval: 300000, // Cache for 5 minutes
       errorRetryCount: 2,
+      shouldRetryOnError: false, // Don't retry on error to prevent spam
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/programs/approved/upcoming`, error);
+        // Handle network errors with better context
+        if (error?.isNetworkError) {
+          logger.warn(`Failed to fetch approved programs: ${error.message}`, {
+            endpoint: `${API_BASE_URL}/api/programs/approved/upcoming`,
+            type: 'network_error'
+          });
+        } else {
+          logger.swrError(`${API_BASE_URL}/api/programs/approved/upcoming`, error);
+        }
       }
     }
   );
@@ -225,8 +326,17 @@ export const usePublicBranding = () => {
       revalidateOnFocus: false, // Don't revalidate on window focus
       revalidateOnReconnect: false, // Don't revalidate on reconnect
       revalidateIfStale: false, // Don't revalidate if stale
+      shouldRetryOnError: false, // Don't retry on error to prevent spam
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/superadmin/branding/public`, error);
+        // Handle network errors with better context
+        if (error?.isNetworkError) {
+          logger.warn(`Failed to fetch branding data: ${error.message}`, {
+            endpoint: `${API_BASE_URL}/api/superadmin/branding/public`,
+            type: 'network_error'
+          });
+        } else {
+          logger.swrError(`${API_BASE_URL}/api/superadmin/branding/public`, error);
+        }
       }
     }
   );
@@ -256,8 +366,17 @@ export const usePublicSiteName = () => {
       dedupingInterval: 300000, // 5 minutes
       errorRetryCount: 3,
       errorRetryInterval: 5000,
+      shouldRetryOnError: false, // Don't retry on error to prevent spam
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/superadmin/branding/site-name/public`, error);
+        // Handle network errors with better context
+        if (error?.isNetworkError) {
+          logger.warn(`Failed to fetch site name: ${error.message}`, {
+            endpoint: `${API_BASE_URL}/api/superadmin/branding/site-name/public`,
+            type: 'network_error'
+          });
+        } else {
+          logger.swrError(`${API_BASE_URL}/api/superadmin/branding/site-name/public`, error);
+        }
       }
     }
   );
@@ -285,8 +404,17 @@ export const usePublicFooterContent = () => {
       dedupingInterval: 300000, // 5 minutes
       errorRetryCount: 3,
       errorRetryInterval: 5000,
+      shouldRetryOnError: false, // Don't retry on error to prevent spam
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/superadmin/footer`, error);
+        // Handle network errors with better context
+        if (error?.isNetworkError) {
+          logger.warn(`Failed to fetch footer content: ${error.message}`, {
+            endpoint: `${API_BASE_URL}/api/superadmin/footer`,
+            type: 'network_error'
+          });
+        } else {
+          logger.swrError(`${API_BASE_URL}/api/superadmin/footer`, error);
+        }
       }
     }
   );
@@ -354,8 +482,17 @@ export const usePublicHeroSection = () => {
       dedupingInterval: 60000, // 1 minute (hero section changes more frequently)
       errorRetryCount: 3,
       errorRetryInterval: 5000,
+      shouldRetryOnError: false, // Don't retry on error to prevent spam
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/hero-section`, error);
+        // Handle network errors with better context
+        if (error?.isNetworkError) {
+          logger.warn(`Failed to fetch hero section: ${error.message}`, {
+            endpoint: `${API_BASE_URL}/api/hero-section`,
+            type: 'network_error'
+          });
+        } else {
+          logger.swrError(`${API_BASE_URL}/api/hero-section`, error);
+        }
       }
     }
   );
@@ -403,8 +540,17 @@ export const usePublicMissionVision = () => {
       dedupingInterval: 300000, // 5 minutes (mission/vision doesn't change often)
       errorRetryCount: 3,
       errorRetryInterval: 5000,
+      shouldRetryOnError: false, // Don't retry on error to prevent spam
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/mission-vision`, error);
+        // Handle network errors with better context
+        if (error?.isNetworkError) {
+          logger.warn(`Failed to fetch mission/vision: ${error.message}`, {
+            endpoint: `${API_BASE_URL}/api/mission-vision`,
+            type: 'network_error'
+          });
+        } else {
+          logger.swrError(`${API_BASE_URL}/api/mission-vision`, error);
+        }
       }
     }
   );
@@ -429,12 +575,35 @@ export const usePublicAboutUs = () => {
   const { data, error, isLoading } = useSWR(
     `${API_BASE_URL}/api/superadmin/about-us/public`,
     async (url) => {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          const error = new Error(`HTTP error! status: ${response.status}`);
+          error.status = response.status;
+          error.statusText = response.statusText;
+          throw error;
+        }
+        const result = await response.json();
+        return result.data;
+      } catch (error) {
+        // Handle network errors
+        if (
+          error instanceof TypeError || 
+          error.name === 'NetworkError' ||
+          error.message.includes('fetch') ||
+          error.message.includes('Failed to fetch') ||
+          error.message.includes('NetworkError') ||
+          error.message.includes('Network request failed')
+        ) {
+          const networkError = new Error(`Network error: Unable to connect to ${url}`);
+          networkError.originalError = error;
+          networkError.isNetworkError = true;
+          networkError.name = error.name || 'NetworkError';
+          networkError.message = error.message || networkError.message;
+          throw networkError;
+        }
+        throw error;
       }
-      const result = await response.json();
-      return result.data;
     },
     {
       revalidateOnFocus: false,
@@ -442,8 +611,17 @@ export const usePublicAboutUs = () => {
       dedupingInterval: 300000, // 5 minutes (about us doesn't change often)
       errorRetryCount: 3,
       errorRetryInterval: 5000,
+      shouldRetryOnError: false, // Don't retry on error to prevent spam
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/superadmin/about-us/public`, error);
+        // Handle network errors with better context
+        if (error?.isNetworkError) {
+          logger.warn(`Failed to fetch about us: ${error.message}`, {
+            endpoint: `${API_BASE_URL}/api/superadmin/about-us/public`,
+            type: 'network_error'
+          });
+        } else {
+          logger.swrError(`${API_BASE_URL}/api/superadmin/about-us/public`, error);
+        }
       }
     }
   );
@@ -475,8 +653,17 @@ export const usePublicHeadsFaces = () => {
     fetcher,
     {
       dedupingInterval: 60000, // Cache for 1 minute
+      shouldRetryOnError: false, // Don't retry on error to prevent spam
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/superadmin/heads-faces`, error);
+        // Handle network errors with better context
+        if (error?.isNetworkError) {
+          logger.warn(`Failed to fetch heads/faces: ${error.message}`, {
+            endpoint: `${API_BASE_URL}/api/superadmin/heads-faces`,
+            type: 'network_error'
+          });
+        } else {
+          logger.swrError(`${API_BASE_URL}/api/superadmin/heads-faces`, error);
+        }
       }
     }
   );
@@ -498,8 +685,17 @@ export const usePublicOrganizationAdvisers = () => {
     fetcher,
     {
       dedupingInterval: 300000, // Cache for 5 minutes
+      shouldRetryOnError: false, // Don't retry on error to prevent spam
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/organization-advisers`, error);
+        // Handle network errors with better context
+        if (error?.isNetworkError) {
+          logger.warn(`Failed to fetch organization advisers: ${error.message}`, {
+            endpoint: `${API_BASE_URL}/api/organization-advisers`,
+            type: 'network_error'
+          });
+        } else {
+          logger.swrError(`${API_BASE_URL}/api/organization-advisers`, error);
+        }
       }
     }
   );

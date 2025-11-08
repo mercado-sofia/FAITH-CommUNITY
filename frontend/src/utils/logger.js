@@ -63,7 +63,32 @@ class Logger {
 
   // SWR specific error logging
   swrError(endpoint, error, context = null) {
-    this.error(`SWR Error for endpoint: ${endpoint}`, error, {
+    // Extract error information even if error object is empty or malformed
+    let errorInfo = error;
+    
+    if (error) {
+      // Try to extract meaningful information from the error
+      errorInfo = {
+        message: error.message || error.toString() || 'Unknown error',
+        name: error.name || 'Error',
+        stack: error.stack,
+        ...(error.isNetworkError && { isNetworkError: true }),
+        ...(error.status && { status: error.status }),
+        ...(error.statusText && { statusText: error.statusText }),
+        ...(error.originalError && { originalError: error.originalError }),
+        // Include any other enumerable properties
+        ...Object.keys(error).reduce((acc, key) => {
+          if (!['message', 'name', 'stack'].includes(key)) {
+            acc[key] = error[key];
+          }
+          return acc;
+        }, {})
+      };
+    } else {
+      errorInfo = { message: 'Empty or undefined error object' };
+    }
+    
+    this.error(`SWR Error for endpoint: ${endpoint}`, errorInfo, {
       ...context,
       type: 'swr_error',
       endpoint
@@ -72,7 +97,32 @@ class Logger {
 
   // API specific error logging
   apiError(endpoint, error, context = null) {
-    this.error(`API Error for endpoint: ${endpoint}`, error, {
+    // Extract error information even if error object is empty or malformed
+    let errorInfo = error;
+    
+    if (error) {
+      // Try to extract meaningful information from the error
+      errorInfo = {
+        message: error.message || error.toString() || 'Unknown error',
+        name: error.name || 'Error',
+        stack: error.stack,
+        ...(error.isNetworkError && { isNetworkError: true }),
+        ...(error.status && { status: error.status }),
+        ...(error.statusText && { statusText: error.statusText }),
+        ...(error.originalError && { originalError: error.originalError }),
+        // Include any other enumerable properties
+        ...Object.keys(error).reduce((acc, key) => {
+          if (!['message', 'name', 'stack'].includes(key)) {
+            acc[key] = error[key];
+          }
+          return acc;
+        }, {})
+      };
+    } else {
+      errorInfo = { message: 'Empty or undefined error object' };
+    }
+    
+    this.error(`API Error for endpoint: ${endpoint}`, errorInfo, {
       ...context,
       type: 'api_error',
       endpoint

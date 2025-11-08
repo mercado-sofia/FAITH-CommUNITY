@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FiEdit2, FiTrash2, FiClipboard } from 'react-icons/fi';
+import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { IoCloseOutline } from "react-icons/io5";
 import { ConfirmationModal } from '@/components';
 import styles from './styles/FAQTable.module.css';
@@ -157,11 +157,7 @@ export default function FAQTable({
               <tr>
                 <td colSpan="6" className={styles.emptyState}>
                   <div className={styles.emptyContent}>
-                    <div className={styles.emptyIcon}>
-                      <FiClipboard />
-                    </div>
                     <h3>No FAQs Found</h3>
-                    <p>No FAQs have been created yet.</p>
                   </div>
                 </td>
               </tr>

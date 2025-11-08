@@ -16,7 +16,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
   // Edit mode state
   const [isEditingAboutUs, setIsEditingAboutUs] = useState(false);
   const [tempAboutUs, setTempAboutUs] = useState({
-    heading: '',
     description: '',
     extension_categories: [],
     image_url: ''
@@ -88,7 +87,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
           const data = await response.json();
           setAboutUsData(data.data);
           setTempAboutUs({
-            heading: data.data?.heading || '',
             description: data.data?.description || '',
             extension_categories: data.data?.extension_categories || [],
             image_url: data.data?.image_url || ''
@@ -97,7 +95,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
           // No data exists yet - that's okay, fields will be empty
           setAboutUsData(null);
           setTempAboutUs({
-            heading: '',
             description: '',
             extension_categories: [],
             image_url: ''
@@ -117,7 +114,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
     setIsEditingAboutUs(!isEditingAboutUs);
     if (!isEditingAboutUs) {
       setTempAboutUs({
-        heading: aboutUsData?.heading || '',
         description: aboutUsData?.description || '',
         extension_categories: aboutUsData?.extension_categories || [],
         image_url: aboutUsData?.image_url || ''
@@ -129,7 +125,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
   const handleCancelEdit = () => {
     setIsEditingAboutUs(false);
     setTempAboutUs({
-      heading: aboutUsData?.heading || '',
       description: aboutUsData?.description || '',
       extension_categories: aboutUsData?.extension_categories || [],
       image_url: aboutUsData?.image_url || ''
@@ -178,7 +173,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              heading: tempAboutUs.heading?.trim() || null,
               description: tempAboutUs.description?.trim() || null,
               extension_categories: tempAboutUs.extension_categories || [],
               image_url: finalImageUrl || null
@@ -598,28 +592,6 @@ export default function AboutUsManagement({ showSuccessModal }) {
 
             {/* Text Content Section - Right Side */}
             <div className={styles.textContentSection}>
-              {/* Heading Field */}
-              <div className={styles.inputGroup}>
-                <label htmlFor="heading" className={styles.inputLabel}>
-                  Heading
-                </label>
-                {isEditingAboutUs ? (
-                <input
-                  type="text"
-                  id="heading"
-                    value={tempAboutUs.heading}
-                    onChange={(e) => setTempAboutUs(prev => ({ ...prev, heading: e.target.value }))}
-                  className={styles.textInput}
-                    placeholder="Enter heading (optional)"
-                  maxLength={500}
-                />
-                ) : (
-                  <div className={styles.displayValue}>
-                    {aboutUsData?.heading || <span className={styles.emptyPlaceholder}>No heading added yet</span>}
-                  </div>
-                )}
-              </div>
-
               {/* Description Field */}
               <div className={styles.inputGroup}>
                 <label htmlFor="description" className={styles.inputLabel}>

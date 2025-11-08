@@ -40,7 +40,7 @@ export default function AboutMore() {
         <div className={styles.aboutMoreContent}>
           <h4 className={styles.aboutMoreSubtitle}>About Us{siteNameData?.site_name ? ` ${siteNameData.site_name}` : ''}</h4>
           <h2 className={styles.aboutMoreTitle}>
-            {aboutUsData?.heading || 'We Believe That We Can Help More People With You'}
+            About Us
           </h2>
           <p className={styles.aboutMoreText}>
             {aboutUsData?.description || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. In pretium vitae est non lacinia. Aenean ullamcorper eleifend massa, eu facilisis lectus ornare vel. Maecenas scelerisque congue metus at imperdiet. Donec et dictum ligula, vitae dapibus libero. Pellentesque odio dui, molestie non porttitor id, dignissim eu mauris. Suspendisse mauris nunc, egestas at nisl id, aliquet mattis erat.'}

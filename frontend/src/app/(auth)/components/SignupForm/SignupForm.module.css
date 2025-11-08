@@ -158,7 +158,6 @@
   color: #000;
   transition: border-bottom-color 0.3s ease;
   text-align: center;
-  border-radius: 6px;
 }
 
 .dateInputGroup input:focus {
@@ -193,7 +192,6 @@
   font-family: Arial, Helvetica, sans-serif;
   color: #000;
   transition: border-bottom-color 0.3s ease;
-  border-radius: 6px;
 }
 
 .inputGroup input:focus,

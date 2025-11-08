@@ -29,10 +29,15 @@ const PORT = process.env.PORT || 8080
 
 // Trust proxy - Required when behind a reverse proxy (Railway, Heroku, etc.)
 // This allows Express to correctly identify client IPs from X-Forwarded-For headers
+// IMPORTANT: We trust only the first proxy (1) to prevent rate limiting bypass
+// Most production environments (Railway, Heroku, etc.) have a single reverse proxy
 if (process.env.TRUST_PROXY !== 'false') {
-  // In production or when explicitly enabled, trust proxy
+  // In production or when explicitly enabled, trust first proxy only (more secure)
   if (process.env.NODE_ENV === 'production' || process.env.TRUST_PROXY === 'true') {
-    app.set('trust proxy', true);
+    // Trust only the first proxy to prevent rate limiting bypass
+    // Set to number of proxies if you have multiple (e.g., Cloudflare + Railway = 2)
+    const proxyCount = Number(process.env.TRUST_PROXY_COUNT) || 1;
+    app.set('trust proxy', proxyCount);
   } else {
     // In development, trust first proxy (useful for local reverse proxies)
     app.set('trust proxy', 1);

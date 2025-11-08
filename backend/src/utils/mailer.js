@@ -34,10 +34,10 @@ function createTransporter() {
   }
 
   try {
-    // Configurable timeout values (default: 15 seconds)
-    const connectionTimeout = Number(process.env.SMTP_CONNECTION_TIMEOUT) || 15000;
-    const greetingTimeout = Number(process.env.SMTP_GREETING_TIMEOUT) || 15000;
-    const socketTimeout = Number(process.env.SMTP_SOCKET_TIMEOUT) || 15000;
+    // Configurable timeout values (default: 30 seconds for better reliability)
+    const connectionTimeout = Number(process.env.SMTP_CONNECTION_TIMEOUT) || 30000;
+    const greetingTimeout = Number(process.env.SMTP_GREETING_TIMEOUT) || 30000;
+    const socketTimeout = Number(process.env.SMTP_SOCKET_TIMEOUT) || 30000;
     
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
@@ -75,7 +75,7 @@ export async function verifySMTPConnection() {
 
   try {
     // Use Promise.race to add a custom timeout wrapper
-    const verificationTimeout = Number(process.env.SMTP_VERIFICATION_TIMEOUT) || 20000; // 20 seconds default
+    const verificationTimeout = Number(process.env.SMTP_VERIFICATION_TIMEOUT) || 30000; // 30 seconds default
     
     const verifyPromise = mailer.verify();
     const timeoutPromise = new Promise((_, reject) => {
@@ -99,7 +99,7 @@ export async function verifySMTPConnection() {
       console.error('      • SMTP_PORT is incorrect (common ports: 587, 465, 25)');
       console.error('      • Firewall or network blocking SMTP connection');
       console.error('      • SMTP server is down or slow to respond');
-      console.error('   → Try increasing timeout: SMTP_VERIFICATION_TIMEOUT=30000');
+      console.error(`   → Try increasing timeout: SMTP_VERIFICATION_TIMEOUT=60000 (current: ${Number(process.env.SMTP_VERIFICATION_TIMEOUT) || 30000}ms)`);
     } else if (error.code === 'ECONNREFUSED' || error.message.includes('ECONNREFUSED')) {
       console.error('   → Connection refused. Check:');
       console.error('      • SMTP_HOST and SMTP_PORT are correct');

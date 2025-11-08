@@ -7,22 +7,24 @@
  * 2. Sending a test email (optional)
  * 
  * Usage:
+ *   cd backend
  *   node scripts/test-smtp.js
- *   node scripts/test-smtp.js --send test@example.com
+ *   node scripts/test-smtp.js --send=test@example.com
  */
 
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { verifySMTPConnection, sendMail, getSMTPStatus } from '../src/utils/mailer.js';
 
-// Load environment variables
+// Load environment variables FIRST, before importing mailer
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const envPath = join(__dirname, '..', '.env');
 dotenv.config({ path: envPath });
 
 async function testSMTP() {
+  // Import mailer after .env is loaded (dynamic import)
+  const { verifySMTPConnection, sendMail, getSMTPStatus } = await import('../src/utils/mailer.js');
   console.log('🔍 Testing SMTP Configuration...\n');
   
   // Check configuration
@@ -36,10 +38,12 @@ async function testSMTP() {
   if (!status.configured) {
     console.error('\n❌ SMTP is not configured. Missing:', status.missing.join(', '));
     console.error('   Please set SMTP_HOST, SMTP_USER, and SMTP_PASS in your .env file');
+    console.error('   Make sure you\'re running this from the backend directory');
     process.exit(1);
   }
   
   console.log('\n🔌 Testing SMTP Connection...');
+  console.log('   This may take up to 60 seconds...\n');
   
   try {
     const verified = await verifySMTPConnection(0); // No retries for manual test
@@ -65,6 +69,7 @@ async function testSMTP() {
             text: 'This is a test email from FAITH CommUNITY. If you received this email, your SMTP configuration is working correctly!',
           });
           console.log('✅ Test email sent successfully!');
+          console.log(`   Check the inbox for: ${sendTo}`);
         } catch (emailError) {
           console.error('❌ Failed to send test email:', emailError.message);
           process.exit(1);

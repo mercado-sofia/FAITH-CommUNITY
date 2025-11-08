@@ -176,6 +176,26 @@ export default function PendingApprovalsTable() {
     }
   };
 
+  // Check if any approval is a program submission to show Title column
+  const hasProgramSubmissions = approvals.some(item => 
+    item.section && item.section.toLowerCase() === 'programs'
+  );
+
+  // Helper function to extract program title from proposed_data
+  const getProgramTitle = (item) => {
+    if (item.section && item.section.toLowerCase() === 'programs' && item.proposed_data) {
+      try {
+        const proposedData = typeof item.proposed_data === 'string' 
+          ? JSON.parse(item.proposed_data) 
+          : item.proposed_data;
+        return proposedData?.title || 'N/A';
+      } catch (error) {
+        return 'N/A';
+      }
+    }
+    return null;
+  };
+
   // Show loading state
   if (isLoading || orgsLoading) {
     return (
@@ -220,6 +240,9 @@ export default function PendingApprovalsTable() {
             <tr>
               <th className={styles.numberColumn}>#</th>
               <th>Organization</th>
+              {hasProgramSubmissions && (
+                <th className={styles.titleColumn}>Title</th>
+              )}
               <th>Section</th>
               <th>Date</th>
               <th>Status</th>
@@ -230,6 +253,9 @@ export default function PendingApprovalsTable() {
               <tr key={index}>
                 <td className={styles.numberCell}>{index}</td>
                 <td>Loading...</td>
+                {hasProgramSubmissions && (
+                  <td>Loading...</td>
+                )}
                 <td>Loading...</td>
                 <td>Loading...</td>
                 <td>Loading...</td>
@@ -304,13 +330,18 @@ export default function PendingApprovalsTable() {
           <tr>
             <th className={styles.numberColumn}>#</th>
             <th>Organization</th>
+            {hasProgramSubmissions && (
+              <th className={styles.titleColumn}>Title</th>
+            )}
             <th>Section</th>
             <th>Date</th>
             <th>Status</th>
           </tr>
         </thead>
         <tbody>
-          {displayList.map((approval, index) => (
+          {displayList.map((approval, index) => {
+            const programTitle = getProgramTitle(approval);
+            return (
             <tr key={approval.id}>
               <td className={styles.numberCell}>
                 {index + 1}
@@ -357,6 +388,11 @@ export default function PendingApprovalsTable() {
                   </span>
                 </div>
               </td>
+              {hasProgramSubmissions && (
+                <td className={styles.titleCell}>
+                  {programTitle || '-'}
+                </td>
+              )}
               <td>{getSectionName(approval.section)}</td>
               <td>{formatDate(approval.submitted_at)}</td>
               <td>
@@ -371,10 +407,11 @@ export default function PendingApprovalsTable() {
                 </span>
               </td>
             </tr>
-          ))}
+          );
+          })}
           {displayList.length === 0 && (
             <tr>
-              <td colSpan={5} style={{ textAlign: 'center', padding: '1rem' }}>
+              <td colSpan={hasProgramSubmissions ? 6 : 5} style={{ textAlign: 'center', padding: '1rem' }}>
                 No approvals found.
               </td>
             </tr>

@@ -18,6 +18,7 @@ export const superadminBreadcrumbConfig = {
   dashboard: { category: 'General', section: 'Dashboard' },
   approvals: { category: 'Management', section: 'Approvals' },
   programs: { category: 'Management', section: 'Programs' },
+  highlights: { category: 'Management', section: 'Highlights' },
   faqs: { category: 'Management', section: 'FAQs' },
   invites: { category: 'Management', section: 'Invites' },
   settings: { category: 'Account', section: 'Settings' },

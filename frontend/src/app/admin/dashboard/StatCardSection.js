@@ -34,9 +34,15 @@ export default function StatCardSection() {
     program.status && program.status.toLowerCase() === 'completed'
   ).length;
 
+  const totalProgramsCount = programsData.length;
+
   // Calculate counts from real data
   const pendingApplicationsCount = volunteersData.filter(volunteer => 
     volunteer.status && volunteer.status.toLowerCase() === 'pending'
+  ).length;
+
+  const approvedApplicationsCount = volunteersData.filter(volunteer => 
+    volunteer.status && volunteer.status.toLowerCase() === 'approved'
   ).length;
 
   const totalApplicationsCount = volunteersData.length;
@@ -52,6 +58,7 @@ export default function StatCardSection() {
           count={isLoading ? "—" : pendingApplicationsCount}
           iconKey="pending"
           isLoading={isLoading}
+          pendingCount={isLoading ? "—" : pendingApplicationsCount}
         />
       </Link>
       <Link href="/admin/volunteers" className={styles.cardWrapper}>
@@ -60,6 +67,8 @@ export default function StatCardSection() {
           count={isLoading ? "—" : totalApplicationsCount}
           iconKey="total"
           isLoading={isLoading}
+          pendingCount={isLoading ? "—" : pendingApplicationsCount}
+          approvedCount={isLoading ? "—" : approvedApplicationsCount}
         />
       </Link>
       <Link href="/admin/programs" className={styles.cardWrapper}>
@@ -68,6 +77,8 @@ export default function StatCardSection() {
           count={isLoading ? "—" : activeProgramsCount}
           iconKey="programs"
           isLoading={isLoading}
+          activeCount={isLoading ? "—" : activeProgramsCount}
+          completedCount={isLoading ? "—" : completedProgramsCount}
         />
       </Link>
       <Link href="/admin/programs?status=Completed" className={styles.cardWrapper}>
@@ -76,6 +87,7 @@ export default function StatCardSection() {
           count={isLoading ? "—" : completedProgramsCount}
           iconKey="programs"
           isLoading={isLoading}
+          completedCount={isLoading ? "—" : completedProgramsCount}
         />
       </Link>
     </div>

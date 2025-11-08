@@ -19,6 +19,7 @@ import { adminApi } from "./superadmin/adminApi"
 import { invitationsApi } from "./superadmin/invitationsApi"
 import { faqApi } from "./superadmin/faqApi"
 import { superadminProgramsApi } from "./superadmin/programsApi"
+import { superadminHighlightsApi } from "./superadmin/highlightsApi"
 import { dashboardApi } from "./superadmin/dashboardApi"
 import { notificationsApi } from "./admin/notificationsApi"
 import { superadminNotificationsApi } from "./superadmin/superadminNotificationsApi"
@@ -45,6 +46,7 @@ export const store = configureStore({
     [invitationsApi.reducerPath]: invitationsApi.reducer,
     [faqApi.reducerPath]: faqApi.reducer,
     [superadminProgramsApi.reducerPath]: superadminProgramsApi.reducer,
+    [superadminHighlightsApi.reducerPath]: superadminHighlightsApi.reducer,
     [dashboardApi.reducerPath]: dashboardApi.reducer,
     [notificationsApi.reducerPath]: notificationsApi.reducer,
     [superadminNotificationsApi.reducerPath]: superadminNotificationsApi.reducer,
@@ -69,6 +71,7 @@ export const store = configureStore({
       invitationsApi.middleware,
       faqApi.middleware,
       superadminProgramsApi.middleware,
+      superadminHighlightsApi.middleware,
       dashboardApi.middleware,
       notificationsApi.middleware,
       superadminNotificationsApi.middleware,

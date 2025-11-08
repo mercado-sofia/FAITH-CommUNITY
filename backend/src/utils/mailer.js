@@ -81,6 +81,11 @@ function createTransporter() {
 mailer = createTransporter();
 
 export async function verifySMTPConnection(retries = 2) {
+  // Recreate mailer if it's null (e.g., if .env was loaded after module initialization)
+  if (!mailer) {
+    mailer = createTransporter();
+  }
+  
   if (!mailer) {
     const status = getSMTPStatus();
     const missingList = status.missing.length > 0 

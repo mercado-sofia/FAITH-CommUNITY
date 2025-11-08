@@ -344,9 +344,31 @@ app.listen(PORT, async () => {
   // Initialize database first
   try {
     const db = await import("./src/database.js");
-    console.log('✅ Database initialized successfully');
+    const { getDatabase, isDatabaseReady, getInitializationError } = db;
+    
+    // Wait for database initialization to complete
+    if (!isDatabaseReady()) {
+      console.log('Waiting for database initialization...');
+      try {
+        await getDatabase();
+        console.log('✅ Database initialized successfully');
+      } catch (dbError) {
+        console.error('❌ Database initialization failed:', dbError.message);
+        if (process.env.NODE_ENV === "production") {
+          console.error('\nPlease check:');
+          console.error('1. MySQL service is running in Railway');
+          console.error('2. Environment variables are set correctly');
+          console.error('3. MYSQL_SSL=true is set for Railway MySQL');
+          process.exit(1);
+        } else {
+          console.warn('⚠️  Database not ready. Some features may not work.');
+        }
+      }
+    } else {
+      console.log('✅ Database initialized successfully');
+    }
   } catch (error) {
-    console.error('❌ Database initialization failed:', error);
+    console.error('❌ Failed to import database module:', error);
     if (process.env.NODE_ENV === "production") {
       process.exit(1);
     }

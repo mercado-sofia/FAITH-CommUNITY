@@ -101,15 +101,13 @@ export default function FooterContentManagement({ showSuccessModal }) {
           const data = await response.json();
           setFooterData(data.data);
           
-          // Set contact info
-          if (data.data.contact) {
-            const contactData = {
-              phone: data.data.contact.phone?.url || '',
-              email: data.data.contact.email?.url || ''
-            };
-            setContactInfo(contactData);
-            setTempContactInfo(contactData);
-          }
+          // Set contact info (handle null/empty values)
+          const contactData = {
+            phone: data.data.contact?.phone?.url || '',
+            email: data.data.contact?.email?.url || ''
+          };
+          setContactInfo(contactData);
+          setTempContactInfo(contactData);
           
           // Set social media
           if (data.data.socialMedia && Array.isArray(data.data.socialMedia)) {
@@ -352,7 +350,10 @@ export default function FooterContentManagement({ showSuccessModal }) {
       switch (footerModalType) {
         case 'contact':
           endpoint = '/contact';
-          body = contactInfo;
+          body = {
+            phone: contactInfo.phone?.trim() || null,
+            email: contactInfo.email?.trim() || null
+          };
           break;
         case 'social':
           endpoint = '/social-media';
@@ -360,7 +361,7 @@ export default function FooterContentManagement({ showSuccessModal }) {
           break;
         case 'copyright':
           endpoint = '/copyright';
-          body = { content: copyright };
+          body = { content: copyright?.trim() || null };
           break;
         default:
           return;
@@ -598,7 +599,10 @@ export default function FooterContentManagement({ showSuccessModal }) {
       switch (section) {
         case 'contact':
           endpoint = '/contact';
-          body = tempContactInfo;
+          body = {
+            phone: tempContactInfo.phone?.trim() || null,
+            email: tempContactInfo.email?.trim() || null
+          };
           break;
         case 'social':
           endpoint = '/social-media';
@@ -606,7 +610,7 @@ export default function FooterContentManagement({ showSuccessModal }) {
           break;
         case 'copyright':
           endpoint = '/copyright';
-          body = { content: tempCopyright };
+          body = { content: tempCopyright?.trim() || null };
           break;
         case 'services':
           // Handle services updates
@@ -735,33 +739,37 @@ export default function FooterContentManagement({ showSuccessModal }) {
             
             <div className={styles.inputGroup}>
               <label htmlFor="phone" className={styles.inputLabel}>Phone Number</label>
-              <input
-                type="text"
-                id="phone"
-                value={isEditingContact ? tempContactInfo.phone : contactInfo.phone}
-                onChange={(e) => isEditingContact ? 
-                  setTempContactInfo(prev => ({ ...prev, phone: e.target.value })) :
-                  setContactInfo(prev => ({ ...prev, phone: e.target.value }))
-                }
-                className={styles.textInput}
-                placeholder="Enter phone number"
-                disabled={!isEditingContact}
-              />
+              {isEditingContact ? (
+                <input
+                  type="text"
+                  id="phone"
+                  value={tempContactInfo.phone || ''}
+                  onChange={(e) => setTempContactInfo(prev => ({ ...prev, phone: e.target.value }))}
+                  className={styles.textInput}
+                  placeholder="Enter phone number"
+                />
+              ) : (
+                <div className={styles.displayValue}>
+                  {contactInfo.phone ? contactInfo.phone : <span className={styles.emptyPlaceholder}>No phone number added yet</span>}
+                </div>
+              )}
             </div>
             <div className={styles.inputGroup}>
               <label htmlFor="email" className={styles.inputLabel}>Email Address</label>
-              <input
-                type="email"
-                id="email"
-                value={isEditingContact ? tempContactInfo.email : contactInfo.email}
-                onChange={(e) => isEditingContact ? 
-                  setTempContactInfo(prev => ({ ...prev, email: e.target.value })) :
-                  setContactInfo(prev => ({ ...prev, email: e.target.value }))
-                }
-                className={styles.textInput}
-                placeholder="Enter email address"
-                disabled={!isEditingContact}
-              />
+              {isEditingContact ? (
+                <input
+                  type="email"
+                  id="email"
+                  value={tempContactInfo.email || ''}
+                  onChange={(e) => setTempContactInfo(prev => ({ ...prev, email: e.target.value }))}
+                  className={styles.textInput}
+                  placeholder="Enter email address"
+                />
+              ) : (
+                <div className={styles.displayValue}>
+                  {contactInfo.email ? contactInfo.email : <span className={styles.emptyPlaceholder}>No email address added yet</span>}
+                </div>
+              )}
             </div>
             
           </div>
@@ -803,50 +811,56 @@ export default function FooterContentManagement({ showSuccessModal }) {
             
             {/* Current Social Media List */}
             <div className={styles.socialMediaList}>
-              {(isEditingSocial ? tempSocialMedia : socialMedia).map((social, index) => {
-                const IconComponent = getPlatformIcon(social.platform);
-                const platformColor = getPlatformColor(social.platform);
-                
-                return (
-                  <div key={index} className={styles.socialMediaItem}>
-                    <div className={styles.socialMediaInfo}>
-                      <div className={styles.socialMediaIcon} style={{ color: platformColor }}>
-                        {IconComponent && <IconComponent size={20} />}
+              {(isEditingSocial ? tempSocialMedia : socialMedia).length > 0 ? (
+                (isEditingSocial ? tempSocialMedia : socialMedia).map((social, index) => {
+                  const IconComponent = getPlatformIcon(social.platform);
+                  const platformColor = getPlatformColor(social.platform);
+                  
+                  return (
+                    <div key={index} className={styles.socialMediaItem}>
+                      <div className={styles.socialMediaInfo}>
+                        <div className={styles.socialMediaIcon} style={{ color: platformColor }}>
+                          {IconComponent && <IconComponent size={20} />}
+                        </div>
+                        <div className={styles.socialMediaDetails}>
+                          <span className={styles.socialMediaPlatform}>{social.platform}</span>
+                          {isEditingSocial ? (
+                            <input
+                              type="url"
+                              value={social.url}
+                              onChange={(e) => {
+                                const newTempSocial = [...tempSocialMedia];
+                                newTempSocial[index] = { ...newTempSocial[index], url: e.target.value };
+                                setTempSocialMedia(newTempSocial);
+                              }}
+                              className={styles.socialUrlInput}
+                              placeholder="Enter URL"
+                            />
+                          ) : (
+                            <span className={styles.socialMediaUrl}>{social.url}</span>
+                          )}
+                        </div>
                       </div>
-                      <div className={styles.socialMediaDetails}>
-                        <span className={styles.socialMediaPlatform}>{social.platform}</span>
-                        {isEditingSocial ? (
-                          <input
-                            type="url"
-                            value={social.url}
-                            onChange={(e) => {
-                              const newTempSocial = [...tempSocialMedia];
-                              newTempSocial[index] = { ...newTempSocial[index], url: e.target.value };
-                              setTempSocialMedia(newTempSocial);
-                            }}
-                            className={styles.socialUrlInput}
-                            placeholder="Enter URL"
-                          />
-                        ) : (
-                          <span className={styles.socialMediaUrl}>{social.url}</span>
-                        )}
-                      </div>
+                      {isEditingSocial && (
+                        <button
+                          onClick={() => {
+                            const newTempSocial = tempSocialMedia.filter((_, i) => i !== index);
+                            setTempSocialMedia(newTempSocial);
+                          }}
+                          className={styles.removeSocialBtn}
+                          title="Remove social media"
+                        >
+                          <FiX size={16} />
+                        </button>
+                      )}
                     </div>
-                    {isEditingSocial && (
-                      <button
-                        onClick={() => {
-                          const newTempSocial = tempSocialMedia.filter((_, i) => i !== index);
-                          setTempSocialMedia(newTempSocial);
-                        }}
-                        className={styles.removeSocialBtn}
-                        title="Remove social media"
-                      >
-                        <FiX size={16} />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })
+              ) : (
+                <div className={styles.emptyState}>
+                  <p className={styles.emptyStateText}>No social media links added yet. Click Edit to add social media platforms.</p>
+                </div>
+              )}
             </div>
 
             {/* Add New Social Media Button */}
@@ -899,40 +913,46 @@ export default function FooterContentManagement({ showSuccessModal }) {
             </div>
             
             <div className={styles.servicesList}>
-              {(isEditingServices ? tempServices : services).map((service) => (
-                <div key={service.id} className={styles.serviceItem}>
-                  {isEditingServices ? (
-                    <input
-                      type="text"
-                      value={service.name}
-                      onChange={(e) => {
-                        const newTempServices = [...tempServices];
-                        const serviceIndex = newTempServices.findIndex(s => s.id === service.id);
-                        if (serviceIndex !== -1) {
-                          newTempServices[serviceIndex] = { ...newTempServices[serviceIndex], name: e.target.value };
+              {(isEditingServices ? tempServices : services).length > 0 ? (
+                (isEditingServices ? tempServices : services).map((service) => (
+                  <div key={service.id} className={styles.serviceItem}>
+                    {isEditingServices ? (
+                      <input
+                        type="text"
+                        value={service.name}
+                        onChange={(e) => {
+                          const newTempServices = [...tempServices];
+                          const serviceIndex = newTempServices.findIndex(s => s.id === service.id);
+                          if (serviceIndex !== -1) {
+                            newTempServices[serviceIndex] = { ...newTempServices[serviceIndex], name: e.target.value };
+                            setTempServices(newTempServices);
+                          }
+                        }}
+                        className={styles.serviceInput}
+                        placeholder="Service name"
+                      />
+                    ) : (
+                      <span>{service.name}</span>
+                    )}
+                    {isEditingServices && (
+                      <button
+                        onClick={() => {
+                          const newTempServices = tempServices.filter(s => s.id !== service.id);
                           setTempServices(newTempServices);
-                        }
-                      }}
-                      className={styles.serviceInput}
-                      placeholder="Service name"
-                    />
-                  ) : (
-                    <span>{service.name}</span>
-                  )}
-                  {isEditingServices && (
-                    <button
-                      onClick={() => {
-                        const newTempServices = tempServices.filter(s => s.id !== service.id);
-                        setTempServices(newTempServices);
-                      }}
-                      className={styles.deleteServiceBtn}
-                      disabled={isUpdatingFooter || isDeleting}
-                    >
-                      <FiTrash2 color="#dc2626" />
-                    </button>
-                  )}
+                        }}
+                        className={styles.deleteServiceBtn}
+                        disabled={isUpdatingFooter || isDeleting}
+                      >
+                        <FiTrash2 color="#dc2626" />
+                      </button>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className={styles.emptyState}>
+                  <p className={styles.emptyStateText}>No services added yet. Click Edit to add services.</p>
                 </div>
-              ))}
+              )}
             </div>
             
             {isEditingServices && (
@@ -1025,25 +1045,19 @@ export default function FooterContentManagement({ showSuccessModal }) {
             
             <div className={styles.inputGroup}>
               <label htmlFor="copyright" className={styles.inputLabel}>Copyright Text</label>
-              {!isEditingCopyright && !copyright ? (
-                <div className={styles.emptyState}>
-                  <p className={styles.emptyStateText}>
-                    No copyright text set. The public footer will display: &quot;© Copyright 2025 FAITH CommUNITY. All Rights Reserved.&quot;
-                  </p>
-                </div>
-              ) : (
+              {isEditingCopyright ? (
                 <input
                   type="text"
                   id="copyright"
-                  value={isEditingCopyright ? tempCopyright : copyright}
-                  onChange={(e) => isEditingCopyright ? 
-                    setTempCopyright(e.target.value) :
-                    setCopyright(e.target.value)
-                  }
+                  value={tempCopyright || ''}
+                  onChange={(e) => setTempCopyright(e.target.value)}
                   className={styles.textInput}
                   placeholder="Enter copyright text (e.g., © Copyright 2025 FAITH CommUNITY. All Rights Reserved.)"
-                  disabled={!isEditingCopyright}
                 />
+              ) : (
+                <div className={styles.displayValue}>
+                  {copyright ? copyright : <span className={styles.emptyPlaceholder}>No copyright text added yet</span>}
+                </div>
               )}
             </div>
             

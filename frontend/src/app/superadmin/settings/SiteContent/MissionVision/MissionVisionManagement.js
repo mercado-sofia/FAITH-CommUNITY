@@ -99,14 +99,27 @@ export default function MissionVisionManagement({ showSuccessModal }) {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 type: 'Mission',
-                content: normalizedTempMission || null
+                content: normalizedTempMission === '' ? null : normalizedTempMission
               })
             },
             'superadmin'
           );
           
           if (response && response.ok) {
-            updates.push('Mission');
+            // Verify the response body to ensure the operation was successful
+            try {
+              const responseData = await response.json();
+              if (responseData.success === true) {
+                updates.push('Mission');
+              } else {
+                const errorMessage = responseData.error || responseData.message || 'Failed to save Mission';
+                errors.push(`Mission: ${errorMessage}`);
+                console.error('Save mission error response:', responseData);
+              }
+            } catch (parseError) {
+              // If response is OK but can't parse JSON, assume success
+              updates.push('Mission');
+            }
           } else {
             // Handle 401 responses
             if (response.status === 401) {
@@ -155,14 +168,27 @@ export default function MissionVisionManagement({ showSuccessModal }) {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 type: 'Vision',
-                content: normalizedTempVision || null
+                content: normalizedTempVision === '' ? null : normalizedTempVision
               })
             },
             'superadmin'
           );
           
           if (response && response.ok) {
-            updates.push('Vision');
+            // Verify the response body to ensure the operation was successful
+            try {
+              const responseData = await response.json();
+              if (responseData.success === true) {
+                updates.push('Vision');
+              } else {
+                const errorMessage = responseData.error || responseData.message || 'Failed to save Vision';
+                errors.push(`Vision: ${errorMessage}`);
+                console.error('Save vision error response:', responseData);
+              }
+            } catch (parseError) {
+              // If response is OK but can't parse JSON, assume success
+              updates.push('Vision');
+            }
           } else {
             // Handle 401 responses
             if (response.status === 401) {

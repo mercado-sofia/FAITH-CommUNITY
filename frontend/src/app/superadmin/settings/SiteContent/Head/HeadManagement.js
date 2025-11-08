@@ -39,16 +39,15 @@ export default function HeadManagement({ showSuccessModal }) {
 
         if (response && response.ok) {
           const data = await response.json();
-          if (data.data && data.data.length > 0) {
-            const head = data.data[0];
+          // Handle single profile - data.data is an array that may be empty or have one item
+          const head = data.data && data.data.length > 0 ? data.data[0] : null;
             setHeadData(head);
             setFormData({
-              name: head.name || '',
-              description: head.description || '',
-              position: head.position || 'Head of FACES',
-              image_url: head.image_url || ''
+            name: head?.name || '',
+            description: head?.description || '',
+            position: head?.position || 'Head of FACES',
+            image_url: head?.image_url || ''
             });
-          }
         }
       } catch (error) {
         console.error('Load error:', error);
@@ -168,7 +167,7 @@ export default function HeadManagement({ showSuccessModal }) {
       // Upload image if a new file is selected
       if (selectedFile) {
         try {
-          imageUrl = await uploadImage(selectedFile);
+        imageUrl = await uploadImage(selectedFile);
           // Clear preview URL after successful upload
           if (previewUrl) {
             URL.revokeObjectURL(previewUrl);
@@ -221,7 +220,7 @@ export default function HeadManagement({ showSuccessModal }) {
       } else {
         let errorMessage = 'Failed to update head of FACES';
         try {
-          const errorData = await response.json();
+        const errorData = await response.json();
           errorMessage = errorData.message || errorData.error || errorMessage;
           console.error('Update error response:', errorData);
         } catch (e) {
@@ -317,7 +316,7 @@ export default function HeadManagement({ showSuccessModal }) {
               disabled={isUpdating}
             >
               <FiEdit3 size={16} />
-              {headData ? 'Edit' : 'Add Head'}
+              Edit
             </button>
           ) : (
             <div className={styles.editActions}>
@@ -341,19 +340,6 @@ export default function HeadManagement({ showSuccessModal }) {
       </div>
 
       <div className={styles.panelContent}>
-        {!headData && !isEditing ? (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyIcon}>👤</div>
-            <h3>No Head of FACES</h3>
-            <p>Add a head of FACES to display on the public interface</p>
-            <button
-              className={styles.addButton}
-              onClick={() => setIsEditing(true)}
-            >
-              Add Head of FACES
-            </button>
-          </div>
-        ) : (
           <div className={styles.headCard}>
             {/* Profile Image Section */}
             <div className={styles.imageSection}>
@@ -449,20 +435,22 @@ export default function HeadManagement({ showSuccessModal }) {
               ) : (
                 <div className={styles.readOnlyInfo}>
                   <div className={styles.nameSection}>
-                    <h3 className={styles.name}>{headData?.name || 'No Name'}</h3>
-                    <span className={styles.position}>{headData?.position || 'Head of FACES'}</span>
+                    <h3 className={styles.name}>{formData.name || 'No Name'}</h3>
+                    <span className={styles.position}>{formData.position || 'Head of FACES'}</span>
                   </div>
                   
-                  {headData?.description && (
-                    <p className={styles.description}>{headData.description}</p>
+                  {formData.description && (
+                    <p className={styles.description}>{formData.description}</p>
                   )}
                   
+                  {!formData.name && !formData.description && (
+                    <p className={styles.emptyMessage}>No information added yet. Click Edit to add details.</p>
+                  )}
                 </div>
               )}
             </div>
 
           </div>
-        )}
       </div>
 
     </div>

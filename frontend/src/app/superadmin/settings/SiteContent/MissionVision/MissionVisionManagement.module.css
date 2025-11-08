@@ -116,6 +116,12 @@
   white-space: pre-wrap;
 }
 
+.emptyPlaceholder {
+  color: #94a3b8;
+  font-style: italic;
+  font-family: var(--font-poppins), sans-serif;
+}
+
 
 /* Edit Toggle Button */
 .editToggleBtn {

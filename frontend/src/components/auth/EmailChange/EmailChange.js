@@ -360,7 +360,7 @@ export default function EmailChange({
         {/* Step 1: Password Verification */}
         {currentStep === 1 && (
           <>
-            <form onSubmit={handleStep1Submit} className={styles.emailForm}>
+            <form onSubmit={handleStep1Submit} className={styles.emailForm} autoComplete="off">
               <div className={styles.stepHeader}>
                 <h3>Step 1: Enter New Email & Verify Your Identity</h3>
                 <p>Enter your new email address and current password to continue</p>
@@ -372,6 +372,7 @@ export default function EmailChange({
                   type="email"
                   value={getCurrentEmail()}
                   readOnly
+                  autoComplete="off"
                   className={styles.currentEmailInput}
                 />
               </div>
@@ -384,6 +385,7 @@ export default function EmailChange({
                   value={emailData.newEmail}
                   onChange={handleInputChange}
                   placeholder="Enter new email address"
+                  autoComplete="off"
                   className={`${styles.emailInput} ${fieldErrors.newEmail ? styles.error : ''}`}
                 />
                 {fieldErrors.newEmail && (
@@ -402,6 +404,7 @@ export default function EmailChange({
                     value={emailData.currentPassword}
                     onChange={handleInputChange}
                     placeholder="Enter current password"
+                    autoComplete="off"
                     className={fieldErrors.currentPassword ? styles.error : ''}
                   />
                   <button
@@ -446,7 +449,7 @@ export default function EmailChange({
         {/* Step 2: OTP Verification */}
         {currentStep === 2 && (
           <>
-            <form onSubmit={handleStep2Submit} className={styles.emailForm}>
+            <form onSubmit={handleStep2Submit} className={styles.emailForm} autoComplete="off">
               <div className={styles.stepHeader}>
                 <h3>Step 2: Enter Verification Code</h3>
                 <p>We&apos;ve sent a 6-digit code to <strong>{emailData.newEmail}</strong></p>
@@ -467,6 +470,7 @@ export default function EmailChange({
                   onChange={handleInputChange}
                   placeholder="Enter 6-digit code"
                   maxLength="6"
+                  autoComplete="off"
                   className={`${styles.otpInput} ${fieldErrors.otp ? styles.error : ''}`}
                 />
                 {fieldErrors.otp && (

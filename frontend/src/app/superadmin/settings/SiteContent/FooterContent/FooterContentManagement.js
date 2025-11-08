@@ -819,12 +819,14 @@ export default function FooterContentManagement({ showSuccessModal }) {
                   return (
                     <div key={index} className={styles.socialMediaItem}>
                       <div className={styles.socialMediaInfo}>
-                        <div className={styles.socialMediaIcon} style={{ color: platformColor }}>
-                          {IconComponent && <IconComponent size={20} />}
-                        </div>
-                        <div className={styles.socialMediaDetails}>
-                          <span className={styles.socialMediaPlatform}>{social.platform}</span>
-                          {isEditingSocial ? (
+                        {isEditingSocial ? (
+                          <>
+                            <div className={styles.socialMediaHeader}>
+                              <div className={styles.socialMediaIcon} style={{ color: platformColor }}>
+                                {IconComponent && <IconComponent size={16} />}
+                              </div>
+                              <span className={styles.socialMediaPlatform}>{social.platform}</span>
+                            </div>
                             <input
                               type="url"
                               value={social.url}
@@ -836,10 +838,18 @@ export default function FooterContentManagement({ showSuccessModal }) {
                               className={styles.socialUrlInput}
                               placeholder="Enter URL"
                             />
-                          ) : (
-                            <span className={styles.socialMediaUrl}>{social.url}</span>
-                          )}
-                        </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className={styles.socialMediaIcon} style={{ color: platformColor }}>
+                              {IconComponent && <IconComponent size={20} />}
+                            </div>
+                            <div className={styles.socialMediaDetails}>
+                              <span className={styles.socialMediaPlatform}>{social.platform}</span>
+                              <span className={styles.socialMediaUrl}>{social.url}</span>
+                            </div>
+                          </>
+                        )}
                       </div>
                       {isEditingSocial && (
                         <button
@@ -850,7 +860,7 @@ export default function FooterContentManagement({ showSuccessModal }) {
                           className={styles.removeSocialBtn}
                           title="Remove social media"
                         >
-                          <FiX size={16} />
+                          <FiTrash2 size={14} />
                         </button>
                       )}
                     </div>
@@ -1044,7 +1054,6 @@ export default function FooterContentManagement({ showSuccessModal }) {
             </div>
             
             <div className={styles.inputGroup}>
-              <label htmlFor="copyright" className={styles.inputLabel}>Copyright Text</label>
               {isEditingCopyright ? (
                 <input
                   type="text"

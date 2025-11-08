@@ -1,14 +1,20 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "FAITH CommUNITY Backend API Server - A unified platform for community extension programs",
   "main": "app.js",
   "scripts": {
     "dev": "nodemon app.js",
     "start": "node app.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "community",
+    "extension-programs",
+    "api",
+    "express",
+    "mysql"
+  ],
+  "author": "FAITH CommUNITY",
   "license": "ISC",
   "type": "module",
   "dependencies": {

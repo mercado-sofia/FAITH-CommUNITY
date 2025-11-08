@@ -13,13 +13,18 @@ dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const dbConfig = {
   host: process.env.MYSQL_HOST || "localhost",
+  port: Number(process.env.MYSQL_PORT) || 3306,
   user: process.env.MYSQL_USER || "root",
   password: process.env.MYSQL_PASSWORD || "",
   database: process.env.MYSQL_DATABASE || "db_community",
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: Number(process.env.MYSQL_CONNECTION_LIMIT) || 10,
   queueLimit: 0,
   multipleStatements: true,
+  // SSL configuration for production (Railway, etc.)
+  ssl: process.env.MYSQL_SSL === 'true' || process.env.NODE_ENV === 'production' ? {
+    rejectUnauthorized: process.env.MYSQL_SSL_REJECT_UNAUTHORIZED !== 'false'
+  } : false,
   typeCast: function (field, next) {
     if (field.type === 'JSON') {
       return JSON.parse(field.string());

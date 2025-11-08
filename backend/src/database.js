@@ -2,7 +2,7 @@ import mysql from "mysql2";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import { logError, logInfo } from "./utils/logger.js";
+import { logError, logInfo, logWarn } from "./utils/logger.js";
 
 // Get the directory name properly in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -10,6 +10,50 @@ const __dirname = path.dirname(__filename);
 
 // Load environment variables from the correct location
 dotenv.config({ path: path.join(__dirname, '../../.env') });
+
+// Validate required database environment variables
+const validateDatabaseConfig = () => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const required = ['MYSQL_HOST', 'MYSQL_USER', 'MYSQL_DATABASE'];
+  const missing = [];
+  
+  // Check required variables (MYSQL_PASSWORD can be empty for local dev)
+  for (const key of required) {
+    if (!process.env[key] || process.env[key].trim() === '') {
+      missing.push(key);
+    }
+  }
+  
+  // In production, MYSQL_PASSWORD is required (Railway MySQL always has a password)
+  if (isProduction && (!process.env.MYSQL_PASSWORD || process.env.MYSQL_PASSWORD.trim() === '')) {
+    missing.push('MYSQL_PASSWORD');
+  }
+  
+  if (missing.length > 0 && isProduction) {
+    const error = new Error(
+      `Missing required database environment variables: ${missing.join(', ')}\n` +
+      `Please set these variables in Railway before deploying.\n` +
+      `For Railway MySQL, use Railway variable references:\n` +
+      `  MYSQL_HOST=\${{MySQL.MYSQLHOST}}\n` +
+      `  MYSQL_PORT=\${{MySQL.MYSQLPORT}}\n` +
+      `  MYSQL_USER=\${{MySQL.MYSQLUSER}}\n` +
+      `  MYSQL_PASSWORD=\${{MySQL.MYSQLPASSWORD}}\n` +
+      `  MYSQL_DATABASE=\${{MySQL.MYSQLDATABASE}}\n` +
+      `Also ensure MYSQL_SSL=true is set for Railway MySQL.`
+    );
+    logError('Database configuration validation failed', error, { context: 'database', missing });
+    throw error;
+  }
+  
+  if (missing.length > 0) {
+    logWarn(`Missing database environment variables: ${missing.join(', ')}. Using defaults.`, { context: 'database' });
+  }
+  
+  return true;
+};
+
+// Validate config before creating pool
+validateDatabaseConfig();
 
 const dbConfig = {
   host: process.env.MYSQL_HOST || "localhost",
@@ -30,12 +74,60 @@ const dbConfig = {
       return JSON.parse(field.string());
     }
     return next();
-  }
+  },
+  // Connection timeout setting (valid for mysql2)
+  connectTimeout: 10000, // 10 seconds
 };
 
 // Create a connection pool
 const pool = mysql.createPool(dbConfig);
 const promisePool = pool.promise();
+
+// Test connection with retry logic
+const testConnection = async (maxRetries = 3, delayMs = 2000) => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const connection = await promisePool.getConnection();
+      await connection.ping();
+      connection.release();
+      logInfo('Database connection test successful', { context: 'database', attempt });
+      return true;
+    } catch (error) {
+      logWarn(`Database connection test failed (attempt ${attempt}/${maxRetries})`, { 
+        context: 'database', 
+        attempt,
+        error: error.message,
+        host: dbConfig.host,
+        database: dbConfig.database
+      });
+      
+      if (attempt < maxRetries) {
+        logInfo(`Retrying database connection in ${delayMs}ms...`, { context: 'database' });
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      } else {
+        // Provide helpful error message for Railway
+        const errorMessage = error.message || 'Unknown error';
+        let helpfulMessage = `Failed to connect to database after ${maxRetries} attempts.\n`;
+        helpfulMessage += `Error: ${errorMessage}\n\n`;
+        helpfulMessage += `Troubleshooting steps:\n`;
+        helpfulMessage += `1. Verify MySQL service is running in Railway\n`;
+        helpfulMessage += `2. Check environment variables are set correctly:\n`;
+        helpfulMessage += `   - MYSQL_HOST: ${dbConfig.host || 'NOT SET'}\n`;
+        helpfulMessage += `   - MYSQL_PORT: ${dbConfig.port || 'NOT SET'}\n`;
+        helpfulMessage += `   - MYSQL_USER: ${dbConfig.user || 'NOT SET'}\n`;
+        helpfulMessage += `   - MYSQL_DATABASE: ${dbConfig.database || 'NOT SET'}\n`;
+        helpfulMessage += `   - MYSQL_SSL: ${dbConfig.ssl ? 'true' : 'false'}\n`;
+        helpfulMessage += `3. For Railway MySQL, ensure MYSQL_SSL=true is set\n`;
+        helpfulMessage += `4. Check Railway logs for MySQL service status\n`;
+        
+        const dbError = new Error(helpfulMessage);
+        dbError.originalError = error;
+        throw dbError;
+      }
+    }
+  }
+  return false;
+};
 
 // Incremental migrations for existing databases
 const runIncrementalMigrations = async (connection) => {
@@ -610,9 +702,14 @@ const runIncrementalMigrations = async (connection) => {
 
 // Initialize database function
 const initializeDatabase = async () => {
+  // Test connection first with retry logic
+  logInfo('Testing database connection...', { context: 'database' });
+  await testConnection();
+  
   const connection = await promisePool.getConnection();
 
   try {
+    logInfo('Database connection acquired, starting initialization...', { context: 'database' });
 
     // Create migrations table if it doesn't exist
     await connection.query(`
@@ -1519,21 +1616,110 @@ const initializeDatabase = async () => {
       await runIncrementalMigrations(connection);
     }
 
+    logInfo('Database initialization completed successfully', { context: 'database' });
     return promisePool;
   } catch (error) {
-    logError('Database initialization failed', error, { context: 'database' });
-    throw error;
+    // Provide detailed error information
+    const errorDetails = {
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage,
+      host: dbConfig.host,
+      database: dbConfig.database,
+      user: dbConfig.user,
+      ssl: dbConfig.ssl ? 'enabled' : 'disabled'
+    };
+    
+    logError('Database initialization failed', error, { 
+      context: 'database',
+      details: errorDetails
+    });
+    
+    // Re-throw with helpful message
+    if (error.originalError) {
+      throw error; // Already has helpful message from testConnection
+    }
+    
+    // Create helpful error message
+    let helpfulMessage = `Database initialization failed: ${error.message}\n\n`;
+    helpfulMessage += `Troubleshooting steps:\n`;
+    helpfulMessage += `1. Verify MySQL service is running in Railway\n`;
+    helpfulMessage += `2. Check environment variables are set correctly\n`;
+    helpfulMessage += `3. For Railway MySQL, ensure MYSQL_SSL=true is set\n`;
+    helpfulMessage += `4. Verify database credentials match MySQL service variables\n`;
+    
+    const dbError = new Error(helpfulMessage);
+    dbError.originalError = error;
+    throw dbError;
   } finally {
     connection.release();
   }
 };
 
-// Initialize database immediately
-initializeDatabase().then(() => {
-}).catch(error => {
-  logError('Database initialization failed', error, { context: 'database' });
-  process.exit(1);
+// Track initialization state
+let initializationPromise = null;
+let initializationComplete = false;
+let initializationError = null;
+
+// Initialize database with better error handling
+const startInitialization = async () => {
+  if (initializationPromise) {
+    return initializationPromise;
+  }
+  
+  initializationPromise = initializeDatabase()
+    .then(() => {
+      initializationComplete = true;
+      initializationError = null;
+      logInfo('✅ Database initialized successfully', { context: 'database' });
+    })
+    .catch(error => {
+      initializationComplete = false;
+      initializationError = error;
+      logError('❌ Database initialization failed', error, { context: 'database' });
+      
+      // In production, exit with error code
+      if (process.env.NODE_ENV === 'production') {
+        console.error('\n❌ Database initialization failed. Application cannot start.\n');
+        console.error('Please check your environment variables and MySQL service status in Railway.\n');
+        process.exit(1);
+      } else {
+        // In development, log but don't exit (allows for debugging)
+        console.error('\n⚠️  Database initialization failed. Application may not work correctly.\n');
+      }
+      
+      throw error;
+    });
+  
+  return initializationPromise;
+};
+
+// Start initialization immediately (non-blocking)
+startInitialization().catch(() => {
+  // Error already logged and handled above
 });
 
 // Export the promise pool for backward compatibility
+// Note: Wait for initialization before using the pool
+export const getDatabase = async () => {
+  if (!initializationComplete && !initializationError) {
+    // Wait for initialization to complete
+    await initializationPromise;
+  }
+  
+  if (initializationError) {
+    throw initializationError;
+  }
+  
+  return promisePool;
+};
+
+// Export promise pool directly (for backward compatibility)
+// Warning: This may be used before initialization completes
 export default promisePool;
+
+// Export initialization status
+export const isDatabaseReady = () => initializationComplete;
+export const getInitializationError = () => initializationError;

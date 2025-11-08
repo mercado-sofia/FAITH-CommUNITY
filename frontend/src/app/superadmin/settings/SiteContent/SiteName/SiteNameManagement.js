@@ -97,9 +97,22 @@ export default function SiteNameManagement({ showSuccessModal }) {
         setIsEditingSiteName(false);
         showSuccessModal('Site name updated successfully! The changes will be visible on the public site immediately.');
       } else {
+        // Handle 401 responses
+        if (response.status === 401) {
+          showSuccessModal('Authentication expired. Please log in again.');
+          return;
+        }
+        
+        // Handle CORS errors (status 0)
+        if (response.status === 0) {
+          console.error('CORS or network error detected');
+          showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+          return;
+        }
+        
         let errorMessage = 'Failed to update site name';
         try {
-          const errorData = await response.json();
+        const errorData = await response.json();
           errorMessage = errorData.message || errorData.error || errorMessage;
           console.error('Update error response:', errorData);
         } catch (e) {

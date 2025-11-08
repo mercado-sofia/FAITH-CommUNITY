@@ -88,10 +88,19 @@ export default function AboutUsManagement({ showSuccessModal }) {
           const data = await response.json();
           setAboutUsData(data.data);
           setTempAboutUs({
-            heading: data.data.heading || '',
-            description: data.data.description || '',
-            extension_categories: data.data.extension_categories || [],
-            image_url: data.data.image_url || ''
+            heading: data.data?.heading || '',
+            description: data.data?.description || '',
+            extension_categories: data.data?.extension_categories || [],
+            image_url: data.data?.image_url || ''
+          });
+        } else if (response && response.status === 404) {
+          // No data exists yet - that's okay, fields will be empty
+          setAboutUsData(null);
+          setTempAboutUs({
+            heading: '',
+            description: '',
+            extension_categories: [],
+            image_url: ''
           });
         }
       } catch (error) {
@@ -128,20 +137,8 @@ export default function AboutUsManagement({ showSuccessModal }) {
     setSelectedFile(null); // Clear any selected file
   };
 
-  // About us update handler
+  // About us update handler - no validation, all fields optional
   const handleAboutUsUpdate = () => {
-    if (!tempAboutUs.heading.trim()) {
-      showSuccessModal('Heading cannot be empty');
-      return;
-    }
-    if (!tempAboutUs.description.trim()) {
-      showSuccessModal('Description cannot be empty');
-      return;
-    }
-    if (!tempAboutUs.extension_categories.length) {
-      showSuccessModal('At least one extension category is required');
-      return;
-    }
     setShowAboutUsModal(true);
   };
 
@@ -181,10 +178,10 @@ export default function AboutUsManagement({ showSuccessModal }) {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              heading: tempAboutUs.heading.trim(),
-              description: tempAboutUs.description.trim(),
-              extension_categories: tempAboutUs.extension_categories,
-              image_url: finalImageUrl
+              heading: tempAboutUs.heading?.trim() || null,
+              description: tempAboutUs.description?.trim() || null,
+              extension_categories: tempAboutUs.extension_categories || [],
+              image_url: finalImageUrl || null
             }),
           },
           'superadmin'
@@ -198,7 +195,7 @@ export default function AboutUsManagement({ showSuccessModal }) {
         } else {
           let errorMessage = 'Failed to update about us content';
           try {
-            const errorData = await response.json();
+          const errorData = await response.json();
             errorMessage = errorData.message || errorData.error || errorMessage;
             console.error('Update error response:', errorData);
           } catch (e) {
@@ -268,13 +265,8 @@ export default function AboutUsManagement({ showSuccessModal }) {
     setEditingCategory({ name: '', color: 'green' });
   };
 
-  // Delete extension category
+  // Delete extension category - allow deleting all categories
   const handleDeleteCategory = (index) => {
-    if (tempAboutUs.extension_categories.length <= 1) {
-      showSuccessModal('Cannot delete the last extension category');
-      return;
-    }
-
     const updatedCategories = tempAboutUs.extension_categories.filter((_, i) => i !== index);
     setTempAboutUs(prev => ({
       ...prev,
@@ -346,7 +338,7 @@ export default function AboutUsManagement({ showSuccessModal }) {
         
         let errorMessage = 'Failed to upload image';
         try {
-          const errorData = await response.json();
+        const errorData = await response.json();
           errorMessage = errorData.message || errorData.error || errorMessage;
           console.error('Upload error response:', errorData);
         } catch (e) {
@@ -611,19 +603,21 @@ export default function AboutUsManagement({ showSuccessModal }) {
                 <label htmlFor="heading" className={styles.inputLabel}>
                   Heading
                 </label>
+                {isEditingAboutUs ? (
                 <input
                   type="text"
                   id="heading"
-                  value={isEditingAboutUs ? tempAboutUs.heading : (aboutUsData?.heading || '')}
-                  onChange={(e) => isEditingAboutUs ? 
-                    setTempAboutUs(prev => ({ ...prev, heading: e.target.value })) :
-                    null
-                  }
+                    value={tempAboutUs.heading}
+                    onChange={(e) => setTempAboutUs(prev => ({ ...prev, heading: e.target.value }))}
                   className={styles.textInput}
-                  placeholder="Enter heading"
+                    placeholder="Enter heading (optional)"
                   maxLength={500}
-                  disabled={!isEditingAboutUs}
                 />
+                ) : (
+                  <div className={styles.displayValue}>
+                    {aboutUsData?.heading || <span className={styles.emptyPlaceholder}>No heading added yet</span>}
+                  </div>
+                )}
               </div>
 
               {/* Description Field */}
@@ -631,18 +625,20 @@ export default function AboutUsManagement({ showSuccessModal }) {
                 <label htmlFor="description" className={styles.inputLabel}>
                   Description
                 </label>
+                {isEditingAboutUs ? (
                 <textarea
                   id="description"
-                  value={isEditingAboutUs ? tempAboutUs.description : (aboutUsData?.description || '')}
-                  onChange={(e) => isEditingAboutUs ? 
-                    setTempAboutUs(prev => ({ ...prev, description: e.target.value })) :
-                    null
-                  }
+                    value={tempAboutUs.description}
+                    onChange={(e) => setTempAboutUs(prev => ({ ...prev, description: e.target.value }))}
                   className={styles.textArea}
-                  placeholder="Enter description"
+                    placeholder="Enter description (optional)"
                   rows={4}
-                  disabled={!isEditingAboutUs}
                 />
+                ) : (
+                  <div className={styles.displayValue}>
+                    {aboutUsData?.description || <span className={styles.emptyPlaceholder}>No description added yet</span>}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -665,7 +661,8 @@ export default function AboutUsManagement({ showSuccessModal }) {
             </div>
             
             <div className={styles.categoriesList}>
-              {(isEditingAboutUs ? tempAboutUs.extension_categories : (aboutUsData?.extension_categories || [])).map((category, index) => (
+              {(isEditingAboutUs ? tempAboutUs.extension_categories : (aboutUsData?.extension_categories || [])).length > 0 ? (
+                (isEditingAboutUs ? tempAboutUs.extension_categories : (aboutUsData?.extension_categories || [])).map((category, index) => (
                 <div key={index} className={styles.categoryItem}>
                   <div className={styles.categoryInfo}>
                     <span className={styles.categoryName}>{category.name}</span>
@@ -684,14 +681,18 @@ export default function AboutUsManagement({ showSuccessModal }) {
                       <button
                         onClick={() => handleDeleteCategory(index)}
                         className={styles.deleteCategoryBtn}
-                        disabled={tempAboutUs.extension_categories.length <= 1}
                       >
                         <FiTrash2 size={14} />
                       </button>
                     </div>
                   )}
                 </div>
-              ))}
+                ))
+              ) : (
+                <div className={styles.emptyCategories}>
+                  <span className={styles.emptyPlaceholder}>No extension categories added yet</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

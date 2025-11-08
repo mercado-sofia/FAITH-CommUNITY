@@ -234,9 +234,22 @@ export default function FooterContentManagement({ showSuccessModal }) {
         setNewService('');
         showSuccessModal('Service added successfully!');
       } else {
+        // Handle 401 responses
+        if (response.status === 401) {
+          showSuccessModal('Authentication expired. Please log in again.');
+          return;
+        }
+        
+        // Handle CORS errors (status 0)
+        if (response.status === 0) {
+          console.error('CORS or network error detected');
+          showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+          return;
+        }
+        
         let errorMessage = 'Failed to add service';
         try {
-          const errorData = await response.json();
+        const errorData = await response.json();
           errorMessage = errorData.message || errorData.error || errorMessage;
           console.error('Add service error response:', errorData);
         } catch (e) {
@@ -282,9 +295,22 @@ export default function FooterContentManagement({ showSuccessModal }) {
         setServices(prev => prev.filter(service => service.id !== serviceToDelete.id));
         showSuccessModal('Service deleted successfully!');
       } else {
+        // Handle 401 responses
+        if (response.status === 401) {
+          showSuccessModal('Authentication expired. Please log in again.');
+          return;
+        }
+        
+        // Handle CORS errors (status 0)
+        if (response.status === 0) {
+          console.error('CORS or network error detected');
+          showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+          return;
+        }
+        
         let errorMessage = 'Failed to delete service';
         try {
-          const errorData = await response.json();
+        const errorData = await response.json();
           errorMessage = errorData.message || errorData.error || errorMessage;
           console.error('Delete service error response:', errorData);
         } catch (e) {
@@ -355,9 +381,22 @@ export default function FooterContentManagement({ showSuccessModal }) {
       if (response && response.ok) {
         showSuccessModal('Footer content updated successfully! The changes will be visible on the public site immediately.');
       } else {
+        // Handle 401 responses
+        if (response.status === 401) {
+          showSuccessModal('Authentication expired. Please log in again.');
+          return;
+        }
+        
+        // Handle CORS errors (status 0)
+        if (response.status === 0) {
+          console.error('CORS or network error detected');
+          showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+          return;
+        }
+        
         let errorMessage = 'Failed to update footer content';
         try {
-          const errorData = await response.json();
+        const errorData = await response.json();
           errorMessage = errorData.message || errorData.error || errorMessage;
           console.error('Update error response:', errorData);
         } catch (e) {
@@ -463,8 +502,29 @@ export default function FooterContentManagement({ showSuccessModal }) {
           );
           
           if (!response || !response.ok) {
-            const errorData = await response.json();
-            showSuccessModal(errorData.message || 'Failed to update service');
+            // Handle 401 responses
+            if (response.status === 401) {
+              showSuccessModal('Authentication expired. Please log in again.');
+              return;
+            }
+            
+            // Handle CORS errors (status 0)
+            if (response.status === 0) {
+              console.error('CORS or network error detected');
+              showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+              return;
+            }
+            
+            let errorMessage = 'Failed to update service';
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.message || errorData.error || errorMessage;
+              console.error('Update service error response:', errorData);
+            } catch (e) {
+              errorMessage = response.statusText || `Server error (${response.status})`;
+              console.error('Non-JSON error response:', response.status, response.statusText);
+            }
+            showSuccessModal(`${errorMessage} (Status: ${response.status})`);
             return;
           }
         }
@@ -481,8 +541,29 @@ export default function FooterContentManagement({ showSuccessModal }) {
           );
           
           if (!response || !response.ok) {
-            const errorData = await response.json();
-            showSuccessModal(errorData.message || 'Failed to delete service');
+            // Handle 401 responses
+            if (response.status === 401) {
+              showSuccessModal('Authentication expired. Please log in again.');
+              return;
+            }
+            
+            // Handle CORS errors (status 0)
+            if (response.status === 0) {
+              console.error('CORS or network error detected');
+              showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+              return;
+            }
+            
+            let errorMessage = 'Failed to delete service';
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.message || errorData.error || errorMessage;
+              console.error('Delete service error response:', errorData);
+            } catch (e) {
+              errorMessage = response.statusText || `Server error (${response.status})`;
+              console.error('Non-JSON error response:', response.status, response.statusText);
+            }
+            showSuccessModal(`${errorMessage} (Status: ${response.status})`);
             return;
           }
         }
@@ -565,9 +646,22 @@ export default function FooterContentManagement({ showSuccessModal }) {
         }
         showSuccessModal('Footer content updated successfully! The changes will be visible on the public site immediately.');
       } else {
+        // Handle 401 responses
+        if (response.status === 401) {
+          showSuccessModal('Authentication expired. Please log in again.');
+          return;
+        }
+        
+        // Handle CORS errors (status 0)
+        if (response.status === 0) {
+          console.error('CORS or network error detected');
+          showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+          return;
+        }
+        
         let errorMessage = 'Failed to update footer content';
         try {
-          const errorData = await response.json();
+        const errorData = await response.json();
           errorMessage = errorData.message || errorData.error || errorMessage;
           console.error('Update footer error response:', errorData);
         } catch (e) {

@@ -16,9 +16,15 @@ export const getAboutUs = async (req, res) => {
     const [rows] = await db.query('SELECT * FROM about_us ORDER BY id DESC LIMIT 1');
     
     if (rows.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'About us content not found' 
+      // Return empty data instead of 404 - fields can be empty
+      return res.json({
+        success: true,
+        data: {
+          heading: null,
+          description: null,
+          extension_categories: [],
+          image_url: null
+        }
       });
     }
 
@@ -41,41 +47,29 @@ export const getAboutUs = async (req, res) => {
   }
 };
 
-// Update about us content
+// Update about us content - all fields optional
 export const updateAboutUs = async (req, res) => {
   try {
     const { heading, description, extension_categories, image_url } = req.body;
 
-    // Validate required fields
-    if (!heading || heading.trim() === '') {
+    // All fields are optional - no validation required
+    // Validate extension categories structure if provided
+    if (extension_categories && !Array.isArray(extension_categories)) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Heading is required' 
+        message: 'Extension categories must be an array' 
       });
     }
 
-    if (!description || description.trim() === '') {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Description is required' 
-      });
-    }
-
-    // Validate extension categories
-    if (!extension_categories || !Array.isArray(extension_categories) || extension_categories.length === 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'At least one extension category is required' 
-      });
-    }
-
-    // Validate each extension category
+    // Validate each extension category if provided
+    if (extension_categories && extension_categories.length > 0) {
     for (const category of extension_categories) {
       if (!category.name || category.name.trim() === '') {
         return res.status(400).json({ 
           success: false, 
-          message: 'Extension category name is required' 
+            message: 'Extension category name cannot be empty if category is provided' 
         });
+        }
       }
     }
 
@@ -83,17 +77,21 @@ export const updateAboutUs = async (req, res) => {
     const [existingRows] = await db.query('SELECT * FROM about_us ORDER BY id DESC LIMIT 1');
     
     let result;
+    const headingValue = heading && heading.trim() ? heading.trim() : null;
+    const descriptionValue = description && description.trim() ? description.trim() : null;
+    const categoriesValue = extension_categories && extension_categories.length > 0 ? JSON.stringify(extension_categories) : JSON.stringify([]);
+    
     if (existingRows.length === 0) {
-      // Create new about us record
+      // Create new about us record - all fields optional
       [result] = await db.query(
         'INSERT INTO about_us (heading, description, extension_categories, image_url) VALUES (?, ?, ?, ?)',
-        [heading.trim(), description.trim(), JSON.stringify(extension_categories), image_url || null]
+        [headingValue, descriptionValue, categoriesValue, image_url || null]
       );
     } else {
-      // Update existing about us record
+      // Update existing about us record - all fields optional
       [result] = await db.query(
         'UPDATE about_us SET heading = ?, description = ?, extension_categories = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [heading.trim(), description.trim(), JSON.stringify(extension_categories), image_url || null, existingRows[0].id]
+        [headingValue, descriptionValue, categoriesValue, image_url || null, existingRows[0].id]
       );
     }
 
@@ -301,12 +299,7 @@ export const deleteExtensionCategory = async (req, res) => {
       });
     }
 
-    if (currentCategories.length <= 1) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Cannot delete the last extension category' 
-      });
-    }
+    // Allow deleting all categories - no minimum required
 
     // Remove category
     currentCategories.splice(index, 1);
@@ -360,11 +353,11 @@ export const uploadAboutUsImage = async (req, res) => {
     const [existingRows] = await db.query('SELECT * FROM about_us ORDER BY id DESC LIMIT 1');
     
     if (existingRows.length === 0) {
-      // Create new about us record with image
-      await db.query(
-        'INSERT INTO about_us (image_url) VALUES (?)',
-        [uploadResult.url]
-      );
+      // Don't auto-create record - user should create via update endpoint first
+      return res.status(404).json({ 
+        success: false, 
+        message: 'About us content not found. Please create about us content first before uploading an image.' 
+      });
     } else {
       // Update existing about us record with new image
       await db.query(

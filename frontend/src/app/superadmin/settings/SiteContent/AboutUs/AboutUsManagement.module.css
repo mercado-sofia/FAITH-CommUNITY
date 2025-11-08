@@ -139,6 +139,36 @@
   color: #6c757d;
 }
 
+.displayValue {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: var(--font-poppins), sans-serif;
+  background: #f9fafb;
+  color: #374151;
+  line-height: 1.6;
+  min-height: 60px;
+  white-space: pre-wrap;
+}
+
+.emptyPlaceholder {
+  color: #94a3b8;
+  font-style: italic;
+  font-family: var(--font-poppins), sans-serif;
+}
+
+.emptyCategories {
+  padding: 1rem;
+  text-align: center;
+  color: #94a3b8;
+  font-style: italic;
+  font-family: var(--font-poppins), sans-serif;
+  border: 1px dashed #d1d5db;
+  border-radius: 6px;
+  background: #f9fafb;
+}
+
 .selectInput {
   padding: 0.75rem;
   border: 1px solid #d1d5db;

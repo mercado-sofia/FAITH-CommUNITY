@@ -1588,12 +1588,8 @@ const initializeDatabase = async () => {
         VALUES ('FAITH CommUNITY')
       `);
 
-      await connection.query(`
-        INSERT IGNORE INTO footer_content (section_type, title, url, display_order) VALUES
-        ('contact', 'phone', '+163-3654-7896', 1),
-        ('contact', 'email', 'info@faithcommunity.com', 2),
-        ('copyright', 'copyright', '© Copyright 2025 FAITH CommUNITY. All Rights Reserved.', 1)
-      `);
+      // Footer content (phone, email, copyright) - no auto-insert, let users add them
+      // Removed auto-insert to allow null values initially
 
       await connection.query(`
         INSERT IGNORE INTO hero_section (tag, heading) VALUES

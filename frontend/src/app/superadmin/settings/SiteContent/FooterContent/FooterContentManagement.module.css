@@ -437,18 +437,37 @@
 
 .emptyState {
   padding: 1rem;
-  background: #f8f9fa;
-  border: 1px dashed #d1d5db;
+  background: #f9fafb;
+  border: 1px dashed #e5e7eb;
   border-radius: 6px;
   margin-top: 0.5rem;
 }
 
 .emptyStateText {
   font-size: 13px;
-  color: #6b7280;
+  color: #9ca3af;
   font-family: var(--font-poppins), sans-serif;
   line-height: 1.5;
   margin: 0;
+}
+
+.displayValue {
+  padding: 0.75rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: #374151;
+  font-family: var(--font-poppins), sans-serif;
+}
+
+.emptyPlaceholder {
+  color: #9ca3af;
+  font-style: italic;
+  font-family: var(--font-poppins), sans-serif;
 }
 
 /* Social Media Styles */

@@ -76,25 +76,55 @@ export const getFooterContent = async (req, res) => {
   }
 }
 
-// Update contact information
+// Update contact information (UPSERT - create if doesn't exist, update if exists)
 export const updateContactInfo = async (req, res) => {
   try {
     const { phone, email } = req.body;
 
-    // Update phone
+    // Handle phone - UPSERT (allow null/empty values)
     if (phone !== undefined) {
-      await db.query(
-        'UPDATE footer_content SET url = ?, updated_at = CURRENT_TIMESTAMP WHERE section_type = ? AND title = ?',
-        [phone, 'contact', 'phone']
+      const phoneValue = phone && phone.trim() ? phone.trim() : null;
+      const [existingPhone] = await db.query(
+        'SELECT id FROM footer_content WHERE section_type = ? AND title = ?',
+        ['contact', 'phone']
       );
+
+      if (existingPhone.length > 0) {
+        // Update existing phone
+        await db.query(
+          'UPDATE footer_content SET url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+          [phoneValue, existingPhone[0].id]
+        );
+      } else {
+        // Create new phone entry
+        await db.query(
+          'INSERT INTO footer_content (section_type, title, url, display_order, is_active) VALUES (?, ?, ?, ?, 1)',
+          ['contact', 'phone', phoneValue, 1]
+        );
+      }
     }
 
-    // Update email
+    // Handle email - UPSERT (allow null/empty values)
     if (email !== undefined) {
-      await db.query(
-        'UPDATE footer_content SET url = ?, updated_at = CURRENT_TIMESTAMP WHERE section_type = ? AND title = ?',
-        [email, 'contact', 'email']
+      const emailValue = email && email.trim() ? email.trim() : null;
+      const [existingEmail] = await db.query(
+        'SELECT id FROM footer_content WHERE section_type = ? AND title = ?',
+        ['contact', 'email']
       );
+
+      if (existingEmail.length > 0) {
+        // Update existing email
+        await db.query(
+          'UPDATE footer_content SET url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+          [emailValue, existingEmail[0].id]
+        );
+      } else {
+        // Create new email entry
+        await db.query(
+          'INSERT INTO footer_content (section_type, title, url, display_order, is_active) VALUES (?, ?, ?, ?, 1)',
+          ['contact', 'email', emailValue, 2]
+        );
+      }
     }
 
     res.json({
@@ -172,15 +202,30 @@ export const updateSocialMedia = async (req, res) => {
   }
 };
 
-// Update copyright text
+// Update copyright text (UPSERT - create if doesn't exist, update if exists)
 export const updateCopyright = async (req, res) => {
   try {
     const { content } = req.body;
 
-    await db.query(
-      'UPDATE footer_content SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE section_type = ?',
-      [content, 'copyright']
+    const contentValue = content && content.trim() ? content.trim() : null;
+    const [existingCopyright] = await db.query(
+      'SELECT id FROM footer_content WHERE section_type = ?',
+      ['copyright']
     );
+
+    if (existingCopyright.length > 0) {
+      // Update existing copyright
+      await db.query(
+        'UPDATE footer_content SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [contentValue, existingCopyright[0].id]
+      );
+    } else {
+      // Create new copyright entry
+      await db.query(
+        'INSERT INTO footer_content (section_type, title, content, display_order, is_active) VALUES (?, ?, ?, ?, 1)',
+        ['copyright', 'copyright', contentValue, 1]
+      );
+    }
 
     res.json({
       success: true,

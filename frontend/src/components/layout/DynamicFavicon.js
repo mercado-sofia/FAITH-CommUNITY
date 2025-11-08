@@ -6,13 +6,45 @@ import logger from '../../utils/logger';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-// Simple fetcher for public branding API
+// Simple fetcher for public branding API with improved error handling
 const fetcher = async (url) => {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
+      error.status = response.status;
+      error.statusText = response.statusText;
+      throw error;
+    }
+    
+    // Parse JSON with error handling
+    try {
+      return await response.json();
+    } catch (parseError) {
+      const error = new Error('Invalid JSON response from server');
+      error.originalError = parseError;
+      throw error;
+    }
+  } catch (error) {
+    // Handle network errors (connection refused, CORS, timeout, etc.)
+    if (
+      error instanceof TypeError || 
+      error.name === 'NetworkError' ||
+      error.message.includes('fetch') ||
+      error.message.includes('Failed to fetch') ||
+      error.message.includes('NetworkError') ||
+      error.message.includes('Network request failed')
+    ) {
+      const networkError = new Error(`Network error: Unable to connect to ${url}`);
+      networkError.originalError = error;
+      networkError.isNetworkError = true;
+      networkError.name = error.name || 'NetworkError';
+      networkError.message = error.message || networkError.message;
+      throw networkError;
+    }
+    // Re-throw other errors
+    throw error;
   }
-  return response.json();
 };
 
 /**
@@ -30,8 +62,19 @@ export default function DynamicFavicon() {
       revalidateOnFocus: false, // Don't revalidate on window focus
       revalidateOnReconnect: false, // Don't revalidate on reconnect
       revalidateIfStale: false, // Don't revalidate if stale
+      shouldRetryOnError: false, // Don't retry on error to prevent spam
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/superadmin/branding/public`, error);
+        // Only log non-network errors or provide more context for network errors
+        if (error.isNetworkError) {
+          // Log network errors with more context but less verbosity
+          logger.warn(`Failed to fetch branding data: ${error.message}`, {
+            endpoint: `${API_BASE_URL}/api/superadmin/branding/public`,
+            type: 'network_error'
+          });
+        } else {
+          // Log other errors normally
+          logger.swrError(`${API_BASE_URL}/api/superadmin/branding/public`, error);
+        }
       }
     }
   );

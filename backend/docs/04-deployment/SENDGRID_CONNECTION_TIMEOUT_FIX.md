@@ -131,28 +131,37 @@ If you see connection timeout errors, check:
 
 If SMTP continues to timeout (connection timeout at CONN stage), your deployment platform is likely blocking outbound SMTP connections. **Use SendGrid's REST API instead** - it uses HTTPS (port 443) which is almost never blocked.
 
-### ✅ Solution: Enable SendGrid REST API
+### ✅ Solution: Enable SendGrid SDK (Official Package)
 
-Add this environment variable to use SendGrid's REST API instead of SMTP:
+The codebase uses the official `@sendgrid/mail` package. Add this environment variable to use SendGrid's SDK instead of SMTP:
 
 ```env
-# Enable SendGrid REST API (uses HTTPS instead of SMTP)
+# Enable SendGrid SDK (uses HTTPS instead of SMTP)
 USE_SENDGRID_API=true
 
-# Still need these for SendGrid
-SMTP_HOST=smtp.sendgrid.net  # (not used when USE_SENDGRID_API=true, but kept for compatibility)
-SMTP_PASS=SG.your-sendgrid-api-key-here  # Required - your SendGrid API key
+# Required for SendGrid SDK
+SMTP_PASS=SG.your-sendgrid-api-key-here  # Your SendGrid API key
+# OR use SENDGRID_API_KEY instead:
+# SENDGRID_API_KEY=SG.your-sendgrid-api-key-here
+
 MAIL_FROM="FAITH CommUNITY" <faithcommunityfaces@gmail.com>
+
+# These are not used when USE_SENDGRID_API=true, but you can keep them for compatibility
+SMTP_HOST=smtp.sendgrid.net
+SMTP_PORT=587
+SMTP_USER=apikey
 ```
 
-**Benefits of REST API:**
+**Benefits of SendGrid SDK:**
 - ✅ Uses HTTPS (port 443) - almost never blocked
+- ✅ Official SendGrid package - well-maintained and tested
 - ✅ More reliable in deployment environments
-- ✅ Better error messages
+- ✅ Better error messages with detailed error information
 - ✅ No connection pooling issues
 - ✅ Faster than SMTP
+- ✅ Handles edge cases automatically
 
-**Note:** When `USE_SENDGRID_API=true`, the `SMTP_HOST`, `SMTP_PORT`, and `SMTP_USER` variables are not used. Only `SMTP_PASS` (your API key) and `MAIL_FROM` are required.
+**Note:** When `USE_SENDGRID_API=true`, the `SMTP_HOST`, `SMTP_PORT`, and `SMTP_USER` variables are not used. You can use either `SMTP_PASS` or `SENDGRID_API_KEY` for your SendGrid API key.
 
 ### Other Troubleshooting Steps
 

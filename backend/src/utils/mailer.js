@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import sgMail from "@sendgrid/mail";
 
 function isSMTPConfigured() {
   return !!(
@@ -266,12 +267,15 @@ export async function verifySMTPConnection(retries = 2) {
   return false;
 }
 
-// Send email via SendGrid REST API (alternative to SMTP)
+// Send email via SendGrid SDK (alternative to SMTP)
 async function sendMailViaSendGridAPI({ to, subject, html, text, from }) {
-  const apiKey = process.env.SMTP_PASS?.trim();
+  const apiKey = process.env.SMTP_PASS?.trim() || process.env.SENDGRID_API_KEY?.trim();
   if (!apiKey) {
-    throw new Error('SMTP_PASS (SendGrid API key) is required for REST API');
+    throw new Error('SMTP_PASS or SENDGRID_API_KEY (SendGrid API key) is required for SendGrid API');
   }
+
+  // Set API key (only needs to be done once, but safe to call multiple times)
+  sgMail.setApiKey(apiKey);
 
   // Parse from address
   let fromEmail = from;
@@ -289,69 +293,75 @@ async function sendMailViaSendGridAPI({ to, subject, html, text, from }) {
       }
     }
   } else {
-    fromEmail = process.env.MAIL_FROM?.match(/<(.+)>/)?.pop() || 
-                process.env.MAIL_FROM?.trim() || 
-                'noreply@faithcommunity.com';
+    // Extract email from MAIL_FROM or use default
+    const mailFrom = process.env.MAIL_FROM?.trim();
+    if (mailFrom) {
+      const match = mailFrom.match(/^"?([^"<]+)"?\s*<(.+)>$|^(.+)$/);
+      if (match) {
+        if (match[1] && match[2]) {
+          fromName = match[1].trim();
+          fromEmail = match[2].trim();
+        } else if (match[3]) {
+          fromEmail = match[3].trim();
+        }
+      }
+    } else {
+      fromEmail = 'faithcommunityfaces@gmail.com'; // Default verified email
+    }
   }
 
-  const payload = {
-    personalizations: [{
-      to: [{ email: to }]
-    }],
+  // Prepare message
+  const msg = {
+    to: to,
     from: {
       email: fromEmail,
       name: fromName
     },
     subject: subject,
-    content: [
-      {
-        type: 'text/html',
-        value: html || text || ''
-      }
-    ]
   };
 
-  // Add plain text if provided
-  if (text && html) {
-    payload.content.push({
-      type: 'text/plain',
-      value: text
-    });
+  // Add content (prefer HTML, fallback to text)
+  if (html) {
+    msg.html = html;
+  }
+  if (text) {
+    msg.text = text;
+  }
+  // If only HTML provided, use it as text too
+  if (html && !text) {
+    msg.text = html.replace(/<[^>]*>/g, ''); // Strip HTML tags for plain text
   }
 
-  const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    let errorMessage = `SendGrid API error: ${response.status} ${response.statusText}`;
-    try {
-      const errorData = JSON.parse(errorText);
-      if (errorData.errors && errorData.errors.length > 0) {
-        errorMessage = `SendGrid API error: ${errorData.errors.map(e => e.message).join(', ')}`;
+  try {
+    const [response] = await sgMail.send(msg);
+    return {
+      messageId: response.headers['x-message-id'] || 'sent',
+      statusCode: response.statusCode,
+      response: 'Email sent successfully'
+    };
+  } catch (error) {
+    // SendGrid SDK provides detailed error information
+    let errorMessage = 'SendGrid API error';
+    if (error.response) {
+      const { body, statusCode } = error.response;
+      errorMessage = `SendGrid API error (${statusCode}): `;
+      if (body && body.errors && body.errors.length > 0) {
+        errorMessage += body.errors.map(e => e.message || e.field || 'Unknown error').join(', ');
+      } else if (body && body.message) {
+        errorMessage += body.message;
+      } else {
+        errorMessage += error.message || 'Unknown error';
       }
-    } catch (e) {
-      // If JSON parsing fails, use the raw error text
-      if (errorText) {
-        errorMessage = `SendGrid API error: ${errorText}`;
-      }
+    } else {
+      errorMessage = `SendGrid API error: ${error.message || 'Unknown error'}`;
     }
-    const error = new Error(errorMessage);
-    error.code = 'SENDGRID_API_ERROR';
-    error.status = response.status;
-    throw error;
+    
+    const sendGridError = new Error(errorMessage);
+    sendGridError.code = 'SENDGRID_API_ERROR';
+    sendGridError.status = error.response?.statusCode;
+    sendGridError.response = error.response;
+    throw sendGridError;
   }
-
-  return {
-    messageId: response.headers.get('x-message-id') || 'sent',
-    response: response.statusText
-  };
 }
 
 export async function sendMail({ to, subject, html, text, attachments } = {}, retries = 2) {
@@ -360,9 +370,10 @@ export async function sendMail({ to, subject, html, text, attachments } = {}, re
   const useSendGridAPI = process.env.USE_SENDGRID_API === 'true';
   
   if (useSendGridAPI) {
-    // Use SendGrid REST API instead of SMTP
-    if (!process.env.SMTP_PASS?.trim()) {
-      throw new Error('SMTP_PASS (SendGrid API key) is required when using SendGrid REST API');
+    // Use SendGrid SDK instead of SMTP
+    const apiKey = process.env.SMTP_PASS?.trim() || process.env.SENDGRID_API_KEY?.trim();
+    if (!apiKey) {
+      throw new Error('SMTP_PASS or SENDGRID_API_KEY (SendGrid API key) is required when using SendGrid API');
     }
 
     const maxRetries = retries;
@@ -445,14 +456,14 @@ export async function sendMail({ to, subject, html, text, attachments } = {}, re
         await new Promise(resolve => setTimeout(resolve, delay));
       }
 
-      const result = await mailer.sendMail({
-        from: process.env.MAIL_FROM || `"FAITH CommUNITY" <${process.env.SMTP_USER}>`,
-        to,
-        subject,
-        html,
-        text,
-        attachments,
-      });
+    const result = await mailer.sendMail({
+      from: process.env.MAIL_FROM || `"FAITH CommUNITY" <${process.env.SMTP_USER}>`,
+      to,
+      subject,
+      html,
+      text,
+      attachments,
+    });
 
       // Close connection after successful send (for SendGrid, avoid keeping connections open)
       if (isSendGrid && mailer && mailer.close) {
@@ -464,8 +475,8 @@ export async function sendMail({ to, subject, html, text, attachments } = {}, re
         }
       }
 
-      return result;
-    } catch (error) {
+    return result;
+  } catch (error) {
       const isLastAttempt = attempt === maxRetries;
       const isTimeoutError = error.code === 'ETIMEDOUT' || 
                             error.message.includes('timeout') || 
@@ -474,7 +485,7 @@ export async function sendMail({ to, subject, html, text, attachments } = {}, re
       
       // Log error details
       if (isLastAttempt) {
-        console.error('❌ Failed to send email:', error.message);
+    console.error('❌ Failed to send email:', error.message);
         if (error.code) {
           console.error(`   → Error code: ${error.code}`);
         }
@@ -503,7 +514,7 @@ export async function sendMail({ to, subject, html, text, attachments } = {}, re
       
       // Re-throw error on last attempt
       if (isLastAttempt) {
-        throw error;
+    throw error;
       }
       
       // Continue to retry

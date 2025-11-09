@@ -392,48 +392,69 @@ app.listen(PORT, async () => {
     }
   }
 
-  // Verify SMTP configuration
+  // Verify email configuration (SMTP or SendGrid API)
   try {
-    const { verifySMTPConnection, getSMTPStatus } = await import("./src/utils/mailer.js");
-    const status = getSMTPStatus();
+    const useSendGridAPI = process.env.USE_SENDGRID_API === 'true';
+    const apiKey = process.env.SMTP_PASS?.trim() || process.env.SENDGRID_API_KEY?.trim();
     
-    if (!status.configured) {
-      const missingList = status.missing.length > 0 
-        ? status.missing.join(', ') 
-        : 'SMTP_HOST, SMTP_USER, SMTP_PASS';
-      console.warn(`⚠️  SMTP not configured. Missing: ${missingList}. Email features will not work.`);
-    } else {
-      // Check for common configuration issues
-      const smtpHost = process.env.SMTP_HOST?.trim() || '';
-      const smtpPort = Number(process.env.SMTP_PORT) || 587;
-      
-      if (smtpHost.includes('sendgrid') && smtpPort === 465) {
-        console.warn('⚠️  SendGrid Configuration Warning:');
-        console.warn('   → SendGrid recommends port 587 (STARTTLS), not port 465');
-        console.warn('   → Port 465 may be blocked in deployment environments');
-        console.warn('   → Consider changing to: SMTP_PORT=587');
-      }
-      
-      if (process.env.SMTP_SKIP_VERIFY === 'true') {
-      console.warn('⚠️  SMTP verification skipped (SMTP_SKIP_VERIFY=true). Email features may not work if SMTP is misconfigured.');
-    } else {
-      // Run verification in background, don't block startup
-      // Note: Verification failure is not critical - server will continue running
-      verifySMTPConnection().then(success => {
-        if (success) {
-          console.log('✅ SMTP verification successful - email features are ready');
-        } else {
-          console.warn('⚠️  SMTP verification failed - server is running but email features may not work');
-          console.warn('   → To skip verification: Set SMTP_SKIP_VERIFY=true in .env');
-          console.warn('   → To test manually: Run node scripts/test-smtp.js');
+    if (useSendGridAPI) {
+      // SendGrid API mode
+      if (!apiKey) {
+        console.warn('⚠️  SendGrid API not configured. Missing: SMTP_PASS or SENDGRID_API_KEY');
+        console.warn('   → Email features will not work until SendGrid API key is configured');
+      } else {
+        console.log('✅ SendGrid API configured - email features are ready');
+        console.log(`   → Using SendGrid SDK (HTTPS) instead of SMTP`);
+        if (!process.env.MAIL_FROM) {
+          console.warn('   → MAIL_FROM not set, will use default: faithcommunityfaces@gmail.com');
         }
-      }).catch(() => {
-        // Error already logged in verifySMTPConnection
-      });
+      }
+    } else {
+      // SMTP mode
+      const { verifySMTPConnection, getSMTPStatus } = await import("./src/utils/mailer.js");
+      const status = getSMTPStatus();
+      
+      if (!status.configured) {
+        const missingList = status.missing.length > 0 
+          ? status.missing.join(', ') 
+          : 'SMTP_HOST, SMTP_USER, SMTP_PASS';
+        console.warn(`⚠️  SMTP not configured. Missing: ${missingList}. Email features will not work.`);
+        console.warn('   → Tip: If SMTP is blocked, use SendGrid API: Set USE_SENDGRID_API=true');
+      } else {
+        // Check for common configuration issues
+        const smtpHost = process.env.SMTP_HOST?.trim() || '';
+        const smtpPort = Number(process.env.SMTP_PORT) || 587;
+        
+        if (smtpHost.includes('sendgrid') && smtpPort === 465) {
+          console.warn('⚠️  SendGrid Configuration Warning:');
+          console.warn('   → SendGrid recommends port 587 (STARTTLS), not port 465');
+          console.warn('   → Port 465 may be blocked in deployment environments');
+          console.warn('   → Consider changing to: SMTP_PORT=587');
+          console.warn('   → Or use SendGrid API: Set USE_SENDGRID_API=true');
+        }
+        
+        if (process.env.SMTP_SKIP_VERIFY === 'true') {
+          console.warn('⚠️  SMTP verification skipped (SMTP_SKIP_VERIFY=true). Email features may not work if SMTP is misconfigured.');
+        } else {
+          // Run verification in background, don't block startup
+          // Note: Verification failure is not critical - server will continue running
+          verifySMTPConnection().then(success => {
+            if (success) {
+              console.log('✅ SMTP verification successful - email features are ready');
+            } else {
+              console.warn('⚠️  SMTP verification failed - server is running but email features may not work');
+              console.warn('   → To skip verification: Set SMTP_SKIP_VERIFY=true in .env');
+              console.warn('   → To test manually: Run node scripts/test-smtp.js');
+              console.warn('   → Alternative: Use SendGrid API: Set USE_SENDGRID_API=true');
+            }
+          }).catch(() => {
+            // Error already logged in verifySMTPConnection
+          });
+        }
       }
     }
   } catch (error) {
-    console.error('❌ Failed to check SMTP configuration:', error.message);
+    console.error('❌ Failed to check email configuration:', error.message);
   }
  
   // IMPORTANT: For serverless environments (Vercel, AWS Lambda, etc.):

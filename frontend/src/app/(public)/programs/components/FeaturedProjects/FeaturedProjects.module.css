@@ -303,8 +303,8 @@
   }
   
   .programCard.featured .programTitle {
-    text-align: center;
-    padding-left: 1rem;
+    text-align: left;
+    padding-left: 1.35rem;
     padding-right: 1rem;
   }
   
@@ -315,9 +315,9 @@
   
   .programTitle {
     font-size: 20px;
-    bottom: 60px;
-    text-align: center;
-    padding-left: 1rem;
+    bottom: 75px;
+    text-align: left;
+    padding-left: 1.35rem;
     padding-right: 1rem;
     width: 100%;
   }
@@ -376,7 +376,7 @@
   }
   
   .programCard.featured .programTitle {
-    text-align: center;
+    text-align: left;
     padding-left: 1rem;
     padding-right: 1rem;
   }
@@ -388,9 +388,9 @@
   
   .programTitle {
     font-size: 20px;
-    bottom: 50px;
-    text-align: center;
-    padding-left: 1rem;
+    bottom: 65px;
+    text-align: left;
+    padding-left: 1.35rem;
     padding-right: 1rem;
     width: 100%;
   }

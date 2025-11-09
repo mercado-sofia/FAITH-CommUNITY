@@ -340,7 +340,11 @@
     font-size: 13px;
     align-self: flex-end !important;
     margin-top: 1.5rem;
-    margin-bottom: -0.5rem;
+    margin-bottom: -1rem;
+  }
+  
+  .orgNav {
+    margin-bottom: 0.5rem;
   }
   
   .orgNavInner {
@@ -363,12 +367,12 @@
 }
   
   .orgItem span {
-    font-size: 0.85rem;
+    font-size: 0.95rem;
   }
   
   .orgLogo {
-    width: 24px !important;
-    height: 24px !important;
+    width: 28px !important;
+    height: 28px !important;
   }
   
   .newsList {
@@ -436,7 +440,11 @@
   .seeAllLink {
     align-self: flex-end !important;
     margin-top: 1.5rem;
-    margin-bottom: -0.5rem;
+    margin-bottom: -1rem;
+  }
+  
+  .orgNav {
+    margin-bottom: 0.5rem;
   }
   
   .orgNavInner {
@@ -459,12 +467,12 @@
   }
   
   .orgItem span {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
   }
   
   .orgLogo {
-    width: 20px !important;
-    height: 20px !important;
+    width: 26px !important;
+    height: 26px !important;
   }
   
   .newsList {
@@ -520,7 +528,7 @@
     flex-direction: column !important;
     align-items: flex-start;
     gap: 0.5rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.4rem;
     width: 100%;
   }
   
@@ -533,7 +541,11 @@
     font-size: 13px;
     align-self: flex-end !important;
     margin-top: 1.5rem;
-    margin-bottom: -0.5rem;
+    margin-bottom: -1rem;
+  }
+  
+  .orgNav {
+    margin-bottom: 0.5rem;
   }
   
   .orgNavInner {
@@ -556,12 +568,12 @@
   }
   
   .orgItem span {
-    font-size: 14px;
+    font-size: 15px;
   }
   
   .orgLogo {
-    width: 18px !important;
-    height: 18px !important;
+    width: 24px !important;
+    height: 24px !important;
   }
   
   .newsList {

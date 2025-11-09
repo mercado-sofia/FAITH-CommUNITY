@@ -17,6 +17,8 @@ export const adminApi = createApi({
       // Use superadmin token if available, otherwise use admin token
       const token = superadminToken || adminToken
       
+      // Send token to backend - let backend handle validation
+      // Backend will reject hardcoded tokens in production with 403
       if (token) {
         headers.set("Authorization", `Bearer ${token}`)
       }

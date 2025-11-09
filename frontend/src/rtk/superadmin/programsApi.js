@@ -10,14 +10,10 @@ export const superadminProgramsApi = createApi({
       // Add JWT token for superadmin authentication
       // Check for window to avoid SSR errors
       const token = getState().superadmin?.token || (typeof window !== 'undefined' ? localStorage.getItem("superAdminToken") : null)
-      // Only reject hardcoded tokens in production (backend also rejects them)
-      // In development, allow hardcoded tokens (backend allows them)
+      // Send token to backend - let backend handle validation
+      // Backend will reject hardcoded tokens in production with 403
       if (token) {
-        if (token === "superadmin" && process.env.NODE_ENV === 'production') {
-          // Don't send hardcoded token in production
-        } else {
-          headers.set("Authorization", `Bearer ${token}`)
-        }
+        headers.set("Authorization", `Bearer ${token}`)
       }
 
       return headers

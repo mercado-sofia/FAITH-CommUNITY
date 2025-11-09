@@ -9,6 +9,8 @@ export const superadminNotificationsApi = createApi({
     prepareHeaders: (headers, { getState }) => {
       // Check for window to avoid SSR errors
       const token = typeof window !== 'undefined' ? localStorage.getItem('superAdminToken') : null;
+      // Send token to backend - let backend handle validation
+      // Backend will reject hardcoded tokens in production with 403
       if (token) {
         headers.set('Authorization', `Bearer ${token}`);
       }

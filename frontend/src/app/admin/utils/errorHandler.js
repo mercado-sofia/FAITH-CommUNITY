@@ -191,6 +191,22 @@ export const getErrorMessage = (error) => {
     return 'An unexpected error occurred. Please try again.';
   }
 
+  // Handle network errors (Failed to fetch, CORS, etc.)
+  const errorMessage = error.message || error.error || (typeof error === 'string' ? error : '');
+  const errorString = typeof errorMessage === 'string' ? errorMessage.toLowerCase() : '';
+  
+  // Check for network-related errors
+  if (errorString.includes('failed to fetch') || 
+      errorString.includes('networkerror') ||
+      errorString.includes('network request failed') ||
+      errorString.includes('fetch failed') ||
+      errorString.includes('cors') ||
+      errorString.includes('connection refused') ||
+      errorString.includes('err_network') ||
+      errorString.includes('err_connection_refused')) {
+    return 'Failed to fetch data. Please check your internet connection and ensure the API server is running. If the problem persists, contact support.';
+  }
+
   // Handle RTK Query error structure
   if (error.data) {
     // Check for nested message/error in data
@@ -210,21 +226,63 @@ export const getErrorMessage = (error) => {
 
   // Handle error.error property
   if (error.error) {
+    // Check if it's a network error
+    const errorError = typeof error.error === 'string' ? error.error.toLowerCase() : '';
+    if (errorError.includes('failed to fetch') || 
+        errorError.includes('networkerror') ||
+        errorError.includes('network request failed')) {
+      return 'Failed to fetch data. Please check your internet connection and ensure the API server is running. If the problem persists, contact support.';
+    }
     return error.error;
   }
 
   // Handle Error instance
   if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes('failed to fetch') || 
+        msg.includes('networkerror') ||
+        msg.includes('network request failed')) {
+      return 'Failed to fetch data. Please check your internet connection and ensure the API server is running. If the problem persists, contact support.';
+    }
     return error.message;
   }
 
   // Handle string errors
   if (typeof error === 'string') {
+    const msg = error.toLowerCase();
+    if (msg.includes('failed to fetch') || 
+        msg.includes('networkerror') ||
+        msg.includes('network request failed')) {
+      return 'Failed to fetch data. Please check your internet connection and ensure the API server is running. If the problem persists, contact support.';
+    }
     return error;
   }
 
   // Handle status-based errors
   if (error.status) {
+    // RTK Query network error statuses
+    if (error.status === 'FETCH_ERROR' || error.status === 'PARSING_ERROR' || error.status === 'CUSTOM_ERROR') {
+      // Check the error message for network issues
+      const statusError = error.error || error.data || error.message || '';
+      const statusErrorStr = typeof statusError === 'string' ? statusError.toLowerCase() : '';
+      
+      if (statusErrorStr.includes('failed to fetch') || 
+          statusErrorStr.includes('networkerror') ||
+          statusErrorStr.includes('network request failed') ||
+          statusErrorStr.includes('cors') ||
+          statusErrorStr.includes('connection refused')) {
+        return 'Failed to fetch data. Please check your internet connection and ensure the API server is running. If the problem persists, contact support.';
+      }
+      
+      // Return the error message if available
+      if (typeof statusError === 'string') {
+        return statusError;
+      }
+      
+      return 'Failed to fetch data. Please check your internet connection and ensure the API server is running.';
+    }
+    
+    // HTTP status codes
     if (error.status === 401) {
       return 'Your session has expired. Please log in again.';
     }

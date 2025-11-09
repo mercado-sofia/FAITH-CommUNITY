@@ -10,7 +10,8 @@ export const dashboardApi = createApi({
       // Add authentication token for superadmin endpoints
       if (typeof window !== 'undefined') {
         const superadminToken = localStorage.getItem('superAdminToken');
-        if (superadminToken) {
+        // Only use valid JWT tokens (not hardcoded tokens)
+        if (superadminToken && superadminToken !== "superadmin") {
           headers.set('Authorization', `Bearer ${superadminToken}`);
         }
       }

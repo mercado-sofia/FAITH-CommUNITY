@@ -555,3 +555,42 @@
 .pageBtn.active:hover {
   background: #2563eb;
 }
+
+/* Error Container */
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  margin: 2rem 0;
+}
+
+.errorMessage {
+  color: #dc2626;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: var(--font-inter), sans-serif;
+  margin-bottom: 1rem;
+}
+
+.retryButton {
+  padding: 0.5rem 1rem;
+  background: #06100f;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  user-select: none;
+}
+
+.retryButton:hover {
+  background: #142220;
+}

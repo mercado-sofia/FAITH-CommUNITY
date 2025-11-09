@@ -7,6 +7,7 @@ import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { useGetNotificationsQuery } from '@/rtk/admin/notificationsApi';
 import { FiTrash2, FiEye } from 'react-icons/fi';
 import SkeletonLoader from '../../components/SkeletonLoader/SkeletonLoader';
+import { getErrorMessage } from '../../utils';
 import styles from '../notifications.module.css';
 
 export default function InfiniteScrollNotifications({ 
@@ -50,7 +51,12 @@ export default function InfiniteScrollNotifications({
   }), [currentAdmin?.id, itemsPerPage, currentPage, currentTab]);
 
   // Fetch notifications for current page
-  const { data: notificationsData, isLoading, error } = useGetNotificationsQuery(
+  const { 
+    data: notificationsData, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useGetNotificationsQuery(
     queryParams,
     { 
       skip: !currentAdmin?.id,
@@ -135,8 +141,11 @@ export default function InfiniteScrollNotifications({
     return (
       <div className={styles.errorContainer}>
         <p className={styles.errorMessage}>
-          {error instanceof Error ? error.message : String(error)}
+          {getErrorMessage(error)}
         </p>
+        <button onClick={() => refetch()} className={styles.retryButton}>
+          Retry
+        </button>
       </div>
     );
   }

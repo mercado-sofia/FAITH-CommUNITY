@@ -8,8 +8,12 @@ import {
   deleteMessage, 
   getUnreadCount 
 } from "../controllers/inboxController.js";
+import { verifyAdminToken } from '../controllers/adminAuthController.js';
 
 const router = express.Router();
+
+// SECURITY FIX: All inbox routes require admin authentication
+router.use(verifyAdminToken);
 
 // Get messages for an organization (admin inbox)
 router.get("/:organization_id", getMessagesByOrg);

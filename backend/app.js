@@ -2,7 +2,6 @@ import 'dotenv/config';
 
 import express from "express"
 import cors from "cors"
-import bodyParser from "body-parser"
 import helmet from "helmet"
 import rateLimit from "express-rate-limit"
 import slowDown from "express-slow-down"
@@ -132,8 +131,8 @@ app.use(
 
 // Parsers
 app.use(cookieParser())
-app.use(bodyParser.json({ limit: "10mb" }))
-app.use(bodyParser.urlencoded({ extended: true }))
+app.use(express.json({ limit: "10mb" }))
+app.use(express.urlencoded({ extended: true }))
 // Static file serving for uploads removed - using Cloudinary now
 
 // Global rate limiting and burst control

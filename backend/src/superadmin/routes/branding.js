@@ -19,11 +19,6 @@ const router = express.Router();
 // Use Cloudinary upload configuration for branding
 const upload = cloudinaryUploadConfigs.branding;
 
-// Test endpoint to verify routes are working
-router.get('/test', (req, res) => {
-  res.json({ success: true, message: 'Branding routes are working' });
-});
-
 // Public route for getting branding data (no authentication required)
 router.get('/public', getBranding);
 

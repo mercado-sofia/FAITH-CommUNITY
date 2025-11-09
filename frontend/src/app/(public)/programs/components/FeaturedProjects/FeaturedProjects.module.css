@@ -276,6 +276,10 @@
   .programsShowcaseContent {
     padding: 0 1rem;
   }
+
+  .heading {
+    font-size: 1.8rem;
+  }
   
   .programsGridContainer {
     padding: 1.5rem 0 2rem;
@@ -349,6 +353,11 @@
 @media (max-width: 480px) {
   .programsShowcaseContent {
     padding: 0 0.75rem;
+  }
+
+  .heading {
+    font-size: 1.6rem;
+    margin-bottom: 1rem;
   }
 
   .programsGridContainer {

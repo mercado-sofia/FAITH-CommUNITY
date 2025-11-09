@@ -73,22 +73,9 @@ export default function ProgramCompletionTrendsChart() {
     );
   }
 
-  // Show error message only if there's an actual API error
-  if (isError) {
-    return (
-      <div className={styles.chartCard}>
-        <div className={styles.chartHeader}>
-          <h3 className={styles.chartTitle}>Program Completion Trends</h3>
-        </div>
-        <div className={styles.emptyState}>
-          <p>Failed to load chart data. Please try again later.</p>
-        </div>
-      </div>
-    );
-  }
-
   // Show empty state if API succeeded but returned no data
-  if (!chartData || chartData.length === 0) {
+  // Also handle errors gracefully by showing empty state instead of error message
+  if (isError || !chartData || chartData.length === 0) {
     return (
       <div className={styles.chartCard}>
         <div className={styles.chartHeader}>

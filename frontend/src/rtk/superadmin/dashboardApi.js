@@ -181,6 +181,11 @@ export const dashboardApi = createApi({
         }
         return [];
       },
+      transformErrorResponse: (response) => {
+        // Handle errors gracefully - return empty array instead of error
+        // This allows the component to show empty state instead of error message
+        return [];
+      },
     }),
 
     // Get top organizations by program count
@@ -191,6 +196,11 @@ export const dashboardApi = createApi({
         if (response.success && response.data) {
           return response.data || [];
         }
+        return [];
+      },
+      transformErrorResponse: (response) => {
+        // Handle errors gracefully - return empty array instead of error
+        // This allows the component to show empty state instead of error message
         return [];
       },
     }),

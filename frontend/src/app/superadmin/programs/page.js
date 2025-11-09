@@ -10,6 +10,7 @@ import ProgramDetailsModal from './components/ProgramDetailsModal'
 import FeaturedProjects from './components/featuredProjects'
 import ProgramCard from './components/ProgramCard'
 import SearchBar from './components/SearchBar'
+import { SkeletonLoader } from '../components'
 import styles from './programs.module.css'
 
 const SuperadminProgramsPage = () => {
@@ -410,10 +411,7 @@ const SuperadminProgramsPage = () => {
             </div>
           </div>
         </div>
-        <div className={styles.loadingContainer}>
-          <div className={styles.spinner}></div>
-          <p>Loading programs...</p>
-        </div>
+        <SkeletonLoader type="programs" count={6} />
       </div>
     )
   }
@@ -588,7 +586,10 @@ const SuperadminProgramsPage = () => {
 
         {filteredOrganizations.length === 0 ? (
           <div className={styles.emptyState}>
-            <p>No organizations found with the selected filters.</p>
+            <h3 className={styles.emptyStateTitle}>No programs found</h3>
+            <p className={styles.emptyStateText}>
+              No programs found matching your current filters. New programs will appear here when administrators submit them.
+            </p>
           </div>
         ) : (
           filteredOrganizations.map(org => {

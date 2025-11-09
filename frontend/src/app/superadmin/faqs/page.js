@@ -14,6 +14,7 @@ import SearchAndFilterControls from './components/SearchAndFilterControls';
 import { RiArrowLeftSLine, RiArrowRightSLine, RiArrowLeftDoubleFill, RiArrowRightDoubleFill } from "react-icons/ri";
 import { ConfirmationModal } from '@/components';
 import { SuccessModal } from '@/components';
+import { SkeletonLoader } from '../components';
 import styles from './faqs.module.css';
 
 export default function ManageFaqs() {
@@ -257,7 +258,10 @@ export default function ManageFaqs() {
   if (isFetching) {
     return (
       <div className={styles.container}>
-        <div className={styles.loading}>Loading FAQs...</div>
+        <div className={styles.headerTop}>
+          <h1>FAQs</h1>
+        </div>
+        <SkeletonLoader type="faqs" count={5} />
       </div>
     );
   }

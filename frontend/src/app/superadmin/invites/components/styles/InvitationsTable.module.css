@@ -306,19 +306,6 @@
   transform: none;
 }
 
-.cancelButton {
-  color: #dc2626;
-  border-color: #dc2626;
-}
-
-.cancelButton:hover:not(:disabled) {
-  background: #dc2626;
-  color: white;
-  border-color: #dc2626;
-}
-
-
-
 .deleteButton {
   color: #dc2626;
   border-color: #dc2626;
@@ -404,25 +391,32 @@
   color: #b91c1c;
 }
 
-/* Empty State */
+/* Empty State Cell */
+.emptyStateCell {
+  text-align: center;
+  padding: 3rem 2rem !important;
+  border: none !important;
+  background-color: #fff;
+}
+
 .emptyState {
   text-align: center;
-  padding: 3rem 2rem;
   color: #6b7280;
 }
 
-.emptyState p {
-  font-size: 15px;
-  color: #6b7280;
-  font-weight: 500;
+.emptyStateTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.emptyStateText {
+  font-size: 13px;
   margin: 0;
-}
-
-.emptyContent {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
+  line-height: 1.5;
+  color: #6b7280;
 }
 
 

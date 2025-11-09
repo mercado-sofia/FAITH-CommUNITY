@@ -447,3 +447,173 @@
   will-change: background-position;
 }
 
+/* FAQs Table Skeleton */
+.faqsSkeleton {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  margin-bottom: 1.4rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  min-height: 400px;
+}
+
+.faqsTableHeaderSkeleton {
+  display: grid;
+  grid-template-columns: 50px 40px 1fr 2fr 150px 100px;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 0.5rem;
+}
+
+.faqsTableRowSkeleton {
+  display: grid;
+  grid-template-columns: 50px 40px 1fr 2fr 150px 100px;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f3f4f6;
+  align-items: center;
+}
+
+.numberSkeleton {
+  width: 30px;
+  height: 16px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  will-change: background-position;
+}
+
+.actionButtonsSkeleton {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Programs Card Skeleton */
+.programsSkeleton {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  margin-bottom: 1.4rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  min-height: 400px;
+}
+
+.programsGridSkeleton {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.programCardSkeleton {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.cardImageSkeleton {
+  width: 100%;
+  height: 200px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  will-change: background-position;
+}
+
+.cardContentSkeleton {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.cardTitleSkeleton {
+  width: 80%;
+  height: 24px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  will-change: background-position;
+}
+
+.cardOrgSkeleton {
+  width: 150px;
+  height: 14px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  will-change: background-position;
+}
+
+.cardDescriptionSkeleton {
+  width: 100%;
+  height: 16px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  will-change: background-position;
+}
+
+.cardFooterSkeleton {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.cardButtonSkeleton {
+  width: 100%;
+  height: 40px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+  margin-top: 16px;
+  will-change: background-position;
+}
+
+/* Highlights Card Skeleton */
+.highlightsSkeleton {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  margin-bottom: 1.4rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  min-height: 400px;
+}
+
+.highlightsGridSkeleton {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.highlightCardSkeleton {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+

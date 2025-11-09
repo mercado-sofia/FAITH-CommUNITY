@@ -8,6 +8,7 @@ import { useGetOrganizationsForFilterQuery } from '@/rtk/superadmin/dashboardApi
 import HighlightCard from './components/HighlightCard'
 import HighlightDetailsModal from './components/HighlightDetailsModal'
 import SearchBar from './components/SearchBar'
+import { SkeletonLoader } from '../components'
 import styles from './highlights.module.css'
 
 const SuperadminHighlightsPage = () => {
@@ -285,10 +286,7 @@ const SuperadminHighlightsPage = () => {
             </div>
           </div>
         </div>
-        <div className={styles.loadingContainer}>
-          <div className={styles.spinner}></div>
-          <p>Loading highlights...</p>
-        </div>
+        <SkeletonLoader type="highlights" count={6} />
       </div>
     )
   }
@@ -461,10 +459,15 @@ const SuperadminHighlightsPage = () => {
       <div className={styles.highlightsSection}>
         {processedHighlights.length === 0 ? (
           <div className={styles.emptyState}>
-            <p>
+            <h3 className={styles.emptyStateTitle}>
+              {activeTab === 'featured' 
+                ? 'No featured highlights found' 
+                : 'No highlights found'}
+            </h3>
+            <p className={styles.emptyStateText}>
               {activeTab === 'featured' 
                 ? 'No featured highlights yet. Star approved highlights to add them here.' 
-                : 'No highlights found with the selected filters.'}
+                : 'No highlights found matching your current filters. New highlights will appear here when administrators submit them.'}
             </p>
           </div>
         ) : (

@@ -155,9 +155,12 @@ export default function FAQTable({
           <tbody>
             {faqs.length === 0 ? (
               <tr>
-                <td colSpan="6" className={styles.emptyState}>
-                  <div className={styles.emptyContent}>
-                    <h3>No FAQs Found</h3>
+                <td colSpan="6" className={styles.emptyStateCell}>
+                  <div className={styles.emptyState}>
+                    <h3 className={styles.emptyStateTitle}>No FAQs found</h3>
+                    <p className={styles.emptyStateText}>
+                      No FAQs found matching your current filters. New FAQs will appear here when you create them.
+                    </p>
                   </div>
                 </td>
               </tr>

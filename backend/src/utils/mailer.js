@@ -278,45 +278,69 @@ async function sendMailViaSendGridAPI({ to, subject, html, text, from }) {
   sgMail.setApiKey(apiKey);
 
   // Parse from address
-  let fromEmail = from;
+  let fromEmail = null;
   let fromName = 'FAITH CommUNITY';
   
+  // First, try to parse from the 'from' parameter
   if (from) {
     // Handle format: "Name" <email@domain.com> or email@domain.com
     const match = from.match(/^"?([^"<]+)"?\s*<(.+)>$|^(.+)$/);
     if (match) {
       if (match[1] && match[2]) {
+        // Format: "Name" <email@domain.com>
         fromName = match[1].trim();
         fromEmail = match[2].trim();
       } else if (match[3]) {
+        // Format: email@domain.com
         fromEmail = match[3].trim();
       }
     }
-  } else {
-    // Extract email from MAIL_FROM or use default
+  }
+  
+  // If not found, try MAIL_FROM environment variable
+  if (!fromEmail) {
     const mailFrom = process.env.MAIL_FROM?.trim();
     if (mailFrom) {
+      // Handle format: "Name" <email@domain.com> or email@domain.com
       const match = mailFrom.match(/^"?([^"<]+)"?\s*<(.+)>$|^(.+)$/);
       if (match) {
         if (match[1] && match[2]) {
+          // Format: "Name" <email@domain.com>
           fromName = match[1].trim();
           fromEmail = match[2].trim();
         } else if (match[3]) {
+          // Format: email@domain.com
           fromEmail = match[3].trim();
         }
       }
-    } else {
-      fromEmail = 'faithcommunityfaces@gmail.com'; // Default verified email
     }
   }
+  
+  // If still not found, use default
+  if (!fromEmail) {
+    fromEmail = 'faithcommunityfaces@gmail.com'; // Default verified email
+  }
+  
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(fromEmail)) {
+    throw new Error(`Invalid from email address format: ${fromEmail}. Please set MAIL_FROM environment variable with a valid email address.`);
+  }
+  
+  // Log the email being used (for debugging)
+  if (process.env.NODE_ENV === 'production') {
+    console.log('📧 SendGrid from address:', {
+      email: fromEmail,
+      name: fromName,
+      source: from ? 'parameter' : (process.env.MAIL_FROM ? 'MAIL_FROM' : 'default')
+    });
+  }
 
-  // Prepare message
+  // Prepare message - SendGrid SDK accepts both string and object format
+  // Using string format is more reliable: "Name" <email@domain.com>
   const msg = {
     to: to,
-    from: {
-      email: fromEmail,
-      name: fromName
-    },
+    from: fromName ? `"${fromName}" <${fromEmail}>` : fromEmail,
     subject: subject,
   };
 
@@ -346,7 +370,11 @@ async function sendMailViaSendGridAPI({ to, subject, html, text, from }) {
       const { body, statusCode } = error.response;
       errorMessage = `SendGrid API error (${statusCode}): `;
       if (body && body.errors && body.errors.length > 0) {
-        errorMessage += body.errors.map(e => e.message || e.field || 'Unknown error').join(', ');
+        const errorDetails = body.errors.map(e => {
+          const field = e.field ? `[${e.field}] ` : '';
+          return `${field}${e.message || 'Unknown error'}`;
+        }).join(', ');
+        errorMessage += errorDetails;
       } else if (body && body.message) {
         errorMessage += body.message;
       } else {
@@ -355,6 +383,25 @@ async function sendMailViaSendGridAPI({ to, subject, html, text, from }) {
     } else {
       errorMessage = `SendGrid API error: ${error.message || 'Unknown error'}`;
     }
+    
+    // Add helpful context for "Invalid from email address" errors
+    if (errorMessage.includes('Invalid from email') || errorMessage.includes('from email')) {
+      errorMessage += `\n   → From email used: ${fromEmail}`;
+      errorMessage += `\n   → Make sure this email is verified in SendGrid Dashboard`;
+      errorMessage += `\n   → Go to SendGrid → Settings → Sender Authentication → Single Sender Verification`;
+      errorMessage += `\n   → Verify: ${fromEmail}`;
+      if (process.env.MAIL_FROM) {
+        errorMessage += `\n   → MAIL_FROM env var: ${process.env.MAIL_FROM}`;
+      }
+    }
+    
+    console.error('❌ SendGrid API error details:', {
+      message: errorMessage,
+      fromEmail,
+      fromName,
+      statusCode: error.response?.statusCode,
+      errors: error.response?.body?.errors
+    });
     
     const sendGridError = new Error(errorMessage);
     sendGridError.code = 'SENDGRID_API_ERROR';

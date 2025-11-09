@@ -104,16 +104,24 @@ export default function Sidebar({
         const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
         
         if (userType === USER_TYPES.SUPERADMIN) {
-          // Superadmin: use authenticated endpoint
-          const response = await makeAuthenticatedRequest(
+          // Superadmin: try authenticated endpoint first, fallback to public
+          let response = await makeAuthenticatedRequest(
             `${baseUrl}/api/superadmin/branding`,
             { method: 'GET' },
             'superadmin'
           );
 
+          // If authenticated request fails, fallback to public endpoint
+          if (!response || !response.ok) {
+            response = await fetch(`${baseUrl}/api/superadmin/branding/public`);
+          }
+
           if (response && response.ok) {
             const data = await response.json();
-            setBrandingData(data.data);
+            // Both endpoints return { success: true, data: ... }
+            if (data.success && data.data) {
+              setBrandingData(data.data);
+            }
           }
         } else if (userType === USER_TYPES.ADMIN) {
           // Admin: use public endpoint (branding is global)
@@ -127,7 +135,8 @@ export default function Sidebar({
           }
         }
       } catch (error) {
-        // Handle error silently
+        // Handle error silently - branding is optional
+        console.debug('Failed to load branding data:', error);
       }
     };
 

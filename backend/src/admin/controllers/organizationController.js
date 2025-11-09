@@ -3,6 +3,44 @@
 import db from "../../database.js"
 import { getOrganizationLogoUrl } from "../../utils/imageUrlUtils.js";
 
+// Helper function to normalize advocacy/competency data
+const normalizeTextData = (value) => {
+  if (!value) return ""
+  
+  // If it's already a string, check if it's a JSON string
+  if (typeof value === 'string') {
+    // Try to parse as JSON
+    try {
+      const parsed = JSON.parse(value)
+      // If parsed result is an object (like {}), return empty string
+      if (typeof parsed === 'object' && parsed !== null && Object.keys(parsed).length === 0) {
+        return ""
+      }
+      // If parsed result is a string, return it
+      if (typeof parsed === 'string') {
+        return parsed
+      }
+      // Otherwise return empty string for other object types
+      return ""
+    } catch (e) {
+      // Not JSON, return as-is
+      return value
+    }
+  }
+  
+  // If it's an object, check if it's empty
+  if (typeof value === 'object' && value !== null) {
+    if (Object.keys(value).length === 0) {
+      return ""
+    }
+    // If object has content, try to stringify (shouldn't happen, but handle it)
+    return JSON.stringify(value)
+  }
+  
+  // For other types, convert to string
+  return String(value)
+}
+
 export const getOrganizationByName = async (req, res) => {
   const { org_name } = req.params
 
@@ -63,9 +101,9 @@ export const getOrganizationByName = async (req, res) => {
         orgName: org.orgName, // From organizations table
         logo: logoUrl, // Use the constructed logo URL
         email: org.email, // Email from admins table
-        // Fix: Return single strings instead of arrays
-        advocacies: advocacies.length > 0 ? advocacies[0].advocacy : "",
-        competencies: competencies.length > 0 ? competencies[0].competency : "",
+        // Fix: Return single strings instead of arrays, normalized to handle JSON objects
+        advocacies: advocacies.length > 0 ? normalizeTextData(advocacies[0].advocacy) : "",
+        competencies: competencies.length > 0 ? normalizeTextData(competencies[0].competency) : "",
         heads: transformedHeads, // Use the transformed heads with proper photo URLs
       },
     })
@@ -336,8 +374,8 @@ export const getOrganizationById = async (req, res) => {
         description: org.description,
         org_color: org.org_color,
         status: org.status,
-        advocacies: advocacies.map(a => a.advocacy),
-        competencies: competencies.map(c => c.competency),
+        advocacies: advocacies.length > 0 ? normalizeTextData(advocacies[0].advocacy) : "",
+        competencies: competencies.length > 0 ? normalizeTextData(competencies[0].competency) : "",
         heads: transformedHeads
       }
     })

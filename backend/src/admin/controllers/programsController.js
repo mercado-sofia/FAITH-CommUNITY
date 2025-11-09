@@ -686,7 +686,7 @@ export const updateProgram = async (req, res) => {
     
     let imagePath = existingProgram[0].image; // Keep existing image by default
 
-    // Handle main image if provided (base64 or Cloudinary URL)
+    // Handle main image if provided (base64, Cloudinary URL, or public_id)
     if (image && image.startsWith('data:image/')) {
       // Convert base64 to buffer and upload to Cloudinary
       const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
@@ -719,7 +719,27 @@ export const updateProgram = async (req, res) => {
     } else if (image === undefined) {
       // No change to image - keep existing
       // Keeping existing main image
+    } else if (image && typeof image === 'string') {
+      // Handle Cloudinary URL or public_id
+      // If it's a full Cloudinary URL, extract the public_id
+      // If it's already a public_id, use it directly
+      const { extractPublicIdFromUrl } = await import('../../utils/cloudinaryConfig.js');
+      const publicId = extractPublicIdFromUrl(image);
+      
+      if (publicId) {
+        // Valid Cloudinary URL or public_id - use the public_id
+        imagePath = publicId;
+        // Using Cloudinary public_id for image
+      } else if (image.includes('faith-community/')) {
+        // It's likely a public_id (contains folder path)
+        imagePath = image;
+        // Using Cloudinary public_id directly
+      } else {
+        // Invalid format - keep existing image
+        // Invalid image format, keeping existing image
+      }
     } else {
+      // Invalid image type - keep existing image
       // Keeping existing main image
     }
     // If image is null, keep the existing image (imagePath already set to existingProgram[0].image)

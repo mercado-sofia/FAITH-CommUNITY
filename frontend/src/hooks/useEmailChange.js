@@ -158,6 +158,19 @@ export const useEmailChange = (userType) => {
         throw new Error(data.error || data.message || 'Failed to verify OTP');
       }
 
+      // Check for explicit error responses
+      // Backend returns { success: true, message: "...", data: {...} } for success
+      // or { error: "...", message: "..." } for errors
+      // Public users return { message: "...", newEmail: "...", token: "...", user: {...} } for success
+      if (data.error && data.success !== true) {
+        throw new Error(data.error || data.message || 'Failed to verify OTP');
+      }
+
+      // If success is explicitly false, throw error
+      if (data.success === false) {
+        throw new Error(data.error || data.message || 'Failed to verify OTP');
+      }
+
       return data;
     } catch (err) {
       const errorMessage = err.message === 'No authentication token found' 

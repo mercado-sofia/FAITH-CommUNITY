@@ -57,15 +57,38 @@ export default function Sidebar({
   useEffect(() => {
     if (userType === USER_TYPES.SUPERADMIN) {
       // Get superadmin data from localStorage
-      try {
-        const superAdminData = localStorage.getItem('superAdminData');
-        if (superAdminData) {
-          const parsedData = JSON.parse(superAdminData);
-          setAdminData(parsedData);
+      const loadSuperAdminData = () => {
+        try {
+          const superAdminData = localStorage.getItem('superAdminData');
+          if (superAdminData) {
+            const parsedData = JSON.parse(superAdminData);
+            setAdminData(parsedData);
+          }
+        } catch (error) {
+          // Handle error silently in production
         }
-      } catch (error) {
-        // Handle error silently in production
-      }
+      };
+      
+      // Load initially
+      loadSuperAdminData();
+      
+      // Listen for storage changes (when email is updated in settings)
+      const handleStorageChange = (e) => {
+        if (e.key === 'superAdminData') {
+          loadSuperAdminData();
+        }
+      };
+      
+      // Listen to storage events from other tabs/windows
+      window.addEventListener('storage', handleStorageChange);
+      
+      // Also listen to custom storage events (for same-tab updates)
+      window.addEventListener('superAdminDataUpdated', loadSuperAdminData);
+      
+      return () => {
+        window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('superAdminDataUpdated', loadSuperAdminData);
+      };
     } else if (userType === USER_TYPES.ADMIN) {
       // Admin data comes from Redux store
       if (currentAdmin) {

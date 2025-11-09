@@ -237,14 +237,48 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
           
           if (imageResponse.ok) {
             const imageResult = await imageResponse.json();
-            imageUrl = imageResult.url || imageResult.public_id;
+            // Prefer public_id over url since database stores public_id
+            // If public_id is not available, extract it from url or use url
+            imageUrl = imageResult.cloudinary_info?.public_id || imageResult.public_id || imageResult.url || imageResult.filePath;
+          } else {
+            // If upload fails, show error and return early
+            const errorData = await imageResponse.json().catch(() => ({ message: 'Failed to upload image' }));
+            throw new Error(errorData.message || 'Failed to upload image');
           }
         } catch (imageError) {
-          // Image upload failed, proceeding without image
+          // Image upload failed - show error and return
+          setSuccessModal({ 
+            isVisible: true, 
+            message: imageError.message || 'Failed to upload image. Please try again.', 
+            type: 'error' 
+          });
+          return;
         }
       }
 
       // Prepare the data for the update request
+      // Handle image properly:
+      // - If imageUrl exists (uploaded successfully), use it
+      // - Else if programData.image is a string (base64 or URL), use it
+      // - Else if programData.image is undefined, use undefined (to keep existing image)
+      // - Never send File objects in JSON body
+      let imageValue = undefined;
+      if (imageUrl) {
+        imageValue = imageUrl;
+      } else if (programData.image !== undefined && programData.image !== null) {
+        // Only use programData.image if it's a string (base64 or URL), not a File object
+        if (typeof programData.image === 'string') {
+          imageValue = programData.image;
+        } else {
+          // If it's not a string and not undefined/null, it's likely a File object that wasn't uploaded
+          // In this case, keep existing image (undefined)
+          imageValue = undefined;
+        }
+      } else {
+        // programData.image is undefined or null - keep existing image
+        imageValue = undefined;
+      }
+
       const updateData = {
         title: programData.title?.trim() || '',
         description: programData.description?.trim() || '',
@@ -261,7 +295,7 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         // DO NOT send collaborators in Edit mode - they are handled separately via the invite-collaborator endpoint
         // This prevents overwriting collaborators that were just added
         // Handle image properly - use uploaded URL, base64 string, or undefined to keep existing
-        image: imageUrl || programData.image,
+        image: imageValue,
         additionalImages: programData.additionalImages || []
       };
 

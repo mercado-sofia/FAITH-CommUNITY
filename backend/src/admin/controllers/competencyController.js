@@ -2,6 +2,44 @@
 
 import db from "../../database.js"
 
+// Helper function to normalize advocacy/competency data
+const normalizeTextData = (value) => {
+  if (!value) return ""
+  
+  // If it's already a string, check if it's a JSON string
+  if (typeof value === 'string') {
+    // Try to parse as JSON
+    try {
+      const parsed = JSON.parse(value)
+      // If parsed result is an object (like {}), return empty string
+      if (typeof parsed === 'object' && parsed !== null && Object.keys(parsed).length === 0) {
+        return ""
+      }
+      // If parsed result is a string, return it
+      if (typeof parsed === 'string') {
+        return parsed
+      }
+      // Otherwise return empty string for other object types
+      return ""
+    } catch (e) {
+      // Not JSON, return as-is
+      return value
+    }
+  }
+  
+  // If it's an object, check if it's empty
+  if (typeof value === 'object' && value !== null) {
+    if (Object.keys(value).length === 0) {
+      return ""
+    }
+    // If object has content, try to stringify (shouldn't happen, but handle it)
+    return JSON.stringify(value)
+  }
+  
+  // For other types, convert to string
+  return String(value)
+}
+
 export const addCompetency = async (req, res) => {
   const { organization_id, competency } = req.body
 
@@ -75,9 +113,16 @@ export const getCompetencies = async (req, res) => {
 
   try {
     const [rows] = await db.execute("SELECT * FROM competencies WHERE organization_id = ?", [organization_id])
+    
+    // Normalize the competency field to ensure it's always a string
+    const normalizedRows = rows.map(row => ({
+      ...row,
+      competency: normalizeTextData(row.competency)
+    }))
+    
     res.json({
       success: true,
-      data: rows,
+      data: normalizedRows,
     })
   } catch (error) {
     res.status(500).json({
@@ -96,9 +141,16 @@ export const getAllCompetencies = async (req, res) => {
       LEFT JOIN organizations o ON c.organization_id = o.id 
       ORDER BY o.orgName
     `)
+    
+    // Normalize the competency field to ensure it's always a string
+    const normalizedRows = rows.map(row => ({
+      ...row,
+      competency: normalizeTextData(row.competency)
+    }))
+    
     res.json({
       success: true,
-      data: rows,
+      data: normalizedRows,
     })
   } catch (error) {
     res.status(500).json({

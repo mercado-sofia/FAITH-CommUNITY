@@ -82,6 +82,16 @@ export default function SettingsPage() {
   };
 
   const handleSecureEmailSuccess = (newEmail) => {
+    // Validate that we have a new email
+    if (!newEmail) {
+      setSuccessMessage('Email change may have succeeded, but the new email was not returned. Please refresh the page to verify.');
+      setSuccessModalType('error');
+      setShowSuccessModal(true);
+      setShowSecureEmailModal(false);
+      refreshAdmin();
+      return;
+    }
+
     setEmailEditData({ email: newEmail });
     setShowSecureEmailModal(false);
     setSuccessMessage('Email has been successfully changed.');

@@ -2,6 +2,44 @@ import { useState } from 'react';
 import { formatDateShort } from '@/utils/dateUtils.js';
 import styles from './ReEditModal.module.css';
 
+// Helper function to normalize advocacy/competency data
+const normalizeTextData = (value) => {
+  if (!value) return ""
+  
+  // If it's already a string, check if it's a JSON string
+  if (typeof value === 'string') {
+    // Try to parse as JSON
+    try {
+      const parsed = JSON.parse(value)
+      // If parsed result is an object (like {}), return empty string
+      if (typeof parsed === 'object' && parsed !== null && Object.keys(parsed).length === 0) {
+        return ""
+      }
+      // If parsed result is a string, return it
+      if (typeof parsed === 'string') {
+        return parsed
+      }
+      // Otherwise return empty string for other object types
+      return ""
+    } catch (e) {
+      // Not JSON, return as-is
+      return value
+    }
+  }
+  
+  // If it's an object, check if it's empty
+  if (typeof value === 'object' && value !== null) {
+    if (Object.keys(value).length === 0) {
+      return ""
+    }
+    // If object has content, try to stringify (shouldn't happen, but handle it)
+    return JSON.stringify(value)
+  }
+  
+  // For other types, convert to string
+  return String(value)
+}
+
 // Helper function to initialize form data based on submission section
 const initializeFormData = (submission) => {
   const proposedData = submission?.proposed_data || {};
@@ -13,12 +51,14 @@ const initializeFormData = (submission) => {
       description: proposedData?.description || ''
     };
   } else if (submission?.section === 'advocacy') {
+    const advocacyValue = typeof proposedData === 'string' ? proposedData : (proposedData?.advocacy || '')
     return {
-      advocacy: typeof proposedData === 'string' ? proposedData : (proposedData?.advocacy || '')
+      advocacy: normalizeTextData(advocacyValue)
     };
   } else if (submission?.section === 'competency') {
+    const competencyValue = typeof proposedData === 'string' ? proposedData : (proposedData?.competency || '')
     return {
-      competency: typeof proposedData === 'string' ? proposedData : (proposedData?.competency || '')
+      competency: normalizeTextData(competencyValue)
     };
   }
   

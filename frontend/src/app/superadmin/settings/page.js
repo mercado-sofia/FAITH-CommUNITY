@@ -168,6 +168,31 @@ export default function SuperAdminSettings() {
           if (response.ok) {
             setCurrentUser(data);
             setTwofaEnabled(data.twofa_enabled || false);
+            
+            // Update localStorage to keep sidebar in sync
+            const superAdminData = localStorage.getItem('superAdminData');
+            if (superAdminData) {
+              try {
+                const parsedData = JSON.parse(superAdminData);
+                // Update email and other fields from API response
+                const updatedData = {
+                  ...parsedData,
+                  email: data.email || parsedData.email,
+                  username: data.username || parsedData.username
+                };
+                localStorage.setItem('superAdminData', JSON.stringify(updatedData));
+                // Dispatch custom event to notify Sidebar of the update
+                window.dispatchEvent(new Event('superAdminDataUpdated'));
+              } catch (error) {
+                // If parsing fails, store the new data
+                localStorage.setItem('superAdminData', JSON.stringify(data));
+                window.dispatchEvent(new Event('superAdminDataUpdated'));
+              }
+            } else {
+              // If no existing data, store the new data
+              localStorage.setItem('superAdminData', JSON.stringify(data));
+              window.dispatchEvent(new Event('superAdminDataUpdated'));
+            }
           }
         } catch (error) {
           showAuthError('Failed to reload user data. Please refresh the page.');
@@ -178,8 +203,21 @@ export default function SuperAdminSettings() {
     });
   };
 
-  const handleEmailSuccess = () => {
+  const handleEmailSuccess = (newEmail) => {
     showSuccessModal('Email has been successfully changed.');
+    // Update localStorage immediately with new email
+    const superAdminData = localStorage.getItem('superAdminData');
+    if (superAdminData) {
+      try {
+        const parsedData = JSON.parse(superAdminData);
+        parsedData.email = newEmail;
+        localStorage.setItem('superAdminData', JSON.stringify(parsedData));
+        // Dispatch custom event to notify Sidebar of the update
+        window.dispatchEvent(new Event('superAdminDataUpdated'));
+      } catch (error) {
+        // Silently handle error
+      }
+    }
     handleUpdateSuccess();
   };
 

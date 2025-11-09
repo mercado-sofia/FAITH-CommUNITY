@@ -13,8 +13,13 @@ export const verifyAdminOrSuperadmin = (req, res, next) => {
   }
 
   try {
-    // Handle hardcoded superadmin token
+    // Handle hardcoded superadmin token (only in development)
     if (token === "superadmin") {
+      // Reject hardcoded tokens in production for security
+      if (process.env.NODE_ENV === "production") {
+        return res.status(403).json({ error: "Hardcoded token not allowed in production" })
+      }
+      // Allow in development only
       req.superadmin = {
         id: 1,
         username: "superadmin@faith.com",

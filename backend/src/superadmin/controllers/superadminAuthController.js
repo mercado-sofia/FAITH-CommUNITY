@@ -86,17 +86,21 @@ export const loginSuperadmin = async (req, res) => {
     }
 
 
-    // For the main superadmin account (ID 1), use hardcoded token for compatibility
-    // For other superadmin accounts, use JWT tokens
-    const token = superadmin.id === 1 ? "superadmin" : jwt.sign(
-      { id: superadmin.id, username: superadmin.username, role: "superadmin" },
-      JWT_SECRET,
-      { 
-        expiresIn: "30m",
-        issuer: process.env.JWT_ISS || "faith-community-api",
-        audience: process.env.JWT_AUD || "faith-community-client"
-      },
-    )
+    // Generate JWT token for all superadmin accounts
+    // In production, always use JWT tokens (never hardcoded tokens)
+    // In development, use hardcoded token for superadmin ID 1 for compatibility
+    const isProduction = process.env.NODE_ENV === "production";
+    const token = (!isProduction && superadmin.id === 1) 
+      ? "superadmin" 
+      : jwt.sign(
+          { id: superadmin.id, username: superadmin.username, role: "superadmin" },
+          JWT_SECRET,
+          { 
+            expiresIn: "30m",
+            issuer: process.env.JWT_ISS || "faith-community-api",
+            audience: process.env.JWT_AUD || "faith-community-client"
+          },
+        )
 
     // Clear failed login attempts on successful login (reset counter)
     await LoginAttemptTracker.clearFailedAttempts(email, ipAddress, 'superadmin');

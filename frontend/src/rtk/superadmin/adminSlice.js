@@ -110,19 +110,25 @@ const adminSlice = createSlice({
       if (typeof window !== "undefined") {
         const adminToken = localStorage.getItem("adminToken")
         const adminData = localStorage.getItem("adminData")
-        const superadminToken = localStorage.getItem("token")
+        const superadminToken = localStorage.getItem("superAdminToken")
+        const superadminData = localStorage.getItem("superAdminData")
         const userRole = localStorage.getItem("userRole")
 
-        if (userRole === "superadmin" && superadminToken === "superadmin") {
-          state.isAuthenticated = true
-          state.token = "superadmin"
-          state.admin = {
-            email: "superadmin@faith.com",
-            role: "superadmin",
-            org: "FAITH",
-            orgName: "FAITH Community System",
+        // Check for superadmin authentication
+        if (userRole === "superadmin" && superadminToken && superadminData) {
+          try {
+            state.isAuthenticated = true
+            state.token = superadminToken
+            state.admin = JSON.parse(superadminData)
+            state.userType = "superadmin"
+          } catch (error) {
+            // Invalid data - reset state
+            state.isAuthenticated = false
+            state.token = null
+            state.admin = null
+            state.userType = null
+            state.error = "Invalid authentication data"
           }
-          state.userType = "superadmin"
         } else if (adminToken && adminData) {
           try {
             state.isAuthenticated = true

@@ -223,8 +223,8 @@
 .warningMessage {
   margin-bottom: 1.6rem;
   padding: 0.8rem 1.2rem;
-  background-color: #fef3cd;
-  border: 1px solid #f59e0b;
+  background-color: #f5f5f5;
+  border: 1px solid #2f3133;
   border-radius: 8px;
 }
 
@@ -236,15 +236,15 @@
 }
 
 .warningIcon {
-  font-size: 1rem;
-  color: #92400e;
+  font-size: 13px;
+  color: #2f3133;
   flex-shrink: 0;
 }
 
 .warningMessage p {
   margin: 0;
-  color: #92400e;
-  font-size: 12px;
+  color: #2f3133;
+  font-size: 13px;
   line-height: 1.6;
 }
 

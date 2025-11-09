@@ -613,15 +613,15 @@ export default function ProgramDetailsPage() {
             />
           )}
         </div>
-
-        {/* Related Programs from Same Organization */}
-        <RelatedPrograms 
-          otherPrograms={otherPrograms}
-          organizationName={program.organization_name}
-          organizationAcronym={program.organization_acronym}
-          organizationId={program.organization_id}
-        />
       </div>
+
+      {/* Related Programs from Same Organization */}
+      <RelatedPrograms 
+        otherPrograms={otherPrograms}
+        organizationName={program.organization_name}
+        organizationAcronym={program.organization_acronym}
+        organizationId={program.organization_id}
+      />
 
       {/* Contact Organization Modal */}
       <ContactFormModal

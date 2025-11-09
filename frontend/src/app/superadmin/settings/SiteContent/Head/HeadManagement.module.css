@@ -306,7 +306,7 @@
 .name {
   font-size: 18px;
   font-weight: 600;
-  color: #111827;
+  color: #000;
   margin: 0 0 1rem 0;
   font-family: var(--font-poppins), sans-serif;
 }

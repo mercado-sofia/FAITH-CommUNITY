@@ -2,6 +2,7 @@
 import db from "../../database.js"
 import * as bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
+import { logError } from "../../utils/logger.js"
 
 // JWT secret for admin (should match the one used in admin login)
 const JWT_SECRET = process.env.JWT_SECRET
@@ -262,7 +263,19 @@ export const verifyAdminEmailChangeOTP = async (req, res) => {
     });
 
   } catch (err) {
-    res.status(500).json({ error: "Internal server error" })
+    // Log the actual error for debugging
+    logError('Error verifying admin email change OTP', err, {
+      context: 'admin_profile_controller',
+      adminId: req.admin?.id,
+      errorStack: err.stack
+    });
+    
+    // Return error message (hide details in production for security)
+    const errorMessage = process.env.NODE_ENV === 'development' 
+      ? err.message 
+      : 'Internal server error';
+    
+    res.status(500).json({ error: errorMessage });
   }
 }
 

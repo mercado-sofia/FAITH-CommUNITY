@@ -10,14 +10,10 @@ export const dashboardApi = createApi({
       // Add authentication token for superadmin endpoints
       if (typeof window !== 'undefined') {
         const superadminToken = localStorage.getItem('superAdminToken');
-        // Only reject hardcoded tokens in production (backend also rejects them)
-        // In development, allow hardcoded tokens (backend allows them)
+        // Send token to backend - let backend handle validation
+        // Backend will reject hardcoded tokens in production with 403
         if (superadminToken) {
-          if (superadminToken === "superadmin" && process.env.NODE_ENV === 'production') {
-            // Don't send hardcoded token in production
-          } else {
-            headers.set('Authorization', `Bearer ${superadminToken}`);
-          }
+          headers.set('Authorization', `Bearer ${superadminToken}`);
         }
       }
       

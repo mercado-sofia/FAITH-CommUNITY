@@ -15,14 +15,10 @@ export const invitationsApi = createApi({
       // Use superadmin token if available, otherwise use admin token
       const token = superadminToken || adminToken
       
-      // Only reject hardcoded tokens in production (backend also rejects them)
-      // In development, allow hardcoded tokens (backend allows them)
+      // Send token to backend - let backend handle validation
+      // Backend will reject hardcoded tokens in production with 403
       if (token) {
-        if (token === "superadmin" && process.env.NODE_ENV === 'production') {
-          // Don't send hardcoded token in production
-        } else {
-          headers.set("Authorization", `Bearer ${token}`)
-        }
+        headers.set("Authorization", `Bearer ${token}`)
       }
 
       return headers

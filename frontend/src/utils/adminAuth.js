@@ -22,16 +22,16 @@ export const clearAuthAndRedirect = (userType = 'admin') => {
 
 /**
  * Check if token is expired (basic check without server validation)
+ * Note: Hardcoded tokens are never "expired" - let the backend handle validation
  */
 export const isTokenExpired = (token) => {
   if (!token) return true;
   
   // Handle hardcoded superadmin token
-  // Allow in development, reject in production (backend also rejects in production)
+  // Don't reject it here - let the backend handle it
+  // The backend will reject it in production, and we'll handle that via 403 response
   if (token === "superadmin") {
-    // In production, reject hardcoded tokens (backend will also reject)
-    // In development, allow them (backend allows them)
-    return process.env.NODE_ENV === 'production';
+    return false; // Never consider hardcoded tokens as expired - backend will validate
   }
   
   try {
@@ -91,8 +91,19 @@ export const makeAuthenticatedRequest = async (url, options = {}, userType = 'ad
     }
   });
   
-  // Handle 401 responses (token invalid/expired)
-  if (response.status === 401) {
+  // Handle 401/403 responses (token invalid/expired or hardcoded token rejected)
+  if (response.status === 401 || response.status === 403) {
+    // Check if it's a hardcoded token rejection
+    try {
+      const errorData = await response.clone().json();
+      if (errorData.error && errorData.error.includes('Hardcoded token not allowed in production')) {
+        // Backend rejected hardcoded token in production - clear auth and redirect
+        clearAuthAndRedirect(userType);
+        return null;
+      }
+    } catch (e) {
+      // If we can't parse the error, just treat it as a normal auth error
+    }
     clearAuthAndRedirect(userType);
     return null;
   }

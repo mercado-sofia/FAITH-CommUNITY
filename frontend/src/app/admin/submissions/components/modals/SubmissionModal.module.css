@@ -245,17 +245,7 @@
   word-wrap: break-word;
 }
 
-.textData .competencyAdvocacyText {
-  font-size: 14px;
-  color: #1e293b;
-  text-align: justify !important;
-  line-height: 1.6;
-  margin: 0;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  display: block;
-  width: 100%;
-}
+/* Note: advocacy and competency are no longer part of the submission workflow */
 
 .textContent {
   font-size: 14px;

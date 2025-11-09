@@ -66,80 +66,38 @@ export const getPendingSubmissions = async (req, res) => {
     // Parse JSON data for each submission and enrich collaborator data
     const submissions = await Promise.all(rows.map(async (submission) => {
       try {
-        // For advocacy/competency sections, data should be a string
-        // For other sections, data should be an object
-        const isTextSection = submission.section === 'advocacy' || submission.section === 'competency';
-        
+        // Note: advocacy and competency are no longer part of the approval workflow
+        // Parse JSON data for all sections
         let previousData, proposedData;
         
-        if (isTextSection) {
-          // For text sections, handle strings specially
-          if (submission.previous_data !== null && submission.previous_data !== undefined) {
-            if (typeof submission.previous_data === 'string') {
-              try {
-                const parsed = JSON.parse(submission.previous_data);
-                // If parsed result is a string, use it (double-encoded string)
-                previousData = typeof parsed === 'string' ? parsed : submission.previous_data;
-              } catch (e) {
-                // Not JSON, use the string as-is
-                previousData = submission.previous_data;
-              }
-            } else {
-              // If it's already parsed by typeCast, convert to string
-              previousData = typeof submission.previous_data === 'string' ? submission.previous_data : String(submission.previous_data);
-            }
-          } else {
-            previousData = "";
-          }
-          
-          if (submission.proposed_data !== null && submission.proposed_data !== undefined) {
-            if (typeof submission.proposed_data === 'string') {
-              try {
-                const parsed = JSON.parse(submission.proposed_data);
-                // If parsed result is a string, use it (double-encoded string)
-                proposedData = typeof parsed === 'string' ? parsed : submission.proposed_data;
-              } catch (e) {
-                // Not JSON, use the string as-is
-                proposedData = submission.proposed_data;
-              }
-            } else {
-              // If it's already parsed by typeCast, convert to string
-              proposedData = typeof submission.proposed_data === 'string' ? submission.proposed_data : String(submission.proposed_data);
-            }
-          } else {
-            proposedData = "";
-          }
-        } else {
-          // For non-text sections, use safeParseJSON
-          previousData = safeParseJSON(submission.previous_data, {});
-          proposedData = safeParseJSON(submission.proposed_data, {});
+        previousData = safeParseJSON(submission.previous_data, {});
+        proposedData = safeParseJSON(submission.proposed_data, {});
         
-          // For program submissions, enrich collaborator data with organization information
-          if (submission.section === 'programs' && proposedData.collaborators && Array.isArray(proposedData.collaborators)) {
-            try {
-              const collaborators = proposedData.collaborators;
-              if (collaborators.length > 0) {
-                // Check if collaborators are stored as IDs (numbers) or objects
-                const firstCollaborator = collaborators[0];
-                if (typeof firstCollaborator === 'number' || (typeof firstCollaborator === 'string' && !isNaN(firstCollaborator))) {
-                  // Collaborators are stored as IDs, fetch full details
-                  const placeholders = collaborators.map(() => '?').join(',');
-                  const [collaboratorRows] = await db.execute(`
-                    SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
-                    FROM admins a
-                    LEFT JOIN organizations o ON a.organization_id = o.id
-                    WHERE a.id IN (${placeholders})
-                  `, collaborators);
-                  
-                  // Replace collaborator IDs with full collaborator objects
-                  proposedData.collaborators = collaboratorRows;
-                }
-                // If collaborators are already objects, keep them as is
+        // For program submissions, enrich collaborator data with organization information
+        if (submission.section === 'programs' && proposedData.collaborators && Array.isArray(proposedData.collaborators)) {
+          try {
+            const collaborators = proposedData.collaborators;
+            if (collaborators.length > 0) {
+              // Check if collaborators are stored as IDs (numbers) or objects
+              const firstCollaborator = collaborators[0];
+              if (typeof firstCollaborator === 'number' || (typeof firstCollaborator === 'string' && !isNaN(firstCollaborator))) {
+                // Collaborators are stored as IDs, fetch full details
+                const placeholders = collaborators.map(() => '?').join(',');
+                const [collaboratorRows] = await db.execute(`
+                  SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
+                  FROM admins a
+                  LEFT JOIN organizations o ON a.organization_id = o.id
+                  WHERE a.id IN (${placeholders})
+                `, collaborators);
+                
+                // Replace collaborator IDs with full collaborator objects
+                proposedData.collaborators = collaboratorRows;
               }
-            } catch (collabError) {
-              logWarn('Failed to enrich collaborator data', { error: collabError.message, submissionId: submission.id });
-              // Keep original collaborator data if fetch fails
+              // If collaborators are already objects, keep them as is
             }
+          } catch (collabError) {
+            logWarn('Failed to enrich collaborator data', { error: collabError.message, submissionId: submission.id });
+            // Keep original collaborator data if fetch fails
           }
         }
         
@@ -226,53 +184,12 @@ export const getAllSubmissions = async (req, res) => {
     // Parse JSON data for each submission and enrich collaborator data
     const submissions = await Promise.all(rows.map(async (submission) => {
       try {
-        // For advocacy/competency sections, data should be a string
-        // For other sections, data should be an object
-        const isTextSection = submission.section === 'advocacy' || submission.section === 'competency';
-        
+        // Note: advocacy and competency are no longer part of the approval workflow
+        // Parse JSON data for all sections
         let previousData, proposedData;
         
-        if (isTextSection) {
-          // For text sections, handle strings specially
-          if (submission.previous_data !== null && submission.previous_data !== undefined) {
-            if (typeof submission.previous_data === 'string') {
-              try {
-                const parsed = JSON.parse(submission.previous_data);
-                // If parsed result is a string, use it (double-encoded string)
-                previousData = typeof parsed === 'string' ? parsed : submission.previous_data;
-              } catch (e) {
-                // Not JSON, use the string as-is
-                previousData = submission.previous_data;
-              }
-            } else {
-              // If it's already parsed by typeCast, convert to string
-              previousData = typeof submission.previous_data === 'string' ? submission.previous_data : String(submission.previous_data);
-            }
-          } else {
-            previousData = "";
-          }
-          
-          if (submission.proposed_data !== null && submission.proposed_data !== undefined) {
-            if (typeof submission.proposed_data === 'string') {
-              try {
-                const parsed = JSON.parse(submission.proposed_data);
-                // If parsed result is a string, use it (double-encoded string)
-                proposedData = typeof parsed === 'string' ? parsed : submission.proposed_data;
-              } catch (e) {
-                // Not JSON, use the string as-is
-                proposedData = submission.proposed_data;
-              }
-            } else {
-              // If it's already parsed by typeCast, convert to string
-              proposedData = typeof submission.proposed_data === 'string' ? submission.proposed_data : String(submission.proposed_data);
-            }
-          } else {
-            proposedData = "";
-          }
-        } else {
-          // For non-text sections, use safeParseJSON
-          previousData = safeParseJSON(submission.previous_data, {});
-          proposedData = safeParseJSON(submission.proposed_data, {});
+        previousData = safeParseJSON(submission.previous_data, {});
+        proposedData = safeParseJSON(submission.proposed_data, {});
         
         // For program submissions, enrich collaborator data with organization information
         if (submission.section === 'programs' && proposedData.collaborators && Array.isArray(proposedData.collaborators)) {
@@ -300,7 +217,6 @@ export const getAllSubmissions = async (req, res) => {
             logWarn('Failed to enrich collaborator data', { error: collabError.message, submissionId: submission.id });
             // Keep original collaborator data if fetch fails
           }
-        }
         }
         
         return {
@@ -418,83 +334,8 @@ export const approveSubmission = async (req, res) => {
       );
     }
 
-    if (section === 'advocacy') {
-      // Check if advocacy record exists
-      const [existingAdvocacy] = await connection.execute(
-        'SELECT id FROM advocacies WHERE organization_id = ?',
-        [orgId]
-      );
-      
-      // Normalize advocacy data - ensure it's a string, not a JSON object
-      let advocacyData = "";
-      if (typeof data === 'string') {
-        advocacyData = data.trim();
-      } else if (typeof data === 'object' && data !== null) {
-        // If it's an object, check if it's empty
-        if (Object.keys(data).length === 0) {
-          advocacyData = "";
-        } else {
-          // If object has properties, try to extract text value
-          // This shouldn't happen, but handle it gracefully
-          advocacyData = JSON.stringify(data).trim();
-        }
-      } else {
-        advocacyData = String(data || "").trim();
-      }
-      
-      if (existingAdvocacy.length > 0) {
-        // Update existing record
-        await connection.execute(
-          'UPDATE advocacies SET advocacy = ? WHERE organization_id = ?',
-          [advocacyData, orgId]
-        );
-      } else {
-        // Insert new record
-        await connection.execute(
-          'INSERT INTO advocacies (organization_id, advocacy) VALUES (?, ?)',
-          [orgId, advocacyData]
-        );
-      }
-    }
-
-    if (section === 'competency') {
-      // Check if competency record exists
-      const [existingCompetency] = await connection.execute(
-        'SELECT id FROM competencies WHERE organization_id = ?',
-        [orgId]
-      );
-      
-      // Normalize competency data - ensure it's a string, not a JSON object
-      let competencyData = "";
-      if (typeof data === 'string') {
-        competencyData = data.trim();
-      } else if (typeof data === 'object' && data !== null) {
-        // If it's an object, check if it's empty
-        if (Object.keys(data).length === 0) {
-          competencyData = "";
-        } else {
-          // If object has properties, try to extract text value
-          // This shouldn't happen, but handle it gracefully
-          competencyData = JSON.stringify(data).trim();
-        }
-      } else {
-        competencyData = String(data || "").trim();
-      }
-      
-      if (existingCompetency.length > 0) {
-        // Update existing record
-        await connection.execute(
-          'UPDATE competencies SET competency = ? WHERE organization_id = ?',
-          [competencyData, orgId]
-        );
-      } else {
-        // Insert new record
-        await connection.execute(
-          'INSERT INTO competencies (organization_id, competency) VALUES (?, ?)',
-          [orgId, competencyData]
-        );
-      }
-    }
+    // Note: advocacy and competency are no longer part of the approval workflow
+    // They are saved directly by admins via their respective endpoints
 
     if (section === 'org_heads') {
       await connection.execute(`DELETE FROM organization_heads WHERE organization_id = ?`, [orgId]);
@@ -1522,77 +1363,8 @@ export const bulkApproveSubmissions = async (req, res) => {
           );
         }
 
-        if (section === 'advocacy') {
-          const [existingAdvocacy] = await connection.execute(
-            'SELECT id FROM advocacies WHERE organization_id = ?',
-            [orgId]
-          );
-          
-          // Normalize advocacy data - ensure it's a string, not a JSON object
-          let advocacyData = "";
-          if (typeof data === 'string') {
-            advocacyData = data.trim();
-          } else if (typeof data === 'object' && data !== null) {
-            // If it's an object, check if it's empty
-            if (Object.keys(data).length === 0) {
-              advocacyData = "";
-            } else {
-              // If object has properties, try to extract text value
-              // This shouldn't happen, but handle it gracefully
-              advocacyData = JSON.stringify(data).trim();
-            }
-          } else {
-            advocacyData = String(data || "").trim();
-          }
-          
-          if (existingAdvocacy.length > 0) {
-            await connection.execute(
-              'UPDATE advocacies SET advocacy = ? WHERE organization_id = ?',
-              [advocacyData, orgId]
-            );
-          } else {
-            await connection.execute(
-              'INSERT INTO advocacies (organization_id, advocacy) VALUES (?, ?)',
-              [orgId, advocacyData]
-            );
-          }
-        }
-
-        if (section === 'competency') {
-          const [existingCompetency] = await connection.execute(
-            'SELECT id FROM competencies WHERE organization_id = ?',
-            [orgId]
-          );
-          
-          // Normalize competency data - ensure it's a string, not a JSON object
-          let competencyData = "";
-          if (typeof data === 'string') {
-            competencyData = data.trim();
-          } else if (typeof data === 'object' && data !== null) {
-            // If it's an object, check if it's empty
-            if (Object.keys(data).length === 0) {
-              competencyData = "";
-            } else {
-              // If object has properties, try to extract text value
-              // This shouldn't happen, but handle it gracefully
-              competencyData = JSON.stringify(data).trim();
-            }
-          } else {
-            competencyData = String(data || "").trim();
-          }
-          
-          if (existingCompetency.length > 0) {
-            await connection.execute(
-              'UPDATE competencies SET competency = ? WHERE organization_id = ?',
-              [competencyData, orgId]
-            );
-          } else {
-            await connection.execute(
-              'INSERT INTO competencies (organization_id, competency) VALUES (?, ?)',
-              [orgId, competencyData]
-            );
-          }
-        }
+        // Note: advocacy and competency are no longer part of the approval workflow
+        // They are saved directly by admins via their respective endpoints
 
         if (section === 'org_heads') {
           await connection.execute(`DELETE FROM organization_heads WHERE organization_id = ?`, [orgId]);

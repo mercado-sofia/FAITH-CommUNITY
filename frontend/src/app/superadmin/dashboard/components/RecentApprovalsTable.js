@@ -122,13 +122,12 @@ export default function PendingApprovalsTable() {
   const displayList = organizationFilteredList.slice(0, Math.max(5, organizationFilteredList.length));
 
   // Get section display name
+  // Note: advocacy and competency are no longer part of the approval workflow
   const getSectionName = (section) => {
     switch (section) {
       case 'organization': return 'Organization';
       case 'programs': return 'Programs';
       case 'news': return 'News';
-      case 'advocacy': return 'Advocacy';
-      case 'competency': return 'Competency';
       case 'org_heads': return 'Org Heads';
       default: return section || 'Unknown';
     }

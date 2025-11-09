@@ -248,7 +248,7 @@ const SearchAndFilterControls = ({
               {(() => {
                 // Default sections that should always be available
                 // Note: "Post Act Report" uses proper case as stored in database, "highlights" is lowercase
-                const defaultSections = ["programs", "competency", "advocacy", "highlights", "Post Act Report"];
+                const defaultSections = ["programs", "highlights", "Post Act Report"];
                 
                 // Use availableSections if provided, otherwise use default list
                 const sections = availableSections && availableSections.length > 0 

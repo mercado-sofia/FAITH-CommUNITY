@@ -1,16 +1,16 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from '@/config/api';
 
 export const superadminNotificationsApi = createApi({
   reducerPath: 'superadminNotificationsApi',
   baseQuery: fetchBaseQuery({
     baseUrl: `${API_BASE_URL}/api/superadmin/notifications`,
+    credentials: 'include',
     prepareHeaders: (headers, { getState }) => {
       // Check for window to avoid SSR errors
       const token = typeof window !== 'undefined' ? localStorage.getItem('superAdminToken') : null;
       if (token) {
-        headers.set('authorization', `Bearer ${token}`);
+        headers.set('Authorization', `Bearer ${token}`);
       }
       return headers;
     },

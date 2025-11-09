@@ -44,17 +44,18 @@ export const addAdvocacy = async (req, res) => {
   const { organization_id, advocacy } = req.body
 
   // Input validation
-  if (!organization_id || !advocacy) {
+  if (!organization_id) {
     return res.status(400).json({
       success: false,
-      message: "Organization ID and advocacy description are required",
+      message: "Organization ID is required",
     })
   }
 
-  if (advocacy.trim().length < 10) {
+  // Allow empty advocacy, but if provided, it must be at least 10 characters
+  if (advocacy !== undefined && advocacy !== null && advocacy.trim().length > 0 && advocacy.trim().length < 10) {
     return res.status(400).json({
       success: false,
-      message: "Advocacy description must be at least 10 characters",
+      message: "Advocacy description must be at least 10 characters if provided",
     })
   }
 
@@ -71,10 +72,13 @@ export const addAdvocacy = async (req, res) => {
     // Check if an entry already exists
     const [existing] = await db.execute("SELECT * FROM advocacies WHERE organization_id = ?", [organization_id])
 
+    // Normalize advocacy value (handle undefined/null/empty)
+    const advocacyValue = (advocacy !== undefined && advocacy !== null) ? advocacy.trim() : "";
+    
     if (existing.length > 0) {
       // Update if it exists
       await db.execute("UPDATE advocacies SET advocacy = ? WHERE organization_id = ?", [
-        advocacy.trim(),
+        advocacyValue,
         organization_id,
       ])
       res.json({
@@ -85,7 +89,7 @@ export const addAdvocacy = async (req, res) => {
       // Otherwise insert
       await db.execute("INSERT INTO advocacies (organization_id, advocacy) VALUES (?, ?)", [
         organization_id,
-        advocacy.trim(),
+        advocacyValue,
       ])
       res.status(201).json({
         success: true,

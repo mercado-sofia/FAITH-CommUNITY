@@ -3,6 +3,10 @@
 import express from 'express';
 const router = express.Router();
 import NotificationController from '../controllers/notificationController.js';
+import { verifyAdminToken } from '../controllers/adminAuthController.js';
+
+// SECURITY FIX: All notification routes require admin authentication
+router.use(verifyAdminToken);
 
 // Get all notifications for an admin
 router.get('/:adminId', NotificationController.getNotifications);

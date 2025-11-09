@@ -301,6 +301,7 @@ export const getAllSubmissions = async (req, res) => {
             // Keep original collaborator data if fetch fails
           }
         }
+        }
         
         return {
           ...submission,

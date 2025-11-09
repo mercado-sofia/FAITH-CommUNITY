@@ -79,6 +79,7 @@ export default function SuperAdminSettings() {
       try {
         // Check authentication status first
         if (!checkAuthStatus('superadmin')) {
+          setLoading(false);
           return;
         }
 
@@ -86,12 +87,20 @@ export default function SuperAdminSettings() {
         let superadminId = null;
         
         if (superAdminData) {
-          const parsedData = JSON.parse(superAdminData);
-          superadminId = parsedData.id;
+          try {
+            const parsedData = JSON.parse(superAdminData);
+            superadminId = parsedData.id;
+          } catch (parseError) {
+            // Invalid JSON in localStorage
+            clearAuthAndRedirect('superadmin');
+            setLoading(false);
+            return;
+          }
         }
         
         if (!superadminId) {
           clearAuthAndRedirect('superadmin');
+          setLoading(false);
           return;
         }
 
@@ -104,6 +113,15 @@ export default function SuperAdminSettings() {
 
         if (!response) {
           // Authentication utility handled redirect
+          setLoading(false);
+          return;
+        }
+
+        // Check if response is JSON before parsing
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          showAuthError('Server returned an invalid response. Please try again.');
+          setLoading(false);
           return;
         }
 
@@ -113,10 +131,19 @@ export default function SuperAdminSettings() {
           setCurrentUser(data);
           setTwofaEnabled(data.twofa_enabled || false);
         } else {
-          showSuccessModal(data.error || 'Failed to load user data');
+          // Handle specific error messages from backend
+          const errorMessage = data.error || data.message || 'Failed to load user data';
+          if (response.status === 401 || response.status === 403) {
+            // Authentication/authorization error - redirect to login
+            clearAuthAndRedirect('superadmin');
+          } else {
+            showAuthError(errorMessage);
+          }
         }
       } catch (error) {
-        showAuthError('Failed to load user data. Please try again.');
+        // Network errors or other exceptions
+        console.error('Error loading user data:', error);
+        showAuthError('Failed to load user data. Please check your connection and try again.');
       } finally {
         setLoading(false);
       }

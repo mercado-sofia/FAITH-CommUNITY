@@ -15,13 +15,9 @@ export const invitationsApi = createApi({
       // Use superadmin token if available, otherwise use admin token
       const token = superadminToken || adminToken
       
-      if (token) {
-        // Handle hardcoded superadmin token
-        if (token === "superadmin") {
-          headers.set("Authorization", `Bearer superadmin`)
-        } else {
-          headers.set("Authorization", `Bearer ${token}`)
-        }
+      // Only use valid JWT tokens (not hardcoded tokens)
+      if (token && token !== "superadmin") {
+        headers.set("Authorization", `Bearer ${token}`)
       }
 
       return headers

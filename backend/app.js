@@ -402,9 +402,21 @@ app.listen(PORT, async () => {
         ? status.missing.join(', ') 
         : 'SMTP_HOST, SMTP_USER, SMTP_PASS';
       console.warn(`⚠️  SMTP not configured. Missing: ${missingList}. Email features will not work.`);
-    } else if (process.env.SMTP_SKIP_VERIFY === 'true') {
-      console.warn('⚠️  SMTP verification skipped (SMTP_SKIP_VERIFY=true). Email features may not work if SMTP is misconfigured.');
     } else {
+      // Check for common configuration issues
+      const smtpHost = process.env.SMTP_HOST?.trim() || '';
+      const smtpPort = Number(process.env.SMTP_PORT) || 587;
+      
+      if (smtpHost.includes('sendgrid') && smtpPort === 465) {
+        console.warn('⚠️  SendGrid Configuration Warning:');
+        console.warn('   → SendGrid recommends port 587 (STARTTLS), not port 465');
+        console.warn('   → Port 465 may be blocked in deployment environments');
+        console.warn('   → Consider changing to: SMTP_PORT=587');
+      }
+      
+      if (process.env.SMTP_SKIP_VERIFY === 'true') {
+        console.warn('⚠️  SMTP verification skipped (SMTP_SKIP_VERIFY=true). Email features may not work if SMTP is misconfigured.');
+      } else {
       // Run verification in background, don't block startup
       // Note: Verification failure is not critical - server will continue running
       verifySMTPConnection().then(success => {
@@ -418,6 +430,7 @@ app.listen(PORT, async () => {
       }).catch(() => {
         // Error already logged in verifySMTPConnection
       });
+      }
     }
   } catch (error) {
     console.error('❌ Failed to check SMTP configuration:', error.message);

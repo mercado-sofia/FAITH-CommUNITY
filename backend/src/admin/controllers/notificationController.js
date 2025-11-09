@@ -59,9 +59,24 @@ class NotificationController {
         total: total
       });
     } catch (error) {
+      console.error('Error fetching notifications:', error);
+      console.error('Error stack:', error.stack);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        errno: error.errno,
+        sqlState: error.sqlState,
+        sqlMessage: error.sqlMessage
+      });
       res.status(500).json({
         success: false,
-        message: 'Failed to fetch notifications'
+        message: 'Failed to fetch notifications',
+        error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message,
+        details: process.env.NODE_ENV === 'development' ? {
+          code: error.code,
+          errno: error.errno,
+          sqlState: error.sqlState
+        } : undefined
       });
     }
   }

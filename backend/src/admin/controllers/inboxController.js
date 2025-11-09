@@ -91,10 +91,24 @@ export const getMessagesByOrg = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Error fetching messages:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage
+    });
     res.status(500).json({
       success: false,
       message: "Failed to fetch messages",
-      error: error.message
+      error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message,
+      details: process.env.NODE_ENV === 'development' ? {
+        code: error.code,
+        errno: error.errno,
+        sqlState: error.sqlState
+      } : undefined
     });
   }
 };

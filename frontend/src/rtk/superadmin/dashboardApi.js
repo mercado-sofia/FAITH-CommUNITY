@@ -10,9 +10,14 @@ export const dashboardApi = createApi({
       // Add authentication token for superadmin endpoints
       if (typeof window !== 'undefined') {
         const superadminToken = localStorage.getItem('superAdminToken');
-        // Only use valid JWT tokens (not hardcoded tokens)
-        if (superadminToken && superadminToken !== "superadmin") {
-          headers.set('Authorization', `Bearer ${superadminToken}`);
+        // Only reject hardcoded tokens in production (backend also rejects them)
+        // In development, allow hardcoded tokens (backend allows them)
+        if (superadminToken) {
+          if (superadminToken === "superadmin" && process.env.NODE_ENV === 'production') {
+            // Don't send hardcoded token in production
+          } else {
+            headers.set('Authorization', `Bearer ${superadminToken}`);
+          }
         }
       }
       

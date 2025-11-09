@@ -15,9 +15,14 @@ export const faqApi = createApi({
       // Use superadmin token if available, otherwise use admin token
       const token = superadminToken || adminToken
       
-      // Only use valid JWT tokens (not hardcoded tokens)
-      if (token && token !== "superadmin") {
-        headers.set("Authorization", `Bearer ${token}`)
+      // Only reject hardcoded tokens in production (backend also rejects them)
+      // In development, allow hardcoded tokens (backend allows them)
+      if (token) {
+        if (token === "superadmin" && process.env.NODE_ENV === 'production') {
+          // Don't send hardcoded token in production
+        } else {
+          headers.set("Authorization", `Bearer ${token}`)
+        }
       }
 
       return headers

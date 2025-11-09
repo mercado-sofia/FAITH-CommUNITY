@@ -1378,7 +1378,6 @@ const initializeDatabase = async () => {
           type ENUM('mission', 'vision') NOT NULL,
           content TEXT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           INDEX idx_type (type)
         )
       `);
@@ -1400,6 +1399,102 @@ const initializeDatabase = async () => {
         await connection.query(`ALTER TABLE mission_vision DROP COLUMN status`);
       } catch (err) {
         // Column might not exist, ignore error
+      }
+      
+      // Migration: Clean up duplicate mission/vision entries, keeping only the latest for each type
+      try {
+        // Get all entries grouped by type
+        const [allEntries] = await connection.query(`
+          SELECT * FROM mission_vision 
+          WHERE type IN ('mission', 'vision') 
+          ORDER BY type, id DESC
+        `);
+        
+        const entriesByType = {
+          mission: [],
+          vision: []
+        };
+        
+        allEntries.forEach(entry => {
+          if (entry.type === 'mission' || entry.type === 'vision') {
+            entriesByType[entry.type].push(entry);
+          }
+        });
+        
+        let deletedCount = 0;
+        
+        // For each type, keep only the latest entry (highest ID) and delete the rest
+        for (const [type, entries] of Object.entries(entriesByType)) {
+          if (entries.length > 1) {
+            // Keep the first entry (latest/highest ID), delete the rest
+            const duplicates = entries.slice(1);
+            const duplicateIds = duplicates.map(entry => entry.id);
+            
+            if (duplicateIds.length > 0) {
+              await connection.query(
+                `DELETE FROM mission_vision WHERE id IN (${duplicateIds.map(() => '?').join(',')})`,
+                duplicateIds
+              );
+              deletedCount += duplicateIds.length;
+              console.log(`Cleaned up ${duplicateIds.length} duplicate ${type} entries`);
+            }
+          }
+        }
+        
+        if (deletedCount > 0) {
+          console.log(`Mission/Vision cleanup: Removed ${deletedCount} duplicate entries`);
+        }
+      } catch (err) {
+        // Log error but don't fail initialization
+        console.warn('Warning: Could not clean up duplicate mission/vision entries:', err.message);
+      }
+      
+      // Migration: Clean up duplicate footer_content entries for contact information
+      try {
+        // Get all contact entries grouped by title (phone/email)
+        const [allContactEntries] = await connection.query(`
+          SELECT * FROM footer_content 
+          WHERE section_type = 'contact' 
+          ORDER BY title, id DESC
+        `);
+        
+        const entriesByTitle = {
+          phone: [],
+          email: []
+        };
+        
+        allContactEntries.forEach(entry => {
+          if (entry.title === 'phone' || entry.title === 'email') {
+            entriesByTitle[entry.title].push(entry);
+          }
+        });
+        
+        let deletedCount = 0;
+        
+        // For each title, keep only the latest entry (highest ID) and delete the rest
+        for (const [title, entries] of Object.entries(entriesByTitle)) {
+          if (entries.length > 1) {
+            // Keep the first entry (latest/highest ID), delete the rest
+            const duplicates = entries.slice(1);
+            const duplicateIds = duplicates.map(entry => entry.id);
+            
+            if (duplicateIds.length > 0) {
+              await connection.query(
+                `DELETE FROM footer_content WHERE id IN (${duplicateIds.map(() => '?').join(',')})`,
+                duplicateIds
+              );
+              deletedCount += duplicateIds.length;
+              console.log(`Cleaned up ${duplicateIds.length} duplicate ${title} contact entries`);
+            }
+          }
+        }
+        
+        if (deletedCount > 0) {
+          console.log(`Footer Content cleanup: Removed ${deletedCount} duplicate contact entries`);
+        }
+      } catch (err) {
+        // Log error but don't fail initialization
+        console.warn('Warning: Could not clean up duplicate footer_content entries:', err.message);
       }
       
       // 6. Security Tables

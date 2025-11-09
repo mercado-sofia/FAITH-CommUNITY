@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { FiTarget, FiEye, FiEdit3 } from 'react-icons/fi';
+import { mutate } from 'swr';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
+import { ConfirmationModal } from '@/components';
 import styles from './MissionVisionManagement.module.css';
 
 export default function MissionVisionManagement({ showSuccessModal }) {
   const [missionVisionData, setMissionVisionData] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showMissionVisionModal, setShowMissionVisionModal] = useState(false);
   
   // Form state
   const [mission, setMission] = useState('');
@@ -29,16 +32,39 @@ export default function MissionVisionManagement({ showSuccessModal }) {
 
         if (response && response.ok) {
           const data = await response.json();
+          console.log('Loaded mission/vision data:', data); // Debug log
           setMissionVisionData(data);
           
           // Extract mission and vision from the data
-          const missionItem = data.find(item => item.type === 'Mission');
-          const visionItem = data.find(item => item.type === 'Vision');
+          // Handle both capitalized and lowercase types
+          const missionItem = data.find(item => 
+            item.type === 'Mission' || item.type === 'mission'
+          );
+          const visionItem = data.find(item => 
+            item.type === 'Vision' || item.type === 'vision'
+          );
           
-          setMission(missionItem?.content || '');
-          setVision(visionItem?.content || '');
-          setTempMission(missionItem?.content || '');
-          setTempVision(visionItem?.content || '');
+          const missionContent = missionItem?.content || '';
+          const visionContent = visionItem?.content || '';
+          
+          console.log('Mission content:', missionContent); // Debug log
+          console.log('Vision content:', visionContent); // Debug log
+          
+          setMission(missionContent);
+          setVision(visionContent);
+          setTempMission(missionContent);
+          setTempVision(visionContent);
+        } else {
+          console.error('Failed to load mission/vision: response not ok', response);
+          if (response) {
+            console.error('Response status:', response.status);
+            try {
+              const errorData = await response.json();
+              console.error('Error data:', errorData);
+            } catch (e) {
+              console.error('Could not parse error response');
+            }
+          }
         }
       } catch (error) {
         console.error('Load error:', error);
@@ -56,7 +82,7 @@ export default function MissionVisionManagement({ showSuccessModal }) {
     };
 
     loadMissionVisionData();
-  }, [showSuccessModal]);
+  }, []); // Load on mount only
 
   // Handle edit toggle
   const handleEditToggle = () => {
@@ -72,8 +98,36 @@ export default function MissionVisionManagement({ showSuccessModal }) {
     setIsEditing(!isEditing);
   };
 
+  // Handle save click - show confirmation modal
+  const handleSaveClick = () => {
+    // Normalize values for comparison (handle null/empty string)
+    const normalizeValue = (val) => (val || '').trim();
+    const normalizedTempMission = normalizeValue(tempMission);
+    const normalizedTempVision = normalizeValue(tempVision);
+    const normalizedMission = normalizeValue(mission);
+    const normalizedVision = normalizeValue(vision);
+    
+    // Check if there are any changes
+    const missionChanged = normalizedTempMission !== normalizedMission;
+    const visionChanged = normalizedTempVision !== normalizedVision;
+    
+    if (!missionChanged && !visionChanged) {
+      // No changes made
+      setIsEditing(false);
+      return;
+    }
+    
+    // Show confirmation modal
+    setShowMissionVisionModal(true);
+  };
+
+  // Handle cancel confirmation modal
+  const handleMissionVisionCancel = () => {
+    setShowMissionVisionModal(false);
+  };
+
   // Handle save changes - use UPSERT to ensure only one Mission and one Vision
-  const handleSaveChanges = async () => {
+  const handleMissionVisionConfirm = async () => {
     try {
       setIsUpdating(true);
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -87,6 +141,7 @@ export default function MissionVisionManagement({ showSuccessModal }) {
       
       const updates = [];
       const errors = [];
+      const savedData = { mission: null, vision: null };
       
       // Handle Mission - use UPSERT (always update/create the single Mission entry)
       const missionChanged = normalizedTempMission !== normalizedMission;
@@ -111,6 +166,10 @@ export default function MissionVisionManagement({ showSuccessModal }) {
               const responseData = await response.json();
               if (responseData.success === true) {
                 updates.push('Mission');
+                // Store the saved data from response
+                if (responseData.data) {
+                  savedData.mission = responseData.data.content || '';
+                }
               } else {
                 const errorMessage = responseData.error || responseData.message || 'Failed to save Mission';
                 errors.push(`Mission: ${errorMessage}`);
@@ -180,6 +239,10 @@ export default function MissionVisionManagement({ showSuccessModal }) {
               const responseData = await response.json();
               if (responseData.success === true) {
                 updates.push('Vision');
+                // Store the saved data from response
+                if (responseData.data) {
+                  savedData.vision = responseData.data.content || '';
+                }
               } else {
                 const errorMessage = responseData.error || responseData.message || 'Failed to save Vision';
                 errors.push(`Vision: ${errorMessage}`);
@@ -226,8 +289,28 @@ export default function MissionVisionManagement({ showSuccessModal }) {
         }
       }
       
-      // Show results and reload data
+      // Show results and update state
       if (updates.length > 0 || errors.length > 0) {
+        // First, update state with saved data immediately (optimistic update)
+        if (savedData.mission !== null) {
+          setMission(savedData.mission);
+          setTempMission(savedData.mission);
+        }
+        if (savedData.vision !== null) {
+          setVision(savedData.vision);
+          setTempVision(savedData.vision);
+        }
+        
+        // Invalidate SWR cache for public site to force refresh
+        try {
+          await mutate(`${baseUrl}/api/mission-vision`);
+        } catch (cacheError) {
+          console.warn('Failed to invalidate cache:', cacheError);
+        }
+        
+        // Wait a bit to ensure database transaction is committed
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
         // Reload data to ensure consistency with database
         const loadData = async () => {
           try {
@@ -238,6 +321,7 @@ export default function MissionVisionManagement({ showSuccessModal }) {
             );
             if (response && response.ok) {
               const data = await response.json();
+              console.log('Reloaded mission/vision data:', data); // Debug log
               setMissionVisionData(data);
               
               // Update form state with fresh data from database
@@ -246,10 +330,17 @@ export default function MissionVisionManagement({ showSuccessModal }) {
               const freshMission = missionItem?.content || '';
               const freshVision = visionItem?.content || '';
               
-              setMission(freshMission);
-              setVision(freshVision);
-              setTempMission(freshMission);
-              setTempVision(freshVision);
+              console.log('Fresh mission:', freshMission, 'Fresh vision:', freshVision); // Debug log
+              
+              // Only update if we got valid data
+              if (missionItem || visionItem) {
+                setMission(freshMission);
+                setVision(freshVision);
+                setTempMission(freshMission);
+                setTempVision(freshVision);
+              }
+            } else {
+              console.error('Failed to reload data: response not ok', response);
             }
           } catch (error) {
             console.error('Error reloading data:', error);
@@ -264,8 +355,8 @@ export default function MissionVisionManagement({ showSuccessModal }) {
         } else {
           showSuccessModal(`Successfully updated ${updates.join(' and ')}! The changes will be visible on the public site immediately.`);
         }
-      } else if (!missionChanged && !visionChanged) {
-        // No changes made
+      } else {
+        // No changes were made
         setIsEditing(false);
       }
     } catch (error) {
@@ -281,6 +372,7 @@ export default function MissionVisionManagement({ showSuccessModal }) {
       showSuccessModal(errorMessage);
     } finally {
       setIsUpdating(false);
+      setShowMissionVisionModal(false);
     }
   };
 
@@ -312,10 +404,10 @@ export default function MissionVisionManagement({ showSuccessModal }) {
               </button>
               <button 
                 className={styles.saveBtn}
-                onClick={handleSaveChanges}
+                onClick={handleSaveClick}
                 disabled={isUpdating}
               >
-                {isUpdating ? 'Saving...' : 'Save Changes'}
+                Save Changes
               </button>
             </>
           )}
@@ -340,7 +432,7 @@ export default function MissionVisionManagement({ showSuccessModal }) {
               />
             ) : (
               <div className={styles.displayValue}>
-                {mission ? mission : <span className={styles.emptyPlaceholder}>No mission statement added yet</span>}
+                {mission && mission.trim() ? mission : <span className={styles.emptyPlaceholder}>No mission statement added yet</span>}
               </div>
             )}
           </div>
@@ -361,12 +453,24 @@ export default function MissionVisionManagement({ showSuccessModal }) {
               />
             ) : (
               <div className={styles.displayValue}>
-                {vision ? vision : <span className={styles.emptyPlaceholder}>No vision statement added yet</span>}
+                {vision && vision.trim() ? vision : <span className={styles.emptyPlaceholder}>No vision statement added yet</span>}
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Mission & Vision Update Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showMissionVisionModal}
+        itemName="Mission & Vision"
+        itemType="mission and vision content"
+        actionType="update"
+        onConfirm={handleMissionVisionConfirm}
+        onCancel={handleMissionVisionCancel}
+        isDeleting={isUpdating}
+        customMessage="This will update the Mission & Vision section across the entire public website. The changes will be visible immediately."
+      />
     </div>
   );
 }

@@ -4,10 +4,21 @@ import db from "../../database.js"
 export const getFooterContent = async (req, res) => {
   try {
     // Get all footer content from database
+    // For contact section, get only the latest entry for each title (phone/email) using subquery
     const [rows] = await db.query(`
-      SELECT * FROM footer_content 
-      WHERE is_active = 1 
-      ORDER BY section_type, display_order
+      SELECT fc1.* 
+      FROM footer_content fc1
+      LEFT JOIN (
+        SELECT section_type, title, MAX(id) as max_id
+        FROM footer_content
+        WHERE section_type = 'contact' AND is_active = 1
+        GROUP BY section_type, title
+      ) fc2 ON fc1.section_type = fc2.section_type 
+        AND fc1.title = fc2.title 
+        AND fc1.id = fc2.max_id
+      WHERE fc1.is_active = 1 
+        AND (fc1.section_type != 'contact' OR fc2.max_id IS NOT NULL)
+      ORDER BY fc1.section_type, fc1.display_order, fc1.id DESC
     `);
 
     // Organize data by section type
@@ -22,11 +33,15 @@ export const getFooterContent = async (req, res) => {
     rows.forEach(row => {
       switch (row.section_type) {
         case 'contact':
-          footerData.contact[row.title] = {
-            content: row.content,
-            url: row.url,
-            icon: row.icon
-          };
+          // Only keep the latest entry for each contact type (phone/email)
+          if (!footerData.contact[row.title] || 
+              (footerData.contact[row.title].id && footerData.contact[row.title].id < row.id)) {
+            footerData.contact[row.title] = {
+              content: row.content,
+              url: row.url,
+              icon: row.icon
+            };
+          }
           break;
         case 'quick_links':
           footerData.quickLinks.push({
@@ -84,17 +99,34 @@ export const updateContactInfo = async (req, res) => {
     // Handle phone - UPSERT (allow null/empty values)
     if (phone !== undefined) {
       const phoneValue = phone && phone.trim() ? phone.trim() : null;
-      const [existingPhone] = await db.query(
-        'SELECT id FROM footer_content WHERE section_type = ? AND title = ?',
+      
+      // Get all phone entries to find the latest and identify duplicates
+      const [allPhoneEntries] = await db.query(
+        'SELECT id FROM footer_content WHERE section_type = ? AND title = ? ORDER BY id DESC',
         ['contact', 'phone']
       );
 
-      if (existingPhone.length > 0) {
-        // Update existing phone
+      if (allPhoneEntries.length > 0) {
+        // Get the latest entry (highest ID)
+        const latestPhone = allPhoneEntries[0];
+        
+        // Update the latest phone entry
         await db.query(
           'UPDATE footer_content SET url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-          [phoneValue, existingPhone[0].id]
+          [phoneValue, latestPhone.id]
         );
+        
+        // Delete all duplicate phone entries (keep only the latest)
+        if (allPhoneEntries.length > 1) {
+          const duplicateIds = allPhoneEntries.slice(1).map(entry => entry.id);
+          if (duplicateIds.length > 0) {
+            await db.query(
+              `DELETE FROM footer_content WHERE id IN (${duplicateIds.map(() => '?').join(',')})`,
+              duplicateIds
+            );
+            console.log(`Cleaned up ${duplicateIds.length} duplicate phone entries`);
+          }
+        }
       } else {
         // Create new phone entry
         await db.query(
@@ -107,17 +139,34 @@ export const updateContactInfo = async (req, res) => {
     // Handle email - UPSERT (allow null/empty values)
     if (email !== undefined) {
       const emailValue = email && email.trim() ? email.trim() : null;
-      const [existingEmail] = await db.query(
-        'SELECT id FROM footer_content WHERE section_type = ? AND title = ?',
+      
+      // Get all email entries to find the latest and identify duplicates
+      const [allEmailEntries] = await db.query(
+        'SELECT id FROM footer_content WHERE section_type = ? AND title = ? ORDER BY id DESC',
         ['contact', 'email']
       );
 
-      if (existingEmail.length > 0) {
-        // Update existing email
+      if (allEmailEntries.length > 0) {
+        // Get the latest entry (highest ID)
+        const latestEmail = allEmailEntries[0];
+        
+        // Update the latest email entry
         await db.query(
           'UPDATE footer_content SET url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-          [emailValue, existingEmail[0].id]
+          [emailValue, latestEmail.id]
         );
+        
+        // Delete all duplicate email entries (keep only the latest)
+        if (allEmailEntries.length > 1) {
+          const duplicateIds = allEmailEntries.slice(1).map(entry => entry.id);
+          if (duplicateIds.length > 0) {
+            await db.query(
+              `DELETE FROM footer_content WHERE id IN (${duplicateIds.map(() => '?').join(',')})`,
+              duplicateIds
+            );
+            console.log(`Cleaned up ${duplicateIds.length} duplicate email entries`);
+          }
+        }
       } else {
         // Create new email entry
         await db.query(

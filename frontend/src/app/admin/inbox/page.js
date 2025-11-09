@@ -15,6 +15,7 @@ import { FiMail, FiTrash2, FiEye, FiCheck, FiX } from 'react-icons/fi';
 import { FaSpinner } from 'react-icons/fa';
 import { SkeletonLoader } from '../components';
 import { ConfirmationModal } from '@/components';
+import { getErrorMessage } from '../utils';
 import styles from './inbox.module.css';
 
 export default function InboxPage() {
@@ -285,7 +286,7 @@ export default function InboxPage() {
           <SkeletonLoader type="table" count={8} />
         ) : messagesError ? (
           <div className={styles.errorContainer}>
-            <p>Error loading messages. Please try again.</p>
+            <p>{getErrorMessage(messagesError)}</p>
             <button onClick={refetchMessages} className={styles.retryButton}>
               Retry
             </button>

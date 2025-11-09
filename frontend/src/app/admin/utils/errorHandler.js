@@ -182,6 +182,76 @@ export const handleValidationError = (errors) => {
 };
 
 /**
+ * Extract error message from RTK Query error object
+ * @param {object} error - RTK Query error object
+ * @returns {string} Extracted error message
+ */
+export const getErrorMessage = (error) => {
+  if (!error) {
+    return 'An unexpected error occurred. Please try again.';
+  }
+
+  // Handle RTK Query error structure
+  if (error.data) {
+    // Check for nested message/error in data
+    if (typeof error.data === 'string') {
+      return error.data;
+    }
+    if (error.data.message) {
+      return error.data.message;
+    }
+    if (error.data.error) {
+      return error.data.error;
+    }
+    if (error.data.details) {
+      return error.data.details;
+    }
+  }
+
+  // Handle error.error property
+  if (error.error) {
+    return error.error;
+  }
+
+  // Handle Error instance
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  // Handle string errors
+  if (typeof error === 'string') {
+    return error;
+  }
+
+  // Handle status-based errors
+  if (error.status) {
+    if (error.status === 401) {
+      return 'Your session has expired. Please log in again.';
+    }
+    if (error.status === 403) {
+      return 'You do not have permission to perform this action.';
+    }
+    if (error.status === 404) {
+      return 'The requested resource was not found.';
+    }
+    if (error.status === 429) {
+      return 'Too many requests. Please wait a moment and try again.';
+    }
+    if (error.status >= 500) {
+      return 'Server error. Please try again later.';
+    }
+    return `Error ${error.status}: ${error.statusText || 'An error occurred'}`;
+  }
+
+  // Fallback for unknown error structure
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'An unexpected error occurred. Please try again.';
+  }
+};
+
+/**
  * Create a standardized error handler for async operations
  * @param {Function} operation - The async operation to execute
  * @param {string} context - Context for error logging

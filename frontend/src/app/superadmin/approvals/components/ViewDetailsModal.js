@@ -551,7 +551,6 @@ const ViewDetailsModal = ({
                       </pre>
                     </div>
                   </div>
-                )}
               </div>
             </div>
           )}

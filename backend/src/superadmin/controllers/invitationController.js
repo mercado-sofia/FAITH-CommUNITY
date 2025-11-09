@@ -14,7 +14,7 @@ const sendInvitationEmail = async (email, token) => {
   try {
     if (!process.env.FRONTEND_URL) {
       console.error('FRONTEND_URL not configured')
-      return false
+      throw new Error('FRONTEND_URL not configured')
     }
 
     const invitationLink = `${process.env.FRONTEND_URL}/admin/invitation/accept?token=${token}`
@@ -44,10 +44,50 @@ const sendInvitationEmail = async (email, token) => {
       `,
       text: `You have been invited to become an admin for FAITH-CommUNITY. Click this link to accept: ${invitationLink}`
     })
-    return true
+    return { success: true }
   } catch (error) {
-    console.error('Email sending failed:', error)
-    return false
+    console.error('Email sending failed:', error.message)
+    if (error.code) {
+      console.error(`   → Error code: ${error.code}`)
+    }
+    if (error.command) {
+      console.error(`   → Failed command: ${error.command}`)
+    }
+    
+    // Return detailed error information
+    const isSendGrid = process.env.SMTP_HOST?.trim()?.includes('sendgrid')
+    const isTimeoutError = error.code === 'ETIMEDOUT' || 
+                          error.message.includes('timeout') || 
+                          error.message.includes('ETIMEDOUT') ||
+                          error.command === 'CONN'
+    
+    let errorMessage = 'Failed to send invitation email'
+    
+    if (isTimeoutError) {
+      if (isSendGrid) {
+        const currentPort = Number(process.env.SMTP_PORT) || 587
+        errorMessage = 'Connection timeout: Unable to connect to SendGrid SMTP server. '
+        if (currentPort === 465) {
+          errorMessage += 'CRITICAL: Port 465 is likely blocked. Please change SMTP_PORT to 587 in your deployment environment variables.'
+        } else {
+          errorMessage += 'Please verify your SendGrid SMTP configuration (SMTP_USER=apikey, SMTP_PASS=your-api-key, SMTP_PORT=587).'
+        }
+      } else {
+        errorMessage = 'Connection timeout: Unable to connect to SMTP server. Please check your SMTP configuration and network settings.'
+      }
+    } else if (error.code === 'EAUTH' || error.message.includes('Invalid login') || error.message.includes('BadCredentials')) {
+      if (isSendGrid) {
+        errorMessage = 'Authentication failed: Please verify SMTP_USER=apikey and SMTP_PASS is your SendGrid API key (not password).'
+      } else {
+        errorMessage = 'Authentication failed: Please check your SMTP_USER and SMTP_PASS credentials.'
+      }
+    } else if (error.code === 'SMTP_NOT_CONFIGURED') {
+      errorMessage = 'SMTP not configured: Please set SMTP_HOST, SMTP_USER, and SMTP_PASS environment variables.'
+    } else if (error.message) {
+      errorMessage = `Email sending failed: ${error.message}`
+    }
+    
+    return { success: false, error: errorMessage }
   }
 }
 
@@ -92,11 +132,15 @@ export const sendInvitation = async (req, res) => {
     )
 
     // Send invitation email
-    const emailSent = await sendInvitationEmail(email, token)
-    if (!emailSent) {
+    const emailResult = await sendInvitationEmail(email, token)
+    if (!emailResult.success) {
       // If email fails, delete the invitation record
       await db.execute("DELETE FROM admin_invitations WHERE token = ?", [token])
-      return res.status(500).json({ error: "Failed to send invitation email" })
+      // Return detailed error message to help with troubleshooting
+      return res.status(500).json({ 
+        error: emailResult.error || "Failed to send invitation email",
+        details: emailResult.error || "Please check your SMTP configuration"
+      })
     }
 
     // Log superadmin action

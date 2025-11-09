@@ -66,11 +66,18 @@ const sendInvitationEmail = async (email, token) => {
     if (isTimeoutError) {
       if (isSendGrid) {
         const currentPort = Number(process.env.SMTP_PORT) || 587
-        errorMessage = 'Connection timeout: Unable to connect to SendGrid SMTP server. '
-        if (currentPort === 465) {
-          errorMessage += 'CRITICAL: Port 465 is likely blocked. Please change SMTP_PORT to 587 in your deployment environment variables.'
+        const useAPI = process.env.USE_SENDGRID_API === 'true'
+        
+        if (useAPI) {
+          errorMessage = 'Connection timeout: SendGrid REST API is enabled but still timing out. Please verify SMTP_PASS (your SendGrid API key) is correct.'
         } else {
-          errorMessage += 'Please verify your SendGrid SMTP configuration (SMTP_USER=apikey, SMTP_PASS=your-api-key, SMTP_PORT=587).'
+          errorMessage = 'Connection timeout: Unable to connect to SendGrid SMTP server. '
+          if (currentPort === 465) {
+            errorMessage += 'CRITICAL: Port 465 is likely blocked. Please change SMTP_PORT to 587 in your deployment environment variables. '
+          } else {
+            errorMessage += 'Your deployment platform may be blocking outbound SMTP connections. '
+          }
+          errorMessage += 'SOLUTION: Set USE_SENDGRID_API=true to use SendGrid REST API instead (uses HTTPS, not blocked).'
         }
       } else {
         errorMessage = 'Connection timeout: Unable to connect to SMTP server. Please check your SMTP configuration and network settings.'

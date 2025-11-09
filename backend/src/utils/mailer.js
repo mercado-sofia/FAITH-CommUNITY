@@ -266,7 +266,138 @@ export async function verifySMTPConnection(retries = 2) {
   return false;
 }
 
+// Send email via SendGrid REST API (alternative to SMTP)
+async function sendMailViaSendGridAPI({ to, subject, html, text, from }) {
+  const apiKey = process.env.SMTP_PASS?.trim();
+  if (!apiKey) {
+    throw new Error('SMTP_PASS (SendGrid API key) is required for REST API');
+  }
+
+  // Parse from address
+  let fromEmail = from;
+  let fromName = 'FAITH CommUNITY';
+  
+  if (from) {
+    // Handle format: "Name" <email@domain.com> or email@domain.com
+    const match = from.match(/^"?([^"<]+)"?\s*<(.+)>$|^(.+)$/);
+    if (match) {
+      if (match[1] && match[2]) {
+        fromName = match[1].trim();
+        fromEmail = match[2].trim();
+      } else if (match[3]) {
+        fromEmail = match[3].trim();
+      }
+    }
+  } else {
+    fromEmail = process.env.MAIL_FROM?.match(/<(.+)>/)?.pop() || 
+                process.env.MAIL_FROM?.trim() || 
+                'noreply@faithcommunity.com';
+  }
+
+  const payload = {
+    personalizations: [{
+      to: [{ email: to }]
+    }],
+    from: {
+      email: fromEmail,
+      name: fromName
+    },
+    subject: subject,
+    content: [
+      {
+        type: 'text/html',
+        value: html || text || ''
+      }
+    ]
+  };
+
+  // Add plain text if provided
+  if (text && html) {
+    payload.content.push({
+      type: 'text/plain',
+      value: text
+    });
+  }
+
+  const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    let errorMessage = `SendGrid API error: ${response.status} ${response.statusText}`;
+    try {
+      const errorData = JSON.parse(errorText);
+      if (errorData.errors && errorData.errors.length > 0) {
+        errorMessage = `SendGrid API error: ${errorData.errors.map(e => e.message).join(', ')}`;
+      }
+    } catch (e) {
+      // If JSON parsing fails, use the raw error text
+      if (errorText) {
+        errorMessage = `SendGrid API error: ${errorText}`;
+      }
+    }
+    const error = new Error(errorMessage);
+    error.code = 'SENDGRID_API_ERROR';
+    error.status = response.status;
+    throw error;
+  }
+
+  return {
+    messageId: response.headers.get('x-message-id') || 'sent',
+    response: response.statusText
+  };
+}
+
 export async function sendMail({ to, subject, html, text, attachments } = {}, retries = 2) {
+  // Check if SendGrid REST API should be used instead of SMTP
+  // Use REST API if explicitly enabled (recommended when SMTP is blocked)
+  const useSendGridAPI = process.env.USE_SENDGRID_API === 'true';
+  
+  if (useSendGridAPI) {
+    // Use SendGrid REST API instead of SMTP
+    if (!process.env.SMTP_PASS?.trim()) {
+      throw new Error('SMTP_PASS (SendGrid API key) is required when using SendGrid REST API');
+    }
+
+    const maxRetries = retries;
+    const from = process.env.MAIL_FROM || `"FAITH CommUNITY" <${process.env.SMTP_USER || 'noreply@faithcommunity.com'}>`;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        if (attempt > 0) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          console.log(`   → Retrying email send via SendGrid API (attempt ${attempt + 1}/${maxRetries + 1}) after ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+
+        const result = await sendMailViaSendGridAPI({ to, subject, html, text, from });
+        return result;
+      } catch (error) {
+        const isLastAttempt = attempt === maxRetries;
+        
+        if (isLastAttempt) {
+          console.error('❌ Failed to send email via SendGrid API:', error.message);
+          if (error.status) {
+            console.error(`   → HTTP Status: ${error.status}`);
+          }
+          throw error;
+        }
+        
+        console.warn(`⚠️  SendGrid API error (attempt ${attempt + 1}/${maxRetries + 1}), retrying...`);
+        continue;
+      }
+    }
+    
+    throw new Error('Failed to send email via SendGrid API after all retry attempts');
+  }
+
+  // Continue with SMTP implementation
   if (!isSMTPConfigured()) {
     const status = getSMTPStatus();
     const error = new Error(`SMTP not configured. Missing: ${status.missing.join(', ')}`);

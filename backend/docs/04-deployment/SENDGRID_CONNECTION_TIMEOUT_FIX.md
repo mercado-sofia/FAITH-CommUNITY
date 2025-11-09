@@ -127,14 +127,37 @@ If you see connection timeout errors, check:
 3. ✅ `SMTP_PASS` is your SendGrid API key (starts with `SG.`)
 4. ✅ Your deployment platform allows outbound SMTP connections on port 587
 
-## Still Having Issues?
+## Still Having Issues? Use SendGrid REST API Instead
+
+If SMTP continues to timeout (connection timeout at CONN stage), your deployment platform is likely blocking outbound SMTP connections. **Use SendGrid's REST API instead** - it uses HTTPS (port 443) which is almost never blocked.
+
+### ✅ Solution: Enable SendGrid REST API
+
+Add this environment variable to use SendGrid's REST API instead of SMTP:
+
+```env
+# Enable SendGrid REST API (uses HTTPS instead of SMTP)
+USE_SENDGRID_API=true
+
+# Still need these for SendGrid
+SMTP_HOST=smtp.sendgrid.net  # (not used when USE_SENDGRID_API=true, but kept for compatibility)
+SMTP_PASS=SG.your-sendgrid-api-key-here  # Required - your SendGrid API key
+MAIL_FROM="FAITH CommUNITY" <faithcommunityfaces@gmail.com>
+```
+
+**Benefits of REST API:**
+- ✅ Uses HTTPS (port 443) - almost never blocked
+- ✅ More reliable in deployment environments
+- ✅ Better error messages
+- ✅ No connection pooling issues
+- ✅ Faster than SMTP
+
+**Note:** When `USE_SENDGRID_API=true`, the `SMTP_HOST`, `SMTP_PORT`, and `SMTP_USER` variables are not used. Only `SMTP_PASS` (your API key) and `MAIL_FROM` are required.
+
+### Other Troubleshooting Steps
 
 1. **Check SendGrid Dashboard** - Verify your API key is active and has correct permissions
 2. **Test API Key** - Use SendGrid's API directly to verify the key works
 3. **Check Platform Logs** - Look for more detailed error messages
-4. **Contact Platform Support** - Some platforms may block SMTP connections; contact support to whitelist port 587
-
-## Alternative: Use SendGrid API Directly
-
-If SMTP continues to have issues, consider using SendGrid's REST API directly instead of SMTP. This requires additional code changes but is more reliable in some deployment environments.
+4. **Contact Platform Support** - Some platforms may block SMTP connections; contact support to whitelist port 587 (or just use REST API instead)
 

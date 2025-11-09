@@ -1,15 +1,7 @@
 //db table: subscribers
 import db from '../../database.js';
 import crypto from 'crypto';
-import nodemailer from 'nodemailer';
-
-/* ========================= Mail Transporter ========================= */
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: String(process.env.SMTP_SECURE) === 'true',
-  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-});
+import { sendMail } from '../../utils/mailer.js';
 
 /* ============================== Utils ============================== */
 const FRONTEND = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -48,8 +40,7 @@ async function sendConfirmationEmail({ email, verifyToken, unsubscribeToken }) {
     </div>
   `;
 
-  await transporter.sendMail({
-    from: `"FAITH CommUNITY" <${process.env.SMTP_USER}>`,
+  await sendMail({
     to: email,
     subject: 'Confirm Your Newsletter Subscription - FAITH CommUNITY',
     html,

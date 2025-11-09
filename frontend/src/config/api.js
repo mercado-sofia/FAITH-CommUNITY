@@ -15,16 +15,20 @@ const getApiBaseUrl = () => {
       console.error(
         '⚠️ CRITICAL: NEXT_PUBLIC_API_URL environment variable is not set in production. ' +
         'Please set it in your deployment configuration before building. ' +
-        'API calls will fail until this is fixed.'
+        'API calls will fail until this is fixed. ' +
+        'Example: NEXT_PUBLIC_API_URL=https://your-backend.railway.app'
       );
       // Return empty string - API calls will fail but app will load
+      // This will cause "Failed to fetch" errors which are now handled better
       return '';
     }
-    return apiUrl;
+    // Ensure the URL doesn't end with a slash
+    return apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
   }
   
   // In development, fallback to localhost
-  return apiUrl || 'http://localhost:8080';
+  const devUrl = apiUrl || 'http://localhost:8080';
+  return devUrl.endsWith('/') ? devUrl.slice(0, -1) : devUrl;
 };
 
 export const API_BASE_URL = getApiBaseUrl();

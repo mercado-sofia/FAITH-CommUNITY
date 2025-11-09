@@ -415,8 +415,8 @@ app.listen(PORT, async () => {
       }
       
       if (process.env.SMTP_SKIP_VERIFY === 'true') {
-        console.warn('⚠️  SMTP verification skipped (SMTP_SKIP_VERIFY=true). Email features may not work if SMTP is misconfigured.');
-      } else {
+      console.warn('⚠️  SMTP verification skipped (SMTP_SKIP_VERIFY=true). Email features may not work if SMTP is misconfigured.');
+    } else {
       // Run verification in background, don't block startup
       // Note: Verification failure is not critical - server will continue running
       verifySMTPConnection().then(success => {

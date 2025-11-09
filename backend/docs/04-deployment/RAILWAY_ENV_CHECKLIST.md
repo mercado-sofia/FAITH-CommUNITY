@@ -32,10 +32,11 @@ Use this checklist to ensure all required environment variables are set before d
 ## ⚠️ Recommended Environment Variables
 
 ### SMTP Configuration (Required for Email Features)
-- [ ] `SMTP_HOST` - SMTP server host (e.g., `smtp.gmail.com`)
-- [ ] `SMTP_PORT` - SMTP port (usually `587` or `465`)
-- [ ] `SMTP_USER` - SMTP username/email
-- [ ] `SMTP_PASS` - SMTP password/app password
+- [ ] `SMTP_HOST` - SMTP server host (e.g., `smtp.gmail.com` or `smtp.sendgrid.net`)
+- [ ] `SMTP_PORT` - SMTP port (usually `587` for STARTTLS or `465` for SSL)
+  - **⚠️ IMPORTANT for SendGrid**: Use port `587`, NOT `465` (port 465 may be blocked in deployment environments)
+- [ ] `SMTP_USER` - SMTP username/email (for SendGrid, use `apikey`)
+- [ ] `SMTP_PASS` - SMTP password/app password (for SendGrid, use your API key)
 - [ ] `MAIL_FROM` - Email sender address (e.g., `FAITH CommUNITY <noreply@yourdomain.com>`)
 
 ### Cloudinary Configuration (Required for File Uploads)
@@ -106,6 +107,13 @@ After setting all variables in Railway, the application will automatically valid
 
 ### Issue: "SSL connection required"
 **Solution**: Set `MYSQL_SSL=true` in environment variables
+
+### Issue: "SMTP connection timeout" (especially with SendGrid)
+**Solution**: 
+- For SendGrid: Use `SMTP_PORT=587` (NOT `465`)
+- Port 465 may be blocked in deployment environments
+- Verify `SMTP_USER=apikey` and `SMTP_PASS` is your SendGrid API key
+- Check firewall/network settings allow outbound SMTP connections
 
 ## 📚 Additional Resources
 

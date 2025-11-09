@@ -10,27 +10,59 @@ const normalizeType = (type) => {
 
 export const getMissionVision = async (req, res) => {
   try {
-    // Get only the latest Mission and Vision (one of each)
-    // Since we're using UPSERT, there should only be one of each type
+    // Get the latest Mission and Vision (one of each type)
+    // Use subquery to get the latest entry for each type
+    // Handle both lowercase and capitalized types in database
     const [results] = await db.query(
-      `SELECT * FROM mission_vision 
-       WHERE type = 'mission' OR type = 'vision'
-       ORDER BY type, id DESC
-       LIMIT 2`
+      `SELECT mv1.* 
+       FROM mission_vision mv1
+       INNER JOIN (
+         SELECT LOWER(type) as type, MAX(id) as max_id
+         FROM mission_vision
+         WHERE LOWER(type) IN ('mission', 'vision')
+         GROUP BY LOWER(type)
+       ) mv2 ON LOWER(mv1.type) = mv2.type AND mv1.id = mv2.max_id
+       ORDER BY LOWER(mv1.type)`
     );
     
+    console.log('Raw mission/vision results:', results); // Debug log
+    
     // Ensure we return exactly one Mission and one Vision
-    const mission = results.find(r => r.type === 'mission');
-    const vision = results.find(r => r.type === 'vision');
+    // Handle both lowercase and capitalized types
+    const mission = results.find(r => 
+      r.type?.toLowerCase() === 'mission' || r.type === 'Mission' || r.type === 'mission'
+    );
+    const vision = results.find(r => 
+      r.type?.toLowerCase() === 'vision' || r.type === 'Vision' || r.type === 'vision'
+    );
+    
+    console.log('Found mission:', mission); // Debug log
+    console.log('Found vision:', vision); // Debug log
     
     const response = [];
-    if (mission) response.push({ ...mission, type: 'Mission' }); // Capitalize for frontend
-    if (vision) response.push({ ...vision, type: 'Vision' }); // Capitalize for frontend
+    if (mission) {
+      response.push({ 
+        ...mission, 
+        type: 'Mission',
+        content: mission.content || null // Ensure content is included
+      });
+    }
+    if (vision) {
+      response.push({ 
+        ...vision, 
+        type: 'Vision',
+        content: vision.content || null // Ensure content is included
+      });
+    }
+    
+    console.log('Sending mission/vision response:', response); // Debug log
     
     res.status(200).json(response);
   } catch (err) {
     console.error('Error fetching mission/vision:', err);
-    res.status(500).json({ error: err.message });
+    // Return empty array instead of error to prevent frontend crashes
+    // This allows the frontend to handle empty state gracefully
+    res.status(200).json([]);
   }
 };
 
@@ -55,24 +87,39 @@ export const upsertMissionVision = async (req, res) => {
       });
     }
     
-    // Check if entry exists for this type
-    const [existing] = await db.query(
-      "SELECT * FROM mission_vision WHERE type = ? ORDER BY id DESC LIMIT 1",
+    // Get all entries for this type to find the latest and identify duplicates
+    const [allEntries] = await db.query(
+      "SELECT * FROM mission_vision WHERE type = ? ORDER BY id DESC",
       [normalizedType]
     );
     
     let result;
-    const wasExisting = existing.length > 0;
+    const wasExisting = allEntries.length > 0;
     
     if (wasExisting) {
-      // Update existing entry
+      // Get the latest entry (highest ID)
+      const latestEntry = allEntries[0];
+      
+      // Update the latest entry
       await db.query(
-        "UPDATE mission_vision SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        [content || null, existing[0].id]
+        "UPDATE mission_vision SET content = ? WHERE id = ?",
+        [content || null, latestEntry.id]
       );
       
+      // Delete all other entries for this type (duplicates)
+      if (allEntries.length > 1) {
+        const duplicateIds = allEntries.slice(1).map(entry => entry.id);
+        if (duplicateIds.length > 0) {
+          await db.query(
+            `DELETE FROM mission_vision WHERE id IN (${duplicateIds.map(() => '?').join(',')})`,
+            duplicateIds
+          );
+          console.log(`Cleaned up ${duplicateIds.length} duplicate ${normalizedType} entries`);
+        }
+      }
+      
       // Fetch updated data
-      const [updated] = await db.query('SELECT * FROM mission_vision WHERE id = ?', [existing[0].id]);
+      const [updated] = await db.query('SELECT * FROM mission_vision WHERE id = ?', [latestEntry.id]);
       
       if (!updated || updated.length === 0) {
         throw new Error('Failed to fetch updated mission/vision entry');
@@ -114,9 +161,14 @@ export const upsertMissionVision = async (req, res) => {
     });
   } catch (err) {
     console.error('Error upserting mission/vision:', err);
+    // Provide more detailed error information
+    const errorMessage = err.message || 'An unexpected error occurred';
+    const errorCode = err.code || 'UNKNOWN_ERROR';
+    
     res.status(500).json({ 
       success: false,
-      error: err.message 
+      error: errorMessage,
+      code: errorCode
     });
   }
 };
@@ -164,7 +216,7 @@ export const updateMissionVision = async (req, res) => {
     updateValues.push(id);
     
     await db.query(
-      `UPDATE mission_vision SET ${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      `UPDATE mission_vision SET ${updateFields.join(', ')} WHERE id = ?`,
       updateValues
     );
     
@@ -202,5 +254,55 @@ export const deleteMissionVision = async (req, res) => {
     res.json({ message: 'Entry deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+// Cleanup function to remove duplicate entries, keeping only the latest for each type
+export const cleanupMissionVision = async () => {
+  try {
+    // Get all entries grouped by type
+    const [allEntries] = await db.query(
+      "SELECT * FROM mission_vision WHERE type IN ('mission', 'vision') ORDER BY type, id DESC"
+    );
+    
+    const entriesByType = {
+      mission: [],
+      vision: []
+    };
+    
+    allEntries.forEach(entry => {
+      if (entry.type === 'mission' || entry.type === 'vision') {
+        entriesByType[entry.type].push(entry);
+      }
+    });
+    
+    let deletedCount = 0;
+    
+    // For each type, keep only the latest entry (highest ID) and delete the rest
+    for (const [type, entries] of Object.entries(entriesByType)) {
+      if (entries.length > 1) {
+        // Keep the first entry (latest/highest ID), delete the rest
+        const duplicates = entries.slice(1);
+        const duplicateIds = duplicates.map(entry => entry.id);
+        
+        if (duplicateIds.length > 0) {
+          await db.query(
+            `DELETE FROM mission_vision WHERE id IN (${duplicateIds.map(() => '?').join(',')})`,
+            duplicateIds
+          );
+          deletedCount += duplicateIds.length;
+          console.log(`Cleaned up ${duplicateIds.length} duplicate ${type} entries`);
+        }
+      }
+    }
+    
+    if (deletedCount > 0) {
+      console.log(`Mission/Vision cleanup: Removed ${deletedCount} duplicate entries`);
+    }
+    
+    return { deletedCount };
+  } catch (err) {
+    console.error('Error cleaning up mission/vision duplicates:', err);
+    throw err;
   }
 };

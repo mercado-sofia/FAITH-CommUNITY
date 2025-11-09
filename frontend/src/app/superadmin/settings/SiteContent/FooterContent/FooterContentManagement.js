@@ -27,6 +27,7 @@ import {
   FaSlack 
 } from 'react-icons/fa';
 import { FaXTwitter } from 'react-icons/fa6';
+import { mutate } from 'swr';
 import { makeAuthenticatedRequest, showAuthError } from '@/utils/adminAuth';
 import { ConfirmationModal } from '@/components';
 import styles from './FooterContentManagement.module.css';
@@ -71,6 +72,7 @@ export default function FooterContentManagement({ showSuccessModal }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeletingFromEditMode, setIsDeletingFromEditMode] = useState(false);
   const [showAddSocialModal, setShowAddSocialModal] = useState(false);
   const [newSocialPlatform, setNewSocialPlatform] = useState('');
   const [newSocialUrl, setNewSocialUrl] = useState('');
@@ -211,6 +213,20 @@ export default function FooterContentManagement({ showSuccessModal }) {
       return;
     }
 
+    // If in edit mode, add to tempServices with a temporary ID
+    if (isEditingServices) {
+      const tempId = `temp-${Date.now()}-${Math.random()}`;
+      const newServiceObj = {
+        id: tempId,
+        name: newService.trim(),
+        isNew: true // Flag to identify new services that need to be created on save
+      };
+      setTempServices(prev => [...prev, newServiceObj]);
+      setNewService('');
+      return;
+    }
+
+    // If not in edit mode, add directly to services via API
     try {
       setIsUpdatingFooter(true);
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -274,12 +290,23 @@ export default function FooterContentManagement({ showSuccessModal }) {
 
   const handleDeleteService = (service) => {
     setServiceToDelete(service);
+    setIsDeletingFromEditMode(isEditingServices);
     setShowDeleteModal(true);
   };
 
   const handleDeleteConfirm = async () => {
     if (!serviceToDelete) return;
     
+    // If deleting from edit mode, just remove from tempServices
+    if (isDeletingFromEditMode) {
+      setTempServices(prev => prev.filter(service => service.id !== serviceToDelete.id));
+      setShowDeleteModal(false);
+      setServiceToDelete(null);
+      setIsDeletingFromEditMode(false);
+      return;
+    }
+    
+    // If not in edit mode, delete via API
     try {
       setIsDeleting(true);
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -332,12 +359,14 @@ export default function FooterContentManagement({ showSuccessModal }) {
       setIsDeleting(false);
       setShowDeleteModal(false);
       setServiceToDelete(null);
+      setIsDeletingFromEditMode(false);
     }
   };
 
   const handleDeleteCancel = () => {
     setShowDeleteModal(false);
     setServiceToDelete(null);
+    setIsDeletingFromEditMode(false);
   };
 
   const handleFooterConfirm = async () => {
@@ -351,18 +380,25 @@ export default function FooterContentManagement({ showSuccessModal }) {
         case 'contact':
           endpoint = '/contact';
           body = {
-            phone: contactInfo.phone?.trim() || null,
-            email: contactInfo.email?.trim() || null
+            phone: tempContactInfo.phone?.trim() || null,
+            email: tempContactInfo.email?.trim() || null
           };
           break;
         case 'social':
           endpoint = '/social-media';
-          body = { socialMedia };
+          body = { socialMedia: tempSocialMedia };
           break;
         case 'copyright':
           endpoint = '/copyright';
-          body = { content: copyright?.trim() || null };
+          body = { content: tempCopyright?.trim() || null };
           break;
+        case 'services':
+          // Handle services updates
+          await handleServicesUpdate();
+          setShowFooterModal(false);
+          setFooterModalType('');
+          setIsUpdatingFooter(false);
+          return;
         default:
           return;
       }
@@ -380,6 +416,55 @@ export default function FooterContentManagement({ showSuccessModal }) {
       );
 
       if (response && response.ok) {
+        // Invalidate SWR cache for public site to force refresh
+        try {
+          await mutate(`${baseUrl}/api/superadmin/footer`);
+        } catch (cacheError) {
+          console.warn('Failed to invalidate cache:', cacheError);
+        }
+        
+        // Reload footer data to ensure consistency with database
+        const loadFooterData = async () => {
+          try {
+            const reloadResponse = await makeAuthenticatedRequest(
+              `${baseUrl}/api/superadmin/footer`,
+              { method: 'GET' },
+              'superadmin'
+            );
+            if (reloadResponse && reloadResponse.ok) {
+              const reloadData = await reloadResponse.json();
+              if (reloadData.success && reloadData.data) {
+                setFooterData(reloadData.data);
+                setContactInfo({
+                  phone: reloadData.data.contact?.phone?.url || '',
+                  email: reloadData.data.contact?.email?.url || ''
+                });
+                setSocialMedia(reloadData.data.socialMedia || []);
+                setCopyright(reloadData.data.copyright?.content || '');
+                setServices(reloadData.data.services || []);
+              }
+            }
+          } catch (error) {
+            console.error('Error reloading footer data:', error);
+          }
+        };
+        await loadFooterData();
+        
+        // Update the main state with temp data
+        switch (footerModalType) {
+          case 'contact':
+            setContactInfo({ ...tempContactInfo });
+            setIsEditingContact(false);
+            break;
+          case 'social':
+            setSocialMedia([...tempSocialMedia]);
+            setIsEditingSocial(false);
+            break;
+          case 'copyright':
+            setCopyright(tempCopyright);
+            setIsEditingCopyright(false);
+            break;
+        }
         showSuccessModal('Footer content updated successfully! The changes will be visible on the public site immediately.');
       } else {
         // Handle 401 responses
@@ -486,8 +571,57 @@ export default function FooterContentManagement({ showSuccessModal }) {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
       
+      // Create new services (those with isNew flag or temp IDs)
+      for (const tempService of tempServices) {
+        if (tempService.isNew || (typeof tempService.id === 'string' && tempService.id.startsWith('temp-'))) {
+          const response = await makeAuthenticatedRequest(
+            `${baseUrl}/api/superadmin/footer/services`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ name: tempService.name }),
+            },
+            'superadmin'
+          );
+          
+          if (!response || !response.ok) {
+            // Handle 401 responses
+            if (response.status === 401) {
+              showSuccessModal('Authentication expired. Please log in again.');
+              return;
+            }
+            
+            // Handle CORS errors (status 0)
+            if (response.status === 0) {
+              console.error('CORS or network error detected');
+              showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
+              return;
+            }
+            
+            let errorMessage = 'Failed to create service';
+            try {
+            const errorData = await response.json();
+              errorMessage = errorData.message || errorData.error || errorMessage;
+              console.error('Create service error response:', errorData);
+            } catch (e) {
+              errorMessage = response.statusText || `Server error (${response.status})`;
+              console.error('Non-JSON error response:', response.status, response.statusText);
+            }
+            showSuccessModal(`${errorMessage} (Status: ${response.status})`);
+            return;
+          }
+        }
+      }
+      
       // Update existing services
       for (const tempService of tempServices) {
+        // Skip new services (they were just created above)
+        if (tempService.isNew || (typeof tempService.id === 'string' && tempService.id.startsWith('temp-'))) {
+          continue;
+        }
+        
         const originalService = services.find(s => s.id === tempService.id);
         if (originalService && originalService.name !== tempService.name) {
           const response = await makeAuthenticatedRequest(
@@ -570,8 +704,24 @@ export default function FooterContentManagement({ showSuccessModal }) {
         }
       }
       
+      // Reload services to get the latest data with correct IDs
+      const reloadResponse = await makeAuthenticatedRequest(
+        `${baseUrl}/api/superadmin/footer`,
+        { method: 'GET' },
+        'superadmin'
+      );
+      
+      if (reloadResponse && reloadResponse.ok) {
+        const reloadData = await reloadResponse.json();
+        if (reloadData.services) {
+          setServices(reloadData.services);
+        }
+      }
+      
+      // Invalidate SWR cache
+      await mutate(`${baseUrl}/api/superadmin/footer`);
+      
       // Update the main state
-      setServices([...tempServices]);
       setIsEditingServices(false);
       showSuccessModal('Services updated successfully! The changes will be visible on the public site immediately.');
     } catch (error) {
@@ -588,106 +738,11 @@ export default function FooterContentManagement({ showSuccessModal }) {
     }
   };
 
-  // Save edit functions
-  const handleSaveEdit = async (section) => {
-    try {
-      setIsUpdatingFooter(true);
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      let endpoint = '';
-      let body = {};
-
-      switch (section) {
-        case 'contact':
-          endpoint = '/contact';
-          body = {
-            phone: tempContactInfo.phone?.trim() || null,
-            email: tempContactInfo.email?.trim() || null
-          };
-          break;
-        case 'social':
-          endpoint = '/social-media';
-          body = { socialMedia: tempSocialMedia };
-          break;
-        case 'copyright':
-          endpoint = '/copyright';
-          body = { content: tempCopyright?.trim() || null };
-          break;
-        case 'services':
-          // Handle services updates
-          await handleServicesUpdate();
-          return;
-        default:
-          return;
-      }
-
-      const response = await makeAuthenticatedRequest(
-        `${baseUrl}/api/superadmin/footer${endpoint}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(body),
-        },
-        'superadmin'
-      );
-
-      if (response && response.ok) {
-        // Update the main state with temp data
-        switch (section) {
-          case 'contact':
-            setContactInfo({ ...tempContactInfo });
-            setIsEditingContact(false);
-            break;
-          case 'social':
-            setSocialMedia([...tempSocialMedia]);
-            setIsEditingSocial(false);
-            break;
-          case 'copyright':
-            setCopyright(tempCopyright);
-            setIsEditingCopyright(false);
-            break;
-        }
-        showSuccessModal('Footer content updated successfully! The changes will be visible on the public site immediately.');
-      } else {
-        // Handle 401 responses
-        if (response.status === 401) {
-          showSuccessModal('Authentication expired. Please log in again.');
-          return;
-        }
-        
-        // Handle CORS errors (status 0)
-        if (response.status === 0) {
-          console.error('CORS or network error detected');
-          showSuccessModal(`CORS error: Unable to connect to backend. Please check:\n1. Backend URL is correct (${baseUrl})\n2. CORS is configured on backend\n3. Backend is running`);
-          return;
-        }
-        
-        let errorMessage = 'Failed to update footer content';
-        try {
-        const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
-          console.error('Update footer error response:', errorData);
-        } catch (e) {
-          errorMessage = response.statusText || `Server error (${response.status})`;
-          console.error('Non-JSON error response:', response.status, response.statusText);
-        }
-        showSuccessModal(`${errorMessage} (Status: ${response.status})`);
-      }
-    } catch (error) {
-      console.error('Update footer error:', error);
-      let errorMessage = 'Failed to update footer content';
-      
-      if (error.message) {
-        errorMessage = error.message;
-      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
-      }
-      
-      showSuccessModal(errorMessage);
-    } finally {
-      setIsUpdatingFooter(false);
-    }
+  // Save edit functions - show confirmation modal instead of saving directly
+  const handleSaveEdit = (section) => {
+    // Show confirmation modal
+    setFooterModalType(section);
+    setShowFooterModal(true);
   };
 
 
@@ -948,10 +1003,7 @@ export default function FooterContentManagement({ showSuccessModal }) {
                     )}
                     {isEditingServices && (
                       <button
-                        onClick={() => {
-                          const newTempServices = tempServices.filter(s => s.id !== service.id);
-                          setTempServices(newTempServices);
-                        }}
+                        onClick={() => handleDeleteService(service)}
                         className={styles.deleteServiceBtn}
                         disabled={isUpdatingFooter || isDeleting}
                       >

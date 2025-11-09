@@ -218,7 +218,7 @@ export const useProgramForm = (mode = 'create', program = null) => {
       // Create mode: image is required
       if (!formData.image) {
         newErrors.image = ERROR_MESSAGES.image.required;
-      } else if (formData.image) {
+      } else {
         const imageError = validateImage(formData.image, VALIDATION_RULES.image);
         if (imageError) {
           newErrors.image = imageError;

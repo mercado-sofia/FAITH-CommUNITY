@@ -114,31 +114,32 @@ export const getPendingSubmissions = async (req, res) => {
           previousData = safeParseJSON(submission.previous_data, {});
           proposedData = safeParseJSON(submission.proposed_data, {});
         
-        // For program submissions, enrich collaborator data with organization information
-        if (submission.section === 'programs' && proposedData.collaborators && Array.isArray(proposedData.collaborators)) {
-          try {
-            const collaborators = proposedData.collaborators;
-            if (collaborators.length > 0) {
-              // Check if collaborators are stored as IDs (numbers) or objects
-              const firstCollaborator = collaborators[0];
-              if (typeof firstCollaborator === 'number' || (typeof firstCollaborator === 'string' && !isNaN(firstCollaborator))) {
-                // Collaborators are stored as IDs, fetch full details
-                const placeholders = collaborators.map(() => '?').join(',');
-                const [collaboratorRows] = await db.execute(`
-                  SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
-                  FROM admins a
-                  LEFT JOIN organizations o ON a.organization_id = o.id
-                  WHERE a.id IN (${placeholders})
-                `, collaborators);
-                
-                // Replace collaborator IDs with full collaborator objects
-                proposedData.collaborators = collaboratorRows;
+          // For program submissions, enrich collaborator data with organization information
+          if (submission.section === 'programs' && proposedData.collaborators && Array.isArray(proposedData.collaborators)) {
+            try {
+              const collaborators = proposedData.collaborators;
+              if (collaborators.length > 0) {
+                // Check if collaborators are stored as IDs (numbers) or objects
+                const firstCollaborator = collaborators[0];
+                if (typeof firstCollaborator === 'number' || (typeof firstCollaborator === 'string' && !isNaN(firstCollaborator))) {
+                  // Collaborators are stored as IDs, fetch full details
+                  const placeholders = collaborators.map(() => '?').join(',');
+                  const [collaboratorRows] = await db.execute(`
+                    SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
+                    FROM admins a
+                    LEFT JOIN organizations o ON a.organization_id = o.id
+                    WHERE a.id IN (${placeholders})
+                  `, collaborators);
+                  
+                  // Replace collaborator IDs with full collaborator objects
+                  proposedData.collaborators = collaboratorRows;
+                }
+                // If collaborators are already objects, keep them as is
               }
-              // If collaborators are already objects, keep them as is
+            } catch (collabError) {
+              logWarn('Failed to enrich collaborator data', { error: collabError.message, submissionId: submission.id });
+              // Keep original collaborator data if fetch fails
             }
-          } catch (collabError) {
-            logWarn('Failed to enrich collaborator data', { error: collabError.message, submissionId: submission.id });
-            // Keep original collaborator data if fetch fails
           }
         }
         

@@ -1,12 +1,12 @@
 import styles from './aboutMore.module.css';
 import Image from "next/image";
 import { FaCheck } from 'react-icons/fa';
-import { usePublicAboutUs, usePublicSiteName } from '../../../hooks/usePublicData';
+import { usePublicAboutUs } from '../../../hooks/usePublicData';
 import { Loader } from '@/components';
+import { getImageUrl } from '@/utils/uploadPaths';
 
 export default function AboutMore() {
-  const { aboutUsData, isLoading, error } = usePublicAboutUs();
-  const { siteNameData } = usePublicSiteName();
+  const { aboutUsData, isLoading } = usePublicAboutUs();
 
   if (isLoading) {
     return (
@@ -20,16 +20,16 @@ export default function AboutMore() {
     );
   }
 
-  if (error) {
-    // Handle error silently in production
-  }
-
   return (
     <section className={styles.aboutMoreSection}>
       <div className={styles.aboutMoreWrapper}>
         <div className={styles.aboutMoreImage}>
         <Image 
-          src={aboutUsData?.image_url || "/samples/sample1.jpg"} 
+          src={(() => {
+            if (!aboutUsData?.image_url) return "/samples/sample1.jpg";
+            const imageUrl = getImageUrl(aboutUsData.image_url, 'aboutus', 'images');
+            return imageUrl === 'IMAGE_UNAVAILABLE' ? "/samples/sample1.jpg" : imageUrl;
+          })()}
           alt="About Image"
           width={500}
           height={400}
@@ -38,7 +38,7 @@ export default function AboutMore() {
         </div>
 
         <div className={styles.aboutMoreContent}>
-          <h4 className={styles.aboutMoreSubtitle}>About Us{siteNameData?.site_name ? ` ${siteNameData.site_name}` : ''}</h4>
+          <h4 className={styles.aboutMoreSubtitle}>About Us</h4>
           <h2 className={styles.aboutMoreTitle}>
             About Us
           </h2>

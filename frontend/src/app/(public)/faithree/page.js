@@ -181,7 +181,7 @@ function FAITHreePage() {
             </div>
             
             
-            {/* Floating ground with tree */}
+            {/* 3D Tree Model */}
             <div 
               className={styles.floatingGround}
               style={{
@@ -189,21 +189,8 @@ function FAITHreePage() {
                 transition: prefersReducedMotion ? 'none' : 'transform 0.1s ease-out'
               }}
             >
-              <div className={styles.groundPlatform}>
-                <svg className={styles.groundSvg} viewBox="0 0 200 60" preserveAspectRatio="none" aria-hidden="true">
-                  {/* Ground/grass platform */}
-                  <ellipse cx="100" cy="50" rx="80" ry="10" fill="#4CAF50" opacity="0.9"/>
-                  <ellipse cx="100" cy="50" rx="70" ry="8" fill="#66BB6A" opacity="0.8"/>
-                  
-                  {/* Grass texture */}
-                  <path d="M 20 50 Q 25 45 30 50 T 40 50 T 50 50 T 60 50 T 70 50 T 80 50 T 90 50 T 100 50 T 110 50 T 120 50 T 130 50 T 140 50 T 150 50 T 160 50 T 170 50 T 180 50" 
-                        stroke="#2E7D32" strokeWidth="1" fill="none" opacity="0.6"/>
-                </svg>
-                
-                {/* 3D Tree Model in center */}
-                <div className={styles.tree3D}>
-                  <TreeModel theme={theme} treePosition={[0, -1.2, 0]} />
-                </div>
+              <div className={styles.tree3D}>
+                <TreeModel theme={theme} treePosition={[0, -1.2, 0]} />
               </div>
             </div>
           </div>

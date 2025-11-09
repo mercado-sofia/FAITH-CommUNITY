@@ -7,12 +7,6 @@ const router = express.Router();
 // SECURITY FIX: All notification routes require superadmin authentication
 router.use(verifySuperadminToken);
 
-// Test endpoint
-router.get('/test/:superAdminId', SuperAdminNotificationController.testNotifications);
-
-// Create test notification
-router.post('/test/:superAdminId', SuperAdminNotificationController.createTestNotification);
-
 // Get all notifications for a superadmin
 router.get('/:superAdminId', SuperAdminNotificationController.getNotifications);
 

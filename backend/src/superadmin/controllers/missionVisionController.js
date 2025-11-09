@@ -25,8 +25,6 @@ export const getMissionVision = async (req, res) => {
        ORDER BY LOWER(mv1.type)`
     );
     
-    console.log('Raw mission/vision results:', results); // Debug log
-    
     // Ensure we return exactly one Mission and one Vision
     // Handle both lowercase and capitalized types
     const mission = results.find(r => 
@@ -35,9 +33,6 @@ export const getMissionVision = async (req, res) => {
     const vision = results.find(r => 
       r.type?.toLowerCase() === 'vision' || r.type === 'Vision' || r.type === 'vision'
     );
-    
-    console.log('Found mission:', mission); // Debug log
-    console.log('Found vision:', vision); // Debug log
     
     const response = [];
     if (mission) {
@@ -54,8 +49,6 @@ export const getMissionVision = async (req, res) => {
         content: vision.content || null // Ensure content is included
       });
     }
-    
-    console.log('Sending mission/vision response:', response); // Debug log
     
     res.status(200).json(response);
   } catch (err) {

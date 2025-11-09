@@ -30,11 +30,6 @@ const upload = multer({
   }
 });
 
-// Test endpoint to verify routes are working
-router.get('/test', (req, res) => {
-  res.json({ success: true, message: 'About Us routes are working' });
-});
-
 // Public route for getting about us data (no authentication required)
 router.get('/public', getAboutUs);
 

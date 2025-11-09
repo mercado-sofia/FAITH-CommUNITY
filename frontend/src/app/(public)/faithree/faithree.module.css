@@ -524,41 +524,6 @@
   }
 }
 
-.groundPlatform {
-  position: relative;
-  width: 300px;
-  height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: visible;
-}
-
-.groundSvg {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
-}
-
-.tree {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 5;
-  animation: gentleSway 3s ease-in-out infinite alternate;
-  display: none; /* Hide the old SVG tree */
-}
-
-.treeSvg {
-  width: 80px;
-  height: 100px;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-}
-
 /* 3D Tree Model Container */
 .tree3D {
   position: absolute;
@@ -572,14 +537,6 @@
   overflow: visible;
 }
 
-@keyframes gentleSway {
-  0% {
-    transform: translateX(-50%) rotate(-1deg);
-  }
-  100% {
-    transform: translateX(-50%) rotate(1deg);
-  }
-}
 
 
 /* Responsive design */
@@ -597,16 +554,6 @@
   .themeIcon {
     width: 20px;
     height: 20px;
-  }
-  
-  .groundPlatform {
-    width: 250px;
-    height: 70px;
-  }
-  
-  .treeSvg {
-    width: 60px;
-    height: 80px;
   }
   
   .tree3D {
@@ -664,16 +611,6 @@
     top: 0.5rem;
     left: 0;
     height: calc(100% - 1rem);
-  }
-  
-  .groundPlatform {
-    width: 200px;
-    height: 60px;
-  }
-  
-  .treeSvg {
-    width: 50px;
-    height: 70px;
   }
   
   .tree3D {

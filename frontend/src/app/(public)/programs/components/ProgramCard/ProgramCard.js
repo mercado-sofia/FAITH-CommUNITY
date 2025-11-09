@@ -373,7 +373,8 @@ export default function ProgramCard({ project }) {
                       strokeLinejoin="round"
                     />
                   </svg>
-                  <span>Collaborative</span>
+                  <span className={styles.collaborationBadgeTextDesktop}>Collaborative</span>
+                  <span className={styles.collaborationBadgeTextMobile}>Collab</span>
                 </div>
               </Link>
             </div>

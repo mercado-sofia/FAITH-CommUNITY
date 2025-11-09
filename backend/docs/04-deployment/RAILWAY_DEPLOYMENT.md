@@ -82,11 +82,20 @@ ALLOWED_ORIGINS=https://your-frontend-domain.com
 
 ```env
 # SMTP Configuration (for email features)
+# For Gmail:
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-app-password
 MAIL_FROM=FAITH CommUNITY <your-email@gmail.com>
+
+# For SendGrid (Production):
+# ⚠️ IMPORTANT: Use port 587, NOT 465 (port 465 may be blocked in deployment environments)
+SMTP_HOST=smtp.sendgrid.net
+SMTP_PORT=587
+SMTP_USER=apikey
+SMTP_PASS=your-sendgrid-api-key
+MAIL_FROM=FAITH CommUNITY <noreply@yourdomain.com>
 
 # Cloudinary (for file uploads)
 CLOUDINARY_CLOUD_NAME=your-cloud-name

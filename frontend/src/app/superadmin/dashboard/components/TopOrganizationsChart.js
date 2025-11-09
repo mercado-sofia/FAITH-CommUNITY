@@ -54,22 +54,9 @@ export default function TopOrganizationsChart() {
     );
   }
 
-  // Show error message only if there's an actual API error
-  if (isError) {
-    return (
-      <div className={styles.chartCard}>
-        <div className={styles.chartHeader}>
-          <h3 className={styles.chartTitle}>Top Organizations by Program Count</h3>
-        </div>
-        <div className={styles.emptyState}>
-          <p>Failed to load chart data. Please try again later.</p>
-        </div>
-      </div>
-    );
-  }
-
   // Show empty state if API succeeded but returned no data (or data filtered to empty)
-  if (!chartData || chartData.length === 0) {
+  // Also handle errors gracefully by showing empty state instead of error message
+  if (isError || !chartData || chartData.length === 0) {
     return (
       <div className={styles.chartCard}>
         <div className={styles.chartHeader}>

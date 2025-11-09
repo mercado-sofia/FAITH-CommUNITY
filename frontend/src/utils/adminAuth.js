@@ -26,9 +26,12 @@ export const clearAuthAndRedirect = (userType = 'admin') => {
 export const isTokenExpired = (token) => {
   if (!token) return true;
   
-  // Reject hardcoded tokens in production
+  // Handle hardcoded superadmin token
+  // Allow in development, reject in production (backend also rejects in production)
   if (token === "superadmin") {
-    return true; // Always consider hardcoded tokens as expired/invalid
+    // In production, reject hardcoded tokens (backend will also reject)
+    // In development, allow them (backend allows them)
+    return process.env.NODE_ENV === 'production';
   }
   
   try {

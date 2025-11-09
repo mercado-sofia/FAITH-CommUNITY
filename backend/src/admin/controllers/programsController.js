@@ -636,10 +636,42 @@ export const deleteProgramSubmission = async (req, res) => {
   }
 };
 
+// Helper function to format date for MySQL (YYYY-MM-DD)
+const formatDateForMySQL = (dateValue) => {
+  if (!dateValue) return null;
+  if (typeof dateValue === 'string') {
+    // If it's already in YYYY-MM-DD format, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+      return dateValue;
+    }
+    // If it's an ISO string, extract the date part
+    try {
+      const date = new Date(dateValue);
+      if (isNaN(date.getTime())) return null;
+      return date.toISOString().split('T')[0];
+    } catch (e) {
+      return null;
+    }
+  }
+  return null;
+};
+
 // Update an approved program (admin only)
 export const updateProgram = async (req, res) => {
   const { id } = req.params;
-  const { title, description, category, status, image, additionalImages, event_start_date, event_end_date, multiple_dates, collaborators, accepts_volunteers, submitted_by_name, submitted_by_role } = req.body;
+  let { title, description, category, status, image, additionalImages, event_start_date, event_end_date, multiple_dates, collaborators, accepts_volunteers, submitted_by_name, submitted_by_role } = req.body;
+
+  // Format dates for MySQL
+  event_start_date = formatDateForMySQL(event_start_date);
+  event_end_date = formatDateForMySQL(event_end_date);
+  
+  // Format multiple dates if provided
+  if (multiple_dates && Array.isArray(multiple_dates)) {
+    multiple_dates = multiple_dates.map(date => formatDateForMySQL(date)).filter(date => date !== null);
+    if (multiple_dates.length === 0) {
+      multiple_dates = null;
+    }
+  }
 
   // Update program request received
 

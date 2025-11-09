@@ -7,6 +7,7 @@ import { LoginAttemptTracker } from "../../utils/loginAttemptTracker.js"
 import { getClientIpAddress } from "../../utils/ipAddressHelper.js"
 import { generateTwoFASecret, verifyTwoFAToken, generateTwoFAQRCode, generateSimpleQRCode, validateTwoFATokenFormat } from "../../utils/twoFA.js"
 import { logSuperadminAction } from "../../utils/audit.js"
+import { logError } from "../../utils/logger.js"
 
 // JWT secret via env
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
@@ -348,7 +349,19 @@ export const verifySuperadminEmailChangeOTP = async (req, res) => {
     });
 
   } catch (err) {
-    res.status(500).json({ error: "Internal server error" })
+    // Log the actual error for debugging
+    logError('Error verifying superadmin email change OTP', err, {
+      context: 'superadmin_auth_controller',
+      superadminId: id,
+      errorStack: err.stack
+    });
+    
+    // Return error message (hide details in production for security)
+    const errorMessage = process.env.NODE_ENV === 'development' 
+      ? err.message 
+      : 'Internal server error';
+    
+    res.status(500).json({ error: errorMessage });
   }
 }
 

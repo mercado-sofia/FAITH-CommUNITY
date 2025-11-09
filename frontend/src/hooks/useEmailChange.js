@@ -152,10 +152,31 @@ export const useEmailChange = (userType) => {
         return;
       }
 
-      const data = await response.json();
+      // Read response as text first, then parse as JSON
+      // This allows us to handle both JSON and non-JSON responses gracefully
+      const responseText = await response.text();
+      let data;
+      
+      // Try to parse as JSON
+      try {
+        data = JSON.parse(responseText);
+      } catch (jsonError) {
+        // Response is not valid JSON
+        console.error('Non-JSON response received:', responseText);
+        
+        if (!response.ok) {
+          // Extract error message from text response
+          const errorMsg = responseText.substring(0, 200) || `Server error (${response.status})`;
+          throw new Error(errorMsg);
+        }
+        
+        throw new Error('Invalid response format from server. Please try again.');
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || data.message || 'Failed to verify OTP');
+        // Extract error message from response
+        const errorMsg = data?.error || data?.message || `Server error (${response.status})`;
+        throw new Error(errorMsg);
       }
 
       // Check for explicit error responses
@@ -173,11 +194,29 @@ export const useEmailChange = (userType) => {
 
       return data;
     } catch (err) {
-      const errorMessage = err.message === 'No authentication token found' 
-        ? 'Your session has expired. Please log in again.' 
-        : err.message;
+      // Log the full error for debugging in production
+      if (process.env.NODE_ENV === 'production') {
+        console.error('Email verification error:', err);
+      }
       
-      if (errorMessage.includes('session has expired') || errorMessage.includes('token')) {
+      let errorMessage = err.message;
+      
+      // Handle network errors
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      }
+      
+      // Handle JSON parsing errors
+      if (err instanceof SyntaxError) {
+        errorMessage = 'Invalid response from server. Please try again.';
+      }
+      
+      // Handle authentication errors
+      if (errorMessage === 'No authentication token found' || 
+          errorMessage.includes('session has expired') || 
+          errorMessage.includes('token')) {
+        errorMessage = 'Your session has expired. Please log in again.';
+        
         if (userType === 'public') {
           // For public users, use centralized cleanup
           const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
@@ -188,6 +227,11 @@ export const useEmailChange = (userType) => {
           clearAuthAndRedirect(userType);
         }
         return;
+      }
+      
+      // If error message is empty or generic, provide a more helpful message
+      if (!errorMessage || errorMessage === 'Failed to verify OTP') {
+        errorMessage = 'Failed to verify code. Please check the code and try again.';
       }
       
       setError(errorMessage);

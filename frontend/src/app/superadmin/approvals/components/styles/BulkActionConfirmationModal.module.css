@@ -59,7 +59,7 @@
 .title {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #111827;
+  color: #000;
   margin: 0;
   flex: 1;
 }
@@ -103,7 +103,7 @@
 }
 
 .warningIcon {
-  color: #f59e0b;
+  color: #000;
   font-size: 20px;
   flex-shrink: 0;
   margin-top: 2px;
@@ -116,7 +116,7 @@
 .message {
   font-size: 1rem;
   font-weight: 500;
-  color: #111827;
+  color: #000;
   margin: 0 0 0.5rem 0;
   line-height: 1.5;
 }
@@ -231,8 +231,6 @@
 
 .approveBtn:hover:not(:disabled) {
   background: #059669;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .rejectBtn {
@@ -241,8 +239,6 @@
 
 .rejectBtn:hover:not(:disabled) {
   background: #dc2626;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .deleteBtn {

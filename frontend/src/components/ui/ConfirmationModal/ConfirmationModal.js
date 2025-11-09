@@ -12,9 +12,12 @@ export default function ConfirmationModal({
   actionType = 'delete', // 'delete', 'deactivate', 'cancel', 'update', 'activate'
   onConfirm,
   onCancel,
-  isDeleting = false,
+  isDeleting = false, // Legacy prop name, kept for backward compatibility
+  isLoading = false, // Generic loading state prop
   customMessage = null
 }) {
+  // Use isLoading if provided, otherwise fall back to isDeleting for backward compatibility
+  const loading = isLoading || isDeleting
   // Lock body scroll when modal is open
   useEffect(() => {
     // Check for document to avoid SSR errors
@@ -38,27 +41,38 @@ export default function ConfirmationModal({
 
   // Get action-specific content
   const getActionContent = () => {
+    const getButtonText = (baseText) => {
+      if (loading) {
+        // Add "ing..." to the button text when loading
+        if (baseText.endsWith('e')) {
+          return baseText.slice(0, -1) + 'ing...'
+        }
+        return baseText + 'ing...'
+      }
+      return baseText
+    }
+
     switch (actionType) {
       case 'activate':
         return {
           icon: <FiUserCheck />,
           title: `Activate Account${itemName && /\d/.test(itemName) ? `: ${itemName}` : ''}`,
           message: `Are you sure you want to activate this account? The account will become active and available for logins.`,
-          buttonText: 'Activate'
+          buttonText: getButtonText('Activate')
         }
       case 'deactivate':
         return {
           icon: <FiUserX />,
           title: `Deactivate Account${itemName && /\d/.test(itemName) ? `: ${itemName}` : ''}`,
           message: `Are you sure you want to deactivate this account? The account will no longer be active and won't be available for logins.`,
-          buttonText: 'Deactivate'
+          buttonText: getButtonText('Deactivate')
         }
       case 'update':
         return {
           icon: <FiEdit3 />,
           title: `Update ${capitalizedItemType}${itemName ? `: "${itemName}"` : ''}`,
           message: customMessage || `Are you sure you want to update this ${itemType}?`,
-          buttonText: 'Update'
+          buttonText: getButtonText('Update')
         }
       case 'cancel':
         return {
@@ -88,14 +102,14 @@ export default function ConfirmationModal({
             }
             return '';
           })()}? This action cannot be undone.`,
-          buttonText: 'Cancel'
+          buttonText: getButtonText('Cancel')
         }
       case 'decline':
         return {
           icon: <FiX />,
           title: `Decline ${capitalizedItemType}${itemName ? `: "${itemName}"` : ''}`,
           message: customMessage || `Are you sure you want to decline this ${itemType}?`,
-          buttonText: 'Decline'
+          buttonText: getButtonText('Decline')
         }
       default: // 'delete'
         return {
@@ -128,7 +142,7 @@ export default function ConfirmationModal({
             }
             return '';
           })()}? This action cannot be undone.`,
-          buttonText: 'Delete'
+          buttonText: getButtonText('Delete')
         }
     }
   }
@@ -154,7 +168,7 @@ export default function ConfirmationModal({
           <button 
             className={styles.closeBtn}
             onClick={onCancel}
-            disabled={isDeleting}
+            disabled={loading}
           >
             <FiX />
           </button>
@@ -178,7 +192,7 @@ export default function ConfirmationModal({
               }
             }}
             className={styles.cancelBtn}
-            disabled={isDeleting}
+            disabled={loading}
           >
             Cancel
           </button>
@@ -196,10 +210,10 @@ export default function ConfirmationModal({
               actionType === 'decline' ? styles.declineBtn :
               styles.deleteBtn
             }
-            disabled={isDeleting}
+            disabled={loading}
           >
             {actionContent.buttonText}
-            {isDeleting ? <FaSpinner className={styles.spinner} /> : null}
+            {loading ? <FaSpinner className={styles.spinner} /> : null}
           </button>
         </div>
       </div>

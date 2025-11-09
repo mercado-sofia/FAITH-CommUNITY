@@ -16,6 +16,7 @@ import db from '../../database.js';
 import { LoginAttemptTracker } from '../../utils/loginAttemptTracker.js';
 import { SecurityMonitoring } from '../../utils/securityMonitoring.js';
 import { getClientIpAddress } from '../../utils/ipAddressHelper.js';
+import { logError } from '../../utils/logger.js';
 
 // User registration
 export const registerUser = async (req, res) => {
@@ -723,7 +724,19 @@ export const verifyEmailChangeOTP = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    // Log the actual error for debugging
+    logError('Error verifying user email change OTP', error, {
+      context: 'user_controller',
+      userId: req.user?.id,
+      errorStack: error.stack
+    });
+    
+    // Return error message (hide details in production for security)
+    const errorMessage = process.env.NODE_ENV === 'development' 
+      ? error.message 
+      : 'Internal server error';
+    
+    res.status(500).json({ error: errorMessage });
   }
 };
 

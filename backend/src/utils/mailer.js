@@ -369,11 +369,28 @@ export async function sendMail({ to, subject, html, text, attachments } = {}, re
   // Use REST API if explicitly enabled (recommended when SMTP is blocked)
   const useSendGridAPI = process.env.USE_SENDGRID_API === 'true';
   
+  // Debug logging in production to help troubleshoot
+  if (process.env.NODE_ENV === 'production') {
+    console.log('📧 Email send request:', {
+      useSendGridAPI,
+      hasApiKey: !!(process.env.SMTP_PASS?.trim() || process.env.SENDGRID_API_KEY?.trim()),
+      hasMailFrom: !!process.env.MAIL_FROM,
+      to: to?.substring(0, 10) + '...' // Only log first 10 chars for privacy
+    });
+  }
+  
   if (useSendGridAPI) {
     // Use SendGrid SDK instead of SMTP
     const apiKey = process.env.SMTP_PASS?.trim() || process.env.SENDGRID_API_KEY?.trim();
     if (!apiKey) {
-      throw new Error('SMTP_PASS or SENDGRID_API_KEY (SendGrid API key) is required when using SendGrid API');
+      const error = new Error('SMTP_PASS or SENDGRID_API_KEY (SendGrid API key) is required when using SendGrid API');
+      error.code = 'SENDGRID_API_KEY_MISSING';
+      console.error('❌ SendGrid API key missing:', {
+        hasSMTP_PASS: !!process.env.SMTP_PASS,
+        hasSENDGRID_API_KEY: !!process.env.SENDGRID_API_KEY,
+        USE_SENDGRID_API: process.env.USE_SENDGRID_API
+      });
+      throw error;
     }
 
     const maxRetries = retries;

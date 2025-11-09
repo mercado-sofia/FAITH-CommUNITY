@@ -257,9 +257,12 @@ export default function InvitationsTable({
           <tbody>
             {invitations.length === 0 ? (
               <tr>
-                <td colSpan="7" className={styles.emptyState}>
-                  <div className={styles.emptyContent}>
-                    <p>No invitations have been sent yet.</p>
+                <td colSpan="7" className={styles.emptyStateCell}>
+                  <div className={styles.emptyState}>
+                    <h3 className={styles.emptyStateTitle}>No invitations found</h3>
+                    <p className={styles.emptyStateText}>
+                      No invitations found matching your current filters. New invitations will appear here when you send them.
+                    </p>
                   </div>
                 </td>
               </tr>

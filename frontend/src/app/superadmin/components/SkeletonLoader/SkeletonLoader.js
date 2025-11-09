@@ -266,6 +266,107 @@ export default function SkeletonLoader({ type = 'section', count = 1, className 
           </div>
         )
       
+      case 'faqs':
+        return (
+          <div className={styles.faqsSkeleton}>
+            <div className={styles.headerSkeleton}>
+              <div className={styles.titleSkeleton} />
+            </div>
+            <div className={styles.tableSkeleton}>
+              <div className={styles.faqsTableHeaderSkeleton}>
+                <div className={styles.headerCellSkeleton} />
+                <div className={styles.headerCellSkeleton} />
+                <div className={styles.headerCellSkeleton} />
+                <div className={styles.headerCellSkeleton} />
+                <div className={styles.headerCellSkeleton} />
+                <div className={styles.headerCellSkeleton} />
+              </div>
+              {Array.from({ length: count }).map((_, index) => (
+                <div key={index} className={styles.faqsTableRowSkeleton}>
+                  <div className={styles.cellSkeleton}>
+                    <div className={styles.numberSkeleton} />
+                  </div>
+                  <div className={styles.cellSkeleton}>
+                    <div className={styles.checkboxSkeleton} />
+                  </div>
+                  <div className={styles.cellSkeleton}>
+                    <div className={styles.textSkeleton} />
+                  </div>
+                  <div className={styles.cellSkeleton}>
+                    <div className={styles.textSkeleton} style={{ width: '80%' }} />
+                  </div>
+                  <div className={styles.cellSkeleton}>
+                    <div className={styles.dateTimeSkeleton}>
+                      <div className={styles.dateSkeleton} />
+                      <div className={styles.timeSkeleton} />
+                    </div>
+                  </div>
+                  <div className={styles.cellSkeleton}>
+                    <div className={styles.actionButtonsSkeleton}>
+                      <div className={styles.actionButtonSkeleton} />
+                      <div className={styles.actionButtonSkeleton} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      
+      case 'programs':
+        return (
+          <div className={styles.programsSkeleton}>
+            <div className={styles.headerSkeleton}>
+              <div className={styles.titleSkeleton} />
+            </div>
+            <div className={styles.programsGridSkeleton}>
+              {Array.from({ length: count }).map((_, index) => (
+                <div key={index} className={styles.programCardSkeleton}>
+                  <div className={styles.cardImageSkeleton} />
+                  <div className={styles.cardContentSkeleton}>
+                    <div className={styles.cardTitleSkeleton} />
+                    <div className={styles.cardOrgSkeleton} />
+                    <div className={styles.cardDescriptionSkeleton} />
+                    <div className={styles.cardDescriptionSkeleton} style={{ width: '70%' }} />
+                    <div className={styles.cardFooterSkeleton}>
+                      <div className={styles.badgeSkeleton} />
+                      <div className={styles.dateSkeleton} style={{ width: '100px' }} />
+                    </div>
+                    <div className={styles.cardButtonSkeleton} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      
+      case 'highlights':
+        return (
+          <div className={styles.highlightsSkeleton}>
+            <div className={styles.headerSkeleton}>
+              <div className={styles.titleSkeleton} />
+            </div>
+            <div className={styles.highlightsGridSkeleton}>
+              {Array.from({ length: count }).map((_, index) => (
+                <div key={index} className={styles.highlightCardSkeleton}>
+                  <div className={styles.cardImageSkeleton} />
+                  <div className={styles.cardContentSkeleton}>
+                    <div className={styles.cardTitleSkeleton} />
+                    <div className={styles.cardOrgSkeleton} />
+                    <div className={styles.cardDescriptionSkeleton} />
+                    <div className={styles.cardDescriptionSkeleton} style={{ width: '70%' }} />
+                    <div className={styles.cardFooterSkeleton}>
+                      <div className={styles.badgeSkeleton} />
+                      <div className={styles.dateSkeleton} style={{ width: '100px' }} />
+                    </div>
+                    <div className={styles.cardButtonSkeleton} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      
       case 'table':
         return (
           <div className={styles.tableSkeleton}>

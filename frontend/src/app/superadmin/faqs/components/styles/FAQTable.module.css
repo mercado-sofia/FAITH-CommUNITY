@@ -265,38 +265,30 @@
   border-color: #dc2626;
 }
 
-/* Empty State */
+/* Empty State Cell */
+.emptyStateCell {
+  text-align: center;
+  padding: 3rem 2rem !important;
+  border: none !important;
+  background-color: #fff;
+}
+
 .emptyState {
   text-align: center;
-  padding: 3rem 2rem;
   color: #6b7280;
 }
 
-.emptyContent {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-.emptyIcon {
-  font-size: 3rem;
-  margin-bottom: 0.25rem;
-  opacity: 0.5;
-  color: #6b7280;
-}
-
-.emptyContent h3 {
-  font-size: 15px;
-  font-weight: 500;
-  color: #6b7280;
-  margin: 0;
+.emptyStateTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.emptyContent p {
-  font-size: 0.875rem;
+.emptyStateText {
+  font-size: 13px;
   margin: 0;
   line-height: 1.5;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #6b7280;
 }

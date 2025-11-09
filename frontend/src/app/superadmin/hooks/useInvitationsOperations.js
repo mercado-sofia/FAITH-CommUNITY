@@ -43,7 +43,8 @@ export const useInvitationsOperations = () => {
       showSuccessModal('Invitation sent successfully!')
       if (refetchCallback) refetchCallback()
     } catch (error) {
-      const errorMessage = error?.data?.error || error?.message || 'Failed to send invitation'
+      // Use detailed error message if available, otherwise fall back to generic message
+      const errorMessage = error?.data?.error || error?.data?.details || error?.message || 'Failed to send invitation'
       throw new Error(errorMessage)
     }
   }, [sendInvitation, showSuccessModal])

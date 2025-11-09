@@ -7,12 +7,18 @@ const getApiBaseUrl = () => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   
   // In production, require the environment variable
+  // Note: NEXT_PUBLIC_* variables must be set at build time in Next.js
   if (process.env.NODE_ENV === 'production') {
     if (!apiUrl) {
-      throw new Error(
-        'NEXT_PUBLIC_API_URL environment variable is required in production. ' +
-        'Please set it in your deployment configuration.'
+      // Log error but don't throw to allow app to load
+      // API calls will fail, but at least the app won't crash
+      console.error(
+        '⚠️ CRITICAL: NEXT_PUBLIC_API_URL environment variable is not set in production. ' +
+        'Please set it in your deployment configuration before building. ' +
+        'API calls will fail until this is fixed.'
       );
+      // Return empty string - API calls will fail but app will load
+      return '';
     }
     return apiUrl;
   }

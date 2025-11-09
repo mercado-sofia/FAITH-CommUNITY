@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react';
 import { HiOutlineDotsHorizontal } from "react-icons/hi"
-import { FiEye } from 'react-icons/fi';
 import { CgOptions } from "react-icons/cg";
 import { FaUser } from "react-icons/fa";
 import Image from "next/image";
@@ -110,7 +109,7 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
 
   useEffect(() => {
     function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (showOptions && dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowOptions(false);
       }
       
@@ -122,11 +121,13 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showDropdown]);
+    if (showOptions || showDropdown !== null) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showOptions, showDropdown]);
 
   const filteredList =
     filter === 'All'
@@ -157,7 +158,6 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
                 </button>
               </div>
               <Link href="/admin/volunteers" className={styles.iconButton}>
-                <FiEye className={styles.icon} />
                 View All
               </Link>
             </div>
@@ -222,7 +222,6 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
                 </button>
               </div>
               <Link href="/admin/volunteers" className={styles.iconButton}>
-                <FiEye className={styles.icon} />
                 View All
               </Link>
             </div>
@@ -245,7 +244,11 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
               <div className={styles.dropdownWrapper} ref={dropdownRef}>
                 <button
                   className={styles.iconButton}
-                  onClick={() => setShowOptions((prev) => !prev)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowOptions((prev) => !prev);
+                  }}
+                  type="button"
                 >
                   <CgOptions className={styles.icon} />
                   Filter
@@ -258,7 +261,10 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
                         className={`${styles.dropdownItem} ${
                           filter === status ? styles.active : ''
                         }`}
-                        onClick={() => handleFilterChange(status)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFilterChange(status);
+                        }}
                       >
                         {status}
                       </li>
@@ -268,7 +274,6 @@ export default function RecentApplicationsTable({ volunteers = [], onStatusUpdat
               </div>
 
               <Link href="/admin/volunteers" className={styles.iconButton}>
-                <FiEye className={styles.icon} />
                 View All
               </Link>
             </div>

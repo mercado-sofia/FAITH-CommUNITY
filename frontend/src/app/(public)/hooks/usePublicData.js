@@ -46,6 +46,44 @@ export const usePublicOrganizationData = (orgID) => {
     });
   };
 
+  // Helper function to normalize advocacy/competency data
+  const normalizeTextData = (value) => {
+    if (!value) return ""
+    
+    // If it's already a string, check if it's a JSON string
+    if (typeof value === 'string') {
+      // Try to parse as JSON
+      try {
+        const parsed = JSON.parse(value)
+        // If parsed result is an object (like {}), return empty string
+        if (typeof parsed === 'object' && parsed !== null && Object.keys(parsed).length === 0) {
+          return ""
+        }
+        // If parsed result is a string, return it
+        if (typeof parsed === 'string') {
+          return parsed
+        }
+        // Otherwise return empty string for other object types
+        return ""
+      } catch (e) {
+        // Not JSON, return as-is
+        return value
+      }
+    }
+    
+    // If it's an object, check if it's empty
+    if (typeof value === 'object' && value !== null) {
+      if (Object.keys(value).length === 0) {
+        return ""
+      }
+      // If object has content, try to stringify (shouldn't happen, but handle it)
+      return JSON.stringify(value)
+    }
+    
+    // For other types, convert to string
+    return String(value)
+  }
+
   // Transform data for public consumption with fallbacks
   const organizationData = data?.data ? {
     name: data.data.orgName || 'Organization Not Found',
@@ -54,8 +92,8 @@ export const usePublicOrganizationData = (orgID) => {
     facebook: data.data.facebook || '',
     email: data.data.email || '',
     logo: data.data.logo || '/assets/icons/placeholder.svg',
-    advocacies: data.data.advocacies || '', // Backend returns string, not array
-    competencies: data.data.competencies || '', // Backend returns string, not array
+    advocacies: normalizeTextData(data.data.advocacies) || '', // Normalize to string
+    competencies: normalizeTextData(data.data.competencies) || '', // Normalize to string
     heads: sortHeadsByOrder(data.data.heads || []), // Apply same sorting as admin section
     featuredProjects: data.data.featuredProjects || [],
   } : null;

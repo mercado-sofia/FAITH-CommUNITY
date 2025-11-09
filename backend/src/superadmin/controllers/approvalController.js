@@ -333,8 +333,22 @@ export const approveSubmission = async (req, res) => {
         [orgId]
       );
       
-      // For advocacy, data is already a string from the parsed JSON
-      const advocacyData = typeof data === 'string' ? data.trim() : JSON.stringify(data).trim();
+      // Normalize advocacy data - ensure it's a string, not a JSON object
+      let advocacyData = "";
+      if (typeof data === 'string') {
+        advocacyData = data.trim();
+      } else if (typeof data === 'object' && data !== null) {
+        // If it's an object, check if it's empty
+        if (Object.keys(data).length === 0) {
+          advocacyData = "";
+        } else {
+          // If object has properties, try to extract text value
+          // This shouldn't happen, but handle it gracefully
+          advocacyData = JSON.stringify(data).trim();
+        }
+      } else {
+        advocacyData = String(data || "").trim();
+      }
       
       if (existingAdvocacy.length > 0) {
         // Update existing record
@@ -358,8 +372,22 @@ export const approveSubmission = async (req, res) => {
         [orgId]
       );
       
-      // For competency, data is already a string from the parsed JSON
-      const competencyData = typeof data === 'string' ? data.trim() : JSON.stringify(data).trim();
+      // Normalize competency data - ensure it's a string, not a JSON object
+      let competencyData = "";
+      if (typeof data === 'string') {
+        competencyData = data.trim();
+      } else if (typeof data === 'object' && data !== null) {
+        // If it's an object, check if it's empty
+        if (Object.keys(data).length === 0) {
+          competencyData = "";
+        } else {
+          // If object has properties, try to extract text value
+          // This shouldn't happen, but handle it gracefully
+          competencyData = JSON.stringify(data).trim();
+        }
+      } else {
+        competencyData = String(data || "").trim();
+      }
       
       if (existingCompetency.length > 0) {
         // Update existing record
@@ -1408,7 +1436,22 @@ export const bulkApproveSubmissions = async (req, res) => {
             [orgId]
           );
           
-          const advocacyData = typeof data === 'string' ? data.trim() : JSON.stringify(data).trim();
+          // Normalize advocacy data - ensure it's a string, not a JSON object
+          let advocacyData = "";
+          if (typeof data === 'string') {
+            advocacyData = data.trim();
+          } else if (typeof data === 'object' && data !== null) {
+            // If it's an object, check if it's empty
+            if (Object.keys(data).length === 0) {
+              advocacyData = "";
+            } else {
+              // If object has properties, try to extract text value
+              // This shouldn't happen, but handle it gracefully
+              advocacyData = JSON.stringify(data).trim();
+            }
+          } else {
+            advocacyData = String(data || "").trim();
+          }
           
           if (existingAdvocacy.length > 0) {
             await connection.execute(
@@ -1429,7 +1472,22 @@ export const bulkApproveSubmissions = async (req, res) => {
             [orgId]
           );
           
-          const competencyData = typeof data === 'string' ? data.trim() : JSON.stringify(data).trim();
+          // Normalize competency data - ensure it's a string, not a JSON object
+          let competencyData = "";
+          if (typeof data === 'string') {
+            competencyData = data.trim();
+          } else if (typeof data === 'object' && data !== null) {
+            // If it's an object, check if it's empty
+            if (Object.keys(data).length === 0) {
+              competencyData = "";
+            } else {
+              // If object has properties, try to extract text value
+              // This shouldn't happen, but handle it gracefully
+              competencyData = JSON.stringify(data).trim();
+            }
+          } else {
+            competencyData = String(data || "").trim();
+          }
           
           if (existingCompetency.length > 0) {
             await connection.execute(

@@ -209,7 +209,17 @@ export default function EmailChange({
         otp: emailData.otp
       }, userId);
 
-      const newEmail = response.data?.email || response.data?.newEmail || response.newEmail || response.email;
+      // Extract new email from response - handle different response structures
+      const newEmail = response.data?.email || 
+                       response.data?.newEmail || 
+                       response.newEmail || 
+                       response.email ||
+                       response.data?.admin?.email;
+
+      // Validate that we have a new email
+      if (!newEmail) {
+        throw new Error('Email change succeeded but new email was not returned. Please refresh the page.');
+      }
 
       if (userType === 'public') {
         // Store email change data for the success modal
@@ -249,16 +259,50 @@ export default function EmailChange({
           onSuccess(newEmail, getCurrentEmail());
         }
       } else {
-        // Admin/Superadmin - handle new token if provided
-        if (response.data?.token) {
+        // Admin/Superadmin - handle token and localStorage updates
+        if (userType === 'admin') {
           // Update token in localStorage for admin users
-          if (userType === 'admin') {
+          if (response.data?.token) {
             localStorage.setItem('adminToken', response.data.token);
             // Update admin data in localStorage if provided
             if (response.data.admin) {
               localStorage.setItem('adminData', JSON.stringify(response.data.admin));
             }
           }
+        } else if (userType === 'superadmin') {
+          // Update superadmin data in localStorage with new email
+          const updateSuperAdminLocalStorage = () => {
+            try {
+              const superAdminData = localStorage.getItem('superAdminData');
+              if (superAdminData) {
+                const parsedData = JSON.parse(superAdminData);
+                parsedData.email = newEmail;
+                localStorage.setItem('superAdminData', JSON.stringify(parsedData));
+              } else if (response.data?.superadmin) {
+                // If no existing data, use response data
+                localStorage.setItem('superAdminData', JSON.stringify(response.data.superadmin));
+              } else {
+                // Fallback: create minimal data structure with new email
+                const fallbackData = { ...currentUser, email: newEmail };
+                localStorage.setItem('superAdminData', JSON.stringify(fallbackData));
+              }
+              // Dispatch custom event to notify Sidebar of the update
+              window.dispatchEvent(new Event('superAdminDataUpdated'));
+            } catch (error) {
+              // If parsing fails, try to use response data
+              if (response.data?.superadmin) {
+                localStorage.setItem('superAdminData', JSON.stringify(response.data.superadmin));
+                window.dispatchEvent(new Event('superAdminDataUpdated'));
+              }
+            }
+          };
+          
+          updateSuperAdminLocalStorage();
+        }
+        
+        // Show success toast for admin/superadmin users
+        if (userType === 'admin' || userType === 'superadmin') {
+          showSuccess('Email changed successfully!');
         }
         
         onSuccess(newEmail);
@@ -272,6 +316,8 @@ export default function EmailChange({
         errorMessage = error.message;
       }
       
+      // Show error toast
+      showError(errorMessage);
       setFieldError('otp', errorMessage);
     }
   };

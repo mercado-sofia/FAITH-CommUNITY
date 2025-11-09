@@ -1,16 +1,16 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from '@/config/api';
 
 export const notificationsApi = createApi({
   reducerPath: 'notificationsApi',
   baseQuery: fetchBaseQuery({
     baseUrl: `${API_BASE_URL}/api/notifications`,
+    credentials: 'include',
     prepareHeaders: (headers, { getState }) => {
       // Check for window to avoid SSR errors
       const token = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
       if (token) {
-        headers.set('authorization', `Bearer ${token}`);
+        headers.set('Authorization', `Bearer ${token}`);
       }
       return headers;
     },
@@ -20,7 +20,8 @@ export const notificationsApi = createApi({
     // Get notifications for an admin
     getNotifications: builder.query({
       query: ({ adminId, limit = 10, offset = 0, tab = 'all' }) => ({
-        url: `/${adminId}?limit=${limit}&offset=${offset}&tab=${tab}`,
+        url: `/${adminId}`,
+        params: { limit, offset, tab },
         method: 'GET',
       }),
       providesTags: ['Notifications'],

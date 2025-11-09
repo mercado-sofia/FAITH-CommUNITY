@@ -759,43 +759,63 @@ export const updateProgram = async (req, res) => {
     }
     
     // If not provided in request body, fallback to admin's info from organization_heads
-    if (!editedByName && req.admin?.id) {
-      const [adminHeadRows] = await db.execute(`
-        SELECT head_name, role 
-        FROM organization_heads 
-        WHERE organization_id = ? AND email = ?
-        LIMIT 1
-      `, [req.admin.organization_id, req.admin.email]);
-      
-      if (adminHeadRows.length > 0) {
-        editedByName = adminHeadRows[0].head_name || null;
+    if (!editedByName && req.admin?.id && req.admin?.organization_id && req.admin?.email) {
+      try {
+        const [adminHeadRows] = await db.execute(`
+          SELECT head_name, role 
+          FROM organization_heads 
+          WHERE organization_id = ? AND email = ?
+          LIMIT 1
+        `, [req.admin.organization_id, req.admin.email]);
+        
+        if (adminHeadRows.length > 0) {
+          editedByName = adminHeadRows[0].head_name || null;
+        }
+      } catch (headError) {
+        // If query fails, just continue with null - not critical
+        console.error('Failed to fetch admin head info:', headError);
       }
     }
     
-    if (!editedByRole && req.admin?.id) {
-      const [adminHeadRows] = await db.execute(`
-        SELECT head_name, role 
-        FROM organization_heads 
-        WHERE organization_id = ? AND email = ?
-        LIMIT 1
-      `, [req.admin.organization_id, req.admin.email]);
-      
-      if (adminHeadRows.length > 0) {
-        editedByRole = adminHeadRows[0].role || null;
+    if (!editedByRole && req.admin?.id && req.admin?.organization_id && req.admin?.email) {
+      try {
+        const [adminHeadRows] = await db.execute(`
+          SELECT head_name, role 
+          FROM organization_heads 
+          WHERE organization_id = ? AND email = ?
+          LIMIT 1
+        `, [req.admin.organization_id, req.admin.email]);
+        
+        if (adminHeadRows.length > 0) {
+          editedByRole = adminHeadRows[0].role || null;
+        }
+      } catch (headError) {
+        // If query fails, just continue with null - not critical
+        console.error('Failed to fetch admin head info:', headError);
       }
     }
     
     // Check if edited_by columns exist
-    const [editColumns] = await db.execute(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_SCHEMA = DATABASE() 
-      AND TABLE_NAME = 'programs_projects' 
-      AND COLUMN_NAME IN ('edited_by_name', 'edited_by_role')
-    `);
+    let hasEditedByName = false;
+    let hasEditedByRole = false;
     
-    const hasEditedByName = editColumns.some(col => col.COLUMN_NAME === 'edited_by_name');
-    const hasEditedByRole = editColumns.some(col => col.COLUMN_NAME === 'edited_by_role');
+    try {
+      const [editColumns] = await db.execute(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'programs_projects' 
+        AND COLUMN_NAME IN ('edited_by_name', 'edited_by_role')
+      `);
+      
+      hasEditedByName = editColumns.some(col => col.COLUMN_NAME === 'edited_by_name');
+      hasEditedByRole = editColumns.some(col => col.COLUMN_NAME === 'edited_by_role');
+    } catch (columnCheckError) {
+      // If column check fails, assume columns don't exist and continue without them
+      console.error('Failed to check edited_by columns:', columnCheckError);
+      hasEditedByName = false;
+      hasEditedByRole = false;
+    }
     
     // Updating program in database
     // Preserve manual_status_override for Completed programs (from Post Act Report approval)

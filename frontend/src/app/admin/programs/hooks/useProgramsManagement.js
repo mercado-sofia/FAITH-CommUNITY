@@ -314,7 +314,9 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
           logError: true
         });
         const errorData = await response.json().catch(() => ({ message: errorInfo.message }));
-        throw new Error(errorData.message || errorInfo.message);
+        // Include the actual error message from the backend if available
+        const errorMessage = errorData.error || errorData.message || errorInfo.message;
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();

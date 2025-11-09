@@ -66,8 +66,53 @@ export const getPendingSubmissions = async (req, res) => {
     // Parse JSON data for each submission and enrich collaborator data
     const submissions = await Promise.all(rows.map(async (submission) => {
       try {
-        const previousData = safeParseJSON(submission.previous_data, {});
-        let proposedData = safeParseJSON(submission.proposed_data, {});
+        // For advocacy/competency sections, data should be a string
+        // For other sections, data should be an object
+        const isTextSection = submission.section === 'advocacy' || submission.section === 'competency';
+        
+        let previousData, proposedData;
+        
+        if (isTextSection) {
+          // For text sections, handle strings specially
+          if (submission.previous_data !== null && submission.previous_data !== undefined) {
+            if (typeof submission.previous_data === 'string') {
+              try {
+                const parsed = JSON.parse(submission.previous_data);
+                // If parsed result is a string, use it (double-encoded string)
+                previousData = typeof parsed === 'string' ? parsed : submission.previous_data;
+              } catch (e) {
+                // Not JSON, use the string as-is
+                previousData = submission.previous_data;
+              }
+            } else {
+              // If it's already parsed by typeCast, convert to string
+              previousData = typeof submission.previous_data === 'string' ? submission.previous_data : String(submission.previous_data);
+            }
+          } else {
+            previousData = "";
+          }
+          
+          if (submission.proposed_data !== null && submission.proposed_data !== undefined) {
+            if (typeof submission.proposed_data === 'string') {
+              try {
+                const parsed = JSON.parse(submission.proposed_data);
+                // If parsed result is a string, use it (double-encoded string)
+                proposedData = typeof parsed === 'string' ? parsed : submission.proposed_data;
+              } catch (e) {
+                // Not JSON, use the string as-is
+                proposedData = submission.proposed_data;
+              }
+            } else {
+              // If it's already parsed by typeCast, convert to string
+              proposedData = typeof submission.proposed_data === 'string' ? submission.proposed_data : String(submission.proposed_data);
+            }
+          } else {
+            proposedData = "";
+          }
+        } else {
+          // For non-text sections, use safeParseJSON
+          previousData = safeParseJSON(submission.previous_data, {});
+          proposedData = safeParseJSON(submission.proposed_data, {});
         
         // For program submissions, enrich collaborator data with organization information
         if (submission.section === 'programs' && proposedData.collaborators && Array.isArray(proposedData.collaborators)) {
@@ -180,8 +225,53 @@ export const getAllSubmissions = async (req, res) => {
     // Parse JSON data for each submission and enrich collaborator data
     const submissions = await Promise.all(rows.map(async (submission) => {
       try {
-        const previousData = safeParseJSON(submission.previous_data, {});
-        let proposedData = safeParseJSON(submission.proposed_data, {});
+        // For advocacy/competency sections, data should be a string
+        // For other sections, data should be an object
+        const isTextSection = submission.section === 'advocacy' || submission.section === 'competency';
+        
+        let previousData, proposedData;
+        
+        if (isTextSection) {
+          // For text sections, handle strings specially
+          if (submission.previous_data !== null && submission.previous_data !== undefined) {
+            if (typeof submission.previous_data === 'string') {
+              try {
+                const parsed = JSON.parse(submission.previous_data);
+                // If parsed result is a string, use it (double-encoded string)
+                previousData = typeof parsed === 'string' ? parsed : submission.previous_data;
+              } catch (e) {
+                // Not JSON, use the string as-is
+                previousData = submission.previous_data;
+              }
+            } else {
+              // If it's already parsed by typeCast, convert to string
+              previousData = typeof submission.previous_data === 'string' ? submission.previous_data : String(submission.previous_data);
+            }
+          } else {
+            previousData = "";
+          }
+          
+          if (submission.proposed_data !== null && submission.proposed_data !== undefined) {
+            if (typeof submission.proposed_data === 'string') {
+              try {
+                const parsed = JSON.parse(submission.proposed_data);
+                // If parsed result is a string, use it (double-encoded string)
+                proposedData = typeof parsed === 'string' ? parsed : submission.proposed_data;
+              } catch (e) {
+                // Not JSON, use the string as-is
+                proposedData = submission.proposed_data;
+              }
+            } else {
+              // If it's already parsed by typeCast, convert to string
+              proposedData = typeof submission.proposed_data === 'string' ? submission.proposed_data : String(submission.proposed_data);
+            }
+          } else {
+            proposedData = "";
+          }
+        } else {
+          // For non-text sections, use safeParseJSON
+          previousData = safeParseJSON(submission.previous_data, {});
+          proposedData = safeParseJSON(submission.proposed_data, {});
         
         // For program submissions, enrich collaborator data with organization information
         if (submission.section === 'programs' && proposedData.collaborators && Array.isArray(proposedData.collaborators)) {

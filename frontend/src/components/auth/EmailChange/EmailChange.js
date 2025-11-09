@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FaEye, FaEyeSlash, FaTimes, FaCheck, FaShieldAlt, FaClock, FaSpinner } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaTimes, FaShieldAlt, FaClock, FaSpinner } from 'react-icons/fa';
 import { useEmailChange } from '@/hooks/useEmailChange';
 import { useFormValidation } from '@/app/(public)/profile/hooks/useFormValidation';
 import { useToast } from '@/app/(public)/components/Toast';
@@ -547,7 +547,6 @@ export default function EmailChange({
                 onClick={handleStep2Submit}
                 disabled={isLoading}
               >
-                <FaCheck />
                 Verify & Change Email
                 {isLoading && <FaSpinner className={styles.spinner} />}
               </button>

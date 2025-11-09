@@ -7,43 +7,7 @@ import { getStatusBadgeConfig } from '@/utils/collaborationStatusUtils';
 import logger from '@/utils/logger';
 import styles from './styles/ViewDetailsModal.module.css';
 
-// Helper function to normalize advocacy/competency data
-const normalizeTextData = (value) => {
-  if (!value) return ""
-  
-  // If it's already a string, check if it's a JSON string
-  if (typeof value === 'string') {
-    // Try to parse as JSON
-    try {
-      const parsed = JSON.parse(value)
-      // If parsed result is an object (like {}), return empty string
-      if (typeof parsed === 'object' && parsed !== null && Object.keys(parsed).length === 0) {
-        return ""
-      }
-      // If parsed result is a string, return it
-      if (typeof parsed === 'string') {
-        return parsed
-      }
-      // Otherwise return empty string for other object types
-      return ""
-    } catch (e) {
-      // Not JSON, return as-is
-      return value
-    }
-  }
-  
-  // If it's an object, check if it's empty
-  if (typeof value === 'object' && value !== null) {
-    if (Object.keys(value).length === 0) {
-      return ""
-    }
-    // If object has content, try to stringify (shouldn't happen, but handle it)
-    return JSON.stringify(value)
-  }
-  
-  // For other types, convert to string
-  return String(value)
-}
+// Note: advocacy and competency are no longer part of the approval workflow
 
 const ViewDetailsModal = ({ 
   isOpen, 
@@ -59,10 +23,9 @@ const ViewDetailsModal = ({
   if (!isOpen || !submissionData) return null;
 
   const getSectionDisplayName = (section) => {
+    // Note: advocacy and competency are no longer part of the approval workflow
     const sectionMap = {
       'organization': 'Organization Information',
-      'advocacy': 'Advocacy Information',
-      'competency': 'Competency Information',
       'programs': 'Program Information'
     };
     return sectionMap[section] || section;
@@ -573,23 +536,8 @@ const ViewDetailsModal = ({
             <div className={styles.contentSections}>
               <div className={styles.contentSection}>
                 <h4 className={styles.sectionTitle}>DATA CHANGES:</h4>
-                {submissionData.section === 'advocacy' || submissionData.section === 'competency' ? (
-                  <div className={styles.textDataContainer}>
-                    <div className={styles.dataBlock}>
-                      <h5>Previous Data:</h5>
-                      <div className={styles.dataContent}>
-                        {normalizeTextData(submissionData.previous_data || submissionData.old_data) || "No previous data"}
-                      </div>
-                    </div>
-                    <div className={styles.dataBlock}>
-                      <h5>Proposed Data:</h5>
-                      <div className={styles.dataContent}>
-                        {normalizeTextData(submissionData.proposed_data || submissionData.data || submissionData.new_data) || "No proposed data"}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className={styles.jsonDataContainer}>
+                {/* Note: advocacy and competency are no longer part of the approval workflow */}
+                <div className={styles.jsonDataContainer}>
                     <div className={styles.dataBlock}>
                       <h5>Previous Data:</h5>
                       <pre className={styles.jsonData}>

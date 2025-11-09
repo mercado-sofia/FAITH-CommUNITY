@@ -38,8 +38,8 @@ export default function OrganizationPage() {
 
   // Safeguard: Ensure we have a stable organization ID for the hooks
   const stableOrgId = useMemo(() => {
-    return organization?.id || admin?.id;
-  }, [organization?.id, admin?.id]);
+    return organization?.id || admin?.organization_id;
+  }, [organization?.id, admin?.organization_id]);
 
   // Use stable organization ID for hooks to prevent unnecessary re-runs
   const { advocacies: stableAdvocacies, isLoading: advocaciesLoading, error: advocaciesError, mutate: refreshAdvocacies } = useAdminAdvocacies(stableOrgId);
@@ -328,6 +328,7 @@ export default function OrganizationPage() {
   }, [orgError, advocaciesError, competenciesError, headsError, admin?.organization_id]);
 
   // Handle re-edit from submissions page
+  // Note: advocacy and competency are no longer handled through submissions
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const isReEdit = urlParams.get('reEdit');
@@ -338,19 +339,21 @@ export default function OrganizationPage() {
         try {
           const submission = JSON.parse(reEditData);
           
+          // Skip advocacy and competency - they should be edited directly
+          if (submission.section === 'advocacy' || submission.section === 'competency') {
+            sessionStorage.removeItem('reEditSubmission');
+            showMessage(`${submission.section} should be edited directly from the organization page`, "info", submission.section);
+            return;
+          }
+          
           setCurrentSection(submission.section);
           updateUiState({ isEditing: true });
           setReEditSubmissionId(submission.id);
           
-          if (submission.section === 'advocacy') {
-            setTempEditData({ advocacy: submission.data });
-            setOriginalData({ ...advocacyData });
-            updateUiState({ showSectionEditModal: true });
-          } else if (submission.section === 'competency') {
-            setTempEditData({ competency: submission.data });
-            setOriginalData({ ...competencyData });
-            updateUiState({ showSectionEditModal: true });
-          }
+          // Handle other sections that still use submissions
+          setTempEditData(submission.data || {});
+          setOriginalData(submission.data || {});
+          updateUiState({ showSectionEditModal: true });
           
           sessionStorage.removeItem('reEditSubmission');
           showMessage(`Re-editing ${submission.section} submission`, "info", submission.section);
@@ -632,28 +635,9 @@ export default function OrganizationPage() {
       updateUiState({ saving: true });
       updateUiState({ showSectionSummaryModal: false });
       
-      const submissions = [];
-      
-      if (currentSection === 'advocacy') {
-        submissions.push({
-          organization_id: orgData.id || admin.id,
-          section: 'advocacy',
-          previous_data: originalData.advocacy || "",
-          proposed_data: (pendingChanges.advocacy || "").trim(),
-          submitted_by: admin.id
-        });
-      } else if (currentSection === 'competency') {
-        submissions.push({
-          organization_id: orgData.id || admin.id,
-          section: 'competency',
-          previous_data: originalData.competency || "",
-          proposed_data: (pendingChanges.competency || "").trim(),
-          submitted_by: admin.id
-        });
-      }
-      
-      if (submissions.length === 0) {
-        throw new Error('No changes to submit');
+      const orgId = orgData.id || admin?.organization_id;
+      if (!orgId) {
+        throw new Error('No organization ID available');
       }
       
       const adminToken = getAdminTokenOrRedirect();
@@ -662,37 +646,64 @@ export default function OrganizationPage() {
       }
 
       let response;
-      if (reEditSubmissionId) {
-        response = await fetch(`${API_CONFIG.BASE_URL}/api/submissions/${reEditSubmissionId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(adminToken && { 'Authorization': `Bearer ${adminToken}` })
-          },
-          body: JSON.stringify({ 
-            proposed_data: submissions[0].proposed_data,
-            section: submissions[0].section
-          })
-        });
-      } else {
-        response = await fetch(`${API_CONFIG.BASE_URL}/api/submissions`, {
+      let result;
+      
+      // Save advocacy/competency directly to their respective tables (no approval needed)
+      if (currentSection === 'advocacy') {
+        const advocacyData = (pendingChanges.advocacy || "").trim();
+        response = await fetch(`${API_CONFIG.BASE_URL}/api/advocacies`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(adminToken && { 'Authorization': `Bearer ${adminToken}` })
+            'Authorization': `Bearer ${adminToken}`
           },
-          body: JSON.stringify({ submissions })
+          body: JSON.stringify({
+            organization_id: orgId,
+            advocacy: advocacyData
+          })
         });
-      }
-      
-      const result = await response.json();
-      
-      if (!response.ok || !result.success) {
-        const errorInfo = handleApiError({ status: response.status, message: result.message }, 'submission_save', {
-          redirectOnAuth: true,
-          logError: true
+        
+        result = await response.json();
+        
+        if (!response.ok || !result.success) {
+          const errorInfo = handleApiError({ status: response.status, message: result.message }, 'advocacy_save', {
+            redirectOnAuth: true,
+            logError: true
+          });
+          throw new Error(errorInfo.message || 'Failed to save advocacy');
+        }
+        
+        // Refresh advocacy data
+        refreshAdvocacies();
+        
+      } else if (currentSection === 'competency') {
+        const competencyData = (pendingChanges.competency || "").trim();
+        response = await fetch(`${API_CONFIG.BASE_URL}/api/competencies`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${adminToken}`
+          },
+          body: JSON.stringify({
+            organization_id: orgId,
+            competency: competencyData
+          })
         });
-        throw new Error(errorInfo.message || 'Failed to submit changes for approval');
+        
+        result = await response.json();
+        
+        if (!response.ok || !result.success) {
+          const errorInfo = handleApiError({ status: response.status, message: result.message }, 'competency_save', {
+            redirectOnAuth: true,
+            logError: true
+          });
+          throw new Error(errorInfo.message || 'Failed to save competency');
+        }
+        
+        // Refresh competency data
+        refreshCompetencies();
+      } else {
+        throw new Error('Invalid section for direct save');
       }
       
       updateUiState({ isEditing: false });
@@ -700,18 +711,16 @@ export default function OrganizationPage() {
       setOriginalData(null);
       setCurrentSection('');
       setTempEditData({});
-      
-      const actionText = reEditSubmissionId ? 'updated' : 'submitted';
       setReEditSubmissionId(null);
       
-      showMessage(`${currentSection.charAt(0).toUpperCase() + currentSection.slice(1)} changes ${actionText} for approval successfully`, "success", currentSection);
+      showMessage(`${currentSection.charAt(0).toUpperCase() + currentSection.slice(1)} saved successfully`, "success", currentSection);
       
     } catch (error) {
-      const errorInfo = handleApiError(error, 'section_submit_approval', {
+      const errorInfo = handleApiError(error, 'section_save', {
         redirectOnAuth: true,
         logError: true
       });
-      showMessage(errorInfo.message || error.message || "Failed to submit changes for approval", "error", currentSection);
+      showMessage(errorInfo.message || error.message || "Failed to save changes", "error", currentSection);
       updateUiState({ showSectionSummaryModal: true });
     } finally {
       updateUiState({ saving: false });
@@ -730,7 +739,7 @@ export default function OrganizationPage() {
       updateUiState({ saving: true });
       updateUiState({ showAddOrgHeadModal: false });
       
-      const orgId = orgData.id || admin.id;
+      const orgId = orgData.id || admin?.organization_id;
       
       if (!orgId) {
         throw new Error('No organization ID available for adding head');
@@ -819,7 +828,7 @@ export default function OrganizationPage() {
       updateUiState({ saving: true });
       updateUiState({ showIndividualHeadEditModal: false });
       
-      const orgId = orgData.id || admin.id;
+      const orgId = orgData.id || admin?.organization_id;
       
       if (!orgId) {
         throw new Error('No organization ID available for saving head');
@@ -911,7 +920,7 @@ export default function OrganizationPage() {
     try {
       updateUiState({ saving: true });
       
-      const orgId = orgData.id || admin.id;
+      const orgId = orgData.id || admin?.organization_id;
       
       if (!orgId) {
         throw new Error('No organization ID available for deleting head');

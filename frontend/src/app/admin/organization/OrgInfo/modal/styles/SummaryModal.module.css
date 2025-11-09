@@ -193,33 +193,6 @@
   border: 1px solid #e2e8f0;
 }
 
-.warningSection {
-  margin-bottom: 1.6rem;
-  padding: 0.8rem 1.2rem;
-  background-color: #fef3cd;
-  border: 1px solid #f59e0b;
-  border-radius: 8px;
-}
-
-.warningContent {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-}
-
-.warningIcon {
-  font-size: 1rem;
-  color: #92400e;
-  flex-shrink: 0;
-}
-
-.warningText {
-  margin: 0;
-  color: #92400e;
-  font-size: 12px;
-  line-height: 1.6;
-}
-
 .warningMessage {
   margin-bottom: 1.6rem;
   padding: 0.8rem 1.2rem;
@@ -231,12 +204,11 @@
 .warningContent {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
   gap: 0.75rem;
 }
 
 .warningIcon {
-  font-size: 13px;
+  font-size: 1rem;
   color: #2f3133;
   flex-shrink: 0;
 }

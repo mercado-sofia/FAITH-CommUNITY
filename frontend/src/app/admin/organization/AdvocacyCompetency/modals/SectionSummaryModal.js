@@ -47,7 +47,7 @@ export default function SectionSummaryModal({
         return 'Confirm Changes'
       case 'advocacy':
       case 'competency':
-        return 'Submit for Approval'
+        return 'Save Changes'
       default:
         return 'Confirm Changes'
     }
@@ -59,7 +59,7 @@ export default function SectionSummaryModal({
         return 'Confirming these changes will immediately update your organization information on the official website.'
       case 'advocacy':
       case 'competency':
-        return 'Submitting these changes will send them to the superadmin for approval. Changes will not be visible until approved.'
+        return 'Saving these changes will immediately update the information on the official website.'
       default:
         return 'Please review your changes before confirming.'
     }

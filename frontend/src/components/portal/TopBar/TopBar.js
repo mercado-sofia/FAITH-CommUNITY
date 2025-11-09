@@ -161,6 +161,7 @@ export default function TopBar({
   };
 
   // Helper function to get notification icon (for superadmin)
+  // Note: advocacy and competency are no longer part of the approval workflow
   const getNotificationIcon = (type, section) => {
     if (type === 'approval_request') {
       switch (section) {
@@ -169,14 +170,6 @@ export default function TopBar({
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
               <path d="M9 12L11 14L15 10" stroke="#10c4a6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               <circle cx="12" cy="12" r="9" stroke="#10c4a6" strokeWidth="2" />
-            </svg>
-          );
-        case 'advocacy':
-        case 'competency':
-          return (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M9 12L11 14L15 10" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="12" cy="12" r="9" stroke="#3b82f6" strokeWidth="2" />
             </svg>
           );
         default:

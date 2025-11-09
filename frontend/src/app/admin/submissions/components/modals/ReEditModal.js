@@ -2,45 +2,8 @@ import { useState } from 'react';
 import { formatDateShort } from '@/utils/dateUtils.js';
 import styles from './ReEditModal.module.css';
 
-// Helper function to normalize advocacy/competency data
-const normalizeTextData = (value) => {
-  if (!value) return ""
-  
-  // If it's already a string, check if it's a JSON string
-  if (typeof value === 'string') {
-    // Try to parse as JSON
-    try {
-      const parsed = JSON.parse(value)
-      // If parsed result is an object (like {}), return empty string
-      if (typeof parsed === 'object' && parsed !== null && Object.keys(parsed).length === 0) {
-        return ""
-      }
-      // If parsed result is a string, return it
-      if (typeof parsed === 'string') {
-        return parsed
-      }
-      // Otherwise return empty string for other object types
-      return ""
-    } catch (e) {
-      // Not JSON, return as-is
-      return value
-    }
-  }
-  
-  // If it's an object, check if it's empty
-  if (typeof value === 'object' && value !== null) {
-    if (Object.keys(value).length === 0) {
-      return ""
-    }
-    // If object has content, try to stringify (shouldn't happen, but handle it)
-    return JSON.stringify(value)
-  }
-  
-  // For other types, convert to string
-  return String(value)
-}
-
 // Helper function to initialize form data based on submission section
+// Note: advocacy and competency are no longer part of the submission workflow
 const initializeFormData = (submission) => {
   const proposedData = submission?.proposed_data || {};
   
@@ -49,16 +12,6 @@ const initializeFormData = (submission) => {
       email: proposedData?.email || '',
       facebook: proposedData?.facebook || '',
       description: proposedData?.description || ''
-    };
-  } else if (submission?.section === 'advocacy') {
-    const advocacyValue = typeof proposedData === 'string' ? proposedData : (proposedData?.advocacy || '')
-    return {
-      advocacy: normalizeTextData(advocacyValue)
-    };
-  } else if (submission?.section === 'competency') {
-    const competencyValue = typeof proposedData === 'string' ? proposedData : (proposedData?.competency || '')
-    return {
-      competency: normalizeTextData(competencyValue)
     };
   }
   
@@ -92,14 +45,6 @@ export default function ReEditModal({ submission, onClose, onSave }) {
         const current = (formData[field] || '').toString().trim();
         return original !== current;
       });
-    } else if (submission.section === 'advocacy') {
-      const originalContent = (originalData.advocacy || '').toString().trim();
-      const currentContent = (formData.advocacy || '').toString().trim();
-      return originalContent !== currentContent;
-    } else if (submission.section === 'competency') {
-      const originalContent = (originalData.competency || '').toString().trim();
-      const currentContent = (formData.competency || '').toString().trim();
-      return originalContent !== currentContent;
     }
 
     return false;
@@ -131,19 +76,6 @@ export default function ReEditModal({ submission, onClose, onSave }) {
       if (!hasContent) {
         return { isValid: false, message: 'Please fill in at least one organization field' };
       }
-    } else if (submission.section === 'advocacy') {
-      const advocacyContent = formData?.advocacy?.trim();
-      if (!advocacyContent) {
-        return { isValid: false, message: 'Advocacy information cannot be empty' };
-      }
-      if (advocacyContent.length < 10) {
-        return { isValid: false, message: 'Advocacy information must be at least 10 characters long' };
-      }
-    } else if (submission.section === 'competency') {
-      const competencyContent = formData?.competency?.trim();
-      if (!competencyContent) {
-        return { isValid: false, message: 'Competency information cannot be empty' };
-      }
     }
 
     return { isValid: true };
@@ -162,15 +94,7 @@ export default function ReEditModal({ submission, onClose, onSave }) {
 
     setIsLoading(true);
     try {
-      // Trim whitespace for advocacy and competency content before saving
-      const trimmedFormData = { ...formData };
-      if (submission?.section === 'advocacy' && trimmedFormData.advocacy) {
-        trimmedFormData.advocacy = trimmedFormData.advocacy.trim();
-      } else if (submission?.section === 'competency' && trimmedFormData.competency) {
-        trimmedFormData.competency = trimmedFormData.competency.trim();
-      }
-      
-      await onSave(submission.id, trimmedFormData);
+      await onSave(submission.id, formData);
       onClose();
     } catch (error) {
       // Let the parent component handle the error message
@@ -216,36 +140,6 @@ export default function ReEditModal({ submission, onClose, onSave }) {
               onChange={(e) => handleInputChange('description', e.target.value)}
               className={styles.formTextarea}
               rows={4}
-            />
-          </div>
-        </div>
-      );
-    } else if (submission.section === 'advocacy') {
-      return (
-        <div className={styles.formFields}>
-          <div className={styles.fieldGroup}>
-            <label>Advocacy Information:</label>
-            <textarea
-              value={formData?.advocacy || ''}
-              onChange={(e) => handleInputChange('advocacy', e.target.value)}
-              className={styles.formTextarea}
-              rows={8}
-              placeholder="Enter advocacy information..."
-            />
-          </div>
-        </div>
-      );
-    } else if (submission.section === 'competency') {
-      return (
-        <div className={styles.formFields}>
-          <div className={styles.fieldGroup}>
-            <label>Competency Information:</label>
-            <textarea
-              value={formData?.competency || ''}
-              onChange={(e) => handleInputChange('competency', e.target.value)}
-              className={styles.formTextarea}
-              rows={8}
-              placeholder="Enter competency information..."
             />
           </div>
         </div>

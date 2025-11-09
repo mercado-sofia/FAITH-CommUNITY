@@ -96,18 +96,8 @@ export default function SubmissionTable({
       const submission = reEditSubmission;
       let formattedData;
 
-      if (submission.section === 'organization') {
-        // For organization, send as object
-        formattedData = updatedData;
-      } else if (submission.section === 'advocacy') {
-        // For advocacy, send the text directly as a string (backend expects string type)
-        formattedData = updatedData.advocacy || '';
-      } else if (submission.section === 'competency') {
-        // For competency, send the text directly as a string (backend expects string type)
-        formattedData = updatedData.competency || '';
-      } else {
-        formattedData = updatedData;
-      }
+      // Note: advocacy and competency are no longer part of the submission workflow
+      formattedData = updatedData;
 
       const response = await fetch(`${API_BASE_URL}/api/submissions/${submissionId}`, {
         method: 'PUT',

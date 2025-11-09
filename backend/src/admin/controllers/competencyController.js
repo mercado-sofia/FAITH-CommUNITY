@@ -44,17 +44,18 @@ export const addCompetency = async (req, res) => {
   const { organization_id, competency } = req.body
 
   // Input validation
-  if (!organization_id || !competency) {
+  if (!organization_id) {
     return res.status(400).json({
       success: false,
-      message: "Organization ID and competency description are required",
+      message: "Organization ID is required",
     })
   }
 
-  if (competency.trim().length < 10) {
+  // Allow empty competency, but if provided, it must be at least 10 characters
+  if (competency !== undefined && competency !== null && competency.trim().length > 0 && competency.trim().length < 10) {
     return res.status(400).json({
       success: false,
-      message: "Competency description must be at least 10 characters",
+      message: "Competency description must be at least 10 characters if provided",
     })
   }
 
@@ -71,10 +72,13 @@ export const addCompetency = async (req, res) => {
     // Check if an entry already exists
     const [existing] = await db.execute("SELECT * FROM competencies WHERE organization_id = ?", [organization_id])
 
+    // Normalize competency value (handle undefined/null/empty)
+    const competencyValue = (competency !== undefined && competency !== null) ? competency.trim() : "";
+    
     if (existing.length > 0) {
       // Update if it exists
       await db.execute("UPDATE competencies SET competency = ? WHERE organization_id = ?", [
-        competency.trim(),
+        competencyValue,
         organization_id,
       ])
       res.json({
@@ -85,7 +89,7 @@ export const addCompetency = async (req, res) => {
       // Otherwise insert
       await db.execute("INSERT INTO competencies (organization_id, competency) VALUES (?, ?)", [
         organization_id,
-        competency.trim(),
+        competencyValue,
       ])
       res.status(201).json({
         success: true,

@@ -47,12 +47,13 @@ class SuperAdminNotificationController {
       const { superAdminId } = req.params;
       
       // Create a test notification
+      // Note: advocacy and competency are no longer part of the submission workflow
       const testNotification = await SuperAdminNotificationController.createNotification(
         superAdminId,
         'approval_request',
         'Test Notification',
         'This is a test notification to verify the system is working.',
-        'competency',
+        'programs', // Use a valid section for testing
         null,
         null  // No organization_id for test notification
       );

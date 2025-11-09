@@ -154,7 +154,7 @@ export const useProgramForm = (mode = 'create', program = null) => {
   }, []);
 
   // Validate form
-  const validateForm = useCallback(() => {
+  const validateForm = useCallback((imagePreview = null) => {
     const newErrors = {};
     
     // Validate required text fields
@@ -166,15 +166,15 @@ export const useProgramForm = (mode = 'create', program = null) => {
       }
     });
 
-    // Validate officer fields - required only for create mode
+    // Validate officer fields - required for both create and edit mode
     if (!isEditMode) {
-      // Validate officer name
+      // Validate officer name (create mode)
       const nameError = validateField('submitted_by_name', formData.submitted_by_name, VALIDATION_RULES);
       if (nameError) {
         newErrors.submitted_by_name = nameError;
       }
 
-      // Validate officer role - handle custom role for "Others"
+      // Validate officer role - handle custom role for "Others" (create mode)
       const role = formData.submitted_by_role || '';
       if (!role || role.trim() === '') {
         newErrors.submitted_by_role = ERROR_MESSAGES.submitted_by_role.required;
@@ -189,15 +189,51 @@ export const useProgramForm = (mode = 'create', program = null) => {
           newErrors.submitted_by_role = roleError;
         }
       }
+    } else {
+      // Validate edited by fields (edit mode)
+      const editedNameError = validateField('submitted_by_name', formData.edited_by_name, VALIDATION_RULES);
+      if (editedNameError) {
+        newErrors.edited_by_name = editedNameError;
+      }
+
+      // Validate edited by role - handle custom role for "Others" (edit mode)
+      const editedRole = formData.edited_by_role || '';
+      if (!editedRole || editedRole.trim() === '') {
+        newErrors.edited_by_role = ERROR_MESSAGES.submitted_by_role.required;
+      } else if (editedRole === 'Others') {
+        // If "Others" is selected, the custom role input should have updated formData.edited_by_role
+        // If it's still "Others", it means no custom role was provided
+        newErrors.edited_by_role = 'Please specify the custom role/position';
+      } else {
+        // Validate role length for non-"Others" roles
+        const roleError = validateField('submitted_by_role', editedRole, VALIDATION_RULES);
+        if (roleError) {
+          newErrors.edited_by_role = roleError;
+        }
+      }
     }
 
-    // Validate main image - required for new programs
-    if (!isEditMode && !formData.image) {
-      newErrors.image = ERROR_MESSAGES.image.required;
-    } else if (formData.image) {
-      const imageError = validateImage(formData.image, VALIDATION_RULES.image);
-      if (imageError) {
-        newErrors.image = imageError;
+    // Validate main image - required for both create and edit mode
+    if (!isEditMode) {
+      // Create mode: image is required
+      if (!formData.image) {
+        newErrors.image = ERROR_MESSAGES.image.required;
+      } else if (formData.image) {
+        const imageError = validateImage(formData.image, VALIDATION_RULES.image);
+        if (imageError) {
+          newErrors.image = imageError;
+        }
+      }
+    } else {
+      // Edit mode: image is required (either existing image preview or new image)
+      if (!imagePreview && !formData.image) {
+        newErrors.image = ERROR_MESSAGES.image.required;
+      } else if (formData.image) {
+        // Validate new image if provided
+        const imageError = validateImage(formData.image, VALIDATION_RULES.image);
+        if (imageError) {
+          newErrors.image = imageError;
+        }
       }
     }
 

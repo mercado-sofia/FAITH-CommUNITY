@@ -287,18 +287,59 @@ export const getSubmissionsByOrg = async (req, res) => {
       let proposed_data_parsed = {}
       let parse_error = false
 
-      // typeCast already parses JSON, so use helper
-      previous_data_parsed = safeParseJSON(row.previous_data, {});
-      proposed_data_parsed = safeParseJSON(row.proposed_data, {});
+      // For advocacy/competency sections, data should be a string
+      // For other sections, data should be an object
+      const isTextSection = row.section === 'advocacy' || row.section === 'competency';
       
-      // Check if parsing failed (only if it was a string and couldn't be parsed)
-      if (typeof row.previous_data === 'string' && !previous_data_parsed) {
-        previous_data_parsed = { error: "Invalid JSON data" };
-        parse_error = true;
-      }
-      if (typeof row.proposed_data === 'string' && !proposed_data_parsed) {
-        proposed_data_parsed = { error: "Invalid JSON data" };
-        parse_error = true;
+      if (isTextSection) {
+        // For text sections, handle strings specially
+        // If it's already a string, use it directly
+        // If it's a JSON string, parse it
+        if (typeof row.previous_data === 'string') {
+          try {
+            const parsed = JSON.parse(row.previous_data);
+            // If parsed result is a string, use it (double-encoded string)
+            previous_data_parsed = typeof parsed === 'string' ? parsed : row.previous_data;
+          } catch (e) {
+            // Not JSON, use the string as-is
+            previous_data_parsed = row.previous_data;
+          }
+        } else if (row.previous_data !== null && row.previous_data !== undefined) {
+          // If it's already parsed by typeCast, convert to string
+          previous_data_parsed = typeof row.previous_data === 'string' ? row.previous_data : String(row.previous_data);
+        } else {
+          previous_data_parsed = "";
+        }
+        
+        if (typeof row.proposed_data === 'string') {
+          try {
+            const parsed = JSON.parse(row.proposed_data);
+            // If parsed result is a string, use it (double-encoded string)
+            proposed_data_parsed = typeof parsed === 'string' ? parsed : row.proposed_data;
+          } catch (e) {
+            // Not JSON, use the string as-is
+            proposed_data_parsed = row.proposed_data;
+          }
+        } else if (row.proposed_data !== null && row.proposed_data !== undefined) {
+          // If it's already parsed by typeCast, convert to string
+          proposed_data_parsed = typeof row.proposed_data === 'string' ? row.proposed_data : String(row.proposed_data);
+        } else {
+          proposed_data_parsed = "";
+        }
+      } else {
+        // For non-text sections, use safeParseJSON
+        previous_data_parsed = safeParseJSON(row.previous_data, {});
+        proposed_data_parsed = safeParseJSON(row.proposed_data, {});
+        
+        // Check if parsing failed (only if it was a string and couldn't be parsed)
+        if (typeof row.previous_data === 'string' && !previous_data_parsed) {
+          previous_data_parsed = { error: "Invalid JSON data" };
+          parse_error = true;
+        }
+        if (typeof row.proposed_data === 'string' && !proposed_data_parsed) {
+          proposed_data_parsed = { error: "Invalid JSON data" };
+          parse_error = true;
+        }
       }
 
       // For program submissions, fetch collaborator details
@@ -564,37 +605,80 @@ export const getSubmissionById = async (req, res) => {
     
     // Parse JSON data
     try {
-      // typeCast already parses JSON, so use helper
-      if (submission.previous_data) {
-        submission.previous_data = safeParseJSON(submission.previous_data, {});
-      }
-      if (submission.proposed_data) {
-        submission.proposed_data = safeParseJSON(submission.proposed_data, {});
-        
-        // For program submissions, fetch collaborator details if they are stored as IDs
-        if (submission.section === 'programs' && submission.proposed_data.collaborators && Array.isArray(submission.proposed_data.collaborators)) {
-          try {
-            const collaborators = submission.proposed_data.collaborators;
-            if (collaborators.length > 0) {
-              // Check if collaborators are stored as IDs (numbers) or objects
-              const firstCollaborator = collaborators[0];
-              if (typeof firstCollaborator === 'number' || (typeof firstCollaborator === 'string' && !isNaN(firstCollaborator))) {
-                // Collaborators are stored as IDs, fetch full details
-                const placeholders = collaborators.map(() => '?').join(',');
-                const [collaboratorRows] = await db.execute(`
-                  SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
-                  FROM admins a
-                  LEFT JOIN organizations o ON a.organization_id = o.id
-                  WHERE a.id IN (${placeholders})
-                `, collaborators);
-                
-                // Replace collaborator IDs with full collaborator objects
-                submission.proposed_data.collaborators = collaboratorRows;
-              }
-              // If collaborators are already objects, keep them as is
+      // For advocacy/competency sections, data should be a string
+      // For other sections, data should be an object
+      const isTextSection = submission.section === 'advocacy' || submission.section === 'competency';
+      
+      if (isTextSection) {
+        // For text sections, handle strings specially
+        if (submission.previous_data !== null && submission.previous_data !== undefined) {
+          if (typeof submission.previous_data === 'string') {
+            try {
+              const parsed = JSON.parse(submission.previous_data);
+              // If parsed result is a string, use it (double-encoded string)
+              submission.previous_data = typeof parsed === 'string' ? parsed : submission.previous_data;
+            } catch (e) {
+              // Not JSON, use the string as-is
+              submission.previous_data = submission.previous_data;
             }
-          } catch (collabError) {
-            // Keep original collaborator data if fetch fails
+          } else {
+            // If it's already parsed by typeCast, convert to string
+            submission.previous_data = typeof submission.previous_data === 'string' ? submission.previous_data : String(submission.previous_data);
+          }
+        } else {
+          submission.previous_data = "";
+        }
+        
+        if (submission.proposed_data !== null && submission.proposed_data !== undefined) {
+          if (typeof submission.proposed_data === 'string') {
+            try {
+              const parsed = JSON.parse(submission.proposed_data);
+              // If parsed result is a string, use it (double-encoded string)
+              submission.proposed_data = typeof parsed === 'string' ? parsed : submission.proposed_data;
+            } catch (e) {
+              // Not JSON, use the string as-is
+              submission.proposed_data = submission.proposed_data;
+            }
+          } else {
+            // If it's already parsed by typeCast, convert to string
+            submission.proposed_data = typeof submission.proposed_data === 'string' ? submission.proposed_data : String(submission.proposed_data);
+          }
+        } else {
+          submission.proposed_data = "";
+        }
+      } else {
+        // For non-text sections, use safeParseJSON
+        if (submission.previous_data) {
+          submission.previous_data = safeParseJSON(submission.previous_data, {});
+        }
+        if (submission.proposed_data) {
+          submission.proposed_data = safeParseJSON(submission.proposed_data, {});
+          
+          // For program submissions, fetch collaborator details if they are stored as IDs
+          if (submission.section === 'programs' && submission.proposed_data.collaborators && Array.isArray(submission.proposed_data.collaborators)) {
+            try {
+              const collaborators = submission.proposed_data.collaborators;
+              if (collaborators.length > 0) {
+                // Check if collaborators are stored as IDs (numbers) or objects
+                const firstCollaborator = collaborators[0];
+                if (typeof firstCollaborator === 'number' || (typeof firstCollaborator === 'string' && !isNaN(firstCollaborator))) {
+                  // Collaborators are stored as IDs, fetch full details
+                  const placeholders = collaborators.map(() => '?').join(',');
+                  const [collaboratorRows] = await db.execute(`
+                    SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
+                    FROM admins a
+                    LEFT JOIN organizations o ON a.organization_id = o.id
+                    WHERE a.id IN (${placeholders})
+                  `, collaborators);
+                  
+                  // Replace collaborator IDs with full collaborator objects
+                  submission.proposed_data.collaborators = collaboratorRows;
+                }
+                // If collaborators are already objects, keep them as is
+              }
+            } catch (collabError) {
+              // Keep original collaborator data if fetch fails
+            }
           }
         }
       }

@@ -8,6 +8,7 @@ import { FormFields, ImageUpload, AdditionalImagesUpload, CollaboratorSection } 
 import CustomDropdown from './components/CustomDropdown';
 import { UnsaveChangesModal } from '../index';
 import { ROLE_OPTIONS } from '@/app/admin/organization/utils/roleHierarchy';
+import { ERROR_MESSAGES } from '../../constants/programConstants';
 import logger from '@/utils/logger';
 import styles from './ProgramForm.module.css';
 
@@ -192,13 +193,15 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
     if (result?.file) {
       // Store the File object for backend submission
       updateFormData({ image: result.file });
+      // Clear image error if it exists
+      if (errors.image) clearError('image');
       // The preview is already set by the handleImageChange hook
     } else if (result?.error) {
       updateFormData({ image: null });
       setImagePreview(null);
       // Handle error display if needed
     }
-  }, [handleImageChange, updateFormData, setImagePreview]);
+  }, [handleImageChange, updateFormData, setImagePreview, errors.image, clearError]);
 
   // Handle additional images changes
   const handleAdditionalImagesChangeWrapper = useCallback(async (event) => {
@@ -266,7 +269,11 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
   const handleSubmit = useCallback(async (e) => {
     if (e) e.preventDefault();
     
-    if (!validateForm()) {
+    // Validate form with image preview for edit mode
+    const isValid = validateForm(imagePreview);
+    
+    // If validation failed, return early (errors are already set by validateForm)
+    if (!isValid) {
       return;
     }
 
@@ -483,13 +490,15 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
                   <div className={styles.inputWrapper}>
                     <input
                       type="text"
-                      className={styles.input}
+                      className={`${styles.input} ${errors.edited_by_name ? styles.inputError : ''}`}
                       value={formData.edited_by_name || program?.edited_by_name || ''}
                       onChange={(e) => {
                         updateFormData({ edited_by_name: e.target.value });
+                        if (errors.edited_by_name) clearError('edited_by_name');
                       }}
                       placeholder="Enter name"
                     />
+                    {errors.edited_by_name && <span className={styles.errorText}>{errors.edited_by_name}</span>}
                   </div>
                 </div>
                 <div className={styles.submittedByRoleField}>
@@ -505,10 +514,13 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
                           : ((formData.edited_by_role || program?.edited_by_role) && !ROLE_OPTIONS.find(option => option.value === (formData.edited_by_role || program?.edited_by_role)) 
                             ? 'Others' 
                             : '')}
-                        onChange={(selectedValue) => handleEditedRoleChange(selectedValue)}
+                        onChange={(selectedValue) => {
+                          handleEditedRoleChange(selectedValue);
+                          if (errors.edited_by_role) clearError('edited_by_role');
+                        }}
                         placeholder="Select a role"
-                        error={false}
-                        required={false}
+                        error={!!errors.edited_by_role}
+                        required={true}
                       />
                     </div>
                     {/* Custom role input - only show when "Others" is selected or when role is not in predefined options */}
@@ -517,13 +529,18 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
                         <input
                           type="text"
                           value={customEditedRole}
-                          onChange={(e) => handleCustomEditedRoleChange(e.target.value)}
-                          className={styles.input}
+                          onChange={(e) => {
+                            handleCustomEditedRoleChange(e.target.value);
+                            if (errors.edited_by_role) clearError('edited_by_role');
+                          }}
+                          className={`${styles.input} ${errors.edited_by_role ? styles.inputError : ''}`}
                           placeholder="Enter custom role/position"
+                          required
                         />
                       </div>
                     )}
                   </div>
+                  {errors.edited_by_role && <span className={styles.errorText}>{errors.edited_by_role}</span>}
                 </div>
               </div>
             </div>
@@ -564,7 +581,7 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
           {/* Main Image Upload */}
           <ImageUpload
             title="Highlight Image"
-            required={!isEditMode}
+            required={true}
             imagePreview={imagePreview}
             dragActive={dragActive}
             fileInputRef={fileInputRef}

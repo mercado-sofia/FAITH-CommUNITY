@@ -667,10 +667,8 @@ export const updateProgram = async (req, res) => {
   
   // Format multiple dates if provided
   if (multiple_dates && Array.isArray(multiple_dates)) {
-    multiple_dates = multiple_dates.map(date => formatDateForMySQL(date)).filter(date => date !== null);
-    if (multiple_dates.length === 0) {
-      multiple_dates = null;
-    }
+    const formattedDates = multiple_dates.map(date => formatDateForMySQL(date)).filter(date => date !== null);
+    multiple_dates = formattedDates.length > 0 ? formattedDates : null;
   }
 
   // Update program request received

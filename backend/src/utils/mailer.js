@@ -195,13 +195,29 @@ export async function verifySMTPConnection(retries = 2) {
         console.warn('   → For Gmail, use an App Password (not your regular password)');
         console.warn('   → Make sure 2-Step Verification is enabled and App Password is generated');
       } else if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT') || error.code === 'ETIMEDOUT') {
+        const isSendGrid = status.host.includes('sendgrid');
+        const currentPort = Number(process.env.SMTP_PORT) || 587;
+        
         console.warn('   → Connection timeout. This is often a network/firewall issue.');
         console.warn('   → Quick fixes:');
-        console.warn('      • Skip verification in development: Set SMTP_SKIP_VERIFY=true in .env');
-        console.warn('      • Try Gmail port 465: Set SMTP_PORT=465 in .env');
-        console.warn('      • Check Windows Firewall/Antivirus isn\'t blocking SMTP');
-        console.warn('      • Try a different network (some ISPs block port 587)');
-        console.warn(`   → Or increase timeout: SMTP_VERIFICATION_TIMEOUT=90000 (current: ${verificationTimeout}ms)`);
+        
+        if (isSendGrid) {
+          console.warn('      • SendGrid detected: Use port 587 (not 465)');
+          if (currentPort === 465) {
+            console.warn('      • ⚠️  You are using port 465. SendGrid recommends port 587');
+            console.warn('      • Change to: SMTP_PORT=587 in your .env');
+          }
+          console.warn('      • SendGrid requires: SMTP_USER=apikey and SMTP_PASS=your-api-key');
+        } else {
+          console.warn('      • Try port 587 (STARTTLS) instead of 465: Set SMTP_PORT=587 in .env');
+          if (currentPort === 587) {
+            console.warn('      • Try port 465 (SSL): Set SMTP_PORT=465 in .env');
+          }
+        }
+        
+        console.warn('      • Skip verification in production: Set SMTP_SKIP_VERIFY=true in .env');
+        console.warn('      • Check firewall/network isn\'t blocking SMTP ports');
+        console.warn(`   → Or increase timeout: SMTP_VERIFICATION_TIMEOUT=120000 (current: ${verificationTimeout}ms)`);
         console.warn('   → Run test script: node scripts/test-smtp.js');
       } else if (error.code === 'ECONNREFUSED' || error.message.includes('ECONNREFUSED')) {
         console.warn('   → Connection refused. Check:');

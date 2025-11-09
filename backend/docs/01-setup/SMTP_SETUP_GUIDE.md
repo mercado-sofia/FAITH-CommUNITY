@@ -166,6 +166,8 @@ Ensure all SMTP credentials are properly set in production environment.
 
 ## Example Production Configuration (SendGrid)
 
+**Important:** SendGrid requires port 587 (STARTTLS), not port 465. Port 465 may be blocked in deployment environments and can cause connection timeouts.
+
 ```env
 SMTP_HOST=smtp.sendgrid.net
 SMTP_PORT=587
@@ -173,6 +175,12 @@ SMTP_USER=apikey
 SMTP_PASS=your-sendgrid-api-key
 MAIL_FROM="FAITH CommUNITY" <noreply@yourdomain.com>
 ```
+
+**Note:** 
+- Always use `SMTP_USER=apikey` (literal string "apikey")
+- `SMTP_PASS` should be your SendGrid API key (not your SendGrid password)
+- Port 587 uses STARTTLS (secure: false, requireTLS: true)
+- Port 465 is NOT recommended for SendGrid and may cause connection timeouts
 
 ## Support
 

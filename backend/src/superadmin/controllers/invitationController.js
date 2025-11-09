@@ -1,24 +1,8 @@
 import db from "../../database.js"
 import crypto from "crypto"
 import * as bcrypt from "bcrypt"
-import nodemailer from "nodemailer"
+import { sendMail } from "../../utils/mailer.js"
 import { logSuperadminAction } from "../../utils/audit.js"
-
-// Email configuration
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    },
-    tls: {
-      rejectUnauthorized: false
-    }
-  })
-}
 
 // Generate secure invitation token
 const generateInvitationToken = () => {
@@ -28,47 +12,38 @@ const generateInvitationToken = () => {
 // Send invitation email
 const sendInvitationEmail = async (email, token) => {
   try {
-    // Validate environment variables
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.error('SMTP credentials not configured')
-      return false
-    }
-    
     if (!process.env.FRONTEND_URL) {
       console.error('FRONTEND_URL not configured')
       return false
     }
 
-    const transporter = createTransporter()
     const invitationLink = `${process.env.FRONTEND_URL}/admin/invitation/accept?token=${token}`
   
-  const mailOptions = {
-    from: process.env.SMTP_USER,
-    to: email,
-    subject: 'Admin Invitation - FAITH-CommUNITY',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333;">Admin Invitation</h2>
-        <p>You have been invited to become an admin for FAITH-CommUNITY.</p>
-        <p>Click the button below to accept the invitation and set up your account:</p>
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${invitationLink}" 
-             style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
-            Accept Invitation
-          </a>
+    await sendMail({
+      to: email,
+      subject: 'Admin Invitation - FAITH-CommUNITY',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Admin Invitation</h2>
+          <p>You have been invited to become an admin for FAITH-CommUNITY.</p>
+          <p>Click the button below to accept the invitation and set up your account:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${invitationLink}" 
+               style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
+              Accept Invitation
+            </a>
+          </div>
+          <p style="color: #666; font-size: 14px;">
+            This invitation will expire in 7 days. If you didn't request this invitation, please ignore this email.
+          </p>
+          <p style="color: #666; font-size: 14px;">
+            If the button doesn't work, copy and paste this link into your browser:<br>
+            <a href="${invitationLink}">${invitationLink}</a>
+          </p>
         </div>
-        <p style="color: #666; font-size: 14px;">
-          This invitation will expire in 7 days. If you didn't request this invitation, please ignore this email.
-        </p>
-        <p style="color: #666; font-size: 14px;">
-          If the button doesn't work, copy and paste this link into your browser:<br>
-          <a href="${invitationLink}">${invitationLink}</a>
-        </p>
-      </div>
-    `
-  }
-
-    await transporter.sendMail(mailOptions)
+      `,
+      text: `You have been invited to become an admin for FAITH-CommUNITY. Click this link to accept: ${invitationLink}`
+    })
     return true
   } catch (error) {
     console.error('Email sending failed:', error)

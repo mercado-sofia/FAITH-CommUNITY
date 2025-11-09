@@ -56,12 +56,39 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       formData.append('description', programData.description.trim());
       formData.append('category', programData.category.trim());
       
-      // Add dates if provided
+      // Helper function to convert date to MySQL format (YYYY-MM-DD)
+      const formatDateForMySQL = (dateValue) => {
+        if (!dateValue) return null;
+        if (typeof dateValue === 'string') {
+          // If it's already in YYYY-MM-DD format, return as is
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+            return dateValue;
+          }
+          // If it's an ISO string, extract the date part
+          const date = new Date(dateValue);
+          if (isNaN(date.getTime())) return null;
+          return date.toISOString().split('T')[0];
+        }
+        // If it's a Date object
+        if (dateValue instanceof Date) {
+          if (isNaN(dateValue.getTime())) return null;
+          return dateValue.toISOString().split('T')[0];
+        }
+        return null;
+      };
+
+      // Add dates if provided (formatted for MySQL)
       if (programData.event_start_date) {
-        formData.append('event_start_date', programData.event_start_date);
+        const formattedDate = formatDateForMySQL(programData.event_start_date);
+        if (formattedDate) {
+          formData.append('event_start_date', formattedDate);
+        }
       }
       if (programData.event_end_date) {
-        formData.append('event_end_date', programData.event_end_date);
+        const formattedDate = formatDateForMySQL(programData.event_end_date);
+        if (formattedDate) {
+          formData.append('event_end_date', formattedDate);
+        }
       }
       
       // Add collaborators if any
@@ -106,6 +133,15 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       }
       
       // Submit through the submissions system
+      // Format multiple dates if provided
+      let formattedMultipleDates = null;
+      if (programData.multiple_dates && Array.isArray(programData.multiple_dates)) {
+        formattedMultipleDates = programData.multiple_dates.map(date => formatDateForMySQL(date)).filter(date => date !== null);
+        if (formattedMultipleDates.length === 0) {
+          formattedMultipleDates = null;
+        }
+      }
+
       const submissionData = {
         submissions: [{
           organization_id: currentAdmin.org,
@@ -115,9 +151,9 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
             title: programData.title.trim(),
             description: programData.description.trim(),
             category: programData.category.trim(),
-            event_start_date: programData.event_start_date || null,
-            event_end_date: programData.event_end_date || null,
-            multiple_dates: programData.multiple_dates || null,
+            event_start_date: formatDateForMySQL(programData.event_start_date),
+            event_end_date: formatDateForMySQL(programData.event_end_date),
+            multiple_dates: formattedMultipleDates,
             status: programData.status || 'pending',
             collaborators: programData.collaborators || [],
             image: imageUrl, // Use uploaded image URL
@@ -279,13 +315,43 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         imageValue = undefined;
       }
 
+      // Helper function to convert date to MySQL format (YYYY-MM-DD)
+      const formatDateForMySQL = (dateValue) => {
+        if (!dateValue) return null;
+        if (typeof dateValue === 'string') {
+          // If it's already in YYYY-MM-DD format, return as is
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+            return dateValue;
+          }
+          // If it's an ISO string, extract the date part
+          const date = new Date(dateValue);
+          if (isNaN(date.getTime())) return null;
+          return date.toISOString().split('T')[0];
+        }
+        // If it's a Date object
+        if (dateValue instanceof Date) {
+          if (isNaN(dateValue.getTime())) return null;
+          return dateValue.toISOString().split('T')[0];
+        }
+        return null;
+      };
+
+      // Format multiple dates if provided
+      let formattedMultipleDates = null;
+      if (programData.multiple_dates && Array.isArray(programData.multiple_dates)) {
+        formattedMultipleDates = programData.multiple_dates.map(date => formatDateForMySQL(date)).filter(date => date !== null);
+        if (formattedMultipleDates.length === 0) {
+          formattedMultipleDates = null;
+        }
+      }
+
       const updateData = {
         title: programData.title?.trim() || '',
         description: programData.description?.trim() || '',
         category: programData.category?.trim() || '',
-        event_start_date: programData.event_start_date || null,
-        event_end_date: programData.event_end_date || null,
-        multiple_dates: programData.multiple_dates || null,
+        event_start_date: formatDateForMySQL(programData.event_start_date),
+        event_end_date: formatDateForMySQL(programData.event_end_date),
+        multiple_dates: formattedMultipleDates,
         status: programData.status || 'active',
         accepts_volunteers: programData.accepts_volunteers !== undefined ? programData.accepts_volunteers : true,
         // The form sends edited_by_name/role as submitted_by_name/role in edit mode

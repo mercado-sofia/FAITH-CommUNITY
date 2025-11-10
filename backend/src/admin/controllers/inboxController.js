@@ -1,6 +1,7 @@
 //db table: messages
 
 import db from "../../database.js";
+import { logError } from "../../utils/logger.js";
 
 // Get messages for a specific organization (admin inbox)
 export const getMessagesByOrg = async (req, res) => {
@@ -37,7 +38,26 @@ export const getMessagesByOrg = async (req, res) => {
     }
 
     const actualOrgId = orgResult[0].id;
-    const offset = (page - 1) * limit;
+    
+    // Validate and convert limit and offset to numbers
+    const limitNum = parseInt(limit, 10);
+    const pageNum = parseInt(page, 10);
+    
+    if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid limit. Must be between 1 and 100'
+      });
+    }
+    
+    if (isNaN(pageNum) || pageNum < 1) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid page. Must be 1 or greater'
+      });
+    }
+    
+    const offsetNum = (pageNum - 1) * limitNum;
     
     // Build query based on filters
     let query = `
@@ -62,8 +82,9 @@ export const getMessagesByOrg = async (req, res) => {
       query += " AND m.is_read = FALSE";
     }
     
-    query += " ORDER BY m.created_at DESC LIMIT ? OFFSET ?";
-    queryParams.push(parseInt(limit), offset);
+    // Note: MySQL2 has issues with LIMIT and OFFSET as placeholders, so we interpolate them directly
+    // This is safe because we've already validated limitNum and offsetNum are valid numbers
+    query += ` ORDER BY m.created_at DESC LIMIT ${limitNum} OFFSET ${offsetNum}`;
 
     const [messages] = await db.execute(query, queryParams);
 
@@ -83,32 +104,28 @@ export const getMessagesByOrg = async (req, res) => {
       data: {
         messages,
         pagination: {
-          current_page: parseInt(page),
-          total_pages: Math.ceil(total / limit),
+          current_page: pageNum,
+          total_pages: Math.ceil(total / limitNum),
           total_items: total,
-          items_per_page: parseInt(limit)
+          items_per_page: limitNum
         }
       }
     });
   } catch (error) {
-    console.error('Error fetching messages:', error);
-    console.error('Error stack:', error.stack);
-    console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      errno: error.errno,
-      sqlState: error.sqlState,
-      sqlMessage: error.sqlMessage
+    // Log the error for debugging
+    logError('Error fetching messages', error, {
+      context: 'inbox_controller',
+      organization_id: req.params?.organization_id,
+      page: req.query?.page,
+      limit: req.query?.limit,
+      unread_only: req.query?.unread_only,
+      errorStack: error.stack
     });
+
     res.status(500).json({
       success: false,
       message: "Failed to fetch messages",
-      error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message,
-      details: process.env.NODE_ENV === 'development' ? {
-        code: error.code,
-        errno: error.errno,
-        sqlState: error.sqlState
-      } : undefined
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };

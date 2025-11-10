@@ -228,8 +228,8 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
               </p>
             </div>
 
-            {/* Media Gallery - Full Width Below - Only show if there are multiple media files */}
-            {highlight.media && highlight.media.length > 1 && (
+            {/* Media Gallery - Full Width Below - Show all media files */}
+            {highlight.media && highlight.media.length > 0 && (
               <div className={styles.mediaGallerySection}>
                 <h4 className={styles.sectionTitle}>
                   Media Gallery ({highlight.media.length} {highlight.media.length === 1 ? 'file' : 'files'})
@@ -237,13 +237,25 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
                 <div className={styles.mediaGrid}>
                   {highlight.media.map((mediaItem, index) => {
                     const mediaUrl = mediaItem.url || mediaItem.filename
+                    const isVideo = mediaItem.type === 'video' || 
+                                   mediaItem.mimetype?.startsWith('video/') ||
+                                   /\.(mp4|avi|mov|wmv|flv|webm|mkv)$/i.test(mediaItem.filename || mediaItem.url || '')
                     const isImage = mediaItem.type === 'image' || 
                                    mediaItem.mimetype?.startsWith('image/') ||
                                    /\.(jpg|jpeg|png|gif|webp)$/i.test(mediaItem.filename || mediaItem.url || '')
                     
                     return (
                       <div key={index} className={styles.mediaItemContainer}>
-                        {isImage && mediaUrl ? (
+                        {isVideo && mediaUrl ? (
+                          <video
+                            controls
+                            className={styles.videoPlayer}
+                            preload="metadata"
+                          >
+                            <source src={mediaUrl} type={mediaItem.mimetype || 'video/mp4'} />
+                            Your browser does not support the video tag.
+                          </video>
+                        ) : isImage && mediaUrl ? (
                           <Image
                             src={mediaUrl}
                             alt={`Media ${index + 1}`}
@@ -261,10 +273,12 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
                             <span>{mediaItem.type || 'File'}</span>
                           </div>
                         )}
-                        <div className={styles.mediaPlaceholder} style={{ display: (isImage && mediaUrl) ? 'none' : 'flex' }}>
-                          <FaEye />
-                          <span>{mediaItem.type || 'File'}</span>
-                        </div>
+                        {!isVideo && !isImage && (
+                          <div className={styles.mediaPlaceholder} style={{ display: 'flex' }}>
+                            <FaEye />
+                            <span>{mediaItem.type || 'File'}</span>
+                          </div>
+                        )}
                       </div>
                     )
                   })}

@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { FiSun } from "react-icons/fi";
+import { IoRainyOutline } from "react-icons/io5";
 import styles from './faithree.module.css';
 import { Highlights, HeroSection } from './sections';
 import { TreeModel } from './components';
@@ -75,9 +77,11 @@ function FAITHreePage() {
         className={`${styles.faithreeContainer} ${styles[theme]} ${isTransitioning ? styles.transitioning : ''}`}
         aria-label="FAITHree interactive environment"
       >
-        <div className={styles.firstSection}>
-          {/* Eco-themed background */}
-          <div className={styles.ecoBackground}>
+        {/* Fixed dimension container for background and tree */}
+        <div className={styles.sceneContainer}>
+          <div className={styles.firstSection}>
+            {/* Eco-themed background */}
+            <div className={styles.ecoBackground}>
             {/* Sky with clouds */}
             <div 
               className={`${styles.sky} ${styles[`sky${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}
@@ -105,39 +109,6 @@ function FAITHreePage() {
                     ></div>
                   ))}
                 </div>
-              )}
-              
-              {/* Clouds - only show in morning theme */}
-              {theme === 'morning' && !prefersReducedMotion && (
-                <>
-                  <div 
-                    className={styles.cloud} 
-                    style={{ 
-                      '--delay': '0s', 
-                      '--duration': prefersReducedMotion ? '0s' : '20s',
-                      transform: `translateX(${parallaxOffset.clouds * 0.5}px)`
-                    }}
-                    aria-hidden="true"
-                  ></div>
-                  <div 
-                    className={styles.cloud} 
-                    style={{ 
-                      '--delay': '5s', 
-                      '--duration': prefersReducedMotion ? '0s' : '25s',
-                      transform: `translateX(${parallaxOffset.clouds * 0.3}px)`
-                    }}
-                    aria-hidden="true"
-                  ></div>
-                  <div 
-                    className={styles.cloud} 
-                    style={{ 
-                      '--delay': '10s', 
-                      '--duration': prefersReducedMotion ? '0s' : '30s',
-                      transform: `translateX(${parallaxOffset.clouds * 0.7}px)`
-                    }}
-                    aria-hidden="true"
-                  ></div>
-                </>
               )}
             </div>
             
@@ -194,10 +165,9 @@ function FAITHreePage() {
               </div>
             </div>
           </div>
-        </div>
-      
-      {/* Theme Toggle Button */}
-      <div className={styles.themeToggleContainer}>
+          
+          {/* Theme Toggle Button */}
+          <div className={styles.themeToggleContainer}>
         <button 
           className={`${styles.themeToggleButton} ${isTransitioning ? styles.disabled : ''}`}
           onClick={toggleTheme}
@@ -207,20 +177,20 @@ function FAITHreePage() {
           aria-pressed={theme === 'rainy'}
         >
           {theme === 'morning' ? (
-            <svg className={styles.themeIcon} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M12 2C12 2 8 6 8 10C8 13.31 10.69 16 14 16C14 16 18 12 18 8C18 4.69 15.31 2 12 2Z" fill="currentColor"/>
-              <path d="M12 6V2M12 22V18M6 12H2M22 12H18M19.07 19.07L16.24 16.24M19.07 4.93L16.24 7.76M4.93 19.07L7.76 16.24M4.93 4.93L7.76 7.76" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
+            <>
+              <FiSun className={styles.themeIcon} aria-hidden="true" />
+              <span>Sunny</span>
+            </>
           ) : (
-            <svg className={styles.themeIcon} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M12 2C12 2 16 6 16 10C16 13.31 13.31 16 10 16C10 16 6 12 6 8C6 4.69 8.69 2 12 2Z" fill="currentColor" opacity="0.3"/>
-              <path d="M12 2C16.97 2 21 6.03 21 11C21 15.97 16.97 20 12 20C7.03 20 3 15.97 3 11C3 6.03 7.03 2 12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              <path d="M8 8L16 16M16 8L8 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
+            <>
+              <IoRainyOutline className={styles.themeIcon} aria-hidden="true" />
+              <span>Rainy</span>
+            </>
           )}
-          <span>{theme === 'morning' ? 'Rainy' : 'Morning'}</span>
         </button>
       </div>
+        </div>
+        </div>
       
       {/* Toggle Button */}
       <div className={styles.toggleButtonContainer}>

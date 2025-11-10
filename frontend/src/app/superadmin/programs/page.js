@@ -123,7 +123,9 @@ const SuperadminProgramsPage = () => {
 
   const { 
     data: statistics = {}, 
-    isLoading: statsLoading 
+    isLoading: statsLoading,
+    error: statsError,
+    refetch: refetchStats
   } = useGetProgramsStatisticsQuery()
 
   // Hierarchical search function with priority scoring
@@ -416,7 +418,9 @@ const SuperadminProgramsPage = () => {
     )
   }
 
-  if (programsError) {
+  // Show error state only for real errors (network errors, 500, etc.)
+  // RTK Query only sets error for actual failures, not empty data
+  if (programsError && !programsLoading) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
@@ -449,7 +453,13 @@ const SuperadminProgramsPage = () => {
         </div>
         <div className={styles.errorContainer}>
           <p className={styles.errorMessage}>Failed to load programs</p>
-          <button onClick={refetchPrograms} className={styles.retryButton}>
+          <p style={{ fontSize: '14px', color: '#666', marginBottom: '1rem' }}>
+            {programsError?.data?.message || programsError?.error || 'Please try again later'}
+          </p>
+          <button onClick={() => {
+            refetchPrograms()
+            refetchStats()
+          }} className={styles.retryButton}>
             Try Again
           </button>
         </div>
@@ -476,23 +486,57 @@ const SuperadminProgramsPage = () => {
             {/* Right Column - 50% width */}
             <div className={styles.rightColumn}>
               <div className={styles.statsContainer}>
-                {!statsLoading && (
+                {!statsLoading && !statsError && (
                   <div className={styles.statCard}>
                     <div className={styles.cardContent}>
                       <div className={styles.textContent}>
-                        <h2 className={styles.count}>{statistics.totalPrograms}</h2>
+                        <h2 className={styles.count}>{statistics.totalPrograms || 0}</h2>
                         <p className={styles.label}>Total Programs</p>
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
                             <span className={styles.activeCount}>
-                              {statistics.activePrograms} Active
+                              {statistics.activePrograms || 0} Active
                             </span>
                             <span className={styles.upcomingCount}>
-                              {statistics.upcomingPrograms} Upcoming
+                              {statistics.upcomingPrograms || 0} Upcoming
                             </span>
                             <span className={styles.completedCount}>
-                              {statistics.completedPrograms} Completed
+                              {statistics.completedPrograms || 0} Completed
                             </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {statsLoading && (
+                  <div className={styles.statCard}>
+                    <div className={styles.cardContent}>
+                      <div className={styles.textContent}>
+                        <h2 className={styles.count}>—</h2>
+                        <p className={styles.label}>Total Programs</p>
+                        <div className={styles.extraInfo}>
+                          <div className={styles.statusCounts}>
+                            <span className={styles.activeCount}>— Active</span>
+                            <span className={styles.upcomingCount}>— Upcoming</span>
+                            <span className={styles.completedCount}>— Completed</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {statsError && !statsLoading && (
+                  <div className={styles.statCard}>
+                    <div className={styles.cardContent}>
+                      <div className={styles.textContent}>
+                        <h2 className={styles.count}>—</h2>
+                        <p className={styles.label}>Total Programs</p>
+                        <div className={styles.extraInfo}>
+                          <div className={styles.statusCounts}>
+                            <span className={styles.activeCount}>— Active</span>
+                            <span className={styles.upcomingCount}>— Upcoming</span>
+                            <span className={styles.completedCount}>— Completed</span>
                           </div>
                         </div>
                       </div>
@@ -584,11 +628,19 @@ const SuperadminProgramsPage = () => {
         </div>
         </div>
 
-        {filteredOrganizations.length === 0 ? (
+        {/* Show empty state when there are no programs (successful empty response) */}
+        {!programsLoading && !programsError && organizationPrograms.length === 0 ? (
           <div className={styles.emptyState}>
             <h3 className={styles.emptyStateTitle}>No programs found</h3>
             <p className={styles.emptyStateText}>
-              No programs found matching your current filters. New programs will appear here when administrators submit them.
+              There are no programs in the system yet. New programs will appear here when administrators submit them.
+            </p>
+          </div>
+        ) : filteredOrganizations.length === 0 && !programsLoading && !programsError ? (
+          <div className={styles.emptyState}>
+            <h3 className={styles.emptyStateTitle}>No programs found</h3>
+            <p className={styles.emptyStateText}>
+              No programs found matching your current filters. Try adjusting your search or organization filter.
             </p>
           </div>
         ) : (

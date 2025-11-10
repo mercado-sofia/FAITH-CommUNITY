@@ -6,11 +6,44 @@ import { OrbitControls, useGLTF, Environment } from '@react-three/drei'
 import * as THREE from 'three'
 
 // Component to load and display the GLB model
-function Model({ url, treePosition = [0, 0, 0] }) {
+function Model({ url, treePosition = [0, 0, 0], theme = 'morning' }) {
   const { scene } = useGLTF(url)
   
   // Clone the scene to avoid mutating the original
   const clonedScene = scene.clone()
+  
+  // Darken tree, grass, and soil materials slightly during rainy season
+  if (theme === 'rainy') {
+    clonedScene.traverse((child) => {
+      if (child.isMesh && child.material) {
+        const materials = Array.isArray(child.material) ? child.material : [child.material]
+        
+        materials.forEach(material => {
+          if (material.isMeshStandardMaterial || material.isMeshPhongMaterial || material.isMeshBasicMaterial) {
+            const currentColor = material.color
+            // Check if material is green-ish (tree canopy, grass, vegetation)
+            // Green is dominant if green channel is higher than red and blue
+            const isGreen = currentColor.g > currentColor.r && currentColor.g > currentColor.b
+            
+            // Check if material is brown/tan-ish (soil cone, tree trunk)
+            // Brown/tan typically has red and green higher than blue, with red often being highest
+            const isBrown = currentColor.r > 0.2 && currentColor.g > 0.15 && 
+                           currentColor.b < currentColor.r && currentColor.b < currentColor.g &&
+                           (currentColor.r > currentColor.g || Math.abs(currentColor.r - currentColor.g) < 0.2)
+            
+            // If it's green (likely tree/grass), darken it slightly (multiply by 0.88 for subtle darkening)
+            if (isGreen && currentColor.g > 0.4) {
+              material.color.multiplyScalar(0.88)
+            }
+            // If it's brown/tan (likely soil cone, tree trunk), darken it slightly but not too much (0.90)
+            else if (isBrown && currentColor.r > 0.25) {
+              material.color.multiplyScalar(0.90)
+            }
+          }
+        })
+      }
+    })
+  }
   
   // Calculate bounding box to center the model properly
   const box = new THREE.Box3().setFromObject(clonedScene)
@@ -319,8 +352,9 @@ export default function TreeModel({
           {/* Optional: Add environment for better lighting */}
           <Environment preset={theme === 'morning' ? 'sunset' : 'city'} />
           
-          {/* The 3D model - pass treePosition to position it */}
-          <Model url={modelPath} treePosition={treePosition} />
+          {/* The 3D model - pass treePosition and theme to position it and apply color changes */}
+          {/* Key prop ensures component re-renders when model changes */}
+          <Model key={modelPath} url={modelPath} treePosition={treePosition} theme={theme} />
           
           {/* Controls with auto-return - pass treePosition and cameraOffset */}
           <AutoReturnControls 

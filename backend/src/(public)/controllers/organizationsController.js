@@ -10,7 +10,8 @@ export const getAllOrganizations = async (req, res) => {
         o.id, 
         o.org as acronym, 
         o.orgName as name, 
-        o.logo 
+        o.logo,
+        o.org_color as color
       FROM organizations o
       WHERE o.org IS NOT NULL AND o.org != '' AND o.orgName IS NOT NULL AND o.status = 'ACTIVE'
       ORDER BY o.org ASC
@@ -31,7 +32,8 @@ export const getAllOrganizations = async (req, res) => {
         id: row.id, // Use numeric ID for proper integration with news
         acronym: row.acronym, // Organization acronym for display
         name: row.name, // Full organization name for tooltips
-        logo: logoUrl
+        logo: logoUrl,
+        color: row.color || null // Organization color
       };
     });
 

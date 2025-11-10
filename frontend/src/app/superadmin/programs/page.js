@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FiChevronDown } from 'react-icons/fi'
 import { useGetAllProgramsByOrganizationQuery, useGetProgramsStatisticsQuery } from '@/rtk/superadmin/programsApi'
+import { useGetAllOrganizationsQuery } from '@/rtk/(public)/organizationsApi'
 import { getOrganizationImageUrl } from '@/utils/uploadPaths'
 import ProgramDetailsModal from './components/ProgramDetailsModal'
 import FeaturedProjects from './components/featuredProjects'
@@ -128,6 +129,44 @@ const SuperadminProgramsPage = () => {
     refetch: refetchStats
   } = useGetProgramsStatisticsQuery()
 
+  // Fetch all organizations to show even those without programs
+  const { 
+    data: allOrganizations = [], 
+    isLoading: organizationsLoading 
+  } = useGetAllOrganizationsQuery()
+
+  // Merge all organizations with programs data
+  // Create a map of organizations that have programs
+  const orgsWithProgramsMap = new Map()
+  organizationPrograms.forEach(org => {
+    if (org && org.organizationId) {
+      orgsWithProgramsMap.set(org.organizationId, org)
+    }
+  })
+
+  // Combine organizations with programs and organizations without programs
+  const allOrganizationsWithPrograms = allOrganizations.map(org => {
+    const orgWithPrograms = orgsWithProgramsMap.get(org.id)
+    if (orgWithPrograms) {
+      // Organization has programs, use the existing data
+      return orgWithPrograms
+    } else {
+      // Organization doesn't have programs, create empty structure
+      return {
+        organizationId: org.id,
+        organizationName: org.name,
+        organizationAcronym: org.acronym,
+        orgLogo: org.logo,
+        organizationColor: org.color || null, // Use organization color from API
+        programs: {
+          upcoming: [],
+          active: [],
+          completed: []
+        }
+      }
+    }
+  })
+
   // Hierarchical search function with priority scoring
   // Priority order: Organization Name > Program Title > Description > Category/Location > Other fields > Collaborators
   const searchPrograms = (programs, query, organizationName = null, organizationAcronym = null) => {
@@ -222,7 +261,7 @@ const SuperadminProgramsPage = () => {
 
   // Filter and prioritize organizations based on selected filters and search
   // Priority: Organization Name > Programs with Title matches > Programs with Description matches > Other
-  const filteredOrganizations = organizationPrograms.map(org => {
+  const filteredOrganizations = allOrganizationsWithPrograms.map(org => {
     // First filter by organization dropdown
     if (selectedOrganization !== 'all' && org.organizationId !== parseInt(selectedOrganization)) {
       return null
@@ -255,7 +294,8 @@ const SuperadminProgramsPage = () => {
         filteredPrograms.active.length + 
         filteredPrograms.completed.length
       
-      // Only include organization if it matches by name/acronym OR has matching programs
+      // Include organization if it matches by name/acronym OR has matching programs
+      // Don't filter out organizations without programs if they match by name/acronym
       if (!orgNameMatch && !orgAcronymMatch && totalMatchingPrograms === 0) {
         return null
       }
@@ -315,22 +355,21 @@ const SuperadminProgramsPage = () => {
     return orgWithoutScore
   })
 
-  // Get all unique organizations for filter dropdown
-  // Filter to only include organizations with valid data
-  const organizationOptions = organizationPrograms
+  // Get all unique organizations for filter dropdown (from all organizations)
+  const organizationOptions = allOrganizations
     .filter(org => {
       // Ensure organization has required fields
       return org && 
-             org.organizationId && 
-             org.organizationAcronym && 
-             org.organizationAcronym.trim() !== '' && 
-             org.organizationName && 
-             org.organizationName.trim() !== '';
+             org.id && 
+             org.acronym && 
+             org.acronym.trim() !== '' && 
+             org.name && 
+             org.name.trim() !== '';
     })
     .map(org => ({
-      id: org.organizationId,
-      name: org.organizationName,
-      acronym: org.organizationAcronym
+      id: org.id,
+      name: org.name,
+      acronym: org.acronym
     }))
 
   // Search handler
@@ -382,7 +421,8 @@ const SuperadminProgramsPage = () => {
     )
   }
 
-  if (programsLoading) {
+  // Show loading state while fetching programs or organizations
+  if (programsLoading || organizationsLoading) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
@@ -824,19 +864,19 @@ const SuperadminProgramsPage = () => {
         </div>
         </div>
 
-        {/* Show empty state when there are no programs (successful empty response) */}
-        {!programsLoading && !programsError && organizationPrograms.length === 0 ? (
+        {/* Show empty state when there are no organizations or programs */}
+        {!programsLoading && !organizationsLoading && !programsError && allOrganizationsWithPrograms.length === 0 ? (
           <div className={styles.emptyState}>
-            <h3 className={styles.emptyStateTitle}>No programs found</h3>
+            <h3 className={styles.emptyStateTitle}>No organizations found</h3>
             <p className={styles.emptyStateText}>
-              There are no programs in the system yet. New programs will appear here when administrators submit them.
+              There are no organizations in the system yet.
             </p>
           </div>
-        ) : filteredOrganizations.length === 0 && !programsLoading && !programsError ? (
+        ) : filteredOrganizations.length === 0 && !programsLoading && !organizationsLoading && !programsError ? (
           <div className={styles.emptyState}>
-            <h3 className={styles.emptyStateTitle}>No programs found</h3>
+            <h3 className={styles.emptyStateTitle}>No organizations found</h3>
             <p className={styles.emptyStateText}>
-              No programs found matching your current filters. Try adjusting your search or organization filter.
+              No organizations found matching your current filters. Try adjusting your search or organization filter.
             </p>
           </div>
         ) : (
@@ -909,21 +949,32 @@ const SuperadminProgramsPage = () => {
                 </div>
 
                 <div className={styles.organizationPrograms}>
-                  {renderProgramSection(org.programs.upcoming, 'Upcoming Programs', 'upcoming', {
-                    name: org.organizationName,
-                    acronym: org.organizationAcronym,
-                    color: org.organizationColor || '#444444'
-                  })}
-                  {renderProgramSection(org.programs.active, 'Active Programs', 'active', {
-                    name: org.organizationName,
-                    acronym: org.organizationAcronym,
-                    color: org.organizationColor || '#444444'
-                  })}
-                  {renderProgramSection(org.programs.completed, 'Completed Programs', 'completed', {
-                    name: org.organizationName,
-                    acronym: org.organizationAcronym,
-                    color: org.organizationColor || '#444444'
-                  })}
+                  {/* Check if organization has any programs */}
+                  {org.programs.upcoming.length === 0 && 
+                   org.programs.active.length === 0 && 
+                   org.programs.completed.length === 0 ? (
+                    <div className={styles.emptyProgramSection}>
+                      <p>This organization has not yet added any programs.</p>
+                    </div>
+                  ) : (
+                    <>
+                      {renderProgramSection(org.programs.upcoming, 'Upcoming Programs', 'upcoming', {
+                        name: org.organizationName,
+                        acronym: org.organizationAcronym,
+                        color: org.organizationColor || '#444444'
+                      })}
+                      {renderProgramSection(org.programs.active, 'Active Programs', 'active', {
+                        name: org.organizationName,
+                        acronym: org.organizationAcronym,
+                        color: org.organizationColor || '#444444'
+                      })}
+                      {renderProgramSection(org.programs.completed, 'Completed Programs', 'completed', {
+                        name: org.organizationName,
+                        acronym: org.organizationAcronym,
+                        color: org.organizationColor || '#444444'
+                      })}
+                    </>
+                  )}
                 </div>
               </div>
             )

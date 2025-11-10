@@ -13,6 +13,8 @@ import SearchAndFilterControls from './components/SearchAndFilterControls';
 import { SkeletonLoader } from '../components';
 import { API_BASE_URL, logError } from '@/config/api';
 import { clearAuthImmediate, USER_TYPES } from '@/utils/authService';
+import { useDispatch } from 'react-redux';
+import { superadminHighlightsApi } from '@/rtk/superadmin/highlightsApi';
 import styles from './approvals.module.css';
 
 // Helper function to make authenticated API calls
@@ -118,6 +120,7 @@ export default function PendingApprovalsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const dispatch = useDispatch();
   const [approvals, setApprovals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -612,13 +615,29 @@ export default function PendingApprovalsPage() {
         throw new Error(errorMessage);
       }
 
+      // Invalidate highlights cache if this was a highlight approval
+      // This ensures the Highlights management page shows updated status
+      try {
+        const submissionData = typeof item.proposed_data === 'string' 
+          ? JSON.parse(item.proposed_data) 
+          : item.proposed_data;
+        
+        if (item.section === 'highlights') {
+          // Invalidate all highlight queries to force refetch
+          dispatch(superadminHighlightsApi.util.invalidateTags(['SuperadminHighlight']));
+        }
+      } catch (cacheError) {
+        // Don't fail the approval if cache invalidation fails
+        logError(cacheError, { context: 'handleApprove-cacheInvalidation', itemId: item.id });
+      }
+
       showSuccessModal('Changes have been approved and applied.');
       fetchApprovals(); // Refresh the list
     } catch (err) {
       logError(err, { context: 'handleApprove', itemId: item.id });
       showSuccessModal('Failed to approve changes: ' + err.message, 'error');
     }
-  }, [showSuccessModal, fetchApprovals, router]);
+  }, [showSuccessModal, fetchApprovals, router, dispatch]);
 
   const handleReject = useCallback(async (item, rejectComment = '') => {
     try {
@@ -671,13 +690,29 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Bulk approval failed');
       }
 
+      // Invalidate highlights cache if any highlights were approved
+      // Check if any of the approved items were highlights
+      try {
+        const approvedItems = approvals.filter(approval => 
+          originalIds.includes(approval.id.toString()) && approval.section === 'highlights'
+        );
+        
+        if (approvedItems.length > 0) {
+          // Invalidate all highlight queries to force refetch
+          dispatch(superadminHighlightsApi.util.invalidateTags(['SuperadminHighlight']));
+        }
+      } catch (cacheError) {
+        // Don't fail the approval if cache invalidation fails
+        logError(cacheError, { context: 'handleBulkApprove-cacheInvalidation', ids: originalIds });
+      }
+
       showSuccessModal(`Bulk approval completed: ${result.details.successCount} approved`);
       fetchApprovals();
     } catch (err) {
       logError(err, { context: 'handleBulkApprove', ids: uniqueKeys });
       showSuccessModal('Failed to bulk approve approvals: ' + err.message, 'error');
     }
-  }, [showSuccessModal, fetchApprovals, router]);
+  }, [showSuccessModal, fetchApprovals, router, dispatch, approvals]);
 
   const handleBulkReject = useCallback(async (uniqueKeys, rejectComment = '') => {
     try {

@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding } from 'react-icons/fa'
 import { formatDateShort } from '@/utils/dateUtils.js'
 import styles from './styles/HighlightDetailsModal.module.css'
 
 const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
+  const scrollPositionRef = useRef(0)
+
   // Lock body scroll when modal is open
   useEffect(() => {
     if (typeof document === 'undefined' || !document.body) {
@@ -14,20 +16,24 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
     }
 
     if (isOpen) {
-      // Save current scroll position
-      const scrollY = window.scrollY
+      // Save current scroll position in ref
+      scrollPositionRef.current = window.scrollY
       
       // Lock body scroll
       document.body.style.position = 'fixed'
-      document.body.style.top = `-${scrollY}px`
+      document.body.style.top = `-${scrollPositionRef.current}px`
       document.body.style.left = '0'
       document.body.style.right = '0'
       document.body.style.overflow = 'hidden'
       document.body.style.width = '100%'
-      
-      return () => {
-        // Restore body scroll when modal closes
+    } else {
+      // Restore body scroll when modal closes
+      // Use requestAnimationFrame to ensure DOM has updated
+      requestAnimationFrame(() => {
         if (typeof document !== 'undefined' && document.body) {
+          const savedScrollY = scrollPositionRef.current
+          
+          // Restore body styles
           document.body.style.position = ''
           document.body.style.top = ''
           document.body.style.left = ''
@@ -35,12 +41,14 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
           document.body.style.overflow = ''
           document.body.style.width = ''
           
-          // Restore scroll position
-          if (typeof window !== 'undefined') {
-            window.scrollTo(0, scrollY)
-          }
+          // Restore scroll position after a brief delay to ensure styles are applied
+          requestAnimationFrame(() => {
+            if (typeof window !== 'undefined') {
+              window.scrollTo(0, savedScrollY)
+            }
+          })
         }
-      }
+      })
     }
   }, [isOpen])
 

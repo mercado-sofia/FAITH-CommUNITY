@@ -32,6 +32,12 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
         if (typeof document !== 'undefined' && document.body && typeof window !== 'undefined') {
           const savedScrollY = scrollPositionRef.current
           
+          // Temporarily disable scroll restoration to prevent browser from resetting
+          const originalScrollRestoration = window.history.scrollRestoration
+          if (originalScrollRestoration) {
+            window.history.scrollRestoration = 'manual'
+          }
+          
           // Remove fixed position and restore styles
           document.body.style.position = ''
           document.body.style.top = ''
@@ -41,19 +47,18 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
           document.body.style.width = ''
           
           // Restore scroll position immediately and synchronously
-          // Use both window.scrollTo and documentElement.scrollTop for maximum compatibility
+          // Use both methods for maximum compatibility
           if (document.documentElement) {
             document.documentElement.scrollTop = savedScrollY
           }
           window.scrollTo(0, savedScrollY)
           
-          // Double-check after a microtask to ensure position is maintained
-          // This handles any async layout updates
-          Promise.resolve().then(() => {
-            if (window.scrollY !== savedScrollY) {
-              window.scrollTo(0, savedScrollY)
-            }
-          })
+          // Restore scroll restoration after a brief moment
+          if (originalScrollRestoration) {
+            setTimeout(() => {
+              window.history.scrollRestoration = originalScrollRestoration
+            }, 100)
+          }
         }
       }
     }

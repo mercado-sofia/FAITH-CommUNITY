@@ -9,6 +9,14 @@
   justify-content: center;
   color: white;
   overflow: hidden;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.inviteSection.fadeIn {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .overlay {

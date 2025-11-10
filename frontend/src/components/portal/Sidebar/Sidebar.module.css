@@ -6,7 +6,7 @@
   top: 0;
   left: 0;
   background-color: #F7F7F7;
-  padding: 1rem 0.4rem 0.5rem;
+  padding: 0 0.4rem 0.5rem;
   z-index: 1000;
   display: flex;
   flex-direction: column;
@@ -27,10 +27,29 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 0.75rem;
-  padding: 0.4rem 0.5rem 1.35rem;
-  margin: 0 0.7rem 0;
-  min-height: 55px;
+  gap: 0.65rem;
+  padding: 0 0 0 1.4rem;
+  margin: 0 -0.4rem 0 -0.4rem;
+  height: 55px;
+  background-color: #FFFFFF;
+  border-bottom: none;
+  position: relative;
+}
+
+.brandingSection::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: repeating-linear-gradient(
+    to right,
+    #e5e7eb 0,
+    #e5e7eb 8px,
+    transparent 8px,
+    transparent 12px
+  );
 }
 
 .brandingLogo {
@@ -68,21 +87,13 @@
   object-fit: contain;
 }
 
-/* Logo */
-.logo {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 0.2rem 0 0.5rem;
-}
-
 .adminInfo {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   padding: 0.6rem 0.85rem;
-  margin: 0 0.7rem 0.45rem;
-  background-color: transparent;
+  margin: 0.7rem 0.7rem 0.45rem;
+  background-color: #FFFFFF;
   border: 1px solid #e0e0e0;
   border-radius: 12px;
 }

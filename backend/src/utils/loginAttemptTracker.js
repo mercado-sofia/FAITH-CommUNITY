@@ -34,30 +34,35 @@ export class LoginAttemptTracker {
   }
   
   // Get failed login attempts count (only counts FAILED attempts)
+  // Counts attempts only for the specific identifier and user_type combination
+  // This ensures admin, user, and superadmin attempts are counted separately
   static async getFailedAttempts(identifier, ipAddress, userType = 'user') {
     await this.ensureAttemptsTable()
     
     // Use database time for more accurate timing - only count FAILED attempts
+    // Count only by identifier and user_type to ensure role-specific counting
     const [rows] = await db.execute(
-      'SELECT COUNT(*) as count FROM login_attempts WHERE (identifier = ? OR ip_address = ?) AND attempt_type = ? AND user_type = ? AND created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)',
-      [identifier, ipAddress, 'failed', userType]
+      'SELECT COUNT(*) as count FROM login_attempts WHERE identifier = ? AND attempt_type = ? AND user_type = ? AND created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)',
+      [identifier, 'failed', userType]
     )
     
     return rows[0]?.count || 0
   }
 
   // Get time remaining until lockout expires (in seconds)
+  // Calculates lockout time only for the specific identifier and user_type combination
   static async getLockoutTimeRemaining(identifier, ipAddress, userType = 'user') {
     await this.ensureAttemptsTable()
     
     // Use database TIMESTAMPDIFF for accurate time calculation (avoids JS Date/timezone issues)
+    // Calculate only by identifier and user_type to ensure role-specific lockout
     const [rows] = await db.execute(
       `SELECT 
         TIMESTAMPDIFF(SECOND, NOW(), DATE_ADD(MIN(created_at), INTERVAL 5 MINUTE)) as remaining_seconds
        FROM login_attempts 
-       WHERE (identifier = ? OR ip_address = ?) AND attempt_type = ? AND user_type = ? 
+       WHERE identifier = ? AND attempt_type = ? AND user_type = ? 
        AND created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)`,
-      [identifier, ipAddress, 'failed', userType]
+      [identifier, 'failed', userType]
     )
     
     if (!rows[0] || rows[0].remaining_seconds === null) {
@@ -68,10 +73,11 @@ export class LoginAttemptTracker {
   }
   
   // Clear all failed attempts (called on successful login to reset the counter)
+  // Clears attempts only for the specific identifier and user_type combination
   static async clearFailedAttempts(identifier, ipAddress, userType = 'user') {
     await db.execute(
-      'DELETE FROM login_attempts WHERE (identifier = ? OR ip_address = ?) AND user_type = ?',
-      [identifier, ipAddress, userType]
+      'DELETE FROM login_attempts WHERE identifier = ? AND user_type = ? AND attempt_type = ?',
+      [identifier, userType, 'failed']
     )
   }
   

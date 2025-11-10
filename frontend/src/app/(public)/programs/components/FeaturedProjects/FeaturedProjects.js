@@ -125,8 +125,10 @@ export default function FeaturedProjects({ orgID }) {
   return (
     <section className={styles.programsShowcaseSection}>
       <div className={styles.programsShowcaseContent}>
-        <p className={styles.subheading}>Together, We Made These Happen</p>
-        <h2 className={styles.heading}>Featured Projects</h2>
+        <div>
+          <p className={styles.subheading}>Together, We Made These Happen</p>
+          <h2 className={styles.heading}>Featured Projects</h2>
+        </div>
         
         <div className={styles.programsGridContainer}>
           <div className={styles.programsGrid}>

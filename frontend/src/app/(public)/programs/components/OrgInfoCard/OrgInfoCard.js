@@ -1,15 +1,20 @@
+'use client';
+
 import styles from './OrgInfoCard.module.css';
 import Image from 'next/image';
 import { FaFacebookF, FaEnvelope } from 'react-icons/fa';
 import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
 import { UnavailableImagePlaceholder } from '@/components';
+import { useFadeIn } from '../../../hooks/useFadeIn';
 
 export default function OrgInfoCard({ data }) {
   const { name, acronym, description, facebook, email, logo } = data;
+  const { ref: sectionRef, isVisible: isSectionVisible } = useFadeIn();
+  const { ref: cardRef, isVisible: isCardVisible } = useFadeIn({ rootMargin: '0px 0px -100px 0px' });
 
   return (
-    <section className={styles.orgSection}>
-      <div className={styles.orgCard}>
+    <section ref={sectionRef} className={`${styles.orgSection} ${isSectionVisible ? styles.fadeIn : ''}`}>
+      <div ref={cardRef} className={`${styles.orgCard} ${isCardVisible ? styles.fadeIn : ''}`}>
         <div className={styles.logoWrapper}>
           {(() => {
             const orgImageUrl = getOrganizationImageUrl(logo, 'logo');

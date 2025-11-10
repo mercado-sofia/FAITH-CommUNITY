@@ -1,15 +1,42 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import styles from './OfficerSection.module.css';
 import { usePublicHeadsFaces } from '../../hooks/usePublicData';
 import Loader from '../../../../components/ui/Loader/Loader';
+import { useFadeIn } from '../../hooks/useFadeIn';
 
 export default function OfficerSection() {
   const { headsFacesData, isLoading } = usePublicHeadsFaces();
+  const { ref: cardRef, isVisible: isCardVisible } = useFadeIn({ rootMargin: '0px 0px -100px 0px' });
+  const [forceVisible, setForceVisible] = useState(false);
 
   // headsFacesData is now a single head object or null
   const primaryAdviser = headsFacesData;
+
+  // Fallback: Force visibility after data loads and a reasonable delay
+  // This ensures the card appears even if IntersectionObserver doesn't trigger
+  // This is especially important on the homepage where the section might be below the fold
+  // The useFadeIn hook has its own fallback (1500ms), but this provides an additional safety net
+  useEffect(() => {
+    // Reset forceVisible when card becomes visible through normal fade-in
+    if (isCardVisible && forceVisible) {
+      setForceVisible(false);
+      return;
+    }
+
+    // Only set timeout if data is loaded, adviser exists, card is not visible, and not already forced
+    if (!isLoading && primaryAdviser && !isCardVisible && !forceVisible) {
+      // Wait for the useFadeIn hook's fallback (1500ms) plus a bit more
+      const timeoutId = setTimeout(() => {
+        // Force visibility if IntersectionObserver hasn't triggered yet
+        setForceVisible(true);
+      }, 2500); // Wait 2.5 seconds after data loads
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isLoading, primaryAdviser, isCardVisible, forceVisible]);
 
   // Show loading state
   if (isLoading) {
@@ -40,7 +67,7 @@ export default function OfficerSection() {
       </div>
 
       <div className={styles.portfolioContainer}>
-        <div className={styles.portfolioCard}>
+        <div ref={cardRef} className={`${styles.portfolioCard} ${(isCardVisible || forceVisible) ? styles.fadeIn : ''}`}>
           {/* Main content */}
           <div className={styles.portfolioContent}>
             {/* Left side - Text content */}

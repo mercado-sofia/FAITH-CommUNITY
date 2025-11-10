@@ -4,6 +4,14 @@
   display: flex;
   justify-content: center;
   cursor: default;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.orgSection.fadeIn {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .orgCard {
@@ -16,6 +24,14 @@
   max-width: 1100px;
   width: 100%;
   gap: 2rem;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease-out 0.2s, transform 0.8s ease-out 0.2s;
+}
+
+.orgCard.fadeIn {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .logoWrapper {

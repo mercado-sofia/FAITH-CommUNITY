@@ -1,6 +1,14 @@
 /* ORG HEADS SECTION */
 .orgheadsSection {
   padding: 4rem 2rem 4rem 8rem;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.orgheadsSection.fadeIn {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .orgheadsWrapper {
@@ -15,6 +23,14 @@
 .orgheadsText {
   flex: 1;
   max-width: 400px;
+  opacity: 0;
+  transform: translateX(-30px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.orgheadsText.fadeIn {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .orgheadsText p {
@@ -37,6 +53,14 @@
   align-items: center;
   gap: 1rem;
   position: relative;
+  opacity: 0;
+  transform: translateX(30px);
+  transition: opacity 0.8s ease-out 0.2s, transform 0.8s ease-out 0.2s;
+}
+
+.orgheadsCarousel.fadeIn {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 /* When no navigation buttons, center the carousel window */

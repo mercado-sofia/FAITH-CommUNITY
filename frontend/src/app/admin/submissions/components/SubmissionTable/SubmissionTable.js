@@ -282,12 +282,6 @@ export default function SubmissionTable({
                 <td>
                   <div className={styles.sectionInfo}>
                     <span className={styles.sectionName}>{s.section.charAt(0).toUpperCase() + s.section.slice(1)}</span>
-                    {s.status === 'rejected' && s.rejection_reason && (
-                      <div className={styles.rejectionHint} title={s.rejection_reason}>
-                        <span className={styles.rejectionIcon}>⚠️</span>
-                        <span className={styles.rejectionText}>Feedback available</span>
-                      </div>
-                    )}
                   </div>
                 </td>
                 <td>{formatDateShort(s.submitted_at)}</td>

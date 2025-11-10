@@ -10,7 +10,7 @@ import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths
 import { UnavailableImagePlaceholder } from '@/components';
 
 export default function NewsSection() {
-  const orgNavRef = useRef(null);
+  const orgNavInnerRef = useRef(null);
   
   const [selectedOrg, setSelectedOrg] = useState(null);
   
@@ -132,7 +132,7 @@ export default function NewsSection() {
       const diff = currentX - touchStartX;
       
       // Update scroll position in real-time
-      const container = orgNavRef.current;
+      const container = orgNavInnerRef.current;
       if (container) {
         const newScrollPosition = container.scrollLeft - diff * 1.5;
         container.scrollLeft = Math.max(0, newScrollPosition);
@@ -152,7 +152,7 @@ export default function NewsSection() {
       const deltaX = e.deltaX;
       
       // Update scroll position in real-time
-      const container = orgNavRef.current;
+      const container = orgNavInnerRef.current;
       if (container) {
         const newScrollPosition = container.scrollLeft + deltaX * 2;
         container.scrollLeft = Math.max(0, newScrollPosition);
@@ -202,7 +202,7 @@ export default function NewsSection() {
         <div className={styles.orgNav}>
           <div 
             className={styles.orgNavInner} 
-            ref={orgNavRef}
+            ref={orgNavInnerRef}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}

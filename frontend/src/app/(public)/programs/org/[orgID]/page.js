@@ -9,7 +9,28 @@ import { OrgInfoCard, AdvocacyCompetency, FeaturedProjects, OrgHeadsCarousel, La
 import { usePublicOrganizationData } from '../../../hooks/usePublicData';
 import { useAuthState } from '@/hooks/useAuthState';
 import { usePublicPageLoader } from '../../../hooks/usePublicPageLoader';
+import { useFadeIn } from '../../../hooks/useFadeIn';
 import styles from '../org.module.css';
+
+// Volunteer Banner Component with fade-in animation
+function VolunteerBannerSection({ acronym, handleVolunteerClick }) {
+  const { ref: bannerRef, isVisible: isBannerVisible } = useFadeIn({ rootMargin: '0px 0px -100px 0px' });
+
+  return (
+    <section ref={bannerRef} className={`${styles.volunteerBanner} ${isBannerVisible ? styles.fadeIn : ''}`}>
+      <div className={styles.bannerContent}>
+        <p>Support {acronym}&apos;s Initiatives and Volunteer with Us!</p>
+        <Link 
+          href="/apply" 
+          className={styles.joinBtn}
+          onClick={handleVolunteerClick}
+        >
+          Join as a Volunteer
+        </Link>
+      </div>
+    </section>
+  );
+}
 
 export default function OrgPage() {
   const { orgID } = useParams();
@@ -106,18 +127,10 @@ export default function OrgPage() {
 
         <LatestPosts orgID={orgID} />
 
-        <section className={styles.volunteerBanner}>
-          <div className={styles.bannerContent}>
-            <p>Support {fallbackData.acronym}&apos;s Initiatives and Volunteer with Us!</p>
-            <Link 
-              href="/apply" 
-              className={styles.joinBtn}
-              onClick={handleVolunteerClick}
-            >
-              Join as a Volunteer
-            </Link>
-          </div>
-        </section>
+        <VolunteerBannerSection 
+          acronym={fallbackData.acronym}
+          handleVolunteerClick={handleVolunteerClick}
+        />
 
         {fallbackData.heads && fallbackData.heads.length > 0 && (
           <OrgHeadsCarousel heads={fallbackData.heads} />
@@ -150,18 +163,10 @@ export default function OrgPage() {
 
       <LatestPosts orgID={orgID} />
 
-      <section className={styles.volunteerBanner}>
-        <div className={styles.bannerContent}>
-          <p>Support {organizationData.acronym}&apos;s Initiatives and Volunteer with Us!</p>
-          <Link 
-            href="/apply" 
-            className={styles.joinBtn}
-            onClick={handleVolunteerClick}
-          >
-            Join as a Volunteer
-          </Link>
-        </div>
-      </section>
+      <VolunteerBannerSection 
+        acronym={organizationData.acronym}
+        handleVolunteerClick={handleVolunteerClick}
+      />
 
       {organizationData.heads && organizationData.heads.length > 0 && (
         <OrgHeadsCarousel heads={organizationData.heads} />

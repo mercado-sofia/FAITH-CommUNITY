@@ -7,6 +7,7 @@ import { FaFacebookF, FaEnvelope, FaPlus } from 'react-icons/fa';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
 import { UnavailableImagePlaceholder } from '@/components';
+import { useFadeIn } from '../../../hooks/useFadeIn';
 
 export default function OrgHeadsCarousel({ heads }) {
   const scrollRef = useRef(null);
@@ -41,15 +42,19 @@ export default function OrgHeadsCarousel({ heads }) {
     return () => el.removeEventListener('scroll', checkScroll);
   }, []);
 
+  const { ref: sectionRef, isVisible: isSectionVisible } = useFadeIn();
+  const { ref: headingRef, isVisible: isHeadingVisible } = useFadeIn();
+  const { ref: carouselRef, isVisible: isCarouselVisible } = useFadeIn({ rootMargin: '0px 0px -100px 0px' });
+
   return (
-    <section className={styles.orgheadsSection}>
+    <section ref={sectionRef} className={`${styles.orgheadsSection} ${isSectionVisible ? styles.fadeIn : ''}`}>
       <div className={styles.orgheadsWrapper}>
-        <div className={styles.orgheadsText}>
+        <div ref={headingRef} className={`${styles.orgheadsText} ${isHeadingVisible ? styles.fadeIn : ''}`}>
           <p>Organization Heads</p>
           <h2>Meet The<br />Organization Heads</h2>
         </div>
 
-        <div className={styles.orgheadsCarousel}>
+        <div ref={carouselRef} className={`${styles.orgheadsCarousel} ${isCarouselVisible ? styles.fadeIn : ''}`}>
           {heads.length >= 4 && (
             <button
               onClick={scrollLeft}

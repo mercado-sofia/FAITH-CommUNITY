@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAddFeaturedHighlightMutation, useRemoveFeaturedHighlightMutation, useCheckFeaturedStatusQuery } from '@/rtk/superadmin/highlightsApi'
+import UnfeatureConfirmationModal from './UnfeatureConfirmationModal'
+import FeatureConfirmationModal from './FeatureConfirmationModal'
 import styles from './styles/StarButton.module.css'
 
 // Helper functions to manage starred highlights in localStorage
@@ -32,9 +34,11 @@ const setStarredHighlight = (highlightId, isStarred) => {
   }
 }
 
-const StarButton = ({ highlightId, onStarChange }) => {
+const StarButton = ({ highlightId, highlightTitle, onStarChange }) => {
   const [isStarred, setIsStarred] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [showUnfeatureModal, setShowUnfeatureModal] = useState(false)
+  const [showFeatureModal, setShowFeatureModal] = useState(false)
 
   // Check if highlight is already featured
   // Note: API endpoints may not exist yet (for future purposes)
@@ -90,11 +94,20 @@ const StarButton = ({ highlightId, onStarChange }) => {
     
     if (isLoading) return
 
+    if (isStarred) {
+      // Show confirmation modal for unfeaturing
+      setShowUnfeatureModal(true)
+    } else {
+      // Show confirmation modal for featuring
+      setShowFeatureModal(true)
+    }
+  }
+
+  const addToFeatured = async () => {
     setIsLoading(true)
-    const newStarredState = !isStarred
     
     try {
-      // Use localStorage directly (API endpoints not implemented yet)
+      const newStarredState = true
       setIsStarred(newStarredState)
       setStarredHighlight(highlightId, newStarredState)
       if (onStarChange) onStarChange(highlightId, newStarredState)
@@ -102,22 +115,62 @@ const StarButton = ({ highlightId, onStarChange }) => {
       // Try to use API if available (for future use)
       // This will fail silently if endpoints don't exist
       try {
-        if (isStarred) {
-          await removeFeaturedHighlight(highlightId).unwrap()
-        } else {
-          await addFeaturedHighlight(highlightId).unwrap()
-        }
+        await addFeaturedHighlight(highlightId).unwrap()
       } catch (apiError) {
         // API not available - that's okay, we're using localStorage
         // Silently ignore the error
       }
     } catch (error) {
       // Fallback: revert state if something goes wrong
-      setIsStarred(!newStarredState)
-      console.error('Error toggling star:', error)
+      setIsStarred(false)
+      console.error('Error adding to featured:', error)
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const removeFromFeatured = async () => {
+    setIsLoading(true)
+    
+    try {
+      const newStarredState = false
+      setIsStarred(newStarredState)
+      setStarredHighlight(highlightId, newStarredState)
+      if (onStarChange) onStarChange(highlightId, newStarredState)
+      
+      // Try to use API if available (for future use)
+      // This will fail silently if endpoints don't exist
+      try {
+        await removeFeaturedHighlight(highlightId).unwrap()
+      } catch (apiError) {
+        // API not available - that's okay, we're using localStorage
+        // Silently ignore the error
+      }
+    } catch (error) {
+      // Fallback: revert state if something goes wrong
+      setIsStarred(true)
+      console.error('Error removing from featured:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleUnfeatureConfirm = async () => {
+    await removeFromFeatured()
+    setShowUnfeatureModal(false)
+  }
+
+  const handleUnfeatureCancel = () => {
+    setShowUnfeatureModal(false)
+  }
+
+  const handleFeatureConfirm = async () => {
+    await addToFeatured()
+    setShowFeatureModal(false)
+  }
+
+  const handleFeatureCancel = () => {
+    setShowFeatureModal(false)
   }
 
   // Don't show loading state (API queries are skipped)
@@ -130,26 +183,44 @@ const StarButton = ({ highlightId, onStarChange }) => {
   // }
 
   return (
-    <button
-      className={`${styles.starButton} ${isStarred ? styles.starred : styles.unstarred}`}
-      onClick={handleStarClick}
-      disabled={isLoading}
-      title={isStarred ? 'Remove from Featured Highlights' : 'Add to Featured Highlights'}
-    >
-      {isLoading ? (
-        <div className={styles.starLoading}></div>
-      ) : (
-        <svg 
-          className={styles.starIcon} 
-          viewBox="0 0 24 24" 
-          fill={isStarred ? "currentColor" : "none"}
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
-        </svg>
-      )}
-    </button>
+    <>
+      <button
+        className={`${styles.starButton} ${isStarred ? styles.starred : styles.unstarred}`}
+        onClick={handleStarClick}
+        disabled={isLoading}
+        title={isStarred ? 'Remove from Featured Highlights' : 'Add to Featured Highlights'}
+      >
+        {isLoading ? (
+          <div className={styles.starLoading}></div>
+        ) : (
+          <svg 
+            className={styles.starIcon} 
+            viewBox="0 0 24 24" 
+            fill={isStarred ? "currentColor" : "none"}
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+          </svg>
+        )}
+      </button>
+
+      <UnfeatureConfirmationModal
+        isOpen={showUnfeatureModal}
+        onClose={handleUnfeatureCancel}
+        onConfirm={handleUnfeatureConfirm}
+        highlightTitle={highlightTitle}
+        isLoading={isLoading}
+      />
+
+      <FeatureConfirmationModal
+        isOpen={showFeatureModal}
+        onClose={handleFeatureCancel}
+        onConfirm={handleFeatureConfirm}
+        highlightTitle={highlightTitle}
+        isLoading={isLoading}
+      />
+    </>
   )
 }
 

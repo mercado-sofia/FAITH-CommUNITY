@@ -16,7 +16,7 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
     }
 
     if (isOpen) {
-      // Save current scroll position in ref
+      // Save current scroll position BEFORE locking
       scrollPositionRef.current = window.scrollY
       
       // Lock body scroll
@@ -26,14 +26,14 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
       document.body.style.right = '0'
       document.body.style.overflow = 'hidden'
       document.body.style.width = '100%'
-    } else {
-      // Restore body scroll when modal closes
-      // Use requestAnimationFrame to ensure DOM has updated
-      requestAnimationFrame(() => {
+      
+      // Cleanup function to restore scroll when modal closes
+      return () => {
+        // Restore body styles first
         if (typeof document !== 'undefined' && document.body) {
           const savedScrollY = scrollPositionRef.current
           
-          // Restore body styles
+          // Restore body styles immediately
           document.body.style.position = ''
           document.body.style.top = ''
           document.body.style.left = ''
@@ -41,14 +41,21 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
           document.body.style.overflow = ''
           document.body.style.width = ''
           
-          // Restore scroll position after a brief delay to ensure styles are applied
+          // Restore scroll position after DOM has updated
+          // Use multiple requestAnimationFrame to ensure all updates are complete
           requestAnimationFrame(() => {
-            if (typeof window !== 'undefined') {
-              window.scrollTo(0, savedScrollY)
-            }
+            requestAnimationFrame(() => {
+              if (typeof window !== 'undefined') {
+                // Prevent any scroll events during restoration
+                window.scrollTo({
+                  top: savedScrollY,
+                  behavior: 'auto' // Instant scroll, no animation
+                })
+              }
+            })
           })
         }
-      })
+      }
     }
   }, [isOpen])
 

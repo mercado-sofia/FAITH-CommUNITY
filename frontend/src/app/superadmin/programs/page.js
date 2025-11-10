@@ -876,14 +876,21 @@ const SuperadminProgramsPage = () => {
       )}
 
       {/* Program Details Modal */}
-      <ProgramDetailsModal 
-        program={selectedProgram}
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false)
-          setSelectedProgram(null)
-        }}
-      />
+      {/* Use key to force re-render when program changes, ensuring correct data display */}
+      {isModalOpen && selectedProgram && (
+        <ProgramDetailsModal 
+          key={`program-modal-${selectedProgram.id}`}
+          program={selectedProgram}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false)
+            // Small delay before clearing to ensure modal closes smoothly
+            setTimeout(() => {
+              setSelectedProgram(null)
+            }, 100)
+          }}
+        />
+      )}
     </div>
   )
 }

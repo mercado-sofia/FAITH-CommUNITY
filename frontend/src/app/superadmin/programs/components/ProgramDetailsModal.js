@@ -20,8 +20,10 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
   }, [isOpen, program?.id])
 
   // Fetch complete program details when modal opens
+  // Force refetch when program ID changes to ensure correct data
   const { 
-    data: fullProgramData
+    data: fullProgramData,
+    isLoading: isLoadingProgram
   } = useGetProgramByIdQuery(program?.id, {
     skip: !isOpen || !program?.id,
     refetchOnMountOrArgChange: true
@@ -34,7 +36,7 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
     }
 
     if (isOpen) {
-      // Save current scroll position in ref
+      // Save current scroll position BEFORE locking
       scrollPositionRef.current = window.scrollY
       
       // Lock body scroll
@@ -44,14 +46,14 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
       document.body.style.right = '0'
       document.body.style.overflow = 'hidden'
       document.body.style.width = '100%'
-    } else {
-      // Restore body scroll when modal closes
-      // Use requestAnimationFrame to ensure DOM has updated
-      requestAnimationFrame(() => {
+      
+      // Cleanup function to restore scroll when modal closes
+      return () => {
+        // Restore body styles first
         if (typeof document !== 'undefined' && document.body) {
           const savedScrollY = scrollPositionRef.current
           
-          // Restore body styles
+          // Restore body styles immediately
           document.body.style.position = ''
           document.body.style.top = ''
           document.body.style.left = ''
@@ -59,23 +61,30 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
           document.body.style.overflow = ''
           document.body.style.width = ''
           
-          // Restore scroll position after a brief delay to ensure styles are applied
+          // Restore scroll position after DOM has updated
+          // Use multiple requestAnimationFrame to ensure all updates are complete
           requestAnimationFrame(() => {
-            if (typeof window !== 'undefined') {
-              window.scrollTo(0, savedScrollY)
-            }
+            requestAnimationFrame(() => {
+              if (typeof window !== 'undefined') {
+                // Prevent any scroll events during restoration
+                window.scrollTo({
+                  top: savedScrollY,
+                  behavior: 'auto' // Instant scroll, no animation
+                })
+              }
+            })
           })
         }
-      })
+      }
     }
   }, [isOpen])
 
   if (!isOpen || !program) return null
 
-  // Use fetched data if available, otherwise fallback to passed program data
-  // Prefer fetched data as it includes complete information like submitted_by_name and submitted_by_role
-  // If query has completed (even if it returned null), use that; otherwise use initial program data
-  const programData = fullProgramData !== undefined ? (fullProgramData || program) : program
+  // Use fetched data if available and loaded, otherwise fallback to passed program data
+  // Always prefer the passed program data initially, then use fetched data when available
+  // This ensures we show the correct program immediately, then update with full details
+  const programData = (fullProgramData && !isLoadingProgram) ? fullProgramData : program
   
   // Use the new upload path utility
   const imageSource = getProgramImageUrl(programData.image);
@@ -104,9 +113,11 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
     }
   }
 
+  // Use program ID as key to force re-render when program changes
+  // This ensures the modal shows the correct program data
   return (
-    <div className={styles.modalOverlay} onClick={handleOverlayClick} key={`modal-${program?.id}`}>
-      <div className={styles.modalContent}>
+    <div className={styles.modalOverlay} onClick={handleOverlayClick} key={`modal-${program?.id}-${isOpen}`}>
+      <div className={styles.modalContent} key={`content-${program?.id}`}>
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>Program Details</h2>
           <button 

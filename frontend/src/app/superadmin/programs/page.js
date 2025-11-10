@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FiChevronDown } from 'react-icons/fi'
 import { useGetAllProgramsByOrganizationQuery, useGetProgramsStatisticsQuery } from '@/rtk/superadmin/programsApi'
-import { useGetAllOrganizationsQuery } from '@/rtk/(public)/organizationsApi'
+import { useGetOrganizationsForFilterQuery } from '@/rtk/superadmin/dashboardApi'
 import { getOrganizationImageUrl } from '@/utils/uploadPaths'
 import ProgramDetailsModal from './components/ProgramDetailsModal'
 import FeaturedProjects from './components/featuredProjects'
@@ -130,10 +130,11 @@ const SuperadminProgramsPage = () => {
   } = useGetProgramsStatisticsQuery()
 
   // Fetch all organizations to show even those without programs
+  // Use the same hook as Highlights Management for consistency
   const { 
     data: allOrganizations = [], 
     isLoading: organizationsLoading 
-  } = useGetAllOrganizationsQuery()
+  } = useGetOrganizationsForFilterQuery()
 
   // Merge all organizations with programs data
   // Create a map of organizations that have programs
@@ -152,11 +153,12 @@ const SuperadminProgramsPage = () => {
       return orgWithPrograms
     } else {
       // Organization doesn't have programs, create empty structure
+      // Note: useGetOrganizationsForFilterQuery returns id, acronym, name, logo, color
       return {
         organizationId: org.id,
         organizationName: org.name,
         organizationAcronym: org.acronym,
-        orgLogo: org.logo,
+        orgLogo: org.logo || null,
         organizationColor: org.color || null, // Use organization color from API
         programs: {
           upcoming: [],
@@ -838,7 +840,7 @@ const SuperadminProgramsPage = () => {
                 className={`${styles.organizationDropdown} ${showDropdown === "organization" ? styles.open : ""}`}
                 onClick={() => setShowDropdown(showDropdown === "organization" ? null : "organization")}
               >
-                {selectedOrganization === "all" ? "All Organizations" : organizationOptions.find(org => org.id.toString() === selectedOrganization)?.acronym + " - " + organizationOptions.find(org => org.id.toString() === selectedOrganization)?.name}
+                {organizationsLoading ? "Loading..." : selectedOrganization === "all" ? "All Organizations" : organizationOptions.find(org => org.id.toString() === selectedOrganization)?.acronym + " - " + organizationOptions.find(org => org.id.toString() === selectedOrganization)?.name}
                 <FiChevronDown className={styles.icon} />
               </div>
               {showDropdown === "organization" && (
@@ -849,14 +851,20 @@ const SuperadminProgramsPage = () => {
                   }}>
                     All Organizations
                   </li>
-                  {organizationOptions.map(org => (
-                    <li key={org.id} onClick={() => {
-                      setSelectedOrganization(org.id.toString());
-                      setShowDropdown(null);
-                    }}>
-                      {org.acronym} - {org.name}
+                  {organizationsLoading ? (
+                    <li style={{ padding: '0.5rem', textAlign: 'center', color: '#666' }}>
+                      Loading organizations...
                     </li>
-                  ))}
+                  ) : (
+                    organizationOptions.map(org => (
+                      <li key={org.id} onClick={() => {
+                        setSelectedOrganization(org.id.toString());
+                        setShowDropdown(null);
+                      }}>
+                        {org.acronym} - {org.name}
+                      </li>
+                    ))
+                  )}
                 </ul>
               )}
             </div>

@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/programsApi'
 import ProgramDetailsModal from './ProgramDetailsModal'
 import ProgramCard from './ProgramCard'
+import { SkeletonLoader } from '../../components'
 import styles from '../programs.module.css'
 
 const FeaturedProjects = ({ searchQuery = '' }) => {
@@ -185,10 +186,7 @@ const FeaturedProjects = ({ searchQuery = '' }) => {
     return (
       <div className={styles.featuredSection}>
         <h2 className={styles.sectionTitle}>Featured Projects</h2>
-        <div className={styles.loadingContainer}>
-          <div className={styles.spinner}></div>
-          <p>Loading featured projects...</p>
-        </div>
+        <SkeletonLoader type="programs" count={3} />
       </div>
     )
   }

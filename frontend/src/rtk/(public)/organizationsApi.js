@@ -22,7 +22,8 @@ export const organizationsApi = createApi({
             id: org.id,
             acronym: org.acronym, // This is the 'org' field from DB
             name: org.name, // This is the 'orgName' field from DB
-            logo: org.logo
+            logo: org.logo,
+            color: org.color || null // Organization color
           }))
         }
         return []

@@ -64,23 +64,77 @@ class NotificationController {
       const total = countResult[0].total;
 
       // Get notifications with pagination
+      // For message notifications, join with messages and users to get the correct sender name dynamically
       // Note: MySQL2 has issues with LIMIT and OFFSET as placeholders, so we interpolate them directly
       // This is safe because we've already validated limitNum and offsetNum are valid numbers
       const query = `
-        SELECT id, type, title, message, section, submission_id, is_read, created_at
-        FROM admin_notifications 
+        SELECT 
+          an.id, 
+          an.type, 
+          an.title, 
+          an.message, 
+          an.section, 
+          an.submission_id, 
+          an.is_read, 
+          an.created_at,
+          -- For message notifications, get sender name from users table
+          -- Try to find user by user_id first, then by email if user_id is null or name is empty
+          CASE 
+            WHEN an.type = 'message' THEN
+              COALESCE(
+                NULLIF(TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))), ''),
+                NULLIF(TRIM(CONCAT(COALESCE(u_by_email.first_name, ''), ' ', COALESCE(u_by_email.last_name, ''))), ''),
+                'Guest User'
+              )
+            ELSE NULL
+          END as sender_name,
+          m.user_id as message_user_id,
+          m.sender_email as message_sender_email
+        FROM admin_notifications an
+        LEFT JOIN messages m ON an.type = 'message' AND an.submission_id = m.id
+        LEFT JOIN users u ON m.user_id = u.id AND u.is_active = 1
+        LEFT JOIN users u_by_email ON an.type = 'message' AND m.sender_email IS NOT NULL AND LOWER(m.sender_email) = LOWER(u_by_email.email) AND u_by_email.is_active = 1
         WHERE ${whereClause}
-        ORDER BY created_at DESC 
+        ORDER BY an.created_at DESC 
         LIMIT ${limitNum} OFFSET ${offsetNum}
       `;
 
       const [notifications] = await db.execute(query, queryParams);
 
-      // Format the time ago for each notification
-      const formattedNotifications = notifications.map(notification => ({
-        ...notification,
-        timeAgo: NotificationController.getTimeAgo(notification.created_at)
-      }));
+      // Format the time ago for each notification and update message text for message notifications
+      const formattedNotifications = notifications.map(notification => {
+        let message = notification.message;
+        
+        // For message notifications, replace "Guest User" with the actual sender name if available
+        if (notification.type === 'message' && notification.sender_name) {
+          const senderName = notification.sender_name.trim();
+          if (senderName && senderName !== 'Guest User') {
+            // Replace "Guest User" in the message with the actual sender name
+            message = message.replace(/Guest User/g, senderName);
+            // Also handle cases where the message might already have the name but we want to ensure it's correct
+            // Extract the name from "You have received a new message from {name}."
+            const messageMatch = message.match(/You have received a new message from (.+)\./);
+            if (messageMatch && messageMatch[1] === 'Guest User') {
+              message = `You have received a new message from ${senderName}.`;
+            } else if (!messageMatch) {
+              // If the pattern doesn't match, just replace Guest User
+              message = message.replace(/Guest User/g, senderName);
+            }
+          }
+        }
+        
+        return {
+          id: notification.id,
+          type: notification.type,
+          title: notification.title,
+          message: message,
+          section: notification.section,
+          submission_id: notification.submission_id,
+          is_read: notification.is_read,
+          created_at: notification.created_at,
+          timeAgo: NotificationController.getTimeAgo(notification.created_at)
+        };
+      });
 
       res.json({
         success: true,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Toast from '../Toast/Toast';
 
 /**
@@ -47,7 +48,14 @@ export default function ToastContainer() {
     };
   }, [addToast]);
 
-  return (
+  // Only render on client side and when document.body exists
+  if (typeof window === 'undefined' || typeof document === 'undefined' || !document.body) {
+    return null;
+  }
+
+  // Use createPortal to render toasts directly to document.body (like newsletter toast)
+  // This ensures proper z-index and positioning on mobile devices
+  return createPortal(
     <div style={{ position: 'fixed', top: 0, right: 0, zIndex: 1000000, pointerEvents: 'none' }}>
       {toasts.map((toast, index) => (
         <div 
@@ -66,6 +74,7 @@ export default function ToastContainer() {
           />
         </div>
       ))}
-    </div>
+    </div>,
+    document.body
   );
 }

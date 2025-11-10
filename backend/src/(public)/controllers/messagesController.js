@@ -71,6 +71,18 @@ export const submitMessage = async (req, res) => {
         // Use the email from users table for consistency
         actualSenderEmail = userResult[0].email;
       }
+    } else {
+      // If user_id is not provided, try to find user by email (for registered users)
+      const [userByEmailResult] = await db.execute(
+        "SELECT id, email FROM users WHERE email = ? AND is_active = 1",
+        [actualSenderEmail]
+      );
+      
+      if (userByEmailResult.length > 0) {
+        actualUserId = userByEmailResult[0].id;
+        // Use the email from users table for consistency
+        actualSenderEmail = userByEmailResult[0].email;
+      }
     }
 
     // Insert message
@@ -102,8 +114,21 @@ export const submitMessage = async (req, res) => {
         
         if (userNameResult.length > 0) {
           const { first_name, last_name } = userNameResult[0];
-          senderDisplayName = `${first_name} ${last_name}`.trim();
+          const fullName = `${first_name || ''} ${last_name || ''}`.trim();
+          // Only use the name if it's not empty
+          if (fullName) {
+            senderDisplayName = fullName;
+          } else if (sender_name && sender_name.trim()) {
+            // Fallback to provided sender_name if full name is empty
+            senderDisplayName = sender_name.trim();
+          }
+        } else if (sender_name && sender_name.trim()) {
+          // If user not found but sender_name provided, use it
+          senderDisplayName = sender_name.trim();
         }
+      } else if (sender_name && sender_name.trim()) {
+        // For unregistered users, use provided sender_name if available
+        senderDisplayName = sender_name.trim();
       }
       
       const notificationPromises = adminResult.map(admin => {

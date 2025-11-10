@@ -2,6 +2,7 @@
 
 import db from '../../database.js';
 import { getOrganizationLogoUrl } from '../../utils/imageUrlUtils.js';
+import { logError } from '../../utils/logger.js';
 
 class SuperAdminNotificationController {
   // Get all notifications for a superadmin
@@ -9,6 +10,14 @@ class SuperAdminNotificationController {
     try {
       const { superAdminId } = req.params;
       const { limit = 10, offset = 0 } = req.query;
+
+      // Validate superAdminId
+      if (!superAdminId || isNaN(parseInt(superAdminId))) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid superadmin ID'
+        });
+      }
 
       // Get total count first
       const [countResult] = await db.execute(
@@ -81,9 +90,17 @@ class SuperAdminNotificationController {
         total: total
       });
     } catch (error) {
+      // Log the error for debugging
+      logError('Error fetching superadmin notifications', error, {
+        context: 'superadmin_notification_controller',
+        superAdminId: req.params?.superAdminId,
+        errorStack: error.stack
+      });
+
       res.status(500).json({
         success: false,
-        message: 'Failed to fetch notifications'
+        message: 'Failed to fetch notifications',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }
@@ -93,6 +110,21 @@ class SuperAdminNotificationController {
     try {
       const { notificationId } = req.params;
       const { superAdminId } = req.body;
+
+      // Validate inputs
+      if (!notificationId || isNaN(parseInt(notificationId))) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid notification ID'
+        });
+      }
+
+      if (!superAdminId || isNaN(parseInt(superAdminId))) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid superadmin ID'
+        });
+      }
 
       const query = `
         UPDATE superadmin_notifications 
@@ -114,9 +146,17 @@ class SuperAdminNotificationController {
         message: 'Notification marked as read'
       });
     } catch (error) {
+      logError('Error marking notification as read', error, {
+        context: 'superadmin_notification_controller',
+        notificationId: req.params?.notificationId,
+        superAdminId: req.body?.superAdminId,
+        errorStack: error.stack
+      });
+
       res.status(500).json({
         success: false,
-        message: 'Failed to mark notification as read'
+        message: 'Failed to mark notification as read',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }
@@ -125,6 +165,14 @@ class SuperAdminNotificationController {
   static async markAllAsRead(req, res) {
     try {
       const { superAdminId } = req.params;
+
+      // Validate superAdminId
+      if (!superAdminId || isNaN(parseInt(superAdminId))) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid superadmin ID'
+        });
+      }
 
       const query = `
         UPDATE superadmin_notifications 
@@ -139,9 +187,16 @@ class SuperAdminNotificationController {
         message: `${result.affectedRows} notifications marked as read`
       });
     } catch (error) {
+      logError('Error marking all notifications as read', error, {
+        context: 'superadmin_notification_controller',
+        superAdminId: req.params?.superAdminId,
+        errorStack: error.stack
+      });
+
       res.status(500).json({
         success: false,
-        message: 'Failed to mark all notifications as read'
+        message: 'Failed to mark all notifications as read',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }
@@ -151,6 +206,21 @@ class SuperAdminNotificationController {
     try {
       const { notificationId } = req.params;
       const { superAdminId } = req.body;
+
+      // Validate inputs
+      if (!notificationId || isNaN(parseInt(notificationId))) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid notification ID'
+        });
+      }
+
+      if (!superAdminId || isNaN(parseInt(superAdminId))) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid superadmin ID'
+        });
+      }
 
       const query = `
         DELETE FROM superadmin_notifications 
@@ -171,9 +241,17 @@ class SuperAdminNotificationController {
         message: 'Notification deleted successfully'
       });
     } catch (error) {
+      logError('Error deleting notification', error, {
+        context: 'superadmin_notification_controller',
+        notificationId: req.params?.notificationId,
+        superAdminId: req.body?.superAdminId,
+        errorStack: error.stack
+      });
+
       res.status(500).json({
         success: false,
-        message: 'Failed to delete notification'
+        message: 'Failed to delete notification',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }
@@ -182,6 +260,14 @@ class SuperAdminNotificationController {
   static async getUnreadCount(req, res) {
     try {
       const { superAdminId } = req.params;
+
+      // Validate superAdminId
+      if (!superAdminId || isNaN(parseInt(superAdminId))) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid superadmin ID'
+        });
+      }
 
       const [result] = await db.execute(
         'SELECT COUNT(*) as count FROM superadmin_notifications WHERE superadmin_id = ? AND is_read = 0',
@@ -193,9 +279,16 @@ class SuperAdminNotificationController {
         count: result[0].count
       });
     } catch (error) {
+      logError('Error getting unread notification count', error, {
+        context: 'superadmin_notification_controller',
+        superAdminId: req.params?.superAdminId,
+        errorStack: error.stack
+      });
+
       res.status(500).json({
         success: false,
-        message: 'Failed to get unread count'
+        message: 'Failed to get unread count',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }

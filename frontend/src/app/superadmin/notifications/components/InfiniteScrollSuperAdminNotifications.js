@@ -176,10 +176,30 @@ export default function InfiniteScrollSuperAdminNotifications({
 
   // Show error state
   if (error) {
+    // Extract error message from RTK Query error object
+    let errorMessage = 'An error occurred while loading notifications';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (error?.data?.message) {
+      errorMessage = error.data.message;
+    } else if (error?.data?.error) {
+      errorMessage = error.data.error;
+    } else if (error?.error) {
+      errorMessage = error.error;
+    } else if (error?.status) {
+      errorMessage = `Error ${error.status}: ${error.data?.message || 'Failed to load notifications'}`;
+    } else if (typeof error === 'object') {
+      // Try to extract any meaningful message from the error object
+      errorMessage = JSON.stringify(error, null, 2);
+    }
+    
     return (
       <div className={styles.errorContainer}>
         <p className={styles.errorMessage}>
-          {error instanceof Error ? error.message : String(error)}
+          {errorMessage}
         </p>
       </div>
     );

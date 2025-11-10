@@ -26,35 +26,7 @@
 /* Scrollable inner content */
 .modalScrollArea {
   overflow: auto;
-  scrollbar-gutter: stable both-edges; /* keeps gutter space */
   max-height: calc(90vh - 60px - 2rem); /* adjust for header + actions */
-}
-
-/* Custom scrollbar for modal content */
-.modalScrollArea::-webkit-scrollbar {
-  width: 8px;
-}
-
-.modalScrollArea::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 4px;
-  margin: 4px 0;
-}
-
-.modalScrollArea::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-  border: 1px solid #f1f5f9;
-}
-
-.modalScrollArea::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* Firefox scrollbar */
-.modalScrollArea {
-  scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 #f1f5f9;
 }
 
 .modalHeader {

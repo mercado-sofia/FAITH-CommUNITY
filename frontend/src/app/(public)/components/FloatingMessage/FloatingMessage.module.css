@@ -139,36 +139,10 @@
   overflow-y: auto;
   z-index: 100000;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  scrollbar-width: thin !important;
-  scrollbar-color: #1ab097 transparent !important;
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
-}
-
-/* Webkit scrollbar styling for Chrome/Safari/Edge - Override global styles */
-.dropdownList::-webkit-scrollbar {
-  width: 6px !important;
-}
-
-.dropdownList::-webkit-scrollbar-track {
-  background: transparent !important;
-}
-
-.dropdownList::-webkit-scrollbar-thumb {
-  background: #1ab097 !important;
-  border-radius: 3px !important;
-  border: none !important;
-}
-
-.dropdownList::-webkit-scrollbar-thumb:hover {
-  background: #1c7466 !important;
-}
-
-/* Hide scrollbar arrows/buttons */
-.dropdownList::-webkit-scrollbar-button {
-  display: none !important;
 }
 
 .dropdownItem {

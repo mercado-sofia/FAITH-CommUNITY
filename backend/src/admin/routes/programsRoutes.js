@@ -49,9 +49,9 @@ router.put('/admin/programs/:id/toggle-volunteers', toggleVolunteerAcceptance);
 router.post('/admin/programs/:id/post-act-report', s3UploadConfigs.postActReport.single('file'), uploadPostActReport);
 router.delete('/admin/programs/:id', deleteProgramSubmission);
 
-// Superadmin routes
-router.get('/superadmin/featured-projects', getAllFeaturedPrograms);
-router.put('/superadmin/programs/:id/featured', toggleFeaturedStatus);
+// Superadmin routes - require authentication
+router.get('/superadmin/featured-projects', verifyAdminOrSuperadmin, getAllFeaturedPrograms);
+router.put('/superadmin/programs/:id/featured', verifyAdminOrSuperadmin, toggleFeaturedStatus);
 
 // ===================== Program Projects routes (from programProjects.js) =====================
 // SECURITY FIX: Removed direct program creation endpoint to enforce submission workflow

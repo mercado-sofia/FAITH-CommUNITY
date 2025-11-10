@@ -1162,116 +1162,154 @@ export const getAllFeaturedPrograms = async (req, res) => {
 
     // Get multiple dates and additional images for each program
     const programsWithDates = await Promise.all(rows.map(async (program) => {
-      let multipleDates = [];
-      
-      // If program has event_start_date and event_end_date, check if they're the same (single day)
-      if (program.event_start_date && program.event_end_date) {
-        if (program.event_start_date === program.event_end_date) {
-          // Single day program
-          multipleDates = [program.event_start_date];
-        }
-      } else {
-        // Check for multiple dates in program_event_dates table
-        const [dateRows] = await db.execute(
-          'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
-          [program.id]
-        );
-        multipleDates = dateRows.map(row => row.event_date);
-      }
-
-      // Get additional images for this program
-      const [imageRows] = await db.execute(
-        'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
-        [program.id]
-      );
-      const additionalImages = imageRows.map(row => row.image_data);
-
-      // Get collaboration data if program is collaborative
-      let collaborators = [];
-      if (program.is_collaborative) {
-        // Get all organizations involved in the collaboration
-        const [collaborationRows] = await db.execute(`
-          SELECT DISTINCT
-            o.orgName as organization_name,
-            o.org as organization_acronym,
-            o.org_color as organization_color,
-            o.logo as organization_logo,
-            CASE 
-              WHEN o.id = ? THEN 'primary'
-              ELSE 'collaborator'
-            END as role
-          FROM (
-            -- Primary organization (the one that created the program)
-            SELECT ? as org_id, 'primary' as role
-            
-            UNION ALL
-            
-            -- Collaborator organizations (those who accepted collaboration)
-            SELECT o.id as org_id, 'collaborator' as role
-            FROM program_collaborations pc
-            LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
-            LEFT JOIN organizations o ON a.organization_id = o.id
-            WHERE pc.program_id = ? AND pc.status = 'accepted'
-          ) org_roles
-          LEFT JOIN organizations o ON org_roles.org_id = o.id
-          WHERE o.id IS NOT NULL
-          ORDER BY 
-            CASE WHEN org_roles.role = 'primary' THEN 0 ELSE 1 END,
-            o.orgName ASC
-        `, [program.organization_id, program.organization_id, program.id]);
+      try {
+        let multipleDates = [];
         
-        // Get admin details for each collaborator organization
-        const collaboratorsWithAdmins = await Promise.all(collaborationRows.map(async (collab) => {
-          if (collab.role === 'primary') {
-            // For primary, get the admin who created the program
-            const [adminRows] = await db.execute(`
-              SELECT a.id, a.email
-              FROM admins a
-              WHERE a.organization_id = ? AND a.is_active = TRUE
-              LIMIT 1
-            `, [program.organization_id]);
-            return {
-              organization_name: collab.organization_name,
-              organization_acronym: collab.organization_acronym,
-              organization_color: collab.organization_color,
-              organization_logo: collab.organization_logo,
-              admin_id: adminRows[0]?.id || null,
-              admin_email: adminRows[0]?.email || null,
-              role: collab.role
-              // Primary doesn't need collaboration_status
-            };
-          } else {
-            // For collaborators, get the admin who accepted the collaboration
-            const [adminRows] = await db.execute(`
-              SELECT a.id, a.email
-              FROM program_collaborations pc
-              LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
-              LEFT JOIN organizations o ON a.organization_id = o.id
-              WHERE pc.program_id = ? AND o.orgName = ? AND pc.status = 'accepted'
-              LIMIT 1
-            `, [program.id, collab.organization_name]);
-            return {
-              organization_name: collab.organization_name,
-              organization_acronym: collab.organization_acronym,
-              organization_color: collab.organization_color,
-              organization_logo: collab.organization_logo,
-              admin_id: adminRows[0]?.id || null,
-              admin_email: adminRows[0]?.email || null,
-              role: collab.role,
-              collaboration_status: 'accepted' // All collaborators are accepted
-            };
+        // If program has event_start_date and event_end_date, check if they're the same (single day)
+        if (program.event_start_date && program.event_end_date) {
+          if (program.event_start_date === program.event_end_date) {
+            // Single day program
+            multipleDates = [program.event_start_date];
           }
-        }));
-        
-        collaborators = collaboratorsWithAdmins;
-      }
+        } else {
+          // Check for multiple dates in program_event_dates table
+          try {
+            const [dateRows] = await db.execute(
+              'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
+              [program.id]
+            );
+            multipleDates = dateRows.map(row => row.event_date);
+          } catch (dateError) {
+            console.error(`Error fetching dates for featured program ${program.id}:`, dateError);
+            multipleDates = [];
+          }
+        }
 
-      return {
-        ...program,
-        multiple_dates: multipleDates,
-        additional_images: additionalImages,
-        collaborators: collaborators
-      };
+        // Get additional images for this program
+        let additionalImages = [];
+        try {
+          const [imageRows] = await db.execute(
+            'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
+            [program.id]
+          );
+          additionalImages = imageRows.map(row => row.image_data);
+        } catch (imageError) {
+          console.error(`Error fetching images for featured program ${program.id}:`, imageError);
+          additionalImages = [];
+        }
+
+        // Get collaboration data if program is collaborative
+        let collaborators = [];
+        const isCollaborativeProgram = program.is_collaborative === 1 || 
+                                       program.is_collaborative === true || 
+                                       program.is_collaborative === '1' ||
+                                       Boolean(program.is_collaborative);
+        
+        if (isCollaborativeProgram) {
+          try {
+            // Get all organizations involved in the collaboration
+            const [collaborationRows] = await db.execute(`
+              SELECT DISTINCT
+                o.orgName as organization_name,
+                o.org as organization_acronym,
+                o.org_color as organization_color,
+                o.logo as organization_logo,
+                CASE 
+                  WHEN o.id = ? THEN 'primary'
+                  ELSE 'collaborator'
+                END as role
+              FROM (
+                -- Primary organization (the one that created the program)
+                SELECT ? as org_id, 'primary' as role
+                
+                UNION ALL
+                
+                -- Collaborator organizations (those who accepted collaboration)
+                SELECT o.id as org_id, 'collaborator' as role
+                FROM program_collaborations pc
+                LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+                LEFT JOIN organizations o ON a.organization_id = o.id
+                WHERE pc.program_id = ? AND pc.status = 'accepted'
+              ) org_roles
+              LEFT JOIN organizations o ON org_roles.org_id = o.id
+              WHERE o.id IS NOT NULL
+              ORDER BY 
+                CASE WHEN org_roles.role = 'primary' THEN 0 ELSE 1 END,
+                o.orgName ASC
+            `, [program.organization_id, program.organization_id, program.id]);
+            
+            // Get admin details for each collaborator organization
+            const collaboratorsWithAdmins = await Promise.all(collaborationRows.map(async (collab) => {
+              try {
+                if (collab.role === 'primary') {
+                  // For primary, get the admin who created the program
+                  const [adminRows] = await db.execute(`
+                    SELECT a.id, a.email
+                    FROM admins a
+                    WHERE a.organization_id = ? AND a.is_active = TRUE
+                    LIMIT 1
+                  `, [program.organization_id]);
+                  return {
+                    organization_name: collab.organization_name,
+                    organization_acronym: collab.organization_acronym,
+                    organization_color: collab.organization_color,
+                    organization_logo: collab.organization_logo,
+                    admin_id: adminRows[0]?.id || null,
+                    admin_email: adminRows[0]?.email || null,
+                    role: collab.role
+                    // Primary doesn't need collaboration_status
+                  };
+                } else {
+                  // For collaborators, get the admin who accepted the collaboration
+                  const [adminRows] = await db.execute(`
+                    SELECT a.id, a.email
+                    FROM program_collaborations pc
+                    LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+                    LEFT JOIN organizations o ON a.organization_id = o.id
+                    WHERE pc.program_id = ? AND o.orgName = ? AND pc.status = 'accepted'
+                    LIMIT 1
+                  `, [program.id, collab.organization_name]);
+                  return {
+                    organization_name: collab.organization_name,
+                    organization_acronym: collab.organization_acronym,
+                    organization_color: collab.organization_color,
+                    organization_logo: collab.organization_logo,
+                    admin_id: adminRows[0]?.id || null,
+                    admin_email: adminRows[0]?.email || null,
+                    role: collab.role,
+                    collaboration_status: 'accepted' // All collaborators are accepted
+                  };
+                }
+              } catch (collabError) {
+                console.error(`Error processing collaborator for featured program ${program.id}:`, collabError);
+                return null;
+              }
+            }));
+            
+            collaborators = collaboratorsWithAdmins.filter(c => c !== null);
+          } catch (collabError) {
+            console.error(`Error fetching collaborators for featured program ${program.id}:`, collabError);
+            collaborators = [];
+          }
+        }
+
+        return {
+          ...program,
+          multiple_dates: multipleDates,
+          additional_images: additionalImages,
+          collaborators: collaborators
+        };
+      } catch (programError) {
+        console.error(`Error processing featured program ${program.id}:`, programError);
+        // Return a minimal program object to prevent breaking the entire request
+        return {
+          ...program,
+          multiple_dates: [],
+          additional_images: [],
+          collaborators: [],
+          error: `Error processing program: ${programError.message}`
+        };
+      }
     }));
 
     const programs = programsWithDates.map(program => {
@@ -1313,10 +1351,13 @@ export const getAllFeaturedPrograms = async (req, res) => {
       data: programs
     });
   } catch (error) {
+    console.error('Error in getAllFeaturedPrograms:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
       message: "Failed to fetch featured programs",
       error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };

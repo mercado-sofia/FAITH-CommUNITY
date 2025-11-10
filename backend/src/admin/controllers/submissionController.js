@@ -139,14 +139,43 @@ export const submitChanges = async (req, res) => {
     const insertPromises = validSubmissions.map(async (item) => {
       const numericOrgId = orgIdMap.get(item.organization_id.toString())
       
+      // Validate and stringify JSON data
+      let previousDataStr, proposedDataStr;
+      
+      try {
+        // Validate previous_data is valid JSON
+        if (item.previous_data !== undefined && item.previous_data !== null) {
+          previousDataStr = JSON.stringify(item.previous_data);
+          // Verify it can be parsed back
+          JSON.parse(previousDataStr);
+        } else {
+          previousDataStr = JSON.stringify({});
+        }
+      } catch (jsonError) {
+        throw new Error(`Invalid previous_data JSON for submission: ${jsonError.message}`);
+      }
+      
+      try {
+        // Validate proposed_data is valid JSON
+        if (item.proposed_data !== undefined && item.proposed_data !== null) {
+          proposedDataStr = JSON.stringify(item.proposed_data);
+          // Verify it can be parsed back
+          JSON.parse(proposedDataStr);
+        } else {
+          proposedDataStr = JSON.stringify({});
+        }
+      } catch (jsonError) {
+        throw new Error(`Invalid proposed_data JSON for submission: ${jsonError.message}`);
+      }
+      
       const [result] = await db.execute(
         `INSERT INTO submissions (organization_id, section, previous_data, proposed_data, submitted_by, status, submitted_at)
          VALUES (?, ?, ?, ?, ?, ?, NOW())`,
         [
           numericOrgId,
           item.section,
-          JSON.stringify(item.previous_data),
-          JSON.stringify(item.proposed_data),
+          previousDataStr,
+          proposedDataStr,
           item.submitted_by,
           "pending",
         ]
@@ -262,10 +291,47 @@ export const submitChanges = async (req, res) => {
     })
   } catch (error) {
     await db.query("ROLLBACK")
-    res.status(500).json({
+    
+    // Determine error type and provide specific error messages
+    let errorType = 'UNKNOWN_ERROR';
+    let errorMessage = 'Failed to save submissions';
+    let statusCode = 500;
+    
+    if (error.message && error.message.includes('JSON')) {
+      errorType = 'JSON_VALIDATION_ERROR';
+      errorMessage = error.message;
+      statusCode = 400;
+    } else if (error.code === 'ER_DUP_ENTRY') {
+      errorType = 'DUPLICATE_ENTRY_ERROR';
+      errorMessage = 'A submission with this data already exists.';
+      statusCode = 409;
+    } else if (error.code === 'ER_NO_REFERENCED_ROW_2' || error.code === 'ER_NO_REFERENCED_ROW') {
+      errorType = 'FOREIGN_KEY_ERROR';
+      errorMessage = 'Invalid reference data. Please check organization and admin IDs.';
+      statusCode = 400;
+    } else if (error.code === 'ECONNREFUSED' || error.code === 'PROTOCOL_CONNECTION_LOST') {
+      errorType = 'DATABASE_CONNECTION_ERROR';
+      errorMessage = 'Database connection failed. Please try again later.';
+      statusCode = 503;
+    } else if (error.code === 'ER_LOCK_WAIT_TIMEOUT' || error.code === 'ER_LOCK_DEADLOCK') {
+      errorType = 'DATABASE_LOCK_ERROR';
+      errorMessage = 'Database is temporarily busy. Please try again in a moment.';
+      statusCode = 503;
+    }
+    
+    res.status(statusCode).json({
       success: false,
-      message: "Failed to save submissions",
+      message: errorMessage,
       error: error.message,
+      errorType: errorType,
+      // Only include detailed error in development
+      ...(process.env.NODE_ENV === 'development' && {
+        details: {
+          code: error.code,
+          sqlState: error.sqlState,
+          sqlMessage: error.sqlMessage
+        }
+      })
     })
   }
 }

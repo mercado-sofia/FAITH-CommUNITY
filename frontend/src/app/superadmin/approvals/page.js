@@ -67,12 +67,58 @@ const makeAuthenticatedRequest = async (url, options = {}, router = null) => {
   } else if (response.status === 404) {
     // Not found
     throw new Error('The requested resource was not found.');
-  } else if (response.status >= 500) {
-    // Server error
-    throw new Error('Server error. Please try again later.');
+  } else if (response.status >= 500 || response.status === 503) {
+    // Server error - try to get detailed error message from response
+    let errorMessage = 'Server error. Please try again later.';
+    let errorType = 'UNKNOWN_ERROR';
+    
+    try {
+      // Try to parse error response to get specific error type
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        // Clone response before reading to avoid consuming the body
+        const clonedResponse = response.clone();
+        const errorData = await clonedResponse.json();
+        if (errorData.errorType) {
+          errorType = errorData.errorType;
+        }
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+      }
+    } catch (parseError) {
+      // If parsing fails, use default message
+      logError(parseError, { context: 'makeAuthenticatedRequest-parseError' });
+    }
+    
+    // Create error object with type information
+    const error = new Error(errorMessage);
+    error.errorType = errorType;
+    throw error;
   } else if (!response.ok) {
-    // Other client errors (400-499)
-    throw new Error(`Request failed with status ${response.status}. Please try again.`);
+    // Other client errors (400-499) - try to get detailed error message
+    let errorMessage = `Request failed with status ${response.status}. Please try again.`;
+    
+    try {
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        // Clone response before reading to avoid consuming the body
+        const clonedResponse = response.clone();
+        const errorData = await clonedResponse.json();
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+      }
+    } catch (parseError) {
+      // If parsing fails, use default message
+      logError(parseError, { context: 'makeAuthenticatedRequest-parseError' });
+    }
+    
+    throw new Error(errorMessage);
   }
 
   return response;
@@ -205,7 +251,14 @@ export default function PendingApprovalsPage() {
       const submissionsResult = await submissionsRes.json();
 
       if (!submissionsRes.ok || !submissionsResult.success) {
-        throw new Error(submissionsResult.message || 'Failed to fetch submissions');
+        // Get error type and message from response
+        const errorMessage = submissionsResult.message || submissionsResult.error || 'Failed to fetch submissions';
+        const errorType = submissionsResult.errorType || 'UNKNOWN_ERROR';
+        
+        // Create error with type information
+        const error = new Error(errorMessage);
+        error.errorType = errorType;
+        throw error;
       }
 
       // Format submissions
@@ -221,8 +274,26 @@ export default function PendingApprovalsPage() {
       setApprovals(allApprovals);
       setError(null);
     } catch (err) {
-      logError(err, { context: 'fetchApprovals' });
-      setError(err.message || 'Failed to load approvals');
+      logError(err, { context: 'fetchApprovals', errorType: err.errorType });
+      
+      // Format error message based on error type
+      let errorMessage = err.message || 'Failed to load approvals';
+      const errorType = err.errorType || 'UNKNOWN_ERROR';
+      
+      // Provide user-friendly messages based on error type
+      if (errorType === 'DATABASE_CONNECTION_ERROR') {
+        errorMessage = 'Database connection failed. Please try again later.';
+      } else if (errorType === 'DATABASE_QUERY_ERROR') {
+        errorMessage = 'Database query error. Please contact support if this persists.';
+      } else if (errorType === 'DATABASE_LOCK_ERROR') {
+        errorMessage = 'Database is temporarily busy. Please try again in a moment.';
+      } else if (errorType === 'JSON_PARSING_ERROR') {
+        errorMessage = 'Invalid data format detected. Some submissions may have invalid data. Please contact support.';
+      } else if (errorType === 'DATABASE_ERROR') {
+        errorMessage = `Database error: ${err.message}`;
+      }
+      
+      setError(errorMessage);
       setApprovals([]);
     } finally {
       setIsLoading(false);
@@ -1264,7 +1335,12 @@ export default function PendingApprovalsPage() {
         <div className={styles.header}>
           <h1 className={styles.pageTitle}>Approvals</h1>
         </div>
-        <div className={styles.error}>Error: {error}</div>
+        <div className={styles.error}>
+          <div className={styles.errorTitle}>Error: {error}</div>
+          <div className={styles.errorHelp}>
+            If this error persists, please try refreshing the page or contact support.
+          </div>
+        </div>
       </div>
     );
   }

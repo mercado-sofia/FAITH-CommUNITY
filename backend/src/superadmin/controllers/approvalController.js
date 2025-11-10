@@ -21,6 +21,7 @@ const safeParseJSON = (value, defaultValue = null) => {
 export const getPendingSubmissions = async (req, res) => {
   try {
     // Get all pending submissions, but exclude collaborative programs that haven't been accepted by all collaborators yet
+    // Use JSON_VALID to safely check JSON before extracting, preventing errors from invalid JSON
     const [rows] = await db.execute(`
       SELECT s.*, 
              o.orgName, o.org, o.logo as organization_logo,
@@ -39,7 +40,11 @@ export const getPendingSubmissions = async (req, res) => {
           -- Include program submissions that don't have collaborators in proposed_data AND no collaboration records
           (
             (
-              -- Check if proposed_data doesn't have collaborators
+              -- Check if proposed_data is valid JSON and doesn't have collaborators
+              (s.proposed_data IS NULL)
+              OR
+              (JSON_VALID(s.proposed_data) = 0)
+              OR
               (JSON_EXTRACT(s.proposed_data, '$.collaborators') IS NULL)
               OR
               (JSON_LENGTH(JSON_EXTRACT(s.proposed_data, '$.collaborators')) = 0)
@@ -120,10 +125,55 @@ export const getPendingSubmissions = async (req, res) => {
       data: submissions
     });
   } catch (error) {
-    res.status(500).json({
+    // Log the full error for debugging
+    logError('Failed to fetch pending submissions', error, { 
+      context: 'getPendingSubmissions',
+      errorType: error.name,
+      errorCode: error.code,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage
+    });
+
+    // Determine error type and provide specific error messages
+    let errorType = 'UNKNOWN_ERROR';
+    let errorMessage = 'Failed to fetch pending submissions';
+    let statusCode = 500;
+
+    if (error.code === 'ER_BAD_FIELD_ERROR' || error.code === 'ER_PARSE_ERROR') {
+      errorType = 'DATABASE_QUERY_ERROR';
+      errorMessage = 'Database query error. Please contact support.';
+      statusCode = 500;
+    } else if (error.code === 'ECONNREFUSED' || error.code === 'PROTOCOL_CONNECTION_LOST') {
+      errorType = 'DATABASE_CONNECTION_ERROR';
+      errorMessage = 'Database connection failed. Please try again later.';
+      statusCode = 503;
+    } else if (error.code === 'ER_LOCK_WAIT_TIMEOUT' || error.code === 'ER_LOCK_DEADLOCK') {
+      errorType = 'DATABASE_LOCK_ERROR';
+      errorMessage = 'Database is temporarily busy. Please try again in a moment.';
+      statusCode = 503;
+    } else if (error.message && error.message.includes('JSON')) {
+      errorType = 'JSON_PARSING_ERROR';
+      errorMessage = 'Invalid data format detected. Some submissions may have invalid JSON data.';
+      statusCode = 500;
+    } else if (error.sqlMessage) {
+      errorType = 'DATABASE_ERROR';
+      errorMessage = `Database error: ${error.sqlMessage}`;
+      statusCode = 500;
+    }
+
+    res.status(statusCode).json({
       success: false,
-      message: 'Failed to fetch pending submissions',
-      error: error.message
+      message: errorMessage,
+      error: error.message,
+      errorType: errorType,
+      // Only include detailed error in development
+      ...(process.env.NODE_ENV === 'development' && {
+        details: {
+          code: error.code,
+          sqlState: error.sqlState,
+          sqlMessage: error.sqlMessage
+        }
+      })
     });
   }
 };
@@ -131,6 +181,7 @@ export const getPendingSubmissions = async (req, res) => {
 export const getAllSubmissions = async (req, res) => {
   try {
     // Get all submissions, but exclude pending collaborative programs that haven't been accepted by all collaborators yet
+    // Use JSON_VALID to safely check JSON before extracting, preventing errors from invalid JSON
     const [rows] = await db.execute(`
       SELECT s.*, 
              o.orgName, o.org, o.logo as organization_logo,
@@ -155,7 +206,11 @@ export const getAllSubmissions = async (req, res) => {
             -- Include program submissions that don't have collaborators in proposed_data AND no collaboration records
             (
               (
-                -- Check if proposed_data doesn't have collaborators
+                -- Check if proposed_data is valid JSON and doesn't have collaborators
+                (s.proposed_data IS NULL)
+                OR
+                (JSON_VALID(s.proposed_data) = 0)
+                OR
                 (JSON_EXTRACT(s.proposed_data, '$.collaborators') IS NULL)
                 OR
                 (JSON_LENGTH(JSON_EXTRACT(s.proposed_data, '$.collaborators')) = 0)
@@ -238,10 +293,55 @@ export const getAllSubmissions = async (req, res) => {
       data: submissions
     });
   } catch (error) {
-    res.status(500).json({
+    // Log the full error for debugging
+    logError('Failed to fetch submissions', error, { 
+      context: 'getAllSubmissions',
+      errorType: error.name,
+      errorCode: error.code,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage
+    });
+
+    // Determine error type and provide specific error messages
+    let errorType = 'UNKNOWN_ERROR';
+    let errorMessage = 'Failed to fetch submissions';
+    let statusCode = 500;
+
+    if (error.code === 'ER_BAD_FIELD_ERROR' || error.code === 'ER_PARSE_ERROR') {
+      errorType = 'DATABASE_QUERY_ERROR';
+      errorMessage = 'Database query error. Please contact support.';
+      statusCode = 500;
+    } else if (error.code === 'ECONNREFUSED' || error.code === 'PROTOCOL_CONNECTION_LOST') {
+      errorType = 'DATABASE_CONNECTION_ERROR';
+      errorMessage = 'Database connection failed. Please try again later.';
+      statusCode = 503;
+    } else if (error.code === 'ER_LOCK_WAIT_TIMEOUT' || error.code === 'ER_LOCK_DEADLOCK') {
+      errorType = 'DATABASE_LOCK_ERROR';
+      errorMessage = 'Database is temporarily busy. Please try again in a moment.';
+      statusCode = 503;
+    } else if (error.message && error.message.includes('JSON')) {
+      errorType = 'JSON_PARSING_ERROR';
+      errorMessage = 'Invalid data format detected. Some submissions may have invalid JSON data.';
+      statusCode = 500;
+    } else if (error.sqlMessage) {
+      errorType = 'DATABASE_ERROR';
+      errorMessage = `Database error: ${error.sqlMessage}`;
+      statusCode = 500;
+    }
+
+    res.status(statusCode).json({
       success: false,
-      message: 'Failed to fetch submissions',
-      error: error.message
+      message: errorMessage,
+      error: error.message,
+      errorType: errorType,
+      // Only include detailed error in development
+      ...(process.env.NODE_ENV === 'development' && {
+        details: {
+          code: error.code,
+          sqlState: error.sqlState,
+          sqlMessage: error.sqlMessage
+        }
+      })
     });
   }
 };

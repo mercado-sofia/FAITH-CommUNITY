@@ -5,6 +5,44 @@
   overflow: visible;
   content-visibility: auto;
   contain-intrinsic-size: 800px 600px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.aboutSection.fadeIn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.aboutImageWrapper {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  transform: translateX(-30px);
+  transition: opacity 0.8s ease-out 0.2s, transform 0.8s ease-out 0.2s;
+}
+
+.aboutImageWrapper.fadeIn {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.aboutContent {
+  flex: 1;
+  z-index: 2;
+  padding-top: 0.65rem;
+  text-align: left;
+  position: relative;
+  opacity: 0;
+  transform: translateX(30px);
+  transition: opacity 0.8s ease-out 0.3s, transform 0.8s ease-out 0.3s;
+}
+
+.aboutContent.fadeIn {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .aboutWrapper {
@@ -14,25 +52,11 @@
   gap: 4rem;
 }
 
-.aboutImageWrapper {
-  flex: 1;
-  position: relative;
-  z-index: 1;
-}
-
 .aboutImage {
   width: 100%;
   height: auto;
   object-fit: cover;
   max-height: 460px;
-}
-
-.aboutContent {
-  flex: 1;
-  z-index: 2;
-  padding-top: 0.65rem;
-  text-align: left;
-  position: relative;
 }
 
 .aboutLabel {

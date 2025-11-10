@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './BannerSection.module.css';
+import { useFadeIn } from '../../hooks/useFadeIn';
 
 export default function BannerSection() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { ref: sectionRef, isVisible: isSectionVisible } = useFadeIn();
 
   // Check user authentication status
   useEffect(() => {
@@ -33,7 +35,7 @@ export default function BannerSection() {
   }, []);
 
   return (
-    <section className={styles.inviteSection}>
+    <section ref={sectionRef} className={`${styles.inviteSection} ${isSectionVisible ? styles.fadeIn : ''}`}>
       <div className={styles.overlay} />
 
       <div className={styles.wrapper}>

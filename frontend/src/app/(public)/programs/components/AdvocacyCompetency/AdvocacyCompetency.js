@@ -1,3 +1,5 @@
+'use client';
+
 import styles from './AdvocacyCompetency.module.css';
 import { FaHeart, FaBrain } from 'react-icons/fa';
 
@@ -46,8 +48,10 @@ export default function AdvocacyCompetency({ acronym, advocacies, competencies }
 
   return (
     <section className={styles.details}>
-      <h3 className={styles.sectionTag}>{acronym}&apos;s</h3>
-      <h2 className={styles.sectionTitle}>Advocacies and Competencies</h2>
+      <div>
+        <h3 className={styles.sectionTag}>{acronym}&apos;s</h3>
+        <h2 className={styles.sectionTitle}>Advocacies and Competencies</h2>
+      </div>
 
       <div className={styles.cardWrapper}>
         <div className={styles.card}>

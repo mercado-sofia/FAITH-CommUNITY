@@ -4,16 +4,20 @@ import styles from './AboutSection.module.css';
 import Image from 'next/image';
 import { FaHeart, FaCube } from 'react-icons/fa';
 import { usePublicSiteName, usePublicMissionVision, usePublicAboutUs } from '../../hooks/usePublicData';
+import { useFadeIn } from '../../hooks/useFadeIn';
 
 function AboutSection() {
   const { siteNameData } = usePublicSiteName();
   const { missionVisionData, isLoading: missionVisionLoading, error: missionVisionError } = usePublicMissionVision();
   const { aboutUsData, isLoading: aboutUsLoading } = usePublicAboutUs();
+  const { ref: sectionRef, isVisible: isSectionVisible } = useFadeIn();
+  const { ref: imageRef, isVisible: isImageVisible } = useFadeIn({ rootMargin: '0px 0px -100px 0px' });
+  const { ref: contentRef, isVisible: isContentVisible } = useFadeIn({ rootMargin: '0px 0px -100px 0px' });
 
   return (
-    <section className={styles.aboutSection}>
+    <section ref={sectionRef} className={`${styles.aboutSection} ${isSectionVisible ? styles.fadeIn : ''}`}>
       <div className={styles.aboutWrapper}>
-          <div className={styles.aboutImageWrapper}>
+          <div ref={imageRef} className={`${styles.aboutImageWrapper} ${isImageVisible ? styles.fadeIn : ''}`}>
             <Image
               src={aboutUsLoading ? "/samples/sample1.jpg" : (aboutUsData?.image_url || "/samples/sample1.jpg")}
               alt="About Us Image"
@@ -28,7 +32,7 @@ function AboutSection() {
             />
           </div>
 
-          <div className={styles.aboutContent}>
+          <div ref={contentRef} className={`${styles.aboutContent} ${isContentVisible ? styles.fadeIn : ''}`}>
             <p className={styles.aboutLabel}>Who we are</p>
             <h2 className={styles.aboutHeading}>The Story Behind {siteNameData?.site_name || 'FAITH CommUNITY'}</h2>
             <p className={styles.aboutParagraph}>

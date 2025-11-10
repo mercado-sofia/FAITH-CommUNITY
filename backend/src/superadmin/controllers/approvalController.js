@@ -927,6 +927,68 @@ export const approveSubmission = async (req, res) => {
       );
     }
 
+    // Handle highlights approval - update highlight status
+    if (section === 'highlights' && data) {
+      const action = data.action;
+      
+      if (action === 'create') {
+        // For new highlights, update the status to approved
+        const [updateResult] = await connection.execute(
+          'UPDATE admin_highlights SET status = ? WHERE id = ?',
+          ['approved', data.highlight_id]
+        );
+        
+        if (updateResult.affectedRows === 0) {
+          logError(`Failed to update highlight ${data.highlight_id} - no rows affected`, null, { context: 'approval_controller', highlightId: data.highlight_id });
+          // Try to find the highlight by title as fallback
+          const [fallbackResult] = await connection.execute(
+            'UPDATE admin_highlights SET status = ? WHERE title = ? AND status = ?',
+            ['approved', data.title, 'pending']
+          );
+          if (fallbackResult.affectedRows === 0) {
+            logError(`Failed to update highlight by title fallback - ${data.title}`, null, { context: 'approval_controller', title: data.title });
+          }
+        }
+      } else if (action === 'update') {
+        // For updates, the highlight is already updated, just change status to approved
+        const [updateResult] = await connection.execute(
+          'UPDATE admin_highlights SET status = ? WHERE id = ?',
+          ['approved', data.highlight_id]
+        );
+        
+        if (updateResult.affectedRows === 0) {
+          logError(`Failed to update highlight ${data.highlight_id} - no rows affected`, null, { context: 'approval_controller', highlightId: data.highlight_id });
+          // Try to find the highlight by title as fallback
+          const [fallbackResult] = await connection.execute(
+            'UPDATE admin_highlights SET status = ? WHERE title = ? AND status = ?',
+            ['approved', data.title, 'pending']
+          );
+          if (fallbackResult.affectedRows === 0) {
+            logError(`Failed to update highlight by title fallback - ${data.title}`, null, { context: 'approval_controller', title: data.title });
+          }
+        }
+      } else if (action === 'delete') {
+        // For deletions, ensure the highlight is actually deleted
+        const highlightId = data.highlight_id || (typeof data.highlight_id === 'string' ? parseInt(data.highlight_id) : null);
+        
+        if (highlightId) {
+          // Check if highlight still exists
+          const [existingHighlight] = await connection.execute(
+            'SELECT id FROM admin_highlights WHERE id = ?',
+            [highlightId]
+          );
+          
+          if (existingHighlight.length > 0) {
+            // Highlight still exists, delete it now (approved deletion)
+            await connection.execute(
+              'DELETE FROM admin_highlights WHERE id = ?',
+              [highlightId]
+            );
+          }
+        }
+      }
+    }
+
     // Update submission status to approved
     await connection.execute(`UPDATE submissions SET status = 'approved' WHERE id = ?`, [id]);
     

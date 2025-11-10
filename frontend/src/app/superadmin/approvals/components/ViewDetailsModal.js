@@ -376,35 +376,80 @@ const ViewDetailsModal = ({
               <div className={styles.contentSection}>
                 <h4 className={styles.sectionTitle}>MEDIA:</h4>
                 {highlightsData && highlightsData.media_files && Array.isArray(highlightsData.media_files) && highlightsData.media_files.length > 0 ? (
-                  <div className={styles.additionalImagesContainer}>
+                  <div className={styles.mediaContainer}>
                     {highlightsData.media_files.map((media, index) => {
-                      const imageUrl = media.url || media.filename || '/defaults/default-profile.png';
-                      return (
-                        <div 
-                          key={index} 
-                          className={styles.additionalImageWrapper}
-                          onClick={() => openImageViewer(highlightsData.media_files.map(m => ({
-                            src: m.url || m.filename || '/defaults/default-profile.png',
-                            alt: m.filename || `Media ${index + 1}`,
-                            type: 'media'
-                          })), index)}
-                        >
-                          <Image 
-                            src={imageUrl} 
-                            alt={media.filename || `Media ${index + 1}`} 
-                            width={120}
-                            height={120}
-                            style={{objectFit: 'cover', borderRadius: '8px'}} 
-                            className={styles.additionalImage}
-                            onError={(e) => {
-                              e.target.src = '/defaults/default-profile.png';
-                            }}
-                          />
-                          <div className={styles.imageOverlay}>
-                            <FaEye className={styles.viewIcon} />
+                      const mediaUrl = media.url || media.filename;
+                      const isVideo = media.type === 'video' || 
+                                     media.mimetype?.startsWith('video/') ||
+                                     /\.(mp4|avi|mov|wmv|flv|webm|mkv)$/i.test(media.filename || media.url || '');
+                      const isImage = media.type === 'image' || 
+                                     media.mimetype?.startsWith('image/') ||
+                                     /\.(jpg|jpeg|png|gif|webp)$/i.test(media.filename || media.url || '');
+                      
+                      if (isVideo && mediaUrl) {
+                        return (
+                          <div key={index} className={styles.videoWrapper}>
+                            <video
+                              controls
+                              className={styles.videoPlayer}
+                              preload="metadata"
+                            >
+                              <source src={mediaUrl} type={media.mimetype || 'video/mp4'} />
+                              Your browser does not support the video tag.
+                            </video>
                           </div>
-                        </div>
-                      );
+                        );
+                      } else if (isImage && mediaUrl) {
+                        return (
+                          <div 
+                            key={index} 
+                            className={styles.additionalImageWrapper}
+                            onClick={() => openImageViewer(highlightsData.media_files
+                              .filter(m => {
+                                const mUrl = m.url || m.filename;
+                                const mIsImage = m.type === 'image' || 
+                                               m.mimetype?.startsWith('image/') ||
+                                               /\.(jpg|jpeg|png|gif|webp)$/i.test(m.filename || m.url || '');
+                                return mIsImage && mUrl;
+                              })
+                              .map(m => ({
+                                src: m.url || m.filename || '/defaults/default-profile.png',
+                                alt: m.filename || `Media ${index + 1}`,
+                                type: 'media'
+                              })), highlightsData.media_files
+                              .filter(m => {
+                                const mUrl = m.url || m.filename;
+                                const mIsImage = m.type === 'image' || 
+                                               m.mimetype?.startsWith('image/') ||
+                                               /\.(jpg|jpeg|png|gif|webp)$/i.test(m.filename || m.url || '');
+                                return mIsImage && mUrl;
+                              })
+                              .findIndex(m => (m.url || m.filename) === mediaUrl))}
+                          >
+                            <Image 
+                              src={mediaUrl} 
+                              alt={media.filename || `Media ${index + 1}`} 
+                              width={120}
+                              height={120}
+                              style={{objectFit: 'cover', borderRadius: '8px'}} 
+                              className={styles.additionalImage}
+                              onError={(e) => {
+                                e.target.src = '/defaults/default-profile.png';
+                              }}
+                            />
+                            <div className={styles.imageOverlay}>
+                              <FaEye className={styles.viewIcon} />
+                            </div>
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <div key={index} className={styles.mediaPlaceholder}>
+                            <FaFile className={styles.fileIcon} />
+                            <span>{media.type || 'File'}</span>
+                          </div>
+                        );
+                      }
                     })}
                   </div>
                 ) : (

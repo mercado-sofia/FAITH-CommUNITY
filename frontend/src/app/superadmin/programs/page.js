@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FiChevronDown } from 'react-icons/fi'
@@ -72,31 +72,9 @@ const SuperadminProgramsPage = () => {
       setShowDropdown(null);
     };
 
-    const handleScroll = (e) => {
-      // Only close dropdowns if scrolling outside of dropdown containers
+    const handleScroll = () => {
       if (showDropdown) {
-        // Check if the target is a DOM element and has the closest method
-        if (e.target && typeof e.target.closest === 'function') {
-          if (!e.target.closest(`.${styles.dropdownWrapper}`)) {
-            setShowDropdown(null);
-          }
-        } else {
-          // For window scroll events, check if any dropdown wrapper is visible
-          if (typeof document !== 'undefined' && typeof window !== 'undefined') {
-            const dropdownWrappers = document.querySelectorAll(`.${styles.dropdownWrapper}`);
-            const isAnyDropdownVisible = Array.from(dropdownWrappers).some(wrapper => {
-              const optionsElement = wrapper.querySelector(`.${styles.options}`);
-              if (optionsElement && typeof window.getComputedStyle !== 'undefined') {
-                return window.getComputedStyle(optionsElement).display !== 'none';
-              }
-              return false;
-            });
-            
-            if (!isAnyDropdownVisible) {
-              setShowDropdown(null);
-            }
-          }
-        }
+        setShowDropdown(null);
       }
     };
 
@@ -136,247 +114,175 @@ const SuperadminProgramsPage = () => {
     isLoading: organizationsLoading 
   } = useGetOrganizationsForFilterQuery()
 
-  // Merge all organizations with programs data
-  // Create a map of organizations that have programs
+  // Merge organizations with programs data - include all organizations even without programs
   const orgsWithProgramsMap = new Map()
   organizationPrograms.forEach(org => {
-    if (org && org.organizationId) {
+    if (org?.organizationId) {
       orgsWithProgramsMap.set(org.organizationId, org)
     }
   })
 
-  // Combine organizations with programs and organizations without programs
   const allOrganizationsWithPrograms = allOrganizations.map(org => {
     const orgWithPrograms = orgsWithProgramsMap.get(org.id)
     if (orgWithPrograms) {
-      // Organization has programs, use the existing data
       return orgWithPrograms
-    } else {
-      // Organization doesn't have programs, create empty structure
-      // Note: useGetOrganizationsForFilterQuery returns id, acronym, name, logo, color
-      return {
-        organizationId: org.id,
-        organizationName: org.name,
-        organizationAcronym: org.acronym,
-        orgLogo: org.logo || null,
-        organizationColor: org.color || null, // Use organization color from API
-        programs: {
-          upcoming: [],
-          active: [],
-          completed: []
-        }
+    }
+    // Organization without programs - create empty structure
+    return {
+      organizationId: org.id,
+      organizationName: org.name,
+      organizationAcronym: org.acronym,
+      orgLogo: org.logo || null,
+      organizationColor: org.color || null,
+      programs: {
+        upcoming: [],
+        active: [],
+        completed: []
       }
     }
   })
 
-  // Hierarchical search function with priority scoring
-  // Priority order: Organization Name > Program Title > Description > Category/Location > Other fields > Collaborators
-  const searchPrograms = (programs, query, organizationName = null, organizationAcronym = null) => {
-    if (!query || !query.trim()) return programs
+  // Search programs with priority scoring (Title > Description > Category/Location > Other > Collaborators)
+  const searchPrograms = (programs, query) => {
+    if (!query?.trim()) return programs
     
     const searchTerm = query.toLowerCase().trim()
     
-    // Score programs based on match priority (higher score = higher priority)
     const scoredPrograms = programs.map(program => {
       let score = 0
       let matches = false
       
-      // Priority 1: Program Title match (100 points)
-      const titleMatch = program.title?.toLowerCase().includes(searchTerm) || false
-      if (titleMatch) {
-        score += 100
-        matches = true
+      const checkMatch = (value, points) => {
+        if (value?.toLowerCase().includes(searchTerm)) {
+          score += points
+          matches = true
+        }
       }
+
+      // Priority scoring: Title (100) > Description (50) > Category/Location (30) > Status/Slug (20) > Submitted by (10) > Collaborators (5)
+      checkMatch(program.title, 100)
+      checkMatch(program.description, 50)
+      checkMatch(program.category, 30)
+      checkMatch(program.location, 30)
+      checkMatch(program.status, 20)
+      checkMatch(program.slug, 20)
       
-      // Priority 2: Program Description match (50 points)
-      const descriptionMatch = program.description?.toLowerCase().includes(searchTerm) || false
-      if (descriptionMatch) {
-        score += 50
-        matches = true
-      }
-      
-      // Priority 3: Category match (30 points)
-      const categoryMatch = program.category?.toLowerCase().includes(searchTerm) || false
-      if (categoryMatch) {
-        score += 30
-        matches = true
-      }
-      
-      // Priority 4: Location match (30 points)
-      const locationMatch = program.location?.toLowerCase().includes(searchTerm) || false
-      if (locationMatch) {
-        score += 30
-        matches = true
-      }
-      
-      // Priority 5: Status match (20 points)
-      const statusMatch = program.status?.toLowerCase().includes(searchTerm) || false
-      if (statusMatch) {
-        score += 20
-        matches = true
-      }
-      
-      // Priority 6: Slug match (20 points)
-      const slugMatch = program.slug?.toLowerCase().includes(searchTerm) || false
-      if (slugMatch) {
-        score += 20
-        matches = true
-      }
-      
-      // Priority 7: Submitted by fields (10 points)
-      const submittedByNameMatch = program.submitted_by_name?.toLowerCase().includes(searchTerm) || false
-      const submittedByRoleMatch = program.submitted_by_role?.toLowerCase().includes(searchTerm) || false
-      if (submittedByNameMatch || submittedByRoleMatch) {
+      if (program.submitted_by_name?.toLowerCase().includes(searchTerm) || 
+          program.submitted_by_role?.toLowerCase().includes(searchTerm)) {
         score += 10
         matches = true
       }
       
-      // Priority 8: Collaborator information (lowest priority - 5 points)
-      const collaboratorMatch = program.collaborators?.some(collab => 
+      if (program.collaborators?.some(collab => 
         collab.organization_name?.toLowerCase().includes(searchTerm) ||
         collab.organization_acronym?.toLowerCase().includes(searchTerm)
-      ) || false
-      if (collaboratorMatch) {
+      )) {
         score += 5
         matches = true
       }
       
-      // Organization name/acronym in program object (shouldn't really happen, but handle it)
-      const programOrgNameMatch = program.organization_name?.toLowerCase().includes(searchTerm) || false
-      const programOrgAcronymMatch = program.organization_acronym?.toLowerCase().includes(searchTerm) || false
-      if (programOrgNameMatch || programOrgAcronymMatch) {
-        score += 100 // Same priority as title since it's important
-        matches = true
-      }
-      
-      // If no matches found, return null to filter out
-      if (!matches) return null
-      
-      return { program, score }
-    }).filter(item => item !== null)
+      return matches ? { program, score } : null
+    }).filter(Boolean)
     
-    // Sort by score (descending) and return only programs
     return scoredPrograms
       .sort((a, b) => b.score - a.score)
       .map(item => item.program)
   }
 
   // Filter and prioritize organizations based on selected filters and search
-  // Priority: Organization Name > Programs with Title matches > Programs with Description matches > Other
-  const filteredOrganizations = allOrganizationsWithPrograms.map(org => {
-    // First filter by organization dropdown
-    if (selectedOrganization !== 'all' && org.organizationId !== parseInt(selectedOrganization)) {
-      return null
-    }
+  const filteredOrganizations = allOrganizationsWithPrograms
+    .filter(org => selectedOrganization === 'all' || org.organizationId === parseInt(selectedOrganization))
+    .map(org => {
+      const filteredPrograms = {
+        upcoming: searchPrograms(org.programs.upcoming, searchQuery),
+        active: searchPrograms(org.programs.active, searchQuery),
+        completed: searchPrograms(org.programs.completed, searchQuery)
+      }
 
-    // Apply search filter to programs with organization context (returns sorted by priority)
-    const filteredPrograms = {
-      upcoming: searchPrograms(org.programs.upcoming, searchQuery, org.organizationName, org.organizationAcronym),
-      active: searchPrograms(org.programs.active, searchQuery, org.organizationName, org.organizationAcronym),
-      completed: searchPrograms(org.programs.completed, searchQuery, org.organizationName, org.organizationAcronym)
-    }
+      let orgPriorityScore = 0
+      
+      if (searchQuery.trim()) {
+        const searchTerm = searchQuery.toLowerCase().trim()
+        const orgNameMatch = org.organizationName?.toLowerCase().includes(searchTerm)
+        const orgAcronymMatch = org.organizationAcronym?.toLowerCase().includes(searchTerm)
+        
+        if (orgNameMatch || orgAcronymMatch) {
+          orgPriorityScore += 1000
+        }
+        
+        const allFilteredPrograms = [
+          ...filteredPrograms.upcoming,
+          ...filteredPrograms.active,
+          ...filteredPrograms.completed
+        ]
+        
+        const totalMatchingPrograms = allFilteredPrograms.length
+        
+        // Filter out if no matches
+        if (!orgNameMatch && !orgAcronymMatch && totalMatchingPrograms === 0) {
+          return null
+        }
+        
+        // Priority scoring for programs
+        if (allFilteredPrograms.some(p => p.title?.toLowerCase().includes(searchTerm))) {
+          orgPriorityScore += 500
+        }
+        if (allFilteredPrograms.some(p => p.description?.toLowerCase().includes(searchTerm))) {
+          orgPriorityScore += 200
+        }
+        if (totalMatchingPrograms > 0) {
+          orgPriorityScore += 100
+        }
+      }
 
-    // Calculate organization priority score for sorting
-    let orgPriorityScore = 0
-    
-    // If search query is active, check if organization name/acronym matches OR if it has any matching programs
-    if (searchQuery.trim()) {
-      const searchTerm = searchQuery.toLowerCase().trim()
-      const orgNameMatch = org.organizationName?.toLowerCase().includes(searchTerm) || false
-      const orgAcronymMatch = org.organizationAcronym?.toLowerCase().includes(searchTerm) || false
-      
-      // Priority 1 (Highest): Organization name/acronym match (1000 points)
-      if (orgNameMatch || orgAcronymMatch) {
-        orgPriorityScore += 1000
+      return {
+        ...org,
+        programs: filteredPrograms,
+        _priorityScore: orgPriorityScore
       }
-      
-      // Count total matching programs and calculate average program priority
-      const totalMatchingPrograms = 
-        filteredPrograms.upcoming.length + 
-        filteredPrograms.active.length + 
-        filteredPrograms.completed.length
-      
-      // Include organization if it matches by name/acronym OR has matching programs
-      // Don't filter out organizations without programs if they match by name/acronym
-      if (!orgNameMatch && !orgAcronymMatch && totalMatchingPrograms === 0) {
-        return null
-      }
-      
-      // Priority 2: Has programs with title matches (calculate from program scores)
-      // Programs are already sorted by priority, so we can check the first few
-      const allFilteredPrograms = [
-        ...filteredPrograms.upcoming,
-        ...filteredPrograms.active,
-        ...filteredPrograms.completed
-      ]
-      
-      // Check if any programs have high priority matches (title matches)
-      const hasTitleMatches = allFilteredPrograms.some(program => {
-        const titleMatch = program.title?.toLowerCase().includes(searchTerm) || false
-        return titleMatch
-      })
-      
-      if (hasTitleMatches) {
-        orgPriorityScore += 500 // High priority for having title matches
-      }
-      
-      // Priority 3: Has programs with description matches
-      const hasDescriptionMatches = allFilteredPrograms.some(program => {
-        const descMatch = program.description?.toLowerCase().includes(searchTerm) || false
-        return descMatch
-      })
-      
-      if (hasDescriptionMatches) {
-        orgPriorityScore += 200 // Medium priority for description matches
-      }
-      
-      // Priority 4: Has any matching programs (lower priority)
-      if (totalMatchingPrograms > 0) {
-        orgPriorityScore += 100 // Base priority for having any matches
-      }
-    }
-
-    return {
-      ...org,
-      programs: filteredPrograms,
-      _priorityScore: orgPriorityScore // Internal score for sorting
-    }
-  })
-  .filter(org => org !== null)
-  // Sort organizations by priority score (descending) - organizations with name matches first
-  .sort((a, b) => {
-    if (searchQuery.trim()) {
-      return b._priorityScore - a._priorityScore
-    }
-    // If no search, maintain original order
-    return 0
-  })
-  // Remove the internal score before returning
-  .map(org => {
-    const { _priorityScore, ...orgWithoutScore } = org
-    return orgWithoutScore
-  })
-
-  // Get all unique organizations for filter dropdown (from all organizations)
-  const organizationOptions = allOrganizations
-    .filter(org => {
-      // Ensure organization has required fields
-      return org && 
-             org.id && 
-             org.acronym && 
-             org.acronym.trim() !== '' && 
-             org.name && 
-             org.name.trim() !== '';
     })
-    .map(org => ({
-      id: org.id,
-      name: org.name,
-      acronym: org.acronym
-    }))
+    .filter(Boolean)
+    .sort((a, b) => searchQuery.trim() ? b._priorityScore - a._priorityScore : 0)
+    .map(({ _priorityScore, ...org }) => org)
 
-  // Search handler
-  const handleSearchChange = (query) => {
-    setSearchQuery(query)
+  // Get organizations for filter dropdown (API already filters valid organizations)
+  const organizationOptions = allOrganizations.map(org => ({
+    id: org.id,
+    name: org.name,
+    acronym: org.acronym
+  }))
+
+  // Calculate text color based on background color for proper contrast
+  const getTextColor = (backgroundColor) => {
+    if (!backgroundColor) return '#374151';
+    
+    const color = backgroundColor.toLowerCase();
+    
+    // Check for white colors
+    if (color === '#ffffff' || color === '#fff' || color === 'white') {
+      return '#374151';
+    }
+    
+    // Check for light gray colors
+    if (color === '#f3f4f6' || color === '#f9fafb' || color === '#e5e7eb' || 
+        color === '#d1d5db' || color === '#9ca3af' || color === '#6b7280') {
+      return '#374151';
+    }
+    
+    // Check if it's a light color by hex value
+    if (color.startsWith('#')) {
+      const hex = color.replace('#', '');
+      const r = parseInt(hex.substr(0, 2), 16);
+      const g = parseInt(hex.substr(2, 2), 16);
+      const b = parseInt(hex.substr(4, 2), 16);
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+      
+      // If brightness is high (light color), use dark text
+      return brightness > 128 ? '#374151' : 'white';
+    }
+    
+    // Default to white for other colors
+    return 'white';
   }
 
   const renderProgramCard = (program, organizationData) => {
@@ -909,37 +815,7 @@ const SuperadminProgramsPage = () => {
                           className={styles.organizationAcronym}
                           style={{ 
                             backgroundColor: org.organizationColor || '#f3f4f6',
-                            color: (() => {
-                              if (!org.organizationColor) return '#374151';
-                              
-                              const color = org.organizationColor.toLowerCase();
-                              
-                              // Check for white colors
-                              if (color === '#ffffff' || color === '#fff' || color === 'white') {
-                                return '#374151';
-                              }
-                              
-                              // Check for light gray colors
-                              if (color === '#f3f4f6' || color === '#f9fafb' || color === '#e5e7eb' || 
-                                  color === '#d1d5db' || color === '#9ca3af' || color === '#6b7280') {
-                                return '#374151';
-                              }
-                              
-                              // Check if it's a light color by hex value
-                              if (color.startsWith('#')) {
-                                const hex = color.replace('#', '');
-                                const r = parseInt(hex.substr(0, 2), 16);
-                                const g = parseInt(hex.substr(2, 2), 16);
-                                const b = parseInt(hex.substr(4, 2), 16);
-                                const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-                                
-                                // If brightness is high (light color), use dark text
-                                return brightness > 128 ? '#374151' : 'white';
-                              }
-                              
-                              // Default to white for other colors
-                              return 'white';
-                            })()
+                            color: getTextColor(org.organizationColor)
                           }}
                         >
                           {org.organizationAcronym}

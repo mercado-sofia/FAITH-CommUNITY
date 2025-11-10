@@ -1,8 +1,21 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '@/config/api';
 
-// Custom baseQuery wrapper to handle errors properly
+// Production-ready baseQuery with proper error handling
 const baseQueryWithErrorHandling = async (args, api, extraOptions) => {
+  // Check if API_BASE_URL is configured
+  if (!API_BASE_URL) {
+    return {
+      error: {
+        status: 'CONFIG_ERROR',
+        data: {
+          message: 'API configuration error. Please contact support.',
+          error: 'API_BASE_URL is not configured'
+        }
+      }
+    };
+  }
+
   const result = await fetchBaseQuery({
     baseUrl: `${API_BASE_URL}/api/superadmin/notifications`,
     credentials: 'include',
@@ -18,44 +31,78 @@ const baseQueryWithErrorHandling = async (args, api, extraOptions) => {
     },
   })(args, api, extraOptions);
 
-  // If there's an error, extract the error message from the response
+  // Normalize error responses for consistent handling
   if (result.error) {
-    // RTK Query error format: { status: number, data: any }
-    if (result.error.data) {
-      const errorData = result.error.data;
-      // Backend returns errors in different formats:
-      // { error: "message" } or { success: false, message: "message" }
-      if (errorData.error && typeof errorData.error === 'string') {
-        result.error.data = { ...errorData, message: errorData.error };
+    const errorData = result.error.data;
+    const status = result.error.status;
+
+    // Handle network/CORS errors
+    if (status === 'FETCH_ERROR' || status === 'PARSING_ERROR') {
+      result.error.data = {
+        message: 'Unable to connect to the server. Please check your internet connection and try again.',
+        error: 'Network error',
+        status: status
+      };
+    }
+    // Handle authentication errors
+    else if (status === 401) {
+      result.error.data = {
+        message: 'Your session has expired. Please log in again.',
+        error: 'Authentication required',
+        status: 401
+      };
+    }
+    // Handle authorization errors
+    else if (status === 403) {
+      result.error.data = {
+        message: 'You do not have permission to access this resource.',
+        error: 'Access denied',
+        status: 403
+      };
+    }
+    // Handle not found errors
+    else if (status === 404) {
+      result.error.data = {
+        message: 'The requested resource was not found.',
+        error: 'Not found',
+        status: 404
+      };
+    }
+    // Handle server errors
+    else if (status >= 500) {
+      result.error.data = {
+        message: 'A server error occurred. Please try again later.',
+        error: 'Server error',
+        status: status
+      };
+    }
+    // Normalize backend error messages
+    else if (errorData) {
+      // Extract message from various backend error formats
+      let message = 'An error occurred while processing your request.';
+      
+      if (typeof errorData === 'string') {
+        message = errorData;
+      } else if (errorData.error && typeof errorData.error === 'string') {
+        message = errorData.error;
       } else if (errorData.message && typeof errorData.message === 'string') {
-        // Already has message, keep it
-        result.error.data = errorData;
-      } else if (typeof errorData === 'string') {
-        // Error data is a string
-        result.error.data = { message: errorData, error: errorData };
-      } else {
-        // Fallback: create a message from status
-        const status = result.error.status;
-        const statusText = typeof status === 'number' 
-          ? `HTTP ${status}` 
-          : status === 'FETCH_ERROR' 
-            ? 'Network error' 
-            : 'Unknown error';
-        result.error.data = { 
-          message: statusText,
-          error: statusText,
-          ...errorData 
-        };
+        message = errorData.message;
       }
-    } else {
-      // No data in error, create a default message
-      const status = result.error.status;
-      const statusText = typeof status === 'number' 
-        ? `HTTP ${status}: Failed to fetch notifications` 
-        : status === 'FETCH_ERROR' 
-          ? 'Failed to fetch notifications. Please check your connection.' 
-          : 'Failed to fetch notifications';
-      result.error.data = { message: statusText, error: statusText };
+
+      result.error.data = {
+        message: message,
+        error: errorData.error || message,
+        status: status,
+        ...(typeof errorData === 'object' && !Array.isArray(errorData) ? errorData : {})
+      };
+    }
+    // Fallback for unknown errors
+    else {
+      result.error.data = {
+        message: 'An unexpected error occurred. Please try again.',
+        error: 'Unknown error',
+        status: status || 'UNKNOWN'
+      };
     }
   }
 

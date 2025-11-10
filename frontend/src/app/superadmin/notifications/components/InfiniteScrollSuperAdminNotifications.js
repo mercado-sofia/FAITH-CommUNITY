@@ -177,23 +177,42 @@ export default function InfiniteScrollSuperAdminNotifications({
   // Show error state
   if (error) {
     // Extract error message from RTK Query error object
-    let errorMessage = 'An error occurred while loading notifications';
+    // RTK Query error format: { status: number|string, data: { message, error, status } }
+    // The baseQueryWithErrorHandling normalizes all errors to have a consistent structure
+    let errorMessage = 'Failed to fetch notifications';
     
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    } else if (typeof error === 'string') {
-      errorMessage = error;
-    } else if (error?.data?.message) {
+    // Log the full error for debugging (only in development)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Notifications API Error:', error);
+    }
+    
+    // Extract message from normalized error structure
+    if (error?.data?.message) {
       errorMessage = error.data.message;
     } else if (error?.data?.error) {
       errorMessage = error.data.error;
-    } else if (error?.error) {
-      errorMessage = error.error;
+    } else if (typeof error?.data === 'string') {
+      errorMessage = error.data;
     } else if (error?.status) {
-      errorMessage = `Error ${error.status}: ${error.data?.message || 'Failed to load notifications'}`;
-    } else if (typeof error === 'object') {
-      // Try to extract any meaningful message from the error object
-      errorMessage = JSON.stringify(error, null, 2);
+      // Fallback based on status
+      const status = error.status;
+      if (status === 'FETCH_ERROR' || status === 'CONFIG_ERROR') {
+        errorMessage = 'Unable to connect to the server. Please check your connection and try again.';
+      } else if (status === 401) {
+        errorMessage = 'Your session has expired. Please log in again.';
+      } else if (status === 403) {
+        errorMessage = 'You do not have permission to access notifications.';
+      } else if (status === 404) {
+        errorMessage = 'Notifications endpoint not found.';
+      } else if (status >= 500) {
+        errorMessage = 'A server error occurred. Please try again later.';
+      } else {
+        errorMessage = 'An error occurred while loading notifications.';
+      }
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
     }
     
     return (
@@ -201,6 +220,14 @@ export default function InfiniteScrollSuperAdminNotifications({
         <p className={styles.errorMessage}>
           {errorMessage}
         </p>
+        {process.env.NODE_ENV === 'development' && (
+          <details style={{ marginTop: '1rem', fontSize: '12px', color: '#666' }}>
+            <summary style={{ cursor: 'pointer' }}>Error Details (Dev Only)</summary>
+            <pre style={{ marginTop: '0.5rem', padding: '0.5rem', background: '#f5f5f5', borderRadius: '4px', overflow: 'auto', maxHeight: '200px' }}>
+              {JSON.stringify(error, null, 2)}
+            </pre>
+          </details>
+        )}
       </div>
     );
   }

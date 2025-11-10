@@ -116,10 +116,16 @@ export const superadminNotificationsApi = createApi({
   endpoints: (builder) => ({
     // Get notifications for a superadmin
     getSuperAdminNotifications: builder.query({
-      query: ({ superAdminId, limit = 10, offset = 0 }) => ({
-        url: `/${superAdminId}?limit=${limit}&offset=${offset}&_t=${Date.now()}`,
-        method: 'GET',
-      }),
+      query: ({ superAdminId, limit = 10, offset = 0 }) => {
+        // Validate superAdminId
+        if (!superAdminId || isNaN(parseInt(superAdminId))) {
+          throw new Error('Invalid superadmin ID');
+        }
+        return {
+          url: `/${superAdminId}?limit=${limit}&offset=${offset}&_t=${Date.now()}`,
+          method: 'GET',
+        };
+      },
       providesTags: ['SuperAdminNotifications'],
       // Force fresh data - don't cache for long
       keepUnusedDataFor: 0,
@@ -127,10 +133,16 @@ export const superadminNotificationsApi = createApi({
 
     // Get unread notification count
     getSuperAdminUnreadCount: builder.query({
-      query: (superAdminId) => ({
-        url: `/${superAdminId}/unread-count`,
-        method: 'GET',
-      }),
+      query: (superAdminId) => {
+        // Validate superAdminId
+        if (!superAdminId || isNaN(parseInt(superAdminId))) {
+          throw new Error('Invalid superadmin ID');
+        }
+        return {
+          url: `/${superAdminId}/unread-count`,
+          method: 'GET',
+        };
+      },
       providesTags: ['SuperAdminNotifications'],
     }),
 

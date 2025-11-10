@@ -49,11 +49,27 @@ export default function InfiniteScrollSuperAdminNotifications({
       if (superAdminData) {
         try {
           const parsedData = JSON.parse(superAdminData);
-          setSuperAdminId(parsedData.id);
+          // Ensure ID is a valid number
+          const id = parsedData?.id;
+          if (id !== null && id !== undefined) {
+            const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
+            if (!isNaN(numericId) && numericId > 0) {
+              setSuperAdminId(numericId);
+            } else {
+              console.error('Invalid superadmin ID:', id);
+              logError(new Error('Invalid superadmin ID'), { context: 'parseSuperAdminData', id });
+            }
+          } else {
+            console.error('Superadmin ID is missing from localStorage data:', parsedData);
+            logError(new Error('Superadmin ID missing'), { context: 'parseSuperAdminData', data: parsedData });
+          }
         } catch (error) {
+          console.error('Failed to parse superAdminData:', error);
           logError(error, { context: 'parseSuperAdminData' });
           // Failed to parse superAdminData, will show loading state
         }
+      } else {
+        console.warn('superAdminData not found in localStorage');
       }
     }
   }, []);

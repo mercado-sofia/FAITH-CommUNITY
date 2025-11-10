@@ -138,17 +138,8 @@
     padding: 0.25rem 0.5rem 0;
     gap: 0.5rem;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
     scroll-snap-type: x mandatory;
     margin-bottom: 0;
-  }
-
-  .navMenu::-webkit-scrollbar { /* Chrome/Safari */
-    display: none;
-    height: 0;
-    width: 0;
-    background: transparent;
   }
 
   .navItem {

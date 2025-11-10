@@ -1,9 +1,91 @@
 'use client'
 
-import { Suspense, useEffect, useRef, useState, useCallback } from 'react'
+import { Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, useGLTF, Environment } from '@react-three/drei'
 import * as THREE from 'three'
+
+// Star component - creates a glowing star shape (static like fruit on tree)
+function Star({ position, treePosition = [0, 0, 0], starId, onStarClick }) {
+  const meshRef = useRef()
+  const [hovered, setHovered] = useState(false)
+  
+  // Create star geometry
+  const starShape = useMemo(() => {
+    const shape = new THREE.Shape()
+    const outerRadius = 0.15
+    const innerRadius = 0.08
+    const spikes = 5
+    const step = (Math.PI * 2) / spikes
+
+    for (let i = 0; i < spikes * 2; i++) {
+      const radius = i % 2 === 0 ? outerRadius : innerRadius
+      const angle = i * step * 0.5
+      const x = Math.cos(angle) * radius
+      const y = Math.sin(angle) * radius
+      
+      if (i === 0) {
+        shape.moveTo(x, y)
+      } else {
+        shape.lineTo(x, y)
+      }
+    }
+    shape.closePath()
+    return shape
+  }, [])
+
+  const extrudeSettings = useMemo(() => ({
+    depth: 0.05,
+    bevelEnabled: true,
+    bevelThickness: 0.02,
+    bevelSize: 0.01,
+    bevelSegments: 3
+  }), [])
+  
+  // Calculate base position (static - no animation)
+  const basePosition = useMemo(() => [
+    treePosition[0] + position[0],
+    treePosition[1] + position[1],
+    treePosition[2] + position[2]
+  ], [treePosition, position])
+
+  const handleClick = (e) => {
+    e.stopPropagation()
+    if (onStarClick) {
+      onStarClick(starId)
+    }
+  }
+
+  return (
+    <group
+      position={basePosition}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
+      onClick={handleClick}
+    >
+      <mesh 
+        ref={meshRef}
+        rotation={[0, 0, 0]}
+      >
+        <extrudeGeometry args={[starShape, extrudeSettings]} />
+        <meshStandardMaterial
+          color="#FFD700"
+          emissive="#FFD700"
+          emissiveIntensity={hovered ? 1.2 : 0.5}
+          metalness={0.3}
+          roughness={0.2}
+        />
+      </mesh>
+      {/* Add a point light to make the star glow - enhanced on hover */}
+      <pointLight
+        color="#FFD700"
+        intensity={hovered ? 0.8 : 0.3}
+        distance={hovered ? 3 : 2}
+      />
+    </group>
+  )
+}
 
 // Component to load and display the GLB model
 function Model({ url, treePosition = [0, 0, 0], theme = 'morning' }) {
@@ -250,6 +332,138 @@ function Loading() {
   )
 }
 
+// Star Modal Component
+function StarModal({ isOpen, onClose, starId }) {
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsVisible(true)
+      if (typeof document !== 'undefined' && document.body) {
+        document.body.style.overflow = 'hidden'
+      }
+    } else {
+      setIsVisible(false)
+      if (typeof document !== 'undefined' && document.body) {
+        document.body.style.overflow = 'auto'
+      }
+    }
+
+    return () => {
+      if (typeof document !== 'undefined' && document.body) {
+        document.body.style.overflow = 'auto'
+      }
+    }
+  }, [isOpen])
+
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      onClose()
+    }
+  }
+
+  if (!isOpen || typeof document === 'undefined' || !document.body) {
+    return null
+  }
+
+  const modalContent = (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        background: 'rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999,
+        opacity: isVisible ? 1 : 0,
+        transition: 'opacity 0.3s ease-in-out',
+        padding: '1rem'
+      }}
+      onClick={handleOverlayClick}
+      onKeyDown={handleKeyDown}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="star-modal-title"
+    >
+      <div
+        style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          width: '100%',
+          maxWidth: '500px',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)',
+          transform: isVisible ? 'scale(1)' : 'scale(0.9)',
+          transition: 'transform 0.3s ease-in-out',
+          position: 'relative',
+          padding: '2rem'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: '1rem',
+            right: '1rem',
+            background: 'transparent',
+            border: 'none',
+            fontSize: '1.5rem',
+            cursor: 'pointer',
+            color: '#666',
+            width: '32px',
+            height: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '50%',
+            transition: 'background-color 0.2s'
+          }}
+          onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+          onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+          aria-label="Close modal"
+        >
+          ×
+        </button>
+        <h2
+          id="star-modal-title"
+          style={{
+            margin: '0 0 1.5rem 0',
+            fontSize: '1.5rem',
+            fontWeight: '600',
+            color: '#333'
+          }}
+        >
+          Star {starId}
+        </h2>
+        <div
+          style={{
+            color: '#666',
+            lineHeight: '1.6'
+          }}
+        >
+          {/* Empty content for now */}
+        </div>
+      </div>
+    </div>
+  )
+
+  return createPortal(modalContent, document.body)
+}
+
 // Main component
 export default function TreeModel({ 
   theme = 'morning',
@@ -294,14 +508,33 @@ export default function TreeModel({
       ]
   const [cameraPosition, setCameraPosition] = useState(initialCamPos)
 
+  // State for star modal
+  const [selectedStarId, setSelectedStarId] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  // Handle star click
+  const handleStarClick = useCallback((starId) => {
+    setSelectedStarId(starId)
+    setIsModalOpen(true)
+  }, [])
+
+  // Handle modal close
+  const handleModalClose = useCallback(() => {
+    setIsModalOpen(false)
+    // Clear selected star after animation
+    setTimeout(() => {
+      setSelectedStarId(null)
+    }, 300)
+  }, [])
+
   // Select the appropriate GLB file based on theme
   const modelPath = theme === 'morning' 
-    ? '/models/for website sunny.glb' 
+    ? '/models/tree website.glb' 
     : '/models/for website cloudy.glb'
 
   // Preload both models for better performance
   useEffect(() => {
-    useGLTF.preload('/models/for website sunny.glb')
+    useGLTF.preload('/models/tree website.glb')
     useGLTF.preload('/models/for website cloudy.glb')
   }, [])
 
@@ -332,39 +565,69 @@ export default function TreeModel({
       ]
 
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'visible' }}>
-      <Canvas
-        camera={{ 
-          position: initialCameraPosition, 
-          fov: 65,
-          rotation: [0, 0, 0]
-        }}
-        gl={{ antialias: true }}
-        style={{ background: 'transparent' }}
-      >
-        <Suspense fallback={<Loading />}>
-          {/* Lighting */}
-          <ambientLight intensity={0.6} />
-          <directionalLight position={[0, 5, 5]} intensity={1.2} />
-          <directionalLight position={[-5, 3, -5]} intensity={0.4} />
-          <pointLight position={[0, 2, 0]} intensity={0.3} />
-          
-          {/* Optional: Add environment for better lighting */}
-          <Environment preset={theme === 'morning' ? 'sunset' : 'city'} />
-          
-          {/* The 3D model - pass treePosition and theme to position it and apply color changes */}
-          {/* Key prop ensures component re-renders when model changes */}
-          <Model key={modelPath} url={modelPath} treePosition={treePosition} theme={theme} />
-          
-          {/* Controls with auto-return - pass treePosition and cameraOffset */}
-          <AutoReturnControls 
-            treePosition={treePosition} 
-            cameraOffset={cameraOffset}
-            onPositionChange={handlePositionChange}
-          />
-        </Suspense>
-      </Canvas>
-    </div>
+    <>
+      <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'visible' }}>
+        <Canvas
+          camera={{ 
+            position: initialCameraPosition, 
+            fov: 65,
+            rotation: [0, 0, 0]
+          }}
+          gl={{ antialias: true }}
+          style={{ background: 'transparent', cursor: 'default' }}
+        >
+          <Suspense fallback={<Loading />}>
+            {/* Lighting */}
+            <ambientLight intensity={0.6} />
+            <directionalLight position={[0, 5, 5]} intensity={1.2} />
+            <directionalLight position={[-5, 3, -5]} intensity={0.4} />
+            <pointLight position={[0, 2, 0]} intensity={0.3} />
+            
+            {/* Optional: Add environment for better lighting */}
+            <Environment preset={theme === 'morning' ? 'sunset' : 'city'} />
+            
+            {/* The 3D model - pass treePosition and theme to position it and apply color changes */}
+            {/* Key prop ensures component re-renders when model changes */}
+            <Model key={modelPath} url={modelPath} treePosition={treePosition} theme={theme} />
+            
+            {/* 3 Stars placed on the tree leaves - positioned close to leaves like fruit */}
+            {/* Positions are relative to tree position, adjusted to be close to the leaves */}
+            <Star 
+              position={[-0.6, 1.8, 1.0]} 
+              treePosition={treePosition}
+              starId={1}
+              onStarClick={handleStarClick}
+            />
+            <Star 
+              position={[0.7, 1.5, -0.3]} 
+              treePosition={treePosition}
+              starId={2}
+              onStarClick={handleStarClick}
+            />
+            <Star 
+              position={[0.1, 1.8, 0.2]} 
+              treePosition={treePosition}
+              starId={3}
+              onStarClick={handleStarClick}
+            />
+            
+            {/* Controls with auto-return - pass treePosition and cameraOffset */}
+            <AutoReturnControls 
+              treePosition={treePosition} 
+              cameraOffset={cameraOffset}
+              onPositionChange={handlePositionChange}
+            />
+          </Suspense>
+        </Canvas>
+      </div>
+      
+      {/* Star Modal */}
+      <StarModal 
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        starId={selectedStarId}
+      />
+    </>
   )
 }
 

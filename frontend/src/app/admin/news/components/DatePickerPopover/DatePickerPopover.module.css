@@ -210,35 +210,6 @@
   }
 }
 
-/* Custom scrollbar for long lists */
-.dropdownOptions,
-.yearDropdownOptions {
-  scrollbar-width: thin;
-  scrollbar-color: var(--accent) #f1f5f9;
-}
-
-.dropdownOptions::-webkit-scrollbar,
-.yearDropdownOptions::-webkit-scrollbar {
-  width: 6px;
-}
-
-.dropdownOptions::-webkit-scrollbar-track,
-.yearDropdownOptions::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 3px;
-}
-
-.dropdownOptions::-webkit-scrollbar-thumb,
-.yearDropdownOptions::-webkit-scrollbar-thumb {
-  background: var(--accent);
-  border-radius: 3px;
-}
-
-.dropdownOptions::-webkit-scrollbar-thumb:hover,
-.yearDropdownOptions::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-600);
-}
-
   .weekdays{
     display:grid; grid-template-columns: repeat(7,1fr);
     padding: 4px 12px 6px; gap:6px;

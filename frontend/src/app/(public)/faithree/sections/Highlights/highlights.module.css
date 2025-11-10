@@ -183,30 +183,9 @@
   background: transparent;
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(76, 175, 80, 0.3) transparent;
   animation: slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
-}
-
-/* Custom scrollbar styling */
-.contentArea::-webkit-scrollbar {
-  width: 6px;
-}
-
-.contentArea::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.contentArea::-webkit-scrollbar-thumb {
-  background: rgba(76, 175, 80, 0.3);
-  border-radius: 3px;
-  transition: background 0.2s ease;
-}
-
-.contentArea::-webkit-scrollbar-thumb:hover {
-  background: rgba(76, 175, 80, 0.5);
 }
 
 @keyframes slideDown {

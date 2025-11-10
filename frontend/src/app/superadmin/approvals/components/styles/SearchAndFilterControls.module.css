@@ -116,9 +116,6 @@
   max-height: 200px;
   overflow-y: auto;
   animation: fadeIn 0.2s ease-in-out;
-  /* Firefox scrollbar */
-  scrollbar-width: thin;
-  scrollbar-color: #c1c1c1 #f1f1f1;
 }
 
 .options li {
@@ -136,25 +133,6 @@
 
 .options li:hover {
   background-color: #f3f3f3;
-}
-
-/* Custom small scrollbar for dropdown (Chrome/Safari/Edge) */
-.options::-webkit-scrollbar {
-  width: 6px;
-}
-
-.options::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-.options::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-.options::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
 }
 
 @keyframes fadeIn {

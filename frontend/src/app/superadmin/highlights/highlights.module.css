@@ -308,28 +308,6 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  /* Firefox scrollbar */
-  scrollbar-width: thin;
-  scrollbar-color: #c1c1c1 #f1f1f1;
-}
-
-/* Custom scrollbar for dropdown (Chrome/Safari/Edge) */
-.options::-webkit-scrollbar {
-  width: 6px;
-}
-
-.options::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-.options::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-.options::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
 }
 
 .options li {

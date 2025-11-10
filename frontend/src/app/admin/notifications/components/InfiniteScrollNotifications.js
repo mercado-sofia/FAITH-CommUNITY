@@ -29,6 +29,34 @@ export default function InfiniteScrollNotifications({
   
   const observer = useRef();
   const currentTabRef = useRef(currentTab);
+  
+  // Fallback: Get adminId from localStorage if Redux state isn't available yet
+  const [adminId, setAdminId] = useState(null);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // First try Redux state
+      if (currentAdmin?.id) {
+        setAdminId(currentAdmin.id);
+      } else {
+        // Fallback to localStorage
+        const adminData = localStorage.getItem('adminData');
+        if (adminData) {
+          try {
+            const parsedData = JSON.parse(adminData);
+            if (parsedData?.id) {
+              const numericId = typeof parsedData.id === 'string' ? parseInt(parsedData.id, 10) : parsedData.id;
+              if (!isNaN(numericId) && numericId > 0) {
+                setAdminId(numericId);
+              }
+            }
+          } catch (error) {
+            // Failed to parse adminData
+          }
+        }
+      }
+    }
+  }, [currentAdmin]);
 
   // Reset everything when tab changes
   useEffect(() => {
@@ -44,11 +72,11 @@ export default function InfiniteScrollNotifications({
 
   // Create a stable query key that includes the tab to prevent cache conflicts
   const queryParams = useMemo(() => ({
-    adminId: currentAdmin?.id, 
+    adminId: adminId, 
     limit: itemsPerPage, 
     offset: (currentPage - 1) * itemsPerPage,
     tab: currentTab // Include tab in query parameters
-  }), [currentAdmin?.id, itemsPerPage, currentPage, currentTab]);
+  }), [adminId, itemsPerPage, currentPage, currentTab]);
 
   // Fetch notifications for current page
   const { 
@@ -59,7 +87,7 @@ export default function InfiniteScrollNotifications({
   } = useGetNotificationsQuery(
     queryParams,
     { 
-      skip: !currentAdmin?.id,
+      skip: !adminId,
       // Use selectFromResult to ensure we get fresh data for each tab
       selectFromResult: ({ data, isLoading, error }) => ({
         data,

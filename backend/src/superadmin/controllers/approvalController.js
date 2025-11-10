@@ -20,8 +20,50 @@ const safeParseJSON = (value, defaultValue = null) => {
 
 export const getPendingSubmissions = async (req, res) => {
   try {
-    // Get all pending submissions, but exclude collaborative programs that haven't been accepted by all collaborators yet
-    // Use JSON_VALID to safely check JSON before extracting, preventing errors from invalid JSON
+    // Optimized query to reduce memory usage:
+    // 1. First get IDs with minimal data to reduce sort memory
+    // 2. Then fetch full data for those IDs
+    // This approach uses less memory for sorting
+    
+    // Step 1: Get pending submission IDs with minimal sorting overhead
+    const [idRows] = await db.execute(`
+      SELECT s.id
+      FROM submissions s 
+      WHERE s.status = 'pending' 
+        AND (
+          -- Include non-program submissions
+          s.section != 'programs'
+          OR
+          -- Include program submissions that don't have collaborators
+          -- Check collaboration records first (faster than JSON operations)
+          NOT EXISTS (
+            SELECT 1 FROM program_collaborations pc 
+            WHERE pc.submission_id = s.id
+          )
+          OR
+          -- Include collaborative programs
+          EXISTS (
+            SELECT 1 FROM program_collaborations pc 
+            WHERE pc.submission_id = s.id
+          )
+        )
+      ORDER BY s.submitted_at DESC
+      LIMIT 10000
+    `);
+    
+    // Extract IDs
+    const submissionIds = idRows.map(row => row.id);
+    
+    if (submissionIds.length === 0) {
+      return res.json({
+        success: true,
+        data: []
+      });
+    }
+    
+    // Step 2: Fetch full data for the selected IDs
+    // Use placeholders to avoid SQL injection
+    const placeholders = submissionIds.map(() => '?').join(',');
     const [rows] = await db.execute(`
       SELECT s.*, 
              o.orgName, o.org, o.logo as organization_logo,
@@ -32,41 +74,9 @@ export const getPendingSubmissions = async (req, res) => {
       LEFT JOIN organizations o ON o.id = s.organization_id 
       LEFT JOIN admins submitted_admin ON s.submitted_by = submitted_admin.id 
       LEFT JOIN organizations submitted_org ON submitted_admin.organization_id = submitted_org.id
-      WHERE s.status = 'pending' 
-        AND (
-          -- Include non-program submissions
-          s.section != 'programs'
-          OR
-          -- Include program submissions that don't have collaborators in proposed_data AND no collaboration records
-          (
-            (
-              -- Check if proposed_data is valid JSON and doesn't have collaborators
-              (s.proposed_data IS NULL)
-              OR
-              (JSON_VALID(s.proposed_data) = 0)
-              OR
-              (JSON_EXTRACT(s.proposed_data, '$.collaborators') IS NULL)
-              OR
-              (JSON_LENGTH(JSON_EXTRACT(s.proposed_data, '$.collaborators')) = 0)
-            )
-            AND
-            -- Also check that no collaboration records exist for this submission
-            NOT EXISTS (
-              SELECT 1 FROM program_collaborations pc 
-              WHERE pc.submission_id = s.id
-            )
-          )
-          OR
-          -- Include collaborative programs - show them immediately for superadmin approval
-          -- Collaborators will be notified AFTER superadmin approval
-          -- Handle both cases: submission-based (program_id NULL) and program-first (program_id set)
-          EXISTS (
-            SELECT 1 FROM program_collaborations pc 
-            WHERE pc.submission_id = s.id
-          )
-        )
+      WHERE s.id IN (${placeholders})
       ORDER BY s.submitted_at DESC
-    `);
+    `, submissionIds);
 
     // Parse JSON data for each submission and enrich collaborator data
     const submissions = await Promise.all(rows.map(async (submission) => {
@@ -139,7 +149,11 @@ export const getPendingSubmissions = async (req, res) => {
     let errorMessage = 'Failed to fetch pending submissions';
     let statusCode = 500;
 
-    if (error.code === 'ER_BAD_FIELD_ERROR' || error.code === 'ER_PARSE_ERROR') {
+    if (error.code === 'ER_OUT_OF_SORTMEMORY') {
+      errorType = 'DATABASE_SORT_MEMORY_ERROR';
+      errorMessage = 'Too many submissions to process at once. The system is processing your request. Please try again in a moment or use filters to narrow down results.';
+      statusCode = 503;
+    } else if (error.code === 'ER_BAD_FIELD_ERROR' || error.code === 'ER_PARSE_ERROR') {
       errorType = 'DATABASE_QUERY_ERROR';
       errorMessage = 'Database query error. Please contact support.';
       statusCode = 500;
@@ -180,18 +194,15 @@ export const getPendingSubmissions = async (req, res) => {
 
 export const getAllSubmissions = async (req, res) => {
   try {
-    // Get all submissions, but exclude pending collaborative programs that haven't been accepted by all collaborators yet
-    // Use JSON_VALID to safely check JSON before extracting, preventing errors from invalid JSON
-    const [rows] = await db.execute(`
-      SELECT s.*, 
-             o.orgName, o.org, o.logo as organization_logo,
-             submitted_admin.email as submitted_by_email,
-             submitted_org.orgName as submitted_by_org_name,
-             submitted_org.id as submitted_by_org_id
+    // Optimized query to reduce memory usage:
+    // 1. First get IDs with minimal data to reduce sort memory
+    // 2. Then fetch full data for those IDs
+    // This approach uses less memory for sorting
+    
+    // Step 1: Get submission IDs with minimal sorting overhead
+    const [idRows] = await db.execute(`
+      SELECT s.id
       FROM submissions s 
-      LEFT JOIN organizations o ON o.id = s.organization_id 
-      LEFT JOIN admins submitted_admin ON s.submitted_by = submitted_admin.id 
-      LEFT JOIN organizations submitted_org ON submitted_admin.organization_id = submitted_org.id
       WHERE (
         -- Include non-pending submissions (already approved/rejected) - these are always shown
         s.status != 'pending'
@@ -203,29 +214,14 @@ export const getAllSubmissions = async (req, res) => {
             -- Include non-program submissions
             s.section != 'programs'
             OR
-            -- Include program submissions that don't have collaborators in proposed_data AND no collaboration records
-            (
-              (
-                -- Check if proposed_data is valid JSON and doesn't have collaborators
-                (s.proposed_data IS NULL)
-                OR
-                (JSON_VALID(s.proposed_data) = 0)
-                OR
-                (JSON_EXTRACT(s.proposed_data, '$.collaborators') IS NULL)
-                OR
-                (JSON_LENGTH(JSON_EXTRACT(s.proposed_data, '$.collaborators')) = 0)
-              )
-              AND
-              -- Also check that no collaboration records exist for this submission
-              NOT EXISTS (
-                SELECT 1 FROM program_collaborations pc 
-                WHERE pc.submission_id = s.id
-              )
+            -- Include program submissions that don't have collaborators
+            -- Check collaboration records first (faster than JSON operations)
+            NOT EXISTS (
+              SELECT 1 FROM program_collaborations pc 
+              WHERE pc.submission_id = s.id
             )
             OR
-            -- Include collaborative programs - show them immediately for superadmin approval
-            -- Collaborators will be notified AFTER superadmin approval
-            -- Handle both cases: submission-based (program_id NULL) and program-first (program_id set)
+            -- Include collaborative programs
             EXISTS (
               SELECT 1 FROM program_collaborations pc 
               WHERE pc.submission_id = s.id
@@ -234,7 +230,35 @@ export const getAllSubmissions = async (req, res) => {
         )
       )
       ORDER BY s.submitted_at DESC
+      LIMIT 10000
     `);
+    
+    // Extract IDs
+    const submissionIds = idRows.map(row => row.id);
+    
+    if (submissionIds.length === 0) {
+      return res.json({
+        success: true,
+        data: []
+      });
+    }
+    
+    // Step 2: Fetch full data for the selected IDs
+    // Use placeholders to avoid SQL injection
+    const placeholders = submissionIds.map(() => '?').join(',');
+    const [rows] = await db.execute(`
+      SELECT s.*, 
+             o.orgName, o.org, o.logo as organization_logo,
+             submitted_admin.email as submitted_by_email,
+             submitted_org.orgName as submitted_by_org_name,
+             submitted_org.id as submitted_by_org_id
+      FROM submissions s 
+      LEFT JOIN organizations o ON o.id = s.organization_id 
+      LEFT JOIN admins submitted_admin ON s.submitted_by = submitted_admin.id 
+      LEFT JOIN organizations submitted_org ON submitted_admin.organization_id = submitted_org.id
+      WHERE s.id IN (${placeholders})
+      ORDER BY s.submitted_at DESC
+    `, submissionIds);
 
     // Parse JSON data for each submission and enrich collaborator data
     const submissions = await Promise.all(rows.map(async (submission) => {
@@ -307,7 +331,11 @@ export const getAllSubmissions = async (req, res) => {
     let errorMessage = 'Failed to fetch submissions';
     let statusCode = 500;
 
-    if (error.code === 'ER_BAD_FIELD_ERROR' || error.code === 'ER_PARSE_ERROR') {
+    if (error.code === 'ER_OUT_OF_SORTMEMORY') {
+      errorType = 'DATABASE_SORT_MEMORY_ERROR';
+      errorMessage = 'Too many submissions to process at once. The system is processing your request. Please try again in a moment or use filters to narrow down results.';
+      statusCode = 503;
+    } else if (error.code === 'ER_BAD_FIELD_ERROR' || error.code === 'ER_PARSE_ERROR') {
       errorType = 'DATABASE_QUERY_ERROR';
       errorMessage = 'Database query error. Please contact support.';
       statusCode = 500;

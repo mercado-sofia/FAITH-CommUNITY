@@ -40,6 +40,22 @@ const SuperadminHighlightsPage = () => {
     }
   }, [])
 
+  // Listen for highlight approval/rejection changes to refetch data
+  useEffect(() => {
+    const handleHighlightStatusChange = () => {
+      // Refetch highlights and statistics when status changes (e.g., after approval)
+      refetchHighlights()
+      refetchStatistics()
+    }
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('highlightStatusChanged', handleHighlightStatusChange)
+      return () => {
+        window.removeEventListener('highlightStatusChanged', handleHighlightStatusChange)
+      }
+    }
+  }, [refetchHighlights, refetchStatistics])
+
   // Helper function to update URL parameter
   const updateTabUrl = (tab) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -89,7 +105,8 @@ const SuperadminHighlightsPage = () => {
 
   const { 
     data: statistics = {}, 
-    isLoading: statsLoading 
+    isLoading: statsLoading,
+    refetch: refetchStatistics
   } = useGetHighlightsStatisticsQuery()
 
   const {

@@ -930,10 +930,27 @@ export const approveSubmission = async (req, res) => {
     // Handle highlights approval - update highlight status
     if (section === 'highlights' && data) {
       const action = data.action;
-      const highlightId = data.highlight_id || (typeof data.highlight_id === 'string' ? parseInt(data.highlight_id) : null);
+      
+      // Extract highlight_id with proper type conversion
+      let highlightId = null;
+      if (data.highlight_id !== undefined && data.highlight_id !== null) {
+        // Convert to integer, handling both string and number types
+        highlightId = typeof data.highlight_id === 'string' 
+          ? parseInt(data.highlight_id, 10) 
+          : parseInt(data.highlight_id, 10);
+        
+        // Validate the conversion
+        if (isNaN(highlightId)) {
+          highlightId = null;
+          logError(`Invalid highlight_id: ${data.highlight_id}`, null, { context: 'approval_controller', submissionId: id });
+        }
+      }
       
       // Log for debugging
-      logInfo(`Processing highlight approval: action=${action}, highlight_id=${highlightId}`, { context: 'approval_controller', submissionId: id });
+      logInfo(`Processing highlight approval: action=${action}, highlight_id=${highlightId}, data=${JSON.stringify(data)}`, { 
+        context: 'approval_controller', 
+        submissionId: id 
+      });
       
       if (action === 'delete') {
         // For deletions, ensure the highlight is actually deleted
@@ -956,20 +973,21 @@ export const approveSubmission = async (req, res) => {
       } else if (highlightId) {
         // For create/update actions, or if action is missing but highlight_id exists, update status to approved
         // This handles cases where action might be missing or undefined
-        const [updateResult] = await connection.execute(
-          'UPDATE admin_highlights SET status = ? WHERE id = ?',
-          ['approved', highlightId]
+        
+        // First, verify the highlight exists and get its current status
+        const [existingHighlight] = await connection.execute(
+          'SELECT id, status FROM admin_highlights WHERE id = ?',
+          [highlightId]
         );
         
-        if (updateResult.affectedRows === 0) {
-          logError(`Failed to update highlight ${highlightId} - no rows affected. Trying fallback by title.`, null, { 
+        if (existingHighlight.length === 0) {
+          logError(`Highlight ${highlightId} not found in database`, null, { 
             context: 'approval_controller', 
             highlightId: highlightId,
-            action: action,
-            data: JSON.stringify(data)
+            action: action
           });
           
-          // Try to find the highlight by title as fallback
+          // Try fallback by title
           if (data.title) {
             const [fallbackResult] = await connection.execute(
               'UPDATE admin_highlights SET status = ? WHERE title = ? AND status = ?',
@@ -978,7 +996,7 @@ export const approveSubmission = async (req, res) => {
             if (fallbackResult.affectedRows > 0) {
               logInfo(`Highlight updated by title fallback: ${data.title}`, { context: 'approval_controller' });
             } else {
-              logError(`Failed to update highlight by title fallback - ${data.title}`, null, { 
+              logError(`Failed to update highlight by title fallback - ${data.title}. Highlight may not exist or already approved.`, null, { 
                 context: 'approval_controller', 
                 title: data.title,
                 highlightId: highlightId
@@ -986,12 +1004,80 @@ export const approveSubmission = async (req, res) => {
             }
           }
         } else {
-          logInfo(`Highlight ${highlightId} status updated to approved successfully`, { context: 'approval_controller' });
+          // Highlight exists, update its status
+          const currentStatus = existingHighlight[0].status;
+          logInfo(`Updating highlight ${highlightId} from status '${currentStatus}' to 'approved'`, { 
+            context: 'approval_controller' 
+          });
+          
+          // Ensure highlightId is an integer for the query
+          const highlightIdInt = parseInt(highlightId, 10);
+          
+          const [updateResult] = await connection.execute(
+            'UPDATE admin_highlights SET status = ?, updated_at = NOW() WHERE id = ?',
+            ['approved', highlightIdInt]
+          );
+          
+          if (updateResult.affectedRows === 0) {
+            logError(`Failed to update highlight ${highlightId} - no rows affected after verification`, null, { 
+              context: 'approval_controller', 
+              highlightId: highlightId,
+              highlightIdInt: highlightIdInt,
+              currentStatus: currentStatus
+            });
+            
+            // Try one more time with the original highlightId (in case of type mismatch)
+            const [retryResult] = await connection.execute(
+              'UPDATE admin_highlights SET status = ?, updated_at = NOW() WHERE id = ?',
+              ['approved', highlightId]
+            );
+            
+            if (retryResult.affectedRows > 0) {
+              logInfo(`Highlight ${highlightId} status updated to approved on retry`, { 
+                context: 'approval_controller' 
+              });
+            } else {
+              // Last resort: try updating by title
+              if (data.title) {
+                const [titleResult] = await connection.execute(
+                  'UPDATE admin_highlights SET status = ?, updated_at = NOW() WHERE title = ? AND status = ?',
+                  ['approved', data.title, 'pending']
+                );
+                if (titleResult.affectedRows > 0) {
+                  logInfo(`Highlight updated by title fallback: ${data.title}`, { context: 'approval_controller' });
+                } else {
+                  logError(`All update attempts failed for highlight ${highlightId}`, null, { 
+                    context: 'approval_controller',
+                    highlightId: highlightId,
+                    title: data.title
+                  });
+                }
+              }
+            }
+          } else {
+            // Verify the update actually happened
+            const [verifyResult] = await connection.execute(
+              'SELECT status FROM admin_highlights WHERE id = ?',
+              [highlightIdInt]
+            );
+            
+            if (verifyResult.length > 0 && verifyResult[0].status === 'approved') {
+              logInfo(`Highlight ${highlightId} status updated to approved successfully (was: ${currentStatus}, verified: ${verifyResult[0].status})`, { 
+                context: 'approval_controller' 
+              });
+            } else {
+              logError(`Highlight ${highlightId} update verification failed. Expected: approved, Got: ${verifyResult[0]?.status || 'not found'}`, null, { 
+                context: 'approval_controller',
+                highlightId: highlightId
+              });
+            }
+          }
         }
       } else {
-        logError(`Cannot update highlight: missing highlight_id. Data: ${JSON.stringify(data)}`, null, { 
+        logError(`Cannot update highlight: missing or invalid highlight_id. Data: ${JSON.stringify(data)}`, null, { 
           context: 'approval_controller',
-          action: action
+          action: action,
+          section: section
         });
       }
     }
@@ -1840,43 +1926,23 @@ export const bulkApproveSubmissions = async (req, res) => {
     if (section === 'highlights') {
       const action = data.action;
       
-      if (action === 'create') {
-        // For new highlights, update the status to approved
-        const [updateResult] = await connection.execute(
-          'UPDATE admin_highlights SET status = ? WHERE id = ?',
-          ['approved', data.highlight_id]
-        );
+      // Extract highlight_id with proper type conversion
+      let highlightId = null;
+      if (data.highlight_id !== undefined && data.highlight_id !== null) {
+        // Convert to integer, handling both string and number types
+        highlightId = typeof data.highlight_id === 'string' 
+          ? parseInt(data.highlight_id, 10) 
+          : parseInt(data.highlight_id, 10);
         
-        if (updateResult.affectedRows === 0) {
-          console.error(`Failed to update highlight ${data.highlight_id} - no rows affected`);
-          // Try to find the highlight by title as fallback
-          const [fallbackResult] = await connection.execute(
-            'UPDATE admin_highlights SET status = ? WHERE title = ? AND status = ?',
-            ['approved', data.title, 'pending']
-          );
-          // Fallback update successful
+        // Validate the conversion
+        if (isNaN(highlightId)) {
+          highlightId = null;
+          logError(`Invalid highlight_id in bulk approval: ${data.highlight_id}`, null, { context: 'approval_controller', submissionId: id });
         }
-      } else if (action === 'update') {
-        // For updates, the highlight is already updated, just change status to approved
-        const [updateResult] = await connection.execute(
-          'UPDATE admin_highlights SET status = ? WHERE id = ?',
-          ['approved', data.highlight_id]
-        );
-        
-        if (updateResult.affectedRows === 0) {
-          console.error(`Failed to update highlight ${data.highlight_id} - no rows affected`);
-          // Try to find the highlight by title as fallback
-          const [fallbackResult] = await connection.execute(
-            'UPDATE admin_highlights SET status = ? WHERE title = ? AND status = ?',
-            ['approved', data.title, 'pending']
-          );
-          // Fallback update successful
-        }
-      } else if (action === 'delete') {
+      }
+      
+      if (action === 'delete') {
         // For deletions, ensure the highlight is actually deleted
-        // The highlight might have been deleted by admin already, but verify and clean up
-        const highlightId = data.highlight_id || (typeof data.highlight_id === 'string' ? parseInt(data.highlight_id) : null);
-        
         if (highlightId) {
           // Check if highlight still exists
           const [existingHighlight] = await connection.execute(
@@ -1886,18 +1952,84 @@ export const bulkApproveSubmissions = async (req, res) => {
           
           if (existingHighlight.length > 0) {
             // Highlight still exists, delete it now (approved deletion)
-            const [deleteResult] = await connection.execute(
+            await connection.execute(
               'DELETE FROM admin_highlights WHERE id = ?',
               [highlightId]
             );
-            
-            // Highlight deleted after bulk approval
-          } else {
-            // Highlight already deleted
+            logInfo(`Highlight ${highlightId} deleted successfully in bulk approval`, { context: 'approval_controller' });
+          }
+        }
+      } else if (highlightId) {
+        // For create/update actions, update status to approved
+        // First, verify the highlight exists and get its current status
+        const [existingHighlight] = await connection.execute(
+          'SELECT id, status FROM admin_highlights WHERE id = ?',
+          [highlightId]
+        );
+        
+        if (existingHighlight.length === 0) {
+          logError(`Highlight ${highlightId} not found in database during bulk approval`, null, { 
+            context: 'approval_controller', 
+            highlightId: highlightId,
+            action: action
+          });
+          
+          // Try fallback by title
+          if (data.title) {
+            const [fallbackResult] = await connection.execute(
+              'UPDATE admin_highlights SET status = ?, updated_at = NOW() WHERE title = ? AND status = ?',
+              ['approved', data.title, 'pending']
+            );
+            if (fallbackResult.affectedRows > 0) {
+              logInfo(`Highlight updated by title fallback in bulk approval: ${data.title}`, { context: 'approval_controller' });
+            }
           }
         } else {
-          console.error(`Invalid highlight_id in deletion submission ${id}: ${highlightId}`);
+          // Highlight exists, update its status
+          const currentStatus = existingHighlight[0].status;
+          const highlightIdInt = parseInt(highlightId, 10);
+          
+          const [updateResult] = await connection.execute(
+            'UPDATE admin_highlights SET status = ?, updated_at = NOW() WHERE id = ?',
+            ['approved', highlightIdInt]
+          );
+          
+          if (updateResult.affectedRows === 0) {
+            logError(`Failed to update highlight ${highlightId} in bulk approval - no rows affected`, null, { 
+              context: 'approval_controller', 
+              highlightId: highlightId,
+              currentStatus: currentStatus
+            });
+            
+            // Try fallback by title
+            if (data.title) {
+              const [fallbackResult] = await connection.execute(
+                'UPDATE admin_highlights SET status = ?, updated_at = NOW() WHERE title = ? AND status = ?',
+                ['approved', data.title, 'pending']
+              );
+              if (fallbackResult.affectedRows > 0) {
+                logInfo(`Highlight updated by title fallback in bulk approval: ${data.title}`, { context: 'approval_controller' });
+              }
+            }
+          } else {
+            // Verify the update
+            const [verifyResult] = await connection.execute(
+              'SELECT status FROM admin_highlights WHERE id = ?',
+              [highlightIdInt]
+            );
+            
+            if (verifyResult.length > 0 && verifyResult[0].status === 'approved') {
+              logInfo(`Highlight ${highlightId} status updated to approved in bulk approval (was: ${currentStatus})`, { 
+                context: 'approval_controller' 
+              });
+            }
+          }
         }
+      } else {
+        logError(`Cannot update highlight in bulk approval: missing or invalid highlight_id. Data: ${JSON.stringify(data)}`, null, { 
+          context: 'approval_controller',
+          action: action
+        });
       }
     }
 

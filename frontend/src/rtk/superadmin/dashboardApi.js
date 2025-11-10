@@ -284,7 +284,9 @@ export const dashboardApi = createApi({
           .map(org => ({
             id: org.id,
             acronym: org.acronym,
-            name: org.name
+            name: org.name,
+            logo: org.logo || null,
+            color: org.color || null
           }));
       },
     }),

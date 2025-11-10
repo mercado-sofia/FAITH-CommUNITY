@@ -827,13 +827,56 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Bulk deletion failed');
       }
 
+      // Invalidate and refetch highlights cache if any highlights were deleted
+      // Check if any of the deleted items were highlights
+      try {
+        const deletedItems = approvals.filter(approval => 
+          originalIds.includes(approval.id.toString()) && approval.section === 'highlights'
+        );
+        
+        if (deletedItems.length > 0 || (result.details && result.details.deletedHighlightIds && result.details.deletedHighlightIds.length > 0)) {
+          // Invalidate all highlight queries to force refetch
+          dispatch(superadminHighlightsApi.util.invalidateTags(['SuperadminHighlight']));
+          
+          // Also manually refetch queries with different status filters
+          const refetchPromises = [
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate(null, { forceRefetch: true })),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('approved', { forceRefetch: true })),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('pending', { forceRefetch: true })),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('rejected', { forceRefetch: true })),
+            dispatch(superadminHighlightsApi.endpoints.getHighlightsStatistics.initiate(undefined, { forceRefetch: true })),
+          ];
+          
+          // Wait for all refetches to complete, then unsubscribe
+          Promise.all(refetchPromises).then(results => {
+            setTimeout(() => {
+              results.forEach(result => {
+                if (result && result.unsubscribe) {
+                  result.unsubscribe();
+                }
+              });
+            }, 1000);
+          }).catch(err => {
+            logError(err, { context: 'handleBulkDelete-refetchHighlights', ids: originalIds });
+          });
+          
+          // Dispatch custom event to notify Highlights page to refetch
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('highlightStatusChanged'));
+          }
+        }
+      } catch (cacheError) {
+        // Don't fail the deletion if cache invalidation fails
+        logError(cacheError, { context: 'handleBulkDelete-cacheInvalidation', ids: originalIds });
+      }
+
       showSuccessModal(`Bulk deletion completed: ${result.details.successCount} deleted`);
       fetchApprovals();
     } catch (err) {
       logError(err, { context: 'handleBulkDelete', ids: uniqueKeys });
       showSuccessModal('Failed to bulk delete approvals: ' + err.message, 'error');
     }
-  }, [showSuccessModal, fetchApprovals, router]);
+  }, [showSuccessModal, fetchApprovals, router, dispatch, approvals]);
 
   // Individual action handlers
   const handleApproveClick = useCallback((approval) => {
@@ -955,6 +998,45 @@ export default function PendingApprovalsPage() {
 
       if (!res.ok || !result.success) {
         throw new Error(result.message || 'Deletion failed');
+      }
+
+      // Invalidate and refetch highlights cache if this was a highlight deletion
+      // This ensures the Highlights management page shows updated data
+      try {
+        if (selectedItemForAction.section === 'highlights') {
+          // Invalidate all highlight queries to force refetch
+          dispatch(superadminHighlightsApi.util.invalidateTags(['SuperadminHighlight']));
+          
+          // Also manually refetch queries with different status filters
+          const refetchPromises = [
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate(null, { forceRefetch: true })),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('approved', { forceRefetch: true })),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('pending', { forceRefetch: true })),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('rejected', { forceRefetch: true })),
+            dispatch(superadminHighlightsApi.endpoints.getHighlightsStatistics.initiate(undefined, { forceRefetch: true })),
+          ];
+          
+          // Wait for all refetches to complete, then unsubscribe
+          Promise.all(refetchPromises).then(results => {
+            setTimeout(() => {
+              results.forEach(result => {
+                if (result && result.unsubscribe) {
+                  result.unsubscribe();
+                }
+              });
+            }, 1000);
+          }).catch(err => {
+            logError(err, { context: 'handleIndividualDeleteConfirm-refetchHighlights', itemId: selectedItemForAction.id });
+          });
+          
+          // Dispatch custom event to notify Highlights page to refetch
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('highlightStatusChanged'));
+          }
+        }
+      } catch (cacheError) {
+        // Don't fail the deletion if cache invalidation fails
+        logError(cacheError, { context: 'handleIndividualDeleteConfirm-cacheInvalidation', itemId: selectedItemForAction.id });
       }
 
       showSuccessModal('Submission deleted successfully');

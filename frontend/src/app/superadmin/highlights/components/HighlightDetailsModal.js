@@ -9,7 +9,7 @@ import styles from './styles/HighlightDetailsModal.module.css'
 const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
   const scrollPositionRef = useRef(0)
 
-  // Lock body scroll when modal is open
+  // Lock scroll when modal is open
   useEffect(() => {
     if (typeof document === 'undefined' || !document.body) {
       return
@@ -30,22 +30,19 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
       
       scrollPositionRef.current = scrollY
       
-      // Lock body scroll
-      document.body.style.position = 'fixed'
-      document.body.style.top = `-${scrollY}px`
-      document.body.style.left = '0'
-      document.body.style.right = '0'
-      document.body.style.overflow = 'hidden'
-      document.body.style.width = '100%'
-      
-      // Also lock the scrollable container if it's not the document element
+      // Lock scroll by setting overflow: hidden on the scrollable container
+      // Don't use position: fixed on body as it causes scroll reset issues
       if (scrollableContainer !== document.documentElement) {
+        // For container scroll, just lock the container
         scrollableContainer.style.overflow = 'hidden'
+      } else {
+        // For window scroll, lock body
+        document.body.style.overflow = 'hidden'
       }
       
       // Cleanup function to restore scroll when modal closes
       return () => {
-        if (typeof document !== 'undefined' && document.body && typeof window !== 'undefined') {
+        if (typeof document !== 'undefined' && typeof window !== 'undefined') {
           const savedScrollY = scrollPositionRef.current
           
           // Find the scrollable container again (in case DOM changed)
@@ -53,28 +50,37 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
                                       document.querySelector('.content') ||
                                       document.documentElement
           
-          // Remove fixed position and restore styles
-          document.body.style.position = ''
-          document.body.style.top = ''
-          document.body.style.left = ''
-          document.body.style.right = ''
-          document.body.style.overflow = ''
-          document.body.style.width = ''
-          
-          // Restore scrollable container overflow
-          if (scrollableContainer !== document.documentElement) {
-            scrollableContainer.style.overflow = ''
-          }
-          
-          // Restore scroll position on the correct element
+          // Restore scroll position FIRST, before restoring overflow
+          // This prevents the browser from resetting scroll to 0
           if (scrollableContainer === document.documentElement) {
             // Window scroll
             document.documentElement.scrollTop = savedScrollY
             window.scrollTo(0, savedScrollY)
           } else {
-            // Container scroll
+            // Container scroll - restore directly
             scrollableContainer.scrollTop = savedScrollY
           }
+          
+          // Then restore overflow
+          if (scrollableContainer !== document.documentElement) {
+            scrollableContainer.style.overflow = ''
+          } else {
+            document.body.style.overflow = ''
+          }
+          
+          // Double-check scroll position after a brief moment
+          // This ensures scroll is maintained even if browser tries to reset it
+          setTimeout(() => {
+            if (scrollableContainer === document.documentElement) {
+              if (window.scrollY !== savedScrollY) {
+                window.scrollTo(0, savedScrollY)
+              }
+            } else {
+              if (scrollableContainer.scrollTop !== savedScrollY) {
+                scrollableContainer.scrollTop = savedScrollY
+              }
+            }
+          }, 0)
         }
       }
     }

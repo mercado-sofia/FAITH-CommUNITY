@@ -14,8 +14,8 @@ function Star({ position, treePosition = [0, 0, 0], starId, onStarClick }) {
   // Create star geometry
   const starShape = useMemo(() => {
     const shape = new THREE.Shape()
-    const outerRadius = 0.15
-    const innerRadius = 0.08
+    const outerRadius = 0.13
+    const innerRadius = 0.07
     const spikes = 5
     const step = (Math.PI * 2) / spikes
 
@@ -36,10 +36,10 @@ function Star({ position, treePosition = [0, 0, 0], starId, onStarClick }) {
   }, [])
 
   const extrudeSettings = useMemo(() => ({
-    depth: 0.05,
+    depth: 0.045,
     bevelEnabled: true,
-    bevelThickness: 0.02,
-    bevelSize: 0.01,
+    bevelThickness: 0.018,
+    bevelSize: 0.009,
     bevelSegments: 3
   }), [])
   
@@ -57,11 +57,27 @@ function Star({ position, treePosition = [0, 0, 0], starId, onStarClick }) {
     }
   }
 
+  const handlePointerOver = (e) => {
+    e.stopPropagation()
+    setHovered(true)
+    if (typeof document !== 'undefined') {
+      document.body.style.cursor = 'pointer'
+    }
+  }
+
+  const handlePointerOut = (e) => {
+    e.stopPropagation()
+    setHovered(false)
+    if (typeof document !== 'undefined') {
+      document.body.style.cursor = 'default'
+    }
+  }
+
   return (
     <group
       position={basePosition}
-      onPointerOver={() => setHovered(true)}
-      onPointerOut={() => setHovered(false)}
+      onPointerOver={handlePointerOver}
+      onPointerOut={handlePointerOut}
       onClick={handleClick}
     >
       <mesh 
@@ -148,8 +164,8 @@ function Model({ url, treePosition = [0, 0, 0], theme = 'morning' }) {
   
   // Rotate the tree to face the camera directly (front-on, symmetrical view)
   // Rotate around Y-axis to orient the tree properly
-  // Original working rotation was Math.PI * 0.25 (45°), adjusting for front-on view
-  clonedScene.rotation.y = Math.PI * 0.25 // 45 degrees - original working angle
+  // Adjusted to show the front facing left
+  clonedScene.rotation.y = -Math.PI * 1.5 // Rotate to show front facing even more left (-270°)
   
   return <primitive object={clonedScene} />
 }
@@ -316,6 +332,8 @@ function AutoReturnControls({
       target={treePosition}
       maxPolarAngle={Math.PI / 2.4}
       minPolarAngle={Math.PI / 2.4}
+      minAzimuthAngle={-0.6}
+      maxAzimuthAngle={0.6}
       enableDamping={true}
       dampingFactor={0.1}
     />
@@ -529,13 +547,13 @@ export default function TreeModel({
 
   // Select the appropriate GLB file based on theme
   const modelPath = theme === 'morning' 
-    ? '/models/tree website.glb' 
-    : '/models/for website cloudy.glb'
+    ? '/models/tree-sunny.glb' 
+    : '/models/tree-cloudy.glb'
 
   // Preload both models for better performance
   useEffect(() => {
-    useGLTF.preload('/models/tree website.glb')
-    useGLTF.preload('/models/for website cloudy.glb')
+    useGLTF.preload('/models/tree-sunny.glb')
+    useGLTF.preload('/models/tree-cloudy.glb')
   }, [])
 
   // Sync treePosition state with prop when it changes
@@ -590,24 +608,54 @@ export default function TreeModel({
             {/* Key prop ensures component re-renders when model changes */}
             <Model key={modelPath} url={modelPath} treePosition={treePosition} theme={theme} />
             
-            {/* 3 Stars placed on the tree leaves - positioned close to leaves like fruit */}
-            {/* Positions are relative to tree position, adjusted to be close to the leaves */}
+            {/* 8 Stars placed on the front of the tree leaves - positioned close to leaves like fruit */}
+            {/* Positions are relative to tree position, all in front (positive Z values) */}
             <Star 
-              position={[-0.6, 1.8, 1.0]} 
+              position={[-1.4, 2.0, 0.8]} 
               treePosition={treePosition}
               starId={1}
               onStarClick={handleStarClick}
             />
             <Star 
-              position={[0.7, 1.5, -0.3]} 
+              position={[0.8, 1.75, 0.8]} 
               treePosition={treePosition}
               starId={2}
               onStarClick={handleStarClick}
             />
             <Star 
-              position={[0.1, 1.8, 0.2]} 
+              position={[0.2, 1.8, 1.0]} 
               treePosition={treePosition}
               starId={3}
+              onStarClick={handleStarClick}
+            />
+            <Star 
+              position={[-0.2, 2, 1.0]} 
+              treePosition={treePosition}
+              starId={4}
+              onStarClick={handleStarClick}
+            />
+            <Star 
+              position={[0.6, 2.1, 0.8]} 
+              treePosition={treePosition}
+              starId={5}
+              onStarClick={handleStarClick}
+            />
+            <Star 
+              position={[-1.1, 1.7, 0.8]} 
+              treePosition={treePosition}
+              starId={6}
+              onStarClick={handleStarClick}
+            />
+            <Star 
+              position={[-0.5, 1.7, 0.9]} 
+              treePosition={treePosition}
+              starId={7}
+              onStarClick={handleStarClick}
+            />
+            <Star 
+              position={[-0.7, 2.1, 0.85]} 
+              treePosition={treePosition}
+              starId={8}
               onStarClick={handleStarClick}
             />
             

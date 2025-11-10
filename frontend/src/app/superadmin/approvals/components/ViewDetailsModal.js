@@ -608,11 +608,14 @@ const ViewDetailsModal = ({
                 <button 
                   onClick={() => {
                     if (onReject) {
-                      onClose(); // Close the details modal first
-                      // Small delay to ensure modal closes before confirmation modal opens
-                      setTimeout(() => {
-                        onReject(submissionData);
-                      }, 100);
+                      // Close the details modal first, then trigger rejection
+                      onClose();
+                      // Use requestAnimationFrame to ensure modal closes before confirmation modal opens
+                      requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                          onReject(submissionData);
+                        });
+                      });
                     }
                   }}
                   className={styles.modalRejectBtn}
@@ -622,11 +625,14 @@ const ViewDetailsModal = ({
                 <button 
                   onClick={() => {
                     if (onApprove) {
-                      onClose(); // Close the details modal first
-                      // Small delay to ensure modal closes before confirmation modal opens
-                      setTimeout(() => {
-                        onApprove(submissionData);
-                      }, 100);
+                      // Close the details modal first, then trigger approval
+                      onClose();
+                      // Use requestAnimationFrame to ensure modal closes before confirmation modal opens
+                      requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                          onApprove(submissionData);
+                        });
+                      });
                     }
                   }}
                   className={styles.modalApproveBtn}

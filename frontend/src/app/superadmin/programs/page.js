@@ -252,6 +252,10 @@ const SuperadminProgramsPage = () => {
     acronym: org.acronym
   }))
 
+  const handleSearchChange = (query) => {
+    setSearchQuery(query)
+  }
+
   // Calculate text color based on background color for proper contrast
   const getTextColor = (backgroundColor) => {
     if (!backgroundColor) return '#374151';

@@ -1,11 +1,49 @@
 'use client'
 
+import { useEffect } from 'react'
 import Image from 'next/image'
 import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding } from 'react-icons/fa'
 import { formatDateShort } from '@/utils/dateUtils.js'
 import styles from './styles/HighlightDetailsModal.module.css'
 
 const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (typeof document === 'undefined' || !document.body) {
+      return
+    }
+
+    if (isOpen) {
+      // Save current scroll position
+      const scrollY = window.scrollY
+      
+      // Lock body scroll
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.left = '0'
+      document.body.style.right = '0'
+      document.body.style.overflow = 'hidden'
+      document.body.style.width = '100%'
+      
+      return () => {
+        // Restore body scroll when modal closes
+        if (typeof document !== 'undefined' && document.body) {
+          document.body.style.position = ''
+          document.body.style.top = ''
+          document.body.style.left = ''
+          document.body.style.right = ''
+          document.body.style.overflow = ''
+          document.body.style.width = ''
+          
+          // Restore scroll position
+          if (typeof window !== 'undefined') {
+            window.scrollTo(0, scrollY)
+          }
+        }
+      }
+    }
+  }, [isOpen])
+
   if (!isOpen || !highlight) return null
 
   const getImageUrl = () => {

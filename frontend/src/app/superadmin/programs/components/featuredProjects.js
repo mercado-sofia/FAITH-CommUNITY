@@ -289,6 +289,8 @@ const FeaturedProjects = ({ searchQuery = '' }) => {
               key={project.id}
               program={programData}
               onViewDetails={(program) => {
+                // Always set the program first, then open modal
+                // This ensures the correct program is displayed
                 setSelectedProgram(program)
                 setIsModalOpen(true)
               }}

@@ -289,15 +289,19 @@ const SuperadminProgramsPage = () => {
     return 'white';
   }
 
+  const handleViewDetails = (program) => {
+    // Always set the program first, then open modal
+    // This ensures the correct program is displayed
+    setSelectedProgram(program)
+    setIsModalOpen(true)
+  }
+
   const renderProgramCard = (program, organizationData) => {
     return (
       <ProgramCard
         key={program.id}
         program={program}
-        onViewDetails={(program) => {
-          setSelectedProgram(program)
-          setIsModalOpen(true)
-        }}
+        onViewDetails={handleViewDetails}
         showOrganizationBadge={false}
         organizationData={organizationData}
       />

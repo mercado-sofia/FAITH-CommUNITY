@@ -1234,9 +1234,12 @@ export const getAllFeaturedPrograms = async (req, res) => {
               LEFT JOIN organizations o ON org_roles.org_id = o.id
               WHERE o.id IS NOT NULL
               ORDER BY 
-                CASE WHEN org_roles.role = 'primary' THEN 0 ELSE 1 END,
+                CASE 
+                  WHEN o.id = ? THEN 0 
+                  ELSE 1 
+                END,
                 o.orgName ASC
-            `, [program.organization_id, program.organization_id, program.id]);
+            `, [program.organization_id, program.organization_id, program.id, program.organization_id]);
             
             // Get admin details for each collaborator organization
             const collaboratorsWithAdmins = await Promise.all(collaborationRows.map(async (collab) => {
@@ -2102,9 +2105,12 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
                 LEFT JOIN organizations o ON org_roles.org_id = o.id
                 WHERE o.id IS NOT NULL
                 ORDER BY 
-                  CASE WHEN org_roles.role = 'primary' THEN 0 ELSE 1 END,
+                  CASE 
+                    WHEN o.id = ? THEN 0 
+                    ELSE 1 
+                  END,
                   o.orgName ASC
-              `, [program.organization_id, program.organization_id, program.id]);
+              `, [program.organization_id, program.organization_id, program.id, program.organization_id]);
               
               // Get admin details for each collaborator organization
               const collaboratorsWithAdmins = await Promise.all(collaborationRows.map(async (collab) => {

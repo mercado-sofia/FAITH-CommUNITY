@@ -29,11 +29,10 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
       
       // Cleanup function to restore scroll when modal closes
       return () => {
-        // Restore body styles first
-        if (typeof document !== 'undefined' && document.body) {
+        if (typeof document !== 'undefined' && document.body && typeof window !== 'undefined') {
           const savedScrollY = scrollPositionRef.current
           
-          // Restore body styles immediately
+          // Remove fixed position and restore styles
           document.body.style.position = ''
           document.body.style.top = ''
           document.body.style.left = ''
@@ -41,18 +40,19 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
           document.body.style.overflow = ''
           document.body.style.width = ''
           
-          // Restore scroll position after DOM has updated
-          // Use multiple requestAnimationFrame to ensure all updates are complete
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              if (typeof window !== 'undefined') {
-                // Prevent any scroll events during restoration
-                window.scrollTo({
-                  top: savedScrollY,
-                  behavior: 'auto' // Instant scroll, no animation
-                })
-              }
-            })
+          // Restore scroll position immediately and synchronously
+          // Use both window.scrollTo and documentElement.scrollTop for maximum compatibility
+          if (document.documentElement) {
+            document.documentElement.scrollTop = savedScrollY
+          }
+          window.scrollTo(0, savedScrollY)
+          
+          // Double-check after a microtask to ensure position is maintained
+          // This handles any async layout updates
+          Promise.resolve().then(() => {
+            if (window.scrollY !== savedScrollY) {
+              window.scrollTo(0, savedScrollY)
+            }
           })
         }
       }

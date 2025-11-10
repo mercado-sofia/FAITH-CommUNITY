@@ -615,16 +615,28 @@ export default function PendingApprovalsPage() {
         throw new Error(errorMessage);
       }
 
-      // Invalidate highlights cache if this was a highlight approval
+      // Invalidate and refetch highlights cache if this was a highlight approval
       // This ensures the Highlights management page shows updated status
       try {
-        const submissionData = typeof item.proposed_data === 'string' 
-          ? JSON.parse(item.proposed_data) 
-          : item.proposed_data;
-        
         if (item.section === 'highlights') {
           // Invalidate all highlight queries to force refetch
+          // This will trigger automatic refetch for any active queries
           dispatch(superadminHighlightsApi.util.invalidateTags(['SuperadminHighlight']));
+          
+          // Also manually refetch queries with different status filters
+          // This ensures all variants of the query are updated
+          const refetchPromises = [
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate(null)),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('approved')),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('pending')),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('rejected')),
+            dispatch(superadminHighlightsApi.endpoints.getHighlightsStatistics.initiate()),
+          ];
+          
+          // Wait for all refetches to complete (fire and forget)
+          Promise.all(refetchPromises).catch(err => {
+            logError(err, { context: 'handleApprove-refetchHighlights', itemId: item.id });
+          });
         }
       } catch (cacheError) {
         // Don't fail the approval if cache invalidation fails
@@ -690,7 +702,7 @@ export default function PendingApprovalsPage() {
         throw new Error(result.message || 'Bulk approval failed');
       }
 
-      // Invalidate highlights cache if any highlights were approved
+      // Invalidate and refetch highlights cache if any highlights were approved
       // Check if any of the approved items were highlights
       try {
         const approvedItems = approvals.filter(approval => 
@@ -700,6 +712,21 @@ export default function PendingApprovalsPage() {
         if (approvedItems.length > 0) {
           // Invalidate all highlight queries to force refetch
           dispatch(superadminHighlightsApi.util.invalidateTags(['SuperadminHighlight']));
+          
+          // Also manually refetch queries with different status filters
+          // This ensures all variants of the query are updated
+          const refetchPromises = [
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate(null)),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('approved')),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('pending')),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('rejected')),
+            dispatch(superadminHighlightsApi.endpoints.getHighlightsStatistics.initiate()),
+          ];
+          
+          // Wait for all refetches to complete (fire and forget)
+          Promise.all(refetchPromises).catch(err => {
+            logError(err, { context: 'handleBulkApprove-refetchHighlights', ids: originalIds });
+          });
         }
       } catch (cacheError) {
         // Don't fail the approval if cache invalidation fails

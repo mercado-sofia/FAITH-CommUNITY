@@ -1,9 +1,9 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '@/config/api';
 
-export const superadminNotificationsApi = createApi({
-  reducerPath: 'superadminNotificationsApi',
-  baseQuery: fetchBaseQuery({
+// Custom baseQuery wrapper to handle errors properly
+const baseQueryWithErrorHandling = async (args, api, extraOptions) => {
+  const result = await fetchBaseQuery({
     baseUrl: `${API_BASE_URL}/api/superadmin/notifications`,
     credentials: 'include',
     prepareHeaders: (headers, { getState }) => {
@@ -16,7 +16,55 @@ export const superadminNotificationsApi = createApi({
       }
       return headers;
     },
-  }),
+  })(args, api, extraOptions);
+
+  // If there's an error, extract the error message from the response
+  if (result.error) {
+    // RTK Query error format: { status: number, data: any }
+    if (result.error.data) {
+      const errorData = result.error.data;
+      // Backend returns errors in different formats:
+      // { error: "message" } or { success: false, message: "message" }
+      if (errorData.error && typeof errorData.error === 'string') {
+        result.error.data = { ...errorData, message: errorData.error };
+      } else if (errorData.message && typeof errorData.message === 'string') {
+        // Already has message, keep it
+        result.error.data = errorData;
+      } else if (typeof errorData === 'string') {
+        // Error data is a string
+        result.error.data = { message: errorData, error: errorData };
+      } else {
+        // Fallback: create a message from status
+        const status = result.error.status;
+        const statusText = typeof status === 'number' 
+          ? `HTTP ${status}` 
+          : status === 'FETCH_ERROR' 
+            ? 'Network error' 
+            : 'Unknown error';
+        result.error.data = { 
+          message: statusText,
+          error: statusText,
+          ...errorData 
+        };
+      }
+    } else {
+      // No data in error, create a default message
+      const status = result.error.status;
+      const statusText = typeof status === 'number' 
+        ? `HTTP ${status}: Failed to fetch notifications` 
+        : status === 'FETCH_ERROR' 
+          ? 'Failed to fetch notifications. Please check your connection.' 
+          : 'Failed to fetch notifications';
+      result.error.data = { message: statusText, error: statusText };
+    }
+  }
+
+  return result;
+};
+
+export const superadminNotificationsApi = createApi({
+  reducerPath: 'superadminNotificationsApi',
+  baseQuery: baseQueryWithErrorHandling,
   tagTypes: ['SuperAdminNotifications'],
   endpoints: (builder) => ({
     // Get notifications for a superadmin

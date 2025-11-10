@@ -125,7 +125,8 @@ const HighlightCard = ({ highlight, onViewDetails }) => {
         {/* Star Button - Only show for approved highlights */}
         {isApproved && (
           <StarButton 
-            highlightId={highlight.id} 
+            highlightId={highlight.id}
+            highlightTitle={highlight.title}
             onStarChange={() => {
               // Trigger refresh when star changes
               if (typeof window !== 'undefined') {

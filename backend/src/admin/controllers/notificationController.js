@@ -1,6 +1,7 @@
 //db table: admin_notifications
 
 import db from '../../database.js';
+import { logError } from '../../utils/logger.js';
 
 class NotificationController {
   // Get all notifications for an admin
@@ -8,6 +9,32 @@ class NotificationController {
     try {
       const { adminId } = req.params;
       const { limit = 10, offset = 0, tab = 'all' } = req.query;
+
+      // Validate adminId
+      if (!adminId || isNaN(parseInt(adminId))) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid admin ID'
+        });
+      }
+
+      // Validate and convert limit and offset to numbers
+      const limitNum = parseInt(limit, 10);
+      const offsetNum = parseInt(offset, 10);
+      
+      if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid limit. Must be between 1 and 100'
+        });
+      }
+      
+      if (isNaN(offsetNum) || offsetNum < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid offset. Must be 0 or greater'
+        });
+      }
 
       // Build WHERE clause based on tab
       let whereClause = 'admin_id = ?';
@@ -37,15 +64,17 @@ class NotificationController {
       const total = countResult[0].total;
 
       // Get notifications with pagination
+      // Note: MySQL2 has issues with LIMIT and OFFSET as placeholders, so we interpolate them directly
+      // This is safe because we've already validated limitNum and offsetNum are valid numbers
       const query = `
         SELECT id, type, title, message, section, submission_id, is_read, created_at
         FROM admin_notifications 
         WHERE ${whereClause}
         ORDER BY created_at DESC 
-        LIMIT ? OFFSET ?
+        LIMIT ${limitNum} OFFSET ${offsetNum}
       `;
 
-      const [notifications] = await db.execute(query, [...queryParams, parseInt(limit), parseInt(offset)]);
+      const [notifications] = await db.execute(query, queryParams);
 
       // Format the time ago for each notification
       const formattedNotifications = notifications.map(notification => ({
@@ -59,24 +88,20 @@ class NotificationController {
         total: total
       });
     } catch (error) {
-      console.error('Error fetching notifications:', error);
-      console.error('Error stack:', error.stack);
-      console.error('Error details:', {
-        message: error.message,
-        code: error.code,
-        errno: error.errno,
-        sqlState: error.sqlState,
-        sqlMessage: error.sqlMessage
+      // Log the error for debugging
+      logError('Error fetching admin notifications', error, {
+        context: 'admin_notification_controller',
+        adminId: req.params?.adminId,
+        limit: req.query?.limit,
+        offset: req.query?.offset,
+        tab: req.query?.tab,
+        errorStack: error.stack
       });
+
       res.status(500).json({
         success: false,
         message: 'Failed to fetch notifications',
-        error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message,
-        details: process.env.NODE_ENV === 'development' ? {
-          code: error.code,
-          errno: error.errno,
-          sqlState: error.sqlState
-        } : undefined
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }

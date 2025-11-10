@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useGetAllFeaturedProjectsQuery } from '@/rtk/superadmin/programsApi'
 import ProgramDetailsModal from './ProgramDetailsModal'
 import ProgramCard from './ProgramCard'
@@ -18,93 +18,54 @@ const FeaturedProjects = ({ searchQuery = '' }) => {
     refetch 
   } = useGetAllFeaturedProjectsQuery()
 
-  // Hierarchical search function with priority scoring
-  // Priority order: Organization Name > Program Title > Description > Category/Location > Other fields > Collaborators
+  // Search featured projects with priority scoring
   const searchFeaturedProjects = (projects, query) => {
-    if (!query || !query.trim()) return projects
+    if (!query?.trim()) return projects
     
     const searchTerm = query.toLowerCase().trim()
     
-    // Score projects based on match priority (higher score = higher priority)
     const scoredProjects = projects.map(project => {
       let score = 0
       let matches = false
       
-      // Priority 1: Organization Name/Acronym match (1000 points - highest)
-      const orgNameMatch = project.orgName?.toLowerCase().includes(searchTerm) || false
-      const orgAcronymMatch = project.orgAcronym?.toLowerCase().includes(searchTerm) || false
-      if (orgNameMatch || orgAcronymMatch) {
+      const checkMatch = (value, points) => {
+        if (value?.toLowerCase().includes(searchTerm)) {
+          score += points
+          matches = true
+        }
+      }
+
+      // Priority: Org Name/Acronym (1000) > Title (100) > Description (50) > Category/Location (30) > Status/Slug (20) > Submitted by (10) > Collaborators (5)
+      if (project.orgName?.toLowerCase().includes(searchTerm) || 
+          project.orgAcronym?.toLowerCase().includes(searchTerm)) {
         score += 1000
         matches = true
       }
       
-      // Priority 2: Program Title match (100 points)
-      const titleMatch = project.title?.toLowerCase().includes(searchTerm) || false
-      if (titleMatch) {
-        score += 100
-        matches = true
-      }
+      checkMatch(project.title, 100)
+      checkMatch(project.description, 50)
+      checkMatch(project.category, 30)
+      checkMatch(project.location, 30)
+      checkMatch(project.status, 20)
+      checkMatch(project.slug, 20)
       
-      // Priority 3: Program Description match (50 points)
-      const descriptionMatch = project.description?.toLowerCase().includes(searchTerm) || false
-      if (descriptionMatch) {
-        score += 50
-        matches = true
-      }
-      
-      // Priority 4: Category match (30 points)
-      const categoryMatch = project.category?.toLowerCase().includes(searchTerm) || false
-      if (categoryMatch) {
-        score += 30
-        matches = true
-      }
-      
-      // Priority 5: Location match (30 points)
-      const locationMatch = project.location?.toLowerCase().includes(searchTerm) || false
-      if (locationMatch) {
-        score += 30
-        matches = true
-      }
-      
-      // Priority 6: Status match (20 points)
-      const statusMatch = project.status?.toLowerCase().includes(searchTerm) || false
-      if (statusMatch) {
-        score += 20
-        matches = true
-      }
-      
-      // Priority 7: Slug match (20 points)
-      const slugMatch = project.slug?.toLowerCase().includes(searchTerm) || false
-      if (slugMatch) {
-        score += 20
-        matches = true
-      }
-      
-      // Priority 8: Submitted by fields (10 points)
-      const submittedByNameMatch = project.submitted_by_name?.toLowerCase().includes(searchTerm) || false
-      const submittedByRoleMatch = project.submitted_by_role?.toLowerCase().includes(searchTerm) || false
-      if (submittedByNameMatch || submittedByRoleMatch) {
+      if (project.submitted_by_name?.toLowerCase().includes(searchTerm) || 
+          project.submitted_by_role?.toLowerCase().includes(searchTerm)) {
         score += 10
         matches = true
       }
       
-      // Priority 9: Collaborator information (lowest priority - 5 points)
-      const collaboratorMatch = project.collaborators?.some(collab => 
+      if (project.collaborators?.some(collab => 
         collab.organization_name?.toLowerCase().includes(searchTerm) ||
         collab.organization_acronym?.toLowerCase().includes(searchTerm)
-      ) || false
-      if (collaboratorMatch) {
+      )) {
         score += 5
         matches = true
       }
       
-      // If no matches found, return null to filter out
-      if (!matches) return null
-      
-      return { project, score }
-    }).filter(item => item !== null)
+      return matches ? { project, score } : null
+    }).filter(Boolean)
     
-    // Sort by score (descending) and return only projects
     return scoredProjects
       .sort((a, b) => b.score - a.score)
       .map(item => item.project)

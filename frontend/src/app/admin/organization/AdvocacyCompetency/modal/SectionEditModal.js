@@ -22,38 +22,95 @@ export default function SectionEditModal({
   // Check if any changes have been made using the custom hook
   const hasChanges = () => hasSectionChangesFromData(originalData, advocacyData, currentSection);
 
+  // Get current input value based on section
+  const getCurrentValue = () => {
+    if (currentSection === 'advocacy') {
+      return advocacyData?.advocacy || '';
+    } else if (currentSection === 'competency') {
+      return competencyData?.competency || '';
+    }
+    return '';
+  };
+
+  // Get character count
+  const getCharacterCount = () => {
+    const value = getCurrentValue();
+    return value ? value.trim().length : 0;
+  };
+
+  // Check if input is valid (at least 10 characters)
+  const isValidInput = () => {
+    const count = getCharacterCount();
+    return count === 0 || count >= 10; // Allow empty (will be saved as empty) or at least 10 chars
+  };
+
+  // Check if save should be disabled
+  const isSaveDisabled = () => {
+    return saving || !hasChanges() || !isValidInput();
+  };
+
   if (!isOpen) return null
 
   // Organization fields are now handled by the main EditModal component
   // This modal only handles advocacy and competency sections
 
-  const renderAdvocacyFields = () => (
-    <div className={styles.formSection}>
-      <div className={styles.formGroup}>
-        <label className={styles.label}>Advocacy Information:</label>
-        <AutoResizeTextarea
-          name="advocacy"
-          value={advocacyData.advocacy}
-          onChange={handleInputChange}
-          placeholder="Enter your organization's advocacy information, mission, vision, goals, programs, and initiatives..."
-        />
+  const renderAdvocacyFields = () => {
+    const charCount = getCharacterCount();
+    const isValid = isValidInput();
+    
+    return (
+      <div className={styles.formSection}>
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Advocacy Information:</label>
+          <AutoResizeTextarea
+            name="advocacy"
+            value={advocacyData.advocacy}
+            onChange={handleInputChange}
+            placeholder="Enter your organization's advocacy information, mission, vision, goals, programs, and initiatives..."
+          />
+          <div className={styles.characterCount}>
+            <span className={isValid ? styles.validCount : styles.invalidCount}>
+              {charCount} {charCount === 1 ? 'character' : 'characters'}
+            </span>
+            {!isValid && charCount > 0 && (
+              <span className={styles.errorMessage}>
+                (Minimum 10 characters required)
+              </span>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
-  )
+    );
+  };
 
-  const renderCompetencyFields = () => (
-    <div className={styles.formSection}>
-      <div className={styles.formGroup}>
-        <label className={styles.label}>Competency Information:</label>
-        <AutoResizeTextarea
-          name="competency"
-          value={competencyData.competency}
-          onChange={handleInputChange}
-          placeholder="Enter your organization's competencies, expertise areas, certifications, partnerships, resources, and achievements..."
-        />
+  const renderCompetencyFields = () => {
+    const charCount = getCharacterCount();
+    const isValid = isValidInput();
+    
+    return (
+      <div className={styles.formSection}>
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Competency Information:</label>
+          <AutoResizeTextarea
+            name="competency"
+            value={competencyData.competency}
+            onChange={handleInputChange}
+            placeholder="Enter your organization's competencies, expertise areas, certifications, partnerships, resources, and achievements..."
+          />
+          <div className={styles.characterCount}>
+            <span className={isValid ? styles.validCount : styles.invalidCount}>
+              {charCount} {charCount === 1 ? 'character' : 'characters'}
+            </span>
+            {!isValid && charCount > 0 && (
+              <span className={styles.errorMessage}>
+                (Minimum 10 characters required)
+              </span>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
-  )
+    );
+  };
 
   const getSectionTitle = () => {
     switch(currentSection) {
@@ -95,7 +152,7 @@ export default function SectionEditModal({
               <button 
                 onClick={handleSave}
                 className={styles.saveButton}
-                disabled={saving || !hasChanges()}
+                disabled={isSaveDisabled()}
               >
                 {saving ? (
                   <>

@@ -16,27 +16,42 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
     }
 
     if (isOpen) {
+      // Find the scrollable container (main.content element in superadmin layout)
+      // The superadmin layout uses a .content container with overflow-y: auto
+      const scrollableContainer = document.querySelector('main[class*="content"]') || 
+                                  document.querySelector('.content') ||
+                                  document.documentElement
+      
       // Save current scroll position BEFORE locking
-      scrollPositionRef.current = window.scrollY
+      // Use the scrollable container's scroll position, not window.scrollY
+      const scrollY = scrollableContainer === document.documentElement 
+        ? window.scrollY 
+        : scrollableContainer.scrollTop
+      
+      scrollPositionRef.current = scrollY
       
       // Lock body scroll
       document.body.style.position = 'fixed'
-      document.body.style.top = `-${scrollPositionRef.current}px`
+      document.body.style.top = `-${scrollY}px`
       document.body.style.left = '0'
       document.body.style.right = '0'
       document.body.style.overflow = 'hidden'
       document.body.style.width = '100%'
+      
+      // Also lock the scrollable container if it's not the document element
+      if (scrollableContainer !== document.documentElement) {
+        scrollableContainer.style.overflow = 'hidden'
+      }
       
       // Cleanup function to restore scroll when modal closes
       return () => {
         if (typeof document !== 'undefined' && document.body && typeof window !== 'undefined') {
           const savedScrollY = scrollPositionRef.current
           
-          // Temporarily disable scroll restoration to prevent browser from resetting
-          const originalScrollRestoration = window.history.scrollRestoration
-          if (originalScrollRestoration) {
-            window.history.scrollRestoration = 'manual'
-          }
+          // Find the scrollable container again (in case DOM changed)
+          const scrollableContainer = document.querySelector('main[class*="content"]') || 
+                                      document.querySelector('.content') ||
+                                      document.documentElement
           
           // Remove fixed position and restore styles
           document.body.style.position = ''
@@ -46,18 +61,19 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
           document.body.style.overflow = ''
           document.body.style.width = ''
           
-          // Restore scroll position immediately and synchronously
-          // Use both methods for maximum compatibility
-          if (document.documentElement) {
-            document.documentElement.scrollTop = savedScrollY
+          // Restore scrollable container overflow
+          if (scrollableContainer !== document.documentElement) {
+            scrollableContainer.style.overflow = ''
           }
-          window.scrollTo(0, savedScrollY)
           
-          // Restore scroll restoration after a brief moment
-          if (originalScrollRestoration) {
-            setTimeout(() => {
-              window.history.scrollRestoration = originalScrollRestoration
-            }, 100)
+          // Restore scroll position on the correct element
+          if (scrollableContainer === document.documentElement) {
+            // Window scroll
+            document.documentElement.scrollTop = savedScrollY
+            window.scrollTo(0, savedScrollY)
+          } else {
+            // Container scroll
+            scrollableContainer.scrollTop = savedScrollY
           }
         }
       }

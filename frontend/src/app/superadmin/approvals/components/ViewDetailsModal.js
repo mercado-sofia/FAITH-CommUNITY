@@ -608,14 +608,12 @@ const ViewDetailsModal = ({
                 <button 
                   onClick={() => {
                     if (onReject) {
-                      // Close the details modal first, then trigger rejection
-                      onClose();
-                      // Use requestAnimationFrame to ensure modal closes before confirmation modal opens
-                      requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                          onReject(submissionData);
-                        });
-                      });
+                      // Call the handler first to set state and open confirmation modal
+                      onReject(submissionData);
+                      // Close the details modal after a small delay to allow state to be set
+                      setTimeout(() => {
+                        onClose();
+                      }, 50);
                     }
                   }}
                   className={styles.modalRejectBtn}
@@ -625,14 +623,12 @@ const ViewDetailsModal = ({
                 <button 
                   onClick={() => {
                     if (onApprove) {
-                      // Close the details modal first, then trigger approval
-                      onClose();
-                      // Use requestAnimationFrame to ensure modal closes before confirmation modal opens
-                      requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                          onApprove(submissionData);
-                        });
-                      });
+                      // Call the handler first to set state and open confirmation modal
+                      onApprove(submissionData);
+                      // Close the details modal after a small delay to allow state to be set
+                      setTimeout(() => {
+                        onClose();
+                      }, 50);
                     }
                   }}
                   className={styles.modalApproveBtn}

@@ -2410,6 +2410,81 @@ export const deleteSubmission = async (req, res) => {
   const { id } = req.params;
 
   try {
+    // First, get the submission to check if it's a highlight submission
+    const [submissionRows] = await db.execute(
+      'SELECT section, proposed_data, previous_data FROM submissions WHERE id = ?',
+      [id]
+    );
+    
+    if (submissionRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Submission not found or already deleted'
+      });
+    }
+
+    const submission = submissionRows[0];
+    let highlightId = null;
+
+    // If this is a highlight submission, extract highlight_id and delete the highlight
+    if (submission.section === 'highlights') {
+      try {
+        let data = safeParseJSON(submission.proposed_data, {});
+        
+        // If proposed_data is empty (for deletions), check previous_data
+        if (!data || Object.keys(data).length === 0) {
+          data = safeParseJSON(submission.previous_data, {});
+        }
+        
+        // Extract highlight_id
+        if (data && data.highlight_id !== undefined && data.highlight_id !== null) {
+          highlightId = typeof data.highlight_id === 'string' 
+            ? parseInt(data.highlight_id, 10) 
+            : parseInt(data.highlight_id, 10);
+          
+          if (isNaN(highlightId)) {
+            highlightId = null;
+          }
+        }
+        
+        // If we have a highlight_id, delete the highlight from admin_highlights
+        if (highlightId) {
+          const [highlightResult] = await db.execute(
+            'DELETE FROM admin_highlights WHERE id = ?',
+            [highlightId]
+          );
+          
+          if (highlightResult.affectedRows > 0) {
+            logInfo(`Highlight ${highlightId} deleted along with submission ${id}`, { 
+              context: 'approval_controller',
+              submissionId: id,
+              highlightId: highlightId
+            });
+          } else {
+            logWarn(`Highlight ${highlightId} not found when deleting submission ${id}`, { 
+              context: 'approval_controller',
+              submissionId: id,
+              highlightId: highlightId
+            });
+          }
+        } else {
+          logWarn(`No highlight_id found in submission ${id} data`, { 
+            context: 'approval_controller',
+            submissionId: id,
+            proposedData: submission.proposed_data,
+            previousData: submission.previous_data
+          });
+        }
+      } catch (parseError) {
+        logError(parseError, { 
+          context: 'approval_controller-deleteSubmission-highlight',
+          submissionId: id
+        });
+        // Continue with submission deletion even if highlight deletion fails
+      }
+    }
+
+    // Delete the submission
     const [result] = await db.execute('DELETE FROM submissions WHERE id = ?', [id]);
     
     if (result.affectedRows === 0) {
@@ -2421,9 +2496,11 @@ export const deleteSubmission = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Submission deleted successfully'
+      message: 'Submission deleted successfully',
+      deletedHighlight: highlightId || null
     });
   } catch (error) {
+    logError(error, { context: 'approval_controller-deleteSubmission', submissionId: id });
     res.status(500).json({
       success: false,
       message: 'Failed to delete submission',
@@ -2447,9 +2524,72 @@ export const bulkDeleteSubmissions = async (req, res) => {
     let successCount = 0;
     let errorCount = 0;
     const errors = [];
+    const deletedHighlightIds = [];
 
     for (const id of ids) {
       try {
+        // First, get the submission to check if it's a highlight submission
+        const [submissionRows] = await db.execute(
+          'SELECT section, proposed_data, previous_data FROM submissions WHERE id = ?',
+          [id]
+        );
+        
+        if (submissionRows.length === 0) {
+          errors.push(`Submission ${id} not found or already deleted`);
+          errorCount++;
+          continue;
+        }
+
+        const submission = submissionRows[0];
+        let highlightId = null;
+
+        // If this is a highlight submission, extract highlight_id and delete the highlight
+        if (submission.section === 'highlights') {
+          try {
+            let data = safeParseJSON(submission.proposed_data, {});
+            
+            // If proposed_data is empty (for deletions), check previous_data
+            if (!data || Object.keys(data).length === 0) {
+              data = safeParseJSON(submission.previous_data, {});
+            }
+            
+            // Extract highlight_id
+            if (data && data.highlight_id !== undefined && data.highlight_id !== null) {
+              highlightId = typeof data.highlight_id === 'string' 
+                ? parseInt(data.highlight_id, 10) 
+                : parseInt(data.highlight_id, 10);
+              
+              if (isNaN(highlightId)) {
+                highlightId = null;
+              }
+            }
+            
+            // If we have a highlight_id, delete the highlight from admin_highlights
+            if (highlightId) {
+              const [highlightResult] = await db.execute(
+                'DELETE FROM admin_highlights WHERE id = ?',
+                [highlightId]
+              );
+              
+              if (highlightResult.affectedRows > 0) {
+                deletedHighlightIds.push(highlightId);
+                logInfo(`Highlight ${highlightId} deleted along with submission ${id} in bulk delete`, { 
+                  context: 'approval_controller',
+                  submissionId: id,
+                  highlightId: highlightId
+                });
+              }
+            }
+          } catch (parseError) {
+            logError(parseError, { 
+              context: 'approval_controller-bulkDeleteSubmissions-highlight',
+              submissionId: id
+            });
+            // Continue with submission deletion even if highlight deletion fails
+          }
+        }
+
+        // Delete the submission
         const [result] = await db.execute('DELETE FROM submissions WHERE id = ?', [id]);
         
         if (result.affectedRows === 0) {
@@ -2461,6 +2601,7 @@ export const bulkDeleteSubmissions = async (req, res) => {
       } catch (error) {
         errors.push(`Failed to delete submission ${id}: ${error.message}`);
         errorCount++;
+        logError(error, { context: 'approval_controller-bulkDeleteSubmissions', submissionId: id });
       }
     }
 
@@ -2470,10 +2611,12 @@ export const bulkDeleteSubmissions = async (req, res) => {
       details: {
         successCount,
         errorCount,
-        errors: errors.length > 0 ? errors : undefined
+        errors: errors.length > 0 ? errors : undefined,
+        deletedHighlightIds: deletedHighlightIds.length > 0 ? deletedHighlightIds : undefined
       }
     });
   } catch (error) {
+    logError(error, { context: 'approval_controller-bulkDeleteSubmissions' });
     res.status(500).json({
       success: false,
       message: 'Failed to bulk delete submissions',

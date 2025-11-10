@@ -837,17 +837,37 @@ export default function PendingApprovalsPage() {
 
   // Individual action handlers
   const handleApproveClick = useCallback((approval) => {
+    // Ensure we have valid approval data
+    if (!approval || !approval.id) {
+      logError(new Error('Invalid approval data'), { context: 'handleApproveClick', approval });
+      return;
+    }
+    
     setSelectedItemForAction(approval);
     setPendingIndividualAction('approve');
     setIsProcessing(false); // Ensure processing state is reset when opening modal
-    setShowIndividualModal(true);
+    
+    // Use requestAnimationFrame to ensure state is set before opening modal
+    requestAnimationFrame(() => {
+      setShowIndividualModal(true);
+    });
   }, []);
 
   const handleRejectClick = useCallback((approval) => {
+    // Ensure we have valid approval data
+    if (!approval || !approval.id) {
+      logError(new Error('Invalid approval data'), { context: 'handleRejectClick', approval });
+      return;
+    }
+    
     setSelectedItemForAction(approval);
     setPendingIndividualAction('reject');
     setIsProcessing(false); // Ensure processing state is reset when opening modal
-    setShowIndividualModal(true);
+    
+    // Use requestAnimationFrame to ensure state is set before opening modal
+    requestAnimationFrame(() => {
+      setShowIndividualModal(true);
+    });
   }, []);
 
   const handleIndividualActionConfirm = useCallback(async (rejectComment) => {

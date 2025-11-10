@@ -2,8 +2,7 @@
 
 import { useModalScrollLock, useFormChanges } from '../../hooks'
 import AutoResizeTextarea from '../components/AutoResizeTextarea'
-import baseStyles from './styles/modalBase.module.css'
-import styles from './styles/SectionEditModal.module.css'
+import styles from './SectionEditModal.module.css'
 
 export default function SectionEditModal({
   isOpen,
@@ -66,12 +65,12 @@ export default function SectionEditModal({
   }
 
   return (
-    <div className={baseStyles.modalOverlay}>
-      <div className={baseStyles.modalContainer}>
-        <div className={baseStyles.modalHeader}>
-          <h2 className={baseStyles.modalTitle}>{getSectionTitle()}</h2>
+    <div className={styles.modalOverlay}>
+      <div className={styles.modalContainer}>
+        <div className={styles.modalHeader}>
+          <h2 className={styles.modalTitle}>{getSectionTitle()}</h2>
           <button 
-            className={baseStyles.closeButton}
+            className={styles.closeButton}
             onClick={handleCancel}
             disabled={saving}
           >
@@ -79,7 +78,7 @@ export default function SectionEditModal({
           </button>
         </div>
 
-        <div className={baseStyles.modalContent}>
+        <div className={styles.modalContent}>
           <div className={styles.mainContent}>
             {currentSection === 'advocacy' && renderAdvocacyFields()}
             {currentSection === 'competency' && renderCompetencyFields()}

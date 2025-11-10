@@ -58,13 +58,13 @@
 }
 
 .modalHeader {
-  padding: 1.25rem 2rem;
+  padding: 1.35rem 2rem;
   border-bottom: 1px solid #e2e8f0;
   flex-shrink: 0;
 }
 
 .modalTitle {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: #06100f;
   margin: 0;
@@ -164,12 +164,12 @@
 }
 
 .beforeSection .value {
-  border-left: 4px solid #b8bbbf;
+  border: 2px solid #b8bbbf;
   background-color: #f8fafc;
 }
 
 .afterSection .value {
-  border-left: 4px solid #06100f;
+  border: 2px solid #06100f;
   background-color: #f8fafb;
 }
 
@@ -299,3 +299,31 @@
   cursor: not-allowed;
   transform: none;
 }
+
+/* Spinner for loading state */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* No changes text */
+.noChangesText {
+  margin: 0;
+  text-align: center;
+  color: #6b7280;
+  font-size: 1rem;
+  padding: 2rem 0;
+}
+

@@ -5,8 +5,9 @@ import { useSelector, useDispatch } from "react-redux";
 import { updateAdminOrg, updateAdminLogo } from "@/rtk/superadmin/adminSlice";
 import { useAdminOrganization, useAdminAdvocacies, useAdminCompetencies, useAdminHeads } from "../hooks/useAdminData";
 import { applyRoleHierarchyOrdering } from "./utils";
-import { EditModal, OrgInfoSection, SummaryModal } from "./OrgInfo";
-import { Section, SectionEditModal, SectionSummaryModal } from "./AdvocacyCompetency";
+import { EditModal, OrgInfoSection } from "./OrgInfo";
+import { Section, SectionEditModal } from "./AdvocacyCompetency";
+import { SummaryModal } from '@/components/ui';
 import { OrgHeadsSection, AddOrgHeadModal, OrgHeadsEditModal } from "./OrgHeads";
 import { SkeletonLoader } from "../components";
 import { ConfirmationModal, ErrorBoundary, SuccessModal } from '@/components';
@@ -1207,6 +1208,8 @@ export default function OrganizationPage() {
 
       {uiState.showSummaryModal && originalData && pendingChanges && (
         <SummaryModal
+          isOpen={uiState.showSummaryModal}
+          currentSection="organization"
           originalData={originalData}
           pendingChanges={pendingChanges}
           saving={uiState.saving}
@@ -1216,7 +1219,7 @@ export default function OrganizationPage() {
       )}
 
       {uiState.showSectionSummaryModal && originalData && pendingChanges && (
-        <SectionSummaryModal
+        <SummaryModal
           isOpen={uiState.showSectionSummaryModal}
           currentSection={currentSection}
           originalData={originalData}

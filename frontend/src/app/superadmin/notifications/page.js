@@ -307,7 +307,6 @@ export default function SuperAdminNotificationsPage() {
           selectedNotifications={selectedNotifications}
           onMarkAsRead={handleMarkAsRead}
           onDeleteClick={handleIndividualDeleteClick}
-          allNotifications={sampleNotificationsData?.notifications || []}
         />
       </div>
 

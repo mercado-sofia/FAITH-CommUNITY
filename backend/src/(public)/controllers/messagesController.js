@@ -58,7 +58,7 @@ export const submitMessage = async (req, res) => {
 
     // Check if user_id is provided and valid (for authenticated users)
     let actualUserId = null;
-    let actualSenderEmail = sender_email.trim();
+    let actualSenderEmail = sender_email.trim().toLowerCase(); // Normalize email to lowercase
     let userByEmailResult = null; // Store user data if found by email
     
     if (user_id) {
@@ -70,12 +70,21 @@ export const submitMessage = async (req, res) => {
       if (userResult.length > 0) {
         actualUserId = userResult[0].id;
         // Use the email from users table for consistency
-        actualSenderEmail = userResult[0].email;
+        actualSenderEmail = userResult[0].email.toLowerCase();
         // Store user data for later use in notification
         userByEmailResult = userResult;
+        
+        // Log in development
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[Message] Found user by user_id: ${actualUserId}, email: ${actualSenderEmail}`);
+        }
       }
-    } else {
-      // If user_id is not provided, try to find user by email (for registered users)
+    }
+    
+    // If user_id is not provided OR user wasn't found by user_id, try to find user by email
+    // This handles cases where user_id might be invalid or missing
+    if (!actualUserId) {
+      // Try to find user by email (for registered users)
       // Use LOWER() for case-insensitive email matching
       [userByEmailResult] = await db.execute(
         "SELECT id, email, first_name, last_name FROM users WHERE LOWER(email) = LOWER(?) AND is_active = 1",
@@ -85,7 +94,17 @@ export const submitMessage = async (req, res) => {
       if (userByEmailResult.length > 0) {
         actualUserId = userByEmailResult[0].id;
         // Use the email from users table for consistency
-        actualSenderEmail = userByEmailResult[0].email;
+        actualSenderEmail = userByEmailResult[0].email.toLowerCase();
+        
+        // Log in development
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[Message] Found user by email: ${actualUserId}, email: ${actualSenderEmail}, name: ${userByEmailResult[0].first_name} ${userByEmailResult[0].last_name}`);
+        }
+      } else {
+        // Log in development if user not found
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[Message] User not found by email: ${actualSenderEmail}`);
+        }
       }
     }
 
@@ -118,6 +137,11 @@ export const submitMessage = async (req, res) => {
         if (userByEmailResult && userByEmailResult.length > 0) {
           const { first_name, last_name } = userByEmailResult[0];
           fullName = `${first_name || ''} ${last_name || ''}`.trim();
+          
+          // Log in development
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[Message Notification] Using user data from lookup: first_name="${first_name}", last_name="${last_name}", fullName="${fullName}"`);
+          }
         } else {
           // Otherwise, query for the name (shouldn't happen, but just in case)
           const [userNameResult] = await db.execute(
@@ -128,37 +152,47 @@ export const submitMessage = async (req, res) => {
           if (userNameResult.length > 0) {
             const { first_name, last_name } = userNameResult[0];
             fullName = `${first_name || ''} ${last_name || ''}`.trim();
+            
+            // Log in development
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`[Message Notification] Queried user name: first_name="${first_name}", last_name="${last_name}", fullName="${fullName}"`);
+            }
           }
         }
         
         // Use the full name if available
-        if (fullName) {
+        if (fullName && fullName.length > 0) {
           senderDisplayName = fullName;
           // Log in development for debugging
           if (process.env.NODE_ENV === 'development') {
-            console.log(`[Message Notification] Registered user found: ${fullName} (ID: ${actualUserId})`);
+            console.log(`[Message Notification] ✅ Registered user found: "${fullName}" (ID: ${actualUserId})`);
           }
         } else if (sender_name && sender_name.trim()) {
           // Fallback to provided sender_name if full name is empty
           senderDisplayName = sender_name.trim();
           if (process.env.NODE_ENV === 'development') {
-            console.log(`[Message Notification] Using provided sender_name: ${sender_name} (User ID: ${actualUserId})`);
+            console.log(`[Message Notification] ⚠️ Using provided sender_name: "${sender_name}" (User ID: ${actualUserId}) - full name was empty`);
           }
         } else {
           if (process.env.NODE_ENV === 'development') {
-            console.log(`[Message Notification] Registered user found but no name available (ID: ${actualUserId}), using "Guest User"`);
+            console.log(`[Message Notification] ❌ Registered user found but no name available (ID: ${actualUserId}), using "Guest User"`);
           }
         }
       } else if (sender_name && sender_name.trim()) {
         // For unregistered users, use provided sender_name if available
         senderDisplayName = sender_name.trim();
         if (process.env.NODE_ENV === 'development') {
-          console.log(`[Message Notification] Unregistered user with name: ${sender_name}`);
+          console.log(`[Message Notification] Unregistered user with name: "${sender_name}"`);
         }
       } else {
         if (process.env.NODE_ENV === 'development') {
           console.log(`[Message Notification] Unregistered user, using "Guest User"`);
         }
+      }
+      
+      // Final log of what will be used in notification
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Message Notification] Final senderDisplayName: "${senderDisplayName}" (actualUserId: ${actualUserId || 'null'})`);
       }
       
       const notificationPromises = adminResult.map(admin => {

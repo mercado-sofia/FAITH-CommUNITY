@@ -185,12 +185,12 @@ function FAITHreePage() {
             <div 
               className={styles.floatingGround}
               style={{
-                transform: `translate(-50%, calc(-50% + ${parallaxOffset.ground}px))`,
+                transform: `translate(-50%, calc(-35% + ${parallaxOffset.ground}px))`,
                 transition: prefersReducedMotion ? 'none' : 'transform 0.1s ease-out'
               }}
             >
               <div className={styles.tree3D}>
-                <TreeModel theme={theme} treePosition={[0, -1.2, 0]} />
+                <TreeModel theme={theme} treePosition={[0, -1.8, 0]} />
               </div>
             </div>
           </div>

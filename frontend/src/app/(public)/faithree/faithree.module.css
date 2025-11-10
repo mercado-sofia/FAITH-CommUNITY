@@ -505,7 +505,7 @@
 /* Floating Ground with Tree */
 .floatingGround {
   position: fixed;
-  top: 50%;
+  top: 60%;
   left: 50%;
   z-index: 4;
   pointer-events: none;
@@ -527,7 +527,7 @@
 /* 3D Tree Model Container */
 .tree3D {
   position: absolute;
-  top: 60%;
+  top: 80%;
   left: 50%;
   transform: translate(-50%, -50%);
   width: 800px;

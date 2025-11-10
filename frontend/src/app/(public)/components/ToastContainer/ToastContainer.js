@@ -53,28 +53,23 @@ export default function ToastContainer() {
     return null;
   }
 
-  // Use createPortal to render toasts directly to document.body (like newsletter toast)
+  // Render each toast directly via createPortal (like Footer newsletter toast)
   // This ensures proper z-index and positioning on mobile devices
-  return createPortal(
-    <div style={{ position: 'fixed', top: 0, right: 0, zIndex: 1000000, pointerEvents: 'none' }}>
-      {toasts.map((toast, index) => (
-        <div 
-          key={toast.id} 
-          style={{ 
-            pointerEvents: 'auto',
-            marginTop: index > 0 ? '0.75rem' : '0',
-            transform: `translateY(${index * 80}px)`
-          }}
-        >
+  // Each toast is rendered independently without wrapper divs that could interfere
+  return (
+    <>
+      {toasts.map((toast) => 
+        createPortal(
           <Toast
+            key={toast.id}
             message={toast.message}
             type={toast.type}
             duration={toast.duration}
             onClose={() => removeToast(toast.id)}
-          />
-        </div>
-      ))}
-    </div>,
-    document.body
+          />,
+          document.body
+        )
+      )}
+    </>
   );
 }

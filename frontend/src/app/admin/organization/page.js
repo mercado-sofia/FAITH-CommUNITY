@@ -478,15 +478,27 @@ export default function OrganizationPage() {
     } else if (currentSection === 'orgHeads') {
       handleOrgHeadsSave();
     } else {
+      // Handle advocacy and competency sections
       const currentData = currentSection === 'advocacy' ? advocacyData : competencyData;
       const editedData = { ...currentData, ...tempEditData };
       
+      // Trim and validate the input
+      let trimmedValue = '';
       if (currentSection === 'advocacy' && editedData.advocacy) {
-        editedData.advocacy = editedData.advocacy.trim();
+        trimmedValue = editedData.advocacy.trim();
+        editedData.advocacy = trimmedValue;
       } else if (currentSection === 'competency' && editedData.competency) {
-        editedData.competency = editedData.competency.trim();
+        trimmedValue = editedData.competency.trim();
+        editedData.competency = trimmedValue;
       }
       
+      // Validate length: must be empty or at least 10 characters
+      if (trimmedValue && trimmedValue.length > 0 && trimmedValue.length < 10) {
+        showMessage("Please enter at least 10 characters or leave the field empty", "error", currentSection);
+        return;
+      }
+      
+      // Check if there are actual changes
       const hasChanges = originalData && Object.keys(editedData).some((key) => key !== "id" && editedData[key] !== originalData[key]);
 
       if (!hasChanges) {
@@ -646,13 +658,18 @@ export default function OrganizationPage() {
         return; // Redirect handled by getAdminTokenOrRedirect
       }
 
-      let response;
-      let result;
-      
       // Save advocacy/competency directly to their respective tables (no approval needed)
+      // Similar to organization info - direct update, no submission workflow
       if (currentSection === 'advocacy') {
-        const advocacyData = (pendingChanges.advocacy || "").trim();
-        response = await fetch(`${API_CONFIG.BASE_URL}/api/advocacies`, {
+        const advocacyValue = (pendingChanges.advocacy || "").trim();
+        
+        // Validate length before API call (defense in depth)
+        if (advocacyValue && advocacyValue.length > 0 && advocacyValue.length < 10) {
+          throw new Error('Advocacy must be at least 10 characters if provided');
+        }
+        
+        // Use POST - backend handles both create and update
+        const response = await fetch(`${API_CONFIG.BASE_URL}/api/advocacies`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -660,26 +677,43 @@ export default function OrganizationPage() {
           },
           body: JSON.stringify({
             organization_id: orgId,
-            advocacy: advocacyData
+            advocacy: advocacyValue
           })
         });
         
-        result = await response.json();
+        const responseText = await response.text().catch(() => '');
+        let result;
+        try {
+          result = JSON.parse(responseText);
+        } catch {
+          result = { success: false, message: responseText || `HTTP ${response.status}` };
+        }
         
         if (!response.ok || !result.success) {
-          const errorInfo = handleApiError({ status: response.status, message: result.message }, 'advocacy_save', {
+          const errorMessage = result.message || result.error || 'Failed to save advocacy';
+          const error = new Error(errorMessage);
+          error.status = response.status;
+          
+          const errorInfo = handleApiError(error, 'advocacy_save', {
             redirectOnAuth: true,
             logError: true
           });
-          throw new Error(errorInfo.message || 'Failed to save advocacy');
+          throw error;
         }
         
         // Refresh advocacy data
         refreshAdvocacies();
         
       } else if (currentSection === 'competency') {
-        const competencyData = (pendingChanges.competency || "").trim();
-        response = await fetch(`${API_CONFIG.BASE_URL}/api/competencies`, {
+        const competencyValue = (pendingChanges.competency || "").trim();
+        
+        // Validate length before API call (defense in depth)
+        if (competencyValue && competencyValue.length > 0 && competencyValue.length < 10) {
+          throw new Error('Competency must be at least 10 characters if provided');
+        }
+        
+        // Use POST - backend handles both create and update
+        const response = await fetch(`${API_CONFIG.BASE_URL}/api/competencies`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -687,18 +721,28 @@ export default function OrganizationPage() {
           },
           body: JSON.stringify({
             organization_id: orgId,
-            competency: competencyData
+            competency: competencyValue
           })
         });
         
-        result = await response.json();
+        const responseText = await response.text().catch(() => '');
+        let result;
+        try {
+          result = JSON.parse(responseText);
+        } catch {
+          result = { success: false, message: responseText || `HTTP ${response.status}` };
+        }
         
         if (!response.ok || !result.success) {
-          const errorInfo = handleApiError({ status: response.status, message: result.message }, 'competency_save', {
+          const errorMessage = result.message || result.error || 'Failed to save competency';
+          const error = new Error(errorMessage);
+          error.status = response.status;
+          
+          const errorInfo = handleApiError(error, 'competency_save', {
             redirectOnAuth: true,
             logError: true
           });
-          throw new Error(errorInfo.message || 'Failed to save competency');
+          throw error;
         }
         
         // Refresh competency data

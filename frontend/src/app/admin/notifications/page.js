@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { 
@@ -16,6 +16,7 @@ import { MdCancel } from 'react-icons/md';
 import { SkeletonLoader } from '../components';
 import { ConfirmationModal, ErrorBoundary } from '@/components';
 import { handleApiError } from '../utils';
+import { logError } from '@/config/api';
 import InfiniteScrollNotifications from './components/InfiniteScrollNotifications';
 import styles from './notifications.module.css';
 
@@ -27,6 +28,34 @@ export default function NotificationsPage() {
   
   const currentAdmin = useSelector(selectCurrentAdmin);
   
+  // Fallback: Get adminId from localStorage if Redux state isn't available yet
+  const [adminId, setAdminId] = useState(null);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // First try Redux state
+      if (currentAdmin?.id) {
+        setAdminId(currentAdmin.id);
+      } else {
+        // Fallback to localStorage
+        const adminData = localStorage.getItem('adminData');
+        if (adminData) {
+          try {
+            const parsedData = JSON.parse(adminData);
+            if (parsedData?.id) {
+              const numericId = typeof parsedData.id === 'string' ? parseInt(parsedData.id, 10) : parsedData.id;
+              if (!isNaN(numericId) && numericId > 0) {
+                setAdminId(numericId);
+              }
+            }
+          } catch (error) {
+            logError(error, { context: 'parseAdminData' });
+          }
+        }
+      }
+    }
+  }, [currentAdmin]);
+  
   // Track current tab state
   const [currentTab, setCurrentTab] = useState('all');
   
@@ -35,18 +64,18 @@ export default function NotificationsPage() {
   const [deleteNotification] = useDeleteNotificationMutation();
 
   // Get unread count from the API
-  const { data: unreadCountData } = useGetUnreadCountQuery(currentAdmin?.id, {
-    skip: !currentAdmin?.id
+  const { data: unreadCountData, error: unreadCountError } = useGetUnreadCountQuery(adminId, {
+    skip: !adminId
   });
 
   // Get a small sample of notifications to calculate type-specific counts
-  const { data: sampleNotificationsData } = useGetNotificationsQuery(
+  const { data: sampleNotificationsData, error: notificationsError } = useGetNotificationsQuery(
     { 
-      adminId: currentAdmin?.id, 
+      adminId: adminId, 
       limit: 100, // Get more for better count accuracy
       offset: 0
     },
-    { skip: !currentAdmin?.id }
+    { skip: !adminId }
   );
 
   // Calculate unread counts for each tab
@@ -103,7 +132,7 @@ export default function NotificationsPage() {
   // Handle mark as read
   const handleMarkAsRead = useCallback(async (notificationId) => {
     try {
-      await markAsRead({ notificationId, adminId: currentAdmin?.id });
+      await markAsRead({ notificationId, adminId: adminId });
       // The mutation will automatically invalidate the cache and refresh the data
     } catch (error) {
       handleApiError(error, 'notifications_mark_read', {
@@ -111,12 +140,12 @@ export default function NotificationsPage() {
         logError: true
       });
     }
-  }, [markAsRead, currentAdmin?.id]);
+  }, [markAsRead, adminId]);
 
   // Handle mark all as read
   const handleMarkAllAsRead = useCallback(async () => {
     try {
-      await markAllAsRead(currentAdmin?.id);
+      await markAllAsRead(adminId);
       // The mutation will automatically invalidate the cache and refresh the data
     } catch (error) {
       handleApiError(error, 'notifications_mark_all_read', {
@@ -124,12 +153,12 @@ export default function NotificationsPage() {
         logError: true
       });
     }
-  }, [markAllAsRead, currentAdmin?.id]);
+  }, [markAllAsRead, adminId]);
 
   // Handle delete notification
   const handleDeleteNotification = useCallback(async (notificationId) => {
     try {
-      await deleteNotification({ notificationId, adminId: currentAdmin?.id });
+      await deleteNotification({ notificationId, adminId: adminId });
       // The mutation will automatically invalidate the cache and refresh the data
       setShowIndividualDeleteModal(false);
       setNotificationToDelete(null);
@@ -139,7 +168,7 @@ export default function NotificationsPage() {
         logError: true
       });
     }
-  }, [deleteNotification, currentAdmin?.id]);
+  }, [deleteNotification, adminId]);
 
   // Handle individual delete confirmation
   const handleIndividualDeleteClick = (notification) => {
@@ -151,7 +180,7 @@ export default function NotificationsPage() {
   const handleBulkDelete = useCallback(async () => {
     try {
       for (const notificationId of selectedNotifications) {
-        await deleteNotification({ notificationId, adminId: currentAdmin?.id });
+        await deleteNotification({ notificationId, adminId: adminId });
       }
       setSelectedNotifications([]);
       setShowDeleteModal(false);
@@ -162,7 +191,7 @@ export default function NotificationsPage() {
         logError: true
       });
     }
-  }, [deleteNotification, selectedNotifications, currentAdmin?.id]);
+  }, [deleteNotification, selectedNotifications, adminId]);
 
   // Get notification icon based on type (memoized)
   const getNotificationIcon = useCallback((type) => {
@@ -219,7 +248,7 @@ export default function NotificationsPage() {
   }, []);
 
   // Loading state for when admin is not available
-  if (!currentAdmin) {
+  if (!adminId) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
@@ -228,6 +257,38 @@ export default function NotificationsPage() {
         <SkeletonLoader type="table" count={8} />
       </div>
     );
+  }
+  
+  // Show error if authentication failed
+  if (unreadCountError || notificationsError) {
+    const error = unreadCountError || notificationsError;
+    const errorMessage = error?.data?.error || error?.data?.message || error?.error || 'Failed to fetch notifications';
+    
+    // If it's an authentication error, show a more helpful message
+    if (errorMessage.includes('Access token required') || errorMessage.includes('Invalid or expired token')) {
+      return (
+        <div className={styles.container}>
+          <div className={styles.header}>
+            <h1>Notifications</h1>
+          </div>
+          <div className={styles.errorContainer}>
+            <p className={styles.errorMessage}>
+              Your session has expired. Please log in again.
+            </p>
+            <button 
+              className={styles.retryButton}
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.location.href = '/login';
+                }
+              }}
+            >
+              Go to Login
+            </button>
+          </div>
+        </div>
+      );
+    }
   }
 
   return (

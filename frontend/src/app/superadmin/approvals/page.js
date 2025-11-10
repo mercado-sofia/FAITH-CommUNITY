@@ -624,19 +624,34 @@ export default function PendingApprovalsPage() {
           dispatch(superadminHighlightsApi.util.invalidateTags(['SuperadminHighlight']));
           
           // Also manually refetch queries with different status filters
-          // This ensures all variants of the query are updated
+          // This ensures all variants of the query are updated immediately
+          // Use unsubscribe to clean up after refetch
           const refetchPromises = [
-            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate(null)),
-            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('approved')),
-            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('pending')),
-            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('rejected')),
-            dispatch(superadminHighlightsApi.endpoints.getHighlightsStatistics.initiate()),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate(null, { forceRefetch: true })),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('approved', { forceRefetch: true })),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('pending', { forceRefetch: true })),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('rejected', { forceRefetch: true })),
+            dispatch(superadminHighlightsApi.endpoints.getHighlightsStatistics.initiate(undefined, { forceRefetch: true })),
           ];
           
-          // Wait for all refetches to complete (fire and forget)
-          Promise.all(refetchPromises).catch(err => {
+          // Wait for all refetches to complete, then unsubscribe
+          Promise.all(refetchPromises).then(results => {
+            // Unsubscribe after a short delay to allow components to use the data
+            setTimeout(() => {
+              results.forEach(result => {
+                if (result && result.unsubscribe) {
+                  result.unsubscribe();
+                }
+              });
+            }, 1000);
+          }).catch(err => {
             logError(err, { context: 'handleApprove-refetchHighlights', itemId: item.id });
           });
+          
+          // Dispatch custom event to notify Highlights page to refetch
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('highlightStatusChanged'));
+          }
         }
       } catch (cacheError) {
         // Don't fail the approval if cache invalidation fails
@@ -714,19 +729,34 @@ export default function PendingApprovalsPage() {
           dispatch(superadminHighlightsApi.util.invalidateTags(['SuperadminHighlight']));
           
           // Also manually refetch queries with different status filters
-          // This ensures all variants of the query are updated
+          // This ensures all variants of the query are updated immediately
+          // Use unsubscribe to clean up after refetch
           const refetchPromises = [
-            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate(null)),
-            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('approved')),
-            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('pending')),
-            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('rejected')),
-            dispatch(superadminHighlightsApi.endpoints.getHighlightsStatistics.initiate()),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate(null, { forceRefetch: true })),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('approved', { forceRefetch: true })),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('pending', { forceRefetch: true })),
+            dispatch(superadminHighlightsApi.endpoints.getAllHighlights.initiate('rejected', { forceRefetch: true })),
+            dispatch(superadminHighlightsApi.endpoints.getHighlightsStatistics.initiate(undefined, { forceRefetch: true })),
           ];
           
-          // Wait for all refetches to complete (fire and forget)
-          Promise.all(refetchPromises).catch(err => {
+          // Wait for all refetches to complete, then unsubscribe
+          Promise.all(refetchPromises).then(results => {
+            // Unsubscribe after a short delay to allow components to use the data
+            setTimeout(() => {
+              results.forEach(result => {
+                if (result && result.unsubscribe) {
+                  result.unsubscribe();
+                }
+              });
+            }, 1000);
+          }).catch(err => {
             logError(err, { context: 'handleBulkApprove-refetchHighlights', ids: originalIds });
           });
+          
+          // Dispatch custom event to notify Highlights page to refetch
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('highlightStatusChanged'));
+          }
         }
       } catch (cacheError) {
         // Don't fail the approval if cache invalidation fails

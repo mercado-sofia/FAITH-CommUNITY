@@ -281,7 +281,9 @@ export default function PendingApprovalsPage() {
       const errorType = err.errorType || 'UNKNOWN_ERROR';
       
       // Provide user-friendly messages based on error type
-      if (errorType === 'DATABASE_CONNECTION_ERROR') {
+      if (errorType === 'DATABASE_SORT_MEMORY_ERROR') {
+        errorMessage = 'Too many submissions to process at once. Please try again in a moment or use filters to narrow down results.';
+      } else if (errorType === 'DATABASE_CONNECTION_ERROR') {
         errorMessage = 'Database connection failed. Please try again later.';
       } else if (errorType === 'DATABASE_QUERY_ERROR') {
         errorMessage = 'Database query error. Please contact support if this persists.';

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding, FaHistory, FaInfoCircle, FaUser, FaClock } from 'react-icons/fa'
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths'
@@ -11,13 +11,57 @@ import styles from './styles/ProgramDetailsModal.module.css'
 const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState('details')
 
+  // Reset tab when program changes
+  useEffect(() => {
+    if (isOpen && program?.id) {
+      setActiveTab('details')
+    }
+  }, [isOpen, program?.id])
+
   // Fetch complete program details when modal opens
   const { 
     data: fullProgramData
   } = useGetProgramByIdQuery(program?.id, {
     skip: !isOpen || !program?.id,
-    refetchOnMountOrArgChange: true // Force refetch when modal opens
+    refetchOnMountOrArgChange: true
   })
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (typeof document === 'undefined' || !document.body) {
+      return
+    }
+
+    if (isOpen) {
+      // Save current scroll position
+      const scrollY = window.scrollY
+      
+      // Lock body scroll
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.left = '0'
+      document.body.style.right = '0'
+      document.body.style.overflow = 'hidden'
+      document.body.style.width = '100%'
+      
+      return () => {
+        // Restore body scroll when modal closes
+        if (typeof document !== 'undefined' && document.body) {
+          document.body.style.position = ''
+          document.body.style.top = ''
+          document.body.style.left = ''
+          document.body.style.right = ''
+          document.body.style.overflow = ''
+          document.body.style.width = ''
+          
+          // Restore scroll position
+          if (typeof window !== 'undefined') {
+            window.scrollTo(0, scrollY)
+          }
+        }
+      }
+    }
+  }, [isOpen])
 
   if (!isOpen || !program) return null
 
@@ -54,7 +98,7 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
   }
 
   return (
-    <div className={styles.modalOverlay} onClick={handleOverlayClick} key={`modal-${program?.id}-${Date.now()}`}>
+    <div className={styles.modalOverlay} onClick={handleOverlayClick} key={`modal-${program?.id}`}>
       <div className={styles.modalContent}>
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>Program Details</h2>

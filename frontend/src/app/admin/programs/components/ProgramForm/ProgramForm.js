@@ -350,7 +350,7 @@ const ProgramForm = ({ mode = 'create', program = null, onCancel, onSubmit, onRe
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateForm, formData, isEditMode, program, onSubmit, clearAllErrors, updateFormData, resetForm, resetImageUploads, resetCollaboration, sendInvitesForNewCollaborators]);
+  }, [validateForm, formData, isEditMode, program, onSubmit, clearAllErrors, updateFormData, resetForm, resetImageUploads, resetCollaboration, sendInvitesForNewCollaborators, imagePreview]);
 
   // Handle form key down
   const handleFormKeyDown = useCallback((e) => {

@@ -40,22 +40,6 @@ const SuperadminHighlightsPage = () => {
     }
   }, [])
 
-  // Listen for highlight approval/rejection changes to refetch data
-  useEffect(() => {
-    const handleHighlightStatusChange = () => {
-      // Refetch highlights and statistics when status changes (e.g., after approval)
-      refetchHighlights()
-      refetchStatistics()
-    }
-    
-    if (typeof window !== 'undefined') {
-      window.addEventListener('highlightStatusChanged', handleHighlightStatusChange)
-      return () => {
-        window.removeEventListener('highlightStatusChanged', handleHighlightStatusChange)
-      }
-    }
-  }, [refetchHighlights, refetchStatistics])
-
   // Helper function to update URL parameter
   const updateTabUrl = (tab) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -113,6 +97,23 @@ const SuperadminHighlightsPage = () => {
     data: organizations = [],
     isLoading: orgsLoading
   } = useGetOrganizationsForFilterQuery()
+
+  // Listen for highlight approval/rejection changes to refetch data
+  // This must be after the hooks that define refetchHighlights and refetchStatistics
+  useEffect(() => {
+    const handleHighlightStatusChange = () => {
+      // Refetch highlights and statistics when status changes (e.g., after approval)
+      refetchHighlights()
+      refetchStatistics()
+    }
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('highlightStatusChanged', handleHighlightStatusChange)
+      return () => {
+        window.removeEventListener('highlightStatusChanged', handleHighlightStatusChange)
+      }
+    }
+  }, [refetchHighlights, refetchStatistics])
 
   // Handle click outside for dropdowns
   useEffect(() => {

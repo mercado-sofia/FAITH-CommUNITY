@@ -19,6 +19,24 @@ class SuperAdminNotificationController {
         });
       }
 
+      // Validate and convert limit and offset to numbers
+      const limitNum = parseInt(limit, 10);
+      const offsetNum = parseInt(offset, 10);
+      
+      if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid limit. Must be between 1 and 100'
+        });
+      }
+      
+      if (isNaN(offsetNum) || offsetNum < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid offset. Must be 0 or greater'
+        });
+      }
+
       // Get total count first
       const [countResult] = await db.execute(
         'SELECT COUNT(*) as total FROM superadmin_notifications WHERE superadmin_id = ?',
@@ -27,6 +45,8 @@ class SuperAdminNotificationController {
       const total = countResult[0].total;
 
       // Get notifications with pagination and current organization data
+      // Note: MySQL2 has issues with LIMIT and OFFSET as placeholders, so we interpolate them directly
+      // This is safe because we've already validated limitNum and offsetNum are valid numbers
       const query = `
         SELECT 
           sn.id, 
@@ -47,10 +67,10 @@ class SuperAdminNotificationController {
         LEFT JOIN organizations o ON sn.organization_id = o.id
         WHERE sn.superadmin_id = ? 
         ORDER BY sn.created_at DESC 
-        LIMIT ? OFFSET ?
+        LIMIT ${limitNum} OFFSET ${offsetNum}
       `;
 
-      const [notifications] = await db.execute(query, [superAdminId, parseInt(limit), parseInt(offset)]);
+      const [notifications] = await db.execute(query, [superAdminId]);
 
       // Format the time ago, logo URL, and generate dynamic messages for each notification
       const formattedNotifications = notifications.map(notification => {

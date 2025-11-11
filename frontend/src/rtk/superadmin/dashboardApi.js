@@ -194,29 +194,44 @@ export const dashboardApi = createApi({
     getTopOrganizationsByProgramCount: builder.query({
       query: (limit = 10) => `/projects/superadmin/top-organizations?limit=${limit}`,
       providesTags: ["Dashboard"],
-      transformResponse: (response) => {
+      transformResponse: (response, meta, arg) => {
+        // Log the raw response for debugging
+        console.log('[getTopOrganizationsByProgramCount] Raw API response:', {
+          response,
+          responseType: typeof response,
+          isArray: Array.isArray(response),
+          hasSuccess: response?.success,
+          hasData: !!response?.data,
+          dataType: typeof response?.data,
+          dataIsArray: Array.isArray(response?.data),
+          dataLength: response?.data?.length
+        });
+
         // Handle both direct data array and wrapped response
         if (Array.isArray(response)) {
+          console.log('[getTopOrganizationsByProgramCount] Returning direct array, length:', response.length);
           return response;
         }
         if (response && response.success && response.data) {
-          return Array.isArray(response.data) ? response.data : [];
+          const data = Array.isArray(response.data) ? response.data : [];
+          console.log('[getTopOrganizationsByProgramCount] Returning wrapped response data, length:', data.length);
+          return data;
         }
-        // Log unexpected response format in development
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('Unexpected response format for top organizations:', response);
-        }
+        // Log unexpected response format
+        console.warn('[getTopOrganizationsByProgramCount] Unexpected response format:', response);
         return [];
       },
       transformErrorResponse: (response, meta, arg) => {
-        // Log errors in development for debugging
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Error fetching top organizations by program count:', {
-            status: response?.status,
-            data: response?.data,
-            originalStatus: meta?.response?.status,
-          });
-        }
+        // Log errors for debugging (always log, not just in development)
+        console.error('[getTopOrganizationsByProgramCount] API Error:', {
+          status: response?.status,
+          statusText: response?.statusText,
+          data: response?.data,
+          error: response?.error,
+          originalStatus: meta?.response?.status,
+          originalStatusText: meta?.response?.statusText,
+          url: meta?.request?.url
+        });
         // Return empty array to show empty state instead of error message
         return [];
       },

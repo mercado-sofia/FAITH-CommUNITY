@@ -9,16 +9,25 @@ export default function TopOrganizationsChart() {
     data: organizationsData = [], 
     isLoading,
     isError,
-    error
+    error,
+    isFetching,
+    isSuccess
   } = useGetTopOrganizationsByProgramCountQuery(8); // Top 8 organizations
 
-  // Debug logging in development
-  if (process.env.NODE_ENV === 'development' && !isLoading) {
+  // Debug logging - always log in development, and in production if there's an issue
+  if (!isLoading && !isFetching) {
     if (isError) {
-      console.error('TopOrganizationsChart error:', error);
-    }
-    if (organizationsData && organizationsData.length > 0) {
-      console.log('TopOrganizationsChart data received:', organizationsData);
+      console.error('[TopOrganizationsChart] Error fetching data:', {
+        error,
+        errorData: error?.data,
+        errorStatus: error?.status
+      });
+    } else if (isSuccess) {
+      console.log('[TopOrganizationsChart] API call successful. Data received:', {
+        dataLength: organizationsData?.length || 0,
+        data: organizationsData,
+        isEmpty: !organizationsData || organizationsData.length === 0
+      });
     }
   }
 

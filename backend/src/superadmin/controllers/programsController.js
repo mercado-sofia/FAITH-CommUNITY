@@ -628,10 +628,16 @@ export const getTopOrganizationsByProgramCount = async (req, res) => {
 
     debugInfo.step = 'diagnostics_complete';
     
+    // Ensure limit is a valid integer and within safe bounds
+    const safeLimit = Math.max(1, Math.min(100, parseInt(limit) || 10));
+    debugInfo.safeLimit = safeLimit;
+    
     // Query to get organizations with their program counts
     // Start from programs_projects (like other working queries) and join to organizations
     // This ensures we only count organizations that actually have programs
     // Count all programs (both approved and unapproved) for dashboard statistics
+    // Note: MySQL2 has issues with LIMIT and OFFSET as placeholders, so we interpolate them directly
+    // This is safe because we've already validated safeLimit is a valid number
     const query = `
       SELECT 
         o.id,
@@ -644,13 +650,14 @@ export const getTopOrganizationsByProgramCount = async (req, res) => {
       GROUP BY o.id, o.org, o.orgName
       HAVING program_count > 0
       ORDER BY program_count DESC
-      LIMIT ?
+      LIMIT ${safeLimit}
     `;
     
     debugInfo.step = 'query_prepared';
     debugInfo.query = query;
     
-    const [results] = await db.execute(query, [limit]);
+    // Execute query without parameters since LIMIT is interpolated
+    const [results] = await db.execute(query);
     debugInfo.queryExecuted = true;
     debugInfo.resultsCount = results.length;
     debugInfo.step = 'query_executed';

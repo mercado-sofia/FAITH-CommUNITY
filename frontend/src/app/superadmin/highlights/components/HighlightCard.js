@@ -36,6 +36,19 @@ const HighlightCard = ({ highlight, onViewDetails }) => {
     return firstImage?.url || firstImage?.filename || null
   }
 
+  const getVideoUrl = () => {
+    if (!highlight.media || highlight.media.length === 0) return null
+    
+    // Get the first video from media array
+    const firstVideo = highlight.media.find(item => 
+      item.type === 'video' || 
+      item.mimetype?.startsWith('video/') ||
+      /\.(mp4|avi|mov|wmv|flv|webm|mkv)$/i.test(item.filename || item.url)
+    )
+    
+    return firstVideo?.url || firstVideo?.filename || null
+  }
+
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'approved': return '#1d9782'
@@ -88,14 +101,20 @@ const HighlightCard = ({ highlight, onViewDetails }) => {
   }
 
   const imageUrl = getImageUrl()
+  const videoUrl = getVideoUrl()
   const isApproved = highlight.status?.toLowerCase() === 'approved'
   const orgColor = getOrganizationColor()
   const badgeTextColor = getTextColorForBadge(orgColor)
+  
+  // Determine what to show: image first, then video, then placeholder
+  const hasImage = imageUrl && !imageError
+  const hasVideo = videoUrl && !hasImage
+  const showPlaceholder = !hasImage && !hasVideo
 
   return (
     <div className={styles.featuredCard}>
       <div className={styles.cardImageContainer}>
-        {imageUrl && !imageError ? (
+        {hasImage ? (
           <Image 
             src={imageUrl}
             alt={highlight.title}
@@ -104,8 +123,31 @@ const HighlightCard = ({ highlight, onViewDetails }) => {
             height={200}
             onError={() => setImageError(true)}
           />
+        ) : hasVideo ? (
+          <video
+            className={styles.cardImage}
+            src={videoUrl}
+            muted
+            playsInline
+            preload="metadata"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              borderRadius: '8px 8px 0 0',
+              backgroundColor: '#000'
+            }}
+            onError={() => {
+              // If video fails to load, show placeholder
+              setImageError(true)
+            }}
+            onLoadedMetadata={(e) => {
+              // Seek to first frame to show as preview
+              e.target.currentTime = 0.1
+            }}
+          />
         ) : null}
-        <div className={styles.imagePlaceholder} style={{ display: imageUrl && !imageError ? 'none' : 'flex' }}>
+        <div className={styles.imagePlaceholder} style={{ display: showPlaceholder ? 'flex' : 'none' }}>
           <span>No Image</span>
         </div>
         

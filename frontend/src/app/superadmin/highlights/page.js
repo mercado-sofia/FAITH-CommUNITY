@@ -373,7 +373,7 @@ const SuperadminHighlightsPage = () => {
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
                             <span className={styles.approvedCount}>
-                              {featuredCount} Featured
+                              {featuredCount} / 8 Featured
                             </span>
                           </div>
                         </div>

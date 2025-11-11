@@ -223,17 +223,26 @@ export const dashboardApi = createApi({
       },
       transformErrorResponse: (response, meta, arg) => {
         // Log errors for debugging (always log, not just in development)
-        console.error('[getTopOrganizationsByProgramCount] API Error:', {
+        const errorData = {
           status: response?.status,
           statusText: response?.statusText,
           data: response?.data,
           error: response?.error,
           originalStatus: meta?.response?.status,
           originalStatusText: meta?.response?.statusText,
-          url: meta?.request?.url
-        });
-        // Return empty array to show empty state instead of error message
-        return [];
+          url: meta?.request?.url,
+          debug: response?.data?.debug || null
+        };
+        
+        console.error('[getTopOrganizationsByProgramCount] API Error:', errorData);
+        
+        // Return error object with debug info preserved so frontend can display it
+        // RTK Query will treat this as an error, but we preserve the debug data
+        throw {
+          status: response?.status || meta?.response?.status || 'FETCH_ERROR',
+          data: response?.data || { message: 'Unknown error occurred', debug: null },
+          error: response?.error || 'Failed to fetch top organizations'
+        };
       },
     }),
 

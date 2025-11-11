@@ -577,8 +577,56 @@ export const getProgramCompletionTrends = async (req, res) => {
 
 // Get top organizations by program count
 export const getTopOrganizationsByProgramCount = async (req, res) => {
+  const startTime = Date.now();
+  let debugInfo = {
+    step: 'initialized',
+    queryParams: req.query,
+    limit: null,
+    queryExecuted: false,
+    resultsCount: 0,
+    error: null
+  };
+
   try {
     const limit = parseInt(req.query.limit) || 10; // Default to top 10
+    debugInfo.limit = limit;
+    debugInfo.step = 'parameters_parsed';
+
+    // First, gather diagnostic information
+    let diagnosticData = {};
+    try {
+      const [programCheck] = await db.execute('SELECT COUNT(*) as total FROM programs_projects');
+      const [orgCheck] = await db.execute("SELECT COUNT(*) as total FROM organizations WHERE status = 'ACTIVE'");
+      const [allOrgs] = await db.execute("SELECT COUNT(*) as total FROM organizations");
+      const [orgWithProgramsCheck] = await db.execute(`
+        SELECT COUNT(DISTINCT o.id) as total 
+        FROM organizations o 
+        INNER JOIN programs_projects pp ON o.id = pp.organization_id 
+        WHERE o.status = 'ACTIVE'
+      `);
+      const [samplePrograms] = await db.execute(`
+        SELECT pp.id, pp.organization_id, pp.title, o.status as org_status, o.org, o.orgName
+        FROM programs_projects pp
+        LEFT JOIN organizations o ON pp.organization_id = o.id
+        LIMIT 5
+      `);
+      
+      diagnosticData = {
+        totalPrograms: programCheck[0]?.total || 0,
+        totalOrganizations: allOrgs[0]?.total || 0,
+        activeOrganizations: orgCheck[0]?.total || 0,
+        activeOrgsWithPrograms: orgWithProgramsCheck[0]?.total || 0,
+        samplePrograms: samplePrograms
+      };
+      
+      console.log('[getTopOrganizationsByProgramCount] Diagnostic data:', JSON.stringify(diagnosticData, null, 2));
+      debugInfo.diagnosticData = diagnosticData;
+    } catch (diagError) {
+      console.error('[getTopOrganizationsByProgramCount] Error gathering diagnostics:', diagError);
+      debugInfo.diagnosticError = diagError.message;
+    }
+
+    debugInfo.step = 'diagnostics_complete';
     
     // Query to get organizations with their program counts
     // Start from programs_projects (like other working queries) and join to organizations
@@ -599,7 +647,13 @@ export const getTopOrganizationsByProgramCount = async (req, res) => {
       LIMIT ?
     `;
     
+    debugInfo.step = 'query_prepared';
+    debugInfo.query = query;
+    
     const [results] = await db.execute(query, [limit]);
+    debugInfo.queryExecuted = true;
+    debugInfo.resultsCount = results.length;
+    debugInfo.step = 'query_executed';
     
     // Log results for debugging
     console.log(`[getTopOrganizationsByProgramCount] Query executed. Found ${results.length} organizations with programs`);
@@ -607,44 +661,74 @@ export const getTopOrganizationsByProgramCount = async (req, res) => {
       console.log('[getTopOrganizationsByProgramCount] Sample result:', JSON.stringify(results[0], null, 2));
       console.log('[getTopOrganizationsByProgramCount] All results:', JSON.stringify(results, null, 2));
     } else {
-      // Debug: Check if there are any programs at all
-      const [programCheck] = await db.execute('SELECT COUNT(*) as total FROM programs_projects');
-      const [orgCheck] = await db.execute("SELECT COUNT(*) as total FROM organizations WHERE status = 'ACTIVE'");
-      const [orgWithPrograms] = await db.execute(`
-        SELECT COUNT(DISTINCT o.id) as total 
-        FROM organizations o 
-        INNER JOIN programs_projects pp ON o.id = pp.organization_id 
-        WHERE o.status = 'ACTIVE'
-      `);
-      console.log('[getTopOrganizationsByProgramCount] Debug info:', {
-        totalPrograms: programCheck[0]?.total || 0,
-        activeOrganizations: orgCheck[0]?.total || 0,
-        activeOrgsWithPrograms: orgWithPrograms[0]?.total || 0
-      });
+      console.warn('[getTopOrganizationsByProgramCount] No results found. Diagnostic data:', diagnosticData);
     }
     
     // Format the data for frontend consumption
-    const organizations = results.map(row => ({
-      id: row.id,
-      acronym: row.acronym || 'N/A',
-      name: row.name || 'Unknown Organization',
-      programCount: parseInt(row.program_count) || 0
-    }));
+    const organizations = results.map(row => {
+      const formatted = {
+        id: row.id,
+        acronym: row.acronym || 'N/A',
+        name: row.name || 'Unknown Organization',
+        programCount: parseInt(row.program_count) || 0
+      };
+      // Validate data
+      if (!formatted.id || formatted.programCount <= 0) {
+        console.warn('[getTopOrganizationsByProgramCount] Invalid row data:', row);
+      }
+      return formatted;
+    });
     
+    debugInfo.step = 'data_formatted';
+    debugInfo.formattedCount = organizations.length;
     console.log('[getTopOrganizationsByProgramCount] Formatted organizations:', JSON.stringify(organizations, null, 2));
     
+    const responseTime = Date.now() - startTime;
+    debugInfo.responseTime = responseTime;
+    debugInfo.step = 'success';
+    
     // Always return success with data array (even if empty)
-    res.json({
+    // Include debug info in development or when no data
+    const response = {
       success: true,
-      data: organizations
-    });
+      data: organizations,
+      ...(process.env.NODE_ENV !== 'production' || organizations.length === 0 ? { debug: debugInfo } : {})
+    };
+    
+    res.json(response);
   } catch (error) {
-    console.error('Error fetching top organizations by program count:', error);
-    console.error('Error stack:', error.stack);
+    debugInfo.step = 'error';
+    debugInfo.error = {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage
+    };
+    
+    // Extract the most specific error message
+    const specificError = error.sqlMessage || error.message || 'Unknown error occurred';
+    
+    console.error('[getTopOrganizationsByProgramCount] Error:', error);
+    console.error('[getTopOrganizationsByProgramCount] Error message:', specificError);
+    console.error('[getTopOrganizationsByProgramCount] Error stack:', error.stack);
+    console.error('[getTopOrganizationsByProgramCount] Debug info:', JSON.stringify(debugInfo, null, 2));
+    
+    const responseTime = Date.now() - startTime;
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch top organizations by program count',
-      error: error.message
+      message: `Failed to fetch top organizations by program count: ${specificError}`,
+      error: specificError,
+      errorDetails: {
+        type: error.name || 'Error',
+        code: error.code,
+        sqlState: error.sqlState,
+        sqlMessage: error.sqlMessage,
+        originalMessage: error.message
+      },
+      debug: debugInfo,
+      responseTime
     });
   }
 };

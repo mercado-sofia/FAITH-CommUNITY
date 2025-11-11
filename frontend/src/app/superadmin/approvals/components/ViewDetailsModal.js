@@ -372,6 +372,16 @@ const ViewDetailsModal = ({
                 </div>
               )}
 
+              {/* Associated Program Section */}
+              {highlightsData.program_id && (
+                <div className={styles.contentSection}>
+                  <h4 className={styles.sectionTitle}>ASSOCIATED PROGRAM:</h4>
+                  <div className={styles.descriptionBox}>
+                    {highlightsData.program_title || `Program #${highlightsData.program_id}`}
+                  </div>
+                </div>
+              )}
+
               {/* Media Section */}
               <div className={styles.contentSection}>
                 <h4 className={styles.sectionTitle}>MEDIA:</h4>

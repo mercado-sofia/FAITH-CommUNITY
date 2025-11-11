@@ -9,30 +9,6 @@
   margin-bottom: 2rem;
 }
 
-.backButton {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: none;
-  border: none;
-  color: #6b7280;
-  font-size: 14px;
-  font-family: var(--font-inter);
-  cursor: pointer;
-  transition: color 0.2s;
-  margin-bottom: 1rem;
-  padding: 0.5rem 0;
-}
-
-.backButton:hover {
-  color: #374151;
-}
-
-.backButton:disabled {
-  color: #9ca3af;
-  cursor: not-allowed;
-}
-
 .title {
   font-size: 1.25rem;
   font-weight: 700;

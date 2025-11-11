@@ -1480,17 +1480,17 @@ const initializeDatabase = async () => {
                 duplicateIds
               );
               deletedCount += duplicateIds.length;
-              console.log(`Cleaned up ${duplicateIds.length} duplicate ${type} entries`);
+              logInfo(`Cleaned up ${duplicateIds.length} duplicate ${type} entries`, { context: 'database_migration', type });
             }
           }
         }
         
         if (deletedCount > 0) {
-          console.log(`Mission/Vision cleanup: Removed ${deletedCount} duplicate entries`);
+          logInfo(`Mission/Vision cleanup: Removed ${deletedCount} duplicate entries`, { context: 'database_migration' });
         }
       } catch (err) {
         // Log error but don't fail initialization
-        console.warn('Warning: Could not clean up duplicate mission/vision entries:', err.message);
+        logWarn('Warning: Could not clean up duplicate mission/vision entries', { context: 'database_migration', error: err.message });
       }
       
       // Migration: Clean up duplicate footer_content entries for contact information
@@ -1528,17 +1528,17 @@ const initializeDatabase = async () => {
                 duplicateIds
               );
               deletedCount += duplicateIds.length;
-              console.log(`Cleaned up ${duplicateIds.length} duplicate ${title} contact entries`);
+              logInfo(`Cleaned up ${duplicateIds.length} duplicate ${title} contact entries`, { context: 'database_migration', title });
             }
           }
         }
         
         if (deletedCount > 0) {
-          console.log(`Footer Content cleanup: Removed ${deletedCount} duplicate contact entries`);
+          logInfo(`Footer Content cleanup: Removed ${deletedCount} duplicate contact entries`, { context: 'database_migration' });
         }
       } catch (err) {
         // Log error but don't fail initialization
-        console.warn('Warning: Could not clean up duplicate footer_content entries:', err.message);
+        logWarn('Warning: Could not clean up duplicate footer_content entries', { context: 'database_migration', error: err.message });
       }
       
       // 6. Security Tables

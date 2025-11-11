@@ -1,5 +1,6 @@
 import db from '../../database.js';
 import { S3_FOLDERS } from '../../utils/s3Config.js';
+import { logError } from '../../utils/logger.js';
 import SuperAdminNotificationController from '../../superadmin/controllers/superadminNotificationController.js';
 
 // Admin upload Post Act Report for a program
@@ -113,7 +114,10 @@ export const uploadPostActReport = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Post Act Report upload error:', error);
+    logError('Post Act Report upload error', error, { 
+      context: 'postActReportController',
+      programId: id 
+    });
     
     // Provide more specific error messages
     let errorMessage = 'Failed to upload Post Act Report';

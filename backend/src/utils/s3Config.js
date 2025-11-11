@@ -1,5 +1,6 @@
 import { S3Client } from '@aws-sdk/client-s3';
 import dotenv from 'dotenv';
+import { logError } from './logger.js';
 
 // Load environment variables
 dotenv.config();
@@ -72,7 +73,7 @@ export const detectBucketRegion = async () => {
       return detectedRegion;
     }
   } catch (error) {
-    console.error('Error detecting bucket region:', error);
+    logError('Error detecting bucket region', error, { context: 's3_config', bucket: S3_BUCKET_NAME });
     return detectedRegion;
   }
   
@@ -114,7 +115,7 @@ export const testS3Connection = async () => {
     await s3Client.send(new ListBucketsCommand({}));
     return true;
   } catch (error) {
-    console.error('S3 connection failed:', error);
+    logError('S3 connection failed', error, { context: 's3_config', test: true });
     return false;
   }
 };

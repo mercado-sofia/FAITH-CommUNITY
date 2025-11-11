@@ -121,7 +121,7 @@ export default function AdminNewsPage() {
         {modals.pageMode === 'list' ? (
           <>
             <div className={styles.headerTop}>
-              <h1>News</h1>
+              <h1>News and Announcements</h1>
               <div className={styles.headerActions}>
                 <button
                   onClick={modals.handleCreateMode}

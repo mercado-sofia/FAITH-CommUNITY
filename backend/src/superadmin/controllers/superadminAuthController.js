@@ -134,9 +134,8 @@ export const verifySuperadminToken = (req, res, next) => {
   }
 
   try {
-    // SECURITY WARNING: Hardcoded superadmin token for development/testing
-    // TODO: Remove this in production or restrict to development environment only
-    // This is a security risk and should not be used in production deployments
+    // SECURITY: Hardcoded superadmin token for development/testing only
+    // Protected by production environment check - automatically disabled in production
     if (token === "superadmin") {
       if (process.env.NODE_ENV === "production") {
         return res.status(403).json({ error: "Hardcoded token not allowed in production" })
@@ -749,11 +748,7 @@ export const setupTwoFA = async (req, res) => {
     const { secret, otpauth } = generateTwoFASecret(superadmin.username);
     
     // Generate QR code (optional - may fail without breaking the flow)
-    // Option 1: Use full QR code generation (requires qrcode library)
     const qrCodeDataUrl = await generateTwoFAQRCode(otpauth);
-    
-    // Option 2: Use simple method (no QR code) - uncomment the line below and comment the line above
-    // const qrCodeDataUrl = generateSimpleQRCode(otpauth);
     
     // Store secret temporarily (will be enabled after verification)
     await db.execute('UPDATE superadmin SET twofa_secret = ? WHERE id = ?', [secret, id]);

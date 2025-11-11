@@ -100,7 +100,6 @@ router.put('/superadmin/programs/:id/featured', verifyAdminOrSuperadmin, toggleF
 // ===================== Program Projects routes (from programProjects.js) =====================
 // SECURITY FIX: Removed direct program creation endpoint to enforce submission workflow
 // All new programs must go through /api/submissions for superadmin approval
-// router.post('/program-projects', verifyAdminOrSuperadmin, upload.single('image'), addProgramProject); // REMOVED - SECURITY FIX
 router.put('/program-projects/:id', verifyAdminOrSuperadmin, upload.single('image'), updateProgramProject);
 router.get('/program-projects', verifyAdminOrSuperadmin, getProgramProjects);
 

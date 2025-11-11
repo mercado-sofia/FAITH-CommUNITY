@@ -32,7 +32,10 @@ export const superadminHighlightsApi = createApi({
         if (response.highlights && Array.isArray(response.highlights)) {
           return response.highlights.map(highlight => ({
             ...highlight,
-            media: highlight.media || []
+            media: highlight.media || [],
+            // Ensure program_title and program_id are preserved
+            program_title: highlight.program_title || null,
+            program_id: highlight.program_id || null
           }))
         }
         return []

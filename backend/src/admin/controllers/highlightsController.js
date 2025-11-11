@@ -493,6 +493,17 @@ export const getAllHighlightsForApproval = async (req, res) => {
     
     const [rows] = await promisePool.execute(query, queryParams);
     
+    // Debug: Log query and sample data
+    if (rows.length > 0) {
+      console.log('getAllHighlightsForApproval - Sample row:', {
+        id: rows[0].id,
+        title: rows[0].title,
+        program_id: rows[0].program_id,
+        program_title: rows[0].program_title,
+        hasProgramIdColumn
+      });
+    }
+    
     // Parse JSON media_files and format the data
     const highlights = rows.map(highlight => ({
       ...highlight,
@@ -503,7 +514,8 @@ export const getAllHighlightsForApproval = async (req, res) => {
     
     res.json({ highlights });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch highlights for approval' });
+    console.error('Error in getAllHighlightsForApproval:', error);
+    res.status(500).json({ error: 'Failed to fetch highlights for approval', details: error.message });
   }
 };
 

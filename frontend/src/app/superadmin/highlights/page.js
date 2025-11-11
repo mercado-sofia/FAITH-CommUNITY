@@ -79,6 +79,21 @@ const SuperadminHighlightsPage = () => {
     refetch: refetchHighlights 
   } = useGetAllHighlightsQuery(statusFilter)
 
+  // Debug: Log highlights data to check for program_title
+  useEffect(() => {
+    if (highlights.length > 0) {
+      console.log('Highlights data sample:', {
+        count: highlights.length,
+        sample: highlights[0] ? {
+          id: highlights[0].id,
+          title: highlights[0].title,
+          program_id: highlights[0].program_id,
+          program_title: highlights[0].program_title
+        } : null
+      });
+    }
+  }, [highlights])
+
   const { 
     data: statistics = {}, 
     isLoading: statsLoading,

@@ -563,6 +563,28 @@ const runIncrementalMigrations = async (connection) => {
       // Index might already exist or other error - silently skip
     }
 
+    // Add program_id column to admin_highlights if it doesn't exist
+    try {
+      const [programIdColumnCheck] = await connection.query(`
+        SELECT COUNT(*) as count 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'admin_highlights' 
+        AND COLUMN_NAME = 'program_id'
+      `);
+      
+      if (programIdColumnCheck[0].count === 0) {
+        await connection.query(`
+          ALTER TABLE admin_highlights 
+          ADD COLUMN program_id INT NULL,
+          ADD FOREIGN KEY (program_id) REFERENCES programs(id) ON DELETE SET NULL,
+          ADD INDEX idx_program_id (program_id)
+        `);
+      }
+    } catch (programIdError) {
+      // Column might already exist or other error - silently skip
+    }
+
     // Fix admin_highlights id column to ensure AUTO_INCREMENT and PRIMARY KEY are properly set
     try {
       // Check if id column has AUTO_INCREMENT

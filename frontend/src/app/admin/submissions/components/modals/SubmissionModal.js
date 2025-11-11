@@ -1,12 +1,63 @@
 import Image from 'next/image';
+import { useState, useEffect } from 'react';
 import { FaTimes, FaTag, FaCalendar, FaEye, FaChartBar, FaExclamationTriangle, FaUsers, FaFile } from 'react-icons/fa';
 import { formatDateShort, formatDateTime } from '@/utils/dateUtils.js';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
+import { getAdminTokenOrRedirect, API_CONFIG } from '../../../utils';
 import styles from './SubmissionModal.module.css';
 
 // Note: advocacy and competency are no longer part of the submission workflow
 
 export default function SubmissionModal({ data, onClose }) {
+  const [programTitle, setProgramTitle] = useState(null);
+  const [loadingProgram, setLoadingProgram] = useState(false);
+
+  // Fetch program title when program_id is available
+  useEffect(() => {
+    const fetchProgramTitle = async () => {
+      // Parse proposed_data to get program_id
+      let programId = null;
+      try {
+        const proposedData = typeof data.proposed_data === 'string' 
+          ? JSON.parse(data.proposed_data) 
+          : data.proposed_data;
+        programId = proposedData?.program_id;
+      } catch (e) {
+        console.error('Error parsing proposed_data:', e);
+      }
+
+      if (programId && data.section === 'highlights') {
+        setLoadingProgram(true);
+        try {
+          const token = getAdminTokenOrRedirect();
+          if (!token) return;
+
+          const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/programs/${programId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.data?.title) {
+              setProgramTitle(result.data.title);
+            } else if (result.title) {
+              setProgramTitle(result.title);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching program title:', error);
+        } finally {
+          setLoadingProgram(false);
+        }
+      }
+    };
+
+    fetchProgramTitle();
+  }, [data]);
+
   const formatData = (dataObj) => {
     // Handle different data types based on section
     if (data.section === 'organization') {
@@ -282,6 +333,121 @@ export default function SubmissionModal({ data, onClose }) {
           </div>
         </div>
       );
+    } else if (data.section === 'highlights') {
+      // Parse media_files if it's a string
+      let mediaFiles = [];
+      try {
+        if (typeof dataObj.media_files === 'string') {
+          mediaFiles = JSON.parse(dataObj.media_files);
+        } else if (Array.isArray(dataObj.media_files)) {
+          mediaFiles = dataObj.media_files;
+        } else if (dataObj.media) {
+          mediaFiles = Array.isArray(dataObj.media) ? dataObj.media : [];
+        }
+      } catch (e) {
+        console.error('Error parsing media_files:', e);
+        mediaFiles = [];
+      }
+
+      return (
+        <div className={styles.highlightLayout}>
+          {/* Highlight Title */}
+          <div className={styles.highlightTitle}>{dataObj.title || 'Untitled Highlight'}</div>
+
+          {/* Highlight Details */}
+          <div className={styles.highlightDetails}>
+            {/* Description */}
+            {dataObj.description && (
+              <div className={styles.highlightDetailItem}>
+                <div className={styles.detailLabel}>Description</div>
+                <div className={styles.detailValue}>{dataObj.description}</div>
+              </div>
+            )}
+
+            {/* Associated Program */}
+            {dataObj.program_id && (
+              <div className={styles.highlightDetailItem}>
+                <div className={styles.detailLabel}>
+                  <FaTag className={styles.detailIcon} />
+                  Associated Program
+                </div>
+                <div className={styles.detailValue}>
+                  {loadingProgram ? (
+                    <span>Loading...</span>
+                  ) : programTitle ? (
+                    programTitle
+                  ) : (
+                    `Program #${dataObj.program_id}`
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Media Files */}
+          {mediaFiles.length > 0 && (
+            <div className={styles.mediaSection}>
+              <div className={styles.mediaLabel}>
+                <FaFile className={styles.mediaIcon} />
+                Media Files ({mediaFiles.length})
+              </div>
+              <div className={styles.mediaGrid}>
+                {mediaFiles.map((file, index) => {
+                  const fileUrl = file.url || file.filename;
+                  const fileName = file.filename || file.originalName || `File ${index + 1}`;
+                  const isImage = file.mimetype?.startsWith('image/') || 
+                                 /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
+                  const isVideo = file.mimetype?.startsWith('video/') || 
+                                 /\.(mp4|avi|mov|wmv|flv|webm)$/i.test(fileName);
+
+                  return (
+                    <div key={index} className={styles.mediaItem}>
+                      {isImage && fileUrl ? (
+                        <Image
+                          src={fileUrl}
+                          alt={fileName}
+                          className={styles.mediaImage}
+                          width={150}
+                          height={150}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : isVideo && fileUrl ? (
+                        <div className={styles.mediaVideoPlaceholder}>
+                          <FaFile />
+                          <span>Video File</span>
+                        </div>
+                      ) : (
+                        <div className={styles.mediaFilePlaceholder}>
+                          <FaFile />
+                          <span>File</span>
+                        </div>
+                      )}
+                      <div className={styles.mediaError} style={{display: 'none'}}>
+                        <FaExclamationTriangle />
+                        <span>Unavailable</span>
+                      </div>
+                      <div className={styles.mediaFileName}>{fileName}</div>
+                      {fileUrl && (
+                        <a
+                          href={fileUrl}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className={styles.mediaLink}
+                        >
+                          View
+                        </a>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      );
     }
 
     // Fallback to JSON display
@@ -468,13 +634,27 @@ export default function SubmissionModal({ data, onClose }) {
               </div>
             </div>
           ) : (
-            <div className={data.section === 'programs' ? styles.dataComparisonSingle : styles.dataComparison}>
-              {/* For programs section, show only proposed data without previous data */}
-              {data.section === 'programs' ? (
+            <div className={data.section === 'programs' || data.section === 'highlights' ? styles.dataComparisonSingle : styles.dataComparison}>
+              {/* For programs and highlights sections, show only proposed data without previous data */}
+              {data.section === 'programs' || data.section === 'highlights' ? (
                 <div className={styles.dataSection}>
-                  <h3 className={styles.sectionTitle}>Proposed Program</h3>
+                  <h3 className={styles.sectionTitle}>
+                    {data.section === 'programs' ? 'Proposed Program' : 'Proposed Highlight'}
+                  </h3>
                   <div className={styles.dataContent}>
-                    {formatData(data.proposed_data)}
+                    {(() => {
+                      // Parse proposed_data if it's a string
+                      let parsedData = data.proposed_data;
+                      if (typeof data.proposed_data === 'string') {
+                        try {
+                          parsedData = JSON.parse(data.proposed_data);
+                        } catch (e) {
+                          console.error('Error parsing proposed_data:', e);
+                          parsedData = data.proposed_data;
+                        }
+                      }
+                      return formatData(parsedData);
+                    })()}
                   </div>
                 </div>
               ) : (
@@ -484,7 +664,7 @@ export default function SubmissionModal({ data, onClose }) {
                     <h3 className={styles.sectionTitle}>Previous Data</h3>
                     <div className={styles.dataContent}>
                       {data.previous_data ? (
-                        formatData(data.previous_data)
+                        formatData(typeof data.previous_data === 'string' ? JSON.parse(data.previous_data) : data.previous_data)
                       ) : (
                         <div className={styles.noData}>No previous data</div>
                       )}
@@ -495,7 +675,19 @@ export default function SubmissionModal({ data, onClose }) {
                   <div className={styles.dataSection}>
                     <h3 className={styles.sectionTitle}>Proposed Changes</h3>
                     <div className={styles.dataContent}>
-                      {formatData(data.proposed_data)}
+                      {(() => {
+                        // Parse proposed_data if it's a string
+                        let parsedData = data.proposed_data;
+                        if (typeof data.proposed_data === 'string') {
+                          try {
+                            parsedData = JSON.parse(data.proposed_data);
+                          } catch (e) {
+                            console.error('Error parsing proposed_data:', e);
+                            parsedData = data.proposed_data;
+                          }
+                        }
+                        return formatData(parsedData);
+                      })()}
                     </div>
                   </div>
                 </>

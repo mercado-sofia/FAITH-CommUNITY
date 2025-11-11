@@ -31,22 +31,25 @@ export const getAdminHighlights = async (req, res) => {
     
     const hasProgramIdColumn = columnCheck[0]?.count > 0;
     
-    // Build query with or without program_id column
-    const programIdSelect = hasProgramIdColumn ? ', program_id' : '';
+    // Build query with or without program_id column and program title
+    const programIdSelect = hasProgramIdColumn ? ', h.program_id' : '';
+    const programJoin = hasProgramIdColumn ? 'LEFT JOIN programs_projects p ON h.program_id = p.id' : '';
+    const programTitleSelect = hasProgramIdColumn ? ', p.title as program_title' : '';
     const query = `
       SELECT 
-        id,
-        title,
-        description,
-        media_files,
-        status,
-        organization_id,
-        created_by${programIdSelect},
-        created_at,
-        updated_at
-      FROM admin_highlights
-      WHERE organization_id = ?
-      ORDER BY created_at DESC
+        h.id,
+        h.title,
+        h.description,
+        h.media_files,
+        h.status,
+        h.organization_id,
+        h.created_by${programIdSelect}${programTitleSelect},
+        h.created_at,
+        h.updated_at
+      FROM admin_highlights h
+      ${programJoin}
+      WHERE h.organization_id = ?
+      ORDER BY h.created_at DESC
     `;
     
     const [rows] = await promisePool.execute(query, [orgId]);
@@ -55,7 +58,8 @@ export const getAdminHighlights = async (req, res) => {
     const highlights = rows.map(highlight => ({
       ...highlight,
       media: safeParseJSON(highlight.media_files, []),
-      program_id: hasProgramIdColumn ? (highlight.program_id || null) : null
+      program_id: hasProgramIdColumn ? (highlight.program_id || null) : null,
+      program_title: hasProgramIdColumn ? (highlight.program_title || null) : null
     }));
     
     res.json({ highlights });
@@ -82,20 +86,23 @@ export const getHighlightById = async (req, res) => {
     
     const hasProgramIdColumn = columnCheck[0]?.count > 0;
     
-    // Build query with or without program_id column
-    const programIdSelect = hasProgramIdColumn ? ', program_id' : '';
+    // Build query with or without program_id column and program title
+    const programIdSelect = hasProgramIdColumn ? ', h.program_id' : '';
+    const programJoin = hasProgramIdColumn ? 'LEFT JOIN programs_projects p ON h.program_id = p.id' : '';
+    const programTitleSelect = hasProgramIdColumn ? ', p.title as program_title' : '';
     const query = `
       SELECT 
-        id,
-        title,
-        description,
-        media_files,
-        organization_id,
-        created_by${programIdSelect},
-        created_at,
-        updated_at
-      FROM admin_highlights
-      WHERE id = ? AND organization_id = ?
+        h.id,
+        h.title,
+        h.description,
+        h.media_files,
+        h.organization_id,
+        h.created_by${programIdSelect}${programTitleSelect},
+        h.created_at,
+        h.updated_at
+      FROM admin_highlights h
+      ${programJoin}
+      WHERE h.id = ? AND h.organization_id = ?
     `;
     
     const [rows] = await promisePool.execute(query, [id, orgId]);
@@ -107,7 +114,8 @@ export const getHighlightById = async (req, res) => {
     const highlight = {
       ...rows[0],
       media: safeParseJSON(rows[0].media_files, []),
-      program_id: hasProgramIdColumn ? (rows[0].program_id || null) : null
+      program_id: hasProgramIdColumn ? (rows[0].program_id || null) : null,
+      program_title: hasProgramIdColumn ? (rows[0].program_title || null) : null
     };
     
     res.json({ highlight });
@@ -399,20 +407,23 @@ const getHighlightByIdInternal = async (connection, highlightId) => {
   
   const hasProgramIdColumn = columnCheck[0]?.count > 0;
   
-  // Build query with or without program_id column
-  const programIdSelect = hasProgramIdColumn ? ', program_id' : '';
+  // Build query with or without program_id column and program title
+  const programIdSelect = hasProgramIdColumn ? ', h.program_id' : '';
+  const programJoin = hasProgramIdColumn ? 'LEFT JOIN programs_projects p ON h.program_id = p.id' : '';
+  const programTitleSelect = hasProgramIdColumn ? ', p.title as program_title' : '';
   const query = `
     SELECT 
-      id,
-      title,
-      description,
-      media_files,
-      organization_id,
-      created_by${programIdSelect},
-      created_at,
-      updated_at
-    FROM admin_highlights
-    WHERE id = ?
+      h.id,
+      h.title,
+      h.description,
+      h.media_files,
+      h.organization_id,
+      h.created_by${programIdSelect}${programTitleSelect},
+      h.created_at,
+      h.updated_at
+    FROM admin_highlights h
+    ${programJoin}
+    WHERE h.id = ?
   `;
   
   const [rows] = await connection.execute(query, [highlightId]);
@@ -424,7 +435,8 @@ const getHighlightByIdInternal = async (connection, highlightId) => {
   return {
     ...rows[0],
     media: safeParseJSON(rows[0].media_files, []),
-    program_id: hasProgramIdColumn ? (rows[0].program_id || null) : null
+    program_id: hasProgramIdColumn ? (rows[0].program_id || null) : null,
+    program_title: hasProgramIdColumn ? (rows[0].program_title || null) : null
   };
 };
 
@@ -432,6 +444,22 @@ const getHighlightByIdInternal = async (connection, highlightId) => {
 export const getAllHighlightsForApproval = async (req, res) => {
   try {
     const { status } = req.query;
+    
+    // Check if program_id column exists
+    const [columnCheck] = await promisePool.execute(`
+      SELECT COUNT(*) as count 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'admin_highlights' 
+      AND COLUMN_NAME = 'program_id'
+    `);
+    
+    const hasProgramIdColumn = columnCheck[0]?.count > 0;
+    
+    // Build query with or without program_id and program title
+    const programIdSelect = hasProgramIdColumn ? ', h.program_id' : '';
+    const programJoin = hasProgramIdColumn ? 'LEFT JOIN programs_projects p ON h.program_id = p.id' : '';
+    const programTitleSelect = hasProgramIdColumn ? ', p.title as program_title' : '';
     
     let query = `
       SELECT 
@@ -447,10 +475,11 @@ export const getAllHighlightsForApproval = async (req, res) => {
         o.orgName as organization_name,
         o.org as organization_acronym,
         o.org_color as organization_color,
-        a.email as admin_email
+        a.email as admin_email${programIdSelect}${programTitleSelect}
       FROM admin_highlights h
       LEFT JOIN organizations o ON h.organization_id = o.id
       LEFT JOIN admins a ON h.created_by = a.id
+      ${programJoin}
     `;
     
     const queryParams = [];
@@ -467,7 +496,9 @@ export const getAllHighlightsForApproval = async (req, res) => {
     // Parse JSON media_files and format the data
     const highlights = rows.map(highlight => ({
       ...highlight,
-      media: safeParseJSON(highlight.media_files, [])
+      media: safeParseJSON(highlight.media_files, []),
+      program_id: hasProgramIdColumn ? (highlight.program_id || null) : null,
+      program_title: hasProgramIdColumn ? (highlight.program_title || null) : null
     }));
     
     res.json({ highlights });
@@ -532,6 +563,22 @@ export const updateHighlightStatus = async (req, res) => {
 // Get approved highlights for public display
 export const getApprovedHighlights = async (req, res) => {
   try {
+    // Check if program_id column exists
+    const [columnCheck] = await promisePool.execute(`
+      SELECT COUNT(*) as count 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'admin_highlights' 
+      AND COLUMN_NAME = 'program_id'
+    `);
+    
+    const hasProgramIdColumn = columnCheck[0]?.count > 0;
+    
+    // Build query with or without program_id and program title
+    const programIdSelect = hasProgramIdColumn ? ', h.program_id' : '';
+    const programJoin = hasProgramIdColumn ? 'LEFT JOIN programs_projects p ON h.program_id = p.id' : '';
+    const programTitleSelect = hasProgramIdColumn ? ', p.title as program_title' : '';
+    
     const query = `
       SELECT 
         h.id,
@@ -541,9 +588,10 @@ export const getApprovedHighlights = async (req, res) => {
         h.created_at,
         o.orgName as organization_name,
         o.org as organization_acronym,
-        o.logo as organization_logo
+        o.logo as organization_logo${programIdSelect}${programTitleSelect}
       FROM admin_highlights h
       LEFT JOIN organizations o ON h.organization_id = o.id
+      ${programJoin}
       WHERE h.status = 'approved'
       ORDER BY h.created_at DESC
     `;
@@ -553,7 +601,9 @@ export const getApprovedHighlights = async (req, res) => {
     // Parse JSON media_files and format the data
     const highlights = rows.map(highlight => ({
       ...highlight,
-      media: safeParseJSON(highlight.media_files, [])
+      media: safeParseJSON(highlight.media_files, []),
+      program_id: hasProgramIdColumn ? (highlight.program_id || null) : null,
+      program_title: hasProgramIdColumn ? (highlight.program_title || null) : null
     }));
     
     res.json({ highlights });

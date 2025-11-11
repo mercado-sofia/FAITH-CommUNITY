@@ -40,6 +40,7 @@ export default function Highlights({ onClose }) {
         organization: highlight.organization_name || 'Unknown Organization',
         organization_acronym: highlight.organization_acronym || '',
         description: highlight.description,
+        program_title: highlight.program_title || null,
         date: new Date(highlight.created_at).toLocaleDateString('en-US', { 
           month: 'short', 
           year: 'numeric' 
@@ -208,6 +209,12 @@ export default function Highlights({ onClose }) {
               <div className={styles.cardContent}>
                 <h3 className={styles.cardTitle}>{story.title}</h3>
                 <p className={styles.cardOrganization}>{story.organization}</p>
+                {/* Associated Program */}
+                {story.program_title && (
+                  <p style={{ marginTop: '4px', marginBottom: '8px', fontSize: '0.875rem', color: '#6b7280' }}>
+                    <span style={{ fontWeight: '500' }}>Program:</span> {story.program_title}
+                  </p>
+                )}
                 <p className={styles.cardDescription}>
                   {story.description}
                 </p>
@@ -313,6 +320,15 @@ export default function Highlights({ onClose }) {
                     <span className={styles.modalMetaLabel}>Organization:</span>
                     <span className={styles.modalMetaValue}>{selectedStory.organization}</span>
                   </div>
+                  {selectedStory.program_title && (
+                    <div className={styles.modalMetaItem}>
+                      <svg className={styles.modalMetaIcon} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M7 7H17M7 12H17M7 17H12M3 3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span className={styles.modalMetaLabel}>Program:</span>
+                      <span className={styles.modalMetaValue}>{selectedStory.program_title}</span>
+                    </div>
+                  )}
                   <div className={styles.modalMetaItem}>
                     <svg className={styles.modalMetaIcon} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M8 7V3M16 7V3M3 11H21M5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V19C3 20.1046 3.89543 21 5 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>

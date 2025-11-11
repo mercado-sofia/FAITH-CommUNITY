@@ -143,6 +143,13 @@ const HighlightCard = ({ highlight, onViewDetails }) => {
         </div>
         <p className={styles.cardOrganization}>{highlight.organization_name || 'Unknown Organization'}</p>
         
+        {/* Associated Program */}
+        {highlight.program_title && (
+          <p className={styles.cardProgram} style={{ marginTop: '4px', marginBottom: '8px', fontSize: '0.875rem', color: '#6b7280' }}>
+            <span style={{ fontWeight: '500' }}>Program:</span> {highlight.program_title}
+          </p>
+        )}
+        
         <p className={styles.cardDescription}>
           {truncateText(highlight.description)}
         </p>

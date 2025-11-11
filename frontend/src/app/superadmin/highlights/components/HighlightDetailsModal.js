@@ -192,6 +192,18 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
                       </div>
                     )}
 
+                    {highlight.program_title && (
+                      <div className={styles.detailItem}>
+                        <FaTag className={styles.detailIcon} />
+                        <div className={styles.detailContent}>
+                          <span className={styles.detailLabel}>Associated Program</span>
+                          <span className={styles.detailValue}>
+                            {highlight.program_title}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
                     {highlight.created_at && (
                       <div className={styles.detailItem}>
                         <FaCalendar className={styles.detailIcon} />

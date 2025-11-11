@@ -102,6 +102,15 @@ export default function HighlightCard({ highlight, onEdit, onView, onDelete }) {
           {truncateText(highlight.description)}
         </p>
 
+        {/* Associated Program */}
+        {highlight.program_title && (
+          <div className={styles.meta} style={{ marginTop: '8px', marginBottom: '8px' }}>
+            <div className={styles.metaItem} style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+              <span style={{ fontWeight: '500' }}>Program:</span> {highlight.program_title}
+            </div>
+          </div>
+        )}
+
         <div className={styles.footer}>
           <div className={styles.meta}>
             <div className={styles.metaItem}>

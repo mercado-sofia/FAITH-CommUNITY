@@ -112,6 +112,18 @@ export const sendInvitation = async (req, res) => {
   }
 
   try {
+    // Check if email exists in users table
+    const [existingUser] = await db.execute("SELECT id FROM users WHERE email = ?", [email])
+    if (existingUser.length > 0) {
+      return res.status(409).json({ error: "This email is already registered as a user" })
+    }
+
+    // Check if email exists in superadmin table (username is used as email)
+    const [existingSuperadmin] = await db.execute("SELECT id FROM superadmin WHERE username = ?", [email])
+    if (existingSuperadmin.length > 0) {
+      return res.status(409).json({ error: "This email is already registered as a superadmin" })
+    }
+
     // Check if admin with this email already exists
     const [existingAdmin] = await db.execute("SELECT id FROM admins WHERE email = ?", [email])
     if (existingAdmin.length > 0) {

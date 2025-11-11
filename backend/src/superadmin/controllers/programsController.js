@@ -580,12 +580,14 @@ export const getTopOrganizationsByProgramCount = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10; // Default to top 10
     
+    // Query to get organizations with their program counts
+    // Count all programs (both approved and unapproved) for dashboard statistics
     const query = `
       SELECT 
         o.id,
         o.org as acronym,
         o.orgName as name,
-        COUNT(pp.id) as program_count
+        COUNT(DISTINCT pp.id) as program_count
       FROM organizations o
       LEFT JOIN programs_projects pp ON o.id = pp.organization_id
       WHERE o.status = 'ACTIVE'
@@ -605,11 +607,13 @@ export const getTopOrganizationsByProgramCount = async (req, res) => {
       programCount: parseInt(row.program_count) || 0
     }));
     
+    // Always return success with data array (even if empty)
     res.json({
       success: true,
       data: organizations
     });
   } catch (error) {
+    console.error('Error fetching top organizations by program count:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch top organizations by program count',

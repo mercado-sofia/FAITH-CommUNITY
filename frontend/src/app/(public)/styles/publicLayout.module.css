@@ -1,8 +1,7 @@
 /* Optimized Public Layout Styles */
 .public-layout-container {
   position: relative;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
 }
 
 .public-navbar-wrapper {
@@ -18,21 +17,16 @@
 }
 
 .public-content-container {
-  position: fixed;
-  top: 75px; /* Fixed navbar height */
-  left: 0;
-  right: 0;
-  bottom: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  will-change: scroll-position;
-  transform: translateZ(0);
+  position: relative;
+  width: 100%;
+  padding-top: 75px; /* Fixed navbar height */
+  min-height: calc(100vh - 75px);
 }
 
 .public-main-content {
   padding: 0;
   margin: 0;
-  min-height: calc(100vh - 80px);
+  min-height: calc(100vh - 75px);
 }
 
 /* Performance optimizations */
@@ -41,8 +35,7 @@
 }
 
 /* Hardware acceleration for smooth animations */
-.public-navbar-wrapper,
-.public-content-container {
+.public-navbar-wrapper {
   -webkit-transform: translateZ(0);
   -moz-transform: translateZ(0);
   -ms-transform: translateZ(0);
@@ -57,7 +50,7 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .public-content-container {
-    top: 70px; /* Smaller navbar on mobile */
+    padding-top: 70px; /* Smaller navbar on mobile */
   }
   
   .public-main-content {

@@ -15,16 +15,19 @@ export default function TopOrganizationsChart() {
   } = useGetTopOrganizationsByProgramCountQuery(8); // Top 8 organizations
 
   // Extract debug info from error or response
-  const debugInfo = error?.data?.debug || (organizationsData && typeof organizationsData === 'object' && 'debug' in organizationsData ? organizationsData.debug : null);
+  // RTK Query error structure: error.data contains the transformed error response
+  const errorData = error?.data || error;
+  const debugInfo = errorData?.debug || (organizationsData && typeof organizationsData === 'object' && 'debug' in organizationsData ? organizationsData.debug : null);
   
   // Debug logging - always log in development, and in production if there's an issue
   if (!isLoading && !isFetching) {
     if (isError) {
       console.error('[TopOrganizationsChart] Error fetching data:', {
         error,
-        errorData: error?.data,
+        errorData,
         errorStatus: error?.status,
-        debugInfo
+        debugInfo,
+        fullErrorStructure: JSON.stringify(error, null, 2)
       });
     } else if (isSuccess) {
       console.log('[TopOrganizationsChart] API call successful. Data received:', {
@@ -92,10 +95,11 @@ export default function TopOrganizationsChart() {
     let errorDetails = null;
     
     if (isError) {
+      // RTK Query error structure: error.data contains the transformed response
       // Try multiple locations for error message - prioritize the most specific one
       exactErrorMessage = 
-        error?.data?.error || 
-        error?.data?.message || 
+        errorData?.error || 
+        errorData?.message || 
         error?.message || 
         error?.error ||
         (typeof error === 'string' ? error : null) ||
@@ -103,18 +107,20 @@ export default function TopOrganizationsChart() {
       
       // Get full error details including SQL errors if available
       errorDetails = {
-        status: error?.status || error?.data?.status,
+        status: error?.status || errorData?.status,
         statusText: error?.statusText,
-        error: error?.data?.error,
-        message: error?.data?.message,
-        errorDetails: error?.data?.errorDetails,
+        error: errorData?.error,
+        message: errorData?.message,
+        errorDetails: errorData?.errorDetails,
+        debug: errorData?.debug,
         stack: error?.stack,
-        fullError: error
+        fullError: error,
+        errorData: errorData
       };
     }
     
     const hasDebugInfo = !!debugInfo;
-    const hasDiagnosticData = isError && error?.data?.debug?.diagnosticData;
+    const hasDiagnosticData = isError && errorData?.debug?.diagnosticData;
     
     return (
       <div className={styles.chartCard}>
@@ -173,16 +179,16 @@ export default function TopOrganizationsChart() {
             }}>
               <p style={{ margin: '0 0 10px 0', fontWeight: 'bold' }}>Database Diagnostics:</p>
               <ul style={{ margin: '0', paddingLeft: '20px' }}>
-                <li><strong>Total Programs:</strong> {error.data.debug.diagnosticData.totalPrograms || 0}</li>
-                <li><strong>Total Organizations:</strong> {error.data.debug.diagnosticData.totalOrganizations || 0}</li>
-                <li><strong>Active Organizations:</strong> {error.data.debug.diagnosticData.activeOrganizations || 0}</li>
-                <li><strong>Active Orgs with Programs:</strong> {error.data.debug.diagnosticData.activeOrgsWithPrograms || 0}</li>
+                <li><strong>Total Programs:</strong> {errorData.debug.diagnosticData.totalPrograms || 0}</li>
+                <li><strong>Total Organizations:</strong> {errorData.debug.diagnosticData.totalOrganizations || 0}</li>
+                <li><strong>Active Organizations:</strong> {errorData.debug.diagnosticData.activeOrganizations || 0}</li>
+                <li><strong>Active Orgs with Programs:</strong> {errorData.debug.diagnosticData.activeOrgsWithPrograms || 0}</li>
               </ul>
-              {error.data.debug.diagnosticData.samplePrograms && error.data.debug.diagnosticData.samplePrograms.length > 0 && (
+              {errorData.debug.diagnosticData.samplePrograms && errorData.debug.diagnosticData.samplePrograms.length > 0 && (
                 <div style={{ marginTop: '10px' }}>
                   <p style={{ margin: '0 0 5px 0', fontWeight: 'bold' }}>Sample Programs:</p>
                   <ul style={{ margin: '0', paddingLeft: '20px', fontSize: '12px' }}>
-                    {error.data.debug.diagnosticData.samplePrograms.map((prog, idx) => (
+                    {errorData.debug.diagnosticData.samplePrograms.map((prog, idx) => (
                       <li key={idx}>
                         ID: {prog.id}, Org ID: {prog.organization_id}, Org Status: {prog.org_status || 'N/A'}, 
                         Org: {prog.org || 'N/A'}, Title: {prog.title || 'N/A'}

@@ -266,6 +266,12 @@ export default function SubmissionTable({
               currentSubmissions.map((s, index) => {
                 const startIndex = (currentPage - 1) * itemsPerPage;
                 const rowNumber = startIndex + index + 1;
+                
+                // Define unsupported section types
+                const unsupportedSections = ['highlights', 'programs'];
+                const isUnsupportedSection = unsupportedSections.includes(s.section?.toLowerCase());
+                const isEditDisabled = s.status !== 'pending' || isUnsupportedSection;
+                
                 return (
               <tr key={s.id}>
                 <td className={styles.numberCell}>
@@ -296,17 +302,19 @@ export default function SubmissionTable({
                 <td>
                   <div className={styles.actionButtons}>
                     <button 
-                      className={`${styles.editBtn} ${s.status !== 'pending' ? styles.disabledBtn : ''}`}
-                      onClick={s.status === 'pending' ? () => handleReEdit(s) : undefined}
-                      disabled={s.status !== 'pending'}
+                      className={`${styles.editBtn} ${isEditDisabled ? styles.disabledBtn : ''}`}
+                      onClick={!isEditDisabled ? () => handleReEdit(s) : undefined}
+                      disabled={isEditDisabled}
                       title={
-                        s.status === 'pending' 
-                          ? "Edit submission" 
-                          : s.status === 'approved' 
-                            ? "Cannot edit - submission already approved" 
-                            : s.status === 'rejected' 
-                              ? "Cannot edit - submission was rejected" 
-                              : "Cannot edit - submission already processed"
+                        isUnsupportedSection
+                          ? `Cannot edit - ${s.section.charAt(0).toUpperCase() + s.section.slice(1)} section type is not supported for editing`
+                          : s.status === 'pending' 
+                            ? "Edit submission" 
+                            : s.status === 'approved' 
+                              ? "Cannot edit - submission already approved" 
+                              : s.status === 'rejected' 
+                                ? "Cannot edit - submission was rejected" 
+                                : "Cannot edit - submission already processed"
                       }
                     >
                       <FiEdit size={14} />

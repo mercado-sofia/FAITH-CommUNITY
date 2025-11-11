@@ -582,22 +582,34 @@ export const getTopOrganizationsByProgramCount = async (req, res) => {
     
     // Query to get organizations with their program counts
     // Count all programs (both approved and unapproved) for dashboard statistics
+    // Using subquery approach to ensure accurate counting
     const query = `
       SELECT 
         o.id,
         o.org as acronym,
         o.orgName as name,
-        COUNT(DISTINCT pp.id) as program_count
+        COALESCE(program_counts.program_count, 0) as program_count
       FROM organizations o
-      LEFT JOIN programs_projects pp ON o.id = pp.organization_id
+      LEFT JOIN (
+        SELECT 
+          organization_id,
+          COUNT(*) as program_count
+        FROM programs_projects
+        GROUP BY organization_id
+      ) program_counts ON o.id = program_counts.organization_id
       WHERE o.status = 'ACTIVE'
-      GROUP BY o.id, o.org, o.orgName
-      HAVING program_count > 0
+        AND COALESCE(program_counts.program_count, 0) > 0
       ORDER BY program_count DESC
       LIMIT ?
     `;
     
     const [results] = await db.execute(query, [limit]);
+    
+    // Log results for debugging
+    console.log(`[getTopOrganizationsByProgramCount] Found ${results.length} organizations with programs`);
+    if (results.length > 0) {
+      console.log('[getTopOrganizationsByProgramCount] Sample result:', results[0]);
+    }
     
     // Format the data for frontend consumption
     const organizations = results.map(row => ({
@@ -614,6 +626,7 @@ export const getTopOrganizationsByProgramCount = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching top organizations by program count:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch top organizations by program count',

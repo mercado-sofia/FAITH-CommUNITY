@@ -80,8 +80,7 @@
   align-items: flex-start;
   justify-content: flex-start;
   gap: 1.5rem;
-  overflow-y: auto;
-  min-width: 0; /* Allow shrinking within grid to avoid overflow */
+  min-width: 0;
   height: fit-content;
 }
 

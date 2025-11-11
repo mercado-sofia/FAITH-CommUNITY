@@ -98,18 +98,19 @@ export default function HighlightCard({ highlight, onEdit, onView, onDelete }) {
           </div>
         </div>
 
-        <p className={styles.description}>
-          {truncateText(highlight.description)}
-        </p>
-
-        {/* Associated Program */}
-        {highlight.program_title && (
+        {/* Associated Program - Display directly under title */}
+        {(highlight.program_title || highlight.program_id) && (
           <div className={styles.meta} style={{ marginTop: '8px', marginBottom: '8px' }}>
             <div className={styles.metaItem} style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-              <span style={{ fontWeight: '500' }}>Program:</span> {highlight.program_title}
+              <span style={{ fontWeight: '600', color: '#4b5563' }}>Associated Program:</span>{' '}
+              {highlight.program_title || `Program ID: ${highlight.program_id}`}
             </div>
           </div>
         )}
+
+        <p className={styles.description}>
+          {truncateText(highlight.description)}
+        </p>
 
         <div className={styles.footer}>
           <div className={styles.meta}>

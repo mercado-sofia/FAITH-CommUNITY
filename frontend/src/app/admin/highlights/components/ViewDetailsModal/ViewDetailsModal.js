@@ -184,12 +184,12 @@ export default function ViewDetailsModal({ highlight, onClose }) {
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>Details</h3>
             <div className={styles.metadata}>
-              {highlight?.program_title && (
+              {(highlight?.program_title || highlight?.program_id) && (
                 <div className={styles.metaItem}>
                   <FiFile className={styles.metaIcon} />
                   <span className={styles.metaLabel}>Associated Program:</span>
                   <span className={styles.metaValue}>
-                    {highlight.program_title}
+                    {highlight.program_title || `Program ID: ${highlight.program_id}`}
                   </span>
                 </div>
               )}

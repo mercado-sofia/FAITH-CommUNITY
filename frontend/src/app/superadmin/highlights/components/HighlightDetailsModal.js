@@ -192,13 +192,13 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
                       </div>
                     )}
 
-                    {highlight.program_title && (
+                    {(highlight.program_title || highlight.program_id) && (
                       <div className={styles.detailItem}>
                         <FaTag className={styles.detailIcon} />
                         <div className={styles.detailContent}>
                           <span className={styles.detailLabel}>Associated Program</span>
                           <span className={styles.detailValue}>
-                            {highlight.program_title}
+                            {highlight.program_title || `Program ID: ${highlight.program_id}`}
                           </span>
                         </div>
                       </div>

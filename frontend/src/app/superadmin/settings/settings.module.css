@@ -1,0 +1,348 @@
+/* Main Layout */
+.mainArea {
+  width: 100%;
+  padding: 0 3rem 2rem 3rem;
+  min-height: calc(100vh - 55px);
+  background: #FFFFFF;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Loading Container */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 1rem;
+}
+
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid #e2e8f0;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Header */
+.header {
+  margin-bottom: 1.4rem;
+  padding-top: 2rem;
+}
+
+.header h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: var(--font-poppins), sans-serif;
+  color: #000;
+  user-select: none;
+  margin: 0;
+}
+
+/* Tab Navigation */
+.tabNavigation {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  width: 100%;
+  padding: 0;
+}
+
+.tabButton {
+  background: none;
+  border: none;
+  padding: 0.65rem 1rem;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  color: #646872;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  user-select: none;
+  border-radius: 10px;
+  outline: none;
+}
+
+.tabButton:hover {
+  color: #000;
+}
+
+.tabButton.activeTab {
+  color: #000;
+  font-weight: 600;
+  background: #f3f4f6;
+}
+
+.tabButton:focus {
+  outline: none;
+}
+
+/* Tab Content */
+.tabContent {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Settings Layout - Changed from Grid to Flexbox */
+.settingsGrid {
+  display: flex;
+  gap: 2rem;
+  max-width: 1200px;
+  align-items: stretch; /* Ensure all children stretch to the same height */
+}
+
+.settingsGrid > * {
+  flex: 1;
+  min-width: 0;
+  display: flex; /* Make each panel a flex container */
+  flex-direction: column; /* Stack content vertically */
+}
+
+/* Two-Factor Authentication Container */
+.twoFAContainer {
+  display: flex;
+  justify-content: flex-start;
+  max-width: 1200px;
+}
+
+.twoFAContainer .settingsPanel {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Settings Panel */
+.settingsPanel {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  margin-bottom: 2rem;
+  flex: 1; /* Take up available space in flex container */
+  display: flex; /* Make panel a flex container */
+  flex-direction: column; /* Stack header and content vertically */
+}
+
+/* Panel Header */
+.panelHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.panelIcon {
+  font-size: 1rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+  color: #c7cccf;
+}
+
+.panelTitle {
+  flex: 1;
+}
+
+.panelTitle h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+  margin: 0 0 4px 0;
+  font-family: var(--font-poppins), sans-serif;
+} 
+
+.panelTitle p {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+  font-family: var(--font-poppins), sans-serif;
+  line-height: 1.4;
+}
+
+/* Panel Content */
+.panelContent {
+  padding: 1.5rem;
+  flex: 1; /* Take up remaining space in the panel */
+  display: flex; /* Make content area a flex container */
+  flex-direction: column; /* Stack content vertically */
+}
+
+/* Display Content */
+.displayContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Field Groups */
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  font-family: var(--font-poppins), sans-serif;
+}
+
+.displayValue {
+  font-size: 14px;
+  color: #64748b;
+  font-family: var(--font-poppins), sans-serif;
+  line-height: 1.4;
+}
+
+/* Edit Button */
+.editButton {
+  background: #f8fafc;
+  color: #000;
+  border: 2px solid #000;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-poppins), sans-serif;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  user-select: none;
+  outline: none; /* Remove default outline */
+}
+
+.editButton:hover {
+  background: #000;
+  color: #f8fafc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(6, 16, 15, 0.3);
+}
+
+.editButton:focus {
+  outline: none !important; /* Force remove outline */
+  box-shadow: 0 0 0 3px rgba(6, 16, 15, 0.2), 0 4px 12px rgba(6, 16, 15, 0.3);
+}
+
+.editButton:active {
+  outline: none;
+  transform: translateY(0);
+}
+
+/* Password Info Styles */
+.passwordInfo {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.infoText {
+  margin: 0 0 0.5rem 0;
+  font-size: 13px;
+  color: #64748b;
+  font-family: var(--font-poppins), sans-serif;
+  line-height: 1.4;
+}
+
+.infoText:last-child {
+  margin-bottom: 0;
+}
+
+/* Message Notifications */
+.message {
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  margin-bottom: 2rem;
+  font-size: 13px;
+  font-weight: 500;
+  animation: slideIn 0.3s ease-out;
+  border: 1px solid transparent;
+}
+
+.message.success {
+  background-color: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.message.error {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .settingsPanel {
+    border: 2px solid #000;
+  }
+  
+  .editButton {
+    border: 2px solid #000;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .settingsPanel,
+  .editButton {
+    transition: none;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slideIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+}

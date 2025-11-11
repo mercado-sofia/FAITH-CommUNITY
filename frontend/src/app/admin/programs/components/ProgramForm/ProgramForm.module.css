@@ -1,0 +1,914 @@
+/* ProgramForm.module.css - Unified form styles for create and edit modes */
+
+/* Form wrapper - no background container */
+.form {
+  width: 100%;
+}
+
+.formLayout {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+  align-items: start;
+}
+
+/* Left Container - Main form container */
+.leftContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #06100f;
+  font-family: var(--font-inter);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.labelIcon {
+  stroke: #06100f;
+  font-size: 16px;
+}
+
+.required {
+  color: #dc2626;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: var(--font-inter);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: #fff;
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.inputError {
+  border-color: #dc2626;
+}
+
+/* Custom Dropdown Styles */
+.customDropdownContainer {
+  position: relative;
+  width: 100%;
+}
+
+.customDropdownButton {
+  width: 100%;
+  padding: 12px 16px;
+  padding-right: 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: var(--font-inter);
+  background: #fff;
+  color: #1f2937;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  text-align: left;
+  appearance: none;
+  outline: none;
+}
+
+.customDropdownButton:hover {
+  border-color: #9ca3af;
+}
+
+.customDropdownButton:focus,
+.customDropdownButton.dropdownOpen {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.dropdownButtonText {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdownArrow {
+  flex-shrink: 0;
+  margin-left: 10px;
+  margin-right: 0;
+  color: #666;
+  font-size: 12px;
+  transition: transform 0.2s ease;
+  transform: rotate(-90deg);
+}
+
+.dropdownArrowOpen {
+  transform: rotate(0deg);
+}
+
+.customDropdownMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownList {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+}
+
+.dropdownItem {
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: var(--font-inter);
+  color: #1f2937;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+  user-select: none;
+}
+
+.dropdownItem:hover,
+.dropdownItemHighlighted {
+  background-color: #f3f4f6;
+}
+
+.dropdownItemSelected {
+  background-color: #eff6ff;
+  color: #1e40af;
+  font-weight: 500;
+}
+
+.dropdownItemSelected:hover,
+.dropdownItemSelected.dropdownItemHighlighted {
+  background-color: #dbeafe;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.charCount {
+  text-align: right;
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.errorText {
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Right Panel */
+.rightPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Container for each section */
+.container {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.leftContainer .container {
+  padding: 24px 28px;
+}
+
+.rightPanel .container {
+  padding: 20px;
+}
+
+.containerTitle {
+  margin: 0 0 16px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #000;
+  font-family: var(--font-inter);
+}
+
+/* Image Upload Styles */
+.uploadArea {
+  background: #f8f9fa;
+  border: 2px dashed #e2e8f0;
+  border-radius: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  transition: all 0.2s ease;
+  position: relative;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.uploadArea.dragActive {
+  border-color: #1CBFA4;
+  background: #f0fdfa;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.uploadContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.uploadButton {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #06100f;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.uploadButton:hover {
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  border-color: #06100f;
+}
+
+.uploadIcon {
+  font-size: 16px;
+  color: #06100f;
+}
+
+.uploadText {
+  font-weight: 400;
+  color: #6b7280;
+  margin: 10px 0 0;
+  font-size: 14px;
+}
+
+.uploadSubtext {
+  color: #9ca3af;
+  font-size: 12px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.browseLink {
+  color: #1CBFA4;
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.browseLink:hover {
+  color: #1D9782;
+}
+
+.imagePreview {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.previewImage {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.removeImageButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: white;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.removeImageButton svg {
+  stroke: #06100f;
+}
+
+.removeImageButton:hover {
+  background: #e5e5e7;
+}
+
+/* Uploaded Files List */
+.uploadedFilesList {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.uploadedFileItem {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: #f8f9fa;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  gap: 12px;
+}
+
+.fileIcon {
+  width: 40px;
+  height: 40px;
+  background: #e5e7eb;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.fileType {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca3af;
+}
+
+.fileInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.fileName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fileSize {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.deleteButton {
+  background: none;
+  border: none;
+  color: #06100f;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.deleteButton svg {
+  stroke: #06100f;
+}
+
+.deleteButton:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Collaboration Section */
+.collaborationSection {
+  margin-top: 12px;
+}
+
+.inviteContainer {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.inviteInputContainer {
+  flex: 1;
+  position: relative;
+}
+
+.inviteInput {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.inviteInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.clearButton {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.clearButton svg {
+  stroke: #6b7280;
+}
+
+.clearButton:hover {
+  color: #374151;
+}
+
+.autocompleteDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.autocompleteItem {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s;
+}
+
+.autocompleteItem:hover,
+.autocompleteItem.selected {
+  background: #f3f4f6;
+}
+
+.autocompleteItem:last-child {
+  border-bottom: none;
+}
+
+.adminInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.adminEmail {
+  font-weight: 500;
+  color: #06100f;
+  font-size: 14px;
+}
+
+.adminOrg {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.noResults {
+  padding: 8px 12px;
+  color: #6b7280;
+  font-size: 14px;
+  text-align: center;
+}
+
+.inviteButton {
+  background: #06100f;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.inviteButton:hover:not(:disabled) {
+  background: #142220;
+}
+
+.inviteButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.selectedCollaborators {
+  margin-top: 12px;
+}
+
+.selectedCollaborators h5 {
+  font-size: 13px;
+  font-weight: 500;
+  color: #969aa8;
+  margin: 24px 0 12px;
+}
+
+.collaboratorsList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.collaboratorItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.collaboratorInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.collaboratorEmail {
+  font-weight: 500;
+  color: #06100f;
+}
+
+.collaboratorOrg {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 14px;
+}
+
+.statusBadge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.statusPending {
+  color: #6b7280;
+}
+
+.statusPending::before {
+  background-color: #6b7280;
+}
+
+.statusAccepted {
+  color: #0ead56;
+}
+
+.statusAccepted::before {
+  background-color: #0ead56;
+}
+
+.statusDeclined {
+  color: #c21313;
+}
+
+.statusDeclined::before {
+  background-color: #c21313;
+}
+
+.removeCollaboratorButton {
+  background: none;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.removeCollaboratorButton:hover {
+  background-color: #fee2e2;
+}
+
+.removeCollaboratorButton svg {
+  stroke: #06100f;
+}
+
+/* Field Spacing */
+.fieldSpacing {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+/* Form Actions */
+.formActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  justify-content: flex-start;
+}
+
+.cancelButton {
+  padding: 12px 24px;
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.cancelButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.submitButton {
+  padding: 12px 24px;
+  background: #06100f;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: #142220;
+}
+
+.submitButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.submitError {
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+  margin-top: 12px;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* Volunteer Acceptance Toggle Styles */
+.toggleContainer {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.toggleWrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.toggleInput {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggleLabel {
+  display: block;
+  width: 50px;
+  height: 28px;
+  background: #e5e7eb;
+  border-radius: 14px;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.toggleLabel:hover {
+  background: #d1d5db;
+}
+
+.toggleInput:checked + .toggleLabel {
+  background: #10b981;
+}
+
+.toggleInput:checked + .toggleLabel:hover {
+  background: #059669;
+}
+
+.toggleSlider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggleInput:checked + .toggleLabel .toggleSlider {
+  transform: translateX(22px);
+}
+
+.toggleText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Submitted By Section Styles */
+.submittedByFields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.submittedByNameField {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.submittedByRoleField {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.inlineLabel {
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #06100f;
+  font-family: var(--font-inter);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  width: 60px;
+}
+
+.inputWrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.roleInputGroup {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.customRoleInput {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.toggleTextActive {
+  font-weight: 600;
+  color: #10b981;
+  font-size: 14px;
+}
+
+.toggleTextInactive {
+  font-weight: 600;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.toggleDescription {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.4;
+}

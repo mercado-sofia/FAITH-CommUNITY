@@ -1,0 +1,298 @@
+/* Approvals Section */
+.pendingApprovalsSection {
+  background: white;
+  border-radius: 10px;
+  padding: 1.5rem;
+  border: 1px solid #e5e5e5;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.2rem;
+}
+
+.sectionTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #000;
+  margin: 0;
+  font-family: var(--font-poppins), sans-serif;
+}
+
+.filterControls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.viewAllButton {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+  background: white;
+  border: 1px solid #e5e5e5;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #000;
+  transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.viewAllButton:hover {
+  background: #f3f3f3;
+}
+
+/* Table Styles */
+.approvalsTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.approvalsTable th {
+  background: #f9fafb;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #000;
+  font-size: 0.875rem;
+  border-bottom: 1px solid #e5e7eb;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.approvalsTable td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  color: #000;
+  font-size: 0.875rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Row striping - alternating backgrounds */
+.approvalsTable tbody tr:nth-child(even) td {
+  background-color: #fafbfc;
+}
+
+.approvalsTable tbody tr:nth-child(odd) td {
+  background-color: #fff;
+}
+
+.approvalsTable tbody tr:hover td {
+  background-color: #f9fafb;
+}
+
+/* Numbering column */
+.numberColumn {
+  width: 4%;
+  text-align: center !important;
+  min-width: 50px;
+}
+
+.numberCell {
+  text-align: center;
+  padding: 0.75rem 1rem !important;
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Title column */
+.titleColumn {
+  width: 22%;
+  text-align: left !important;
+}
+
+.titleCell {
+  text-align: left !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.875rem;
+  color: #000;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.orgInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.orgLogoContainer {
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.orgLogo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.orgLogoPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+  color: #6b7280;
+  font-weight: 600;
+  font-size: 16px;
+  border-radius: 50%;
+}
+
+.orgAcronym {
+  font-weight: 400;
+  color: #000;
+  font-size: 0.875rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statusBadge {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 85px;
+  width: 85px;
+  box-sizing: border-box;
+}
+
+.statusBadge.pending {
+  background: #F7F7F7;
+  color: #6b7280;
+}
+
+.statusBadge.approved {
+  background: #edfcf5;
+  color: #058964;
+}
+
+.statusBadge.rejected {
+  background: #feefef;
+  color: #b61212;
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #6b7280;
+}
+
+.emptyState h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.35rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.emptyState p {
+  font-size: 0.875rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Dropdown Styles */
+.dropdownWrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.organizationDropdown {
+  background: white;
+  padding: 0.45rem 0.9rem;
+  min-width: 200px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #000;
+  transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.organizationDropdown:hover {
+  background: #f3f3f3;
+}
+
+.organizationDropdown:focus {
+  outline: none;
+  background: #f3f3f3;
+}
+
+.organizationDropdown .icon {
+  margin-left: 0.5rem;
+  font-size: 16px;
+  color: #000;
+  transition: transform 0.2s ease;
+}
+
+.organizationDropdown.open .icon {
+  color: #000;
+  transform: rotate(180deg);
+}
+
+.options {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 50;
+  max-height: 200px;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.options li {
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.15s ease;
+}
+
+.options li:last-child {
+  border-bottom: none;
+}
+
+.options li:hover {
+  background-color: #f3f3f3;
+}
+

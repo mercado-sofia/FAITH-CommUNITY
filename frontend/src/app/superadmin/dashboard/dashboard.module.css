@@ -1,0 +1,29 @@
+/* Main Dashboard Layout */
+.mainArea {
+  padding: 0 3rem 2rem 3rem;
+  min-height: calc(100vh - 55px);
+  background: #FFFFFF;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Header Section */
+.header {
+  margin-bottom: 2rem;
+  padding-top: 2rem;
+}
+
+.header h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: var(--font-poppins), sans-serif;
+  color: #000;
+  user-select: none;
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* Recent Row for Table */
+.recentRow {
+  width: 100%;
+  margin-top: 2rem;
+}

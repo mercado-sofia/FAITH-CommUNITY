@@ -1,0 +1,66 @@
+/* Optimized Public Layout Styles */
+.public-layout-container {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.public-navbar-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: transparent;
+  border: none;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.public-content-container {
+  position: fixed;
+  top: 75px; /* Fixed navbar height */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  will-change: scroll-position;
+  transform: translateZ(0);
+}
+
+.public-main-content {
+  padding: 0;
+  margin: 0;
+  min-height: calc(100vh - 80px);
+}
+
+/* Performance optimizations */
+.public-layout-container * {
+  box-sizing: border-box;
+}
+
+/* Hardware acceleration for smooth animations */
+.public-navbar-wrapper,
+.public-content-container {
+  -webkit-transform: translateZ(0);
+  -moz-transform: translateZ(0);
+  -ms-transform: translateZ(0);
+  -o-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  -moz-backface-visibility: hidden;
+  -ms-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .public-content-container {
+    top: 70px; /* Smaller navbar on mobile */
+  }
+  
+  .public-main-content {
+    min-height: calc(100vh - 70px);
+  }
+}

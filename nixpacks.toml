@@ -1,0 +1,16 @@
+# Nixpacks configuration for Railway
+# This tells Nixpacks to install Node.js and run commands in the backend directory
+# Note: If rootDirectory is set in railway.json, Railway will already be in the backend directory
+
+[phases.setup]
+nixPkgs = ["nodejs-18_x"]
+
+[phases.install]
+cmds = ["npm install"]
+
+[phases.build]
+cmds = []
+
+[start]
+cmd = "node app.js"
+

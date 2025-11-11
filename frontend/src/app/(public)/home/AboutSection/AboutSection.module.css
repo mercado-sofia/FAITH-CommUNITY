@@ -1,0 +1,268 @@
+.aboutSection {
+  padding: 6rem 1rem 6rem 0;
+  background: #fff;
+  position: relative;
+  overflow: visible;
+  content-visibility: auto;
+  contain-intrinsic-size: 800px 600px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.aboutSection.fadeIn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.aboutImageWrapper {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  transform: translateX(-30px);
+  transition: opacity 0.8s ease-out 0.2s, transform 0.8s ease-out 0.2s;
+}
+
+.aboutImageWrapper.fadeIn {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.aboutContent {
+  flex: 1;
+  z-index: 2;
+  padding-top: 0.65rem;
+  text-align: left;
+  position: relative;
+  opacity: 0;
+  transform: translateX(30px);
+  transition: opacity 0.8s ease-out 0.3s, transform 0.8s ease-out 0.3s;
+}
+
+.aboutContent.fadeIn {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.aboutWrapper {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  gap: 4rem;
+}
+
+.aboutImage {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  max-height: 460px;
+}
+
+.aboutLabel {
+  color: #FFAC00;
+  font-style: italic;
+  font-weight: normal;
+  margin-bottom: 0.5rem;
+  font-size: 15px;
+}
+
+.aboutHeading {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #122F2A;
+  margin-bottom: 0.8rem;
+  line-height: 1.2;
+  max-width: 400px;
+}
+
+.aboutParagraph {
+  color: #000;
+  font-size: 15px;
+  line-height: 1.5;
+  margin-bottom: 2rem;
+  max-width: 480px;
+  text-align: justify;
+}
+
+.aboutBoxes {
+  position: absolute;
+  top: 100%;
+  left: 25%;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1.4rem;
+  z-index: 2;
+  width: max-content;
+}
+
+.missionbox,
+.visionbox {
+  color: white;
+  padding: 2rem;
+  border-radius: 10px;
+  width: 380px;
+  height: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s ease;
+}
+
+.missionbox {
+  background: #122F2A;
+}
+
+.visionbox {
+  background: #1A685B;
+}
+
+.missionbox h3,
+.visionbox h3 {
+  font-size: 18px;
+  font-weight: 400;
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.missionbox p,
+.visionbox p {
+  font-size: 14px;
+  font-weight: 300;
+  line-height: 1.6;
+  color: rgb(200, 219, 213);
+  width: 100%;
+  text-align: justify;
+}
+
+.abouticon {
+  margin-bottom: 12px;
+  background-color: white;
+  color: #1EBB06;
+  border-radius: 50%;
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  width: 30px;
+  height: 30px;
+  transition: color 0.2s ease;
+}
+
+.missionbox:hover,
+.visionbox:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.missionbox:hover .abouticon,
+.visionbox:hover .abouticon {
+  color: #FFAC00;
+}
+
+/* Tablet and smaller */
+@media (max-width: 1300px) {
+  .aboutSection {
+    padding: 4rem 2rem;
+  }
+
+  .aboutWrapper {
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .aboutContent {
+    width: 100%;
+    text-align: center;
+  }
+
+  .aboutImageWrapper {
+    width: 100%;
+  }
+
+  .aboutHeading,
+  .aboutParagraph {
+    margin: 1rem auto 0;
+  }
+
+  .aboutHeading {
+    font-size: 1.9rem;
+    max-width: 90%;
+  }
+
+  .aboutParagraph {
+    font-size: 14px;
+    margin: 1.6rem auto;
+    width: 90%;
+    max-width: 640px;
+    text-align: center;
+  }
+
+  .aboutBoxes {
+    position: static;
+    margin-top: 1rem;
+    transform: none;
+    left: auto;
+    top: auto;
+    width: 100%;
+    gap: 1.2rem;
+    justify-content: center;
+  }
+
+  .missionbox,
+  .visionbox {
+    width: 420px;
+  }
+}
+
+/* Mobile & small screens */
+@media (max-width: 980px) {
+  .aboutHeading {
+    font-size: 1.8rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .aboutSection {
+    padding: 3rem 1rem;
+  }
+
+  .aboutContent {
+    padding: 0;
+  }
+
+  .aboutLabel {
+    font-size: 14px;
+  }
+
+  .aboutHeading {
+    font-size: 1.5rem;
+    max-width: 90%;
+  }
+
+  .aboutParagraph {
+    font-size: 14px;
+    max-width: 380px;
+  }
+
+  .aboutBoxes {
+    margin: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .missionbox,
+  .visionbox {
+    width: 90%;
+    padding: 1.5rem;
+  }
+
+  .missionbox h3,
+  .visionbox h3 {
+    font-size: 15px;
+  }
+
+  .missionbox p,
+  .visionbox p {
+    font-size: 13px;
+  }
+}

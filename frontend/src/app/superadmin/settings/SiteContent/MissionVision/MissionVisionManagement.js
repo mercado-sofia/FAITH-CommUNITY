@@ -19,7 +19,7 @@ export default function MissionVisionManagement({ showSuccessModal }) {
   const [tempMission, setTempMission] = useState('');
   const [tempVision, setTempVision] = useState('');
 
-  // Load mission and vision data
+  // Load mission and vision data (for reference only, don't auto-populate)
   useEffect(() => {
     const loadMissionVisionData = async () => {
       try {
@@ -35,25 +35,8 @@ export default function MissionVisionManagement({ showSuccessModal }) {
           console.log('Loaded mission/vision data:', data); // Debug log
           setMissionVisionData(data);
           
-          // Extract mission and vision from the data
-          // Handle both capitalized and lowercase types
-          const missionItem = data.find(item => 
-            item.type === 'Mission' || item.type === 'mission'
-          );
-          const visionItem = data.find(item => 
-            item.type === 'Vision' || item.type === 'vision'
-          );
-          
-          const missionContent = missionItem?.content || '';
-          const visionContent = visionItem?.content || '';
-          
-          console.log('Mission content:', missionContent); // Debug log
-          console.log('Vision content:', visionContent); // Debug log
-          
-          setMission(missionContent);
-          setVision(visionContent);
-          setTempMission(missionContent);
-          setTempVision(visionContent);
+          // Don't auto-populate form fields - keep them empty initially
+          // Data is loaded for reference only
         } else {
           console.error('Failed to load mission/vision: response not ok', response);
           if (response) {

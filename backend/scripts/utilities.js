@@ -287,16 +287,8 @@ async function fixMissingData() {
       console.log('✅ Site name added');
     }
     
-    // Check mission/vision
-    const [missionVision] = await db.execute('SELECT COUNT(*) as count FROM mission_vision');
-    if (missionVision[0].count === 0) {
-      await db.execute(`
-        INSERT INTO mission_vision (type, content) VALUES
-        ('mission', 'To provide quality education and community service through innovative programs and partnerships.'),
-        ('vision', 'To be a leading institution in community development and social transformation.')
-      `);
-      console.log('✅ Mission/Vision added');
-    }
+    // Mission/Vision - no auto-insert, let users add them manually
+    // Removed auto-insert to allow empty values initially
     
     // Check footer content
     const [footerContent] = await db.execute('SELECT COUNT(*) as count FROM footer_content');

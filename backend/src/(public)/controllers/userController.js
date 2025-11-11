@@ -54,6 +54,24 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ error: 'Invalid gender value' });
     }
 
+    // Check if email exists in admins table
+    const [existingAdmin] = await db.query(
+      'SELECT id FROM admins WHERE email = ?',
+      [email]
+    );
+    if (existingAdmin.length > 0) {
+      return res.status(409).json({ error: 'This email is already registered as an admin' });
+    }
+
+    // Check if email exists in superadmin table (username is used as email)
+    const [existingSuperadmin] = await db.query(
+      'SELECT id FROM superadmin WHERE username = ?',
+      [email]
+    );
+    if (existingSuperadmin.length > 0) {
+      return res.status(409).json({ error: 'This email is already registered as a superadmin' });
+    }
+
     // Check if user already exists
     const [existingUsers] = await db.query(
       'SELECT id FROM users WHERE email = ?',
@@ -61,7 +79,7 @@ export const registerUser = async (req, res) => {
     );
 
     if (existingUsers.length > 0) {
-      return res.status(400).json({ error: 'User with this email already exists' });
+      return res.status(409).json({ error: 'User with this email already exists' });
     }
 
     // Hash password
@@ -186,7 +204,7 @@ export const registerUser = async (req, res) => {
   } catch (error) {
     // Handle specific database errors
     if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ error: 'User with this email already exists' });
+      return res.status(409).json({ error: 'User with this email already exists' });
     }
     
     if (error.code === 'ER_NO_REFERENCED_ROW_2') {

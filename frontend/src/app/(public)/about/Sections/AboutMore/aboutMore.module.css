@@ -3,6 +3,43 @@
   background: #fff;
 }
 
+/* Fade-in animation keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animation classes */
+.fadeIn {
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+.fadeInDelay1 {
+  animation: fadeIn 0.8s ease-out 0.2s forwards;
+  opacity: 0;
+}
+
+.fadeInDelay2 {
+  animation: fadeIn 0.8s ease-out 0.4s forwards;
+  opacity: 0;
+}
+
+.fadeInDelay3 {
+  animation: fadeIn 0.8s ease-out 0.6s forwards;
+  opacity: 0;
+}
+
+.fadeInDelay4 {
+  animation: fadeIn 0.8s ease-out 0.8s forwards;
+  opacity: 0;
+}
+
 .aboutMoreWrapper {
   display: flex;
   flex-wrap: wrap;
@@ -83,6 +120,7 @@
 .aboutMoreIcons div {
   display: flex;
   align-items: center;
+  opacity: 0;
 }
 
 .checkCircle {

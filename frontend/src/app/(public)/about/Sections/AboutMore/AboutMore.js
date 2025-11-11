@@ -23,7 +23,7 @@ export default function AboutMore() {
   return (
     <section className={styles.aboutMoreSection}>
       <div className={styles.aboutMoreWrapper}>
-        <div className={styles.aboutMoreImage}>
+        <div className={`${styles.aboutMoreImage} ${styles.fadeIn}`}>
         <Image 
           src={(() => {
             if (!aboutUsData?.image_url) return "/samples/sample1.jpg";
@@ -38,17 +38,24 @@ export default function AboutMore() {
         </div>
 
         <div className={styles.aboutMoreContent}>
-          <h4 className={styles.aboutMoreSubtitle}>About Us</h4>
-          <h2 className={styles.aboutMoreTitle}>
+          <h4 className={`${styles.aboutMoreSubtitle} ${styles.fadeInDelay1}`}>About Us</h4>
+          <h2 className={`${styles.aboutMoreTitle} ${styles.fadeInDelay2}`}>
             About Us
           </h2>
-          <p className={styles.aboutMoreText}>
+          <p className={`${styles.aboutMoreText} ${styles.fadeInDelay3}`}>
             {aboutUsData?.description || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. In pretium vitae est non lacinia. Aenean ullamcorper eleifend massa, eu facilisis lectus ornare vel. Maecenas scelerisque congue metus at imperdiet. Donec et dictum ligula, vitae dapibus libero. Pellentesque odio dui, molestie non porttitor id, dignissim eu mauris. Suspendisse mauris nunc, egestas at nisl id, aliquet mattis erat.'}
           </p>
 
           <div className={styles.aboutMoreIcons}>
             {aboutUsData?.extension_categories?.map((category, index) => (
-              <div key={index}>
+              <div 
+                key={index}
+                className={styles.fadeIn}
+                style={{ 
+                  animationDelay: `${0.8 + (index * 0.15)}s`,
+                  opacity: 0
+                }}
+              >
                 <span 
                   className={styles.checkCircle} 
                   style={{ 

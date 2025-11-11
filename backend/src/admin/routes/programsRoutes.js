@@ -1,6 +1,7 @@
 //controller: programsController.js
 import express from 'express';
 import path from 'path';
+import multer from 'multer';
 import { verifyAdminOrSuperadmin } from '../../superadmin/middleware/verifyAdminOrSuperadmin.js';
 import { 
   getAdminPrograms,
@@ -44,9 +45,52 @@ router.get('/admin/programs/single/:id', getProgramById);
 router.put('/admin/programs/:id', updateProgram);
 router.put('/admin/programs/:id/mark-active', markProgramAsActive);
 router.put('/admin/programs/:id/toggle-volunteers', toggleVolunteerAcceptance);
+// Error handling middleware for Post Act Report multer errors
+const handlePostActReportMulterError = (error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        message: 'File too large. Maximum size is 10MB for Post Act Reports.'
+      });
+    }
+    if (error.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({
+        success: false,
+        message: 'Too many files. Only one file allowed.'
+      });
+    }
+    return res.status(400).json({
+      success: false,
+      message: 'File upload error: ' + error.message
+    });
+  }
+  
+  // Handle file filter errors (wrong file type)
+  if (error && error.message && error.message.includes('Only')) {
+    return res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+  
+  next(error);
+};
+
 // Post Act Report upload (using S3 upload configuration)
 // This accepts images, PDFs, and document files (DOC, DOCX) and uploads to S3
-router.post('/admin/programs/:id/post-act-report', s3UploadConfigs.postActReport.single('file'), uploadPostActReport);
+router.post(
+  '/admin/programs/:id/post-act-report',
+  (req, res, next) => {
+    s3UploadConfigs.postActReport.single('file')(req, res, (err) => {
+      if (err) {
+        return handlePostActReportMulterError(err, req, res, next);
+      }
+      next();
+    });
+  },
+  uploadPostActReport
+);
 router.delete('/admin/programs/:id', deleteProgramSubmission);
 
 // Superadmin routes - require authentication

@@ -245,6 +245,16 @@ const SuperadminHighlightsPage = () => {
   // Include all organizations, including "Collab Admin" as it's a real organization in the database
   const organizationOptions = organizations || []
 
+  // Calculate featured highlights count
+  // Use refreshKey to force re-calculation when starred highlights change
+  const getFeaturedCount = () => {
+    const starredIds = getStarredHighlights()
+    return highlights.filter(h => h.status === 'approved' && starredIds.has(h.id)).length
+  }
+
+  // Calculate featured count (refreshKey ensures it updates when starred highlights change)
+  const featuredCount = getFeaturedCount()
+
   // Search handler
   const handleSearchChange = (query) => {
     setSearchQuery(query)
@@ -280,9 +290,7 @@ const SuperadminHighlightsPage = () => {
                         <p className={styles.label}>Total Highlights</p>
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
-                            <span className={styles.approvedCount}>— Approved</span>
-                            <span className={styles.pendingCount}>— Pending</span>
-                            <span className={styles.rejectedCount}>— Rejected</span>
+                            <span className={styles.approvedCount}>— Featured</span>
                           </div>
                         </div>
                       </div>
@@ -316,9 +324,7 @@ const SuperadminHighlightsPage = () => {
                         <p className={styles.label}>Total Highlights</p>
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
-                            <span className={styles.approvedCount}>— Approved</span>
-                            <span className={styles.pendingCount}>— Pending</span>
-                            <span className={styles.rejectedCount}>— Rejected</span>
+                            <span className={styles.approvedCount}>— Featured</span>
                           </div>
                         </div>
                       </div>
@@ -362,18 +368,12 @@ const SuperadminHighlightsPage = () => {
                   <div className={styles.statCard}>
                     <div className={styles.cardContent}>
                       <div className={styles.textContent}>
-                        <h2 className={styles.count}>{statistics.totalHighlights || 0}</h2>
+                        <h2 className={styles.count}>{statistics.approvedHighlights || 0}</h2>
                         <p className={styles.label}>Total Highlights</p>
                         <div className={styles.extraInfo}>
                           <div className={styles.statusCounts}>
                             <span className={styles.approvedCount}>
-                              {statistics.approvedHighlights || 0} Approved
-                            </span>
-                            <span className={styles.pendingCount}>
-                              {statistics.pendingHighlights || 0} Pending
-                            </span>
-                            <span className={styles.rejectedCount}>
-                              {statistics.rejectedHighlights || 0} Rejected
+                              {featuredCount} Featured
                             </span>
                           </div>
                         </div>

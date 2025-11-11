@@ -222,6 +222,17 @@ app.get("/api/highlights/public/approved", async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch highlights' });
   }
 });
+
+// Public route for featured highlights (no authentication required)
+app.get("/api/highlights/public/featured", async (req, res) => {
+  try {
+    const { getFeaturedHighlights } = await import("./src/admin/controllers/highlightsController.js");
+    await getFeaturedHighlights(req, res);
+  } catch (error) {
+    logger.error('Error in public featured highlights route', error, { context: 'public_featured_highlights' });
+    res.status(500).json({ error: 'Failed to fetch featured highlights' });
+  }
+});
 app.use(["/api/users/login", "/api/users/forgot-password", "/api/users/reset-password", "/api/users/verify-email"], authSpeedLimiter, authLimiter)
 app.use("/api/users", usersRoutes)
 

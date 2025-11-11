@@ -611,3 +611,167 @@ export const getApprovedHighlights = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch approved highlights' });
   }
 };
+
+// Get featured highlights (ordered)
+export const getFeaturedHighlights = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        fh.highlight_id,
+        fh.display_order,
+        h.id,
+        h.title,
+        h.description,
+        h.media_files,
+        h.created_at,
+        o.orgName as organization_name,
+        o.org as organization_acronym,
+        o.logo as organization_logo
+      FROM featured_highlights fh
+      INNER JOIN admin_highlights h ON fh.highlight_id = h.id
+      LEFT JOIN organizations o ON h.organization_id = o.id
+      WHERE h.status = 'approved'
+      ORDER BY fh.display_order ASC
+      LIMIT 8
+    `;
+    
+    const [rows] = await promisePool.execute(query);
+    
+    const highlights = rows.map(highlight => ({
+      ...highlight,
+      media: safeParseJSON(highlight.media_files, []),
+    }));
+    
+    res.json({ highlights });
+  } catch (error) {
+    console.error('Error fetching featured highlights:', error);
+    res.status(500).json({ error: 'Failed to fetch featured highlights' });
+  }
+};
+
+// Add highlight to featured
+export const addFeaturedHighlight = async (req, res) => {
+  const connection = await promisePool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+    
+    const { id: highlightId } = req.params;
+    
+    // Check if highlight exists and is approved
+    const [highlightRows] = await connection.execute(
+      'SELECT id, status FROM admin_highlights WHERE id = ?',
+      [highlightId]
+    );
+    
+    if (highlightRows.length === 0) {
+      return res.status(404).json({ error: 'Highlight not found' });
+    }
+    
+    if (highlightRows[0].status !== 'approved') {
+      return res.status(400).json({ error: 'Only approved highlights can be featured' });
+    }
+    
+    // Check if already featured
+    const [existing] = await connection.execute(
+      'SELECT id FROM featured_highlights WHERE highlight_id = ?',
+      [highlightId]
+    );
+    
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Highlight is already featured' });
+    }
+    
+    // Check current count (max 8)
+    const [countRows] = await connection.execute(
+      'SELECT COUNT(*) as count FROM featured_highlights'
+    );
+    const currentCount = countRows[0].count;
+    
+    if (currentCount >= 8) {
+      return res.status(400).json({ error: 'Maximum of 8 featured highlights allowed' });
+    }
+    
+    // Get next display order
+    const displayOrder = currentCount + 1;
+    
+    // Add to featured
+    await connection.execute(
+      'INSERT INTO featured_highlights (highlight_id, display_order) VALUES (?, ?)',
+      [highlightId, displayOrder]
+    );
+    
+    await connection.commit();
+    res.json({ message: 'Highlight added to featured', displayOrder });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error adding featured highlight:', error);
+    res.status(500).json({ error: 'Failed to add featured highlight' });
+  } finally {
+    connection.release();
+  }
+};
+
+// Remove highlight from featured
+export const removeFeaturedHighlight = async (req, res) => {
+  const connection = await promisePool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+    
+    const { id: highlightId } = req.params;
+    
+    // Get the display order of the highlight being removed
+    const [featuredRows] = await connection.execute(
+      'SELECT display_order FROM featured_highlights WHERE highlight_id = ?',
+      [highlightId]
+    );
+    
+    if (featuredRows.length === 0) {
+      return res.status(404).json({ error: 'Highlight is not featured' });
+    }
+    
+    const removedOrder = featuredRows[0].display_order;
+    
+    // Remove from featured
+    await connection.execute(
+      'DELETE FROM featured_highlights WHERE highlight_id = ?',
+      [highlightId]
+    );
+    
+    // Update display orders of remaining items (decrement orders after removed item)
+    await connection.execute(
+      'UPDATE featured_highlights SET display_order = display_order - 1 WHERE display_order > ?',
+      [removedOrder]
+    );
+    
+    await connection.commit();
+    res.json({ message: 'Highlight removed from featured' });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error removing featured highlight:', error);
+    res.status(500).json({ error: 'Failed to remove featured highlight' });
+  } finally {
+    connection.release();
+  }
+};
+
+// Check if highlight is featured
+export const checkFeaturedStatus = async (req, res) => {
+  try {
+    const { id: highlightId } = req.params;
+    
+    const [rows] = await promisePool.execute(
+      'SELECT display_order FROM featured_highlights WHERE highlight_id = ?',
+      [highlightId]
+    );
+    
+    res.json({ 
+      isFeatured: rows.length > 0,
+      displayOrder: rows.length > 0 ? rows[0].display_order : null
+    });
+  } catch (error) {
+    console.error('Error checking featured status:', error);
+    res.status(500).json({ error: 'Failed to check featured status' });
+  }
+};

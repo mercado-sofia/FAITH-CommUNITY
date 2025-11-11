@@ -20,6 +20,19 @@ export const getAdminHighlights = async (req, res) => {
   try {
     const { organization_id: orgId } = req.admin;
     
+    // Check if program_id column exists
+    const [columnCheck] = await promisePool.execute(`
+      SELECT COUNT(*) as count 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'admin_highlights' 
+      AND COLUMN_NAME = 'program_id'
+    `);
+    
+    const hasProgramIdColumn = columnCheck[0]?.count > 0;
+    
+    // Build query with or without program_id column
+    const programIdSelect = hasProgramIdColumn ? ', program_id' : '';
     const query = `
       SELECT 
         id,
@@ -28,7 +41,7 @@ export const getAdminHighlights = async (req, res) => {
         media_files,
         status,
         organization_id,
-        created_by,
+        created_by${programIdSelect},
         created_at,
         updated_at
       FROM admin_highlights
@@ -41,12 +54,14 @@ export const getAdminHighlights = async (req, res) => {
     // Parse JSON media_files and format the data
     const highlights = rows.map(highlight => ({
       ...highlight,
-      media: safeParseJSON(highlight.media_files, [])
+      media: safeParseJSON(highlight.media_files, []),
+      program_id: hasProgramIdColumn ? (highlight.program_id || null) : null
     }));
     
     res.json({ highlights });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch highlights' });
+    console.error('Error fetching highlights:', error);
+    res.status(500).json({ error: 'Failed to fetch highlights', details: error.message });
   }
 };
 
@@ -56,6 +71,19 @@ export const getHighlightById = async (req, res) => {
     const { id } = req.params;
     const { organization_id: orgId } = req.admin;
     
+    // Check if program_id column exists
+    const [columnCheck] = await promisePool.execute(`
+      SELECT COUNT(*) as count 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'admin_highlights' 
+      AND COLUMN_NAME = 'program_id'
+    `);
+    
+    const hasProgramIdColumn = columnCheck[0]?.count > 0;
+    
+    // Build query with or without program_id column
+    const programIdSelect = hasProgramIdColumn ? ', program_id' : '';
     const query = `
       SELECT 
         id,
@@ -63,7 +91,7 @@ export const getHighlightById = async (req, res) => {
         description,
         media_files,
         organization_id,
-        created_by,
+        created_by${programIdSelect},
         created_at,
         updated_at
       FROM admin_highlights
@@ -78,12 +106,14 @@ export const getHighlightById = async (req, res) => {
     
     const highlight = {
       ...rows[0],
-      media: safeParseJSON(rows[0].media_files, [])
+      media: safeParseJSON(rows[0].media_files, []),
+      program_id: hasProgramIdColumn ? (rows[0].program_id || null) : null
     };
     
     res.json({ highlight });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch highlight' });
+    console.error('Error fetching highlight:', error);
+    res.status(500).json({ error: 'Failed to fetch highlight', details: error.message });
   }
 };
 
@@ -94,7 +124,7 @@ export const createHighlight = async (req, res) => {
   try {
     await connection.beginTransaction();
     
-    const { title, description, media = [] } = req.body;
+    const { title, description, media = [], program_id } = req.body;
     const { organization_id: orgId, id: adminId } = req.admin;
     
     // Validate required fields
@@ -102,21 +132,37 @@ export const createHighlight = async (req, res) => {
       return res.status(400).json({ error: 'Title and description are required' });
     }
     
-    // Insert highlight with media files as JSON and default status as 'pending'
+    // Validate program_id is required
+    if (!program_id) {
+      return res.status(400).json({ error: 'Associated Program is required' });
+    }
+    
+    // Check if program_id column exists
+    const [columnCheck] = await connection.execute(`
+      SELECT COUNT(*) as count 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'admin_highlights' 
+      AND COLUMN_NAME = 'program_id'
+    `);
+    
+    const hasProgramIdColumn = columnCheck[0]?.count > 0;
+    
+    // Build INSERT query with or without program_id column
+    const programIdColumn = hasProgramIdColumn ? ', program_id' : '';
+    const programIdValue = hasProgramIdColumn ? ', ?' : '';
     const highlightQuery = `
-      INSERT INTO admin_highlights (title, description, media_files, status, organization_id, created_by, created_at, updated_at)
-      VALUES (?, ?, ?, 'pending', ?, ?, NOW(), NOW())
+      INSERT INTO admin_highlights (title, description, media_files, status, organization_id, created_by${programIdColumn}, created_at, updated_at)
+      VALUES (?, ?, ?, 'pending', ?, ?${programIdValue}, NOW(), NOW())
     `;
     
     const mediaFilesJson = JSON.stringify(media);
     
-    const [highlightResult] = await connection.execute(highlightQuery, [
-      title,
-      description,
-      mediaFilesJson,
-      orgId,
-      adminId
-    ]);
+    const insertParams = hasProgramIdColumn
+      ? [title, description, mediaFilesJson, orgId, adminId, program_id || null]
+      : [title, description, mediaFilesJson, orgId, adminId];
+    
+    const [highlightResult] = await connection.execute(highlightQuery, insertParams);
     
     const highlightId = highlightResult.insertId;
     
@@ -131,6 +177,7 @@ export const createHighlight = async (req, res) => {
       title,
       description,
       media_files: mediaFilesJson,
+      program_id: program_id || null,
       action: 'create'
     });
     
@@ -165,12 +212,17 @@ export const updateHighlight = async (req, res) => {
     await connection.beginTransaction();
     
     const { id } = req.params;
-    const { title, description, media = [] } = req.body;
+    const { title, description, media = [], program_id } = req.body;
     const { organization_id: orgId } = req.admin;
     
     // Validate required fields
     if (!title || !description) {
       return res.status(400).json({ error: 'Title and description are required' });
+    }
+    
+    // Validate program_id is required
+    if (!program_id) {
+      return res.status(400).json({ error: 'Associated Program is required' });
     }
     
     // Validate ID parameter
@@ -188,16 +240,32 @@ export const updateHighlight = async (req, res) => {
     
     const currentHighlight = checkRows[0];
     
-    // Update highlight with media files as JSON
+    // Check if program_id column exists
+    const [columnCheck] = await connection.execute(`
+      SELECT COUNT(*) as count 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'admin_highlights' 
+      AND COLUMN_NAME = 'program_id'
+    `);
+    
+    const hasProgramIdColumn = columnCheck[0]?.count > 0;
+    
+    // Build UPDATE query with or without program_id column
+    const programIdUpdate = hasProgramIdColumn ? ', program_id = ?' : '';
     const updateQuery = `
       UPDATE admin_highlights 
-      SET title = ?, description = ?, media_files = ?, updated_at = NOW()
+      SET title = ?, description = ?, media_files = ?${programIdUpdate}, updated_at = NOW()
       WHERE id = ? AND organization_id = ?
     `;
     
     const mediaFilesJson = JSON.stringify(media);
     
-    await connection.execute(updateQuery, [title, description, mediaFilesJson, id, orgId]);
+    const updateParams = hasProgramIdColumn
+      ? [title, description, mediaFilesJson, program_id || null, id, orgId]
+      : [title, description, mediaFilesJson, id, orgId];
+    
+    await connection.execute(updateQuery, updateParams);
     
     // Create a submission record for the highlight update
     const submissionQuery = `
@@ -210,6 +278,7 @@ export const updateHighlight = async (req, res) => {
       title: currentHighlight.title,
       description: currentHighlight.description,
       media_files: currentHighlight.media_files,
+      program_id: currentHighlight.program_id || null,
       action: 'update'
     });
     
@@ -218,6 +287,7 @@ export const updateHighlight = async (req, res) => {
       title,
       description,
       media_files: mediaFilesJson,
+      program_id: program_id || null,
       action: 'update'
     });
     
@@ -318,6 +388,19 @@ export const deleteHighlight = async (req, res) => {
 
 // Helper function to get highlight by ID (internal use)
 const getHighlightByIdInternal = async (connection, highlightId) => {
+  // Check if program_id column exists
+  const [columnCheck] = await connection.execute(`
+    SELECT COUNT(*) as count 
+    FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() 
+    AND TABLE_NAME = 'admin_highlights' 
+    AND COLUMN_NAME = 'program_id'
+  `);
+  
+  const hasProgramIdColumn = columnCheck[0]?.count > 0;
+  
+  // Build query with or without program_id column
+  const programIdSelect = hasProgramIdColumn ? ', program_id' : '';
   const query = `
     SELECT 
       id,
@@ -325,7 +408,7 @@ const getHighlightByIdInternal = async (connection, highlightId) => {
       description,
       media_files,
       organization_id,
-      created_by,
+      created_by${programIdSelect},
       created_at,
       updated_at
     FROM admin_highlights
@@ -340,7 +423,8 @@ const getHighlightByIdInternal = async (connection, highlightId) => {
   
   return {
     ...rows[0],
-    media: safeParseJSON(rows[0].media_files, [])
+    media: safeParseJSON(rows[0].media_files, []),
+    program_id: hasProgramIdColumn ? (rows[0].program_id || null) : null
   };
 };
 

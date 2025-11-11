@@ -1,10 +1,21 @@
+/* Admin Layout Container */
+.adminLayout {
+  display: flex;
+  min-height: 100vh;
+}
+
 .mainContent {
-  margin: 55px 4px 0 260px;
+  flex: 1;
+  margin: 55px 0 0 260px;
   padding: 2rem 3rem 2rem 4.5rem;
-  height: calc(100vh - 55px);
+  min-height: calc(100vh - 55px);
   background-color: #FFFFFF;
-  overflow-y: auto;
   overflow-x: hidden;
+  /* Removed overflow-y: auto and fixed height to use browser's default scrollbar */
+}
+
+.content {
+  width: 100%;
 }
 
 .mainArea {

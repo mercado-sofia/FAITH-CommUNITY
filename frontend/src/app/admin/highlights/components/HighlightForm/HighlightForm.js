@@ -2,10 +2,67 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { FaSpinner, FaTimes, FaUpload, FaImage, FaVideo, FaFile, FaEye, FaExclamationTriangle, FaCheckCircle } from 'react-icons/fa';
+import { FaSpinner, FaTimes, FaUpload, FaImage, FaVideo, FaFile, FaEye, FaExclamationTriangle, FaCheckCircle, FaChevronDown } from 'react-icons/fa';
+import { getAdminTokenOrRedirect, API_CONFIG } from '../../../utils';
 import styles from './HighlightForm.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
+// Custom Dropdown Component (similar to DateSelectionField)
+const CustomDropdown = ({ options, value, onChange, disabled, placeholder, error }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelect = (option) => {
+    onChange(option.value);
+    setIsOpen(false);
+  };
+
+  // Use loose comparison to handle number/string type mismatches
+  const selectedOption = options.find(option => Number(option.value) === Number(value));
+
+  return (
+    <div className={styles.customDropdown} ref={dropdownRef}>
+      <button
+        type="button"
+        className={`${styles.dropdownButton} ${isOpen ? styles.dropdownOpen : ''} ${disabled ? styles.disabled : ''} ${error ? styles.inputError : ''}`}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
+      >
+        <span className={styles.dropdownValue}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <FaChevronDown className={`${styles.dropdownArrow} ${isOpen ? styles.arrowUp : ''}`} />
+      </button>
+      
+      {isOpen && (
+        <div className={styles.dropdownOptions}>
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={`${styles.dropdownOption} ${Number(value) === Number(option.value) ? styles.optionSelected : ''}`}
+              onClick={() => handleSelect(option)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function HighlightForm({ mode = 'create', highlight = null, onCancel, onSubmit }) {
   const isEditMode = mode === 'edit';
@@ -13,31 +70,96 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    media: []
+    media: [],
+    program_id: null
   });
   const [errors, setErrors] = useState({});
   const [dragActive, setDragActive] = useState({ images: false, videos: false });
   const [uploadingFiles, setUploadingFiles] = useState([]);
   const [uploadComplete, setUploadComplete] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
+  const [programs, setPrograms] = useState([]);
+  const [isLoadingPrograms, setIsLoadingPrograms] = useState(true);
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
+
+  // Fetch programs for dropdown
+  useEffect(() => {
+    const fetchPrograms = async () => {
+      try {
+        setIsLoadingPrograms(true);
+        const token = getAdminTokenOrRedirect();
+        if (!token) {
+          return;
+        }
+
+        const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/programs`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch programs');
+        }
+
+        const result = await response.json();
+        const programsData = result.data || result.programs || [];
+        
+        // Filter to only show:
+        // 1. Completed programs (status === 'Completed')
+        // 2. That have an approved Post Act Report (has_approved_post_act_report === true)
+        // Upcoming and Active programs cannot have highlights
+        let eligiblePrograms = programsData.filter(program => 
+          program.status === 'Completed' && 
+          (program.has_approved_post_act_report === true || program.has_approved_post_act_report === 1)
+        );
+        
+        // In edit mode, if the highlight's associated program is not in the filtered list,
+        // include it anyway so the dropdown can show the current selection
+        if (isEditMode && highlight && highlight.program_id) {
+          const associatedProgram = programsData.find(p => p.id === highlight.program_id);
+          if (associatedProgram && !eligiblePrograms.find(p => p.id === associatedProgram.id)) {
+            // Add the associated program even if it doesn't meet the filter criteria
+            eligiblePrograms = [associatedProgram, ...eligiblePrograms];
+          }
+        }
+        
+        setPrograms(eligiblePrograms);
+      } catch (error) {
+        console.error('Error fetching programs:', error);
+        setPrograms([]);
+      } finally {
+        setIsLoadingPrograms(false);
+      }
+    };
+
+    fetchPrograms();
+  }, [isEditMode, highlight]);
 
   // Initialize form data
   useEffect(() => {
     if (isEditMode && highlight) {
       // Edit mode: populate form with existing highlight data
+      // Ensure program_id is properly converted to number if it exists
+      const programId = highlight.program_id 
+        ? (typeof highlight.program_id === 'string' ? parseInt(highlight.program_id, 10) : highlight.program_id)
+        : null;
+      
       setFormData({
         title: highlight.title || '',
         description: highlight.description || '',
-        media: highlight.media || []
+        media: highlight.media || [],
+        program_id: programId
       });
     } else {
       // Create mode: reset form to empty state
       setFormData({
         title: '',
         description: '',
-        media: []
+        media: [],
+        program_id: null
       });
     }
     // Clear any existing errors when switching modes
@@ -63,6 +185,10 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
   // Validate form
   const validateForm = useCallback(() => {
     const newErrors = {};
+    
+    if (!formData.program_id) {
+      newErrors.program_id = 'Associated Program is required';
+    }
     
     if (!formData.title.trim()) {
       newErrors.title = 'Title is required';
@@ -384,10 +510,52 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
         <div className={styles.formGrid}>
           {/* Left Column - Form Fields */}
           <div className={styles.formColumn}>
+            {/* Program Selection */}
+            <div className={styles.fieldGroup}>
+              <label className={styles.label}>
+                Associated Program
+              </label>
+              {isLoadingPrograms ? (
+                <div className={styles.loadingPrograms}>
+                  <FaSpinner className={styles.spinner} />
+                  <span>Loading programs...</span>
+                </div>
+              ) : programs.length === 0 ? (
+                <div className={styles.noProgramsMessage}>
+                  <p className={styles.noProgramsText}>
+                    No eligible programs found. Only <strong>Completed</strong> programs with an <strong>approved Post Act Report</strong> can have highlights.
+                  </p>
+                  <div className={styles.errorText}>
+                    You must have at least one Completed program with an approved Post Act Report to create a highlight.
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <CustomDropdown
+                    options={programs.map(program => ({
+                      value: program.id,
+                      label: program.title || `Program #${program.id}`
+                    }))}
+                    value={formData.program_id ? Number(formData.program_id) : ''}
+                    onChange={(value) => handleInputChange('program_id', value ? parseInt(value, 10) : null)}
+                    disabled={isSubmitting}
+                    placeholder="Select a program"
+                    error={errors.program_id}
+                  />
+                  <p className={styles.helperText}>
+                    Only Completed programs with approved Post Act Reports are eligible for highlights.
+                  </p>
+                </>
+              )}
+              {errors.program_id && (
+                <span className={styles.errorText}>{errors.program_id}</span>
+              )}
+            </div>
+
             {/* Title */}
             <div className={styles.fieldGroup}>
               <label className={styles.label}>
-                Title <span className={styles.required}>*</span>
+                Title
               </label>
               <input
                 type="text"
@@ -405,7 +573,7 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
             {/* Description */}
             <div className={styles.fieldGroup}>
               <label className={styles.label}>
-                Description <span className={styles.required}>*</span>
+                Description
               </label>
               <textarea
                 value={formData.description}

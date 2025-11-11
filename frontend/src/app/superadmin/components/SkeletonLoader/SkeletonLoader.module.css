@@ -617,3 +617,181 @@
   height: 100%;
 }
 
+/* Settings Page Skeleton */
+.settingsPageSkeleton {
+  width: 100%;
+  padding: 0 3rem 2rem 3rem;
+}
+
+.settingsHeaderSkeleton {
+  margin-bottom: 1.4rem;
+  padding-top: 2rem;
+}
+
+.settingsTitleSkeleton {
+  width: 120px;
+  height: 20px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  will-change: background-position;
+}
+
+.tabNavigationSkeleton {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.tabButtonSkeleton {
+  width: 100px;
+  height: 36px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 10px;
+  will-change: background-position;
+}
+
+.settingsGridSkeleton {
+  display: flex;
+  gap: 2rem;
+  max-width: 1200px;
+  margin-bottom: 2rem;
+}
+
+.settingsPanelSkeleton {
+  flex: 1;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 250px;
+}
+
+.panelHeaderSkeleton {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.panelIconSkeleton {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 12px;
+  will-change: background-position;
+  flex-shrink: 0;
+}
+
+.panelTitleGroupSkeleton {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.panelTitleTextSkeleton {
+  width: 150px;
+  height: 14px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  will-change: background-position;
+}
+
+.panelSubtitleSkeleton {
+  width: 200px;
+  height: 12px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  will-change: background-position;
+}
+
+.panelEditButtonSkeleton {
+  width: 60px;
+  height: 32px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+  will-change: background-position;
+  flex-shrink: 0;
+}
+
+.panelContentSkeleton {
+  padding: 1.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.fieldGroupSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.fieldLabelSkeleton {
+  width: 100px;
+  height: 13px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  will-change: background-position;
+}
+
+.fieldValueSkeleton {
+  width: 100%;
+  height: 16px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  will-change: background-position;
+}
+
+.passwordInfoSkeleton {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.infoTextSkeleton {
+  width: 100%;
+  height: 13px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  will-change: background-position;
+}
+
+.twoFAPanelSkeleton {
+  display: flex;
+  justify-content: flex-start;
+  max-width: 1200px;
+}
+
+.twoFAPanelSkeleton .settingsPanelSkeleton {
+  flex: 1;
+  min-width: 0;
+}
+

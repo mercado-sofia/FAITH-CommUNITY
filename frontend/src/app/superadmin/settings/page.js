@@ -258,9 +258,8 @@ export default function SuperAdminSettings() {
 
   if (loading) {
     return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.spinner}></div>
-        <p>Loading settings...</p>
+      <div className={styles.mainArea}>
+        <SkeletonLoader type="settings" />
       </div>
     );
   }

@@ -133,7 +133,28 @@ const testConnection = async (maxRetries = 3, delayMs = 2000) => {
 // Incremental migrations for existing databases
 const runIncrementalMigrations = async (connection) => {
   try {
-
+    // Create program_post_act_reports table if it doesn't exist (for existing databases)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS program_post_act_reports (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        program_id INT NOT NULL,
+        file_public_id VARCHAR(255) NOT NULL,
+        file_url VARCHAR(500) NOT NULL,
+        status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+        uploaded_by_admin_id INT NULL,
+        reviewed_by_superadmin_id INT NULL,
+        reviewed_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (uploaded_by_admin_id) REFERENCES admins(id) ON DELETE SET NULL,
+        INDEX idx_program_id (program_id),
+        INDEX idx_status (status),
+        INDEX idx_uploaded_by (uploaded_by_admin_id),
+        INDEX idx_reviewed_by (reviewed_by_superadmin_id),
+        INDEX idx_created_at (created_at)
+      )
+    `);
 
     // Migrate existing news data
     await connection.query(`
@@ -892,6 +913,29 @@ const initializeDatabase = async () => {
           INDEX idx_programs_approved (is_approved),
           INDEX idx_programs_accepts_volunteers (accepts_volunteers),
           INDEX idx_programs_manual_override (manual_status_override)
+        )
+      `);
+
+      // Create program_post_act_reports table for Post Act Report submissions
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS program_post_act_reports (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          program_id INT NOT NULL,
+          file_public_id VARCHAR(255) NOT NULL,
+          file_url VARCHAR(500) NOT NULL,
+          status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+          uploaded_by_admin_id INT NULL,
+          reviewed_by_superadmin_id INT NULL,
+          reviewed_at TIMESTAMP NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE CASCADE,
+          FOREIGN KEY (uploaded_by_admin_id) REFERENCES admins(id) ON DELETE SET NULL,
+          INDEX idx_program_id (program_id),
+          INDEX idx_status (status),
+          INDEX idx_uploaded_by (uploaded_by_admin_id),
+          INDEX idx_reviewed_by (reviewed_by_superadmin_id),
+          INDEX idx_created_at (created_at)
         )
       `);
 

@@ -403,6 +403,87 @@ export default function SkeletonLoader({ type = 'section', count = 1, className 
           </div>
         )
       
+      case 'settings':
+        return (
+          <div className={styles.settingsPageSkeleton}>
+            {/* Header Skeleton */}
+            <div className={styles.settingsHeaderSkeleton}>
+              <div className={styles.settingsTitleSkeleton} />
+            </div>
+            
+            {/* Tab Navigation Skeleton */}
+            <div className={styles.tabNavigationSkeleton}>
+              <div className={styles.tabButtonSkeleton} />
+              <div className={styles.tabButtonSkeleton} />
+            </div>
+            
+            {/* Settings Grid Skeleton */}
+            <div className={styles.settingsGridSkeleton}>
+              {/* Email Address Panel Skeleton */}
+              <div className={styles.settingsPanelSkeleton}>
+                <div className={styles.panelHeaderSkeleton}>
+                  <div className={styles.panelIconSkeleton} />
+                  <div className={styles.panelTitleGroupSkeleton}>
+                    <div className={styles.panelTitleTextSkeleton} />
+                    <div className={styles.panelSubtitleSkeleton} />
+                  </div>
+                  <div className={styles.panelEditButtonSkeleton} />
+                </div>
+                <div className={styles.panelContentSkeleton}>
+                  <div className={styles.fieldGroupSkeleton}>
+                    <div className={styles.fieldLabelSkeleton} />
+                    <div className={styles.fieldValueSkeleton} />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Password & Security Panel Skeleton */}
+              <div className={styles.settingsPanelSkeleton}>
+                <div className={styles.panelHeaderSkeleton}>
+                  <div className={styles.panelIconSkeleton} />
+                  <div className={styles.panelTitleGroupSkeleton}>
+                    <div className={styles.panelTitleTextSkeleton} />
+                    <div className={styles.panelSubtitleSkeleton} />
+                  </div>
+                  <div className={styles.panelEditButtonSkeleton} />
+                </div>
+                <div className={styles.panelContentSkeleton}>
+                  <div className={styles.fieldGroupSkeleton}>
+                    <div className={styles.fieldLabelSkeleton} />
+                    <div className={styles.passwordInfoSkeleton}>
+                      <div className={styles.infoTextSkeleton} />
+                      <div className={styles.infoTextSkeleton} style={{ width: '85%' }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Two-Factor Authentication Panel Skeleton */}
+            <div className={styles.twoFAPanelSkeleton}>
+              <div className={styles.settingsPanelSkeleton}>
+                <div className={styles.panelHeaderSkeleton}>
+                  <div className={styles.panelIconSkeleton} />
+                  <div className={styles.panelTitleGroupSkeleton}>
+                    <div className={styles.panelTitleTextSkeleton} />
+                    <div className={styles.panelSubtitleSkeleton} />
+                  </div>
+                  <div className={styles.panelEditButtonSkeleton} />
+                </div>
+                <div className={styles.panelContentSkeleton}>
+                  <div className={styles.fieldGroupSkeleton}>
+                    <div className={styles.fieldLabelSkeleton} />
+                    <div className={styles.passwordInfoSkeleton}>
+                      <div className={styles.infoTextSkeleton} />
+                      <div className={styles.infoTextSkeleton} style={{ width: '90%' }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      
       case 'section':
       default:
         return (

@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSelector } from 'react-redux';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { selectCurrentAdmin } from '@/rtk/superadmin/adminSlice';
 import { FaPlus } from 'react-icons/fa';
 import { ConfirmationModal, SuccessModal, ErrorBoundary } from '@/components';
 import { SkeletonLoader } from '../components';
@@ -12,7 +10,6 @@ import { getAdminTokenOrRedirect, handleApiError, API_CONFIG, TIMEOUTS } from '.
 import styles from './highlights.module.css';
 
 export default function AdminHighlightsPage() {
-  const currentAdmin = useSelector(selectCurrentAdmin);
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -30,11 +27,6 @@ export default function AdminHighlightsPage() {
   // Filter and search states
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
-  const [statusFilter, setStatusFilter] = useState(() => {
-    const status = searchParams.get('status') || 'pending';
-    const normalizedStatus = status.replace(/\+/g, '-');
-    return normalizedStatus;
-  });
 
   // Show skeleton immediately on first load, then show content when data is ready
   const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
@@ -61,13 +53,10 @@ export default function AdminHighlightsPage() {
   useEffect(() => {
     const search = searchParams.get('search') || '';
     const sort = searchParams.get('sort') || 'newest';
-    const status = searchParams.get('status') || 'pending';
-    const normalizedStatus = status.replace(/\+/g, '-');
     
     if (search !== searchQuery) setSearchQuery(search);
     if (sort !== sortBy) setSortBy(sort);
-    if (normalizedStatus !== statusFilter) setStatusFilter(normalizedStatus);
-  }, [searchParams, searchQuery, sortBy, statusFilter]);
+  }, [searchParams, searchQuery, sortBy]);
 
   // Load highlights data
   const loadHighlights = useCallback(async (isRefresh = false) => {
@@ -124,11 +113,6 @@ export default function AdminHighlightsPage() {
     }
   }, []);
 
-  // Manual refresh function
-  const handleRefresh = useCallback(async () => {
-    await loadHighlights(true);
-  }, [loadHighlights]);
-
   // Load highlights on component mount
   useEffect(() => {
     loadHighlights();
@@ -169,19 +153,10 @@ export default function AdminHighlightsPage() {
         params.delete('sort');
       }
       router.replace(`/admin/highlights?${params.toString()}`);
-    } else if (filterType === 'status') {
-      setStatusFilter(value);
-      const params = new URLSearchParams(searchParams);
-      if (value !== 'pending') {
-        params.set('status', value);
-      } else {
-        params.delete('status');
-      }
-      router.replace(`/admin/highlights?${params.toString()}`);
     }
   }, [searchParams, router]);
 
-  // Filter and sort highlights
+  // Filter and sort highlights - only show approved highlights
   const filteredAndSortedHighlights = useCallback(() => {
     // First, deduplicate highlights by ID to prevent duplicate keys
     const uniqueHighlights = highlights.reduce((acc, highlight) => {
@@ -191,14 +166,8 @@ export default function AdminHighlightsPage() {
       return acc;
     }, []);
 
-    let filtered = uniqueHighlights;
-
-    // Apply status filter
-    if (statusFilter === 'pending') {
-      filtered = filtered.filter(highlight => highlight.status === 'pending');
-    } else if (statusFilter === 'showed-in-public' || statusFilter === 'showed-in+public' || statusFilter === 'showed in public') {
-      filtered = filtered.filter(highlight => highlight.status === 'approved');
-    }
+    // Filter to only show approved highlights (similar to programs page)
+    let filtered = uniqueHighlights.filter(highlight => highlight.status === 'approved');
 
     // Apply search filter
     if (searchQuery.trim()) {
@@ -224,7 +193,7 @@ export default function AdminHighlightsPage() {
     });
 
     return sorted;
-  }, [highlights, searchQuery, sortBy, statusFilter]);
+  }, [highlights, searchQuery, sortBy]);
 
   // Handle create highlight
   const handleCreateHighlight = useCallback(() => {
@@ -407,22 +376,9 @@ export default function AdminHighlightsPage() {
             sortBy={sortBy}
             onSearchChange={handleSearchChange}
             onFilterChange={handleFilterChange}
-            totalCount={highlights?.length || 0}
+            totalCount={highlights?.filter(h => h.status === 'approved')?.length || 0}
             filteredCount={filteredAndSortedHighlights()?.length || 0}
           />
-
-          {/* Status Navigation Tabs */}
-          <div className={styles.statusTabs}>
-            {['Pending', 'Showed in Public'].map((status) => (
-              <button
-                key={status}
-                className={`${styles.statusTab} ${statusFilter === status.toLowerCase().replace(' ', '-') || statusFilter === status.toLowerCase().replace(' ', '+') || statusFilter === status.toLowerCase() ? styles.activeTab : ''}`}
-                onClick={() => handleFilterChange('status', status.toLowerCase().replace(' ', '-'))}
-              >
-                {status}
-              </button>
-            ))}
-          </div>
 
           {/* Highlights Grid */}
           <div className={styles.programsSection}>

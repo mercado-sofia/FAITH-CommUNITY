@@ -6,17 +6,22 @@ import { IoRainyOutline } from "react-icons/io5";
 import styles from './faithree.module.css';
 import { Highlights, HeroSection } from './sections';
 import { TreeModel } from './components';
+import { getFeaturedHighlightsOrdered } from '@/app/superadmin/highlights/components/StarButton';
 
 // Check for reduced motion preference
 const prefersReducedMotion = typeof window !== 'undefined' 
   ? window.matchMedia('(prefers-reduced-motion: reduce)').matches 
   : false;
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 function FAITHreePage() {
   const [isContentVisible, setIsContentVisible] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const [theme, setTheme] = useState('morning'); // 'morning' or 'rainy'
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [featuredHighlights, setFeaturedHighlights] = useState([]);
+  const [isLoadingHighlights, setIsLoadingHighlights] = useState(true);
 
   // Generate rain drops data once with more variety
   const rainDrops = useMemo(() => {
@@ -69,6 +74,62 @@ function FAITHreePage() {
     clouds: scrollY * 0.1,
     ground: scrollY * 0.5
   }), [scrollY]);
+
+  // Fetch featured highlights
+  useEffect(() => {
+    const fetchFeaturedHighlights = async () => {
+      try {
+        setIsLoadingHighlights(true);
+        
+        // Get ordered featured highlight IDs from localStorage
+        const featuredIds = getFeaturedHighlightsOrdered();
+        
+        if (featuredIds.length === 0) {
+          setFeaturedHighlights([]);
+          setIsLoadingHighlights(false);
+          return;
+        }
+        
+        // Fetch all approved highlights from API
+        const response = await fetch(`${API_BASE_URL}/api/highlights/public/approved`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch highlights');
+        }
+        
+        const data = await response.json();
+        const allHighlights = data.highlights || [];
+        
+        // Match featured IDs with full highlight data, preserving order
+        // Convert both to strings for comparison to handle number/string mismatches
+        const orderedFeaturedHighlights = featuredIds
+          .map(id => allHighlights.find(h => String(h.id) === String(id)))
+          .filter(Boolean) // Remove any undefined values (in case highlight was deleted)
+          .slice(0, 8); // Ensure max 8 highlights
+        
+        setFeaturedHighlights(orderedFeaturedHighlights);
+      } catch (error) {
+        console.error('Error fetching featured highlights:', error);
+        setFeaturedHighlights([]);
+      } finally {
+        setIsLoadingHighlights(false);
+      }
+    };
+
+    fetchFeaturedHighlights();
+
+    // Listen for changes to featured highlights
+    const handleStarredChange = () => {
+      fetchFeaturedHighlights();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('starredHighlightsChanged', handleStarredChange);
+      return () => {
+        window.removeEventListener('starredHighlightsChanged', handleStarredChange);
+      };
+    }
+  }, []);
 
   return (
     <>
@@ -161,7 +222,11 @@ function FAITHreePage() {
               }}
             >
               <div className={styles.tree3D}>
-                <TreeModel theme={theme} treePosition={[0, -1.8, 0]} />
+                <TreeModel 
+                  theme={theme} 
+                  treePosition={[0, -1.8, 0]} 
+                  featuredHighlights={featuredHighlights}
+                />
               </div>
             </div>
           </div>

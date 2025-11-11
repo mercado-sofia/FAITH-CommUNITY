@@ -5,33 +5,73 @@ import FeatureConfirmationModal from './FeatureConfirmationModal'
 import styles from './styles/StarButton.module.css'
 
 // Helper functions to manage starred highlights in localStorage
+// Store as ordered array to preserve the order in which highlights were starred
 const STARRED_HIGHLIGHTS_KEY = 'superadmin_starred_highlights'
+const MAX_FEATURED_HIGHLIGHTS = 8
 
 const getStarredHighlights = () => {
   if (typeof window === 'undefined') return new Set()
   try {
     const stored = localStorage.getItem(STARRED_HIGHLIGHTS_KEY)
-    return stored ? new Set(JSON.parse(stored)) : new Set()
+    if (!stored) return new Set()
+    
+    // Handle both old format (array) and new format (array)
+    const array = JSON.parse(stored)
+    return new Set(Array.isArray(array) ? array : [])
   } catch {
     return new Set()
+  }
+}
+
+// Get starred highlights as ordered array (preserves order)
+const getStarredHighlightsOrdered = () => {
+  if (typeof window === 'undefined') return []
+  try {
+    const stored = localStorage.getItem(STARRED_HIGHLIGHTS_KEY)
+    return stored ? JSON.parse(stored) : []
+  } catch {
+    return []
   }
 }
 
 const setStarredHighlight = (highlightId, isStarred) => {
   if (typeof window === 'undefined') return
   try {
-    const starred = getStarredHighlights()
+    const starredOrdered = getStarredHighlightsOrdered()
+    
     if (isStarred) {
-      starred.add(highlightId)
+      // Check if already starred
+      if (starredOrdered.includes(highlightId)) {
+        return // Already starred, no change needed
+      }
+      
+      // Check if we've reached the maximum
+      if (starredOrdered.length >= MAX_FEATURED_HIGHLIGHTS) {
+        throw new Error(`Maximum of ${MAX_FEATURED_HIGHLIGHTS} featured highlights allowed`)
+      }
+      
+      // Add to the end of the array (preserves order)
+      starredOrdered.push(highlightId)
     } else {
-      starred.delete(highlightId)
+      // Remove from array
+      const index = starredOrdered.indexOf(highlightId)
+      if (index > -1) {
+        starredOrdered.splice(index, 1)
+      }
     }
-    localStorage.setItem(STARRED_HIGHLIGHTS_KEY, JSON.stringify(Array.from(starred)))
+    
+    localStorage.setItem(STARRED_HIGHLIGHTS_KEY, JSON.stringify(starredOrdered))
     // Dispatch custom event to notify other components
     window.dispatchEvent(new CustomEvent('starredHighlightsChanged'))
   } catch (error) {
     console.error('Error saving starred highlights:', error)
+    throw error
   }
+}
+
+// Export for use in other components
+export const getFeaturedHighlightsOrdered = () => {
+  return getStarredHighlightsOrdered()
 }
 
 const StarButton = ({ highlightId, highlightTitle, onStarChange }) => {
@@ -107,6 +147,14 @@ const StarButton = ({ highlightId, highlightTitle, onStarChange }) => {
     setIsLoading(true)
     
     try {
+      // Check if we've reached the maximum before adding
+      const starredOrdered = getStarredHighlightsOrdered()
+      if (starredOrdered.length >= MAX_FEATURED_HIGHLIGHTS) {
+        alert(`Maximum of ${MAX_FEATURED_HIGHLIGHTS} featured highlights allowed. Please unfeature another highlight first.`)
+        setIsLoading(false)
+        return
+      }
+      
       const newStarredState = true
       setIsStarred(newStarredState)
       setStarredHighlight(highlightId, newStarredState)
@@ -124,6 +172,9 @@ const StarButton = ({ highlightId, highlightTitle, onStarChange }) => {
       // Fallback: revert state if something goes wrong
       setIsStarred(false)
       console.error('Error adding to featured:', error)
+      if (error.message && error.message.includes('Maximum')) {
+        alert(error.message)
+      }
     } finally {
       setIsLoading(false)
     }

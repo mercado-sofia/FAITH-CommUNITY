@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FiChevronDown } from 'react-icons/fi'
 import { useGetAllHighlightsQuery, useGetHighlightsStatisticsQuery } from '@/rtk/superadmin/highlightsApi'
@@ -23,7 +23,11 @@ const SuperadminHighlightsPage = () => {
   const dropdownRef = useRef(null)
   const [activeTab, setActiveTab] = useState(() => {
     const tab = searchParams.get('tab')
-    return tab || 'featured' // Default to 'featured' if no URL parameter
+    // Only allow 'featured' and 'all' tabs, default to 'featured'
+    if (tab === 'all' || tab === 'featured') {
+      return tab
+    }
+    return 'featured' // Default to 'featured' if no URL parameter or invalid tab
   })
 
   // Listen for starred highlights changes
@@ -41,7 +45,7 @@ const SuperadminHighlightsPage = () => {
   }, [])
 
   // Helper function to update URL parameter
-  const updateTabUrl = (tab) => {
+  const updateTabUrl = useCallback((tab) => {
     const params = new URLSearchParams(searchParams.toString())
     if (tab === 'featured') {
       // Remove tab parameter for featured (default)
@@ -50,35 +54,23 @@ const SuperadminHighlightsPage = () => {
       params.set('tab', tab)
     }
     router.push(`?${params.toString()}`, { scroll: false })
-  }
+  }, [searchParams, router])
 
   // Sync URL parameter changes with activeTab state
   useEffect(() => {
     const tab = searchParams.get('tab')
-    if (tab && tab !== activeTab) {
-      setActiveTab(tab)
+    // Only allow 'featured' and 'all' tabs
+    if (tab === 'all' || tab === 'featured') {
+      if (tab !== activeTab) {
+        setActiveTab(tab)
+      }
     } else if (!tab && activeTab !== 'featured') {
       setActiveTab('featured')
     }
   }, [searchParams, activeTab])
 
-  // Get status filter based on active tab
-  const getStatusFilter = () => {
-    switch (activeTab) {
-      case 'approved':
-        return 'approved'
-      case 'pending':
-        return 'pending'
-      case 'rejected':
-        return 'rejected'
-      case 'all':
-      case 'featured':
-      default:
-        return null // Get all highlights
-    }
-  }
-
-  const statusFilter = getStatusFilter()
+  // Always fetch only approved highlights
+  const statusFilter = 'approved'
 
   const { 
     data: highlights = [], 
@@ -98,11 +90,11 @@ const SuperadminHighlightsPage = () => {
     isLoading: orgsLoading
   } = useGetOrganizationsForFilterQuery()
 
-  // Listen for highlight approval/rejection changes to refetch data
+  // Listen for highlight status changes to refetch data
   // This must be after the hooks that define refetchHighlights and refetchStatistics
   useEffect(() => {
     const handleHighlightStatusChange = () => {
-      // Refetch highlights and statistics when status changes (e.g., after approval)
+      // Refetch highlights and statistics when status changes
       refetchHighlights()
       refetchStatistics()
     }
@@ -219,15 +211,16 @@ const SuperadminHighlightsPage = () => {
   // Get featured highlights (only starred highlights)
   const getFeaturedHighlights = (highlights) => {
     const starredIds = getStarredHighlights()
-    // Only show approved highlights that are starred
-    return highlights.filter(h => 
-      h.status === 'approved' && starredIds.has(h.id)
-    )
+    // Filter by starred and ensure status is approved (safety check)
+    return highlights.filter(h => h.status === 'approved' && starredIds.has(h.id))
   }
 
   // Process highlights based on active tab
   // Use refreshKey to force re-evaluation when starred highlights change
-  let processedHighlights = highlights
+  
+  // Safety filter: Explicitly ensure only approved highlights are displayed
+  // This is a defensive measure in case the API returns unexpected data
+  let processedHighlights = highlights.filter(h => h.status === 'approved')
 
   // Apply search filter
   if (searchQuery.trim()) {
@@ -241,15 +234,11 @@ const SuperadminHighlightsPage = () => {
 
   // Apply tab-specific filtering
   if (activeTab === 'featured') {
-    // Featured tab: only show starred highlights
+    // Featured tab: only show starred/featured highlights
     processedHighlights = getFeaturedHighlights(processedHighlights)
-  } else if (activeTab === 'approved') {
-    // Approved tab: show all approved highlights (these sync with FAITHtree Stories Highlights)
-    processedHighlights = processedHighlights.filter(h => h.status === 'approved')
-  } else if (activeTab === 'pending') {
-    processedHighlights = processedHighlights.filter(h => h.status === 'pending')
-  } else if (activeTab === 'rejected') {
-    processedHighlights = processedHighlights.filter(h => h.status === 'rejected')
+  } else if (activeTab === 'all') {
+    // All tab: show all approved highlights (both featured and non-featured combined)
+    // No additional filtering needed - already filtered to approved above
   }
 
   // Use organizations from API for filter dropdown
@@ -413,24 +402,6 @@ const SuperadminHighlightsPage = () => {
           >
             All
           </button>
-          <button
-            className={`${styles.navTab} ${activeTab === 'approved' ? styles.activeTab : ''}`}
-            onClick={() => updateTabUrl('approved')}
-          >
-            Approved
-          </button>
-          <button
-            className={`${styles.navTab} ${activeTab === 'pending' ? styles.activeTab : ''}`}
-            onClick={() => updateTabUrl('pending')}
-          >
-            Pending
-          </button>
-          <button
-            className={`${styles.navTab} ${activeTab === 'rejected' ? styles.activeTab : ''}`}
-            onClick={() => updateTabUrl('rejected')}
-          >
-            Rejected
-          </button>
         </div>
       </div>
 
@@ -485,7 +456,7 @@ const SuperadminHighlightsPage = () => {
             <p className={styles.emptyStateText}>
               {activeTab === 'featured' 
                 ? 'No featured highlights yet. Star approved highlights to add them here.' 
-                : 'No highlights found matching your current filters. New highlights will appear here when administrators submit them.'}
+                : 'No approved highlights found matching your current filters.'}
             </p>
           </div>
         ) : (

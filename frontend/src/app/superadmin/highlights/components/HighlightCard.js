@@ -185,15 +185,12 @@ const HighlightCard = ({ highlight, onViewDetails }) => {
         </div>
         
         {/* Associated Program - Display directly under title */}
-        {highlight.program_title ? (
+        {(highlight.program_title || highlight.program_id) && (
           <p className={styles.cardProgram}>
-            <span className={styles.programLabel}>Program:</span> {highlight.program_title}
+            <span className={styles.programLabel}>Associated Program:</span>{' '}
+            {highlight.program_title || `Program ID: ${highlight.program_id}`}
           </p>
-        ) : highlight.program_id ? (
-          <p className={styles.cardProgram} style={{ fontStyle: 'italic', color: '#9ca3af' }}>
-            <span className={styles.programLabel}>Program:</span> Program ID: {highlight.program_id} (Title not found)
-          </p>
-        ) : null}
+        )}
         
         <p className={styles.cardOrganization}>{highlight.organization_name || 'Unknown Organization'}</p>
         

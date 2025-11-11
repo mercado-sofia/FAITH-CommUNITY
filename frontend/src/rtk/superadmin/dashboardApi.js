@@ -195,14 +195,29 @@ export const dashboardApi = createApi({
       query: (limit = 10) => `/projects/superadmin/top-organizations?limit=${limit}`,
       providesTags: ["Dashboard"],
       transformResponse: (response) => {
-        if (response.success && response.data) {
-          return response.data || [];
+        // Handle both direct data array and wrapped response
+        if (Array.isArray(response)) {
+          return response;
+        }
+        if (response && response.success && response.data) {
+          return Array.isArray(response.data) ? response.data : [];
+        }
+        // Log unexpected response format in development
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Unexpected response format for top organizations:', response);
         }
         return [];
       },
-      transformErrorResponse: (response) => {
-        // Handle errors gracefully - return empty array instead of error
-        // This allows the component to show empty state instead of error message
+      transformErrorResponse: (response, meta, arg) => {
+        // Log errors in development for debugging
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error fetching top organizations by program count:', {
+            status: response?.status,
+            data: response?.data,
+            originalStatus: meta?.response?.status,
+          });
+        }
+        // Return empty array to show empty state instead of error message
         return [];
       },
     }),

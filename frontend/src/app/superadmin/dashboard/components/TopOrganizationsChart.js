@@ -8,8 +8,19 @@ export default function TopOrganizationsChart() {
   const { 
     data: organizationsData = [], 
     isLoading,
-    isError
+    isError,
+    error
   } = useGetTopOrganizationsByProgramCountQuery(8); // Top 8 organizations
+
+  // Debug logging in development
+  if (process.env.NODE_ENV === 'development' && !isLoading) {
+    if (isError) {
+      console.error('TopOrganizationsChart error:', error);
+    }
+    if (organizationsData && organizationsData.length > 0) {
+      console.log('TopOrganizationsChart data received:', organizationsData);
+    }
+  }
 
   // Transform data for chart - truncate long names
   const chartData = (organizationsData || [])

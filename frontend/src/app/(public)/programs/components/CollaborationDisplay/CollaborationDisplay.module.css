@@ -1,0 +1,218 @@
+/* Collaboration Display Styles - Redesigned for Better UX */
+.collaborationSection {
+  margin: 2rem 0;
+  padding-top: 2rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.sectionIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  border-radius: 6px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.3;
+}
+
+
+.collaboratorsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.collaboratorCard {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.collaboratorCard:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+.collaboratorLink {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.collaboratorContent {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.collaboratorLogoContainer {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #e2e8f0;
+  margin-top: 2px;
+}
+
+.collaboratorLogo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.collaboratorDetails {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.collaboratorName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.3;
+}
+
+.collaboratorAcronymInName {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.collaboratorArrow {
+  flex-shrink: 0;
+  color: #94a3b8;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+}
+
+.collaboratorCard:hover .collaboratorArrow {
+  color: #3b82f6;
+  transform: translateX(2px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .collaborationSection {
+    margin: 0;
+    padding-top: 1rem;
+  }
+  
+  .sectionHeader {
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .sectionIcon {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .sectionTitle {
+    font-size: 16px;
+  }
+  
+  
+  .collaboratorsGrid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .collaboratorContent {
+    padding: 1rem;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  
+  .collaboratorLogoContainer {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .collaboratorName {
+    font-size: 14px;
+  }
+  
+  .collaboratorAcronymInName {
+    font-size: 14px;
+  }
+  
+  /* Remove hover effects on mobile */
+  .collaboratorCard:hover {
+    border-color: #e2e8f0;
+    box-shadow: none;
+  }
+  
+  .collaboratorCard:hover .collaboratorArrow {
+    color: #94a3b8;
+    transform: translateX(0);
+  }
+  
+}
+
+@media (max-width: 480px) {
+  .collaborationSection {
+    margin: 0 0 2rem;
+    padding-top: 1rem;
+  }
+  
+  .collaboratorsGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .collaboratorContent {
+    padding: 0.875rem;
+    align-items: center;
+  }
+  
+  .collaboratorLogoContainer {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .collaboratorName {
+    font-size: 14px;
+  }
+  
+  /* Remove hover effects on mobile (smaller screens) */
+  .collaboratorCard:hover {
+    border-color: #e2e8f0;
+    box-shadow: none;
+  }
+  
+  .collaboratorCard:hover .collaboratorArrow {
+    color: #94a3b8;
+    transform: translateX(0);
+  }
+  
+}

@@ -1,0 +1,407 @@
+/* ORG HEADS SECTION */
+.orgheadsSection {
+  padding: 4rem 2rem 4rem 8rem;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.orgheadsSection.fadeIn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.orgheadsWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+/* Left Text */
+.orgheadsText {
+  flex: 1;
+  max-width: 400px;
+  opacity: 0;
+  transform: translateX(-30px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.orgheadsText.fadeIn {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.orgheadsText p {
+  color: #1A685B;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.orgheadsText h2 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+/* Carousel Container */
+.orgheadsCarousel {
+  flex: 2.5;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+  opacity: 0;
+  transform: translateX(30px);
+  transition: opacity 0.8s ease-out 0.2s, transform 0.8s ease-out 0.2s;
+}
+
+.orgheadsCarousel.fadeIn {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* When no navigation buttons, center the carousel window */
+.orgheadsCarousel:has(.carouselWindow:only-child) {
+  justify-content: center;
+}
+
+/* NEW: Carousel window to limit visible cards */
+.carouselWindow {
+  width: 780px;
+  overflow: hidden;
+}
+
+/* Arrow Buttons */
+.orgheadsNavBtn {
+  width: 35px;
+  height: 35px;
+  padding: 8px;
+  background-color: #1a685b;
+  color: white;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.4s ease;
+}
+
+.orgheadsNavBtn:hover {
+  background-color: #1b8271;
+}
+
+/* Horizontal scroll area */
+.orgheadsCards {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1rem 0;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  transition: transform 0.4s ease;
+}
+
+/* Card Wrapper */
+.orgheadsWrapperItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  width: 240px;
+}
+
+/* IMAGE CONTAINER */
+.imageContainer {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  width: 240px;
+  height: 280px;
+  border-bottom: 7px solid #FFAC00;
+  transition: border-color 0.4s ease, transform 0.4s ease;
+}
+
+/* Lift effect on hover */
+.imageContainer:hover {
+  border-bottom-color: #1A685B;
+}
+
+/* IMAGE */
+.headImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
+  transition: filter 0.4s ease;
+}
+
+.imageContainer:hover .headImage {
+  filter: grayscale(100%);
+}
+
+/* ICON BAR */
+.iconBar {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  z-index: 2;
+}
+
+/* ICON BUTTONS */
+.iconBtn {
+  background: white;
+  color: #1A685B;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: .8rem;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.4s, color 0.4s, transform 0.4s;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.plusBtn {
+  display: flex !important;
+  font-size: 0.8rem;
+  background: #1A685B;
+  color: white;
+}
+
+.iconBar:hover .iconBtn {
+  display: flex;
+}
+
+.iconBar:hover .plusBtn {
+  background: #FFAC00;
+  transform: rotate(45deg);
+}
+
+.iconBtn:hover {
+  background: #FFAC00;
+  color: white;
+}
+
+.orgheadsNavBtn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* TEXT BELOW IMAGE */
+.orgheadsTextInfo {
+  text-align: center;
+  margin-top: 0.75rem;
+  cursor: default;
+}
+
+.orgheadsTextInfo h4 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.orgheadsTextInfo p {
+  font-size: 14px;
+  margin: 0;
+  color: #333;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .orgheadsSection {
+    padding: 3rem 1.5rem 3rem 1.5rem;
+  }
+
+  .orgheadsWrapper {
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .orgheadsText {
+    max-width: 100%;
+    text-align: center;
+  }
+
+  .orgheadsText p {
+    font-size: 0.95rem;
+  }
+
+  .orgheadsText h2 {
+    font-size: 2rem;
+  }
+
+  .orgheadsCarousel {
+    flex: 1;
+    width: 100%;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* Hide navigation buttons on mobile */
+  .orgheadsNavBtn {
+    display: none !important;
+  }
+
+  .carouselWindow {
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+  }
+
+  /* Change from horizontal scroll to grid layout */
+  .orgheadsCards {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 0;
+    overflow-x: visible;
+    overflow-y: visible;
+  }
+
+  .orgheadsWrapperItem {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .imageContainer {
+    width: 100%;
+    max-width: 300px;
+    aspect-ratio: 240 / 280;
+    height: auto;
+    margin: 0 auto;
+  }
+
+  .headImage {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+  }
+
+  .orgheadsTextInfo h4 {
+    font-size: 20px;
+  }
+
+  .orgheadsTextInfo p {
+    font-size: 18px;
+  }
+
+  /* Remove hover effects on mobile */
+  .imageContainer:hover {
+    border-bottom-color: #FFAC00;
+    transform: none;
+  }
+
+  .imageContainer:hover .headImage {
+    filter: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .orgheadsSection {
+    padding: 2.5rem 1rem 2.5rem 1rem;
+  }
+
+  .orgheadsWrapper {
+    gap: 1.5rem;
+  }
+
+  .orgheadsText p {
+    font-size: 0.9rem;
+  }
+
+  .orgheadsText h2 {
+    font-size: 1.75rem;
+  }
+
+  /* Hide navigation buttons on mobile */
+  .orgheadsNavBtn {
+    display: none !important;
+  }
+
+  .carouselWindow {
+    max-width: 100%;
+    overflow: visible;
+  }
+
+  /* Grid layout with one card per row */
+  .orgheadsCards {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 0;
+    overflow-x: visible;
+    overflow-y: visible;
+  }
+
+  .orgheadsWrapperItem {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .imageContainer {
+    width: 100%;
+    max-width: 280px;
+    aspect-ratio: 240 / 280;
+    height: auto;
+    margin: 0 auto;
+    border-bottom-width: 6px;
+  }
+
+  .headImage {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+  }
+
+  .iconBtn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
+  }
+
+  .plusBtn {
+    font-size: 0.75rem;
+  }
+
+  .orgheadsTextInfo {
+    margin-top: 0.75rem;
+  }
+
+  .orgheadsTextInfo h4 {
+    font-size: 18px;
+  }
+
+  .orgheadsTextInfo p {
+    font-size: 16px;
+  }
+
+  /* Remove hover effects on mobile */
+  .imageContainer:hover {
+    border-bottom-color: #FFAC00;
+    transform: none;
+  }
+
+  .imageContainer:hover .headImage {
+    filter: none;
+  }
+}

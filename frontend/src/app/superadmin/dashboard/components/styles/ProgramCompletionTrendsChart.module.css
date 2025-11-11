@@ -1,0 +1,72 @@
+.chartCard {
+  background-color: #fff;
+  border-radius: 10px;
+  border: 1px solid #e5e5e5;
+  padding: 1.5rem;
+  font-family: var(--font-inter), sans-serif;
+  box-sizing: border-box;
+}
+
+.chartHeader {
+  margin-bottom: 1.5rem;
+}
+
+.chartTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #000;
+  margin: 0 0 0.25rem 0;
+  font-family: var(--font-poppins), sans-serif;
+}
+
+.chartSubtitle {
+  font-size: 0.8125rem;
+  color: #8b8e8d;
+  margin: 0;
+  font-family: var(--font-inter), sans-serif;
+}
+
+.chartContainer {
+  width: 100%;
+  min-height: 300px;
+}
+
+.loadingState,
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: #8b8e8d;
+  font-size: 0.875rem;
+}
+
+.tooltip {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tooltipLabel {
+  font-weight: 600;
+  color: #000;
+  margin: 0 0 0.25rem 0;
+  font-size: 0.8125rem;
+  font-family: var(--font-poppins), sans-serif;
+}
+
+.tooltipValue {
+  color: #8b8e8d;
+  margin: 0;
+  font-size: 0.75rem;
+  font-family: var(--font-inter), sans-serif;
+}
+
+.tooltipValue strong {
+  color: #1d9782;
+  font-weight: 600;
+}
+
+

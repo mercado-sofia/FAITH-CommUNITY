@@ -1,0 +1,35 @@
+/* Programs Container Styles */
+
+/* Programs Section */
+.programsSection {
+  margin-top: 2.4rem;
+}
+
+/* Programs Grid */
+.programsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 80px 20px;
+  margin: 40px 0;
+}
+
+.emptyTitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: #374151;
+  margin: 0 0 8px 0;
+}
+
+.emptyText {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+

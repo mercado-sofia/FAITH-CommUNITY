@@ -1,0 +1,37 @@
+.mainContent {
+  margin: 55px 4px 0 260px;
+  padding: 2rem 3rem 2rem 4.5rem;
+  height: calc(100vh - 55px);
+  background-color: #FFFFFF;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.mainArea {
+  width: 100%;
+}
+
+/* Header */
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: var(--font-poppins), sans-serif;
+  color: #06100f;
+  user-select: none;
+}
+
+/* Section Heading */
+.section h2 {
+  font-size: 1.3rem;
+  color: #19a48d;
+  margin-bottom: 1rem;
+}
+
+/* 🔹 Layout for Recent Applications */
+.recentRow {
+  width: 100%;
+}

@@ -1,0 +1,267 @@
+/* Clean Modern Adviser Section */
+.officerSection {
+  padding: 5rem 2rem;
+  background: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+.officerHeading {
+  text-align: center;
+  margin-bottom: 3rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.officerSubtitle {
+  color: #FFAC00;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  opacity: 0.9;
+}
+
+.officerTitle {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: #000;
+  margin: 0;
+}
+
+.loaderContainer {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+/* Main Container */
+.portfolioContainer {
+  max-width: 980px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.portfolioCard {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 2rem 1rem 1.8rem;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease-out 0.2s, transform 0.8s ease-out 0.2s;
+}
+
+.portfolioCard.fadeIn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.portfolioContent {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 400px;
+  position: relative;
+}
+
+.imageContainer {
+  order: 1;
+}
+
+/* Text Content */
+.textContent {
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: left;
+  background: #ffffff;
+  position: relative;
+  order: 2;
+}
+
+.nameRoleWrapper {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1.5rem;
+}
+
+.greeting {
+  margin-bottom: 0.5rem;
+}
+
+.adviserName {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1b685b;
+  margin: 0 0 1rem 0;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.roleText {
+  display: inline-block;
+  color: #2d2d2d;
+  font-size: 15px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+.description {
+  font-size: 15px;
+  color: #323232;
+  line-height: 1.6;
+  text-align: justify;
+  margin-bottom: 0.5rem;
+  max-width: 400px;
+}
+
+/* Image Container */
+.imageContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.imageWrapper {
+  position: relative;
+  width: 380px;
+  height: 380px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.adviserImage {
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.adviserImage:hover {
+  transform: scale(1.05);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .officerSection {
+    padding: 4rem 1rem 4rem;
+  }
+
+  .officerHeading {
+    margin-bottom: 2rem;
+  }
+
+  .officerTitle {
+    font-size: 1.8rem;
+  }
+
+  .officerSubtitle {
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    margin-bottom: 0.65rem;
+  }
+
+  .portfolioCard {
+    padding: 2.4rem 1.5rem 1.8rem;
+  }
+
+  .portfolioContent {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .textContent {
+    padding: 1rem 0.75rem;
+    text-align: center;
+  }
+
+  .imageContainer {
+    padding: 1rem;
+  }
+
+  .imageWrapper {
+    width: 300px;
+    height: 300px;
+  }
+
+  .nameRoleWrapper {
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 1.5rem;
+  }
+
+  .greeting {
+    margin-bottom: 1rem;
+  }
+
+  .adviserName {
+    font-size: 1.8rem;
+    margin-bottom: 0;
+  }
+
+  .roleContainer {
+    margin-bottom: 0;
+  }
+
+  .roleText {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .officerHeading {
+    margin-bottom: 1.4rem;
+  }
+
+  .portfolioCard {
+    padding: 1rem 1rem 0.8rem;
+  }
+
+  .textContent {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .imageContainer {
+    padding: 0.75rem;
+  }
+
+  .nameRoleWrapper {
+    gap: 0;
+  }
+
+  .adviserName {
+    font-size: 1.4rem;
+  }
+
+  .roleText {
+    font-size: 15px;
+  }
+
+  .description {
+    font-size: 0.9rem;
+  }
+
+  .imageWrapper {
+    width: 280px;
+    height: 280px;
+  }
+
+  .officerTitle {
+    font-size: 1.6rem;
+  }
+
+  .officerSubtitle {
+    font-size: 0.85rem;
+  }
+}

@@ -1,0 +1,597 @@
+.impactSection {
+  padding: 3rem 2rem 4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background-color: #fff;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.impactHeading {
+  margin-bottom: 1.6rem;
+}
+
+.impactTitle {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.4;
+  width: 100%;
+  max-width: 600px;
+}
+
+.subtitle {
+  color: #f8aa00;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 10px;
+}
+
+/* Carousel Container */
+.carouselContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 12px 2rem 0 2rem;
+  box-sizing: border-box;
+}
+
+/* Navigation Buttons */
+.navButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #1A685B;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(26, 104, 91, 0.3);
+}
+
+.navButton:hover:not(:disabled) {
+  background: #1b8271;
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 6px 16px rgba(26, 104, 91, 0.4);
+}
+
+.navButton:disabled {
+  background: #e0e0e0;
+  color: #9e9e9e;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.navButtonPrev {
+  left: 6px;
+}
+
+.navButtonNext {
+  right: 6px;
+}
+
+/* Mobile-specific positioning overrides */
+@media (max-width: 768px) {
+  .navButtonPrev {
+    left: 4px !important;
+  }
+  
+  .navButtonNext {
+    right: 4px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .navButtonPrev {
+    left: 2px !important;
+  }
+  
+  .navButtonNext {
+    right: 2px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .navButtonPrev {
+    left: 1px !important;
+  }
+  
+  .navButtonNext {
+    right: 1px !important;
+  }
+}
+
+/* Carousel Wrapper */
+.carouselWrapper {
+  overflow: hidden;
+  width: 100%;
+  position: relative;
+  height: 490px;
+  box-sizing: border-box;
+}
+
+/* Carousel Track */
+.carouselTrack {
+  display: flex;
+  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+  padding-top: 12px;
+  width: 100%;
+  justify-content: flex-start;
+  box-sizing: border-box;
+}
+
+/* Centered container for fewer than 3 projects */
+.centeredContainer {
+  justify-content: center;
+}
+
+/* Centered track for fewer than 3 projects */
+.centeredTrack {
+  justify-content: center;
+  width: auto;
+  max-width: none;
+}
+
+/* Carousel Card */
+.carouselCard {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  height: 450px;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+/* Card Image Container */
+.cardImageContainer {
+  position: relative;
+  width: 100%;
+  height: 240px;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.cardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.carouselCard:hover .cardImage {
+  transform: scale(1.05);
+}
+
+/* Card Badge */
+.cardBadge {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  padding: 12px 20px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: white;
+  text-transform: uppercase;
+  border-bottom-left-radius: 12px;
+  border-top-right-radius: 12px;
+  max-width: 80%;
+  word-wrap: break-word;
+  line-height: 1.2;
+}
+
+/* Transparent background badge - white text */
+.cardBadgeTransparent {
+  color: white !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Collaborative badge styling */
+.cardBadgeCollaborative {
+  background: linear-gradient(135deg, #2D5A87 0%, #1E3A5F 100%) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(45, 90, 135, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Card Content */
+.cardContent {
+  padding: 1rem 1rem 1.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.cardTitle {
+  margin: 0 0 0.75rem 0;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1.3;
+  color: #1a1a1a;
+  text-align: left;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.titleLink {
+  color: inherit;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.titleLink:hover {
+  color: #004c3f;
+  text-decoration: underline;
+}
+
+.cardDate {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  margin-bottom: 1rem;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.dateIcon {
+  font-size: 16px;
+}
+
+.impactdesc {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.loaderWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 400px;
+}
+
+.loader {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #1A685B;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .carouselContainer {
+    padding: 12px 1.5rem 0 1.5rem;
+  }
+  
+  
+  .carouselWrapper {
+    height: 490px;
+  }
+  
+  .navButton {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .navButtonPrev {
+    left: 6px;
+  }
+  
+  .navButtonNext {
+    right: 6px;
+  }
+  
+  .carouselCard {
+    height: 460px;
+    padding: 10px;
+  }
+  
+  .cardImageContainer {
+    height: 240px;
+  }
+  
+  .cardContent {
+    padding: 0.75rem 1.25rem 1.25rem 1.25rem;
+  }
+  
+  .cardTitle {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  .impactSection {
+    padding: 2.5rem 1.5rem 3rem;
+  }
+  
+  .impactTitle {
+    font-size: 1.6rem;
+    line-height: 1.3;
+  }
+  
+  .subtitle {
+    font-size: 0.9rem;
+  }
+  
+  .carouselContainer {
+    padding: 12px 1.5rem 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .carouselWrapper {
+    height: 430px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .carouselTrack {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding-top: 12px;
+  }
+  
+  .navButton {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+  }
+  
+  .navButtonPrev {
+    left: 4px !important;
+  }
+  
+  .navButtonNext {
+    right: 4px !important;
+  }
+  
+  .carouselCard {
+    height: 400px;
+    padding: 8px;
+    max-width: calc(100vw - 3rem - 88px);
+    width: calc(100vw - 3rem - 88px);
+    box-sizing: border-box;
+  }
+  
+  .cardImageContainer {
+    height: 220px;
+  }
+  
+  .cardContent {
+    padding: 0.5rem 1rem 1rem 1rem;
+  }
+  
+  .cardTitle {
+    font-size: 18px;
+    line-height: 1.25;
+  }
+  
+  .cardDate {
+    font-size: 16px;
+  }
+  
+  .cardBadge {
+    font-size: 16px;
+    padding: 10px 16px;
+    max-width: 85%;
+  }
+  
+  .impactdesc {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .impactSection {
+    padding: 2rem 1rem 3rem;
+  }
+  
+  .impactHeading {
+    margin-bottom: 1rem;
+  }
+
+  .impactTitle {
+    font-size: 1.35rem;
+    line-height: 1.25;
+  }
+  
+  .subtitle {
+    font-size: 0.85rem;
+  }
+  
+  .carouselContainer {
+    padding: 12px 1rem 0 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .carouselWrapper {
+    height: 410px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .carouselTrack {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding-top: 12px;
+  }
+  
+  .navButton {
+    width: 36px;
+    height: 36px;
+    font-size: 12px;
+  }
+  
+  .navButtonPrev {
+    left: 2px !important;
+  }
+  
+  .navButtonNext {
+    right: 2px !important;
+  }
+  
+  .carouselCard {
+    height: 380px;
+    padding: 6px;
+    max-width: calc(100vw - 2rem - 80px);
+    width: calc(100vw - 2rem - 80px);
+    box-sizing: border-box;
+  }
+  
+  .cardImageContainer {
+    height: 200px;
+  }
+  
+  .cardContent {
+    padding: 0.8rem 1rem;
+  }
+  
+  .cardTitle {
+    font-size: 18px;
+    line-height: 1.2;
+  }
+  
+  .cardDate {
+    font-size: 16px;
+  }
+  
+  .cardBadge {
+    font-size: 16px;
+    padding: 8px 16px;
+    max-width: 90%;
+  }
+  
+  .impactdesc {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  .impactSection {
+    padding: 2rem 0.75rem 3rem;
+  }
+  
+  .impactTitle {
+    font-size: 1.25rem;
+  }
+  
+  .subtitle {
+    font-size: 0.8rem;
+  }
+  
+  .carouselContainer {
+    padding: 12px 0.75rem 0 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .carouselWrapper {
+    height: 400px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .carouselTrack {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding-top: 12px;
+  }
+  
+  .navButton {
+    width: 32px;
+    height: 32px;
+    font-size: 11px;
+  }
+  
+  .navButtonPrev {
+    left: 1px !important;
+  }
+  
+  .navButtonNext {
+    right: 1px !important;
+  }
+  
+  .carouselCard {
+    height: 370px;
+    max-width: calc(100vw - 1.5rem - 70px);
+    width: calc(100vw - 1.5rem - 70px);
+  }
+  
+  .cardImageContainer {
+    height: 180px;
+  }
+  
+  .cardTitle {
+    font-size: 18px;
+  }
+  
+  .cardDate {
+    font-size: 16px;
+  }
+  
+  .cardBadge {
+    font-size: 16px;
+    padding: 6px 14px;
+  }
+  
+  .impactdesc {
+    font-size: 14px;
+  }
+}

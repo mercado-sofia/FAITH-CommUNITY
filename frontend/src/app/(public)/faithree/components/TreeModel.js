@@ -351,7 +351,7 @@ function Loading() {
 }
 
 // Star Modal Component
-function StarModal({ isOpen, onClose, starId }) {
+function StarModal({ isOpen, onClose, starId, highlight }) {
   const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
@@ -390,6 +390,19 @@ function StarModal({ isOpen, onClose, starId }) {
     return null
   }
 
+  // Get first image from media files
+  const getFirstImage = () => {
+    if (!highlight?.media || highlight.media.length === 0) return null
+    const firstImage = highlight.media.find(item => 
+      item.type === 'image' || 
+      item.mimetype?.startsWith('image/') ||
+      /\.(jpg|jpeg|png|gif|webp)$/i.test(item.filename || item.url || '')
+    )
+    return firstImage?.url || firstImage?.filename || null
+  }
+
+  const imageUrl = getFirstImage()
+
   const modalContent = (
     <div
       style={{
@@ -420,7 +433,7 @@ function StarModal({ isOpen, onClose, starId }) {
           backgroundColor: 'white',
           borderRadius: '16px',
           width: '100%',
-          maxWidth: '500px',
+          maxWidth: '600px',
           maxHeight: '90vh',
           overflowY: 'auto',
           boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)',
@@ -448,7 +461,8 @@ function StarModal({ isOpen, onClose, starId }) {
             alignItems: 'center',
             justifyContent: 'center',
             borderRadius: '50%',
-            transition: 'background-color 0.2s'
+            transition: 'background-color 0.2s',
+            zIndex: 1
           }}
           onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
           onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
@@ -467,14 +481,171 @@ function StarModal({ isOpen, onClose, starId }) {
         >
           Star {starId}
         </h2>
-        <div
-          style={{
-            color: '#666',
-            lineHeight: '1.6'
-          }}
-        >
-          {/* Empty content for now */}
-        </div>
+        
+        {highlight ? (
+          <div
+            style={{
+              color: '#666',
+              lineHeight: '1.6'
+            }}
+          >
+            {/* Title */}
+            <h3
+              style={{
+                margin: '0 0 1rem 0',
+                fontSize: '1.25rem',
+                fontWeight: '600',
+                color: '#333'
+              }}
+            >
+              {highlight.title}
+            </h3>
+            
+            {/* Image */}
+            {imageUrl && (
+              <div
+                style={{
+                  marginBottom: '1rem',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  maxHeight: '300px'
+                }}
+              >
+                <img
+                  src={imageUrl}
+                  alt={highlight.title}
+                  style={{
+                    width: '100%',
+                    height: 'auto',
+                    display: 'block'
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none'
+                  }}
+                />
+              </div>
+            )}
+            
+            {/* Description */}
+            <div style={{ marginBottom: '1rem' }}>
+              <h4
+                style={{
+                  margin: '0 0 0.5rem 0',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  color: '#333'
+                }}
+              >
+                Description
+              </h4>
+              <p
+                style={{
+                  margin: 0,
+                  color: '#666',
+                  whiteSpace: 'pre-wrap'
+                }}
+              >
+                {highlight.description || 'No description available'}
+              </p>
+            </div>
+            
+            {/* Media Files */}
+            {highlight.media && highlight.media.length > 0 && (
+              <div>
+                <h4
+                  style={{
+                    margin: '0 0 0.5rem 0',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    color: '#333'
+                  }}
+                >
+                  Media Files ({highlight.media.length})
+                </h4>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                    gap: '0.5rem',
+                    marginTop: '0.5rem'
+                  }}
+                >
+                  {highlight.media.map((mediaItem, index) => {
+                    const mediaUrl = mediaItem.url || mediaItem.filename
+                    const isVideo = mediaItem.type === 'video' || 
+                                   mediaItem.mimetype?.startsWith('video/') ||
+                                   /\.(mp4|avi|mov|wmv|flv|webm|mkv)$/i.test(mediaItem.filename || mediaItem.url || '')
+                    const isImage = mediaItem.type === 'image' || 
+                                   mediaItem.mimetype?.startsWith('image/') ||
+                                   /\.(jpg|jpeg|png|gif|webp)$/i.test(mediaItem.filename || mediaItem.url || '')
+                    
+                    return (
+                      <div
+                        key={index}
+                        style={{
+                          borderRadius: '4px',
+                          overflow: 'hidden',
+                          aspectRatio: '1',
+                          backgroundColor: '#f0f0f0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        {isVideo && mediaUrl ? (
+                          <video
+                            controls
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover'
+                            }}
+                            preload="metadata"
+                          >
+                            <source src={mediaUrl} type={mediaItem.mimetype || 'video/mp4'} />
+                          </video>
+                        ) : isImage && mediaUrl ? (
+                          <img
+                            src={mediaUrl}
+                            alt={`Media ${index + 1}`}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover'
+                            }}
+                            onError={(e) => {
+                              e.target.style.display = 'none'
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              padding: '0.5rem',
+                              textAlign: 'center',
+                              fontSize: '0.75rem',
+                              color: '#999'
+                            }}
+                          >
+                            {mediaItem.type || 'File'}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div
+            style={{
+              color: '#666',
+              lineHeight: '1.6'
+            }}
+          >
+            No highlight data available
+          </div>
+        )}
       </div>
     </div>
   )
@@ -492,7 +663,9 @@ export default function TreeModel({
   // This controls where the camera is positioned relative to the tree
   // Adjusted to shift view right (tree on left, right edge cropped) - matching 2nd picture
   // Camera positioned to the right (positive X) while maintaining same Y elevation
-  cameraOffset = [2.5, 2.2, 7.5]
+  cameraOffset = [2.5, 2.2, 7.5],
+  // Featured highlights array (max 8) - ordered by when they were starred
+  featuredHighlights = []
 }) {
   // Load saved camera position from localStorage
   // Returns null if saved position matches old default (x ~= 0.5) to force reset
@@ -535,6 +708,13 @@ export default function TreeModel({
     setSelectedStarId(starId)
     setIsModalOpen(true)
   }, [])
+
+  // Get highlight data for selected star
+  const getHighlightForStar = useCallback((starId) => {
+    // starId is 1-indexed, array is 0-indexed
+    const index = starId - 1
+    return featuredHighlights[index] || null
+  }, [featuredHighlights])
 
   // Handle modal close
   const handleModalClose = useCallback(() => {
@@ -610,54 +790,31 @@ export default function TreeModel({
             
             {/* 8 Stars placed on the front of the tree leaves - positioned close to leaves like fruit */}
             {/* Positions are relative to tree position, all in front (positive Z values) */}
-            <Star 
-              position={[-1.4, 2.0, 0.8]} 
-              treePosition={treePosition}
-              starId={1}
-              onStarClick={handleStarClick}
-            />
-            <Star 
-              position={[0.8, 1.75, 0.8]} 
-              treePosition={treePosition}
-              starId={2}
-              onStarClick={handleStarClick}
-            />
-            <Star 
-              position={[0.2, 1.8, 1.0]} 
-              treePosition={treePosition}
-              starId={3}
-              onStarClick={handleStarClick}
-            />
-            <Star 
-              position={[-0.2, 2, 1.0]} 
-              treePosition={treePosition}
-              starId={4}
-              onStarClick={handleStarClick}
-            />
-            <Star 
-              position={[0.6, 2.1, 0.8]} 
-              treePosition={treePosition}
-              starId={5}
-              onStarClick={handleStarClick}
-            />
-            <Star 
-              position={[-1.1, 1.7, 0.8]} 
-              treePosition={treePosition}
-              starId={6}
-              onStarClick={handleStarClick}
-            />
-            <Star 
-              position={[-0.5, 1.7, 0.9]} 
-              treePosition={treePosition}
-              starId={7}
-              onStarClick={handleStarClick}
-            />
-            <Star 
-              position={[-0.7, 2.1, 0.85]} 
-              treePosition={treePosition}
-              starId={8}
-              onStarClick={handleStarClick}
-            />
+            {/* Only show stars for featured highlights (max 8) */}
+            {[
+              { id: 1, position: [-1.4, 2.0, 0.8] },
+              { id: 2, position: [0.8, 1.75, 0.8] },
+              { id: 3, position: [0.2, 1.8, 1.0] },
+              { id: 4, position: [-0.2, 2, 1.0] },
+              { id: 5, position: [0.6, 2.1, 0.8] },
+              { id: 6, position: [-1.1, 1.7, 0.8] },
+              { id: 7, position: [-0.5, 1.7, 0.9] },
+              { id: 8, position: [-0.7, 2.1, 0.85] }
+            ].map((starConfig) => {
+              // Only show star if there's a corresponding featured highlight
+              const shouldShow = starConfig.id <= featuredHighlights.length
+              if (!shouldShow) return null
+              
+              return (
+                <Star 
+                  key={starConfig.id}
+                  position={starConfig.position} 
+                  treePosition={treePosition}
+                  starId={starConfig.id}
+                  onStarClick={handleStarClick}
+                />
+              )
+            })}
             
             {/* Controls with auto-return - pass treePosition and cameraOffset */}
             <AutoReturnControls 
@@ -674,6 +831,7 @@ export default function TreeModel({
         isOpen={isModalOpen}
         onClose={handleModalClose}
         starId={selectedStarId}
+        highlight={selectedStarId ? getHighlightForStar(selectedStarId) : null}
       />
     </>
   )

@@ -183,14 +183,19 @@ const HighlightCard = ({ highlight, onViewDetails }) => {
         <div className={styles.cardHeader}>
           <h3 className={styles.cardTitle}>{highlight.title}</h3>
         </div>
-        <p className={styles.cardOrganization}>{highlight.organization_name || 'Unknown Organization'}</p>
         
-        {/* Associated Program */}
-        {highlight.program_title && (
-          <p className={styles.cardProgram} style={{ marginTop: '4px', marginBottom: '8px', fontSize: '0.875rem', color: '#6b7280' }}>
-            <span style={{ fontWeight: '500' }}>Program:</span> {highlight.program_title}
+        {/* Associated Program - Display directly under title */}
+        {highlight.program_title ? (
+          <p className={styles.cardProgram}>
+            <span className={styles.programLabel}>Program:</span> {highlight.program_title}
           </p>
-        )}
+        ) : highlight.program_id ? (
+          <p className={styles.cardProgram} style={{ fontStyle: 'italic', color: '#9ca3af' }}>
+            <span className={styles.programLabel}>Program:</span> Program ID: {highlight.program_id} (Title not found)
+          </p>
+        ) : null}
+        
+        <p className={styles.cardOrganization}>{highlight.organization_name || 'Unknown Organization'}</p>
         
         <p className={styles.cardDescription}>
           {truncateText(highlight.description)}

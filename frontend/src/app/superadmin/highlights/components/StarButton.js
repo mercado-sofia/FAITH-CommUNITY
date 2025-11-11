@@ -6,8 +6,10 @@ import styles from './styles/StarButton.module.css'
 
 // Helper functions to manage starred highlights in localStorage
 // Store as ordered array to preserve the order in which highlights were starred
+import { getFeaturedHighlightsOrdered, getMaxFeaturedHighlights } from '@/utils/featuredHighlights'
+
 const STARRED_HIGHLIGHTS_KEY = 'superadmin_starred_highlights'
-const MAX_FEATURED_HIGHLIGHTS = 8
+const MAX_FEATURED_HIGHLIGHTS = getMaxFeaturedHighlights()
 
 const getStarredHighlights = () => {
   if (typeof window === 'undefined') return new Set()
@@ -25,13 +27,7 @@ const getStarredHighlights = () => {
 
 // Get starred highlights as ordered array (preserves order)
 const getStarredHighlightsOrdered = () => {
-  if (typeof window === 'undefined') return []
-  try {
-    const stored = localStorage.getItem(STARRED_HIGHLIGHTS_KEY)
-    return stored ? JSON.parse(stored) : []
-  } catch {
-    return []
-  }
+  return getFeaturedHighlightsOrdered()
 }
 
 const setStarredHighlight = (highlightId, isStarred) => {
@@ -69,10 +65,8 @@ const setStarredHighlight = (highlightId, isStarred) => {
   }
 }
 
-// Export for use in other components
-export const getFeaturedHighlightsOrdered = () => {
-  return getStarredHighlightsOrdered()
-}
+// Re-export for backward compatibility (if needed)
+export { getFeaturedHighlightsOrdered } from '@/utils/featuredHighlights'
 
 const StarButton = ({ highlightId, highlightTitle, onStarChange }) => {
   const [isStarred, setIsStarred] = useState(false)

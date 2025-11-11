@@ -716,6 +716,18 @@ export default function TreeModel({
     return featuredHighlights[index] || null
   }, [featuredHighlights])
 
+  // Debug: Log featured highlights when they change
+  useEffect(() => {
+    if (featuredHighlights.length > 0) {
+      console.log('TreeModel received featured highlights:', {
+        count: featuredHighlights.length,
+        highlights: featuredHighlights.map(h => ({ id: h.id, title: h.title }))
+      })
+    } else {
+      console.log('TreeModel: No featured highlights (empty array)')
+    }
+  }, [featuredHighlights])
+
   // Handle modal close
   const handleModalClose = useCallback(() => {
     setIsModalOpen(false)

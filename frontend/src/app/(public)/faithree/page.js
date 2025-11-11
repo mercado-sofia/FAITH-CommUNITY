@@ -6,7 +6,7 @@ import { IoRainyOutline } from "react-icons/io5";
 import styles from './faithree.module.css';
 import { Highlights, HeroSection } from './sections';
 import { TreeModel } from './components';
-import { getFeaturedHighlightsOrdered } from '@/app/superadmin/highlights/components/StarButton';
+import { getFeaturedHighlightsOrdered } from '@/utils/featuredHighlights';
 
 // Check for reduced motion preference
 const prefersReducedMotion = typeof window !== 'undefined' 
@@ -81,8 +81,21 @@ function FAITHreePage() {
       try {
         setIsLoadingHighlights(true);
         
+        // Check if we're in browser environment
+        if (typeof window === 'undefined') {
+          setFeaturedHighlights([]);
+          setIsLoadingHighlights(false);
+          return;
+        }
+        
         // Get ordered featured highlight IDs from localStorage
-        const featuredIds = getFeaturedHighlightsOrdered();
+        let featuredIds = [];
+        try {
+          featuredIds = getFeaturedHighlightsOrdered();
+        } catch (error) {
+          console.error('Error reading featured highlights from localStorage:', error);
+          // Continue with empty array if localStorage read fails
+        }
         
         if (featuredIds.length === 0) {
           setFeaturedHighlights([]);
@@ -91,10 +104,17 @@ function FAITHreePage() {
         }
         
         // Fetch all approved highlights from API
+        if (!API_BASE_URL) {
+          console.error('API_BASE_URL is not set. Please configure NEXT_PUBLIC_API_URL environment variable.');
+          setFeaturedHighlights([]);
+          setIsLoadingHighlights(false);
+          return;
+        }
+        
         const response = await fetch(`${API_BASE_URL}/api/highlights/public/approved`);
         
         if (!response.ok) {
-          throw new Error('Failed to fetch highlights');
+          throw new Error(`Failed to fetch highlights: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
@@ -106,6 +126,12 @@ function FAITHreePage() {
           .map(id => allHighlights.find(h => String(h.id) === String(id)))
           .filter(Boolean) // Remove any undefined values (in case highlight was deleted)
           .slice(0, 8); // Ensure max 8 highlights
+        
+        console.log('Featured highlights loaded:', {
+          featuredIdsCount: featuredIds.length,
+          matchedHighlightsCount: orderedFeaturedHighlights.length,
+          highlights: orderedFeaturedHighlights.map(h => ({ id: h.id, title: h.title }))
+        });
         
         setFeaturedHighlights(orderedFeaturedHighlights);
       } catch (error) {

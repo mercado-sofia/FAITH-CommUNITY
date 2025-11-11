@@ -113,6 +113,38 @@ export const uploadPostActReport = async (req, res) => {
       }
     });
   } catch (error) {
-    return res.status(500).json({ success: false, message: 'Failed to upload Post Act Report', error: error.message });
+    console.error('Post Act Report upload error:', error);
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to upload Post Act Report';
+    let statusCode = 500;
+    
+    if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    // Handle S3 upload errors
+    if (error.name === 'S3UploadError' || error.message?.includes('S3') || error.message?.includes('AWS')) {
+      errorMessage = 'Failed to upload file to storage. Please try again.';
+      statusCode = 503;
+    }
+    
+    // Handle database errors
+    if (error.code === 'ER_DUP_ENTRY') {
+      errorMessage = 'A Post Act Report already exists for this program.';
+      statusCode = 409;
+    } else if (error.code === 'ER_NO_REFERENCED_ROW_2' || error.code === 'ER_NO_REFERENCED_ROW') {
+      errorMessage = 'Invalid program reference. Please refresh and try again.';
+      statusCode = 400;
+    } else if (error.code === 'ECONNREFUSED' || error.code === 'PROTOCOL_CONNECTION_LOST') {
+      errorMessage = 'Database connection failed. Please try again later.';
+      statusCode = 503;
+    }
+    
+    return res.status(statusCode).json({ 
+      success: false, 
+      message: errorMessage,
+      ...(process.env.NODE_ENV === 'development' && { error: error.message })
+    });
   }
 };

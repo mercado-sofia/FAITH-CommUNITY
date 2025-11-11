@@ -428,12 +428,20 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       });
 
       if (!response.ok) {
-        const errorInfo = handleApiError({ status: response.status }, 'program_post_act_report', {
-          redirectOnAuth: true,
-          logError: true
-        });
-        const errorData = await response.json().catch(() => ({ message: errorInfo.message }));
-        throw new Error(errorData.message || errorInfo.message);
+        let errorMessage;
+        try {
+          const errorData = await response.json();
+          // Check for both 'message' and 'error' fields in error response
+          errorMessage = errorData.message || errorData.error || `HTTP error! status: ${response.status}`;
+        } catch (parseError) {
+          // If response is not JSON, use status-based error message
+          const errorInfo = handleApiError({ status: response.status }, 'program_post_act_report', {
+            redirectOnAuth: true,
+            logError: true
+          });
+          errorMessage = errorInfo.message;
+        }
+        throw new Error(errorMessage);
       }
 
       // Optimistically update UI to reflect pending state to avoid duplicate submissions

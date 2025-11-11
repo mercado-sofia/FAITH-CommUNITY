@@ -1721,23 +1721,11 @@ const initializeDatabase = async () => {
         (3, 'Innovation', 'Building the Future', 3)
       `);
 
+      // Mission/Vision - no auto-insert, let users add them manually
+      // Removed auto-insert to allow empty values initially
 
-      await connection.query(`
-        INSERT IGNORE INTO mission_vision (type, content) VALUES
-        ('mission', 'To provide quality education and community service through innovative programs and partnerships.'),
-        ('vision', 'To be a leading institution in community development and social transformation.')
-      `);
-
-      // Insert default extension_categories for about_us table (can't use DEFAULT on JSON column)
-      await connection.query(`
-        INSERT IGNORE INTO about_us (extension_categories) VALUES
-        (?)
-      `, [JSON.stringify([
-        {"name": "Extension For Education", "icon": "education", "color": "green"},
-        {"name": "Extension For Medical", "icon": "medical", "color": "red"},
-        {"name": "Extension For Community", "icon": "community", "color": "orange"},
-        {"name": "Extension For Foods", "icon": "food", "color": "green"}
-      ])]);
+      // Extension categories (about_us) - no auto-insert, let users add them manually
+      // Removed auto-insert to allow empty values initially
       
       // Handle existing data migrations for news table
       const [existingNews] = await connection.query(`

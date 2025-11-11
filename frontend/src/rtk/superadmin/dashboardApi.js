@@ -222,26 +222,28 @@ export const dashboardApi = createApi({
         return [];
       },
       transformErrorResponse: (response, meta, arg) => {
-        // Log errors for debugging (always log, not just in development)
-        const errorData = {
-          status: response?.status,
-          statusText: response?.statusText,
-          data: response?.data,
-          error: response?.error,
-          originalStatus: meta?.response?.status,
-          originalStatusText: meta?.response?.statusText,
-          url: meta?.request?.url,
-          debug: response?.data?.debug || null
-        };
+        // Extract error data from response
+        const errorResponse = response?.data || response;
+        const errorMessage = errorResponse?.error || errorResponse?.message || 'Failed to fetch top organizations';
+        const errorStatus = response?.status || meta?.response?.status || 'FETCH_ERROR';
         
-        console.error('[getTopOrganizationsByProgramCount] API Error:', errorData);
+        // Log errors for debugging
+        console.error('[getTopOrganizationsByProgramCount] API Error:', {
+          status: errorStatus,
+          statusText: response?.statusText || meta?.response?.statusText,
+          errorMessage,
+          errorResponse,
+          debug: errorResponse?.debug,
+          url: meta?.request?.url
+        });
         
-        // Return error object with debug info preserved so frontend can display it
-        // RTK Query will treat this as an error, but we preserve the debug data
-        throw {
-          status: response?.status || meta?.response?.status || 'FETCH_ERROR',
-          data: response?.data || { message: 'Unknown error occurred', debug: null },
-          error: response?.error || 'Failed to fetch top organizations'
+        // Return error data structure that RTK Query can serialize
+        // RTK Query will automatically set this as the error state
+        return {
+          status: errorStatus,
+          message: errorMessage,
+          error: errorMessage,
+          ...errorResponse, // Spread all error response data including debug, errorDetails, etc.
         };
       },
     }),

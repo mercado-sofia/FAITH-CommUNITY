@@ -581,24 +581,20 @@ export const getTopOrganizationsByProgramCount = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10; // Default to top 10
     
     // Query to get organizations with their program counts
+    // Start from programs_projects (like other working queries) and join to organizations
+    // This ensures we only count organizations that actually have programs
     // Count all programs (both approved and unapproved) for dashboard statistics
-    // Using subquery approach to ensure accurate counting
     const query = `
       SELECT 
         o.id,
         o.org as acronym,
         o.orgName as name,
-        COALESCE(program_counts.program_count, 0) as program_count
-      FROM organizations o
-      LEFT JOIN (
-        SELECT 
-          organization_id,
-          COUNT(*) as program_count
-        FROM programs_projects
-        GROUP BY organization_id
-      ) program_counts ON o.id = program_counts.organization_id
+        COUNT(DISTINCT pp.id) as program_count
+      FROM programs_projects pp
+      INNER JOIN organizations o ON pp.organization_id = o.id
       WHERE o.status = 'ACTIVE'
-        AND COALESCE(program_counts.program_count, 0) > 0
+      GROUP BY o.id, o.org, o.orgName
+      HAVING program_count > 0
       ORDER BY program_count DESC
       LIMIT ?
     `;
@@ -606,9 +602,25 @@ export const getTopOrganizationsByProgramCount = async (req, res) => {
     const [results] = await db.execute(query, [limit]);
     
     // Log results for debugging
-    console.log(`[getTopOrganizationsByProgramCount] Found ${results.length} organizations with programs`);
+    console.log(`[getTopOrganizationsByProgramCount] Query executed. Found ${results.length} organizations with programs`);
     if (results.length > 0) {
-      console.log('[getTopOrganizationsByProgramCount] Sample result:', results[0]);
+      console.log('[getTopOrganizationsByProgramCount] Sample result:', JSON.stringify(results[0], null, 2));
+      console.log('[getTopOrganizationsByProgramCount] All results:', JSON.stringify(results, null, 2));
+    } else {
+      // Debug: Check if there are any programs at all
+      const [programCheck] = await db.execute('SELECT COUNT(*) as total FROM programs_projects');
+      const [orgCheck] = await db.execute("SELECT COUNT(*) as total FROM organizations WHERE status = 'ACTIVE'");
+      const [orgWithPrograms] = await db.execute(`
+        SELECT COUNT(DISTINCT o.id) as total 
+        FROM organizations o 
+        INNER JOIN programs_projects pp ON o.id = pp.organization_id 
+        WHERE o.status = 'ACTIVE'
+      `);
+      console.log('[getTopOrganizationsByProgramCount] Debug info:', {
+        totalPrograms: programCheck[0]?.total || 0,
+        activeOrganizations: orgCheck[0]?.total || 0,
+        activeOrgsWithPrograms: orgWithPrograms[0]?.total || 0
+      });
     }
     
     // Format the data for frontend consumption
@@ -618,6 +630,8 @@ export const getTopOrganizationsByProgramCount = async (req, res) => {
       name: row.name || 'Unknown Organization',
       programCount: parseInt(row.program_count) || 0
     }));
+    
+    console.log('[getTopOrganizationsByProgramCount] Formatted organizations:', JSON.stringify(organizations, null, 2));
     
     // Always return success with data array (even if empty)
     res.json({

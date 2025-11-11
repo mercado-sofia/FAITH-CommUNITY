@@ -695,7 +695,7 @@
   display: flex;
   gap: 12px;
   margin-top: 8px;
-  justify-content: flex-start;
+  justify-content: flex-end;
 }
 
 .cancelButton {

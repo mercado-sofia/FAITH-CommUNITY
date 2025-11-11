@@ -3,7 +3,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { FaSpinner, FaTimes, FaUpload, FaImage, FaVideo, FaFile, FaEye, FaExclamationTriangle, FaCheckCircle } from 'react-icons/fa';
-import { FiArrowLeft } from 'react-icons/fi';
 import styles from './HighlightForm.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -375,14 +374,6 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
     <div className={styles.container}>
       {/* Header */}
       <div className={styles.header}>
-        <button
-          className={styles.backButton}
-          onClick={onCancel}
-          disabled={isSubmitting}
-        >
-          <FiArrowLeft />
-          Back to Highlights
-        </button>
         <h1 className={styles.title}>
           {isEditMode ? 'Edit Highlight' : 'Add New Highlight'}
         </h1>

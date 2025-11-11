@@ -18,6 +18,64 @@ const safeParseJSON = (value, defaultValue = null) => {
   return value;
 };
 
+// Helper function to clean up unapproved program and related records
+const cleanupUnapprovedProgram = async (programId, submissionId) => {
+  try {
+    // Check if program exists and is not approved
+    const [existingProgram] = await db.execute(
+      'SELECT id, is_approved FROM programs_projects WHERE id = ?',
+      [programId]
+    );
+    
+    if (existingProgram.length > 0 && !existingProgram[0].is_approved) {
+      // Program was created but not approved - delete it and related records
+      // Delete collaboration records linked to this submission or program
+      await db.execute(
+        'DELETE FROM program_collaborations WHERE (submission_id = ? OR program_id = ?)',
+        [submissionId, programId]
+      );
+      
+      // Delete program event dates
+      await db.execute(
+        'DELETE FROM program_event_dates WHERE program_id = ?',
+        [programId]
+      );
+      
+      // Delete program additional images
+      await db.execute(
+        'DELETE FROM program_additional_images WHERE program_id = ?',
+        [programId]
+      );
+      
+      // Delete the unapproved program
+      await db.execute(
+        'DELETE FROM programs_projects WHERE id = ? AND is_approved = FALSE',
+        [programId]
+      );
+      
+      return { deleted: true, wasApproved: false };
+    } else if (existingProgram.length > 0 && existingProgram[0].is_approved) {
+      // Program is already approved - this is an update rejection, don't delete the program
+      // Just clean up any collaboration records linked to this submission
+      await db.execute(
+        'DELETE FROM program_collaborations WHERE submission_id = ? AND program_id IS NULL',
+        [submissionId]
+      );
+      return { deleted: false, wasApproved: true };
+    } else {
+      // Program doesn't exist - clean up collaboration records linked to this submission
+      await db.execute(
+        'DELETE FROM program_collaborations WHERE submission_id = ? AND program_id IS NULL',
+        [submissionId]
+      );
+      return { deleted: false, wasApproved: false, notFound: true };
+    }
+  } catch (error) {
+    logError('Error cleaning up unapproved program', error, { programId, submissionId });
+    throw error;
+  }
+};
+
 export const getPendingSubmissions = async (req, res) => {
   try {
     // Optimized query to reduce memory usage:
@@ -1411,51 +1469,7 @@ export const rejectSubmission = async (req, res) => {
         const programId = data.program_id;
         
         if (programId) {
-          // Check if program exists and is not approved
-          const [existingProgram] = await db.execute(
-            'SELECT id, is_approved FROM programs_projects WHERE id = ?',
-            [programId]
-          );
-          
-          if (existingProgram.length > 0 && !existingProgram[0].is_approved) {
-            // Program was created but not approved - delete it and related records
-            // Delete collaboration records linked to this submission or program
-            await db.execute(
-              'DELETE FROM program_collaborations WHERE (submission_id = ? OR program_id = ?)',
-              [id, programId]
-            );
-            
-            // Delete program event dates
-            await db.execute(
-              'DELETE FROM program_event_dates WHERE program_id = ?',
-              [programId]
-            );
-            
-            // Delete program additional images
-            await db.execute(
-              'DELETE FROM program_additional_images WHERE program_id = ?',
-              [programId]
-            );
-            
-            // Delete the unapproved program
-            await db.execute(
-              'DELETE FROM programs_projects WHERE id = ? AND is_approved = FALSE',
-              [programId]
-            );
-          } else if (existingProgram.length > 0 && existingProgram[0].is_approved) {
-            // Program is already approved - this is an update rejection, don't delete the program
-            // Just clean up any collaboration records linked to this submission
-            await db.execute(
-              'DELETE FROM program_collaborations WHERE submission_id = ? AND program_id IS NULL',
-              [id]
-            );
-          } else {
-            // Program doesn't exist - clean up collaboration records linked to this submission
-            await db.execute(
-              'DELETE FROM program_collaborations WHERE submission_id = ? AND program_id IS NULL',
-              [id]
-            );
-          }
+          await cleanupUnapprovedProgram(programId, id);
         } else {
           // No program_id in submission - clean up collaboration records linked to this submission
           await db.execute(
@@ -2386,51 +2400,7 @@ export const bulkRejectSubmissions = async (req, res) => {
             const programId = data.program_id;
             
             if (programId) {
-              // Check if program exists and is not approved
-              const [existingProgram] = await db.execute(
-                'SELECT id, is_approved FROM programs_projects WHERE id = ?',
-                [programId]
-              );
-              
-              if (existingProgram.length > 0 && !existingProgram[0].is_approved) {
-                // Program was created but not approved - delete it and related records
-                // Delete collaboration records linked to this submission or program
-                await db.execute(
-                  'DELETE FROM program_collaborations WHERE (submission_id = ? OR program_id = ?)',
-                  [id, programId]
-                );
-                
-                // Delete program event dates
-                await db.execute(
-                  'DELETE FROM program_event_dates WHERE program_id = ?',
-                  [programId]
-                );
-                
-                // Delete program additional images
-                await db.execute(
-                  'DELETE FROM program_additional_images WHERE program_id = ?',
-                  [programId]
-                );
-                
-                // Delete the unapproved program
-                await db.execute(
-                  'DELETE FROM programs_projects WHERE id = ? AND is_approved = FALSE',
-                  [programId]
-                );
-              } else if (existingProgram.length > 0 && existingProgram[0].is_approved) {
-                // Program is already approved - this is an update rejection, don't delete the program
-                // Just clean up any collaboration records linked to this submission
-                await db.execute(
-                  'DELETE FROM program_collaborations WHERE submission_id = ? AND program_id IS NULL',
-                  [id]
-                );
-              } else {
-                // Program doesn't exist - clean up collaboration records linked to this submission
-                await db.execute(
-                  'DELETE FROM program_collaborations WHERE submission_id = ? AND program_id IS NULL',
-                  [id]
-                );
-              }
+              await cleanupUnapprovedProgram(programId, id);
             } else {
               // No program_id in submission - clean up collaboration records linked to this submission
               await db.execute(

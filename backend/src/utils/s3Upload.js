@@ -7,6 +7,7 @@ import {
 } from './s3Config.js';
 import { Upload } from '@aws-sdk/lib-storage';
 import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { logError } from './logger.js';
 
 // Memory storage for multer (to work with S3)
 const storage = multer.memoryStorage();
@@ -153,12 +154,12 @@ export const uploadSingleToS3 = async (file, folder, options = {}) => {
           content_type: contentType,
         };
       } catch (retryError) {
-        console.error('Error uploading to S3 (retry failed):', retryError);
+        logError('Error uploading to S3 (retry failed)', retryError, { context: 's3_upload', retry: true });
         throw new Error(`Failed to upload file: ${retryError.message}`);
       }
     }
     
-    console.error('Error uploading to S3:', error);
+    logError('Error uploading to S3', error, { context: 's3_upload' });
     throw new Error(`Failed to upload file: ${error.message}`);
   }
 };
@@ -180,7 +181,7 @@ export const uploadMultipleToS3 = async (files, folder, options = {}) => {
       count: results.length
     };
   } catch (error) {
-    console.error('Error uploading multiple files to S3:', error);
+    logError('Error uploading multiple files to S3', error, { context: 's3_upload', multiple: true });
     throw error;
   }
 };
@@ -196,7 +197,7 @@ export const deleteFromS3 = async (key) => {
     await s3Client.send(command);
     return { success: true };
   } catch (error) {
-    console.error('Error deleting from S3:', error);
+    logError('Error deleting from S3', error, { context: 's3_delete', key });
     throw error;
   }
 };

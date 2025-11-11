@@ -4,69 +4,7 @@ import UnfeatureConfirmationModal from './UnfeatureConfirmationModal'
 import FeatureConfirmationModal from './FeatureConfirmationModal'
 import styles from './styles/StarButton.module.css'
 
-// Helper functions to manage starred highlights in localStorage
-// Store as ordered array to preserve the order in which highlights were starred
-import { getFeaturedHighlightsOrdered, getMaxFeaturedHighlights } from '@/utils/featuredHighlights'
-
-const STARRED_HIGHLIGHTS_KEY = 'superadmin_starred_highlights'
-const MAX_FEATURED_HIGHLIGHTS = getMaxFeaturedHighlights()
-
-const getStarredHighlights = () => {
-  if (typeof window === 'undefined') return new Set()
-  try {
-    const stored = localStorage.getItem(STARRED_HIGHLIGHTS_KEY)
-    if (!stored) return new Set()
-    
-    // Handle both old format (array) and new format (array)
-    const array = JSON.parse(stored)
-    return new Set(Array.isArray(array) ? array : [])
-  } catch {
-    return new Set()
-  }
-}
-
-// Get starred highlights as ordered array (preserves order)
-const getStarredHighlightsOrdered = () => {
-  return getFeaturedHighlightsOrdered()
-}
-
-const setStarredHighlight = (highlightId, isStarred) => {
-  if (typeof window === 'undefined') return
-  try {
-    const starredOrdered = getStarredHighlightsOrdered()
-    
-    if (isStarred) {
-      // Check if already starred
-      if (starredOrdered.includes(highlightId)) {
-        return // Already starred, no change needed
-      }
-      
-      // Check if we've reached the maximum
-      if (starredOrdered.length >= MAX_FEATURED_HIGHLIGHTS) {
-        throw new Error(`Maximum of ${MAX_FEATURED_HIGHLIGHTS} featured highlights allowed`)
-      }
-      
-      // Add to the end of the array (preserves order)
-      starredOrdered.push(highlightId)
-    } else {
-      // Remove from array
-      const index = starredOrdered.indexOf(highlightId)
-      if (index > -1) {
-        starredOrdered.splice(index, 1)
-      }
-    }
-    
-    localStorage.setItem(STARRED_HIGHLIGHTS_KEY, JSON.stringify(starredOrdered))
-    // Dispatch custom event to notify other components
-    window.dispatchEvent(new CustomEvent('starredHighlightsChanged'))
-  } catch (error) {
-    console.error('Error saving starred highlights:', error)
-    throw error
-  }
-}
-
-// Re-export for backward compatibility (if needed)
-export { getFeaturedHighlightsOrdered } from '@/utils/featuredHighlights'
+const MAX_FEATURED_HIGHLIGHTS = 8
 
 const StarButton = ({ highlightId, highlightTitle, onStarChange }) => {
   const [isStarred, setIsStarred] = useState(false)
@@ -74,53 +12,32 @@ const StarButton = ({ highlightId, highlightTitle, onStarChange }) => {
   const [showUnfeatureModal, setShowUnfeatureModal] = useState(false)
   const [showFeatureModal, setShowFeatureModal] = useState(false)
 
-  // Check if highlight is already featured
-  // Note: API endpoints may not exist yet (for future purposes)
-  // Skip API queries for now and only use localStorage
-  // These are kept for future use when API endpoints are implemented
+  // Check if highlight is already featured using API
   const { 
     data: featuredStatus, 
     isLoading: statusLoading,
-    refetch: refetchStatus,
-    error: statusError
+    refetch: refetchStatus
   } = useCheckFeaturedStatusQuery(highlightId, {
-    skip: true // Skip API query for now - use localStorage only
+    skip: !highlightId
   })
 
-  // Mutations for starring/unstarring (for future use)
+  // Mutations for starring/unstarring
   const [addFeaturedHighlight] = useAddFeaturedHighlightMutation()
   const [removeFeaturedHighlight] = useRemoveFeaturedHighlightMutation()
-  
-  // Suppress unused variable warnings
-  void featuredStatus
-  void statusLoading
-  void refetchStatus
-  void statusError
 
-  // Check localStorage on mount and when highlightId changes
+  // Update starred state when API response changes
+  useEffect(() => {
+    if (featuredStatus) {
+      setIsStarred(featuredStatus.isFeatured || false)
+    }
+  }, [featuredStatus])
+
+  // Refetch status when highlightId changes
   useEffect(() => {
     if (highlightId) {
-      const starred = getStarredHighlights()
-      setIsStarred(starred.has(highlightId))
+      refetchStatus()
     }
-  }, [highlightId])
-
-  // Listen for changes from other components
-  useEffect(() => {
-    const handleStarredChange = () => {
-      if (highlightId) {
-        const starred = getStarredHighlights()
-        setIsStarred(starred.has(highlightId))
-      }
-    }
-    
-    if (typeof window !== 'undefined') {
-      window.addEventListener('starredHighlightsChanged', handleStarredChange)
-      return () => {
-        window.removeEventListener('starredHighlightsChanged', handleStarredChange)
-      }
-    }
-  }, [highlightId])
+  }, [highlightId, refetchStatus])
 
   const handleStarClick = async (e) => {
     e.preventDefault()
@@ -141,33 +58,23 @@ const StarButton = ({ highlightId, highlightTitle, onStarChange }) => {
     setIsLoading(true)
     
     try {
-      // Check if we've reached the maximum before adding
-      const starredOrdered = getStarredHighlightsOrdered()
-      if (starredOrdered.length >= MAX_FEATURED_HIGHLIGHTS) {
-        alert(`Maximum of ${MAX_FEATURED_HIGHLIGHTS} featured highlights allowed. Please unfeature another highlight first.`)
-        setIsLoading(false)
-        return
-      }
-      
-      const newStarredState = true
-      setIsStarred(newStarredState)
-      setStarredHighlight(highlightId, newStarredState)
-      if (onStarChange) onStarChange(highlightId, newStarredState)
-      
-      // Try to use API if available (for future use)
-      // This will fail silently if endpoints don't exist
-      try {
-        await addFeaturedHighlight(highlightId).unwrap()
-      } catch (apiError) {
-        // API not available - that's okay, we're using localStorage
-        // Silently ignore the error
+      await addFeaturedHighlight(highlightId).unwrap()
+      setIsStarred(true)
+      if (onStarChange) onStarChange(highlightId, true)
+      // Refetch status to get updated display order
+      refetchStatus()
+      // Dispatch event to notify other components
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('starredHighlightsChanged'))
       }
     } catch (error) {
-      // Fallback: revert state if something goes wrong
       setIsStarred(false)
       console.error('Error adding to featured:', error)
-      if (error.message && error.message.includes('Maximum')) {
-        alert(error.message)
+      const errorMessage = error?.data?.error || error?.message || 'Failed to add highlight to featured'
+      if (errorMessage.includes('Maximum')) {
+        alert(`Maximum of ${MAX_FEATURED_HIGHLIGHTS} featured highlights allowed. Please unfeature another highlight first.`)
+      } else {
+        alert(errorMessage)
       }
     } finally {
       setIsLoading(false)
@@ -178,23 +85,20 @@ const StarButton = ({ highlightId, highlightTitle, onStarChange }) => {
     setIsLoading(true)
     
     try {
-      const newStarredState = false
-      setIsStarred(newStarredState)
-      setStarredHighlight(highlightId, newStarredState)
-      if (onStarChange) onStarChange(highlightId, newStarredState)
-      
-      // Try to use API if available (for future use)
-      // This will fail silently if endpoints don't exist
-      try {
-        await removeFeaturedHighlight(highlightId).unwrap()
-      } catch (apiError) {
-        // API not available - that's okay, we're using localStorage
-        // Silently ignore the error
+      await removeFeaturedHighlight(highlightId).unwrap()
+      setIsStarred(false)
+      if (onStarChange) onStarChange(highlightId, false)
+      // Refetch status
+      refetchStatus()
+      // Dispatch event to notify other components
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('starredHighlightsChanged'))
       }
     } catch (error) {
-      // Fallback: revert state if something goes wrong
       setIsStarred(true)
       console.error('Error removing from featured:', error)
+      const errorMessage = error?.data?.error || error?.message || 'Failed to remove highlight from featured'
+      alert(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -218,14 +122,14 @@ const StarButton = ({ highlightId, highlightTitle, onStarChange }) => {
     setShowFeatureModal(false)
   }
 
-  // Don't show loading state (API queries are skipped)
-  // if (statusLoading && !statusError) {
-  //   return (
-  //     <div className={styles.starButton}>
-  //       <div className={styles.starLoading}></div>
-  //     </div>
-  //   )
-  // }
+  // Show loading state while checking featured status
+  if (statusLoading) {
+    return (
+      <div className={styles.starButton}>
+        <div className={styles.starLoading}></div>
+      </div>
+    )
+  }
 
   return (
     <>

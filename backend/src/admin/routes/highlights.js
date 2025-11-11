@@ -9,7 +9,11 @@ import {
   deleteHighlight,
   getAllHighlightsForApproval,
   updateHighlightStatus,
-  getApprovedHighlights
+  getApprovedHighlights,
+  getFeaturedHighlights,
+  addFeaturedHighlight,
+  removeFeaturedHighlight,
+  checkFeaturedStatus
 } from '../controllers/highlightsController.js';
 
 const router = express.Router();
@@ -20,8 +24,20 @@ router.use(verifyAdminOrSuperadmin);
 // Get all highlights for admin's organization
 router.get('/', getAdminHighlights);
 
+// Superadmin routes for highlight approval (must be before /:id routes)
+router.get('/approval/all', getAllHighlightsForApproval);
+router.put('/approval/:id/status', updateHighlightStatus);
+
+// Featured highlights routes (must be before /:id routes)
+router.get('/featured', getFeaturedHighlights);
+
 // Get a single highlight by ID
 router.get('/:id', getHighlightById);
+
+// Featured status and actions for specific highlight (must be after /:id route)
+router.get('/:id/featured', checkFeaturedStatus);
+router.post('/:id/feature', addFeaturedHighlight);
+router.post('/:id/unfeature', removeFeaturedHighlight);
 
 // Create a new highlight
 router.post('/', createHighlight);
@@ -31,9 +47,5 @@ router.put('/:id', updateHighlight);
 
 // Delete a highlight
 router.delete('/:id', deleteHighlight);
-
-// Superadmin routes for highlight approval
-router.get('/approval/all', getAllHighlightsForApproval);
-router.put('/approval/:id/status', updateHighlightStatus);
 
 export default router;

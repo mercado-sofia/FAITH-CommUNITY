@@ -197,22 +197,51 @@ const SuperadminHighlightsPage = () => {
     return highlights.filter(h => h.organization_id === parseInt(orgId))
   }
 
-  // Get starred highlights from localStorage
-  const getStarredHighlights = () => {
-    if (typeof window === 'undefined') return new Set()
-    try {
-      const stored = localStorage.getItem('superadmin_starred_highlights')
-      return stored ? new Set(JSON.parse(stored)) : new Set()
-    } catch {
-      return new Set()
-    }
-  }
+  // Get featured highlights - fetch from API
+  const [featuredHighlightsFromApi, setFeaturedHighlightsFromApi] = useState([])
+  const [isLoadingFeatured, setIsLoadingFeatured] = useState(false)
 
-  // Get featured highlights (only starred highlights)
+  useEffect(() => {
+    const fetchFeaturedHighlights = async () => {
+      try {
+        setIsLoadingFeatured(true)
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admin/highlights/featured`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('superAdminToken') || ''}`
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          setFeaturedHighlightsFromApi(data.highlights || [])
+        }
+      } catch (error) {
+        console.error('Error fetching featured highlights:', error)
+      } finally {
+        setIsLoadingFeatured(false)
+      }
+    }
+
+    fetchFeaturedHighlights()
+
+    // Listen for changes
+    const handleStarredChange = () => {
+      fetchFeaturedHighlights()
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('starredHighlightsChanged', handleStarredChange)
+      return () => {
+        window.removeEventListener('starredHighlightsChanged', handleStarredChange)
+      }
+    }
+  }, [])
+
+  // Get featured highlights (from API)
   const getFeaturedHighlights = (highlights) => {
-    const starredIds = getStarredHighlights()
-    // Filter by starred and ensure status is approved (safety check)
-    return highlights.filter(h => h.status === 'approved' && starredIds.has(h.id))
+    const featuredIds = new Set(featuredHighlightsFromApi.map(fh => fh.highlight_id || fh.id))
+    // Filter by featured and ensure status is approved (safety check)
+    return highlights.filter(h => h.status === 'approved' && featuredIds.has(h.id))
   }
 
   // Process highlights based on active tab
@@ -245,15 +274,8 @@ const SuperadminHighlightsPage = () => {
   // Include all organizations, including "Collab Admin" as it's a real organization in the database
   const organizationOptions = organizations || []
 
-  // Calculate featured highlights count
-  // Use refreshKey to force re-calculation when starred highlights change
-  const getFeaturedCount = () => {
-    const starredIds = getStarredHighlights()
-    return highlights.filter(h => h.status === 'approved' && starredIds.has(h.id)).length
-  }
-
-  // Calculate featured count (refreshKey ensures it updates when starred highlights change)
-  const featuredCount = getFeaturedCount()
+  // Calculate featured count from API data
+  const featuredCount = featuredHighlightsFromApi.length
 
   // Search handler
   const handleSearchChange = (query) => {

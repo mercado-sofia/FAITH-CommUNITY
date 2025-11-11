@@ -6,7 +6,6 @@ import { IoRainyOutline } from "react-icons/io5";
 import styles from './faithree.module.css';
 import { Highlights, HeroSection } from './sections';
 import { TreeModel } from './components';
-import { getFeaturedHighlightsOrdered } from '@/utils/featuredHighlights';
 
 // Check for reduced motion preference
 const prefersReducedMotion = typeof window !== 'undefined' 
@@ -75,7 +74,7 @@ function FAITHreePage() {
     ground: scrollY * 0.5
   }), [scrollY]);
 
-  // Fetch featured highlights
+  // Fetch featured highlights from API
   useEffect(() => {
     const fetchFeaturedHighlights = async () => {
       try {
@@ -88,22 +87,7 @@ function FAITHreePage() {
           return;
         }
         
-        // Get ordered featured highlight IDs from localStorage
-        let featuredIds = [];
-        try {
-          featuredIds = getFeaturedHighlightsOrdered();
-        } catch (error) {
-          console.error('Error reading featured highlights from localStorage:', error);
-          // Continue with empty array if localStorage read fails
-        }
-        
-        if (featuredIds.length === 0) {
-          setFeaturedHighlights([]);
-          setIsLoadingHighlights(false);
-          return;
-        }
-        
-        // Fetch all approved highlights from API
+        // Fetch featured highlights from API
         if (!API_BASE_URL) {
           console.error('API_BASE_URL is not set. Please configure NEXT_PUBLIC_API_URL environment variable.');
           setFeaturedHighlights([]);
@@ -111,26 +95,22 @@ function FAITHreePage() {
           return;
         }
         
-        const response = await fetch(`${API_BASE_URL}/api/highlights/public/approved`);
+        const response = await fetch(`${API_BASE_URL}/api/highlights/public/featured`);
         
         if (!response.ok) {
-          throw new Error(`Failed to fetch highlights: ${response.status} ${response.statusText}`);
+          throw new Error(`Failed to fetch featured highlights: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
-        const allHighlights = data.highlights || [];
+        const highlights = data.highlights || [];
         
-        // Match featured IDs with full highlight data, preserving order
-        // Convert both to strings for comparison to handle number/string mismatches
-        const orderedFeaturedHighlights = featuredIds
-          .map(id => allHighlights.find(h => String(h.id) === String(id)))
-          .filter(Boolean) // Remove any undefined values (in case highlight was deleted)
-          .slice(0, 8); // Ensure max 8 highlights
+        // API already returns highlights in order (by display_order)
+        // Limit to 8 just in case
+        const orderedFeaturedHighlights = highlights.slice(0, 8);
         
-        console.log('Featured highlights loaded:', {
-          featuredIdsCount: featuredIds.length,
-          matchedHighlightsCount: orderedFeaturedHighlights.length,
-          highlights: orderedFeaturedHighlights.map(h => ({ id: h.id, title: h.title }))
+        console.log('Featured highlights loaded from API:', {
+          count: orderedFeaturedHighlights.length,
+          highlights: orderedFeaturedHighlights.map(h => ({ id: h.id, title: h.title, displayOrder: h.display_order }))
         });
         
         setFeaturedHighlights(orderedFeaturedHighlights);

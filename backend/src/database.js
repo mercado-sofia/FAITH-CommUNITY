@@ -563,6 +563,33 @@ const runIncrementalMigrations = async (connection) => {
       // Index might already exist or other error - silently skip
     }
 
+    // Create featured_highlights table if it doesn't exist
+    try {
+      const [tableCheck] = await connection.query(`
+        SELECT COUNT(*) as count 
+        FROM INFORMATION_SCHEMA.TABLES 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'featured_highlights'
+      `);
+      
+      if (tableCheck[0].count === 0) {
+        await connection.query(`
+          CREATE TABLE featured_highlights (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            highlight_id INT NOT NULL,
+            display_order INT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (highlight_id) REFERENCES admin_highlights(id) ON DELETE CASCADE,
+            UNIQUE KEY unique_highlight (highlight_id),
+            INDEX idx_display_order (display_order)
+          )
+        `);
+      }
+    } catch (featuredError) {
+      // Table might already exist or other error - silently skip
+    }
+
     // Add program_id column to admin_highlights if it doesn't exist
     try {
       const [programIdColumnCheck] = await connection.query(`

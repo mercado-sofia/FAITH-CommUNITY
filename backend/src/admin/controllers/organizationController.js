@@ -46,11 +46,12 @@ export const getOrganizationByName = async (req, res) => {
 
   try {
     // Get organization details with org/orgName from organizations table
+    // Only return organizations with ACTIVE status
     const [orgRows] = await db.execute(
       `SELECT o.*, a.email 
        FROM organizations o
        LEFT JOIN admins a ON a.organization_id = o.id AND a.is_active = TRUE
-       WHERE o.org = ? LIMIT 1`,
+       WHERE o.org = ? AND o.status = 'ACTIVE' LIMIT 1`,
       [org_name]
     )
 
@@ -316,11 +317,12 @@ export const getOrganizationById = async (req, res) => {
 
   try {
     // Get organization details with org/orgName from organizations table
+    // Only return organizations with ACTIVE status
     const [orgRows] = await db.execute(
       `SELECT o.*, a.email 
        FROM organizations o
        LEFT JOIN admins a ON a.organization_id = o.id AND a.is_active = TRUE
-       WHERE o.id = ? LIMIT 1`,
+       WHERE o.id = ? AND o.status = 'ACTIVE' LIMIT 1`,
       [id]
     )
 

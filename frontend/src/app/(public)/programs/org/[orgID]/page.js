@@ -82,60 +82,34 @@ export default function OrgPage() {
   // Show loading state
   if (pageLoading || !pageReady || isLoading || imageLoading) return <Loader small centered />;
 
-  // Show error state with fallback data
+  // Show error state - simple "Org Not Found" message
   if (error || isEmpty) {
-    const fallbackData = {
-      name: 'Organization Not Found',
-      acronym: orgID?.toUpperCase() || 'ORG',
-      description: 'No data available for this organization.',
-      facebook: '',
-      email: '',
-      logo: '/assets/icons/placeholder.svg',
-      advocacies: [],
-      competencies: [],
-      heads: [],
-      featuredProjects: [],
-    };
-
+    // Check if it's a 404 error (organization not found) or empty response
+    const isNotFound = error?.status === 404 || 
+                      error?.response?.status === 404 ||
+                      (error && !error.isNetworkError && !organizationData) ||
+                      isEmpty;
+    
+    // Show simple "Org Not Found" message for 404 or empty data
     return (
-      <>
-        <BannerSection
-          title="Programs and Services"
-          backgroundImage="/samples/sample2.jpg"
-          breadcrumbs={[
-            { href: '/', label: 'Home' },
-            { href: '/programs', label: 'Programs and Services' },
-            { label: fallbackData.acronym },
-          ]}
-        />
-
-        {error && (
-          <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
-            <p>Unable to load organization data. Please try again later.</p>
-          </div>
-        )}
-
-      <OrgInfoCard data={fallbackData} />
-      {(fallbackData.advocacies?.length > 0 || fallbackData.competencies?.length > 0) && (
-        <AdvocacyCompetency
-          acronym={fallbackData.acronym}
-          advocacies={fallbackData.advocacies}
-          competencies={fallbackData.competencies}
-        />
-      )}
-      <FeaturedProjects orgID={orgID} />
-
-        <LatestPosts orgID={orgID} />
-
-        <VolunteerBannerSection 
-          acronym={fallbackData.acronym}
-          handleVolunteerClick={handleVolunteerClick}
-        />
-
-        {fallbackData.heads && fallbackData.heads.length > 0 && (
-          <OrgHeadsCarousel heads={fallbackData.heads} />
-        )}
-      </>
+      <div style={{ 
+        padding: '40px 20px', 
+        textAlign: 'center',
+        minHeight: '50vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
+        <p style={{ 
+          fontSize: '18px', 
+          color: '#333',
+          margin: 0,
+          fontFamily: 'system-ui, -apple-system, sans-serif'
+        }}>
+          Org Not Found
+        </p>
+      </div>
     );
   }
 

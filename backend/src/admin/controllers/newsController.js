@@ -272,7 +272,7 @@ export const getApprovedNews = async (req, res) => {
       `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
        FROM news n
        LEFT JOIN organizations o ON n.organization_id = o.id
-       WHERE n.is_deleted = FALSE
+       WHERE n.is_deleted = FALSE AND o.status = 'ACTIVE'
        ORDER BY n.created_at DESC`
     );
 
@@ -317,14 +317,14 @@ export const getApprovedNewsByOrg = async (req, res) => {
 
   try {
     let [orgRows] = await db.execute(
-      "SELECT id FROM organizations WHERE id = ?",
+      "SELECT id, status FROM organizations WHERE id = ?",
       [orgId]
     );
 
     if (orgRows.length === 0) {
       // Try to find by org acronym from organizations table
       [orgRows] = await db.execute(
-        "SELECT id FROM organizations WHERE org = ?",
+        "SELECT id, status FROM organizations WHERE org = ?",
         [orgId]
       );
     }
@@ -335,11 +335,16 @@ export const getApprovedNewsByOrg = async (req, res) => {
 
     const organization = orgRows[0];
 
+    // Check if organization is active
+    if (organization.status !== 'ACTIVE') {
+      return res.status(404).json({ success: false, message: "Organization not found" });
+    }
+
     const [rows] = await db.execute(
       `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
        FROM news n
        LEFT JOIN organizations o ON n.organization_id = o.id
-       WHERE n.organization_id = ? AND n.is_deleted = FALSE
+       WHERE n.organization_id = ? AND n.is_deleted = FALSE AND o.status = 'ACTIVE'
        ORDER BY n.created_at DESC`,
       [organization.id]
     );

@@ -213,11 +213,14 @@ export const getProgramCollaborators = async (req, res) => {
     // CRITICAL: Only show approved programs to collaborators
     // Collaborators must NOT see programs until superadmin approves
     const [programRows] = await db.execute(`
-      SELECT id, title, organization_id, is_approved
-      FROM programs_projects 
-      WHERE id = ? AND is_approved = TRUE AND (
-        organization_id = (SELECT organization_id FROM admins WHERE id = ?)
-        OR id IN (SELECT program_id FROM program_collaborations WHERE collaborator_admin_id = ? AND status = 'accepted' AND program_id IS NOT NULL)
+      SELECT p.id, p.title, p.organization_id, p.is_approved
+      FROM programs_projects p
+      LEFT JOIN organizations o ON p.organization_id = o.id
+      WHERE p.id = ? AND p.is_approved = TRUE 
+      AND o.status = 'ACTIVE'
+      AND (
+        p.organization_id = (SELECT organization_id FROM admins WHERE id = ?)
+        OR p.id IN (SELECT program_id FROM program_collaborations WHERE collaborator_admin_id = ? AND status = 'accepted' AND program_id IS NOT NULL)
       )
     `, [programId, currentAdminId, currentAdminId]);
 
@@ -518,6 +521,8 @@ export const getCollaborationRequests = async (req, res) => {
       -- CRITICAL: Only show collaboration requests for APPROVED programs
       -- Collaborators must NOT see requests until superadmin approves the program
       AND p.is_approved = TRUE
+      -- CRITICAL: Only show collaborations where program organization is active
+      AND prog_org.status = 'ACTIVE'
       ORDER BY p.created_at DESC
     `, [currentAdminId, currentAdminId, currentAdminId, currentAdminId, adminOrgId]);
     

@@ -492,7 +492,7 @@ export const deleteInvitation = async (req, res) => {
   }
 }
 
-// Deactivate admin associated with invitation
+// Deactivate/Reactivate admin associated with invitation (toggles status)
 export const deactivateAdminFromInvitation = async (req, res) => {
   const { id } = req.params
 
@@ -522,16 +522,28 @@ export const deactivateAdminFromInvitation = async (req, res) => {
       return res.status(404).json({ error: "No admin account found for this invitation" })
     }
 
-    // Deactivate the admin account
+    // Get current status (handle both boolean and numeric 0/1 from MySQL)
+    const currentStatus = invitation.is_active === true || invitation.is_active === 1
+    const newStatus = !currentStatus
+    const action = newStatus ? 'reactivated' : 'deactivated'
+
+    // Toggle admin account status
     await connection.execute(
-      "UPDATE admins SET is_active = FALSE WHERE id = ?",
-      [invitation.admin_id]
+      "UPDATE admins SET is_active = ? WHERE id = ?",
+      [newStatus, invitation.admin_id]
     )
 
-    // Also deactivate their organization
-    if (invitation.organization_id) {
+    // If deactivating admin, also deactivate their organization
+    if (!newStatus && invitation.organization_id) {
       await connection.execute(
         "UPDATE organizations SET status = 'INACTIVE' WHERE id = ?",
+        [invitation.organization_id]
+      )
+    }
+    // If reactivating admin, also reactivate their organization
+    else if (newStatus && invitation.organization_id) {
+      await connection.execute(
+        "UPDATE organizations SET status = 'ACTIVE' WHERE id = ?",
         [invitation.organization_id]
       )
     }
@@ -539,14 +551,14 @@ export const deactivateAdminFromInvitation = async (req, res) => {
     await connection.commit()
 
     res.json({ 
-      message: "Admin account deactivated successfully",
-      is_active: false,
+      message: `Admin account ${action} successfully`,
+      is_active: newStatus,
       organization_updated: invitation.organization_id ? true : false
     })
   } catch (err) {
     await connection.rollback()
-    console.error("Deactivate admin from invitation error:", err)
-    res.status(500).json({ error: "Internal server error while deactivating admin" })
+    console.error("Deactivate/Reactivate admin from invitation error:", err)
+    res.status(500).json({ error: "Internal server error while updating admin status" })
   } finally {
     connection.release()
   }

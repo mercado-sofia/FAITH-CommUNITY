@@ -74,6 +74,8 @@ export const getAdminPrograms = async (req, res) => {
       -- CRITICAL: Only show APPROVED programs to admins
       -- Programs must go through superadmin approval first
       AND p.is_approved = TRUE
+      -- CRITICAL: Only show programs from active organizations
+      AND o.status = 'ACTIVE'
       ORDER BY p.created_at DESC
     `;
 
@@ -112,7 +114,7 @@ export const getAdminPrograms = async (req, res) => {
         FROM program_collaborations pc
         LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
         LEFT JOIN organizations o ON a.organization_id = o.id
-        WHERE pc.program_id = ? AND pc.collaborator_admin_id = ?
+        WHERE pc.program_id = ? AND pc.collaborator_admin_id = ? AND o.status = 'ACTIVE'
       `, [program.id, currentAdminId]);
 
       // Determine user's role in this program
@@ -124,7 +126,7 @@ export const getAdminPrograms = async (req, res) => {
         collaborationStatus = collaborationRows[0].collaboration_status;
       }
 
-      // Get all collaborators for this program (excluding declined/opted-out ones)
+      // Get all collaborators for this program (excluding declined/opted-out ones and inactive organizations)
       const [allCollaborators] = await db.execute(`
         SELECT 
           a.id,
@@ -135,7 +137,7 @@ export const getAdminPrograms = async (req, res) => {
         FROM program_collaborations pc
         LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
         LEFT JOIN organizations o ON a.organization_id = o.id
-        WHERE pc.program_id = ? AND pc.status IN ('accepted', 'pending')
+        WHERE pc.program_id = ? AND pc.status IN ('accepted', 'pending') AND o.status = 'ACTIVE'
       `, [program.id]);
 
       // For creators, determine overall collaboration status based on all collaborators
@@ -254,6 +256,7 @@ export const getProgramsByOrg = async (req, res) => {
        LEFT JOIN organizations o ON p.organization_id = o.id
        WHERE p.organization_id = ? 
        AND p.is_approved = TRUE
+       AND o.status = 'ACTIVE'
        AND p.id NOT IN (
          SELECT DISTINCT program_id 
          FROM program_collaborations 
@@ -347,7 +350,7 @@ export const getApprovedPrograms = async (req, res) => {
       SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
-      WHERE p.is_approved = TRUE
+      WHERE p.is_approved = TRUE AND o.status = 'ACTIVE'
       ORDER BY p.created_at DESC
     `);
 
@@ -388,7 +391,7 @@ export const getApprovedPrograms = async (req, res) => {
           FROM program_collaborations pc
           LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
           LEFT JOIN organizations o ON a.organization_id = o.id
-          WHERE pc.program_id = ? AND pc.status = 'accepted'
+          WHERE pc.program_id = ? AND pc.status = 'accepted' AND o.status = 'ACTIVE'
           ORDER BY o.orgName ASC
         `, [program.id]);
         
@@ -466,14 +469,14 @@ export const getApprovedProgramsByOrg = async (req, res) => {
   try {
     // First try to get organization by ID (numeric) from organizations table
     let [orgRows] = await db.execute(
-      "SELECT id, org, orgName, logo FROM organizations WHERE id = ?",
+      "SELECT id, org, orgName, logo, status FROM organizations WHERE id = ?",
       [orgId]
     );
 
     // If not found by ID, try to find by org acronym from organizations table
     if (orgRows.length === 0) {
       [orgRows] = await db.execute(
-        "SELECT id, org, orgName, logo FROM organizations WHERE org = ?",
+        "SELECT id, org, orgName, logo, status FROM organizations WHERE org = ?",
         [orgId]
       );
     }
@@ -487,12 +490,20 @@ export const getApprovedProgramsByOrg = async (req, res) => {
 
     const organization = orgRows[0];
 
+    // Check if organization is active
+    if (organization.status !== 'ACTIVE') {
+      return res.status(404).json({
+        success: false,
+        message: `Organization not found: ${orgId}`,
+      });
+    }
+
     // Get approved programs for this organization
     const [rows] = await db.execute(`
       SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
-       WHERE p.organization_id = ? AND p.is_approved = TRUE
+       WHERE p.organization_id = ? AND p.is_approved = TRUE AND o.status = 'ACTIVE'
        ORDER BY p.created_at DESC
     `, [organization.id]);
 
@@ -1232,7 +1243,7 @@ export const getAllFeaturedPrograms = async (req, res) => {
                 WHERE pc.program_id = ? AND pc.status = 'accepted'
               ) org_roles
               LEFT JOIN organizations o ON org_roles.org_id = o.id
-              WHERE o.id IS NOT NULL
+              WHERE o.id IS NOT NULL AND o.status = 'ACTIVE'
               ORDER BY 
                 CASE 
                   WHEN o.id = ? THEN 0 
@@ -1372,7 +1383,7 @@ export const getFeaturedPrograms = async (req, res) => {
       SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo, o.org_color as orgColor
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
-      WHERE p.is_featured = TRUE AND p.is_approved = TRUE
+      WHERE p.is_featured = TRUE AND p.is_approved = TRUE AND o.status = 'ACTIVE'
       ORDER BY p.created_at DESC
     `);
 
@@ -1430,7 +1441,7 @@ export const getFeaturedPrograms = async (req, res) => {
             WHERE pc.program_id = ? AND pc.status = 'accepted'
           ) org_roles
           LEFT JOIN organizations o ON org_roles.org_id = o.id
-          WHERE o.id IS NOT NULL
+          WHERE o.id IS NOT NULL AND o.status = 'ACTIVE'
           ORDER BY 
             CASE WHEN org_roles.role = 'primary' THEN 0 ELSE 1 END,
             o.orgName ASC
@@ -1526,7 +1537,7 @@ export const getProgramBySlug = async (req, res) => {
         o.org_color as organization_color
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
-      WHERE pp.slug = ? AND pp.is_approved = TRUE
+      WHERE pp.slug = ? AND pp.is_approved = TRUE AND o.status = 'ACTIVE'
     `;
     
     const [results] = await db.execute(query, [slug]);
@@ -1576,7 +1587,7 @@ export const getProgramBySlug = async (req, res) => {
         FROM program_collaborations pc
         LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
         LEFT JOIN organizations o ON a.organization_id = o.id
-        WHERE pc.program_id = ? AND pc.status = 'accepted'
+        WHERE pc.program_id = ? AND pc.status = 'accepted' AND o.status = 'ACTIVE'
         ORDER BY o.orgName ASC
       `, [program.id]);
       
@@ -1640,7 +1651,7 @@ export const getRelatedProgramsByOrganization = async (req, res) => {
         o.logo as orgLogo
       FROM programs_projects pp
       LEFT JOIN organizations o ON pp.organization_id = o.id
-      WHERE pp.organization_id = ? AND pp.id != ? AND pp.is_approved = TRUE
+      WHERE pp.organization_id = ? AND pp.id != ? AND pp.is_approved = TRUE AND o.status = 'ACTIVE'
       ORDER BY pp.created_at DESC
       LIMIT 6
     `;

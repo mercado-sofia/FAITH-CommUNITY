@@ -231,8 +231,18 @@ export const acceptInvitation = async (req, res) => {
     return res.status(400).json({ error: "All fields are required including logo" })
   }
 
-  if (password.length < 6) {
-    return res.status(400).json({ error: "Password must be at least 6 characters long" })
+  // Validate password requirements (matching frontend)
+  if (password.length < 8) {
+    return res.status(400).json({ error: "Password must be at least 8 characters long" })
+  }
+  if (!/(?=.*[a-z])/.test(password)) {
+    return res.status(400).json({ error: "Password must contain at least one lowercase letter" })
+  }
+  if (!/(?=.*[A-Z])/.test(password)) {
+    return res.status(400).json({ error: "Password must contain at least one uppercase letter" })
+  }
+  if (!/(?=.*\d)/.test(password)) {
+    return res.status(400).json({ error: "Password must contain at least one number" })
   }
 
   const connection = await db.getConnection()

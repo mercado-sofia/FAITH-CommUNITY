@@ -6,6 +6,7 @@ import styles from './highlights.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
+/* TEMPORARILY COMMENTED OUT - Highlights component disabled
 export default function Highlights({ onClose, organizationId = null }) {
   const [stories, setStories] = useState([]);
   const [selectedStory, setSelectedStory] = useState(null);
@@ -312,4 +313,10 @@ export default function Highlights({ onClose, organizationId = null }) {
       )}
     </div>
   );
+}
+*/
+
+// Temporary placeholder to prevent import errors
+export default function Highlights({ onClose, organizationId = null }) {
+  return null;
 }

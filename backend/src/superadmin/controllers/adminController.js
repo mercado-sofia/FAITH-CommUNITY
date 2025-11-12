@@ -7,6 +7,7 @@ import { logAdminAction, logSuperadminAction } from "../../utils/audit.js"
 import { SessionSecurity } from "../../utils/sessionSecurity.js"
 import { LoginAttemptTracker } from "../../utils/loginAttemptTracker.js"
 import { getClientIpAddress } from "../../utils/ipAddressHelper.js"
+import { logError } from "../../utils/logger.js"
 
 // JWT secret via env
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
@@ -582,8 +583,18 @@ export const resetPassword = async (req, res) => {
     return res.status(400).json({ error: "Token and new password are required" })
   }
 
-  if (newPassword.length < 6) {
-    return res.status(400).json({ error: "Password must be at least 6 characters long" })
+  // Validate password requirements (matching frontend)
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: "Password must be at least 8 characters long" })
+  }
+  if (!/(?=.*[a-z])/.test(newPassword)) {
+    return res.status(400).json({ error: "Password must contain at least one lowercase letter" })
+  }
+  if (!/(?=.*[A-Z])/.test(newPassword)) {
+    return res.status(400).json({ error: "Password must contain at least one uppercase letter" })
+  }
+  if (!/(?=.*\d)/.test(newPassword)) {
+    return res.status(400).json({ error: "Password must contain at least one number" })
   }
 
   try {
@@ -617,7 +628,7 @@ export const resetPassword = async (req, res) => {
 
     // Also update user password if email exists there
     await db.execute(
-      'UPDATE users SET password = ? WHERE email = ?',
+      'UPDATE users SET password_hash = ? WHERE email = ?',
       [hashedPassword, tokenData.email]
     )
 
@@ -648,6 +659,11 @@ export const resetPassword = async (req, res) => {
 
     res.json({ message: "Password has been successfully reset" })
   } catch (err) {
+    logError('Error resetting password (admin)', err, { 
+      context: 'adminController', 
+      email: req.body.token ? 'token provided' : 'no token',
+      error: err.message 
+    })
     res.status(500).json({ error: "Internal server error while resetting password" })
   }
 }

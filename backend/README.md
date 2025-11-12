@@ -235,11 +235,14 @@ The application supports three types of users:
 - **Superadmin**: System administrators
 
 ### Default Superadmin Account
-- **Email**: `superadmin@faith-community.com`
+- **Email**: `faithcommunityfaces@gmail.com`
 - **Password**: `admin123`
-- **Login URL**: `http://localhost:3000/superadmin/login`
+- **Login URL**: `http://localhost:3000/superadmin/login` or `http://localhost:3000/login`
 
-⚠️ **Important**: Change the superadmin password after first login!
+⚠️ **Important**: 
+- The superadmin account is automatically created when the database is first initialized
+- If you can't access it, run: `node scripts/utilities.js create-superadmin`
+- Change the superadmin password after first login!
 
 ## 📚 API Documentation
 

@@ -1374,13 +1374,23 @@ export const resetPasswordUser = async (req, res) => {
     return res.status(400).json({ error: "Token and new password are required" })
   }
 
-  if (newPassword.length < 6) {
-    return res.status(400).json({ error: "Password must be at least 6 characters long" })
+  // Validate password requirements (matching frontend)
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: "Password must be at least 8 characters long" })
+  }
+  if (!/(?=.*[a-z])/.test(newPassword)) {
+    return res.status(400).json({ error: "Password must contain at least one lowercase letter" })
+  }
+  if (!/(?=.*[A-Z])/.test(newPassword)) {
+    return res.status(400).json({ error: "Password must contain at least one uppercase letter" })
+  }
+  if (!/(?=.*\d)/.test(newPassword)) {
+    return res.status(400).json({ error: "Password must contain at least one number" })
   }
 
   try {
     // Find valid token
-    const [tokenRows] = await db.query(
+    const [tokenRows] = await db.execute(
       'SELECT email, expires_at FROM password_reset_tokens WHERE token = ? AND expires_at > NOW()',
       [token]
     )
@@ -1396,25 +1406,25 @@ export const resetPasswordUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, saltRounds)
 
     // Update user password
-    await db.query(
+    await db.execute(
       'UPDATE users SET password_hash = ? WHERE email = ?',
       [hashedPassword, tokenData.email]
     )
 
     // Also update admin password if email exists there
-    await db.query(
+    await db.execute(
       'UPDATE admins SET password = ? WHERE email = ? AND is_active = TRUE',
       [hashedPassword, tokenData.email]
     )
 
     // Also update superadmin password if email exists there
-    await db.query(
+    await db.execute(
       'UPDATE superadmin SET password = ? WHERE username = ?',
       [hashedPassword, tokenData.email]
     )
 
     // Delete used token
-    await db.query(
+    await db.execute(
       'DELETE FROM password_reset_tokens WHERE token = ?',
       [token]
     )
@@ -1440,6 +1450,11 @@ export const resetPasswordUser = async (req, res) => {
 
     res.json({ message: "Password has been successfully reset" })
   } catch (err) {
+    logError('Error resetting password (user)', err, { 
+      context: 'userController', 
+      email: req.body.token ? 'token provided' : 'no token',
+      error: err.message 
+    })
     res.status(500).json({ error: "Internal server error while resetting password" })
   }
 }

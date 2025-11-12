@@ -518,7 +518,6 @@ export default function OrganizationPage() {
     if (!pendingChanges) return;
     try {
       updateUiState({ saving: true });
-      updateUiState({ showSummaryModal: false });
       
       const method = pendingChanges.id ? "PUT" : "POST";
       const url = pendingChanges.id
@@ -598,6 +597,7 @@ export default function OrganizationPage() {
         }
 
         updateUiState({ isEditing: false });
+        updateUiState({ showSummaryModal: false });
         setPendingChanges(null);
         setOriginalData(null);
         showMessage("Organization information saved successfully", "success");
@@ -646,7 +646,6 @@ export default function OrganizationPage() {
     
     try {
       updateUiState({ saving: true });
-      updateUiState({ showSectionSummaryModal: false });
       
       const orgId = orgData.id || admin?.organization_id;
       if (!orgId) {
@@ -752,6 +751,7 @@ export default function OrganizationPage() {
       }
       
       updateUiState({ isEditing: false });
+      updateUiState({ showSectionSummaryModal: false });
       setPendingChanges(null);
       setOriginalData(null);
       setCurrentSection('');

@@ -7,7 +7,7 @@ import { LoginAttemptTracker } from "../../utils/loginAttemptTracker.js"
 import { getClientIpAddress } from "../../utils/ipAddressHelper.js"
 import { generateTwoFASecret, verifyTwoFAToken, generateTwoFAQRCode, generateSimpleQRCode, validateTwoFATokenFormat } from "../../utils/twoFA.js"
 import { logSuperadminAction } from "../../utils/audit.js"
-import { logError } from "../../utils/logger.js"
+import { logError, logInfo } from "../../utils/logger.js"
 
 // JWT secret via env
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
@@ -558,8 +558,18 @@ export const resetPasswordSuperadmin = async (req, res) => {
     return res.status(400).json({ error: "Token and new password are required" })
   }
 
-  if (newPassword.length < 6) {
-    return res.status(400).json({ error: "Password must be at least 6 characters long" })
+  // Validate password requirements (matching frontend)
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: "Password must be at least 8 characters long" })
+  }
+  if (!/(?=.*[a-z])/.test(newPassword)) {
+    return res.status(400).json({ error: "Password must contain at least one lowercase letter" })
+  }
+  if (!/(?=.*[A-Z])/.test(newPassword)) {
+    return res.status(400).json({ error: "Password must contain at least one uppercase letter" })
+  }
+  if (!/(?=.*\d)/.test(newPassword)) {
+    return res.status(400).json({ error: "Password must contain at least one number" })
   }
 
   try {
@@ -590,7 +600,7 @@ export const resetPasswordSuperadmin = async (req, res) => {
     )
 
     // Also update users (if applicable)
-    await db.execute("UPDATE users SET password = ? WHERE email = ?", [
+    await db.execute("UPDATE users SET password_hash = ? WHERE email = ?", [
       hashedPassword,
       email,
     ])
@@ -625,6 +635,11 @@ export const resetPasswordSuperadmin = async (req, res) => {
 
     res.json({ message: "Password has been successfully reset" })
   } catch (err) {
+    logError('Error resetting password (superadmin)', err, { 
+      context: 'superadminAuthController', 
+      email: req.body.token ? 'token provided' : 'no token',
+      error: err.message 
+    })
     res.status(500).json({ error: "Internal server error while resetting password" })
   }
 }
@@ -835,5 +850,108 @@ export const disableTwoFA = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// -------------------- Production Initialization Endpoint --------------------
+
+/**
+ * Initialize/Reset superadmin account (Production only, protected by secret key)
+ * This endpoint allows resetting the superadmin account in production when you can't log in
+ * Usage: POST /api/superadmin/auth/initialize
+ * Body: { secretKey: "your-secret-key" }
+ */
+export const initializeSuperadmin = async (req, res) => {
+  try {
+    const { secretKey } = req.body;
+    
+    // Get the secret key from environment variable
+    const requiredSecretKey = process.env.SUPERADMIN_INIT_SECRET || process.env.JWT_SECRET;
+    
+    if (!requiredSecretKey) {
+      logError('SUPERADMIN_INIT_SECRET or JWT_SECRET not set in environment', new Error('Missing secret'), { context: 'superadmin' });
+      return res.status(500).json({ 
+        error: 'Server configuration error: Initialization secret not configured' 
+      });
+    }
+    
+    // Verify secret key
+    if (!secretKey || secretKey !== requiredSecretKey) {
+      logError('Invalid secret key for superadmin initialization', new Error('Unauthorized'), { 
+        context: 'superadmin',
+        ip: getClientIpAddress(req)
+      });
+      return res.status(401).json({ 
+        error: 'Invalid secret key' 
+      });
+    }
+    
+    // Initialize superadmin account with default credentials
+    const superadminEmail = 'faithcommunityfaces@gmail.com';
+    const superadminPassword = 'admin123';
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(superadminPassword, saltRounds);
+    
+    // Check if superadmin exists
+    const [existing] = await db.execute(
+      'SELECT id, username, password FROM superadmin WHERE id = 1'
+    );
+    
+    if (existing.length === 0) {
+      // Insert new superadmin account
+      await db.execute(
+        `INSERT INTO superadmin (id, username, password, password_changed_at, twofa_enabled, twofa_secret, created_at, updated_at)
+         VALUES (1, ?, ?, NOW(), FALSE, NULL, NOW(), NOW())`,
+        [superadminEmail, hashedPassword]
+      );
+      
+      logInfo('Superadmin account created via initialization endpoint', {
+        context: 'superadmin',
+        email: superadminEmail,
+        ip: getClientIpAddress(req)
+      });
+      
+      res.json({
+        success: true,
+        message: 'Superadmin account created successfully',
+        email: superadminEmail,
+        password: superadminPassword,
+        warning: 'Please change the password after first login!'
+      });
+    } else {
+      // Update existing superadmin account
+      const existingAccount = existing[0];
+      
+      // Update password and email to ensure correct credentials
+      await db.execute(
+        `UPDATE superadmin 
+         SET username = ?, password = ?, password_changed_at = NOW(), updated_at = NOW(), twofa_enabled = FALSE, twofa_secret = NULL
+         WHERE id = 1`,
+        [superadminEmail, hashedPassword]
+      );
+      
+      logInfo('Superadmin account reset via initialization endpoint', {
+        context: 'superadmin',
+        email: superadminEmail,
+        previousEmail: existingAccount.username,
+        ip: getClientIpAddress(req)
+      });
+      
+      res.json({
+        success: true,
+        message: 'Superadmin account reset successfully',
+        email: superadminEmail,
+        password: superadminPassword,
+        warning: 'Please change the password after first login!'
+      });
+    }
+  } catch (error) {
+    logError('Failed to initialize superadmin account', error, {
+      context: 'superadmin',
+      ip: getClientIpAddress(req)
+    });
+    res.status(500).json({ 
+      error: 'Internal server error while initializing superadmin account' 
+    });
   }
 };

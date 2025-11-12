@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { FiX, FiAlertTriangle } from 'react-icons/fi';
-import { FaSpinner } from 'react-icons/fa';
 import styles from './styles/BulkActionConfirmationModal.module.css';
 
 export default function BulkActionConfirmationModal({
@@ -185,10 +184,7 @@ export default function BulkActionConfirmationModal({
             disabled={isProcessing}
           >
             {isProcessing ? (
-              <>
-                <FaSpinner className={styles.spinner} />
-                {actionType === 'approve' ? 'Approving...' : actionType === 'reject' ? 'Rejecting...' : actionType === 'delete' ? 'Deleting...' : 'Processing...'}
-              </>
+              actionType === 'approve' ? 'Approving...' : actionType === 'reject' ? 'Rejecting...' : actionType === 'delete' ? 'Deleting...' : 'Processing...'
             ) : (
               config.buttonText
             )}

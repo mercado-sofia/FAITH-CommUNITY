@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import Image from 'next/image'
-import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding } from 'react-icons/fa'
+import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 import { formatDateShort } from '@/utils/dateUtils.js'
 import logger from '@/utils/logger'
 import styles from './styles/HighlightDetailsModal.module.css'
@@ -11,6 +11,9 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
   const scrollPositionRef = useRef(0)
   const [programTitle, setProgramTitle] = useState(null)
   const [loadingProgram, setLoadingProgram] = useState(false)
+  const [imageViewerOpen, setImageViewerOpen] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [allImages, setAllImages] = useState([])
 
   // Lock scroll when modal is open
   useEffect(() => {
@@ -230,6 +233,87 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
     }
   }, [isOpen, highlight])
 
+  // Get all images from media - must be before early return
+  useEffect(() => {
+    if (!highlight) {
+      setAllImages([])
+      return
+    }
+
+    // Get the first image URL
+    const getImageUrl = () => {
+      if (!highlight.media || highlight.media.length === 0) return null
+      
+      const firstImage = highlight.media.find(item => 
+        item.type === 'image' || 
+        item.mimetype?.startsWith('image/') ||
+        /\.(jpg|jpeg|png|gif|webp)$/i.test(item.filename || item.url)
+      )
+      
+      return firstImage?.url || firstImage?.filename || null
+    }
+
+    const imageUrl = getImageUrl()
+
+    if (highlight?.media && highlight.media.length > 0) {
+      const images = highlight.media
+        .filter(item => {
+          const isImage = item.type === 'image' || 
+                         item.mimetype?.startsWith('image/') ||
+                         /\.(jpg|jpeg|png|gif|webp)$/i.test(item.filename || item.url || '')
+          return isImage && (item.url || item.filename)
+        })
+        .map((item, index) => ({
+          src: item.url || item.filename,
+          alt: `Highlight image ${index + 1}`,
+          index
+        }))
+      setAllImages(images)
+    } else if (imageUrl) {
+      setAllImages([{
+        src: imageUrl,
+        alt: highlight.title || 'Highlight image',
+        index: 0
+      }])
+    } else {
+      setAllImages([])
+    }
+  }, [highlight])
+
+  const closeImageViewer = useCallback(() => {
+    setImageViewerOpen(false)
+  }, [])
+
+  const navigateImage = useCallback((direction) => {
+    setCurrentImageIndex((prev) => {
+      if (allImages.length === 0) return prev
+      if (direction === 'next') {
+        return (prev + 1) % allImages.length
+      } else {
+        return (prev - 1 + allImages.length) % allImages.length
+      }
+    })
+  }, [allImages.length])
+
+  // Handle keyboard navigation in image viewer
+  useEffect(() => {
+    if (!imageViewerOpen) return
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        closeImageViewer()
+      } else if (e.key === 'ArrowLeft') {
+        navigateImage('prev')
+      } else if (e.key === 'ArrowRight') {
+        navigateImage('next')
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [imageViewerOpen, navigateImage, closeImageViewer])
+
+  // Early return after all hooks
   if (!isOpen || !highlight) return null
 
   const getImageUrl = () => {
@@ -257,6 +341,11 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
   const imageUrl = getImageUrl()
   const statusColor = getStatusColor(highlight.status)
 
+  const openImageViewer = (index = 0) => {
+    setCurrentImageIndex(index)
+    setImageViewerOpen(true)
+  }
+
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
       onClose()
@@ -283,19 +372,29 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
             {/* Top Section - Image and Highlight Info Side by Side */}
             <div className={styles.topSection}>
               {/* Left - Highlight Image */}
-              <div className={styles.imageSection}>
+              <div 
+                className={styles.imageSection}
+                onClick={() => imageUrl && openImageViewer(0)}
+                style={{ cursor: imageUrl ? 'pointer' : 'default' }}
+              >
                 {imageUrl ? (
-                  <Image 
-                    src={imageUrl}
-                    alt={highlight.title}
-                    className={styles.highlightImage}
-                    width={400}
-                    height={300}
-                    onError={(e) => {
-                      e.target.style.display = 'none'
-                      e.target.nextSibling.style.display = 'flex'
-                    }}
-                  />
+                  <>
+                    <Image 
+                      src={imageUrl}
+                      alt={highlight.title}
+                      className={styles.highlightImage}
+                      width={400}
+                      height={300}
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                        e.target.nextSibling.style.display = 'flex'
+                      }}
+                    />
+                    <div className={styles.imageOverlay}>
+                      <FaEye className={styles.imageOverlayIcon} />
+                      <span className={styles.imageOverlayText}>Click to view full screen</span>
+                    </div>
+                  </>
                 ) : null}
                 <div className={styles.imagePlaceholder} style={{ display: imageUrl ? 'none' : 'flex' }}>
                   <FaEye />
@@ -326,51 +425,39 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
                     {highlight.organization_name && (
                       <div className={styles.detailItem}>
                         <FaBuilding className={styles.detailIcon} />
-                        <div className={styles.detailContent}>
-                          <span className={styles.detailLabel}>Organization</span>
-                          <span className={styles.detailValue}>
-                            {highlight.organization_name}
-                            {highlight.organization_acronym && ` (${highlight.organization_acronym})`}
-                          </span>
-                        </div>
+                        <span className={styles.detailValue}>
+                          {highlight.organization_name}
+                          {highlight.organization_acronym && ` (${highlight.organization_acronym})`}
+                        </span>
                       </div>
                     )}
 
                     {(highlight.program_title || highlight.program_id || programTitle) && (
                       <div className={styles.detailItem}>
                         <FaTag className={styles.detailIcon} />
-                        <div className={styles.detailContent}>
-                          <span className={styles.detailLabel}>Associated Program</span>
-                          <span className={styles.detailValue}>
-                            {loadingProgram ? (
-                              'Loading...'
-                            ) : highlight.program_title || programTitle || `Program ID: ${highlight.program_id}`}
-                          </span>
-                        </div>
+                        <span className={styles.detailValue}>
+                          {loadingProgram ? (
+                            'Loading...'
+                          ) : highlight.program_title || programTitle || `Program ID: ${highlight.program_id}`}
+                        </span>
                       </div>
                     )}
 
                     {highlight.created_at && (
                       <div className={styles.detailItem}>
                         <FaCalendar className={styles.detailIcon} />
-                        <div className={styles.detailContent}>
-                          <span className={styles.detailLabel}>Created</span>
-                          <span className={styles.detailValue}>
-                            {formatDateShort(highlight.created_at)}
-                          </span>
-                        </div>
+                        <span className={styles.detailValue}>
+                          {formatDateShort(highlight.created_at)}
+                        </span>
                       </div>
                     )}
 
                     {highlight.media && highlight.media.length > 0 && (
                       <div className={styles.detailItem}>
                         <FaTag className={styles.detailIcon} />
-                        <div className={styles.detailContent}>
-                          <span className={styles.detailLabel}>Media Files</span>
-                          <span className={styles.detailValue}>
-                            {highlight.media.length} {highlight.media.length === 1 ? 'file' : 'files'}
-                          </span>
-                        </div>
+                        <span className={styles.detailValue}>
+                          {highlight.media.length} {highlight.media.length === 1 ? 'file' : 'files'}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -390,22 +477,20 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
             {/* Always show the section - if no program, it will show "No program associated" */}
             <div className={styles.descriptionSection}>
               <h4 className={styles.sectionTitle}>Associated Program</h4>
-              <div className={styles.description}>
+              <p className={styles.description}>
                 {loadingProgram ? (
-                  <span style={{ color: '#6b7280' }}>Loading program information...</span>
+                  'Loading program information...'
                 ) : (
-                  <span style={{ fontWeight: 500, color: '#374151' }}>
-                    {highlight.program_title || programTitle || (highlight.program_id ? `Program #${highlight.program_id}` : 'No program associated')}
-                  </span>
+                  highlight.program_title || programTitle || (highlight.program_id ? `Program #${highlight.program_id}` : 'No program associated')
                 )}
-              </div>
+              </p>
             </div>
 
             {/* Media Gallery - Full Width Below - Show all media files */}
             {highlight.media && highlight.media.length > 0 && (
               <div className={styles.mediaGallerySection}>
                 <h4 className={styles.sectionTitle}>
-                  Media Gallery ({highlight.media.length} {highlight.media.length === 1 ? 'file' : 'files'})
+                  Media Gallery
                 </h4>
                 <div className={styles.mediaGrid}>
                   {highlight.media.map((mediaItem, index) => {
@@ -429,17 +514,34 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
                             Your browser does not support the video tag.
                           </video>
                         ) : isImage && mediaUrl ? (
-                          <Image
-                            src={mediaUrl}
-                            alt={`Media ${index + 1}`}
-                            className={styles.mediaItem}
-                            width={150}
-                            height={150}
-                            onError={(e) => {
-                              e.target.style.display = 'none'
-                              e.target.nextSibling.style.display = 'flex'
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              // Find the index of this image in allImages array
+                              const imageIndex = allImages.findIndex(img => {
+                                const imgSrc = img.src
+                                const mediaSrc = mediaUrl
+                                // Compare URLs, handling both relative and absolute paths
+                                return imgSrc === mediaSrc || 
+                                       imgSrc?.endsWith(mediaSrc) || 
+                                       mediaSrc?.endsWith(imgSrc)
+                              })
+                              openImageViewer(imageIndex >= 0 ? imageIndex : allImages.length > 0 ? 0 : 0)
                             }}
-                          />
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <Image
+                              src={mediaUrl}
+                              alt={`Media ${index + 1}`}
+                              className={styles.mediaItem}
+                              width={150}
+                              height={150}
+                              onError={(e) => {
+                                e.target.style.display = 'none'
+                                e.target.nextSibling.style.display = 'flex'
+                              }}
+                            />
+                          </div>
                         ) : (
                           <div className={styles.mediaPlaceholder}>
                             <FaEye />
@@ -467,6 +569,66 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
           </button>
         </div>
       </div>
+
+      {/* Full Screen Image Viewer */}
+      {imageViewerOpen && allImages.length > 0 && (
+        <div className={styles.imageViewerOverlay} onClick={closeImageViewer}>
+          <div className={styles.imageViewerModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.imageViewerHeader}>
+              <div className={styles.imageInfo}>
+                <span className={styles.imageTitle}>
+                  {allImages[currentImageIndex]?.alt || highlight.title}
+                </span>
+                {allImages.length > 1 && (
+                  <span className={styles.imageCounter}>
+                    {currentImageIndex + 1} of {allImages.length}
+                  </span>
+                )}
+              </div>
+              <button 
+                onClick={closeImageViewer}
+                className={styles.imageViewerCloseBtn}
+                aria-label="Close image viewer"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            
+            <div className={styles.imageViewerContent}>
+              {allImages.length > 1 && (
+                <>
+                  <button 
+                    onClick={() => navigateImage('prev')}
+                    className={`${styles.imageNavBtn} ${styles.prevBtn}`}
+                    aria-label="Previous image"
+                  >
+                    <FaChevronLeft />
+                  </button>
+                  <button 
+                    onClick={() => navigateImage('next')}
+                    className={`${styles.imageNavBtn} ${styles.nextBtn}`}
+                    aria-label="Next image"
+                  >
+                    <FaChevronRight />
+                  </button>
+                </>
+              )}
+              
+              <div className={styles.imageViewerImageContainer}>
+                <Image
+                  src={allImages[currentImageIndex]?.src}
+                  alt={allImages[currentImageIndex]?.alt || 'Highlight image'}
+                  width={1200}
+                  height={800}
+                  style={{ objectFit: 'contain', maxWidth: '100%', maxHeight: '100%' }}
+                  className={styles.viewerImage}
+                  unoptimized
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

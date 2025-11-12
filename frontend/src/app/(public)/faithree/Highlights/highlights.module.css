@@ -960,15 +960,7 @@
   border-radius: 8px;
   overflow: hidden;
   border: 2px solid transparent;
-  cursor: pointer;
-  transition: border-color 0.2s ease;
-  background: none;
-  padding: 0;
   position: relative;
-}
-
-.modalThumbnail:hover {
-  border-color: #d1d5db;
 }
 
 .modalActiveThumbnail {

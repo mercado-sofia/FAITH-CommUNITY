@@ -6,7 +6,6 @@ import styles from './highlights.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-
 export default function Highlights({ onClose, organizationId = null }) {
   const [stories, setStories] = useState([]);
   const [selectedStory, setSelectedStory] = useState(null);
@@ -259,13 +258,9 @@ export default function Highlights({ onClose, organizationId = null }) {
                     {selectedStory.media.length > 1 && (
                       <div className={styles.modalImageThumbnails}>
                         {selectedStory.media.map((item, index) => (
-                          <button
+                          <div
                             key={index}
                             className={`${styles.modalThumbnail} ${index === 0 ? styles.modalActiveThumbnail : ''}`}
-                            onClick={() => {
-                              // For now, just show the first image
-                              // Could implement thumbnail switching later
-                            }}
                           >
                             <Image
                               src={item.url}
@@ -274,7 +269,7 @@ export default function Highlights({ onClose, organizationId = null }) {
                               className={styles.modalThumbnailImage}
                               sizes="100px"
                             />
-                          </button>
+                          </div>
                         ))}
                       </div>
                     )}

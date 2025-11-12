@@ -1,0 +1,1048 @@
+/* Star Modal Overlay */
+.starModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 2rem;
+}
+
+.starModalOverlay.visible {
+  opacity: 1;
+}
+
+/* Star Modal Container */
+.starModalContainer {
+  position: relative;
+  width: 100%;
+  max-width: 650px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: scale(0.9) translateY(20px);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.starModalContainer.visible {
+  transform: scale(1) translateY(0);
+}
+
+/* Circular Star Element - Positioned 50% above modal */
+.starCircle {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF8C00 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  margin-bottom: -40px; /* Negative margin to position 50% above modal */
+  box-shadow: 
+    0 0 30px rgba(255, 215, 0, 0.5),
+    0 0 60px rgba(255, 165, 0, 0.3),
+    0 6px 24px rgba(0, 0, 0, 0.25),
+    inset 0 2px 8px rgba(255, 255, 255, 0.3),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.2);
+  animation: starPulse 2s ease-in-out infinite, starRotate 20s linear infinite;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: visible;
+}
+
+/* Pulsing animation for star circle */
+@keyframes starPulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 40px rgba(255, 215, 0, 0.6),
+      0 0 80px rgba(255, 165, 0, 0.4),
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      inset 0 2px 10px rgba(255, 255, 255, 0.3),
+      inset 0 -2px 10px rgba(0, 0, 0, 0.2);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 
+      0 0 60px rgba(255, 215, 0, 0.8),
+      0 0 120px rgba(255, 165, 0, 0.6),
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      inset 0 2px 10px rgba(255, 255, 255, 0.4),
+      inset 0 -2px 10px rgba(0, 0, 0, 0.2);
+    transform: scale(1.05);
+  }
+}
+
+/* Slow rotation animation */
+@keyframes starRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Glowing ring around star circle */
+.starCircle::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, 
+    rgba(255, 215, 0, 0.3) 0%, 
+    rgba(255, 165, 0, 0.2) 50%, 
+    rgba(255, 140, 0, 0.3) 100%);
+  z-index: -1;
+  animation: ringPulse 2s ease-in-out infinite;
+}
+
+@keyframes ringPulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.1);
+  }
+}
+
+/* Star icon inside circle */
+.starIcon {
+  width: 40px;
+  height: 40px;
+  color: white;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+  animation: starTwinkle 1.5s ease-in-out infinite;
+  z-index: 1;
+}
+
+@keyframes starTwinkle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.1);
+  }
+}
+
+/* Sparkle particles around star */
+.starCircle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200%;
+  height: 200%;
+  transform: translate(-50%, -50%);
+  background-image: 
+    radial-gradient(2px 2px at 20% 30%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(2px 2px at 60% 70%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 50% 50%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(1px 1px at 80% 10%, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(2px 2px at 90% 60%, rgba(255, 255, 255, 0.6), transparent);
+  background-size: 100% 100%;
+  animation: sparkleRotate 8s linear infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@keyframes sparkleRotate {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* Modal Content Box */
+.starModalContent {
+  position: relative;
+  width: 100%;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.98) 0%, 
+    rgba(248, 255, 248, 0.95) 25%,
+    rgba(240, 253, 244, 0.95) 50%,
+    rgba(248, 255, 248, 0.95) 75%,
+    rgba(255, 255, 255, 0.98) 100%);
+  background-size: 400% 400%;
+  backdrop-filter: blur(25px);
+  border-radius: 20px;
+  box-shadow: 
+    0 24px 48px rgba(0, 0, 0, 0.2),
+    0 12px 24px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(16, 185, 129, 0.1),
+    0 0 40px rgba(255, 215, 0, 0.12);
+  overflow: hidden;
+  padding-top: 50px; /* Space for the star circle */
+  animation: gradientShift 8s ease infinite, modalShimmer 3s ease-in-out infinite;
+  border: 2px solid rgba(255, 215, 0, 0.2);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Animated gradient background */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Shimmer effect */
+@keyframes modalShimmer {
+  0% {
+    box-shadow: 
+      0 24px 48px rgba(0, 0, 0, 0.2),
+      0 12px 24px rgba(0, 0, 0, 0.12),
+      0 0 0 1px rgba(16, 185, 129, 0.1),
+      0 0 40px rgba(255, 215, 0, 0.12);
+  }
+  50% {
+    box-shadow: 
+      0 24px 48px rgba(0, 0, 0, 0.2),
+      0 12px 24px rgba(0, 0, 0, 0.12),
+      0 0 0 1px rgba(16, 185, 129, 0.15),
+      0 0 50px rgba(255, 215, 0, 0.2),
+      0 0 80px rgba(255, 165, 0, 0.12);
+  }
+  100% {
+    box-shadow: 
+      0 24px 48px rgba(0, 0, 0, 0.2),
+      0 12px 24px rgba(0, 0, 0, 0.12),
+      0 0 0 1px rgba(16, 185, 129, 0.1),
+      0 0 40px rgba(255, 215, 0, 0.12);
+  }
+}
+
+/* Glitter particles overlay */
+.starModalContent::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(2px 2px at 20% 30%, rgba(16, 185, 129, 0.8), transparent),
+    radial-gradient(2px 2px at 60% 70%, rgba(5, 150, 105, 0.6), transparent),
+    radial-gradient(1px 1px at 50% 50%, rgba(34, 197, 94, 0.9), transparent),
+    radial-gradient(1px 1px at 80% 10%, rgba(16, 185, 129, 0.7), transparent),
+    radial-gradient(2px 2px at 90% 60%, rgba(5, 150, 105, 0.5), transparent),
+    radial-gradient(1px 1px at 33% 85%, rgba(34, 197, 94, 0.8), transparent),
+    radial-gradient(2px 2px at 10% 50%, rgba(16, 185, 129, 0.6), transparent),
+    radial-gradient(1px 1px at 70% 20%, rgba(5, 150, 105, 0.7), transparent),
+    radial-gradient(2px 2px at 40% 15%, rgba(255, 215, 0, 0.4), transparent),
+    radial-gradient(1px 1px at 85% 80%, rgba(255, 165, 0, 0.3), transparent);
+  background-size: 200% 200%;
+  background-position: 0% 0%;
+  animation: glitterMove 15s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.6;
+}
+
+@keyframes glitterMove {
+  0% {
+    background-position: 0% 0%, 100% 100%, 50% 50%, 80% 20%, 20% 80%, 30% 70%, 10% 90%, 70% 30%, 40% 15%, 85% 80%;
+    opacity: 0.6;
+  }
+  25% {
+    background-position: 50% 25%, 50% 75%, 75% 25%, 25% 75%, 60% 40%, 40% 60%, 30% 50%, 70% 50%, 60% 30%, 70% 60%;
+    opacity: 0.8;
+  }
+  50% {
+    background-position: 100% 50%, 0% 50%, 50% 100%, 50% 0%, 80% 60%, 20% 40%, 50% 30%, 50% 70%, 80% 50%, 30% 90%;
+    opacity: 0.7;
+  }
+  75% {
+    background-position: 50% 75%, 50% 25%, 25% 75%, 75% 25%, 40% 60%, 60% 40%, 70% 50%, 30% 50%, 20% 70%, 90% 20%;
+    opacity: 0.8;
+  }
+  100% {
+    background-position: 0% 0%, 100% 100%, 50% 50%, 80% 20%, 20% 80%, 30% 70%, 10% 90%, 70% 30%, 40% 15%, 85% 80%;
+    opacity: 0.6;
+  }
+}
+
+/* Sparkle overlay */
+.starModalContent::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(16, 185, 129, 0.1) 50%,
+    transparent 70%
+  );
+  animation: sparkleRotate 4s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes sparkleRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Modal Inner Content */
+.modalInner {
+  position: relative;
+  z-index: 2;
+  padding: 1.75rem 2rem 2.25rem 2rem; /* Small increase to top (1.75rem), medium increase to bottom (2.25rem) */
+  padding-right: calc(2rem + 12px); /* Add space for scrollbar (10px width + 2px margin) */
+  max-height: calc(90vh - 140px); /* Account for star circle (80px) + padding-top (50px) + title + close button + margins */
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  min-height: 0; /* Allow flex item to shrink below content size */
+  /* Firefox Scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: #9bceb5 rgba(240, 253, 244, 0.3);
+}
+
+/* Custom Scrollbar - Green Glowing (Webkit browsers) */
+.modalInner::-webkit-scrollbar {
+  width: 10px;
+}
+
+.modalInner::-webkit-scrollbar-track {
+  background: rgba(240, 253, 244, 0.3);
+  border-radius: 10px;
+  margin: 12px 0; /* Top/bottom margin to respect border radius (20px) */
+  margin-right: 2px; /* Right margin to stay within rounded corner */
+}
+
+.modalInner::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #9bceb5 0%, #a8d5c0 50%, #b5decb 100%);
+  border-radius: 10px;
+  box-shadow: 
+    0 0 8px rgba(155, 206, 181, 0.6),
+    0 0 12px rgba(155, 206, 181, 0.4),
+    inset 0 1px 2px rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(155, 206, 181, 0.3);
+}
+
+.modalInner::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #8bc4ab 0%, #9bceb5 50%, #a8d5c0 100%);
+  box-shadow: 
+    0 0 12px rgba(155, 206, 181, 0.8),
+    0 0 18px rgba(155, 206, 181, 0.6),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+/* Close Button */
+.closeButton {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(226, 232, 240, 0.6);
+  color: #6b7280;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px; /* Minimum touch target */
+  min-height: 36px; /* Minimum touch target */
+  backdrop-filter: blur(8px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+  font-size: 1.25rem;
+  font-weight: 300;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(46, 125, 50, 0.4);
+  color: #2e7d32;
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.2);
+}
+
+.closeButton:active {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* Modal Title */
+.modalTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 1.25rem 0;
+  font-family: var(--font-poppins), 'Poppins', sans-serif;
+  line-height: 1.3;
+  text-align: center;
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 30%, #4caf50 70%, #66bb6a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  z-index: 1;
+  /* Fallback color for browsers that don't support background-clip */
+  color: #2e7d32;
+}
+
+/* Ensure gradient is visible - add a fallback for better visibility */
+@supports (-webkit-background-clip: text) {
+  .modalTitle {
+    color: transparent;
+  }
+}
+
+/* Section Styles */
+.modalSection {
+  margin-bottom: 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.modalSection:last-child {
+  margin-bottom: 0;
+}
+
+.sectionTitle {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: var(--font-poppins), 'Poppins', sans-serif;
+}
+
+/* Description Container */
+.descriptionContainer {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 0 auto;
+  max-width: 90%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+.descriptionText {
+  color: #333;
+  line-height: 1.6;
+  margin: 0;
+  font-size: 0.9rem;
+  font-family: var(--font-poppins), 'Poppins', sans-serif;
+  text-align: center;
+  text-transform: none; /* Preserve original casing from data */
+  font-variant: normal;
+}
+
+/* Media Gallery */
+.mediaGallery {
+  margin-bottom: 1.5rem;
+}
+
+.mainImageContainer {
+  position: relative;
+  width: 100%;
+  height: 280px;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #f3f4f6;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.mainImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Navigation Arrows */
+.navArrowLeft,
+.navArrowRight {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(16, 185, 129, 0.3);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 5;
+  color: #059669;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.navArrowLeft {
+  left: 1rem;
+}
+
+.navArrowRight {
+  right: 1rem;
+}
+
+.navArrowLeft:hover,
+.navArrowRight:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.navArrowLeft:active,
+.navArrowRight:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.navArrowLeft svg,
+.navArrowRight svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Image Counter */
+.imageCounter {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: var(--font-poppins), 'Poppins', sans-serif;
+  z-index: 5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.thumbnailGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 0.75rem;
+}
+
+.thumbnail {
+  position: relative;
+  width: 100%;
+  padding-bottom: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #f5f5f5;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.thumbnail:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.thumbnailActive {
+  border: 3px solid #059669 !important;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4) !important;
+  transform: scale(1.05);
+}
+
+.thumbnailImage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Program Title Container */
+.programTitleContainer {
+  background: linear-gradient(135deg, rgba(5, 150, 105, 0.08) 0%, rgba(16, 185, 129, 0.06) 50%, rgba(34, 197, 94, 0.08) 100%);
+  border: 2px solid rgba(5, 150, 105, 0.25);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin: 0 auto;
+  max-width: 90%;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.1);
+  backdrop-filter: blur(4px);
+}
+
+.programTitleText {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: var(--font-poppins), 'Poppins', sans-serif;
+  color: #059669;
+  line-height: 1.5;
+}
+
+/* Details Section */
+.detailsSection {
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+.metadataList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  font-family: var(--font-inter), 'Inter', sans-serif;
+  flex-wrap: wrap;
+}
+
+/* Special styling for organization item */
+.organizationItem {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem; /* Add more space below organization details */
+}
+
+.organizationItem .metaValue {
+  margin-left: 0;
+  padding-left: 0.75rem;
+  border-left: 2px solid rgba(16, 185, 129, 0.2);
+  font-size: 18px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: #059669; /* Fallback for browsers that don't support background-clip */
+}
+
+/* Ensure gradient is visible for organization value */
+@supports (-webkit-background-clip: text) {
+  .organizationItem .metaValue {
+    color: transparent;
+  }
+}
+
+.metaIcon {
+  width: 20px;
+  height: 20px;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.metaLabel {
+  color: #6b7280;
+  font-weight: 500;
+  min-width: 100px;
+}
+
+/* Organization Label - Styled Design */
+.organizationLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.08) 100%);
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  font-size: 0.95rem; /* Keep same font size */
+  font-weight: 600;
+  color: #059669;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
+}
+
+.organizationLabel .metaIcon {
+  color: #059669;
+  width: 18px;
+  height: 18px;
+}
+
+.organizationLabel .metaLabel {
+  color: #059669;
+  min-width: auto;
+  font-weight: 600;
+  font-size: 0.95rem; /* Keep same font size */
+}
+
+.metaValue {
+  color: #374151;
+  font-weight: 600;
+}
+
+/* Responsive Design - Medium screens */
+@media (max-width: 1024px) {
+  .starModalContainer {
+    max-width: 600px;
+  }
+  
+  .modalInner {
+    padding: 1.5rem 1.75rem;
+    padding-right: calc(1.75rem + 12px);
+  }
+}
+
+/* Responsive Design - Tablets */
+@media (max-width: 768px) {
+  .starModalOverlay {
+    padding: 1rem;
+  }
+
+  .starModalContainer {
+    max-width: 95vw;
+    max-height: 90vh;
+  }
+
+  .starCircle {
+    width: 70px;
+    height: 70px;
+    margin-bottom: -35px;
+  }
+
+  .starIcon {
+    width: 35px;
+    height: 35px;
+  }
+
+  .starModalContent {
+    padding-top: 45px;
+    border-radius: 18px;
+    max-height: 90vh;
+  }
+
+  .modalInner {
+    padding: 1.375rem 1.5rem 1.625rem 1.5rem; /* Small increase to top, medium increase to bottom */
+    padding-right: calc(1.5rem + 12px);
+    max-height: calc(90vh - 130px);
+  }
+
+  .modalTitle {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .mainImageContainer {
+    height: 220px;
+  }
+  
+  .navArrowLeft,
+  .navArrowRight {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .navArrowLeft svg,
+  .navArrowRight svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .navArrowLeft {
+    left: 0.75rem;
+  }
+  
+  .navArrowRight {
+    right: 0.75rem;
+  }
+  
+  .imageCounter {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.85rem;
+  }
+  
+  .descriptionContainer {
+    max-width: 95%;
+    padding: 1.25rem;
+  }
+  
+  .descriptionText {
+    font-size: 0.85rem;
+  }
+  
+  .programTitleContainer {
+    max-width: 95%;
+    padding: 0.875rem 1.25rem;
+  }
+  
+  .programTitleText {
+    font-size: 0.9rem;
+  }
+  
+  .organizationLabel {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+  }
+  
+  .metaItem {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .starModalOverlay {
+    padding: 0.5rem;
+  }
+
+  .starModalContainer {
+    max-width: 98vw;
+    max-height: 95vh;
+  }
+
+  .starCircle {
+    width: 60px;
+    height: 60px;
+    margin-bottom: -30px;
+  }
+
+  .starIcon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .starModalContent {
+    padding-top: 40px;
+    border-radius: 14px;
+    max-height: 95vh;
+  }
+
+  .modalInner {
+    padding: 1.125rem 1.25rem 1.375rem 1.25rem; /* Small increase to top, medium increase to bottom */
+    padding-right: calc(1.25rem + 12px);
+    max-height: calc(95vh - 120px);
+  }
+
+  .modalTitle {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .mainImageContainer {
+    height: 180px;
+  }
+  
+  .navArrowLeft,
+  .navArrowRight {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .navArrowLeft svg,
+  .navArrowRight svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .navArrowLeft {
+    left: 0.5rem;
+  }
+  
+  .navArrowRight {
+    right: 0.5rem;
+  }
+  
+  .imageCounter {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.75rem;
+    bottom: 0.75rem;
+  }
+
+  .closeButton {
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 32px;
+    height: 32px;
+    padding: 6px;
+    font-size: 1.1rem;
+  }
+  
+  .descriptionContainer {
+    max-width: 98%;
+    padding: 1rem;
+  }
+  
+  .descriptionText {
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+  
+  .programTitleContainer {
+    max-width: 98%;
+    padding: 0.75rem 1rem;
+  }
+  
+  .programTitleText {
+    font-size: 0.85rem;
+  }
+  
+  .sectionTitle {
+    font-size: 0.75rem;
+  }
+  
+  .organizationLabel {
+    font-size: 0.8rem;
+    padding: 0.35rem 0.5rem;
+  }
+  
+  .organizationLabel .metaIcon {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .metaItem {
+    font-size: 0.8rem;
+    gap: 0.5rem;
+  }
+  
+  .metaIcon {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .thumbnailGrid {
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    gap: 0.5rem;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 360px) {
+  .starModalContainer {
+    max-width: 99vw;
+    max-height: 98vh;
+  }
+  
+  .starModalContent {
+    max-height: 98vh;
+  }
+  
+  .modalInner {
+    padding: 0.875rem 1rem 1rem 1rem; /* Small increase to top, medium increase to bottom */
+    padding-right: calc(1rem + 12px);
+    max-height: calc(98vh - 110px);
+  }
+  
+  .modalTitle {
+    font-size: 1rem;
+  }
+  
+  .descriptionContainer {
+    padding: 0.75rem;
+  }
+  
+  .descriptionText {
+    font-size: 0.75rem;
+  }
+  
+  .mainImageContainer {
+    height: 150px;
+  }
+  
+  .closeButton {
+    width: 28px;
+    height: 28px;
+    padding: 4px;
+    font-size: 1rem;
+  }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .starModalContainer {
+    max-height: 85vh;
+  }
+  
+  .starModalContent {
+    max-height: 85vh;
+  }
+  
+  .modalInner {
+    max-height: calc(85vh - 100px);
+  }
+  
+  .mainImageContainer {
+    height: 180px;
+  }
+}
+
+@media (max-width: 480px) and (orientation: landscape) {
+  .starModalContainer {
+    max-height: 90vh;
+  }
+  
+  .starModalContent {
+    max-height: 90vh;
+  }
+  
+  .modalInner {
+    max-height: calc(90vh - 90px);
+    padding: 0.75rem 1rem;
+    padding-right: calc(1rem + 12px);
+  }
+  
+  .mainImageContainer {
+    height: 150px;
+  }
+  
+  .starCircle {
+    width: 50px;
+    height: 50px;
+    margin-bottom: -25px;
+  }
+  
+  .starIcon {
+    width: 25px;
+    height: 25px;
+  }
+  
+  .starModalContent {
+    padding-top: 35px;
+  }
+}
+

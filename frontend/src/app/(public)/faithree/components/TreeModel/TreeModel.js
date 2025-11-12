@@ -1,11 +1,11 @@
 'use client'
 
 import { Suspense, useEffect, useRef, useState, useCallback, useMemo } from 'react'
-import { createPortal } from 'react-dom'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, useGLTF, Environment } from '@react-three/drei'
 import * as THREE from 'three'
-import Image from 'next/image'
+import StarModal from '../StarModal/StarModal'
+import styles from './TreeModel.module.css'
 
 // Star component - creates a glowing star shape (static like fruit on tree)
 function Star({ position, treePosition = [0, 0, 0], starId, onStarClick, onHover, onHoverOut }) {
@@ -379,289 +379,6 @@ function Loading() {
   )
 }
 
-// Star Modal Component
-function StarModal({ isOpen, onClose, starId, featuredHighlights = [] }) {
-  const [isVisible, setIsVisible] = useState(false)
-
-  useEffect(() => {
-    if (isOpen) {
-      setIsVisible(true)
-      if (typeof document !== 'undefined' && document.body) {
-        document.body.style.overflow = 'hidden'
-      }
-    } else {
-      setIsVisible(false)
-      if (typeof document !== 'undefined' && document.body) {
-        document.body.style.overflow = 'auto'
-      }
-    }
-
-    return () => {
-      if (typeof document !== 'undefined' && document.body) {
-        document.body.style.overflow = 'auto'
-      }
-    }
-  }, [isOpen])
-
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose()
-    }
-  }
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Escape') {
-      onClose()
-    }
-  }
-
-  // Map starId (1-8) to array index (0-7) to get the corresponding highlight
-  const highlight = starId ? featuredHighlights[starId - 1] : null
-
-  if (!isOpen || typeof document === 'undefined' || !document.body) {
-    return null
-  }
-
-  // If no highlight found for this star, don't show modal
-  if (!highlight) {
-    return null
-  }
-
-  // Format date
-  const formattedDate = highlight.created_at 
-    ? new Date(highlight.created_at).toLocaleDateString('en-US', { 
-        month: 'short', 
-        year: 'numeric' 
-      })
-    : ''
-
-  const modalContent = (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        width: '100vw',
-        height: '100vh',
-        background: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 9999,
-        opacity: isVisible ? 1 : 0,
-        transition: 'opacity 0.3s ease-in-out',
-        padding: '1rem'
-      }}
-      onClick={handleOverlayClick}
-      onKeyDown={handleKeyDown}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="star-modal-title"
-    >
-      <div
-        style={{
-          backgroundColor: 'white',
-          borderRadius: '16px',
-          width: '100%',
-          maxWidth: '600px',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)',
-          transform: isVisible ? 'scale(1)' : 'scale(0.9)',
-          transition: 'transform 0.3s ease-in-out',
-          position: 'relative',
-          padding: '2rem'
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: '1rem',
-            right: '1rem',
-            background: 'transparent',
-            border: 'none',
-            fontSize: '1.5rem',
-            cursor: 'pointer',
-            color: '#666',
-            width: '32px',
-            height: '32px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: '50%',
-            transition: 'background-color 0.2s'
-          }}
-          onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
-          onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-          aria-label="Close modal"
-        >
-          ×
-        </button>
-        
-        <h2
-          id="star-modal-title"
-          style={{
-            margin: '0 0 1.5rem 0',
-            fontSize: '1.5rem',
-            fontWeight: '600',
-            color: '#333'
-          }}
-        >
-          {highlight.title || 'Featured Highlight'}
-        </h2>
-
-        {/* Description Section */}
-        {highlight.description && (
-          <div style={{ marginBottom: '1.5rem' }}>
-            <h3 style={{ 
-              fontSize: '0.875rem', 
-              fontWeight: '600', 
-              color: '#666', 
-              marginBottom: '0.5rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em'
-            }}>
-              Description
-            </h3>
-            <p style={{ 
-              color: '#333', 
-              lineHeight: '1.6',
-              margin: 0
-            }}>
-              {highlight.description}
-            </p>
-          </div>
-        )}
-
-        {/* Media Gallery */}
-        {highlight.media && highlight.media.length > 0 && (
-          <div style={{ marginBottom: '1.5rem' }}>
-            <h3 style={{ 
-              fontSize: '0.875rem', 
-              fontWeight: '600', 
-              color: '#666', 
-              marginBottom: '0.75rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em'
-            }}>
-              Media ({highlight.media.length} {highlight.media.length === 1 ? 'file' : 'files'})
-            </h3>
-            <div style={{ 
-              position: 'relative', 
-              width: '100%', 
-              height: '300px',
-              borderRadius: '8px',
-              overflow: 'hidden',
-              backgroundColor: '#f5f5f5',
-              marginBottom: highlight.media.length > 1 ? '0.75rem' : 0
-            }}>
-              {highlight.media[0] && highlight.media[0].url && (
-                <Image
-                  src={highlight.media[0].url}
-                  alt={highlight.title || 'Highlight image'}
-                  fill
-                  style={{ objectFit: 'cover' }}
-                  sizes="600px"
-                />
-              )}
-            </div>
-            {highlight.media.length > 1 && (
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fill, minmax(60px, 1fr))',
-                gap: '0.5rem'
-              }}>
-                {highlight.media.slice(1, 5).map((item, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      position: 'relative',
-                      width: '100%',
-                      paddingBottom: '100%',
-                      borderRadius: '4px',
-                      overflow: 'hidden',
-                      backgroundColor: '#f5f5f5'
-                    }}
-                  >
-                    {item.url && (
-                      <Image
-                        src={item.url}
-                        alt={`Thumbnail ${index + 2}`}
-                        fill
-                        style={{ objectFit: 'cover' }}
-                        sizes="60px"
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Details Section */}
-        <div style={{ 
-          paddingTop: '1rem',
-          borderTop: '1px solid #e5e5e5'
-        }}>
-          <h3 style={{ 
-            fontSize: '0.875rem', 
-            fontWeight: '600', 
-            color: '#666', 
-            marginBottom: '0.75rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em'
-          }}>
-            Details
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {highlight.organization_name && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <svg style={{ width: '18px', height: '18px', color: '#666', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M19 21V5C19 3.89543 18.1046 3 17 3H7C5.89543 3 5 3.89543 5 5V21M19 21H5M19 21H21M5 21H3M9 7H15M9 11H15M9 15H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <span style={{ fontSize: '0.875rem', color: '#666' }}>Organization:</span>
-                <span style={{ fontSize: '0.875rem', color: '#333', fontWeight: '500' }}>
-                  {highlight.organization_name}
-                  {highlight.organization_acronym && ` (${highlight.organization_acronym})`}
-                </span>
-              </div>
-            )}
-            {highlight.program_title && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <svg style={{ width: '18px', height: '18px', color: '#666', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M7 7H17M7 12H17M7 17H12M3 3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <span style={{ fontSize: '0.875rem', color: '#666' }}>Program:</span>
-                <span style={{ fontSize: '0.875rem', color: '#333', fontWeight: '500' }}>
-                  {highlight.program_title}
-                </span>
-              </div>
-            )}
-            {formattedDate && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <svg style={{ width: '18px', height: '18px', color: '#666', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M8 7V3M16 7V3M3 11H21M5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V19C3 20.1046 3.89543 21 5 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <span style={{ fontSize: '0.875rem', color: '#666' }}>Date:</span>
-                <span style={{ fontSize: '0.875rem', color: '#333', fontWeight: '500' }}>
-                  {formattedDate}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-
-  return createPortal(modalContent, document.body)
-}
-
 // Main component
 export default function TreeModel({ 
   theme = 'morning',
@@ -698,15 +415,6 @@ export default function TreeModel({
 
   // State to track current tree position (updates in real-time)
   const [treePosition, setTreePosition] = useState(initialTreePosition)
-  const savedCamPos = getSavedCameraPosition()
-  const initialCamPos = savedCamPos 
-    ? [savedCamPos.x, savedCamPos.y, savedCamPos.z]
-    : [
-        initialTreePosition[0] + cameraOffset[0],
-        initialTreePosition[1] + cameraOffset[1],
-        initialTreePosition[2] + cameraOffset[2]
-      ]
-  const [cameraPosition, setCameraPosition] = useState(initialCamPos)
 
   // State for star modal
   const [selectedStarId, setSelectedStarId] = useState(null)
@@ -750,7 +458,6 @@ export default function TreeModel({
     // Preload cloud models
     useGLTF.preload('/models/clouds.glb')
     useGLTF.preload('/models/clouds 2.glb')
-    useGLTF.preload('/models/cloud 3.glb')
   }, [])
 
   // Sync treePosition state with prop when it changes
@@ -761,13 +468,7 @@ export default function TreeModel({
   // Handle position changes from controls
   const handlePositionChange = useCallback((newPosition) => {
     setTreePosition(newPosition)
-    // Update camera position based on new tree position
-    setCameraPosition([
-      newPosition[0] + cameraOffset[0],
-      newPosition[1] + cameraOffset[1],
-      newPosition[2] + cameraOffset[2]
-    ])
-  }, [cameraOffset])
+  }, [])
 
   // Calculate initial camera position - use saved position if available
   const savedPos = getSavedCameraPosition()
@@ -781,7 +482,7 @@ export default function TreeModel({
 
   return (
     <>
-      <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'visible' }}>
+      <div className={styles.treeModelContainer}>
         <Canvas
           camera={{ 
             position: initialCameraPosition, 
@@ -811,19 +512,19 @@ export default function TreeModel({
                 {/* Cloud 1: Back left */}
                 <Cloud 
                   url="/models/clouds.glb" 
-                  initialPosition={[-3, 1, -4]} 
+                  initialPosition={[-3, 0.3, -4]} 
                   scale={1.2}
                 />
                 {/* Cloud 2: Front right */}
                 <Cloud 
                   url="/models/clouds.glb" 
-                  initialPosition={[3, 0.8, -2]} 
+                  initialPosition={[3, 0.1, -2]} 
                   scale={1.0}
                 />
                 {/* Cloud 3: Back center-right for balance */}
                 <Cloud 
                   url="/models/clouds 2.glb" 
-                  initialPosition={[-0.8, 1.5, -3]} 
+                  initialPosition={[-0.8, 1, -4]} 
                   scale={0.9}
                 />
               </>
@@ -886,4 +587,3 @@ export default function TreeModel({
     </>
   )
 }
-

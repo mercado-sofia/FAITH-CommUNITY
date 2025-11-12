@@ -203,3 +203,12 @@
   transform: translateY(0);
 }
 
+.highlightedText {
+  background-color: #fef08a;
+  color: #000;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+

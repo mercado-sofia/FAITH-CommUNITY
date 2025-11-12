@@ -3,6 +3,7 @@
 import { useEffect, useRef, forwardRef } from "react";
 import styles from "./ProgramSelect.module.css";
 import { FaChevronDown } from "react-icons/fa";
+import { getProgramStatusByDates } from "@/utils/programStatusUtils";
 
 const ProgramSelect = forwardRef(function ProgramSelect(
   {
@@ -126,7 +127,15 @@ const ProgramSelect = forwardRef(function ProgramSelect(
             >
               {programOptions.length > 0 ? (
                 programOptions
-                  .filter(option => option.accepts_volunteers !== false && option.accepts_volunteers !== 0 && option.accepts_volunteers !== '0') // Filter out programs that don't accept volunteers
+                  .filter(option => {
+                    // Filter out Completed programs (regardless of accepts_volunteers)
+                    const calculatedStatus = getProgramStatusByDates(option);
+                    if (calculatedStatus === 'Completed') {
+                      return false;
+                    }
+                    // Filter out programs that don't accept volunteers
+                    return option.accepts_volunteers !== false && option.accepts_volunteers !== 0 && option.accepts_volunteers !== '0';
+                  })
                   .map((option) => {
                     const isAlreadyApplied = isProgramAlreadyApplied(option.id);
                     const applicationStatus = getApplicationStatus(option.id);

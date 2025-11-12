@@ -6,7 +6,7 @@ import { FaTimes, FaUser, FaFileAlt, FaTimesCircle, FaCheckCircle } from 'react-
 import { FiCalendar, FiClock } from 'react-icons/fi';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
+import { makeAuthenticatedRequest } from '../../utils/profileApi';
 import { formatDateLong, formatApplicationProgramDates } from '@/utils/dateUtils';
 import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
 import { UnavailableImagePlaceholder } from '@/components';
@@ -23,8 +23,8 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
     setError(null);
     
     try {
-      const response = await fetch(getApiUrl(`/api/users/applications/${applicationId}`), {
-        headers: getAuthHeaders()
+      const response = await makeAuthenticatedRequest(`/api/users/applications/${applicationId}`, {
+        method: 'GET'
       });
       
       if (response.ok) {
@@ -111,6 +111,18 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
     }
   };
 
+  const getStatusClassName = (status) => {
+    if (!status) return '';
+    const normalizedStatus = status.toLowerCase();
+    // Map statuses to their CSS class names
+    if (normalizedStatus === 'rejected' || normalizedStatus === 'declined') {
+      return sharedStyles.statusRejected; // Use statusRejected for both rejected and declined
+    }
+    // For other statuses, capitalize first letter
+    const capitalized = normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1);
+    return sharedStyles[`status${capitalized}`] || '';
+  };
+
   if (!isOpen) return null;
 
   const modalContent = (
@@ -145,7 +157,7 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
                 <div className={styles.programTitleSection}>
                   <h3 className={styles.programTitle}>{application.programName}</h3>
                   <div className={styles.statusContainer}>
-                    <span className={`${sharedStyles.statusBadge} ${sharedStyles[`status${application.status?.charAt(0).toUpperCase() + application.status?.slice(1)}`]}`}>
+                    <span className={`${sharedStyles.statusBadge} ${getStatusClassName(application.status)}`}>
                       {getStatusText(application.status)}
                     </span>
                   </div>
@@ -253,14 +265,14 @@ export default function ApplicationDetailsModal({ isOpen, onClose, applicationId
                         <span className={styles.timelineDate}>{formatDate(application.appliedAt)}</span>
                       </div>
                     </div>
-                    {application.status !== 'pending' && (
+                    {application.status?.toLowerCase() !== 'pending' && (
                       <div className={styles.timelineItem}>
                         <div className={styles.timelineDot}></div>
                         <div className={styles.timelineContent}>
                           <span className={styles.timelineLabel}>
-                            {application.status === 'approved' ? 'Application Approved' : 
-                             application.status === 'rejected' || application.status === 'declined' ? 'Application Declined' : 
-                             application.status === 'completed' ? 'Application Completed' :
+                            {application.status?.toLowerCase() === 'approved' ? 'Application Approved' : 
+                             application.status?.toLowerCase() === 'rejected' || application.status?.toLowerCase() === 'declined' ? 'Application Declined' : 
+                             application.status?.toLowerCase() === 'completed' ? 'Application Completed' :
                              'Application Cancelled'}
                           </span>
                           <span className={styles.timelineDate}>

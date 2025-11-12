@@ -3,6 +3,7 @@ import db from '../../database.js';
 import NotificationController from '../../admin/controllers/notificationController.js';
 import { logSuperadminAction } from '../../utils/audit.js';
 import { logError, logWarn, logInfo } from '../../utils/logger.js';
+import { calculateInitialStatusFromDates } from '../../utils/programStatusUtils.js';
 
 // Helper function to safely parse JSON (typeCast already parses JSON columns, so check if it's already an object)
 const safeParseJSON = (value, defaultValue = null) => {
@@ -692,6 +693,24 @@ export const approveSubmission = async (req, res) => {
           
           if (existingProgramId) {
             // Update existing program to approve it
+            // Check if program already has manual_status_override set - preserve it if TRUE
+            const [existingProgram] = await connection.execute(
+              'SELECT manual_status_override FROM programs_projects WHERE id = ?',
+              [existingProgramId]
+            );
+            const existingManualOverride = existingProgram[0]?.manual_status_override === 1 || existingProgram[0]?.manual_status_override === true;
+            
+            // Calculate initial status from event dates (only during creation/update)
+            // After creation, admin can manually change status which will override dates
+            const initialStatusUpdate = calculateInitialStatusFromDates(
+              data.event_start_date || null,
+              data.event_end_date || null,
+              data.multiple_dates || null
+            );
+            
+            // Preserve manual_status_override if it was already set, otherwise set to FALSE (dates will determine status)
+            const manualOverrideValue = existingManualOverride ? 1 : 0;
+            
             let updateQuery, updateValues;
             
             if (hasSubmittedByName && hasSubmittedByRole) {
@@ -702,7 +721,7 @@ export const approveSubmission = async (req, res) => {
                 data.title,
                 data.description,
                 data.category,
-                'Upcoming',
+                initialStatusUpdate, // Calculated from event dates during creation/update
                 cloudinaryImageUrl,
                 data.event_start_date || null,
                 data.event_end_date || null,
@@ -710,7 +729,7 @@ export const approveSubmission = async (req, res) => {
                 true, // Approved by superadmin
                 true, // Collaborative
                 data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
-                false, // New approved programs start with automatic status (no manual override)
+                manualOverrideValue, // Preserve existing manual override if set, otherwise FALSE
                 (data.submitted_by_name && data.submitted_by_name.trim()) ? data.submitted_by_name.trim() : null,
                 (data.submitted_by_role && data.submitted_by_role.trim()) ? data.submitted_by_role.trim() : null,
                 existingProgramId
@@ -723,7 +742,7 @@ export const approveSubmission = async (req, res) => {
                 data.title,
                 data.description,
                 data.category,
-                'Upcoming',
+                initialStatusUpdate, // Calculated from event dates during creation/update
                 cloudinaryImageUrl,
                 data.event_start_date || null,
                 data.event_end_date || null,
@@ -731,7 +750,7 @@ export const approveSubmission = async (req, res) => {
                 true, // Approved by superadmin
                 true, // Collaborative
                 data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
-                false, // New approved programs start with automatic status (no manual override)
+                manualOverrideValue, // Preserve existing manual override if set, otherwise FALSE
                 existingProgramId
               ];
             }
@@ -748,6 +767,14 @@ export const approveSubmission = async (req, res) => {
             `, [programId, data.title, id]);
           } else {
             // Create new program
+            // Calculate initial status from event dates (only during creation)
+            // After creation, admin can manually change status which will override dates
+            const initialStatus = calculateInitialStatusFromDates(
+              data.event_start_date || null,
+              data.event_end_date || null,
+              data.multiple_dates || null
+            );
+            
             let insertQuery, insertValues;
             
             if (hasSubmittedByName && hasSubmittedByRole) {
@@ -758,7 +785,7 @@ export const approveSubmission = async (req, res) => {
                 data.title,
                 data.description,
                 data.category,
-                'Upcoming',
+                initialStatus, // Calculated from event dates during creation
                 cloudinaryImageUrl,
                 data.event_start_date || null,
                 data.event_end_date || null,
@@ -766,7 +793,7 @@ export const approveSubmission = async (req, res) => {
                 true, // Approved by superadmin
                 true, // Collaborative - will be updated based on collaborator responses
                 data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
-                false, // New approved programs start with automatic status (no manual override)
+                false, // New approved programs start with automatic status (no manual override) - admin can change later
                 (data.submitted_by_name && data.submitted_by_name.trim()) ? data.submitted_by_name.trim() : null,
                 (data.submitted_by_role && data.submitted_by_role.trim()) ? data.submitted_by_role.trim() : null
               ];
@@ -778,7 +805,7 @@ export const approveSubmission = async (req, res) => {
                 data.title,
                 data.description,
                 data.category,
-                'Upcoming',
+                initialStatus, // Calculated from event dates during creation
                 cloudinaryImageUrl,
                 data.event_start_date || null,
                 data.event_end_date || null,
@@ -786,7 +813,7 @@ export const approveSubmission = async (req, res) => {
                 true, // Approved by superadmin
                 true, // Collaborative - will be updated based on collaborator responses
                 data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
-                false // New approved programs start with automatic status (no manual override)
+                false // New approved programs start with automatic status (no manual override) - admin can change later
               ];
             }
             
@@ -882,6 +909,24 @@ export const approveSubmission = async (req, res) => {
           
           if (existingProgramId) {
             // Update existing program to approve it
+            // Check if program already has manual_status_override set - preserve it if TRUE
+            const [existingProgram2] = await connection.execute(
+              'SELECT manual_status_override FROM programs_projects WHERE id = ?',
+              [existingProgramId]
+            );
+            const existingManualOverride2 = existingProgram2[0]?.manual_status_override === 1 || existingProgram2[0]?.manual_status_override === true;
+            
+            // Calculate initial status from event dates (only during creation/update)
+            // After creation, admin can manually change status which will override dates
+            const initialStatus2Update = calculateInitialStatusFromDates(
+              data.event_start_date || null,
+              data.event_end_date || null,
+              data.multiple_dates || null
+            );
+            
+            // Preserve manual_status_override if it was already set, otherwise set to FALSE (dates will determine status)
+            const manualOverrideValue2 = existingManualOverride2 ? 1 : 0;
+            
             let updateQuery2, updateValues2;
             
             if (hasSubmittedByName2 && hasSubmittedByRole2) {
@@ -892,7 +937,7 @@ export const approveSubmission = async (req, res) => {
                 data.title,
                 data.description,
                 data.category,
-                'Upcoming', // Default status for approved programs
+                initialStatus2Update, // Calculated from event dates during creation/update
                 cloudinaryImageUrl, // Use Cloudinary URL instead of base64
                 data.event_start_date || null,
                 data.event_end_date || null,
@@ -900,7 +945,7 @@ export const approveSubmission = async (req, res) => {
                 true, // SECURITY FIX: Always approve when superadmin approves (this is the approval process)
                 false, // Not collaborative
                 data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
-                false, // New approved programs start with automatic status (no manual override)
+                manualOverrideValue2, // Preserve existing manual override if set, otherwise FALSE
                 (data.submitted_by_name && data.submitted_by_name.trim()) ? data.submitted_by_name.trim() : null,
                 (data.submitted_by_role && data.submitted_by_role.trim()) ? data.submitted_by_role.trim() : null,
                 existingProgramId
@@ -913,7 +958,7 @@ export const approveSubmission = async (req, res) => {
                 data.title,
                 data.description,
                 data.category,
-                'Upcoming', // Default status for approved programs
+                initialStatus2Update, // Calculated from event dates during creation/update
                 cloudinaryImageUrl, // Use Cloudinary URL instead of base64
                 data.event_start_date || null,
                 data.event_end_date || null,
@@ -921,7 +966,7 @@ export const approveSubmission = async (req, res) => {
                 true, // SECURITY FIX: Always approve when superadmin approves (this is the approval process)
                 false, // Not collaborative
                 data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
-                false, // New approved programs start with automatic status (no manual override)
+                manualOverrideValue2, // Preserve existing manual override if set, otherwise FALSE
                 existingProgramId
               ];
             }
@@ -930,6 +975,14 @@ export const approveSubmission = async (req, res) => {
             programId = existingProgramId;
           } else {
             // Create new program
+            // Calculate initial status from event dates (only during creation)
+            // After creation, admin can manually change status which will override dates
+            const initialStatus2 = calculateInitialStatusFromDates(
+              data.event_start_date || null,
+              data.event_end_date || null,
+              data.multiple_dates || null
+            );
+            
             let insertQuery2, insertValues2;
             
             if (hasSubmittedByName2 && hasSubmittedByRole2) {
@@ -940,7 +993,7 @@ export const approveSubmission = async (req, res) => {
                 data.title,
                 data.description,
                 data.category,
-                'Upcoming', // Default status for approved programs
+                initialStatus2, // Calculated from event dates during creation
                 cloudinaryImageUrl, // Use Cloudinary URL instead of base64
                 data.event_start_date || null,
                 data.event_end_date || null,
@@ -948,7 +1001,7 @@ export const approveSubmission = async (req, res) => {
                 true, // SECURITY FIX: Always approve when superadmin approves (this is the approval process)
                 false, // Not collaborative
                 data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
-                false, // New approved programs start with automatic status (no manual override)
+                false, // New approved programs start with automatic status (no manual override) - admin can change later
                 (data.submitted_by_name && data.submitted_by_name.trim()) ? data.submitted_by_name.trim() : null,
                 (data.submitted_by_role && data.submitted_by_role.trim()) ? data.submitted_by_role.trim() : null
               ];
@@ -960,7 +1013,7 @@ export const approveSubmission = async (req, res) => {
                 data.title,
                 data.description,
                 data.category,
-                'Upcoming', // Default status for approved programs
+                initialStatus2, // Calculated from event dates during creation
                 cloudinaryImageUrl, // Use Cloudinary URL instead of base64
                 data.event_start_date || null,
                 data.event_end_date || null,
@@ -968,7 +1021,7 @@ export const approveSubmission = async (req, res) => {
                 true, // SECURITY FIX: Always approve when superadmin approves (this is the approval process)
                 false, // Not collaborative
                 data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
-                false // New approved programs start with automatic status (no manual override)
+                false // New approved programs start with automatic status (no manual override) - admin can change later
               ];
             }
             
@@ -1828,6 +1881,24 @@ export const bulkApproveSubmissions = async (req, res) => {
           
           if (existingProgramId) {
             // Update existing program to approve it
+            // Check if program already has manual_status_override set - preserve it if TRUE
+            const [existingProgram3] = await connection.execute(
+              'SELECT manual_status_override FROM programs_projects WHERE id = ?',
+              [existingProgramId]
+            );
+            const existingManualOverride3 = existingProgram3[0]?.manual_status_override === 1 || existingProgram3[0]?.manual_status_override === true;
+            
+            // Calculate initial status from event dates (only during creation/update)
+            // After creation, admin can manually change status which will override dates
+            const initialStatus3Update = calculateInitialStatusFromDates(
+              data.event_start_date || null,
+              data.event_end_date || null,
+              data.multiple_dates || null
+            );
+            
+            // Preserve manual_status_override if it was already set, otherwise set to FALSE (dates will determine status)
+            const manualOverrideValue3 = existingManualOverride3 ? 1 : 0;
+            
             let updateQuery3, updateValues3;
             
             if (hasSubmittedByName3 && hasSubmittedByRole3) {
@@ -1838,7 +1909,7 @@ export const bulkApproveSubmissions = async (req, res) => {
                 data.title,
                 data.description,
                 data.category,
-                'Upcoming',
+                initialStatus3Update, // Calculated from event dates during creation/update
                 cloudinaryImageUrl,
                 data.event_start_date || null,
                 data.event_end_date || null,
@@ -1846,7 +1917,7 @@ export const bulkApproveSubmissions = async (req, res) => {
                 true, // Approved by superadmin
                 data.collaborators && data.collaborators.length > 0,
                 data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
-                false, // New approved programs start with automatic status (no manual override)
+                manualOverrideValue3, // Preserve existing manual override if set, otherwise FALSE
                 (data.submitted_by_name && data.submitted_by_name.trim()) ? data.submitted_by_name.trim() : null,
                 (data.submitted_by_role && data.submitted_by_role.trim()) ? data.submitted_by_role.trim() : null,
                 existingProgramId
@@ -1859,7 +1930,7 @@ export const bulkApproveSubmissions = async (req, res) => {
                 data.title,
                 data.description,
                 data.category,
-                'Upcoming',
+                initialStatus3Update, // Calculated from event dates during creation/update
                 cloudinaryImageUrl,
                 data.event_start_date || null,
                 data.event_end_date || null,
@@ -1867,7 +1938,7 @@ export const bulkApproveSubmissions = async (req, res) => {
                 true, // Approved by superadmin
                 data.collaborators && data.collaborators.length > 0,
                 data.accepts_volunteers !== undefined ? data.accepts_volunteers : true,
-                false, // New approved programs start with automatic status (no manual override)
+                manualOverrideValue3, // Preserve existing manual override if set, otherwise FALSE
                 existingProgramId
               ];
             }
@@ -1876,6 +1947,14 @@ export const bulkApproveSubmissions = async (req, res) => {
             programId = existingProgramId;
           } else {
             // Create new program
+            // Calculate initial status from event dates (only during creation)
+            // After creation, admin can manually change status which will override dates
+            const initialStatus3 = calculateInitialStatusFromDates(
+              data.event_start_date || null,
+              data.event_end_date || null,
+              data.multiple_dates || null
+            );
+            
             let insertQuery3, insertValues3;
             
             if (hasSubmittedByName3 && hasSubmittedByRole3) {
@@ -1886,7 +1965,7 @@ export const bulkApproveSubmissions = async (req, res) => {
                 data.title,
                 data.description,
                 data.category,
-                'Upcoming', // Default status for approved programs
+                initialStatus3, // Calculated from event dates during creation
                 cloudinaryImageUrl, // Use Cloudinary URL instead of base64
                 data.event_start_date || null,
                 data.event_end_date || null,

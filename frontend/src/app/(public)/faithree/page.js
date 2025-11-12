@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import Image from 'next/image';
 import { FiSun } from "react-icons/fi";
 import { IoRainyOutline } from "react-icons/io5";
+import { LuMousePointerClick } from "react-icons/lu";
 import styles from './faithree.module.css';
 // import Highlights from './Highlights/highlights';
 import { TreeModel, LoadingOverlay } from './components';
@@ -269,10 +270,24 @@ function FAITHreePage() {
           {/* Rolling hills - SVG paths */}
           <div className={styles.hills}>
             <svg className={styles.hillsSvg} viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                {/* Sunny theme gradient */}
+                <linearGradient id="sunnyGroundGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#aefb82" stopOpacity="1" />
+                  <stop offset="50%" stopColor="#84e090" stopOpacity="1" />
+                  <stop offset="100%" stopColor="#4bc788" stopOpacity="1" />
+                </linearGradient>
+                {/* Rainy theme gradient */}
+                <linearGradient id="rainyGroundGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#32b974" stopOpacity="0.75" />
+                  <stop offset="50%" stopColor="#28a063" stopOpacity="0.7" />
+                  <stop offset="100%" stopColor="#1d8751" stopOpacity="0.65" />
+                </linearGradient>
+              </defs>
               {/* Back hill layer - deepest green */}
               <path
                 d="M0,50 L0,38 C8,35 16,32 24,34 C32,32 40,30 48,32 C56,30 64,28 72,30 C80,28 88,26 96,28 C98,27 100,28 100,30 L100,50 Z"
-                fill={theme === 'rainy' ? "#2E5C3A" : "#7CB342"}
+                fill={theme === 'rainy' ? "url(#rainyGroundGradient)" : "url(#sunnyGroundGradient)"}
                 opacity={theme === 'rainy' ? "0.7" : "0.9"}
                 style={{
                   transition: prefersReducedMotion ? 'none' : 'fill 0.6s ease, opacity 0.6s ease'
@@ -281,7 +296,7 @@ function FAITHreePage() {
               {/* Middle hill layer - medium green */}
               <path
                 d="M0,50 L0,32 C6,29 14,26 22,28 C30,26 38,24 46,26 C54,24 62,22 70,24 C78,22 86,20 94,22 C97,21 100,22 100,24 L100,50 Z"
-                fill={theme === 'rainy' ? "#3D7047" : "#8BC34A"}
+                fill={theme === 'rainy' ? "url(#rainyGroundGradient)" : "url(#sunnyGroundGradient)"}
                 opacity={theme === 'rainy' ? "0.75" : "0.95"}
                 style={{
                   transition: prefersReducedMotion ? 'none' : 'fill 0.6s ease, opacity 0.6s ease'
@@ -290,7 +305,7 @@ function FAITHreePage() {
               {/* Front hill layer - lightest green */}
               <path
                 d="M0,50 L0,26 C10,23 20,20 30,22 C40,20 50,18 60,20 C70,18 80,16 90,18 C95,17 100,18 100,20 L100,50 Z"
-                fill={theme === 'rainy' ? "#4A7C56" : "#A5D6A7"}
+                fill={theme === 'rainy' ? "url(#rainyGroundGradient)" : "url(#sunnyGroundGradient)"}
                 opacity="1"
                 style={{
                   transition: prefersReducedMotion ? 'none' : 'fill 0.6s ease, opacity 0.6s ease'
@@ -312,7 +327,7 @@ function FAITHreePage() {
         </div>
         
         {/* Theme Toggle Button - Desktop */}
-        <div className={styles.themeToggleContainer}>
+        <div className={`${styles.themeToggleContainer} ${styles[`toggleButtons${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}>
           <button 
             className={`${styles.themeToggleButton} ${isTransitioning ? styles.disabled : ''}`}
             onClick={toggleTheme}
@@ -333,6 +348,16 @@ function FAITHreePage() {
               </>
             )}
           </button>
+          {/* Click Me Button - Beside Theme Toggle (Desktop) */}
+          <button
+            className={styles.instructionToggleButton}
+            onClick={() => setIsInstructionOpen(!isInstructionOpen)}
+            aria-label={isInstructionOpen ? 'Close instructions' : 'Open instructions'}
+            aria-expanded={isInstructionOpen}
+          >
+            <LuMousePointerClick className={styles.instructionToggleIcon} aria-hidden="true" />
+            <span className={styles.instructionToggleText}>Click me!</span>
+          </button>
         </div>
 
         {/* Click Me Button - Top Left (Mobile) */}
@@ -343,6 +368,7 @@ function FAITHreePage() {
             aria-label={isInstructionOpen ? 'Close instructions' : 'Open instructions'}
             aria-expanded={isInstructionOpen}
           >
+            <LuMousePointerClick className={styles.instructionToggleIcon} aria-hidden="true" />
             <span className={styles.instructionToggleText}>Click me!</span>
           </button>
         </div>

@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
+import { getProgramStatusByDates } from "@/utils/programStatusUtils"
 
 export const superadminProgramsApi = createApi({
   reducerPath: "superadminProgramsApi",
@@ -66,16 +67,19 @@ export const superadminProgramsApi = createApi({
               submitted_by_name: program.submitted_by_name,
               submitted_by_role: program.submitted_by_role,
               edited_by_name: program.edited_by_name,
-              edited_by_role: program.edited_by_role
+              edited_by_role: program.edited_by_role,
+              manual_status_override: program.manual_status_override === true || program.manual_status_override === 1 || program.manual_status_override === '1',
+              accepts_volunteers: program.accepts_volunteers !== undefined ? program.accepts_volunteers : true
             };
 
-            // Categorize by status
-            const status = program.status;
-            if (status === 'Upcoming') {
+            // Categorize by status using getProgramStatusByDates to respect manual_status_override
+            // This ensures consistency across all portals (Public, Admin, Superadmin)
+            const calculatedStatus = getProgramStatusByDates(programData);
+            if (calculatedStatus === 'Upcoming') {
               acc[orgKey].programs.upcoming.push(programData);
-            } else if (status === 'Active') {
+            } else if (calculatedStatus === 'Active') {
               acc[orgKey].programs.active.push(programData);
-            } else if (status === 'Completed') {
+            } else if (calculatedStatus === 'Completed') {
               acc[orgKey].programs.completed.push(programData);
             }
 

@@ -6,7 +6,7 @@ import { FiCalendar } from 'react-icons/fi';
 import { FaRegClock } from 'react-icons/fa6';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
+import { makeAuthenticatedRequest } from '../../utils/profileApi';
 import { formatDateShort, formatApplicationProgramDates } from '@/utils/dateUtils';
 import { getProgramImageUrl, getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
 import { UnavailableImagePlaceholder } from '@/components';
@@ -46,8 +46,8 @@ export default function MyApplications() {
         return;
       }
       
-      const response = await fetch(getApiUrl('/api/users/applications'), {
-        headers: getAuthHeaders()
+      const response = await makeAuthenticatedRequest('/api/users/applications', {
+        method: 'GET'
       });
 
       if (response.ok) {
@@ -57,6 +57,7 @@ export default function MyApplications() {
         setApplications([]);
       }
     } catch (error) {
+      console.error('Error fetching applications:', error);
       setApplications([]);
     } finally {
       setIsLoading(false);
@@ -79,6 +80,18 @@ export default function MyApplications() {
       default:
         return 'Pending Review';
     }
+  };
+
+  const getStatusClassName = (status) => {
+    if (!status) return '';
+    const normalizedStatus = status.toLowerCase();
+    // Map statuses to their CSS class names
+    if (normalizedStatus === 'rejected' || normalizedStatus === 'declined') {
+      return styles.statusRejected; // Use statusRejected for both rejected and declined
+    }
+    // For other statuses, capitalize first letter
+    const capitalized = normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1);
+    return styles[`status${capitalized}`] || '';
   };
 
   const canCancelApplication = (status) => {
@@ -150,9 +163,8 @@ export default function MyApplications() {
     setFeedbackMessage(null);
 
     try {
-      const response = await fetch(getApiUrl(`/api/users/applications/${applicationToCancel.id}/cancel`), {
-        method: 'PUT',
-        headers: getAuthHeaders()
+      const response = await makeAuthenticatedRequest(`/api/users/applications/${applicationToCancel.id}/cancel`, {
+        method: 'PUT'
       });
 
       const data = await response.json();
@@ -220,9 +232,8 @@ export default function MyApplications() {
     setFeedbackMessage(null);
 
     try {
-      const response = await fetch(getApiUrl(`/api/users/applications/${applicationToDelete.id}`), {
-        method: 'DELETE',
-        headers: getAuthHeaders()
+      const response = await makeAuthenticatedRequest(`/api/users/applications/${applicationToDelete.id}`, {
+        method: 'DELETE'
       });
 
       const data = await response.json();
@@ -279,9 +290,8 @@ export default function MyApplications() {
     setFeedbackMessage(null);
 
     try {
-      const response = await fetch(getApiUrl(`/api/users/applications/${applicationToComplete.id}/complete`), {
-        method: 'PUT',
-        headers: getAuthHeaders()
+      const response = await makeAuthenticatedRequest(`/api/users/applications/${applicationToComplete.id}/complete`, {
+        method: 'PUT'
       });
 
       const data = await response.json();
@@ -622,7 +632,7 @@ export default function MyApplications() {
 
                     {/* Status Badge - Bottom Right */}
                     <div className={styles.statusContainer}>
-                      <span className={`${styles.statusBadge} ${styles[`status${application.status.charAt(0).toUpperCase() + application.status.slice(1)}`]}`}>
+                      <span className={`${styles.statusBadge} ${getStatusClassName(application.status)}`}>
                         {getStatusText(application.status)}
                       </span>
                     </div>

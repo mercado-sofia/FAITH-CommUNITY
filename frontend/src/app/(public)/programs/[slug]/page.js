@@ -227,12 +227,19 @@ export default function ProgramDetailsPage() {
 
   const handleApplyClick = () => {
     if (program) {
-      if (programStatus === 'Upcoming') {
+      // Allow applications for Upcoming and Active programs (if they accept volunteers)
+      if (programStatus === 'Upcoming' || programStatus === 'Active') {
         // Check if user has already applied
         const hasApplied = isLoggedIn && userApplications.some(app => app.programId === program.id);
         
         if (hasApplied) {
           // Do nothing - button is disabled
+          return;
+        }
+        
+        // Check if program accepts volunteers
+        const acceptsVolunteers = program.accepts_volunteers !== false && program.accepts_volunteers !== 0 && program.accepts_volunteers !== '0';
+        if (!acceptsVolunteers) {
           return;
         }
         
@@ -312,34 +319,63 @@ export default function ProgramDetailsPage() {
     // Handle both boolean and numeric values (0/1 from database)
     const acceptsVolunteers = program.accepts_volunteers !== false && program.accepts_volunteers !== 0 && program.accepts_volunteers !== '0';
 
-    // Only show apply button for Upcoming programs that accept volunteers
-    if (programStatus !== 'Upcoming' || !acceptsVolunteers) {
+    // Block applications for Completed programs (regardless of accepts_volunteers setting)
+    if (programStatus === 'Completed') {
       return null;
     }
 
-    switch (programStatus) {
-      case 'Upcoming':
-        if (hasApplied) {
-          return {
-            title: 'Application Submitted',
-            text: 'You have already applied to this program. Your application is being reviewed and you will be notified of the status soon.',
-            buttonText: 'Already Applied',
-            icon: '📝',
-            isDisabled: true
-          };
-        }
-        
-        return {
-          title: 'Ready to Join?',
-          text: 'Take the first step towards making a positive impact in your community. Apply now and become part of this meaningful program.',
-          buttonText: 'Apply Now',
-          icon: '✨',
-          isDisabled: false
-        };
-      default:
-        // This should never be reached due to the early return above
+    // For Active programs, only show apply button if they accept volunteers
+    if (programStatus === 'Active') {
+      if (!acceptsVolunteers) {
         return null;
+      }
+      
+      if (hasApplied) {
+        return {
+          title: 'Application Submitted',
+          text: 'You have already applied to this program. Your application is being reviewed and you will be notified of the status soon.',
+          buttonText: 'Already Applied',
+          icon: '📝',
+          isDisabled: true
+        };
+      }
+      
+      return {
+        title: 'Ready to Join?',
+        text: 'Take the first step towards making a positive impact in your community. Apply now and become part of this meaningful program.',
+        buttonText: 'Apply Now',
+        icon: '✨',
+        isDisabled: false
+      };
     }
+
+    // For Upcoming programs, only show apply button if they accept volunteers
+    if (programStatus === 'Upcoming') {
+      if (!acceptsVolunteers) {
+        return null;
+      }
+      
+      if (hasApplied) {
+        return {
+          title: 'Application Submitted',
+          text: 'You have already applied to this program. Your application is being reviewed and you will be notified of the status soon.',
+          buttonText: 'Already Applied',
+          icon: '📝',
+          isDisabled: true
+        };
+      }
+      
+      return {
+        title: 'Ready to Join?',
+        text: 'Take the first step towards making a positive impact in your community. Apply now and become part of this meaningful program.',
+        buttonText: 'Apply Now',
+        icon: '✨',
+        isDisabled: false
+      };
+    }
+
+    // For any other status, don't show apply button
+    return null;
   };
 
   if (pageLoading || !pageReady || isFetchingProgram) {

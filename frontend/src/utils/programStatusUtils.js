@@ -25,35 +25,10 @@ export const getProgramStatusByDates = (program) => {
     return program.status;
   }
 
-  // Priority 2: If no start date, use the database status as fallback
-  if (!program.event_start_date) {
-    return program.status || 'Active';
-  }
-
-  // Priority 3: Calculate status based on dates (for programs without manual override)
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // Reset time to start of day
-  
-  const startDate = new Date(program.event_start_date);
-  startDate.setHours(0, 0, 0, 0);
-  
-  const endDate = program.event_end_date ? new Date(program.event_end_date) : null;
-  if (endDate) {
-    endDate.setHours(23, 59, 59, 999); // Set to end of day
-  }
-
-  // If start date is in the future, it's upcoming
-  if (startDate > today) {
-    return 'Upcoming';
-  }
-  
-  // If end date exists and is in the past, it's completed
-  if (endDate && endDate < today) {
-    return 'Completed';
-  }
-  
-  // If start date is today or in the past, and either no end date or end date is today or in the future, it's active
-  return 'Active';
+  // Priority 2: Programs stay 'Upcoming' until admin manually changes status
+  // Only use automated date-based calculation when creating the program initially
+  // After that, programs remain in their current status until admin manually changes it
+  return program.status || 'Upcoming';
 };
 
 /**

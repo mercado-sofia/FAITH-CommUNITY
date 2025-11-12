@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
+import { getProgramStatusByDates } from "@/utils/programStatusUtils"
 
 export const adminProgramsApi = createApi({
   reducerPath: "adminProgramsApi",
@@ -50,10 +51,11 @@ export const adminProgramsApi = createApi({
       transformResponse: (response) => {
         // The backend returns the array directly, not wrapped in { data: ... }
         const programs = Array.isArray(response) ? response : []
-        // Count only active programs (status === 'active' or similar)
-        const activeCount = programs.filter(program => 
-          program.status && program.status.toLowerCase() === 'active'
-        ).length;
+        // Count only active programs using getProgramStatusByDates to respect manual_status_override
+        const activeCount = programs.filter(program => {
+          const programStatus = getProgramStatusByDates(program);
+          return programStatus && programStatus.toLowerCase() === 'active';
+        }).length;
         return activeCount;
       },
       transformErrorResponse: (response) => {
@@ -68,10 +70,11 @@ export const adminProgramsApi = createApi({
       transformResponse: (response) => {
         // The backend returns the array directly, not wrapped in { data: ... }
         const programs = Array.isArray(response) ? response : []
-        // Count only completed programs (status === 'completed')
-        const completedCount = programs.filter(program => 
-          program.status && program.status.toLowerCase() === 'completed'
-        ).length;
+        // Count only completed programs using getProgramStatusByDates to respect manual_status_override
+        const completedCount = programs.filter(program => {
+          const programStatus = getProgramStatusByDates(program);
+          return programStatus && programStatus.toLowerCase() === 'completed';
+        }).length;
         return completedCount;
       },
       transformErrorResponse: (response) => {

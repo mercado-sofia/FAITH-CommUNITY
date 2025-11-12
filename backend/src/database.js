@@ -520,8 +520,35 @@ const runIncrementalMigrations = async (connection) => {
       // If the enum update fails, it might already be updated or there might be existing data
     }
 
-    // manual_status_override field is already included in the initial table creation
-    // No need to add it in migrations as it's part of the base schema
+    // Add manual_status_override column if it doesn't exist (migration for existing databases)
+    try {
+      const [manualOverrideColumns] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'programs_projects' 
+        AND COLUMN_NAME = 'manual_status_override'
+      `);
+      
+      if (manualOverrideColumns.length === 0) {
+        await connection.query(`
+          ALTER TABLE programs_projects 
+          ADD COLUMN manual_status_override BOOLEAN DEFAULT FALSE
+        `);
+        // Add index for performance (if it doesn't already exist)
+        try {
+          await connection.query(`
+            CREATE INDEX idx_programs_manual_override ON programs_projects(manual_status_override)
+          `);
+        } catch (indexError) {
+          // Index might already exist, which is fine
+          logWarn('Index idx_programs_manual_override may already exist', { context: 'database' });
+        }
+        logInfo('Added manual_status_override column to programs_projects table', { context: 'database' });
+      }
+    } catch (error) {
+      logError('Error adding manual_status_override column', error, { context: 'database' });
+    }
 
     // Add status column to admin_highlights if it doesn't exist
     try {

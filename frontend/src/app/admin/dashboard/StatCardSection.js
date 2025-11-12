@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import StatCard from './StatCard';
 import styles from './styles/StatCard.module.css';
 import Link from 'next/link';
+import { getProgramStatusByDates } from '@/utils/programStatusUtils';
 import { useAdminVolunteers, useAdminPrograms } from '../hooks/useAdminData';
 import { selectCurrentAdmin, selectIsAuthenticated } from '@/rtk/superadmin/adminSlice';
 
@@ -23,18 +24,22 @@ export default function StatCardSection() {
     isLoading: programsLoading
   } = useAdminPrograms();
 
-  // Calculate counts from real data
-  const activeProgramsCount = programsData.filter(program => 
-    program.status && program.status.toLowerCase() === 'active'
-  ).length;
+  // Calculate counts from real data using getProgramStatusByDates to respect manual_status_override
+  // This ensures consistency across all portals (Public, Admin, Superadmin)
+  const activeProgramsCount = programsData.filter(program => {
+    const programStatus = getProgramStatusByDates(program);
+    return programStatus && programStatus.toLowerCase() === 'active';
+  }).length;
 
-  const upcomingProgramsCount = programsData.filter(program => 
-    program.status && program.status.toLowerCase() === 'upcoming'
-  ).length;
+  const upcomingProgramsCount = programsData.filter(program => {
+    const programStatus = getProgramStatusByDates(program);
+    return programStatus && programStatus.toLowerCase() === 'upcoming';
+  }).length;
 
-  const completedProgramsCount = programsData.filter(program => 
-    program.status && program.status.toLowerCase() === 'completed'
-  ).length;
+  const completedProgramsCount = programsData.filter(program => {
+    const programStatus = getProgramStatusByDates(program);
+    return programStatus && programStatus.toLowerCase() === 'completed';
+  }).length;
 
   // Calculate total programs (active + upcoming)
   const totalProgramsCount = activeProgramsCount + upcomingProgramsCount;
@@ -44,7 +49,8 @@ export default function StatCardSection() {
   const previousYear = currentYear - 1;
   
   const completedThisYear = programsData.filter(program => {
-    if (program.status && program.status.toLowerCase() === 'completed') {
+    const programStatus = getProgramStatusByDates(program);
+    if (programStatus && programStatus.toLowerCase() === 'completed') {
       const completedDate = program.date_completed || program.updated_at;
       if (completedDate) {
         const year = new Date(completedDate).getFullYear();
@@ -55,7 +61,8 @@ export default function StatCardSection() {
   }).length;
 
   const completedPreviousYear = programsData.filter(program => {
-    if (program.status && program.status.toLowerCase() === 'completed') {
+    const programStatus = getProgramStatusByDates(program);
+    if (programStatus && programStatus.toLowerCase() === 'completed') {
       const completedDate = program.date_completed || program.updated_at;
       if (completedDate) {
         const year = new Date(completedDate).getFullYear();

@@ -3,6 +3,8 @@
  * Handles all authentication operations including logout for all user types
  */
 
+import { authenticatedFetch } from './apiClient';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 /**
@@ -104,6 +106,7 @@ export const clearAuthImmediate = (userType = USER_TYPES.PUBLIC) => {
 
 /**
  * Call logout API endpoint (only for public users)
+ * Uses authenticatedFetch to handle automatic token refresh
  */
 const callLogoutAPI = async (userType) => {
   // Check for window to avoid SSR errors
@@ -117,17 +120,11 @@ const callLogoutAPI = async (userType) => {
     return; // No API endpoint for admin/superadmin
   }
   
-  const token = typeof window !== 'undefined' ? localStorage.getItem(authKeys.token) : null;
-  if (!token) return;
-  
   try {
-    await fetch(`${API_BASE_URL}${authKeys.apiEndpoint}`, {
+    // Use authenticatedFetch which handles token refresh automatically
+    await authenticatedFetch(authKeys.apiEndpoint, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    }, 'user');
   } catch (error) {
     // Continue with client-side cleanup even if API fails
   }

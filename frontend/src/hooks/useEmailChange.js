@@ -37,15 +37,6 @@ export const useEmailChange = (userType) => {
     }
   };
 
-  // Get authentication headers for public users
-  const getPublicAuthHeaders = () => {
-    const token = localStorage.getItem('userToken');
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
-  };
-
   // Request email change
   const requestEmailChange = useCallback(async (emailData, userId = null) => {
     setIsLoading(true);
@@ -56,12 +47,12 @@ export const useEmailChange = (userType) => {
       let url, response;
 
       if (userType === 'public') {
-        // Public user API call
-        response = await fetch(endpoints.requestChange, {
+        // Public user API call with automatic token refresh
+        const { authenticatedFetch } = await import('@/utils/apiClient');
+        response = await authenticatedFetch(endpoints.requestChange, {
           method: 'POST',
-          headers: getPublicAuthHeaders(),
           body: JSON.stringify(emailData)
-        });
+        }, 'user');
       } else {
         // Admin/Superadmin API call
         const requestUrl = userType === 'superadmin' 
@@ -125,12 +116,12 @@ export const useEmailChange = (userType) => {
       let url, response;
 
       if (userType === 'public') {
-        // Public user API call
-        response = await fetch(endpoints.verifyOtp, {
+        // Public user API call with automatic token refresh
+        const { authenticatedFetch } = await import('@/utils/apiClient');
+        response = await authenticatedFetch(endpoints.verifyOtp, {
           method: 'POST',
-          headers: getPublicAuthHeaders(),
           body: JSON.stringify(otpData)
-        });
+        }, 'user');
       } else {
         // Admin/Superadmin API call
         const requestUrl = userType === 'superadmin' 

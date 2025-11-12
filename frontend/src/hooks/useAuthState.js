@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { logout as authServiceLogout, USER_TYPES } from '@/utils/authService';
+import { getValidAccessToken, isTokenExpiredOrExpiringSoon } from '@/utils/tokenRefresh';
 
 export const useAuthState = () => {
   const [user, setUser] = useState(null);
@@ -17,7 +18,7 @@ export const useAuthState = () => {
     }
   }, []);
 
-  // Initialize auth state from localStorage
+  // Initialize auth state from localStorage with automatic token refresh
   const initializeAuth = useCallback(async () => {
     try {
       // Check for window to avoid SSR errors
@@ -26,8 +27,16 @@ export const useAuthState = () => {
         return;
       }
       
-      const token = localStorage.getItem('userToken');
+      let token = localStorage.getItem('userToken');
       const storedUserData = localStorage.getItem('userData');
+      
+      // If token exists but is expired or expiring soon, try to refresh it
+      if (token && isTokenExpiredOrExpiringSoon(token)) {
+        const refreshedToken = await getValidAccessToken(true);
+        if (refreshedToken) {
+          token = refreshedToken;
+        }
+      }
       
       // Only proceed if we have both token and userData, and token is valid
       if (token && storedUserData && storedUserData !== 'undefined' && storedUserData !== 'null' && isTokenValid(token)) {

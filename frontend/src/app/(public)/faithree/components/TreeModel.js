@@ -5,9 +5,10 @@ import { createPortal } from 'react-dom'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, useGLTF, Environment } from '@react-three/drei'
 import * as THREE from 'three'
+import Image from 'next/image'
 
 // Star component - creates a glowing star shape (static like fruit on tree)
-function Star({ position, treePosition = [0, 0, 0], starId, onStarClick }) {
+function Star({ position, treePosition = [0, 0, 0], starId, onStarClick, onHover, onHoverOut }) {
   const meshRef = useRef()
   const [hovered, setHovered] = useState(false)
   
@@ -60,16 +61,16 @@ function Star({ position, treePosition = [0, 0, 0], starId, onStarClick }) {
   const handlePointerOver = (e) => {
     e.stopPropagation()
     setHovered(true)
-    if (typeof document !== 'undefined') {
-      document.body.style.cursor = 'pointer'
+    if (onHover) {
+      onHover()
     }
   }
 
   const handlePointerOut = (e) => {
     e.stopPropagation()
     setHovered(false)
-    if (typeof document !== 'undefined') {
-      document.body.style.cursor = 'default'
+    if (onHoverOut) {
+      onHoverOut()
     }
   }
 
@@ -351,7 +352,7 @@ function Loading() {
 }
 
 // Star Modal Component
-function StarModal({ isOpen, onClose, starId }) {
+function StarModal({ isOpen, onClose, starId, featuredHighlights = [] }) {
   const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
@@ -386,9 +387,25 @@ function StarModal({ isOpen, onClose, starId }) {
     }
   }
 
+  // Map starId (1-8) to array index (0-7) to get the corresponding highlight
+  const highlight = starId ? featuredHighlights[starId - 1] : null
+
   if (!isOpen || typeof document === 'undefined' || !document.body) {
     return null
   }
+
+  // If no highlight found for this star, don't show modal
+  if (!highlight) {
+    return null
+  }
+
+  // Format date
+  const formattedDate = highlight.created_at 
+    ? new Date(highlight.created_at).toLocaleDateString('en-US', { 
+        month: 'short', 
+        year: 'numeric' 
+      })
+    : ''
 
   const modalContent = (
     <div
@@ -420,7 +437,7 @@ function StarModal({ isOpen, onClose, starId }) {
           backgroundColor: 'white',
           borderRadius: '16px',
           width: '100%',
-          maxWidth: '500px',
+          maxWidth: '600px',
           maxHeight: '90vh',
           overflowY: 'auto',
           boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)',
@@ -456,6 +473,7 @@ function StarModal({ isOpen, onClose, starId }) {
         >
           ×
         </button>
+        
         <h2
           id="star-modal-title"
           style={{
@@ -465,15 +483,149 @@ function StarModal({ isOpen, onClose, starId }) {
             color: '#333'
           }}
         >
-          Star {starId}
+          {highlight.title || 'Featured Highlight'}
         </h2>
-        <div
-          style={{
-            color: '#666',
-            lineHeight: '1.6'
-          }}
-        >
-          {/* Empty content for now */}
+
+        {/* Description Section */}
+        {highlight.description && (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <h3 style={{ 
+              fontSize: '0.875rem', 
+              fontWeight: '600', 
+              color: '#666', 
+              marginBottom: '0.5rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            }}>
+              Description
+            </h3>
+            <p style={{ 
+              color: '#333', 
+              lineHeight: '1.6',
+              margin: 0
+            }}>
+              {highlight.description}
+            </p>
+          </div>
+        )}
+
+        {/* Media Gallery */}
+        {highlight.media && highlight.media.length > 0 && (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <h3 style={{ 
+              fontSize: '0.875rem', 
+              fontWeight: '600', 
+              color: '#666', 
+              marginBottom: '0.75rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            }}>
+              Media ({highlight.media.length} {highlight.media.length === 1 ? 'file' : 'files'})
+            </h3>
+            <div style={{ 
+              position: 'relative', 
+              width: '100%', 
+              height: '300px',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              backgroundColor: '#f5f5f5',
+              marginBottom: highlight.media.length > 1 ? '0.75rem' : 0
+            }}>
+              {highlight.media[0] && highlight.media[0].url && (
+                <Image
+                  src={highlight.media[0].url}
+                  alt={highlight.title || 'Highlight image'}
+                  fill
+                  style={{ objectFit: 'cover' }}
+                  sizes="600px"
+                />
+              )}
+            </div>
+            {highlight.media.length > 1 && (
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fill, minmax(60px, 1fr))',
+                gap: '0.5rem'
+              }}>
+                {highlight.media.slice(1, 5).map((item, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      position: 'relative',
+                      width: '100%',
+                      paddingBottom: '100%',
+                      borderRadius: '4px',
+                      overflow: 'hidden',
+                      backgroundColor: '#f5f5f5'
+                    }}
+                  >
+                    {item.url && (
+                      <Image
+                        src={item.url}
+                        alt={`Thumbnail ${index + 2}`}
+                        fill
+                        style={{ objectFit: 'cover' }}
+                        sizes="60px"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Details Section */}
+        <div style={{ 
+          paddingTop: '1rem',
+          borderTop: '1px solid #e5e5e5'
+        }}>
+          <h3 style={{ 
+            fontSize: '0.875rem', 
+            fontWeight: '600', 
+            color: '#666', 
+            marginBottom: '0.75rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
+          }}>
+            Details
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {highlight.organization_name && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <svg style={{ width: '18px', height: '18px', color: '#666', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19 21V5C19 3.89543 18.1046 3 17 3H7C5.89543 3 5 3.89543 5 5V21M19 21H5M19 21H21M5 21H3M9 7H15M9 11H15M9 15H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span style={{ fontSize: '0.875rem', color: '#666' }}>Organization:</span>
+                <span style={{ fontSize: '0.875rem', color: '#333', fontWeight: '500' }}>
+                  {highlight.organization_name}
+                  {highlight.organization_acronym && ` (${highlight.organization_acronym})`}
+                </span>
+              </div>
+            )}
+            {highlight.program_title && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <svg style={{ width: '18px', height: '18px', color: '#666', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7 7H17M7 12H17M7 17H12M3 3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span style={{ fontSize: '0.875rem', color: '#666' }}>Program:</span>
+                <span style={{ fontSize: '0.875rem', color: '#333', fontWeight: '500' }}>
+                  {highlight.program_title}
+                </span>
+              </div>
+            )}
+            {formattedDate && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <svg style={{ width: '18px', height: '18px', color: '#666', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 7V3M16 7V3M3 11H21M5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V19C3 20.1046 3.89543 21 5 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span style={{ fontSize: '0.875rem', color: '#666' }}>Date:</span>
+                <span style={{ fontSize: '0.875rem', color: '#333', fontWeight: '500' }}>
+                  {formattedDate}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -492,7 +644,9 @@ export default function TreeModel({
   // This controls where the camera is positioned relative to the tree
   // Adjusted to shift view right (tree on left, right edge cropped) - matching 2nd picture
   // Camera positioned to the right (positive X) while maintaining same Y elevation
-  cameraOffset = [2.5, 2.2, 7.5]
+  cameraOffset = [2.5, 2.2, 7.5],
+  // Featured highlights from superadmin (ordered by display_order)
+  featuredHighlights = []
 }) {
   // Load saved camera position from localStorage
   // Returns null if saved position matches old default (x ~= 0.5) to force reset
@@ -529,11 +683,22 @@ export default function TreeModel({
   // State for star modal
   const [selectedStarId, setSelectedStarId] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  // State to track if any star is hovered (for cursor change)
+  const [isStarHovered, setIsStarHovered] = useState(false)
 
   // Handle star click
   const handleStarClick = useCallback((starId) => {
     setSelectedStarId(starId)
     setIsModalOpen(true)
+  }, [])
+
+  // Handle star hover state for cursor change
+  const handleStarHover = useCallback(() => {
+    setIsStarHovered(true)
+  }, [])
+
+  const handleStarHoverOut = useCallback(() => {
+    setIsStarHovered(false)
   }, [])
 
   // Handle modal close
@@ -592,7 +757,7 @@ export default function TreeModel({
             rotation: [0, 0, 0]
           }}
           gl={{ antialias: true }}
-          style={{ background: 'transparent', cursor: 'default' }}
+          style={{ background: 'transparent', cursor: isStarHovered ? 'pointer' : 'default' }}
         >
           <Suspense fallback={<Loading />}>
             {/* Lighting */}
@@ -608,56 +773,42 @@ export default function TreeModel({
             {/* Key prop ensures component re-renders when model changes */}
             <Model key={modelPath} url={modelPath} treePosition={treePosition} theme={theme} />
             
-            {/* 8 Stars placed on the front of the tree leaves - positioned close to leaves like fruit */}
+            {/* Stars placed on the front of the tree leaves - positioned close to leaves like fruit */}
+            {/* Only render stars 1 to featuredHighlights.length (based on superadmin's featured highlights) */}
             {/* Positions are relative to tree position, all in front (positive Z values) */}
-            <Star 
-              position={[-1.4, 2.0, 0.8]} 
-              treePosition={treePosition}
-              starId={1}
-              onStarClick={handleStarClick}
-            />
-            <Star 
-              position={[0.8, 1.75, 0.8]} 
-              treePosition={treePosition}
-              starId={2}
-              onStarClick={handleStarClick}
-            />
-            <Star 
-              position={[0.2, 1.8, 1.0]} 
-              treePosition={treePosition}
-              starId={3}
-              onStarClick={handleStarClick}
-            />
-            <Star 
-              position={[-0.2, 2, 1.0]} 
-              treePosition={treePosition}
-              starId={4}
-              onStarClick={handleStarClick}
-            />
-            <Star 
-              position={[0.6, 2.1, 0.8]} 
-              treePosition={treePosition}
-              starId={5}
-              onStarClick={handleStarClick}
-            />
-            <Star 
-              position={[-1.1, 1.7, 0.8]} 
-              treePosition={treePosition}
-              starId={6}
-              onStarClick={handleStarClick}
-            />
-            <Star 
-              position={[-0.5, 1.7, 0.9]} 
-              treePosition={treePosition}
-              starId={7}
-              onStarClick={handleStarClick}
-            />
-            <Star 
-              position={[-0.7, 2.1, 0.85]} 
-              treePosition={treePosition}
-              starId={8}
-              onStarClick={handleStarClick}
-            />
+            {/* Star positions array - indexed by starId - 1 (0-7) */}
+            {(() => {
+              const starPositions = [
+                [-1.4, 2.0, 0.8],   // Star 1
+                [0.8, 1.75, 0.8],   // Star 2
+                [0.2, 1.8, 1.0],    // Star 3
+                [-0.2, 2, 1.0],     // Star 4
+                [0.6, 2.1, 0.8],    // Star 5
+                [-1.1, 1.7, 0.8],   // Star 6
+                [-0.5, 1.7, 0.9],   // Star 7
+                [-0.7, 2.1, 0.85]   // Star 8
+              ]
+              
+              // Render stars only for featured highlights (1 to featuredHighlights.length)
+              return starPositions.map((position, index) => {
+                const starId = index + 1 // 1-8
+                // Only render if there's a corresponding featured highlight
+                if (starId <= featuredHighlights.length) {
+                  return (
+                    <Star 
+                      key={starId}
+                      position={position} 
+                      treePosition={treePosition}
+                      starId={starId}
+                      onStarClick={handleStarClick}
+                      onHover={handleStarHover}
+                      onHoverOut={handleStarHoverOut}
+                    />
+                  )
+                }
+                return null
+              })
+            })()}
             
             {/* Controls with auto-return - pass treePosition and cameraOffset */}
             <AutoReturnControls 
@@ -674,6 +825,7 @@ export default function TreeModel({
         isOpen={isModalOpen}
         onClose={handleModalClose}
         starId={selectedStarId}
+        featuredHighlights={featuredHighlights}
       />
     </>
   )

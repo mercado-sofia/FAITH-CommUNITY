@@ -1,18 +1,17 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { baseQueryWithReauth } from '../baseQueryWithTokenRefresh';
 
 export const userNotificationsApi = createApi({
   reducerPath: 'userNotificationsApi',
-  baseQuery: fetchBaseQuery({ 
-    baseUrl: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/users/`,
-    prepareHeaders: (headers, { getState }) => {
-      // Check for window to avoid SSR errors
-      const token = typeof window !== 'undefined' ? localStorage.getItem('userToken') : null;
-      if (token) {
-        headers.set('authorization', `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+  baseQuery: async (args, api, extraOptions) => {
+    // Use custom base query with token refresh
+    const result = await baseQueryWithReauth(
+      { ...args, url: `/api/users/${args.url}` },
+      api,
+      extraOptions
+    );
+    return result;
+  },
   tagTypes: ['UserNotifications'],
   endpoints: (builder) => ({
     getUserNotifications: builder.query({

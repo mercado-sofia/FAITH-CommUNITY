@@ -184,7 +184,8 @@
 /* Modal-specific wrapper classes */
 .markCompletedModal {
   height: auto;
-  max-width: 520px;
+  max-width: 600px;
+  max-height: 90vh;
 }
 
 /* Upload field */

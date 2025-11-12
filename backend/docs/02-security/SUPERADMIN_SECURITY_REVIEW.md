@@ -80,7 +80,7 @@ This document provides a comprehensive security review of the superadmin backend
    - Optional but recommended for enhanced security
 
 4. **Login Attempt Tracking**
-   - Rate limiting: 5 failed attempts = 5-minute lockout
+   - Rate limiting: 7 failed attempts = 5-minute lockout
    - IP-based tracking
    - Automatic cleanup on successful login
 

@@ -224,8 +224,8 @@ export const loginUser = async (req, res) => {
     // Check failed login attempts BEFORE attempting login
     const failedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'user');
     
-    // Block for 5 minutes after 5 failed attempts
-    if (failedAttempts >= 5) {
+    // Block for 5 minutes after 7 failed attempts
+    if (failedAttempts >= 7) {
       const remainingSeconds = await LoginAttemptTracker.getLockoutTimeRemaining(email, ipAddress, 'user');
       const remainingMinutes = Math.ceil(remainingSeconds / 60);
       
@@ -234,7 +234,7 @@ export const loginUser = async (req, res) => {
         retryAfter: `${remainingMinutes} minutes`,
         remainingSeconds: remainingSeconds,
         attempts: failedAttempts,
-        maxAttempts: 5
+        maxAttempts: 7
       });
     }
 
@@ -252,7 +252,7 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({ 
         error: 'Invalid email or password',
         attempts: newFailedAttempts,
-        remainingAttempts: Math.max(0, 5 - newFailedAttempts)
+        remainingAttempts: Math.max(0, 7 - newFailedAttempts)
       });
     }
 
@@ -268,7 +268,7 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({ 
         error: 'Invalid email or password',
         attempts: newFailedAttempts,
-        remainingAttempts: Math.max(0, 5 - newFailedAttempts)
+        remainingAttempts: Math.max(0, 7 - newFailedAttempts)
       });
     }
 

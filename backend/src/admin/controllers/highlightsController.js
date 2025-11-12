@@ -1,5 +1,6 @@
 //db table: admin_highlights
 import promisePool from '../../database.js';
+import { getOrganizationLogoUrl } from '../../utils/imageUrlUtils.js';
 
 // Helper function to safely parse JSON (typeCast already parses JSON columns, so check if it's already an object)
 const safeParseJSON = (value, defaultValue = null) => {
@@ -598,6 +599,7 @@ export const getApprovedHighlights = async (req, res) => {
         h.description,
         h.media_files,
         h.created_at,
+        h.organization_id,
         o.orgName as organization_name,
         o.org as organization_acronym,
         o.logo as organization_logo${programIdSelect}${programTitleSelect}
@@ -622,12 +624,21 @@ export const getApprovedHighlights = async (req, res) => {
     }
     
     // Parse JSON media_files and format the data
-    const highlights = rows.map(highlight => ({
-      ...highlight,
-      media: safeParseJSON(highlight.media_files, []),
-      program_id: hasProgramIdColumn ? (highlight.program_id || null) : null,
-      program_title: hasProgramIdColumn ? (highlight.program_title || null) : null
-    }));
+    const highlights = rows.map(highlight => {
+      // Process organization logo URL
+      let logoUrl = null;
+      if (highlight.organization_logo) {
+        logoUrl = getOrganizationLogoUrl(highlight.organization_logo);
+      }
+      
+      return {
+        ...highlight,
+        media: safeParseJSON(highlight.media_files, []),
+        program_id: hasProgramIdColumn ? (highlight.program_id || null) : null,
+        program_title: hasProgramIdColumn ? (highlight.program_title || null) : null,
+        organization_logo: logoUrl
+      };
+    });
     
     res.json({ highlights });
   } catch (error) {

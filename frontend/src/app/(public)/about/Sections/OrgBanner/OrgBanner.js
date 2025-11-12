@@ -1,29 +1,83 @@
 import styles from './OrgBanner.module.css';
 import Image from 'next/image';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePublicOrganizations } from '../../../hooks/usePublicData';
 
 export default function OrgBanner() {
   const [orgStart, setOrgStart] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [isSmallMobile, setIsSmallMobile] = useState(false);
   const { organizations, isLoading: loading, error } = usePublicOrganizations();
+  const prevScreenCategory = useRef({ isMobile: false, isSmallMobile: false });
   
-  // Check if screen is mobile size
+  // Check if screen is mobile size and calculate visible count dynamically
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
+    const checkScreenSize = () => {
+      const width = window.innerWidth;
+      const newIsMobile = width <= 768;
+      const newIsSmallMobile = width <= 480;
+      
+      // Reset scroll position if screen size category changed significantly
+      // (e.g., desktop to mobile or vice versa)
+      if (prevScreenCategory.current.isMobile !== newIsMobile || 
+          prevScreenCategory.current.isSmallMobile !== newIsSmallMobile) {
+        setOrgStart(0);
+        prevScreenCategory.current = { isMobile: newIsMobile, isSmallMobile: newIsSmallMobile };
+      }
+      
+      setIsMobile(newIsMobile);
+      setIsSmallMobile(newIsSmallMobile);
     };
     
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
   
-  // Calculate dynamic visible count based on screen size and available organizations
-  const maxVisibleCount = isMobile ? 3 : 7;
+  // Calculate dynamic visible count based on screen size
+  // For mobile: account for nav buttons (28px each), gaps (0.5rem = 8px), and padding (1rem = 16px each side)
+  // Available width = viewport - (padding * 2) - (nav buttons * 2) - (gaps * 2)
+  // On mobile (768px): 768 - 32 - 56 - 16 = 664px available (conservative estimate)
+  // On small mobile (480px): 480 - 32 - 48 - 16 = 384px available (conservative estimate)
+  // Each org item: 120px (mobile) or 100px (small mobile) + 2px gap
+  const getMaxVisibleCount = () => {
+    if (isSmallMobile) {
+      // Small mobile: 100px per org + 2px gap
+      // Can fit 2 orgs comfortably: (100 + 2) * 2 = 204px < 384px available
+      return 2;
+    } else if (isMobile) {
+      // Regular mobile: 120px per org + 2px gap  
+      // Can fit 3 orgs: (120 + 2) * 3 = 366px < 664px available
+      return 3;
+    } else {
+      // Desktop: 140px per org + 2px gap
+      return 7;
+    }
+  };
+  
+  const maxVisibleCount = getMaxVisibleCount();
   const orgVisibleCount = Math.min(organizations.length, maxVisibleCount);
   const needsCarousel = organizations.length > maxVisibleCount;
+  
+  // Get org item width based on screen size
+  const getOrgItemWidth = () => {
+    if (isSmallMobile) return 100;
+    if (isMobile) return 120;
+    return 140;
+  };
+  
+  const orgItemWidth = getOrgItemWidth();
+  
+  // Ensure orgStart doesn't exceed valid bounds when organizations change
+  useEffect(() => {
+    if (organizations.length > 0 && orgStart > 0) {
+      const maxStart = Math.max(0, organizations.length - orgVisibleCount);
+      if (orgStart > maxStart) {
+        setOrgStart(maxStart);
+      }
+    }
+  }, [organizations.length, orgVisibleCount, orgStart]);
 
   if (loading) {
     return (
@@ -75,16 +129,17 @@ export default function OrgBanner() {
             className={styles.orgSliderWrapper}
             style={{ 
               width: needsCarousel 
-                ? `calc((${isMobile ? 120 : 140}px + 2px) * ${orgVisibleCount} - 2px)` 
+                ? `calc((${orgItemWidth}px + 2px) * ${orgVisibleCount} - 2px)` 
                 : 'auto',
-              justifyContent: needsCarousel ? 'flex-start' : 'center'
+              justifyContent: needsCarousel ? 'flex-start' : 'center',
+              maxWidth: '100%'
             }}
           >
             <div
               className={styles.orgSliderTrack}
               style={{ 
                 transform: needsCarousel 
-                  ? `translateX(-${orgStart * ((isMobile ? 120 : 140) + 2)}px)` 
+                  ? `translateX(-${orgStart * (orgItemWidth + 2)}px)` 
                   : 'none',
                 justifyContent: needsCarousel ? 'flex-start' : 'center'
               }}

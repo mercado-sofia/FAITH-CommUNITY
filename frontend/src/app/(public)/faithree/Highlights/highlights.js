@@ -1,27 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import styles from './highlights.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 
-export default function Highlights({ onClose }) {
+export default function Highlights({ onClose, organizationId = null }) {
   const [stories, setStories] = useState([]);
   const [selectedStory, setSelectedStory] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [organizationName, setOrganizationName] = useState(null);
 
   // Fetch approved highlights from API
-  const fetchHighlights = async (isManualRefresh = false) => {
+  const fetchHighlights = useCallback(async () => {
     try {
-      if (isManualRefresh) {
-        setIsRefreshing(true);
-      } else {
-        setIsLoading(true);
-      }
+      setIsLoading(true);
       
       const response = await fetch(`${API_BASE_URL}/api/highlights/public/approved`);
       
@@ -46,8 +42,22 @@ export default function Highlights({ onClose }) {
         });
       }
       
+      // Filter by organization if organizationId is provided
+      let filteredHighlights = highlights;
+      if (organizationId) {
+        filteredHighlights = highlights.filter(h => h.organization_id === organizationId);
+        // Set organization name for display
+        if (filteredHighlights.length > 0) {
+          setOrganizationName(filteredHighlights[0].organization_name || null);
+        } else {
+          setOrganizationName(null);
+        }
+      } else {
+        setOrganizationName(null);
+      }
+      
       // Transform API data to match expected format and ensure unique IDs
-      const transformedHighlights = highlights.map((highlight, index) => ({
+      const transformedHighlights = filteredHighlights.map((highlight, index) => ({
         id: `${highlight.id || 'unknown'}-${index}`,
         originalId: highlight.id,
         title: highlight.title,
@@ -60,8 +70,7 @@ export default function Highlights({ onClose }) {
           month: 'short', 
           year: 'numeric' 
         }),
-        media: highlight.media || [],
-        isHighlighted: false
+        media: highlight.media || []
       }));
       
       setStories(transformedHighlights);
@@ -70,43 +79,23 @@ export default function Highlights({ onClose }) {
       setError('Failed to load highlights');
       setStories([]);
     } finally {
-      if (isManualRefresh) {
-        setIsRefreshing(false);
-      } else {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
-  };
+  }, [organizationId]);
 
-  // Load highlights on component mount
+  // Load highlights on component mount and when organizationId changes
   useEffect(() => {
     fetchHighlights();
-  }, []);
+  }, [fetchHighlights]);
 
   // Auto-refresh every 30 seconds to catch new approvals
   useEffect(() => {
     const interval = setInterval(() => {
-      fetchHighlights(true);
+      fetchHighlights();
     }, 30000); // 30 seconds
 
     return () => clearInterval(interval);
-  }, []);
-
-  // Manual refresh function
-  const handleManualRefresh = () => {
-    fetchHighlights(true);
-  };
-
-  const handleStarClick = (storyId, event) => {
-    event.stopPropagation(); // Prevent card click when clicking star
-    setStories(prevStories => 
-      prevStories.map(story => 
-        story.id === storyId 
-          ? { ...story, isHighlighted: !story.isHighlighted }
-          : story
-      )
-    );
-  };
+  }, [fetchHighlights]);
 
   const handleCardClick = (story) => {
     setSelectedStory(story);
@@ -119,36 +108,14 @@ export default function Highlights({ onClose }) {
   return (
     <div className={styles.contentArea}>
       <div className={styles.headerSection}>
-        <div className={styles.breadcrumbs}>
-          <span>Management</span>
-          <span className={styles.separator}>›</span>
-          <span>FAITHree</span>
-        </div>
-        
         <div className={styles.pageHeader}>
           <div className={styles.headerContent}>
             <div className={styles.titleSection}>
-              <h1 className={styles.pageTitle}>FAITHree Stories Highlights</h1>
-              <p className={styles.pageSubtitle}>
-                Environmental stewardship and sustainability initiatives
-              </p>
+              <h1 className={styles.pageTitle}>
+                {organizationName ? `${organizationName} Highlights` : 'FAITHree Stories Highlights'}
+              </h1>
             </div>
             <div className={styles.headerActions}>
-              <button 
-                className={styles.refreshButton}
-                onClick={handleManualRefresh}
-                disabled={isRefreshing}
-                title="Refresh highlights"
-              >
-                <svg 
-                  className={`${styles.refreshIcon} ${isRefreshing ? styles.spinning : ''}`}
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
               <button
                 className={styles.closeButton}
                 onClick={onClose}
@@ -211,15 +178,6 @@ export default function Highlights({ onClose }) {
                     <path d="M4 16L8.586 11.414C9.367 10.633 10.633 10.633 11.414 11.414L16 16M14 14L15.586 12.414C16.367 11.633 17.633 11.633 18.414 12.414L20 14M14 8H14.01M6 20H18C19.105 20 20 19.105 20 18V6C20 4.895 19.105 4 18 4H6C4.895 4 4 4.895 4 6V18C4 19.105 4.895 20 6 20Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
-                <button 
-                  className={`${styles.starButton} ${story.isHighlighted ? styles.starButtonActive : ''}`}
-                  onClick={(e) => handleStarClick(story.id, e)}
-                  title={story.isHighlighted ? "Remove from highlights" : "Add to highlights"}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
               </div>
               <div className={styles.cardContent}>
                 <h3 className={styles.cardTitle}>{story.title}</h3>

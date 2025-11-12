@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import Image from 'next/image';
 import { FiSun } from "react-icons/fi";
 import { IoRainyOutline } from "react-icons/io5";
 import styles from './faithree.module.css';
-import { Highlights } from './sections';
-import { TreeModel } from './components';
+import Highlights from './Highlights/highlights';
+import { TreeModel, LoadingOverlay } from './components';
 
 // Check for reduced motion preference
 const prefersReducedMotion = typeof window !== 'undefined' 
@@ -16,10 +17,15 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 function FAITHreePage() {
   const [isContentVisible, setIsContentVisible] = useState(false);
+  const [selectedOrgId, setSelectedOrgId] = useState(null);
+  const [isOrgContentVisible, setIsOrgContentVisible] = useState(false);
   const [theme, setTheme] = useState('morning'); // 'morning' or 'rainy'
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [nextTheme, setNextTheme] = useState(null);
   const [featuredHighlights, setFeaturedHighlights] = useState([]);
   const [isLoadingHighlights, setIsLoadingHighlights] = useState(true);
+  const [organizations, setOrganizations] = useState([]);
+  const [isLoadingOrgs, setIsLoadingOrgs] = useState(true);
 
   // Generate rain drops data once with more variety
   const rainDrops = useMemo(() => {
@@ -36,15 +42,42 @@ function FAITHreePage() {
 
   const toggleContent = useCallback(() => {
     setIsContentVisible(prev => !prev);
-  }, []);
+    // Close org content when opening highlights
+    if (!isContentVisible) {
+      setIsOrgContentVisible(false);
+      setSelectedOrgId(null);
+    }
+  }, [isContentVisible]);
+
+  const toggleOrgContent = useCallback((orgId) => {
+    if (selectedOrgId === orgId && isOrgContentVisible) {
+      // Close if clicking the same org
+      setIsOrgContentVisible(false);
+      setSelectedOrgId(null);
+    } else {
+      // Open new org
+      setSelectedOrgId(orgId);
+      setIsOrgContentVisible(true);
+      // Close highlights when opening org
+      setIsContentVisible(false);
+    }
+  }, [selectedOrgId, isOrgContentVisible]);
 
   const toggleTheme = useCallback(() => {
     if (isTransitioning) return;
+    const newTheme = theme === 'morning' ? 'rainy' : 'morning';
+    setNextTheme(newTheme);
     setIsTransitioning(true);
-    setTheme(prev => prev === 'morning' ? 'rainy' : 'morning');
+    // Change theme after a short delay to allow loading animation
+    setTimeout(() => {
+      setTheme(newTheme);
+    }, 300);
     // Reset transition state after animation completes
-    setTimeout(() => setIsTransitioning(false), 600);
-  }, [isTransitioning]);
+    setTimeout(() => {
+      setIsTransitioning(false);
+      setNextTheme(null);
+    }, 1000);
+  }, [isTransitioning, theme]);
 
   // Optimized scroll handler with throttling and CSS variables
   useEffect(() => {
@@ -164,6 +197,75 @@ function FAITHreePage() {
     }
   }, []);
 
+  // Fetch organizations from highlights to get unique orgs
+  useEffect(() => {
+    const fetchOrganizations = async () => {
+      try {
+        setIsLoadingOrgs(true);
+        
+        if (typeof window === 'undefined' || !API_BASE_URL) {
+          setOrganizations([]);
+          setIsLoadingOrgs(false);
+          return;
+        }
+        
+        // Fetch approved highlights to extract unique organizations
+        const response = await fetch(`${API_BASE_URL}/api/highlights/public/approved`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch highlights: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const highlights = data.highlights || [];
+        
+        console.log('Fetched highlights for org extraction:', highlights.length);
+        if (highlights.length > 0) {
+          console.log('Sample highlight:', {
+            id: highlights[0].id,
+            organization_id: highlights[0].organization_id,
+            organization_name: highlights[0].organization_name,
+            organization_acronym: highlights[0].organization_acronym
+          });
+        }
+        
+        // Extract unique organizations
+        const orgMap = new Map();
+        highlights.forEach(highlight => {
+          // Check if we have organization info (need at least name and acronym)
+          if (highlight.organization_name && highlight.organization_acronym) {
+            // Use organization_id as key if available, otherwise use name+acronym composite
+            const orgId = highlight.organization_id;
+            const orgKey = orgId || `${highlight.organization_name}_${highlight.organization_acronym}`;
+            
+            if (!orgMap.has(orgKey)) {
+              orgMap.set(orgKey, {
+                id: orgId || orgKey, // Use organization_id if available, otherwise use composite key
+                name: highlight.organization_name,
+                acronym: highlight.organization_acronym,
+                logo: highlight.organization_logo || null
+              });
+            }
+          }
+        });
+        
+        const uniqueOrgs = Array.from(orgMap.values()).sort((a, b) => 
+          a.acronym.localeCompare(b.acronym)
+        );
+        
+        console.log('Extracted organizations:', uniqueOrgs);
+        setOrganizations(uniqueOrgs);
+      } catch (error) {
+        console.error('Error fetching organizations:', error);
+        setOrganizations([]);
+      } finally {
+        setIsLoadingOrgs(false);
+      }
+    };
+
+    fetchOrganizations();
+  }, []);
+
   return (
     <>
       {/* Welcome Message */}
@@ -193,6 +295,8 @@ function FAITHreePage() {
       >
         {/* Fixed dimension container for background and tree */}
         <div className={styles.sceneContainer}>
+          {/* Loading Overlay */}
+          {isTransitioning && <LoadingOverlay nextTheme={nextTheme} />}
           <div className={styles.firstSection}>
             {/* Eco-themed background */}
             <div className={styles.ecoBackground}>
@@ -301,29 +405,73 @@ function FAITHreePage() {
         </div>
         </div>
       
-      {/* Toggle Button */}
-      <div className={styles.toggleButtonContainer}>
-        <button 
-          className={styles.toggleButton}
-          onClick={toggleContent}
-          aria-label={isContentVisible ? 'Close FAITHree Stories Highlights' : 'Open FAITHree Stories Highlights'}
-          aria-expanded={isContentVisible}
-        >
-          <div className={styles.buttonIcon}>
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" fill="currentColor"/>
-            </svg>
+      {/* Toggle Buttons Container */}
+      <div className={styles.toggleButtonsContainer}>
+        {/* Highlights Toggle Button */}
+        <div className={styles.toggleButtonContainer}>
+          <button 
+            className={styles.toggleButton}
+            onClick={toggleContent}
+            aria-label={isContentVisible ? 'Close FAITHree Stories Highlights' : 'Open FAITHree Stories Highlights'}
+            aria-expanded={isContentVisible}
+          >
+            <div className={styles.buttonIcon}>
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" fill="currentColor"/>
+              </svg>
+            </div>
+            <span>FAITHree Stories Highlights</span>
+            <div className={`${styles.chevron} ${isContentVisible ? styles.chevronUp : styles.chevronDown}`}>
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          </button>
+        </div>
+
+        {/* Organization Toggle Buttons */}
+        {!isLoadingOrgs && organizations.length > 0 && (
+          <div className={styles.orgTogglesContainer}>
+            {organizations.map((org, index) => (
+              <div key={org.id || `org-${index}`} className={styles.orgToggleWrapper}>
+                <button
+                  className={`${styles.orgToggleButton} ${selectedOrgId === org.id && isOrgContentVisible ? styles.orgToggleActive : ''}`}
+                  onClick={() => toggleOrgContent(org.id)}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.setAttribute('data-hover', 'true');
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.setAttribute('data-hover', 'false');
+                  }}
+                  aria-label={`View highlights from ${org.name}`}
+                  aria-expanded={selectedOrgId === org.id && isOrgContentVisible}
+                >
+                  {org.logo && (
+                    <div className={styles.orgToggleLogo}>
+                      <Image
+                        src={org.logo}
+                        alt={org.acronym}
+                        width={24}
+                        height={24}
+                        className={styles.orgLogoImage}
+                      />
+                    </div>
+                  )}
+                  <span className={styles.orgToggleAcronym}>{org.acronym}</span>
+                  <span className={styles.orgToggleName}>{org.name}</span>
+                  <div className={`${styles.chevron} ${selectedOrgId === org.id && isOrgContentVisible ? styles.chevronUp : styles.chevronDown}`}>
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                </button>
+              </div>
+            ))}
           </div>
-          <span>FAITHree Stories Highlights</span>
-          <div className={`${styles.chevron} ${isContentVisible ? styles.chevronUp : styles.chevronDown}`}>
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-        </button>
+        )}
       </div>
       
-      {/* Sliding Modal Container */}
+      {/* Sliding Modal Container for Highlights */}
       <div 
         className={`${styles.modalContainer} ${isContentVisible ? styles.modalOpen : styles.modalClosed}`}
         aria-hidden={!isContentVisible}
@@ -331,6 +479,23 @@ function FAITHreePage() {
       >
         <div className={styles.modalContent}>
           <Highlights onClose={toggleContent} />
+        </div>
+      </div>
+
+      {/* Sliding Modal Container for Organization Highlights */}
+      <div 
+        className={`${styles.modalContainer} ${isOrgContentVisible ? styles.modalOpen : styles.modalClosed}`}
+        aria-hidden={!isOrgContentVisible}
+        aria-modal={isOrgContentVisible}
+      >
+        <div className={styles.modalContent}>
+          <Highlights 
+            onClose={() => {
+              setIsOrgContentVisible(false);
+              setSelectedOrgId(null);
+            }}
+            organizationId={selectedOrgId}
+          />
         </div>
       </div>
       </div>

@@ -17,6 +17,7 @@ import {
   setupTwoFA,
   verifyTwoFA,
   disableTwoFA,
+  initializeSuperadmin,
 } from "../controllers/superadminAuthController.js"
 
 const router = express.Router()
@@ -27,6 +28,8 @@ router.post("/forgot-password",  forgotPasswordSuperadmin)
 router.post("/reset-password",   resetPasswordSuperadmin)
 router.post("/validate-reset-token", validateResetToken)
 router.post("/check-email",   checkEmailSuperadmin)
+// Production initialization endpoint (protected by secret key)
+router.post("/initialize",   initializeSuperadmin)
 
 // ---------- Protected endpoints ----------
 router.get("/profile/:id",   verifySuperadminToken, getSuperadminProfile)

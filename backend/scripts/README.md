@@ -20,7 +20,9 @@ node scripts/utilities.js <command>
 ```
 
 **Available Commands:**
-- `create-superadmin` - Create the initial superadmin account
+- `create-superadmin` - Create/update the superadmin account
+- `reset-superadmin-password` - Reset superadmin password to default
+- `check-superadmin` - Check superadmin account status
 - `check-data` - Check all database data and show summary
 - `fix-missing-data` - Check and fix all missing tables and data
 - `production-health-check` - Production health monitoring (recommended for production)
@@ -69,11 +71,27 @@ node scripts/utilities.js debug-collaborations
 ## Available Commands
 
 ### `create-superadmin`
-Creates the initial superadmin account for system setup.
+Creates/updates the superadmin account for system setup.
 - **Purpose**: Essential for initial system setup and fresh deployments
 - **Usage**: `node scripts/utilities.js create-superadmin`
-- **Output**: Creates superadmin with email `superadmin@faith-community.com` and password `admin123`
-- **Notes**: Checks if superadmin already exists before creating
+- **Output**: Creates/updates superadmin with email `faithcommunityfaces@gmail.com` and password `admin123`
+- **Notes**: Checks if superadmin already exists before creating, updates if email doesn't match
+- **Environment**: ✅ Production-safe
+
+### `reset-superadmin-password`
+Resets the superadmin password to default.
+- **Purpose**: Reset superadmin password when you can't log in
+- **Usage**: `node scripts/utilities.js reset-superadmin-password`
+- **Output**: Resets password to `admin123` and email to `faithcommunityfaces@gmail.com`
+- **Notes**: Only works if superadmin account exists
+- **Environment**: ✅ Production-safe
+
+### `check-superadmin`
+Checks the current superadmin account status.
+- **Purpose**: Verify superadmin account exists and view its details
+- **Usage**: `node scripts/utilities.js check-superadmin`
+- **Output**: Shows account details including email, password status, 2FA status
+- **Notes**: Useful for troubleshooting login issues
 - **Environment**: ✅ Production-safe
 
 ### `check-data`

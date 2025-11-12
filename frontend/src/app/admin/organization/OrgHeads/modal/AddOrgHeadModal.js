@@ -528,8 +528,14 @@ export default function AddOrgHeadModal({
             className={styles.saveButton}
             disabled={saving}
           >
-            {saving ? <FaSpinner className={styles.spinner} /> : null}
-            Add Head
+            {saving ? (
+              <>
+                <FaSpinner className={styles.spinner} />
+                Saving...
+              </>
+            ) : (
+              'Add Head'
+            )}
           </button>
         </div>
       </div>

@@ -270,7 +270,7 @@ export default function SummaryModal({
             {saving ? (
               <>
                 <span className={styles.spinner}></span>
-                Applying Changes...
+                Saving...
               </>
             ) : (
               getActionButtonText()

@@ -14,29 +14,36 @@ The superadmin authentication was failing with "Invalid credentials" due to two 
 ### Option 1: Quick Setup Script
 ```bash
 cd backend
-node create-superadmin.js
+node scripts/utilities.js create-superadmin
 ```
 
-This creates a superadmin account with default credentials:
-- **Email**: `superadmin@faith-community.com`
+This creates/updates a superadmin account with default credentials:
+- **Email**: `faithcommunityfaces@gmail.com`
 - **Password**: `admin123`
 
-### Option 2: Interactive Setup Script
+### Option 2: Check Superadmin Status
 ```bash
 cd backend
-node setup-superadmin.js
+node scripts/utilities.js check-superadmin
 ```
 
-This script will prompt you for:
-- Email address
-- Password (with confirmation)
-- Option to update existing account
+This will show you the current superadmin account details.
+
+### Option 3: Reset Superadmin Password
+```bash
+cd backend
+node scripts/utilities.js reset-superadmin-password
+```
+
+This will reset the superadmin password to the default `admin123`.
 
 ## Default Credentials
-- **Email**: `superadmin@faith-community.com`
+- **Email**: `faithcommunityfaces@gmail.com`
 - **Password**: `admin123`
-- **Login URL**: `http://localhost:3000/login`
+- **Login URL**: `http://localhost:3000/login` or `http://localhost:3000/superadmin/login`
 - **Superadmin Panel**: `http://localhost:3000/superadmin`
+
+**Important**: The superadmin account is automatically created when the database is first initialized. If you can't access it, run the `create-superadmin` command to ensure it exists and has the correct credentials.
 
 ## Security Recommendations
 
@@ -81,10 +88,13 @@ The superadmin table includes:
 ## Troubleshooting
 
 ### "Invalid credentials" Error:
-1. Verify superadmin account exists: Run `node create-superadmin.js`
-2. Check database connection in `.env` file
-3. Ensure MySQL server is running
-4. Verify database credentials
+1. **Check superadmin account**: Run `node scripts/utilities.js check-superadmin` to verify the account exists
+2. **Verify email**: Make sure you're using `faithcommunityfaces@gmail.com` (not `superadmin@faith-community.com`)
+3. **Reset password**: Run `node scripts/utilities.js reset-superadmin-password` to reset to default
+4. **Create/update account**: Run `node scripts/utilities.js create-superadmin` to ensure account exists
+5. Check database connection in `.env` file
+6. Ensure MySQL server is running
+7. Verify database credentials
 
 ### Database Connection Issues:
 1. Check `.env` file configuration:
@@ -105,10 +115,10 @@ The superadmin table includes:
 
 ## Files Created/Modified
 
-### New Files:
-- `backend/setup-superadmin.js` - Interactive setup script
-- `backend/create-superadmin.js` - Quick setup script
-- `backend/docs/SUPERADMIN_SETUP.md` - This documentation
+### Utility Commands:
+- `node scripts/utilities.js create-superadmin` - Create/update superadmin account
+- `node scripts/utilities.js check-superadmin` - Check superadmin account status
+- `node scripts/utilities.js reset-superadmin-password` - Reset password to default
 
 ### Existing Files (No Changes Needed):
 - `backend/src/superadmin/controllers/superadminAuthController.js` - Authentication logic
@@ -133,8 +143,8 @@ After running the setup script:
    ```
 
 3. **Test login**:
-   - Go to `http://localhost:3000/login`
-   - Use credentials: `superadmin@faith-community.com` / `admin123`
+   - Go to `http://localhost:3000/login` or `http://localhost:3000/superadmin/login`
+   - Use credentials: `faithcommunityfaces@gmail.com` / `admin123`
    - Should redirect to `http://localhost:3000/superadmin`
 
 ## Support

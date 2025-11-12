@@ -8,6 +8,8 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 // Production-safe commands
 const productionSafeCommands = [
   'create-superadmin',
+  'reset-superadmin-password',
+  'check-superadmin',
   'check-data', 
   'fix-missing-data',
   'production-health-check',
@@ -25,44 +27,133 @@ const developmentOnlyCommands = [
  */
 async function createSuperadmin() {
   try {
-    console.log('🔧 Creating superadmin account...');
+    console.log('🔧 Creating/updating superadmin account...');
     
-    // Check if ANY superadmin exists (enforce single account rule)
-    const [existing] = await db.execute('SELECT id, username FROM superadmin LIMIT 1');
+    // Use the same email as database initialization
+    const superadminEmail = 'faithcommunityfaces@gmail.com';
+    const superadminPassword = 'admin123';
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(superadminPassword, saltRounds);
     
-    if (existing.length > 0) {
-      console.log('✅ Superadmin account already exists!');
-      console.log(`📧 Email: ${existing[0].username}`);
-      console.log('⚠️  Only one superadmin account is allowed.');
-      console.log('📝 Use the update endpoints to change credentials.');
+    // Check if superadmin exists
+    const [existing] = await db.execute('SELECT id, username, password FROM superadmin WHERE id = 1');
+    
+    if (existing.length === 0) {
+      // Insert new superadmin account
+      await db.execute(`
+        INSERT INTO superadmin (id, username, password, password_changed_at, twofa_enabled, twofa_secret, created_at, updated_at)
+        VALUES (1, ?, ?, NOW(), FALSE, NULL, NOW(), NOW())
+      `, [superadminEmail, hashedPassword]);
+      
+      console.log('✅ Superadmin account created successfully!');
+      console.log(`📧 Email: ${superadminEmail}`);
+      console.log(`🔑 Password: ${superadminPassword}`);
       console.log('🌐 Login URL: http://localhost:3000/superadmin/login');
+      console.log('⚠️  Please change the password after first login!');
+    } else {
+      // Update existing superadmin account
+      const existingAccount = existing[0];
+      
+      // Update password if it's NULL or empty, or if username doesn't match
+      if (!existingAccount.password || existingAccount.password.trim() === '' || existingAccount.username !== superadminEmail) {
+        await db.execute(`
+          UPDATE superadmin 
+          SET username = ?, password = ?, password_changed_at = NOW(), updated_at = NOW()
+          WHERE id = 1
+        `, [superadminEmail, hashedPassword]);
+        
+        console.log('✅ Superadmin account updated successfully!');
+        console.log(`📧 Email: ${superadminEmail}`);
+        console.log(`🔑 Password: ${superadminPassword}`);
+        console.log('🌐 Login URL: http://localhost:3000/superadmin/login');
+      } else {
+        console.log('✅ Superadmin account already exists!');
+        console.log(`📧 Email: ${existingAccount.username}`);
+        console.log('⚠️  Account already has a password set.');
+        console.log('💡 To reset password, use: node scripts/utilities.js reset-superadmin-password');
+        console.log('🌐 Login URL: http://localhost:3000/superadmin/login');
+      }
+    }
+    
+  } catch (error) {
+    console.error('❌ Error creating/updating superadmin:', error.message);
+    console.error('Full error:', error);
+  }
+}
+
+/**
+ * Resets the superadmin password to default
+ * Usage: node scripts/utilities.js reset-superadmin-password
+ */
+async function resetSuperadminPassword() {
+  try {
+    console.log('🔧 Resetting superadmin password...');
+    
+    const superadminEmail = 'faithcommunityfaces@gmail.com';
+    const superadminPassword = 'admin123';
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(superadminPassword, saltRounds);
+    
+    // Check if superadmin exists
+    const [existing] = await db.execute('SELECT id, username FROM superadmin WHERE id = 1');
+    
+    if (existing.length === 0) {
+      console.log('❌ Superadmin account does not exist!');
+      console.log('💡 Run: node scripts/utilities.js create-superadmin');
       return;
     }
     
-    // Create superadmin account with fixed id=1
-    const hashedPassword = await bcrypt.hash('admin123', 10);
-    
+    // Force update password and email
     await db.execute(`
-      INSERT INTO superadmin (id, username, password, twofa_enabled, twofa_secret, created_at, updated_at)
-      VALUES (1, 'superadmin@faith-community.com', ?, FALSE, NULL, NOW(), NOW())
-    `, [hashedPassword]);
+      UPDATE superadmin 
+      SET username = ?, password = ?, password_changed_at = NOW(), updated_at = NOW()
+      WHERE id = 1
+    `, [superadminEmail, hashedPassword]);
     
-    console.log('✅ Superadmin account created successfully!');
-    console.log('📧 Email: superadmin@faith-community.com');
-    console.log('🔑 Password: admin123');
+    console.log('✅ Superadmin password reset successfully!');
+    console.log(`📧 Email: ${superadminEmail}`);
+    console.log(`🔑 Password: ${superadminPassword}`);
     console.log('🌐 Login URL: http://localhost:3000/superadmin/login');
-    console.log('⚠️  Please change the password after first login!');
     
   } catch (error) {
-    if (error.message.includes('Only one superadmin account is allowed')) {
-      console.log('✅ Superadmin account already exists (enforced by database constraint)');
-      const [existing] = await db.execute('SELECT username FROM superadmin LIMIT 1');
-      if (existing.length > 0) {
-        console.log(`📧 Email: ${existing[0].username}`);
-      }
-    } else {
-      console.error('❌ Error creating superadmin:', error.message);
+    console.error('❌ Error resetting superadmin password:', error.message);
+    console.error('Full error:', error);
+  }
+}
+
+/**
+ * Checks superadmin account status
+ * Usage: node scripts/utilities.js check-superadmin
+ */
+async function checkSuperadmin() {
+  try {
+    console.log('🔍 Checking superadmin account...\n');
+    
+    const [existing] = await db.execute('SELECT id, username, password, twofa_enabled, created_at, updated_at, password_changed_at FROM superadmin WHERE id = 1');
+    
+    if (existing.length === 0) {
+      console.log('❌ Superadmin account does not exist!');
+      console.log('💡 Run: node scripts/utilities.js create-superadmin');
+      return;
     }
+    
+    const account = existing[0];
+    console.log('✅ Superadmin account found:');
+    console.log(`   ID: ${account.id}`);
+    console.log(`   Email: ${account.username}`);
+    console.log(`   Password: ${account.password ? '✅ Set' : '❌ Not set'}`);
+    console.log(`   2FA Enabled: ${account.twofa_enabled ? 'Yes' : 'No'}`);
+    console.log(`   Created: ${account.created_at}`);
+    console.log(`   Updated: ${account.updated_at}`);
+    console.log(`   Password Changed: ${account.password_changed_at || 'Never'}`);
+    console.log('\n📝 Login Credentials:');
+    console.log(`   Email: ${account.username}`);
+    console.log(`   Password: admin123 (if not changed)`);
+    console.log('🌐 Login URL: http://localhost:3000/superadmin/login');
+    
+  } catch (error) {
+    console.error('❌ Error checking superadmin:', error.message);
+    console.error('Full error:', error);
   }
 }
 
@@ -530,7 +621,9 @@ function showHelp() {
     console.log('🏭 PRODUCTION MODE - Limited commands available:');
     console.log('');
     console.log('Production-safe commands:');
-    console.log('  create-superadmin        Create the initial superadmin account');
+    console.log('  create-superadmin        Create/update the superadmin account');
+    console.log('  reset-superadmin-password Reset superadmin password to default');
+    console.log('  check-superadmin         Check superadmin account status');
     console.log('  check-data              Check all database data and show summary');
     console.log('  fix-missing-data        Check and fix all missing tables and data');
     console.log('  production-health-check Production health check (recommended)');
@@ -543,7 +636,9 @@ function showHelp() {
     console.log('🛠️  DEVELOPMENT MODE - All commands available:');
     console.log('');
     console.log('Production-safe commands:');
-    console.log('  create-superadmin        Create the initial superadmin account');
+    console.log('  create-superadmin        Create/update the superadmin account');
+    console.log('  reset-superadmin-password Reset superadmin password to default');
+    console.log('  check-superadmin         Check superadmin account status');
     console.log('  check-data              Check all database data and show summary');
     console.log('  fix-missing-data        Check and fix all missing tables and data');
     console.log('  production-health-check Production health check');
@@ -582,6 +677,12 @@ if (isProduction && developmentOnlyCommands.includes(command)) {
 switch (command) {
   case 'create-superadmin':
     await createSuperadmin();
+    break;
+  case 'reset-superadmin-password':
+    await resetSuperadminPassword();
+    break;
+  case 'check-superadmin':
+    await checkSuperadmin();
     break;
   case 'check-data':
     await checkAllData();

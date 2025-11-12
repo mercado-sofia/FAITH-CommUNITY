@@ -173,9 +173,11 @@ export default function HeroSection() {
                     <Image
                       src={imageSrc}
                       alt={isFirst ? "Main Card" : `Vertical Card ${index}`}
-                      width={280}
-                      height={isFirst ? 180 : 340}
+                      width={isFirst ? 880 : 360}
+                      height={1120}
                       className={styles.cardImage}
+                      quality={100}
+                      sizes={isFirst ? "(max-width: 1300px) 720px, 880px" : "(max-width: 1300px) 360px, 360px"}
                       priority
                     />
                     {isFirst ? (
@@ -201,9 +203,11 @@ export default function HeroSection() {
                   <Image
                     src={heroData.images[currentImageIndex]?.url || getFallbackImage(currentImageIndex)}
                     alt={`Carousel Image ${currentImageIndex + 1}`}
-                    width={400}
-                    height={300}
+                    width={1920}
+                    height={1080}
                     className={styles.carouselImage}
+                    quality={100}
+                    sizes="(max-width: 640px) 640px, (max-width: 1270px) 1280px, 1920px"
                     priority
                   />
                   <div className={styles.carouselOverlay}>

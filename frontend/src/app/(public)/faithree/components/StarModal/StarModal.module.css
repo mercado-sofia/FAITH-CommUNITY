@@ -752,6 +752,7 @@
 .metaValue {
   color: #374151;
   font-weight: 600;
+  text-align: left;
 }
 
 /* Responsive Design - Medium screens */

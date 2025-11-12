@@ -1,17 +1,37 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { FiSun } from "react-icons/fi";
 import { IoRainyOutline } from "react-icons/io5";
 import styles from './LoadingOverlay.module.css';
 
 export default function LoadingOverlay({ nextTheme }) {
-  if (!nextTheme) return null;
+  const [isVisible, setIsVisible] = useState(false);
+  const [displayTheme, setDisplayTheme] = useState(null);
+
+  useEffect(() => {
+    if (nextTheme) {
+      // Show immediately when nextTheme is set
+      setDisplayTheme(nextTheme);
+      setIsVisible(true);
+    } else {
+      // Delay hiding by 1 second when nextTheme becomes null
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+        setDisplayTheme(null);
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [nextTheme]);
+
+  if (!isVisible || !displayTheme) return null;
 
   return (
-    <div className={`${styles.loadingOverlay} ${nextTheme === 'rainy' ? styles.loadingRainy : styles.loadingSunny}`}>
+    <div className={`${styles.loadingOverlay} ${displayTheme === 'rainy' ? styles.loadingRainy : styles.loadingSunny}`}>
       <div className={styles.loadingContent}>
         <div className={styles.loadingIconContainer}>
-          {nextTheme === 'rainy' ? (
+          {displayTheme === 'rainy' ? (
             <>
               <IoRainyOutline className={styles.loadingIcon} aria-hidden="true" />
               <div className={styles.loadingSparkles}>
@@ -32,7 +52,7 @@ export default function LoadingOverlay({ nextTheme }) {
           )}
         </div>
         <p className={styles.loadingText}>
-          {nextTheme === 'rainy' ? 'Bringing the rain...' : 'Bringing the sunshine...'}
+          {displayTheme === 'rainy' ? 'Bringing the rain...' : 'Bringing the sunshine...'}
         </p>
         <div className={styles.loadingDots}>
           <span></span>

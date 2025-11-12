@@ -8,12 +8,158 @@ import styles from './ViewDetailsModal.module.css';
 
 export default function ViewDetailsModal({ highlight, onClose }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [programTitle, setProgramTitle] = useState(null);
+  const [loadingProgram, setLoadingProgram] = useState(false);
 
   useEffect(() => {
     if (highlight?.media) {
       setSelectedImageIndex(0);
     }
   }, [highlight]);
+
+  // Fetch program title when program_id is available but program_title is not
+  useEffect(() => {
+    const fetchProgramTitle = async () => {
+      // If already have title, use it
+      if (highlight?.program_title) {
+        setProgramTitle(highlight.program_title);
+        return;
+      }
+
+      // If no program_id, try to fetch from submission record
+      if (!highlight?.program_id || highlight.program_id === null || highlight.program_id === undefined || highlight.program_id === '') {
+        // Try to get program_id from submission if highlight doesn't have it
+        setLoadingProgram(true);
+        try {
+          const token = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+          if (!token) {
+            setLoadingProgram(false);
+            return;
+          }
+
+          // Get organization acronym from admin data
+          let orgAcronym = null;
+          try {
+            const adminData = typeof window !== 'undefined' ? localStorage.getItem('adminData') : null;
+            if (adminData) {
+              const parsed = JSON.parse(adminData);
+              orgAcronym = parsed.org || parsed.organization_acronym || parsed.acronym;
+            }
+          } catch (e) {
+            console.error('Error parsing admin data:', e);
+          }
+
+          if (!orgAcronym) {
+            setLoadingProgram(false);
+            return;
+          }
+
+          // Try to find submission for this highlight using the correct endpoint
+          const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/submissions/${orgAcronym}`;
+          const response = await fetch(apiUrl, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            // Response structure: { success: true, data: [submissions] }
+            const submissions = result.success ? result.data : (result.submissions || []);
+            
+            // Find submission for this highlight
+            const highlightSubmission = submissions.find(sub => {
+              if (sub.section !== 'highlights' || sub.status !== 'approved') {
+                return false;
+              }
+              
+              try {
+                const proposedData = typeof sub.proposed_data === 'string' 
+                  ? JSON.parse(sub.proposed_data) 
+                  : sub.proposed_data;
+                
+                // Match by title (most reliable)
+                return proposedData?.title === highlight?.title;
+              } catch {
+                return false;
+              }
+            });
+
+            if (highlightSubmission) {
+              try {
+                const proposedData = typeof highlightSubmission.proposed_data === 'string' 
+                  ? JSON.parse(highlightSubmission.proposed_data) 
+                  : highlightSubmission.proposed_data;
+                
+                if (proposedData?.program_id) {
+                  // Found program_id in submission, now fetch the program title
+                  const programResponse = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admin/programs/single/${proposedData.program_id}`,
+                    {
+                      headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                      },
+                    }
+                  );
+
+                  if (programResponse.ok) {
+                    const programResult = await programResponse.json();
+                    if (programResult.data?.title) {
+                      setProgramTitle(programResult.data.title);
+                    } else if (programResult.title) {
+                      setProgramTitle(programResult.title);
+                    }
+                  }
+                }
+              } catch (e) {
+                console.error('Error parsing submission data:', e);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching program from submission:', error);
+        } finally {
+          setLoadingProgram(false);
+        }
+        return;
+      }
+
+      // Fetch program title from API using program_id
+      setLoadingProgram(true);
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+        if (!token) {
+          setLoadingProgram(false);
+          return;
+        }
+
+        const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admin/programs/single/${highlight.program_id}`;
+        const response = await fetch(apiUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.data?.title) {
+            setProgramTitle(result.data.title);
+          } else if (result.title) {
+            setProgramTitle(result.title);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching program title:', error);
+      } finally {
+        setLoadingProgram(false);
+      }
+    };
+
+    fetchProgramTitle();
+  }, [highlight?.program_id, highlight?.program_title]);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'No date';
@@ -184,15 +330,15 @@ export default function ViewDetailsModal({ highlight, onClose }) {
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>Details</h3>
             <div className={styles.metadata}>
-              {(highlight?.program_title || highlight?.program_id) && (
-                <div className={styles.metaItem}>
-                  <FiFile className={styles.metaIcon} />
-                  <span className={styles.metaLabel}>Associated Program:</span>
-                  <span className={styles.metaValue}>
-                    {highlight.program_title || `Program ID: ${highlight.program_id}`}
-                  </span>
-                </div>
-              )}
+              <div className={styles.metaItem}>
+                <FiFile className={styles.metaIcon} />
+                <span className={styles.metaLabel}>Associated Program:</span>
+                <span className={styles.metaValue}>
+                  {loadingProgram ? (
+                    'Loading...'
+                  ) : highlight?.program_title || programTitle || (highlight?.program_id ? `Program #${highlight.program_id}` : 'No program associated')}
+                </span>
+              </div>
               <div className={styles.metaItem}>
                 <FiCalendar className={styles.metaIcon} />
                 <span className={styles.metaLabel}>Created:</span>

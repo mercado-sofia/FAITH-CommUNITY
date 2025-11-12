@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FaTimes, FaEye, FaExpand, FaChevronLeft, FaChevronRight, FaFile } from 'react-icons/fa';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
@@ -19,8 +19,8 @@ const ViewDetailsModal = ({
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [allImages, setAllImages] = useState([]);
-  
-  if (!isOpen || !submissionData) return null;
+  const [programTitle, setProgramTitle] = useState(null);
+  const [loadingProgram, setLoadingProgram] = useState(false);
 
   const getSectionDisplayName = (section) => {
     // Note: advocacy and competency are no longer part of the approval workflow
@@ -42,7 +42,7 @@ const ViewDetailsModal = ({
 
   // Parse program data for display
   const getProgramData = () => {
-    if (submissionData.section !== 'programs') return null;
+    if (!submissionData || submissionData.section !== 'programs') return null;
     try {
       // Try different possible field names for the data
       const dataField = submissionData.proposed_data || submissionData.data || submissionData.new_data;
@@ -56,7 +56,7 @@ const ViewDetailsModal = ({
 
   // Parse highlights data for display
   const getHighlightsData = () => {
-    if (submissionData.section !== 'highlights') return null;
+    if (!submissionData || submissionData.section !== 'highlights') return null;
     try {
       // Try different possible field names for the data
       const dataField = submissionData.proposed_data || submissionData.data || submissionData.new_data;
@@ -80,6 +80,58 @@ const ViewDetailsModal = ({
 
   const programData = getProgramData();
   const highlightsData = getHighlightsData();
+
+  // Fetch program title when highlightsData has program_id
+  useEffect(() => {
+    const fetchProgramTitle = async () => {
+      if (!highlightsData?.program_id) {
+        setProgramTitle(null);
+        return;
+      }
+
+      // If program_title is already in highlightsData, use it
+      if (highlightsData.program_title) {
+        setProgramTitle(highlightsData.program_title);
+        return;
+      }
+
+      // Otherwise, fetch from API
+      setLoadingProgram(true);
+      try {
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const token = localStorage.getItem('superAdminToken');
+        
+        if (!token) {
+          logger.warn('No superadmin token found for fetching program title');
+          setLoadingProgram(false);
+          return;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/projects/superadmin/${highlightsData.program_id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data?.title) {
+            setProgramTitle(result.data.title);
+          }
+        }
+      } catch (error) {
+        logger.error('Error fetching program title', error, { context: 'ViewDetailsModal' });
+      } finally {
+        setLoadingProgram(false);
+      }
+    };
+
+    fetchProgramTitle();
+  }, [highlightsData?.program_id, highlightsData?.program_title]);
+
+  // Early return after all hooks to maintain hook order
+  if (!isOpen || !submissionData) return null;
 
   // Handle image viewing
   const openImageViewer = (images, startIndex = 0) => {
@@ -377,7 +429,15 @@ const ViewDetailsModal = ({
                 <div className={styles.contentSection}>
                   <h4 className={styles.sectionTitle}>ASSOCIATED PROGRAM:</h4>
                   <div className={styles.descriptionBox}>
-                    {highlightsData.program_title || `Program #${highlightsData.program_id}`}
+                    {loadingProgram ? (
+                      <span>Loading...</span>
+                    ) : programTitle ? (
+                      programTitle
+                    ) : highlightsData.program_title ? (
+                      highlightsData.program_title
+                    ) : (
+                      `Program #${highlightsData.program_id}`
+                    )}
                   </div>
                 </div>
               )}

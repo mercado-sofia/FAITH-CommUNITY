@@ -311,7 +311,7 @@ function FAITHreePage() {
           </div>
         </div>
         
-        {/* Theme Toggle Button */}
+        {/* Theme Toggle Button - Desktop */}
         <div className={styles.themeToggleContainer}>
           <button 
             className={`${styles.themeToggleButton} ${isTransitioning ? styles.disabled : ''}`}
@@ -335,9 +335,8 @@ function FAITHreePage() {
           </button>
         </div>
 
-        {/* Instructional Text - Right Side */}
-        <div className={`${styles.instructionContainer} ${styles[`instruction${theme.charAt(0).toUpperCase() + theme.slice(1)}`]} ${isInstructionOpen ? styles.instructionOpen : ''}`}>
-          {/* Mobile Toggle Button */}
+        {/* Click Me Button - Top Left (Mobile) */}
+        <div className={styles.instructionToggleContainer}>
           <button
             className={styles.instructionToggleButton}
             onClick={() => setIsInstructionOpen(!isInstructionOpen)}
@@ -345,13 +344,11 @@ function FAITHreePage() {
             aria-expanded={isInstructionOpen}
           >
             <span className={styles.instructionToggleText}>Click me!</span>
-            <div className={`${styles.instructionToggleIcon} ${isInstructionOpen ? styles.instructionToggleIconOpen : ''}`}>
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
           </button>
-          
+        </div>
+
+        {/* Instructional Text - Right Side */}
+        <div className={`${styles.instructionContainer} ${styles[`instruction${theme.charAt(0).toUpperCase() + theme.slice(1)}`]} ${isInstructionOpen ? styles.instructionOpen : ''}`}>
           {/* Instruction Content */}
           <div className={`${styles.instructionContent} ${isInstructionOpen ? styles.instructionContentOpen : ''}`}>
             <div className={styles.instructionIcon}>

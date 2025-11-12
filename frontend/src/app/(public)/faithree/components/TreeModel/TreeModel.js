@@ -533,7 +533,7 @@ export default function TreeModel({
                 {/* Cloud 2: Front right */}
                 <Cloud 
                   url="/models/clouds.glb" 
-                  initialPosition={[3, 0.8, -2]} 
+                  initialPosition={[2.4, 0.8, -2]} 
                   scale={1.0}
                 />
                 {/* Cloud 3: Back center-right for balance */}

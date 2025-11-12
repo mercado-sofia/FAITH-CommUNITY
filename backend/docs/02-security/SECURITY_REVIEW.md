@@ -33,20 +33,20 @@ The login attempt tracking system has a **solid foundation** but has **several c
 ## 🚨 CRITICAL VULNERABILITIES
 
 ### 1. **Race Condition (HIGH SEVERITY)**
-**Issue**: The check-and-insert pattern is NOT atomic. Multiple concurrent login attempts can bypass the 5-attempt limit.
+**Issue**: The check-and-insert pattern is NOT atomic. Multiple concurrent login attempts can bypass the 7-attempt limit.
 
 **Current Code Flow:**
 ```javascript
-// Request 1: Check attempts (finds 4)
-const failedAttempts = await getFailedAttempts(...); // Returns 4
+// Request 1: Check attempts (finds 6)
+const failedAttempts = await getFailedAttempts(...); // Returns 6
 
-// Request 2: Check attempts (also finds 4)
-const failedAttempts = await getFailedAttempts(...); // Returns 4
+// Request 2: Check attempts (also finds 6)
+const failedAttempts = await getFailedAttempts(...); // Returns 6
 
-// Request 1: Insert attempt (now 5)
+// Request 1: Insert attempt (now 7)
 await trackFailedAttempt(...);
 
-// Request 2: Insert attempt (now 6, but limit was 5!)
+// Request 2: Insert attempt (now 8, but limit was 7!)
 await trackFailedAttempt(...);
 ```
 
@@ -145,7 +145,7 @@ if (!user.email_verified) {
 ### 1. **Account Lockout Notification**
 Send email to user when account is locked:
 ```javascript
-if (failedAttempts >= 5) {
+if (failedAttempts >= 7) {
   await sendLockoutNotification(email, ipAddress);
 }
 ```
@@ -155,6 +155,7 @@ Instead of hard lockout, consider progressive delays:
 - 3 attempts: 30 seconds
 - 4 attempts: 2 minutes
 - 5 attempts: 5 minutes
+- 7 attempts: 5 minutes (hard lockout)
 
 ### 3. **CAPTCHA Integration**
 Require CAPTCHA after 3 failed attempts before allowing more attempts.

@@ -32,6 +32,20 @@ export default function Highlights({ onClose }) {
       const data = await response.json();
       const highlights = data.highlights || [];
       
+      // Debug: Log raw API data to check for program_title
+      if (highlights.length > 0) {
+        console.log('Highlights API response sample:', {
+          count: highlights.length,
+          sample: {
+            id: highlights[0].id,
+            title: highlights[0].title,
+            program_id: highlights[0].program_id,
+            program_title: highlights[0].program_title,
+            raw: highlights[0]
+          }
+        });
+      }
+      
       // Transform API data to match expected format and ensure unique IDs
       const transformedHighlights = highlights.map((highlight, index) => ({
         id: `${highlight.id || 'unknown'}-${index}`,
@@ -41,6 +55,7 @@ export default function Highlights({ onClose }) {
         organization_acronym: highlight.organization_acronym || '',
         description: highlight.description,
         program_title: highlight.program_title || null,
+        program_id: highlight.program_id || null,
         date: new Date(highlight.created_at).toLocaleDateString('en-US', { 
           month: 'short', 
           year: 'numeric' 
@@ -210,9 +225,9 @@ export default function Highlights({ onClose }) {
                 <h3 className={styles.cardTitle}>{story.title}</h3>
                 <p className={styles.cardOrganization}>{story.organization}</p>
                 {/* Associated Program */}
-                {story.program_title && (
+                {(story.program_title || story.program_id) && (
                   <p style={{ marginTop: '4px', marginBottom: '8px', fontSize: '0.875rem', color: '#6b7280' }}>
-                    <span style={{ fontWeight: '500' }}>Program:</span> {story.program_title}
+                    <span style={{ fontWeight: '500' }}>Program:</span> {story.program_title || `Program ID: ${story.program_id}`}
                   </p>
                 )}
                 <p className={styles.cardDescription}>
@@ -320,13 +335,13 @@ export default function Highlights({ onClose }) {
                     <span className={styles.modalMetaLabel}>Organization:</span>
                     <span className={styles.modalMetaValue}>{selectedStory.organization}</span>
                   </div>
-                  {selectedStory.program_title && (
+                  {(selectedStory.program_title || selectedStory.program_id) && (
                     <div className={styles.modalMetaItem}>
                       <svg className={styles.modalMetaIcon} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M7 7H17M7 12H17M7 17H12M3 3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                       <span className={styles.modalMetaLabel}>Program:</span>
-                      <span className={styles.modalMetaValue}>{selectedStory.program_title}</span>
+                      <span className={styles.modalMetaValue}>{selectedStory.program_title || `Program ID: ${selectedStory.program_id}`}</span>
                     </div>
                   )}
                   <div className={styles.modalMetaItem}>

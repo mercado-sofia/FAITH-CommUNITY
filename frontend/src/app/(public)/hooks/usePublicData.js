@@ -264,18 +264,14 @@ export const usePublicFAQs = () => {
 
 // Custom hook for approved upcoming programs (for apply form)
 export const usePublicApprovedPrograms = () => {
-  // Custom fetcher with authentication
+  // Custom fetcher with authentication and automatic token refresh
   const authenticatedFetcher = async (url) => {
     try {
-      const userToken = localStorage.getItem('userToken');
-      
-      const response = await fetch(url, {
+      // Use authenticatedFetch for automatic token refresh
+      const { authenticatedFetch } = await import('@/utils/apiClient');
+      const response = await authenticatedFetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(userToken && { 'Authorization': `Bearer ${userToken}` }),
-        },
-      });
+      }, 'user');
 
       if (!response.ok) {
         const error = new Error(`HTTP ${response.status}: ${response.statusText}`);

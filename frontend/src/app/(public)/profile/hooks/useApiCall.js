@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { getApiUrl, getAuthHeaders, getAuthHeadersWithFormData } from '../utils/profileApi';
+import { getApiUrl, getAuthHeaders, getAuthHeadersWithFormData, makeAuthenticatedRequest } from '../utils/profileApi';
 
 export const useApiCall = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -24,8 +24,8 @@ export const useApiCall = () => {
         ...options
       };
 
-
-      const response = await fetch(getApiUrl(endpoint), defaultOptions);
+      // Use authenticatedFetch for automatic token refresh
+      const response = await makeAuthenticatedRequest(endpoint, defaultOptions);
       
       // Handle non-JSON responses (like file uploads)
       let data;

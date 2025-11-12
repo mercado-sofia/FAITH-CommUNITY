@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { FiSun } from "react-icons/fi";
 import { IoRainyOutline } from "react-icons/io5";
 import styles from './faithree.module.css';
-import { Highlights, HeroSection } from './sections';
+import { Highlights } from './sections';
 import { TreeModel } from './components';
 
 // Check for reduced motion preference
@@ -16,7 +16,6 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 function FAITHreePage() {
   const [isContentVisible, setIsContentVisible] = useState(false);
-  const [scrollY, setScrollY] = useState(0);
   const [theme, setTheme] = useState('morning'); // 'morning' or 'rainy'
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [featuredHighlights, setFeaturedHighlights] = useState([]);
@@ -47,14 +46,41 @@ function FAITHreePage() {
     setTimeout(() => setIsTransitioning(false), 600);
   }, [isTransitioning]);
 
-  // Optimized scroll handler with throttling
+  // Optimized scroll handler with throttling and CSS variables
   useEffect(() => {
     let ticking = false;
+    let rafId = null;
     
     const handleScroll = () => {
       if (!ticking) {
-        window.requestAnimationFrame(() => {
-          setScrollY(window.scrollY || window.pageYOffset || 0);
+        rafId = window.requestAnimationFrame(() => {
+          const scrollY = window.scrollY || window.pageYOffset || 0;
+          
+          // Update CSS variables directly for smoother performance
+          if (typeof document !== 'undefined') {
+            const root = document.documentElement;
+            root.style.setProperty('--scroll-y', `${scrollY}px`);
+            
+            // Calculate and set parallax values directly
+            const containerOffset = -scrollY * 1.2;
+            root.style.setProperty('--container-offset', `${containerOffset}px`);
+            
+            // Calculate welcome message opacity and scale
+            const fadeStart = 0;
+            const fadeEnd = 300;
+            const welcomeOpacity = scrollY <= fadeStart ? 1 : 
+              scrollY >= fadeEnd ? 0 : 
+              1 - (scrollY - fadeStart) / (fadeEnd - fadeStart);
+            root.style.setProperty('--welcome-opacity', welcomeOpacity);
+            
+            const zoomStart = 0;
+            const zoomEnd = 300;
+            const welcomeScale = scrollY <= zoomStart ? 1 : 
+              scrollY >= zoomEnd ? 0.5 : 
+              1 - ((scrollY - zoomStart) / (zoomEnd - zoomStart)) * 0.5;
+            root.style.setProperty('--welcome-scale', welcomeScale);
+          }
+          
           ticking = false;
         });
         ticking = true;
@@ -64,15 +90,16 @@ function FAITHreePage() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll(); // Initial call
     
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll, { passive: true });
+      if (rafId) {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
   }, []);
 
-  // Calculate parallax offsets for different layers
-  const parallaxOffset = useMemo(() => ({
-    hills: scrollY * 0.3,
-    clouds: scrollY * 0.1,
-    ground: scrollY * 0.5
-  }), [scrollY]);
+  // Note: Parallax calculations are now done directly in the scroll handler
+  // and applied via CSS variables for better performance
 
   // Fetch featured highlights from API
   useEffect(() => {
@@ -139,10 +166,30 @@ function FAITHreePage() {
 
   return (
     <>
+      {/* Welcome Message */}
+      <div 
+        className={styles.welcomeMessage}
+        style={{
+          opacity: 'var(--welcome-opacity, 1)',
+          transform: 'scale(var(--welcome-scale, 1))',
+        }}
+      >
+        <div className={styles.welcomeContent}>
+          <h1 className={styles.welcomeTitle}>Welcome to FAITHree</h1>
+          <p className={styles.welcomeSubtitle}>Explore stories that grow like a tree</p>
+        </div>
+      </div>
+
+      {/* Spacer to enable scrolling */}
+      <div className={styles.scrollSpacer} />
+
       {/* First Section with Floating Ground */}
       <div 
         className={`${styles.faithreeContainer} ${styles[theme]} ${isTransitioning ? styles.transitioning : ''}`}
         aria-label="FAITHree interactive environment"
+        style={{
+          transform: 'translateY(var(--container-offset, 0px))',
+        }}
       >
         {/* Fixed dimension container for background and tree */}
         <div className={styles.sceneContainer}>
@@ -153,7 +200,6 @@ function FAITHreePage() {
             <div 
               className={`${styles.sky} ${styles[`sky${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}
               style={{
-                transform: `translateY(${parallaxOffset.clouds}px)`,
                 transition: prefersReducedMotion ? 'none' : 'background 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
               }}
             >
@@ -179,13 +225,9 @@ function FAITHreePage() {
               )}
             </div>
             
-            {/* Rolling hills - SVG paths with parallax */}
+            {/* Rolling hills - SVG paths */}
             <div 
               className={styles.hills}
-              style={{
-                transform: `translateY(${parallaxOffset.hills}px)`,
-                transition: prefersReducedMotion ? 'none' : 'transform 0.1s ease-out'
-              }}
             >
               <svg className={styles.hillsSvg} viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true">
                 {/* Back hill layer - deepest green */}
@@ -222,10 +264,6 @@ function FAITHreePage() {
             {/* 3D Tree Model */}
             <div 
               className={styles.floatingGround}
-              style={{
-                transform: `translate(-50%, calc(-35% + ${parallaxOffset.ground}px))`,
-                transition: prefersReducedMotion ? 'none' : 'transform 0.1s ease-out'
-              }}
             >
               <div className={styles.tree3D}>
                 <TreeModel 
@@ -297,8 +335,6 @@ function FAITHreePage() {
       </div>
       </div>
       
-      {/* Hero Section */}
-      <HeroSection />
     </>
   );
 }

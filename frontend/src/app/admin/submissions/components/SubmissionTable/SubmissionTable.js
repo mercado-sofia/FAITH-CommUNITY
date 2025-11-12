@@ -1,8 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
-import { FiEdit, FiX, FiTrash2 } from 'react-icons/fi';
+import { FiX, FiTrash2 } from 'react-icons/fi';
 import { formatDateShort } from '@/utils/dateUtils.js';
 import SubmissionModal from '../modals/SubmissionModal';
-import ReEditModal from '../modals/ReEditModal';
 import CancelConfirmationModal from '../modals/CancelConfirmationModal';
 import { ConfirmationModal } from '@/components';
 import { SuccessModal } from '@/components';
@@ -24,7 +23,6 @@ export default function SubmissionTable({
 }) {
   const dropdownRefs = useRef({});
   const [selected, setSelected] = useState(null);
-  const [reEditSubmission, setReEditSubmission] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [successModal, setSuccessModal] = useState({ isVisible: false, message: '', type: 'success' });
@@ -85,49 +83,6 @@ export default function SubmissionTable({
       setLoadingStates(prev => ({ ...prev, [`cancel-${id}`]: false }));
     }
   };
-
-  const handleReEdit = (submission) => {
-    setReEditSubmission(submission);
-  };
-
-  const handleSaveReEdit = async (submissionId, updatedData) => {
-    try {
-      // Format the data correctly based on the submission section
-      const submission = reEditSubmission;
-      let formattedData;
-
-      // Note: advocacy and competency are no longer part of the submission workflow
-      formattedData = updatedData;
-
-      const response = await fetch(`${API_BASE_URL}/api/submissions/${submissionId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        },
-        body: JSON.stringify({
-          proposed_data: formattedData,
-          section: submission.section
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Failed to update submission: ${response.status}`);
-      }
-
-      const result = await response.json();
-      // Refresh the submissions list
-      if (onRefresh) onRefresh();
-      setReEditSubmission(null);
-      showToast('Submission updated successfully!', 'success');
-    } catch (error) {
-      showToast(`Failed to save changes: ${error.message}`, 'error');
-      // Don't throw the error to prevent the modal from closing
-    }
-  };
-
-
 
   // Delete handler (hard delete)
   const handleDelete = async (id) => {
@@ -267,11 +222,6 @@ export default function SubmissionTable({
                 const startIndex = (currentPage - 1) * itemsPerPage;
                 const rowNumber = startIndex + index + 1;
                 
-                // Define unsupported section types
-                const unsupportedSections = ['highlights', 'programs'];
-                const isUnsupportedSection = unsupportedSections.includes(s.section?.toLowerCase());
-                const isEditDisabled = s.status !== 'pending' || isUnsupportedSection;
-                
                 return (
               <tr key={s.id}>
                 <td className={styles.numberCell}>
@@ -302,24 +252,6 @@ export default function SubmissionTable({
                 <td>
                   <div className={styles.actionButtons}>
                     <button 
-                      className={`${styles.editBtn} ${isEditDisabled ? styles.disabledBtn : ''}`}
-                      onClick={!isEditDisabled ? () => handleReEdit(s) : undefined}
-                      disabled={isEditDisabled}
-                      title={
-                        isUnsupportedSection
-                          ? `Cannot edit - ${s.section.charAt(0).toUpperCase() + s.section.slice(1)} section type is not supported for editing`
-                          : s.status === 'pending' 
-                            ? "Edit submission" 
-                            : s.status === 'approved' 
-                              ? "Cannot edit - submission already approved" 
-                              : s.status === 'rejected' 
-                                ? "Cannot edit - submission was rejected" 
-                                : "Cannot edit - submission already processed"
-                      }
-                    >
-                      <FiEdit size={14} />
-                    </button>
-                    <button 
                       className={`${styles.cancelBtn} ${s.status !== 'pending' ? styles.disabledBtn : ''}`}
                       onClick={s.status === 'pending' ? () => setConfirmId(s.id) : undefined}
                       disabled={s.status !== 'pending' || loadingStates[`cancel-${s.id}`]}
@@ -336,21 +268,25 @@ export default function SubmissionTable({
                       {loadingStates[`cancel-${s.id}`] ? (
                         <span className={styles.spinner}></span>
                       ) : (
-                        <FiX size={14} />
+                        <>
+                          <FiX size={14} /> Cancel
+                        </>
                       )}
                     </button>
-                  <button 
-                    className={styles.deleteBtn} 
-                    onClick={() => setDeleteId(s.id)}
-                    disabled={loadingStates[`delete-${s.id}`]}
-                    title="Delete submission from history"
-                  >
-                    {loadingStates[`delete-${s.id}`] ? (
-                      <span className={styles.spinner}></span>
-                    ) : (
-                      <FiTrash2 size={14} />
-                    )}
-                  </button>
+                    <button 
+                      className={styles.deleteBtn} 
+                      onClick={() => setDeleteId(s.id)}
+                      disabled={loadingStates[`delete-${s.id}`]}
+                      title="Delete submission from history"
+                    >
+                      {loadingStates[`delete-${s.id}`] ? (
+                        <span className={styles.spinner}></span>
+                      ) : (
+                        <>
+                          <FiTrash2 size={14} /> Delete
+                        </>
+                      )}
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -361,13 +297,6 @@ export default function SubmissionTable({
         </table>
       )}
       {selected && <SubmissionModal data={selected} onClose={() => setSelected(null)} />}
-      {reEditSubmission && (
-        <ReEditModal 
-          submission={reEditSubmission} 
-          onClose={() => setReEditSubmission(null)}
-          onSave={handleSaveReEdit}
-        />
-      )}
       {confirmId && <CancelConfirmationModal isOpen={!!confirmId} onConfirm={() => handleCancel(confirmId)} onCancel={() => setConfirmId(null)} />}
       {deleteId && (
         <ConfirmationModal

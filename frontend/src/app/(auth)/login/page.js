@@ -27,7 +27,7 @@ export default function LoginPage() {
   const [fieldErrors, setFieldErrors] = useState({})
   const [lastAttemptedSystem, setLastAttemptedSystem] = useState(null)
   const [attemptCount, setAttemptCount] = useState(0)
-  const [remainingAttempts, setRemainingAttempts] = useState(5)
+  const [remainingAttempts, setRemainingAttempts] = useState(7)
   const [lockoutSeconds, setLockoutSeconds] = useState(0)
   const [isLockedOut, setIsLockedOut] = useState(false)
   const router = useRouter()
@@ -39,12 +39,12 @@ export default function LoginPage() {
   useEffect(() => {
     if (isLockedOut && lockoutSeconds > 0) {
       const timer = setInterval(() => {
-        setLockoutSeconds(prev => {
+            setLockoutSeconds(prev => {
           if (prev <= 1) {
             setIsLockedOut(false)
             setErrorMessage("")
             setAttemptCount(0)
-            setRemainingAttempts(5)
+            setRemainingAttempts(7)
             return 0
           }
           return prev - 1
@@ -189,25 +189,23 @@ export default function LoginPage() {
 
     try {
       // Only try one system at a time to avoid multiple failed attempts
-      const systems = needsOtp && lastAttemptedSystem ? [lastAttemptedSystem] : ["admin", "superadmin", "user"]
-      let result
+      // If we've tried a system before, stick with it to track attempts correctly per user type
+      // Otherwise, start with admin
+      const systemToTry = lastAttemptedSystem || "admin"
+      let result = await attempt(systemToTry)
       let successfulSystem = null
-      
-      // Try only the first system initially to avoid multiple failed attempts
-      const systemToTry = systems[0]
-      result = await attempt(systemToTry)
       
       if (result.ok) {
         successfulSystem = systemToTry
         // Reset attempt tracking on success
         setAttemptCount(0)
-        setRemainingAttempts(5)
+        setRemainingAttempts(7)
         setIsLockedOut(false)
       } else if (result.status === 429) {
         // Rate limit hit - don't try other systems
         const data = result.data || {}
         const remainingSecs = data.remainingSeconds || 300 // Default to 5 minutes
-        const attempts = data.attempts || 5
+        const attempts = data.attempts || 7
         
         setIsLockedOut(true)
         setLockoutSeconds(remainingSecs)
@@ -218,31 +216,6 @@ export default function LoginPage() {
         setFieldErrors({ email: "Rate limit exceeded", password: "Rate limit exceeded" })
         setIsLoading(false)
         return
-      } else if (result.data && result.data.error && result.data.error.includes("Invalid credentials")) {
-        // Only try other systems if the first one fails with invalid credentials
-        // and we haven't hit rate limits
-        for (let i = 1; i < systems.length; i++) {
-          result = await attempt(systems[i])
-          if (result.ok) {
-            successfulSystem = systems[i]
-            break
-          } else if (result.status === 429) {
-            // Rate limit hit during fallback attempts
-            const data = result.data || {}
-            const remainingSecs = data.remainingSeconds || 300
-            const attempts = data.attempts || 5
-            
-            setIsLockedOut(true)
-            setLockoutSeconds(remainingSecs)
-            setAttemptCount(attempts)
-            setRemainingAttempts(0)
-            setErrorMessage(data.error || `Too many failed login attempts. Please wait ${formatTimeRemaining(remainingSecs)} before trying again.`)
-            setShowError(true)
-            setFieldErrors({ email: "Rate limit exceeded", password: "Rate limit exceeded" })
-            setIsLoading(false)
-            return
-          }
-        }
       }
 
       if (result && result.ok) {
@@ -281,7 +254,7 @@ export default function LoginPage() {
       if (result && result.status === 429) {
         const data = result.data || {}
         const remainingSecs = data.remainingSeconds || 300
-        const attempts = data.attempts || 5
+        const attempts = data.attempts || 7
         
         setIsLockedOut(true)
         setLockoutSeconds(remainingSecs)
@@ -314,7 +287,7 @@ export default function LoginPage() {
       // Update attempt count from response if available
       if (data?.attempts !== undefined) {
         setAttemptCount(data.attempts)
-        setRemainingAttempts(data.remainingAttempts !== undefined ? data.remainingAttempts : Math.max(0, 5 - data.attempts))
+        setRemainingAttempts(data.remainingAttempts !== undefined ? data.remainingAttempts : Math.max(0, 7 - data.attempts))
       }
 
       if (successfulSystem === "user" && data?.requiresVerification) {
@@ -323,8 +296,8 @@ export default function LoginPage() {
         setFieldErrors({ email: "Please verify your email address", password: "Please verify your email address" })
       } else {
         const baseError = (data && data.error) || "Invalid email or password. Please check your credentials and try again."
-        const attemptsInfo = data?.attempts ? ` (Attempt ${data.attempts}/5${data?.remainingAttempts ? `, ${data.remainingAttempts} remaining` : ''})` : ""
-        setErrorMessage(baseError + attemptsInfo)
+        // Only show attempts info in error message if attempts > 3 (tracker will show separately)
+        setErrorMessage(baseError)
         setShowError(true)
         setFieldErrors({ email: "Invalid email or password", password: "Invalid email or password" })
       }
@@ -359,6 +332,10 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value)
+                // Clear last attempted system when email changes to allow trying different system
+                if (lastAttemptedSystem) {
+                  setLastAttemptedSystem(null)
+                }
                 if (showError || Object.keys(fieldErrors).length > 0) {
                   setShowError(false)
                   setFieldErrors({})
@@ -378,6 +355,10 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => {
               setPassword(e.target.value)
+              // Clear last attempted system when password changes to allow trying different system
+              if (lastAttemptedSystem) {
+                setLastAttemptedSystem(null)
+              }
               if (showError || Object.keys(fieldErrors).length > 0) {
                 setShowError(false)
                 setFieldErrors({})
@@ -413,9 +394,9 @@ export default function LoginPage() {
                   Try again in: {formatTimeRemaining(lockoutSeconds)}
                 </p>
               )}
-              {!isLockedOut && attemptCount > 0 && (
+              {!isLockedOut && attemptCount > 3 && (
                 <p className={styles.attemptInfo}>
-                  Failed login attempts: {attemptCount}/5 {remainingAttempts > 0 && `(${remainingAttempts} remaining)`}
+                  Failed login attempts: {attemptCount}/7 {remainingAttempts > 0 && `(${remainingAttempts} remaining)`}
                 </p>
               )}
             </div>

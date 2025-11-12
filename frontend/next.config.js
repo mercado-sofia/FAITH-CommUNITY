@@ -70,7 +70,7 @@ const nextConfig = {
               "img-src 'self' data: https: blob:", // Allow images from various sources
               "font-src 'self' data: https:",
               "connect-src 'self' https: http: ws: wss:", // Allow API calls to backend
-              "frame-src 'self'",
+              "frame-src 'self' https://www.youtube.com https://player.vimeo.com https://youtube.com https://youtu.be",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",

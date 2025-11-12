@@ -29,6 +29,7 @@ export default function HeroSectionManagement({ showSuccessModal }) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [iframeError, setIframeError] = useState(false);
   
   // Upload loading states
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
@@ -60,6 +61,8 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           const data = await response.json();
           if (data.data) {
             setHeroData(data.data);
+            // Reset iframe error when new data is loaded
+            setIframeError(false);
           }
         }
       } catch (error) {
@@ -180,22 +183,38 @@ export default function HeroSectionManagement({ showSuccessModal }) {
 
   // Helper function to convert YouTube URLs to embed format
   const convertToEmbedUrl = (url) => {
+    if (!url) return '';
+    
+    // Handle YouTube watch URLs
     if (url.includes('youtube.com/watch')) {
       const videoId = url.match(/[?&]v=([^&]+)/);
       if (videoId) {
-        return `https://www.youtube.com/embed/${videoId[1]}`;
+        return `https://www.youtube.com/embed/${videoId[1]}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`;
       }
-    } else if (url.includes('youtu.be/')) {
+    } 
+    // Handle YouTube short URLs
+    else if (url.includes('youtu.be/')) {
       const videoId = url.match(/youtu\.be\/([^?&]+)/);
       if (videoId) {
-        return `https://www.youtube.com/embed/${videoId[1]}`;
+        return `https://www.youtube.com/embed/${videoId[1]}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`;
       }
-    } else if (url.includes('vimeo.com/')) {
+    } 
+    // Handle YouTube embed URLs (already in embed format)
+    else if (url.includes('youtube.com/embed/')) {
+      return url.includes('?') ? url : `${url}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`;
+    }
+    // Handle Vimeo URLs
+    else if (url.includes('vimeo.com/')) {
       const videoId = url.match(/vimeo\.com\/(\d+)/);
       if (videoId) {
         return `https://player.vimeo.com/video/${videoId[1]}`;
       }
     }
+    // Handle Vimeo player URLs (already in embed format)
+    else if (url.includes('player.vimeo.com/video/')) {
+      return url;
+    }
+    
     return url; // Return original if no conversion needed
   };
 
@@ -665,15 +684,50 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                 </div>
               ) : heroData.video_link ? (
                 <div className={styles.videoPreview}>
-                  <iframe
-                    src={convertToEmbedUrl(heroData.video_link)}
-                    style={{ width: '100%', height: '200px', border: 'none' }}
-                    title="Video Preview"
-                    allowFullScreen
-                  />
-                  <div className={styles.videoPlayOverlay} onClick={() => setShowVideoModal(true)}>
-                    <FaPlay size={24} />
-                  </div>
+                  {iframeError ? (
+                    <div className={styles.emptyState}>
+                      <span style={{ color: '#dc2626', fontSize: '12px', textAlign: 'center', padding: '1rem' }}>
+                        Video embed failed. The video may be private, have embedding disabled, or the URL is invalid.
+                        <br />
+                        <button 
+                          onClick={() => {
+                            setIframeError(false);
+                            window.location.reload();
+                          }}
+                          style={{ 
+                            marginTop: '0.5rem', 
+                            padding: '0.5rem 1rem', 
+                            background: '#3b82f6', 
+                            color: 'white', 
+                            border: 'none', 
+                            borderRadius: '4px', 
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                          }}
+                        >
+                          Retry
+                        </button>
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <iframe
+                        src={convertToEmbedUrl(heroData.video_link)}
+                        style={{ width: '100%', height: '200px', border: 'none' }}
+                        title="Video Preview"
+                        allowFullScreen
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        onError={() => setIframeError(true)}
+                        onLoad={() => {
+                          // Reset error state when iframe loads
+                          setIframeError(false);
+                        }}
+                      />
+                      <div className={styles.videoPlayOverlay} onClick={() => setShowVideoModal(true)}>
+                        <FaPlay size={24} />
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className={styles.emptyState}>
@@ -1048,13 +1102,58 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         >
           <button className={styles.closeButton} onClick={() => setShowVideoModal(false)}>✖</button>
           {heroData?.video_link ? (
-            <iframe
-              src={convertToEmbedUrl(heroData.video_link)}
-              className={styles.videoPlayer}
-              frameBorder="0"
-              allowFullScreen
-              title="Hero Video"
-            />
+            iframeError ? (
+              <div style={{ 
+                color: 'white', 
+                textAlign: 'center', 
+                padding: '2rem',
+                background: 'rgba(220, 38, 38, 0.1)',
+                borderRadius: '8px',
+                border: '1px solid rgba(220, 38, 38, 0.3)'
+              }}>
+                <p style={{ fontSize: '16px', marginBottom: '1rem' }}>
+                  Video embed failed to load
+                </p>
+                <p style={{ fontSize: '14px', color: '#cbd5e1', marginBottom: '1rem' }}>
+                  The video may be private, have embedding disabled, or the URL is invalid.
+                </p>
+                <p style={{ fontSize: '12px', color: '#94a3b8' }}>
+                  Video URL: {heroData.video_link}
+                </p>
+                <button 
+                  onClick={() => {
+                    setIframeError(false);
+                    setShowVideoModal(false);
+                  }}
+                  style={{ 
+                    marginTop: '1rem', 
+                    padding: '0.75rem 1.5rem', 
+                    background: '#3b82f6', 
+                    color: 'white', 
+                    border: 'none', 
+                    borderRadius: '6px', 
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <iframe
+                src={convertToEmbedUrl(heroData.video_link)}
+                className={styles.videoPlayer}
+                frameBorder="0"
+                allowFullScreen
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                title="Hero Video"
+                onError={() => setIframeError(true)}
+                onLoad={() => {
+                  // Reset error state when iframe loads
+                  setIframeError(false);
+                }}
+              />
+            )
           ) : (
             <video 
               controls 

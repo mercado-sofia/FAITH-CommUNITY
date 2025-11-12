@@ -475,4 +475,3 @@ Responses include rate limit information:
 ---
 
 **Back to [Main Documentation](../PROJECT_DOCUMENTATION.md)**
-

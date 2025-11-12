@@ -105,17 +105,19 @@ function Star({ position, treePosition = [0, 0, 0], starId, onStarClick, onHover
 }
 
 // Cloud component - loads cloud models (static)
-function Cloud({ url, initialPosition = [0, 0, 0], scale = 1 }) {
+function Cloud({ url, initialPosition = [0, 0, 0], scale = 1, isMobile = false }) {
   const { scene } = useGLTF(url)
   
   const clonedScene = useMemo(() => {
     const cloned = scene.clone()
     
-    // Scale the cloud
+    // Scale the cloud - increase scale on mobile
     const box = new THREE.Box3().setFromObject(cloned)
     const size = box.getSize(new THREE.Vector3())
     const maxDim = Math.max(size.x, size.y, size.z)
-    const cloudScale = (scale * 2.0) / maxDim
+    // Increase cloud scale on mobile by 1.5x
+    const mobileMultiplier = isMobile ? 1.5 : 1
+    const cloudScale = (scale * 2.0 * mobileMultiplier) / maxDim
     cloned.scale.set(cloudScale, cloudScale, cloudScale)
     
     // Center the cloud
@@ -127,13 +129,13 @@ function Cloud({ url, initialPosition = [0, 0, 0], scale = 1 }) {
     )
     
     return cloned
-  }, [scene, initialPosition, scale])
+  }, [scene, initialPosition, scale, isMobile])
   
   return <primitive object={clonedScene} />
 }
 
 // Component to load and display the GLB model
-function Model({ url, treePosition = [0, 0, 0], theme = 'morning' }) {
+function Model({ url, treePosition = [0, 0, 0], theme = 'morning', isMobile = false }) {
   const { scene } = useGLTF(url)
   
   // Clone the scene to avoid mutating the original
@@ -186,9 +188,12 @@ function Model({ url, treePosition = [0, 0, 0], theme = 'morning' }) {
     -center.z + treePosition[2]
   )
   
-  // Scale to make it bigger - increased scale significantly
+  // Scale to make it bigger - increased scale significantly, and even more on mobile
   const maxDim = Math.max(size.x, size.y, size.z)
-  const scale = 6.0 / maxDim // Increased from 4.5 to 6.0 for even bigger tree
+  // Increase tree scale on mobile by 1.4x
+  const baseScale = 6.0
+  const mobileMultiplier = isMobile ? 1.4 : 1
+  const scale = (baseScale * mobileMultiplier) / maxDim
   clonedScene.scale.set(scale, scale, scale)
   
   // Rotate the tree to face the camera directly (front-on, symmetrical view)
@@ -470,6 +475,21 @@ export default function TreeModel({
     setTreePosition(newPosition)
   }, [])
 
+  // Detect if device is mobile
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const isMobileDevice = window.innerWidth <= 768
+      setIsMobile(isMobileDevice)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
   // Calculate initial camera position - use saved position if available
   const savedPos = getSavedCameraPosition()
   const initialCameraPosition = savedPos
@@ -503,8 +523,8 @@ export default function TreeModel({
             <Environment preset={theme === 'morning' ? 'sunset' : 'city'} />
             
             {/* The 3D model - pass treePosition and theme to position it and apply color changes */}
-            {/* Key prop ensures component re-renders when model changes */}
-            <Model key={modelPath} url={modelPath} treePosition={treePosition} theme={theme} />
+            {/* Key prop ensures component re-renders when model or mobile state changes */}
+            <Model key={`${modelPath}-${isMobile}`} url={modelPath} treePosition={treePosition} theme={theme} isMobile={isMobile} />
             
             {/* Static clouds in the background - only in sunny mode */}
             {theme === 'morning' && (
@@ -514,18 +534,21 @@ export default function TreeModel({
                   url="/models/clouds.glb" 
                   initialPosition={[-3, 0.3, -4]} 
                   scale={1.2}
+                  isMobile={isMobile}
                 />
                 {/* Cloud 2: Front right */}
                 <Cloud 
                   url="/models/clouds.glb" 
                   initialPosition={[3, 0.1, -2]} 
                   scale={1.0}
+                  isMobile={isMobile}
                 />
                 {/* Cloud 3: Back center-right for balance */}
                 <Cloud 
                   url="/models/clouds 2.glb" 
                   initialPosition={[-0.8, 1, -4]} 
                   scale={0.9}
+                  isMobile={isMobile}
                 />
               </>
             )}

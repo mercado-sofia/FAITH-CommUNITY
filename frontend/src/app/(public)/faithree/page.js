@@ -25,6 +25,7 @@ function FAITHreePage() {
   const [featuredHighlights, setFeaturedHighlights] = useState([]);
   const [organizations, setOrganizations] = useState([]);
   const [isLoadingOrgs, setIsLoadingOrgs] = useState(true);
+  const [isInstructionOpen, setIsInstructionOpen] = useState(false); // Mobile instruction toggle
 
   // Generate rain drops data once with more variety
   const rainDrops = useMemo(() => {
@@ -333,10 +334,40 @@ function FAITHreePage() {
             )}
           </button>
         </div>
+
+        {/* Instructional Text - Right Side */}
+        <div className={`${styles.instructionContainer} ${styles[`instruction${theme.charAt(0).toUpperCase() + theme.slice(1)}`]} ${isInstructionOpen ? styles.instructionOpen : ''}`}>
+          {/* Mobile Toggle Button */}
+          <button
+            className={styles.instructionToggleButton}
+            onClick={() => setIsInstructionOpen(!isInstructionOpen)}
+            aria-label={isInstructionOpen ? 'Close instructions' : 'Open instructions'}
+            aria-expanded={isInstructionOpen}
+          >
+            <span className={styles.instructionToggleText}>Click me!</span>
+            <div className={`${styles.instructionToggleIcon} ${isInstructionOpen ? styles.instructionToggleIconOpen : ''}`}>
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          </button>
+          
+          {/* Instruction Content */}
+          <div className={`${styles.instructionContent} ${isInstructionOpen ? styles.instructionContentOpen : ''}`}>
+            <div className={styles.instructionIcon}>
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" fill="currentColor"/>
+              </svg>
+            </div>
+            <p className={styles.instructionText}>
+              <span className={styles.instructionHighlight}>Click the stars</span> on the tree to discover inspiring success stories from our programs
+            </p>
+          </div>
+        </div>
       </div>
       
       {/* Toggle Buttons Container */}
-      <div className={styles.toggleButtonsContainer}>
+      <div className={`${styles.toggleButtonsContainer} ${styles[`toggleButtons${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}>
         {/* Highlights Toggle Button */}
         <div className={styles.toggleButtonContainer}>
           <button 

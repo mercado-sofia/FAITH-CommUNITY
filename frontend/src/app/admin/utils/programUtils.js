@@ -75,8 +75,9 @@ export const filterAndSortPrograms = (programs, searchQuery, statusFilter, sortB
       (program.description && program.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (program.category && program.category.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    // Use database status field directly (respects manual_status_override)
-    const programStatus = program.status || 'Active';
+    // Use getProgramStatusByDates to respect manual_status_override
+    // This ensures consistency across all portals (Public, Admin, Superadmin)
+    const programStatus = getProgramStatusByDates(program);
     const matchesStatus = programStatus.toLowerCase() === statusFilter.toLowerCase();
 
     // Check if this program has pending collaboration requests

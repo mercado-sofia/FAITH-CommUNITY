@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FaBell, FaEnvelope, FaCheck } from 'react-icons/fa';
 import { FiTrash2 } from 'react-icons/fi';
-import { getApiUrl, getAuthHeaders } from '../../utils/profileApi';
+import { makeAuthenticatedRequest } from '../../utils/profileApi';
 import { getRelativeTime } from '@/utils/dateUtils';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import styles from './Notifications.module.css';
@@ -22,8 +22,8 @@ export default function Notifications() {
   const fetchNotifications = async () => {
     try {
       setError('');
-      const response = await fetch(getApiUrl('/api/users/notifications'), {
-        headers: getAuthHeaders()
+      const response = await makeAuthenticatedRequest('/api/users/notifications', {
+        method: 'GET'
       });
 
       if (response.ok) {
@@ -33,6 +33,7 @@ export default function Notifications() {
         setError('Failed to load notifications');
       }
     } catch (error) {
+      console.error('Error fetching notifications:', error);
       setError('Failed to load notifications');
     } finally {
       setIsLoading(false);
@@ -41,9 +42,8 @@ export default function Notifications() {
 
   const markAsRead = async (notificationId) => {
     try {
-      const response = await fetch(getApiUrl(`/api/users/notifications/${notificationId}/read`), {
-        method: 'PUT',
-        headers: getAuthHeaders()
+      const response = await makeAuthenticatedRequest(`/api/users/notifications/${notificationId}/read`, {
+        method: 'PUT'
       });
 
       if (response.ok) {
@@ -74,9 +74,8 @@ export default function Notifications() {
     if (!notificationToDelete) return;
 
     try {
-      const response = await fetch(getApiUrl(`/api/users/notifications/${notificationToDelete.id}`), {
-        method: 'DELETE',
-        headers: getAuthHeaders()
+      const response = await makeAuthenticatedRequest(`/api/users/notifications/${notificationToDelete.id}`, {
+        method: 'DELETE'
       });
 
       if (response.ok) {
@@ -150,7 +149,7 @@ export default function Notifications() {
                   <h4>{notification.title}</h4>
                   <p>{notification.message}</p>
                   <span className={styles.notificationDate}>
-                    {getRelativeTime(notification.created_at)}
+                    {getRelativeTime(notification.createdAt || notification.created_at)}
                   </span>
                 </div>
                 <div className={styles.notificationActions}>

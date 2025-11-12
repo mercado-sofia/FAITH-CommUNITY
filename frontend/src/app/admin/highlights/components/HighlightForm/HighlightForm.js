@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { FaSpinner, FaTimes, FaUpload, FaImage, FaVideo, FaFile, FaEye, FaExclamationTriangle, FaCheckCircle, FaChevronDown } from 'react-icons/fa';
+import { getProgramStatusByDates } from '@/utils/programStatusUtils';
 import { getAdminTokenOrRedirect, API_CONFIG } from '../../../utils';
 import styles from './HighlightForm.module.css';
 
@@ -108,13 +109,14 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
         const programsData = result.data || result.programs || [];
         
         // Filter to only show:
-        // 1. Completed programs (status === 'Completed')
+        // 1. Completed programs (using getProgramStatusByDates to respect manual_status_override)
         // 2. That have an approved Post Act Report (has_approved_post_act_report === true)
         // Upcoming and Active programs cannot have highlights
-        let eligiblePrograms = programsData.filter(program => 
-          program.status === 'Completed' && 
-          (program.has_approved_post_act_report === true || program.has_approved_post_act_report === 1)
-        );
+        let eligiblePrograms = programsData.filter(program => {
+          const programStatus = getProgramStatusByDates(program);
+          return programStatus === 'Completed' && 
+                 (program.has_approved_post_act_report === true || program.has_approved_post_act_report === 1);
+        });
         
         // In edit mode, if the highlight's associated program is not in the filtered list,
         // include it anyway so the dropdown can show the current selection

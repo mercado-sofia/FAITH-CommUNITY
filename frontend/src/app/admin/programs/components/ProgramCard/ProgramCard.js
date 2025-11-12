@@ -7,6 +7,7 @@ import { TbListDetails } from 'react-icons/tb';
 import { FiTrash2 } from 'react-icons/fi';
 import { getProgramImageUrl } from '@/utils/uploadPaths';
 import { formatProgramDates, formatProgramDatesForCard, formatDateShort } from '@/utils/dateUtils.js';
+import { getProgramStatusByDates } from '@/utils/programStatusUtils';
 import CollaborationBadge from '../CollaborationBadge/CollaborationBadge';
 import ProgramActions from './ProgramActions';
 import ProgramModals from './ProgramModals';
@@ -102,8 +103,9 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
       // For collaboration cards, use the collaboration status directly
       return normalizedData.status || 'pending';
     } else {
-      // For regular program cards, use the program_projects.status field directly
-      return normalizedData.status || 'Upcoming';
+      // For regular program cards, use getProgramStatusByDates to respect manual_status_override
+      // This ensures consistency across all portals (Public, Admin, Superadmin)
+      return getProgramStatusByDates(normalizedData);
     }
   };
 
@@ -161,7 +163,7 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
                   {normalizedData.user_role === 'creator' ? (
                     <>
                       {/* Only show volunteer acceptance functions for upcoming programs */}
-                      {(normalizedData.status || 'Upcoming') === 'Upcoming' && (
+                      {getDisplayStatus() === 'Upcoming' && (
                         normalizedData.accepts_volunteers ? (
                           <button
                             className={styles.dropdownItem}
@@ -252,7 +254,7 @@ const ProgramCard = ({ program, onEdit, onDelete, onViewDetails, onMarkCompleted
                   {normalizedData.user_role === 'creator' ? (
                     <>
                       {/* Only show volunteer acceptance functions for upcoming programs */}
-                      {(normalizedData.status || 'Upcoming') === 'Upcoming' && (
+                      {getDisplayStatus() === 'Upcoming' && (
                         normalizedData.accepts_volunteers ? (
                           <button
                             className={styles.dropdownItem}

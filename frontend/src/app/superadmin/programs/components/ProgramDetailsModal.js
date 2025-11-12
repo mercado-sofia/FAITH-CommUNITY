@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding, FaHistory, FaInfoCircle, FaUser, FaClock } from 'react-icons/fa'
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths'
+import { getProgramStatusByDates } from '@/utils/programStatusUtils'
 import { useGetProgramByIdQuery } from '@/rtk/superadmin/programsApi'
 import { formatProgramDates, formatDateShort, formatDateTime } from '@/utils/dateUtils.js'
 import styles from './styles/ProgramDetailsModal.module.css'
@@ -206,11 +207,16 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
                 <h3 className={styles.programTitle}>{programData.title}</h3>
                 
                 {/* Status Badge */}
-                {programData.status && (
-                  <div className={`${styles.statusBadge} ${styles[programData.status]}`}>
-                    {programData.status.charAt(0).toUpperCase() + programData.status.slice(1)}
-                  </div>
-                )}
+                {(() => {
+                  // Calculate program status using getProgramStatusByDates to respect manual_status_override
+                  // This ensures consistency across all portals (Public, Admin, Superadmin)
+                  const programStatus = getProgramStatusByDates(programData);
+                  return programStatus ? (
+                    <div className={`${styles.statusBadge} ${styles[programStatus]}`}>
+                      {programStatus.charAt(0).toUpperCase() + programStatus.slice(1)}
+                    </div>
+                  ) : null;
+                })()}
 
                 {/* Program Details */}
                 <div className={styles.detailsSection}>

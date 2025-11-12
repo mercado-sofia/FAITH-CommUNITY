@@ -1,6 +1,7 @@
 import React from 'react';
 import { LuSquareCheckBig } from 'react-icons/lu';
 import { MdOutlineRadioButtonChecked, MdOutlineCancel } from 'react-icons/md';
+import { getProgramStatusByDates } from '@/utils/programStatusUtils';
 import styles from './ProgramActions.module.css';
 
 const ProgramActions = ({
@@ -20,8 +21,9 @@ const ProgramActions = ({
 
   // Regular program action buttons - Only show for creators and not for collaboration cards
   if (normalizedData.user_role === 'creator' && !isCollaborationCard) {
-    // Use program_projects.status field directly
-    const displayStatus = normalizedData.status || 'Upcoming';
+    // Use getProgramStatusByDates to respect manual_status_override
+    // This ensures consistency across all portals (Public, Admin, Superadmin)
+    const displayStatus = getProgramStatusByDates(normalizedData);
     
     // If a report is pending, show notice and hide both buttons
     if (normalizedData.has_pending_post_act_report) {

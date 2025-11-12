@@ -61,18 +61,60 @@ export const submitVolunteer = async (req, res) => {
       return res.status(409).json({ error: 'You have already applied for this program' });
     }
 
-    // Verify the program exists, is approved, accepts volunteers, and organization is active
+    // Verify the program exists, is approved, and organization is active
+    // Get program with all necessary fields to calculate status properly
     const [programRows] = await db.execute(
-      `SELECT p.id, p.status 
+      `SELECT p.id, p.status, p.event_start_date, p.event_end_date, p.manual_status_override, p.is_approved, p.accepts_volunteers
        FROM programs_projects p
        LEFT JOIN organizations o ON p.organization_id = o.id
-       WHERE p.id = ? AND p.status = "Upcoming" AND p.is_approved = TRUE 
-       AND p.accepts_volunteers = TRUE AND o.status = 'ACTIVE'`,
+       WHERE p.id = ? AND p.is_approved = TRUE AND o.status = 'ACTIVE'`,
       [program_id]
     );
 
     if (programRows.length === 0) {
-      return res.status(404).json({ error: 'Program not found or not accepting volunteer applications' });
+      return res.status(404).json({ error: 'Program not found or not available' });
+    }
+
+    const program = programRows[0];
+    
+    // Calculate actual program status respecting manual_status_override
+    // This matches the frontend getProgramStatusByDates logic
+    // Programs stay in their current status until admin manually changes it
+    let actualStatus = program.status || 'Upcoming';
+    
+    if (program.manual_status_override === 1 || program.manual_status_override === true) {
+      // If admin has manually set the status, use it regardless of dates
+      actualStatus = program.status;
+    } else {
+      // If no manual override, use the database status (programs stay 'Upcoming' until admin changes it)
+      actualStatus = program.status || 'Upcoming';
+    }
+    
+    // Block applications for Completed programs (regardless of accepts_volunteers setting)
+    if (actualStatus === 'Completed') {
+      return res.status(404).json({ 
+        error: 'Program is not accepting volunteer applications. This program has been completed.' 
+      });
+    }
+    
+    // For Active programs, check if they accept volunteers
+    if (actualStatus === 'Active') {
+      const acceptsVolunteers = program.accepts_volunteers === 1 || program.accepts_volunteers === true;
+      if (!acceptsVolunteers) {
+        return res.status(404).json({ 
+          error: 'Program is not accepting volunteer applications at this time.' 
+        });
+      }
+    }
+    
+    // For Upcoming programs, check if they accept volunteers
+    if (actualStatus === 'Upcoming') {
+      const acceptsVolunteers = program.accepts_volunteers === 1 || program.accepts_volunteers === true;
+      if (!acceptsVolunteers) {
+        return res.status(404).json({ 
+          error: 'Program is not accepting volunteer applications at this time.' 
+        });
+      }
     }
 
     const sql = `
@@ -689,24 +731,61 @@ export const getApprovedUpcomingPrograms = async (req, res) => {
     // Get user_id from the authenticated user (from JWT token)
     const user_id = req.user?.id;
     
-    let query, params;
-    
-    // Show all upcoming approved programs regardless of user application history
-    // Only show programs from active organizations
-    query = `
+    // Get all approved programs (Upcoming and Active) that are not Completed
+    // Exclude Completed programs regardless of accepts_volunteers setting
+    // Only return programs that accept volunteers (admin can close volunteer applications)
+    // Programs stay 'Upcoming' until admin manually changes status
+    const query = `
       SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
-      WHERE p.status = 'Upcoming' AND p.is_approved = 1 AND o.status = 'ACTIVE'
+      WHERE p.is_approved = 1 
+      AND o.status = 'ACTIVE'
+      AND p.status != 'Completed'
+      AND (p.accepts_volunteers = 1 OR p.accepts_volunteers = TRUE)
       ORDER BY p.title ASC
     `;
-    params = [];
 
-    const [rows] = await db.execute(query, params);
+    const [rows] = await db.execute(query);
+
+    // Get multiple dates and additional images for each program
+    const programsWithDates = await Promise.all(rows.map(async (program) => {
+      let multipleDates = [];
+      
+      // If program has event_start_date and event_end_date, check if they're the same (single day)
+      if (program.event_start_date && program.event_end_date) {
+        if (program.event_start_date === program.event_end_date) {
+          // Single day program
+          multipleDates = [program.event_start_date];
+        }
+      } else {
+        // Check for multiple dates in program_event_dates table
+        const [dateRows] = await db.execute(
+          'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
+          [program.id]
+        );
+        multipleDates = dateRows.map(row => row.event_date);
+      }
+
+      // Get additional images for this program
+      const [imageRows] = await db.execute(
+        'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
+        [program.id]
+      );
+      const additionalImages = imageRows.map(row => row.image_data);
+
+      return {
+        ...program,
+        multiple_dates: multipleDates,
+        additional_images: additionalImages,
+        manual_status_override: program.manual_status_override === 1 || program.manual_status_override === true,
+        accepts_volunteers: program.accepts_volunteers !== undefined ? program.accepts_volunteers : true
+      };
+    }));
 
     res.json({
       success: true,
-      data: rows
+      data: programsWithDates
     });
   } catch (err) {
     res.status(500).json({ 

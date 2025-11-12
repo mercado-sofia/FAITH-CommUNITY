@@ -2,6 +2,7 @@
 import db from "../../database.js";
 import { sendToSubscribers } from './subscribersController.js';
 import { getOrganizationLogoUrl, getProgramImageUrl } from "../../utils/imageUrlUtils.js";
+import { calculateInitialStatusFromDates } from "../../utils/programStatusUtils.js";
 
 // ---------------- Helper: escape HTML ----------------
 function escapeHtml(str = "") {
@@ -438,7 +439,9 @@ export const getApprovedPrograms = async (req, res) => {
         created_at: program.created_at,
         slug: program.slug,
         is_collaborative: program.is_collaborative,
-        collaborators: program.collaborators
+        collaborators: program.collaborators,
+        manual_status_override: program.manual_status_override === 1 || program.manual_status_override === true,
+        accepts_volunteers: program.accepts_volunteers !== undefined ? program.accepts_volunteers : true
       };
     });
 
@@ -568,7 +571,9 @@ export const getApprovedProgramsByOrg = async (req, res) => {
         created_at: program.created_at,
         slug: program.slug,
         is_collaborative: program.is_collaborative,
-        collaborators: program.collaborators
+        collaborators: program.collaborators,
+        manual_status_override: program.manual_status_override === 1 || program.manual_status_override === true,
+        accepts_volunteers: program.accepts_volunteers !== undefined ? program.accepts_volunteers : true
       };
     });
 
@@ -716,14 +721,15 @@ export const updateProgram = async (req, res) => {
     // Program found
     const currentStatus = existingProgram[0].status;
     const currentManualOverride = existingProgram[0].manual_status_override === 1 || existingProgram[0].manual_status_override === true;
-    const newStatus = status || 'active';
+    const newStatus = status || currentStatus; // Use current status if not provided
     
-    // Preserve manual_status_override if:
-    // 1. Status is "Completed" (likely from Post Act Report approval) - don't reset it
-    // 2. Status hasn't changed and was previously manually overridden
-    // Only reset to FALSE if admin is explicitly changing the status away from Completed
-    const shouldPreserveOverride = (currentStatus === 'Completed' && currentManualOverride && newStatus === 'Completed') ||
-                                   (currentStatus === newStatus && currentManualOverride);
+    // Determine if we should set manual_status_override to TRUE:
+    // 1. If admin is explicitly providing a status that differs from current status, set manual override
+    // 2. If status is already manually overridden and admin is keeping the same status, preserve it
+    // 3. If status is "Completed" (likely from Post Act Report approval), preserve it
+    // Only set to FALSE if this is a new program creation (which should not happen in update)
+    const shouldSetManualOverride = status !== undefined && status !== null && 
+                                    (currentStatus !== newStatus || currentManualOverride);
     
     let imagePath = existingProgram[0].image; // Keep existing image by default
 
@@ -859,9 +865,9 @@ export const updateProgram = async (req, res) => {
     }
     
     // Updating program in database
-    // Preserve manual_status_override for Completed programs (from Post Act Report approval)
-    // Only reset if admin is explicitly changing status away from current status
-    const manualOverrideValue = shouldPreserveOverride ? 1 : 0;
+    // Set manual_status_override to TRUE when admin manually changes status
+    // This ensures the status is respected regardless of dates after admin changes it
+    const manualOverrideValue = shouldSetManualOverride ? 1 : (currentManualOverride ? 1 : 0);
     
     let updateQuery, updateValues;
     if (hasEditedByName && hasEditedByRole) {
@@ -1531,6 +1537,7 @@ export const getProgramBySlug = async (req, res) => {
         pp.slug,
         pp.is_collaborative,
         pp.accepts_volunteers,
+        pp.manual_status_override,
         o.orgName as organization_name,
         o.org as organization_acronym,
         o.logo as orgLogo,
@@ -1614,7 +1621,9 @@ export const getProgramBySlug = async (req, res) => {
       orgLogo: logoUrl,
       multiple_dates: multipleDates,
       additional_images: additionalImages,
-      collaborators: collaborators
+      collaborators: collaborators,
+      manual_status_override: program.manual_status_override === 1 || program.manual_status_override === true,
+      accepts_volunteers: program.accepts_volunteers !== undefined ? program.accepts_volunteers : true
     };
     
     res.json({
@@ -1784,6 +1793,10 @@ export const addProgramProject = async (req, res) => {
       counter++;
     }
 
+    // Calculate initial status from event dates (only during creation)
+    // After creation, admin can manually change status which will override dates
+    const initialStatus = calculateInitialStatusFromDates(event_start_date, event_end_date, null);
+
     const [result] = await db.execute(
       `INSERT INTO programs_projects (organization_id, title, description, category, event_start_date, event_end_date, image, status, slug, is_approved, is_collaborative, manual_status_override, submitted_by_name, submitted_by_role)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -1795,11 +1808,11 @@ export const addProgramProject = async (req, res) => {
         event_start_date ?? null,
         event_end_date ?? null,
         image ?? null, 
-        'Upcoming', // Default status for new programs 
+        initialStatus, // Calculated from event dates during creation
         finalSlug, 
         false, // SECURITY FIX: Always require superadmin approval - never auto-approve
         collaborators && collaborators.length > 0,
-        false, // New programs start with automatic status (no manual override)
+        false, // New programs start with automatic status (no manual override) - admin can change later
         null, // submitted_by_name not available for direct program creation (only via submissions)
         null // submitted_by_role not available for direct program creation (only via submissions)
       ]
@@ -1951,12 +1964,28 @@ export const updateProgramProject = async (req, res) => {
       slugValue = finalSlug;
     }
 
+    // Get current program to check existing manual_status_override
+    const [currentProgram] = await db.execute(
+      'SELECT status, manual_status_override FROM programs_projects WHERE id = ?',
+      [id]
+    );
+    
+    const currentStatus = currentProgram[0]?.status;
+    const currentManualOverride = currentProgram[0]?.manual_status_override === 1 || currentProgram[0]?.manual_status_override === true;
+    const newStatus = status || currentStatus;
+    
+    // Set manual_status_override to TRUE if:
+    // 1. Status is being changed
+    // 2. Status is already manually overridden (preserve it)
+    const shouldSetManualOverride = (status !== undefined && status !== null && currentStatus !== newStatus) || currentManualOverride;
+    const manualOverrideValue = shouldSetManualOverride ? 1 : 0;
+    
     await db.execute(
       `UPDATE programs_projects
-       SET title = ?, description = ?, image = COALESCE(?, image), status = ?, manual_status_override = FALSE${slugUpdate}
+       SET title = ?, description = ?, image = COALESCE(?, image), status = ?, manual_status_override = ?${slugUpdate}
        WHERE id = ?`,
-      title ? [title, description ?? null, image, status ?? 'pending', slugValue, id] 
-            : [title, description ?? null, image, status ?? 'pending', id]
+      title ? [title, description ?? null, image, newStatus, manualOverrideValue, slugValue, id] 
+            : [title, description ?? null, image, newStatus, manualOverrideValue, id]
     );
 
     // Get the current slug for the URL
@@ -2027,6 +2056,8 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
         pp.updated_at,
         pp.organization_id,
         pp.is_collaborative,
+        pp.manual_status_override,
+        pp.accepts_volunteers,
         pp.submitted_by_name,
         pp.submitted_by_role,
         pp.edited_by_name,
@@ -2204,7 +2235,9 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
             additional_images: additionalImages,
             collaborators: collaborators,
             // Override is_collaborative to ensure it's set correctly (use the same value we checked)
-            is_collaborative: isCollaborativeValue
+            is_collaborative: isCollaborativeValue,
+            manual_status_override: program.manual_status_override === 1 || program.manual_status_override === true,
+            accepts_volunteers: program.accepts_volunteers !== undefined ? program.accepts_volunteers : true
           };
         } catch (programError) {
           console.error(`Error processing program ${program.id}:`, programError);

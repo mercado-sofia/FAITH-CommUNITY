@@ -4,6 +4,7 @@ import React from 'react'
 import Image from 'next/image'
 import { getProgramImageUrl } from '@/utils/uploadPaths'
 import { formatProgramDatesForCard } from '@/utils/dateUtils.js'
+import { getProgramStatusByDates } from '@/utils/programStatusUtils'
 import StarButton from './StarButton'
 import CollaborationBadge from '@/app/admin/programs/components/CollaborationBadge/CollaborationBadge'
 import styles from './styles/ProgramCard.module.css'
@@ -16,6 +17,10 @@ const ProgramCard = ({
 }) => {
   // Use the new upload path utility
   const imageSource = getProgramImageUrl(program.image)
+  
+  // Calculate program status using getProgramStatusByDates to respect manual_status_override
+  // This ensures consistency across all portals (Public, Admin, Superadmin)
+  const programStatus = getProgramStatusByDates(program)
 
   // Get organization data for badge
   const orgData = organizationData || {
@@ -137,8 +142,8 @@ const ProgramCard = ({
                 />
               );
             })()}
-            <span className={`${styles.statusBadge} ${styles[program.status?.toLowerCase()]}`}>
-              {program.status}
+            <span className={`${styles.statusBadge} ${styles[programStatus?.toLowerCase()]}`}>
+              {programStatus}
             </span>
           </div>
           <span className={styles.cardDate}>

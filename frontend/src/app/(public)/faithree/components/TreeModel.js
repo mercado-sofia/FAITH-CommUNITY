@@ -104,6 +104,34 @@ function Star({ position, treePosition = [0, 0, 0], starId, onStarClick, onHover
   )
 }
 
+// Cloud component - loads cloud models (static)
+function Cloud({ url, initialPosition = [0, 0, 0], scale = 1 }) {
+  const { scene } = useGLTF(url)
+  
+  const clonedScene = useMemo(() => {
+    const cloned = scene.clone()
+    
+    // Scale the cloud
+    const box = new THREE.Box3().setFromObject(cloned)
+    const size = box.getSize(new THREE.Vector3())
+    const maxDim = Math.max(size.x, size.y, size.z)
+    const cloudScale = (scale * 2.0) / maxDim
+    cloned.scale.set(cloudScale, cloudScale, cloudScale)
+    
+    // Center the cloud
+    const center = box.getCenter(new THREE.Vector3())
+    cloned.position.set(
+      -center.x * cloudScale + initialPosition[0],
+      -center.y * cloudScale + initialPosition[1],
+      -center.z * cloudScale + initialPosition[2]
+    )
+    
+    return cloned
+  }, [scene, initialPosition, scale])
+  
+  return <primitive object={clonedScene} />
+}
+
 // Component to load and display the GLB model
 function Model({ url, treePosition = [0, 0, 0], theme = 'morning' }) {
   const { scene } = useGLTF(url)
@@ -719,6 +747,10 @@ export default function TreeModel({
   useEffect(() => {
     useGLTF.preload('/models/tree-sunny.glb')
     useGLTF.preload('/models/tree-cloudy.glb')
+    // Preload cloud models
+    useGLTF.preload('/models/clouds.glb')
+    useGLTF.preload('/models/clouds 2.glb')
+    useGLTF.preload('/models/cloud 3.glb')
   }, [])
 
   // Sync treePosition state with prop when it changes
@@ -772,6 +804,30 @@ export default function TreeModel({
             {/* The 3D model - pass treePosition and theme to position it and apply color changes */}
             {/* Key prop ensures component re-renders when model changes */}
             <Model key={modelPath} url={modelPath} treePosition={treePosition} theme={theme} />
+            
+            {/* Static clouds in the background - only in sunny mode */}
+            {theme === 'morning' && (
+              <>
+                {/* Cloud 1: Back left */}
+                <Cloud 
+                  url="/models/clouds.glb" 
+                  initialPosition={[-3, 1, -4]} 
+                  scale={1.2}
+                />
+                {/* Cloud 2: Front right */}
+                <Cloud 
+                  url="/models/clouds.glb" 
+                  initialPosition={[3, 0.8, -2]} 
+                  scale={1.0}
+                />
+                {/* Cloud 3: Back center-right for balance */}
+                <Cloud 
+                  url="/models/clouds 2.glb" 
+                  initialPosition={[-0.8, 1.5, -3]} 
+                  scale={0.9}
+                />
+              </>
+            )}
             
             {/* Stars placed on the front of the tree leaves - positioned close to leaves like fruit */}
             {/* Only render stars 1 to featuredHighlights.length (based on superadmin's featured highlights) */}

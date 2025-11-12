@@ -8,6 +8,9 @@
   url("/samples/sample4.jpg") center/cover no-repeat;
   color: white;
   text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .orgHeading {
@@ -31,11 +34,16 @@
   justify-content: center;
   gap: 1rem;
   position: relative;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .orgSliderWrapper {
   overflow: hidden;
   display: flex;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .orgSliderTrack {
@@ -151,7 +159,8 @@
 /* Mobile responsive styles */
 @media (max-width: 768px) {
   .orgSection {
-    padding: 1.5rem 2rem 2rem;
+    padding: 1.5rem 1rem 2rem;
+    overflow-x: hidden;
   }
   
   .orgHeading {
@@ -163,8 +172,14 @@
     font-size: 2.2rem;
   }
   
+  .orgCarouselWrapper {
+    gap: 0.5rem;
+    padding: 0;
+  }
+  
   .orgItem {
     flex: 0 0 120px;
+    min-width: 120px;
   }
   
   .orgItem img {
@@ -180,12 +195,14 @@
   .orgNavBtn {
     width: 28px;
     height: 28px;
+    flex-shrink: 0;
   }
 }
 
 @media (max-width: 480px) {
   .orgSection {
-    padding: 1.2rem 2rem 1.8rem;
+    padding: 1.2rem 1rem 1.8rem;
+    overflow-x: hidden;
   }
   
   .orgHeading {
@@ -197,8 +214,14 @@
     font-size: 1.9rem;
   }
   
+  .orgCarouselWrapper {
+    gap: 0.5rem;
+    padding: 0;
+  }
+  
   .orgItem {
     flex: 0 0 100px;
+    min-width: 100px;
   }
   
   .orgItem img {
@@ -214,5 +237,6 @@
   .orgNavBtn {
     width: 24px;
     height: 24px;
+    flex-shrink: 0;
   }
 }

@@ -251,16 +251,3 @@
   box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
 }
 
-.spinner {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-

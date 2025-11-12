@@ -497,105 +497,128 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
   }, [formData, validateForm, onSubmit]);
 
   return (
-    <div className={styles.container}>
-      {/* Header */}
-      <div className={styles.header}>
-        <h1 className={styles.title}>
-          {isEditMode ? 'Edit Highlight' : 'Add New Highlight'}
-        </h1>
-      </div>
-
+    <>
       {/* Form */}
       <form onSubmit={handleSubmit} className={styles.form}>
-        <div className={styles.formGrid}>
-          {/* Left Column - Form Fields */}
-          <div className={styles.formColumn}>
+        <div className={styles.formLayout}>
+          {/* Left Container - Form Fields */}
+          <div className={styles.leftContainer}>
             {/* Program Selection */}
-            <div className={styles.fieldGroup}>
-              <label className={styles.label}>
-                Associated Program
-              </label>
-              {isLoadingPrograms ? (
-                <div className={styles.loadingPrograms}>
-                  <FaSpinner className={styles.spinner} />
-                  <span>Loading programs...</span>
-                </div>
-              ) : programs.length === 0 ? (
-                <div className={styles.noProgramsMessage}>
-                  <p className={styles.noProgramsText}>
-                    No eligible programs found. Only <strong>Completed</strong> programs with an <strong>approved Post Act Report</strong> can have highlights.
-                  </p>
-                  <div className={styles.errorText}>
-                    You must have at least one Completed program with an approved Post Act Report to create a highlight.
+            <div className={styles.container}>
+              <div className={styles.fieldGroup}>
+                <label className={styles.label}>
+                  Associated Program
+                </label>
+                {isLoadingPrograms ? (
+                  <div className={styles.loadingPrograms}>
+                    <FaSpinner className={styles.spinner} />
+                    <span>Loading programs...</span>
                   </div>
-                </div>
-              ) : (
-                <>
-                  <CustomDropdown
-                    options={programs.map(program => ({
-                      value: program.id,
-                      label: program.title || `Program #${program.id}`
-                    }))}
-                    value={formData.program_id ? Number(formData.program_id) : ''}
-                    onChange={(value) => handleInputChange('program_id', value ? parseInt(value, 10) : null)}
-                    disabled={isSubmitting}
-                    placeholder="Select a program"
-                    error={errors.program_id}
-                  />
-                  <p className={styles.helperText}>
-                    Only Completed programs with approved Post Act Reports are eligible for highlights.
-                  </p>
-                </>
-              )}
-              {errors.program_id && (
-                <span className={styles.errorText}>{errors.program_id}</span>
-              )}
+                ) : programs.length === 0 ? (
+                  <div className={styles.noProgramsMessage}>
+                    <p className={styles.noProgramsText}>
+                      No eligible programs found. Only <strong>Completed</strong> programs with an <strong>approved Post Act Report</strong> can have highlights.
+                    </p>
+                    <div className={styles.errorText}>
+                      You must have at least one Completed program with an approved Post Act Report to create a highlight.
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <CustomDropdown
+                      options={programs.map(program => ({
+                        value: program.id,
+                        label: program.title || `Program #${program.id}`
+                      }))}
+                      value={formData.program_id ? Number(formData.program_id) : ''}
+                      onChange={(value) => handleInputChange('program_id', value ? parseInt(value, 10) : null)}
+                      disabled={isSubmitting}
+                      placeholder="Select a program"
+                      error={errors.program_id}
+                    />
+                    <p className={styles.helperText}>
+                      Only Completed programs with approved Post Act Reports are eligible for highlights.
+                    </p>
+                  </>
+                )}
+                {errors.program_id && (
+                  <span className={styles.errorText}>{errors.program_id}</span>
+                )}
+              </div>
             </div>
 
             {/* Title */}
-            <div className={styles.fieldGroup}>
-              <label className={styles.label}>
-                Title
-              </label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => handleInputChange('title', e.target.value)}
-                className={`${styles.input} ${errors.title ? styles.inputError : ''}`}
-                placeholder="Enter highlight title"
-                disabled={isSubmitting}
-              />
-              {errors.title && (
-                <span className={styles.errorText}>{errors.title}</span>
-              )}
+            <div className={styles.container}>
+              <div className={styles.fieldGroup}>
+                <label className={styles.label}>
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  className={`${styles.input} ${errors.title ? styles.inputError : ''}`}
+                  placeholder="Enter highlight title"
+                  disabled={isSubmitting}
+                />
+                {errors.title && (
+                  <span className={styles.errorText}>{errors.title}</span>
+                )}
+              </div>
             </div>
 
             {/* Description */}
-            <div className={styles.fieldGroup}>
-              <label className={styles.label}>
-                Description
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                className={`${styles.textarea} ${errors.description ? styles.inputError : ''}`}
-                placeholder="Enter detailed description of the success story"
-                rows={6}
+            <div className={styles.container}>
+              <div className={styles.fieldGroup}>
+                <label className={styles.label}>
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  className={`${styles.textarea} ${errors.description ? styles.inputError : ''}`}
+                  placeholder="Enter detailed description of the success story"
+                  rows={6}
+                  disabled={isSubmitting}
+                />
+                {errors.description && (
+                  <span className={styles.errorText}>{errors.description}</span>
+                )}
+              </div>
+            </div>
+
+            {/* Form Actions - Below left container, aligned right */}
+            <div className={styles.formActions}>
+              <button
+                type="button"
+                className={styles.cancelButton}
+                onClick={onCancel}
                 disabled={isSubmitting}
-              />
-              {errors.description && (
-                <span className={styles.errorText}>{errors.description}</span>
-              )}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className={styles.submitButton}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <FaSpinner className={styles.spinner} />
+                    {isEditMode ? 'Updating...' : 'Creating...'}
+                  </>
+                ) : (
+                  isEditMode ? 'Update Highlight' : 'Create Highlight'
+                )}
+              </button>
             </div>
           </div>
 
-          {/* Right Column - Media Upload */}
-          <div className={styles.mediaColumn}>
-            {/* Image Upload Area */}
-            <div className={styles.fieldGroup}>
-              <label className={styles.label}>
-                Image Upload
-              </label>
+          {/* Right Panel - Media Upload */}
+          <div className={styles.rightPanel}>
+            {/* Image Upload Container */}
+            <div className={styles.container}>
+              <h3 className={styles.containerTitle}>Image Upload</h3>
               <div
                 className={`${styles.uploadArea} ${dragActive.images ? styles.dragActive : ''}`}
                 onDragEnter={handleImageDragEnter}
@@ -632,11 +655,9 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
               </div>
             </div>
 
-            {/* Video Upload Area */}
-            <div className={styles.fieldGroup}>
-              <label className={styles.label}>
-                Video Upload
-              </label>
+            {/* Video Upload Container */}
+            <div className={styles.container}>
+              <h3 className={styles.containerTitle}>Video Upload</h3>
               <div
                 className={`${styles.uploadArea} ${dragActive.videos ? styles.dragActive : ''}`}
                 onDragEnter={handleVideoDragEnter}
@@ -675,113 +696,93 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
 
             {/* Uploading Files */}
             {uploadingFiles.length > 0 && (
-              <div className={styles.uploadingSection}>
-                <div className={styles.uploadingHeader}>
-                  <FaExclamationTriangle className={styles.cautionIcon} />
-                  <h4 className={styles.uploadingTitle}>Uploading files...</h4>
-                </div>
-                <p className={styles.uploadingCaution}>
-                  Please wait while your files are being uploaded. Do not close this page or navigate away.
-                </p>
-                {uploadingFiles.map((fileName, index) => (
-                  <div key={index} className={styles.uploadingItem}>
-                    <FaSpinner className={styles.uploadingSpinner} />
-                    <span className={styles.uploadingName}>{fileName}</span>
+              <div className={styles.container}>
+                <div className={styles.uploadingSection}>
+                  <div className={styles.uploadingHeader}>
+                    <FaExclamationTriangle className={styles.cautionIcon} />
+                    <h4 className={styles.uploadingTitle}>Uploading files...</h4>
                   </div>
-                ))}
-              </div>
-            )}
-
-            {/* Upload Complete Message */}
-            {uploadComplete && uploadingFiles.length === 0 && (
-              <div className={styles.uploadCompleteSection}>
-                <div className={styles.uploadCompleteHeader}>
-                  <FaCheckCircle className={styles.successIcon} />
-                  <h4 className={styles.uploadCompleteTitle}>Upload complete!</h4>
-                </div>
-                <p className={styles.uploadCompleteMessage}>
-                  Your files have been successfully uploaded and are ready to use.
-                </p>
-              </div>
-            )}
-
-            {/* Media Preview */}
-            {formData.media.length > 0 && (
-              <div className={styles.mediaPreview}>
-                <h4 className={styles.previewTitle}>
-                  Uploaded Files ({formData.media.length})
-                </h4>
-                <div className={styles.mediaList}>
-                  {formData.media.map((file, index) => (
-                    <div key={index} className={styles.mediaItem}>
-                      <div className={styles.mediaIcon}>
-                        {getFileIcon(file)}
-                      </div>
-                      <div className={styles.mediaInfo}>
-                        <div className={styles.mediaName}>
-                          {file.filename || file.originalName || `File ${index + 1}`}
-                        </div>
-                        <div className={styles.mediaDetails}>
-                          {file.mimetype && (
-                            <span className={styles.mediaType}>{file.mimetype}</span>
-                          )}
-                          {file.size && (
-                            <span className={styles.mediaSize}>{formatFileSize(file.size)}</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className={styles.mediaActions}>
-                        <button
-                          type="button"
-                          className={styles.previewButton}
-                          onClick={() => previewMedia(file)}
-                          disabled={isSubmitting}
-                          title="Preview file"
-                        >
-                          <FaEye />
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.removeButton}
-                          onClick={() => removeMedia(index)}
-                          disabled={isSubmitting}
-                          title="Remove file"
-                        >
-                          <FaTimes />
-                        </button>
-                      </div>
+                  <p className={styles.uploadingCaution}>
+                    Please wait while your files are being uploaded. Do not close this page or navigate away.
+                  </p>
+                  {uploadingFiles.map((fileName, index) => (
+                    <div key={index} className={styles.uploadingItem}>
+                      <FaSpinner className={styles.uploadingSpinner} />
+                      <span className={styles.uploadingName}>{fileName}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-          </div>
-        </div>
 
-        {/* Form Actions */}
-        <div className={styles.formActions}>
-          <button
-            type="button"
-            className={styles.cancelButton}
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className={styles.submitButton}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <FaSpinner className={styles.spinner} />
-                {isEditMode ? 'Updating...' : 'Creating...'}
-              </>
-            ) : (
-              isEditMode ? 'Update Highlight' : 'Create Highlight'
+            {/* Upload Complete Message */}
+            {uploadComplete && uploadingFiles.length === 0 && (
+              <div className={styles.container}>
+                <div className={styles.uploadCompleteSection}>
+                  <div className={styles.uploadCompleteHeader}>
+                    <FaCheckCircle className={styles.successIcon} />
+                    <h4 className={styles.uploadCompleteTitle}>Upload complete!</h4>
+                  </div>
+                  <p className={styles.uploadCompleteMessage}>
+                    Your files have been successfully uploaded and are ready to use.
+                  </p>
+                </div>
+              </div>
             )}
-          </button>
+
+            {/* Media Preview */}
+            {formData.media.length > 0 && (
+              <div className={styles.container}>
+                <h3 className={styles.containerTitle}>
+                  Uploaded Files ({formData.media.length})
+                </h3>
+                <div className={styles.mediaPreview}>
+                  <div className={styles.mediaList}>
+                    {formData.media.map((file, index) => (
+                      <div key={index} className={styles.mediaItem}>
+                        <div className={styles.mediaIcon}>
+                          {getFileIcon(file)}
+                        </div>
+                        <div className={styles.mediaInfo}>
+                          <div className={styles.mediaName}>
+                            {file.filename || file.originalName || `File ${index + 1}`}
+                          </div>
+                          <div className={styles.mediaDetails}>
+                            {file.mimetype && (
+                              <span className={styles.mediaType}>{file.mimetype}</span>
+                            )}
+                            {file.size && (
+                              <span className={styles.mediaSize}>{formatFileSize(file.size)}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className={styles.mediaActions}>
+                          <button
+                            type="button"
+                            className={styles.previewButton}
+                            onClick={() => previewMedia(file)}
+                            disabled={isSubmitting}
+                            title="Preview file"
+                          >
+                            <FaEye />
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.removeButton}
+                            onClick={() => removeMedia(index)}
+                            disabled={isSubmitting}
+                            title="Remove file"
+                          >
+                            <FaTimes />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </form>
 
@@ -839,6 +840,6 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

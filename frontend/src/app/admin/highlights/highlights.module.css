@@ -104,3 +104,16 @@
 .emptyActionButton:hover {
   background: #142220;
 }
+
+/* Create/Edit Form Header */
+.createPostHeader {
+  margin-bottom: 2rem;
+}
+
+.createPostHeader h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: var(--font-poppins), sans-serif;
+  color: #06100f;
+  margin: 0;
+}

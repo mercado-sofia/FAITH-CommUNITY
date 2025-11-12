@@ -26,7 +26,7 @@
 .starModalContainer {
   position: relative;
   width: 100%;
-  max-width: 650px;
+  max-width: 750px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -199,6 +199,10 @@
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  /* Performance optimizations */
+  will-change: transform;
+  transform: translateZ(0); /* Force GPU acceleration */
+  contain: layout style paint; /* Isolate rendering */
 }
 
 /* Animated gradient background */
@@ -211,6 +215,28 @@
   }
   100% {
     background-position: 0% 50%;
+  }
+}
+
+/* Pause animations during scrolling for better performance */
+.starModalContent.scrolling {
+  animation-play-state: paused !important;
+}
+
+.starModalContent.scrolling::before,
+.starModalContent.scrolling::after {
+  animation-play-state: paused !important;
+}
+
+/* Reduce animation complexity when scrolling for better performance */
+@media (prefers-reduced-motion: reduce) {
+  .starModalContent {
+    animation: none;
+  }
+  
+  .starModalContent::before,
+  .starModalContent::after {
+    animation: none;
   }
 }
 
@@ -265,6 +291,9 @@
   pointer-events: none;
   z-index: 1;
   opacity: 0.6;
+  /* Performance optimizations */
+  will-change: transform, background-position;
+  transform: translateZ(0); /* Force GPU acceleration */
 }
 
 @keyframes glitterMove {
@@ -304,12 +333,15 @@
     rgba(16, 185, 129, 0.1) 50%,
     transparent 70%
   );
-  animation: sparkleRotate 4s linear infinite;
+  animation: sparkleRotateSimple 4s linear infinite;
   pointer-events: none;
   z-index: 1;
+  /* Performance optimizations */
+  will-change: transform;
+  transform: translateZ(0); /* Force GPU acceleration */
 }
 
-@keyframes sparkleRotate {
+@keyframes sparkleRotateSimple {
   0% {
     transform: rotate(0deg);
   }
@@ -332,6 +364,11 @@
   /* Firefox Scrollbar */
   scrollbar-width: thin;
   scrollbar-color: #9bceb5 rgba(240, 253, 244, 0.3);
+  /* Performance optimizations for smooth scrolling */
+  will-change: scroll-position;
+  transform: translateZ(0); /* Force GPU acceleration */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  contain: layout style paint; /* Isolate rendering */
 }
 
 /* Custom Scrollbar - Green Glowing (Webkit browsers) */
@@ -720,7 +757,7 @@
 /* Responsive Design - Medium screens */
 @media (max-width: 1024px) {
   .starModalContainer {
-    max-width: 600px;
+    max-width: 700px;
   }
   
   .modalInner {

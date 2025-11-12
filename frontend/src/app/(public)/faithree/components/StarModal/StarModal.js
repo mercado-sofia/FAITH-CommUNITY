@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import styles from './StarModal.module.css'
@@ -9,18 +9,59 @@ import styles from './StarModal.module.css'
 export default function StarModal({ isOpen, onClose, starId, featuredHighlights = [] }) {
   const [isVisible, setIsVisible] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const modalInnerRef = useRef(null)
+  const modalContentRef = useRef(null)
+  const scrollTimeoutRef = useRef(null)
+  const isScrollingRef = useRef(false)
+
+  // Optimize scrolling performance by pausing animations during scroll
+  const handleScroll = useCallback(() => {
+    if (!modalContentRef.current) return
+    
+    // Mark as scrolling
+    isScrollingRef.current = true
+    
+    // Pause animations during scroll for better performance
+    modalContentRef.current.classList.add(styles.scrolling)
+    
+    // Clear existing timeout
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current)
+    }
+    
+    // Resume animations after scrolling stops
+    scrollTimeoutRef.current = setTimeout(() => {
+      isScrollingRef.current = false
+      if (modalContentRef.current) {
+        modalContentRef.current.classList.remove(styles.scrolling)
+      }
+    }, 150) // Resume after 150ms of no scrolling
+  }, [])
 
   useEffect(() => {
+    // Capture ref value at the start of the effect to use in cleanup
+    const modalInner = modalInnerRef.current
+    
     if (isOpen) {
       setIsVisible(true)
       setCurrentImageIndex(0) // Reset to first image when modal opens
       if (typeof document !== 'undefined' && document.body) {
         document.body.style.overflow = 'hidden'
       }
+      
+      // Add scroll listener for performance optimization
+      if (modalInner) {
+        modalInner.addEventListener('scroll', handleScroll, { passive: true })
+      }
     } else {
       setIsVisible(false)
       if (typeof document !== 'undefined' && document.body) {
         document.body.style.overflow = 'auto'
+      }
+      
+      // Clean up scroll listener
+      if (modalInner) {
+        modalInner.removeEventListener('scroll', handleScroll)
       }
     }
 
@@ -28,8 +69,17 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
       if (typeof document !== 'undefined' && document.body) {
         document.body.style.overflow = 'auto'
       }
+      
+      // Clean up scroll listener using captured value
+      if (modalInner) {
+        modalInner.removeEventListener('scroll', handleScroll)
+      }
+      // Clean up timeout - use ref directly since it may be set during effect execution
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
     }
-  }, [isOpen])
+  }, [isOpen, handleScroll])
 
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
@@ -114,6 +164,7 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
 
         {/* Modal Content Box */}
         <div 
+          ref={modalContentRef}
           className={styles.starModalContent}
           onClick={(e) => e.stopPropagation()}
         >
@@ -125,7 +176,10 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
             ×
           </button>
           
-          <div className={styles.modalInner}>
+          <div 
+            ref={modalInnerRef}
+            className={styles.modalInner}
+          >
             <h2
               id="star-modal-title"
               className={styles.modalTitle}

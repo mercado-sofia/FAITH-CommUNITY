@@ -102,7 +102,7 @@ export const getAllProgramsByOrganization = async (req, res) => {
             WHERE pc.program_id = ? AND pc.status = 'accepted'
           ) org_roles
           LEFT JOIN organizations o ON org_roles.org_id = o.id
-          WHERE o.id IS NOT NULL
+          WHERE o.id IS NOT NULL AND o.status = 'ACTIVE'
           ORDER BY 
             CASE WHEN org_roles.role = 'primary' THEN 0 ELSE 1 END,
             o.orgName ASC
@@ -365,7 +365,7 @@ export const getProgramById = async (req, res) => {
           WHERE pc.program_id = ? AND pc.status = 'accepted'
         ) org_roles
         LEFT JOIN organizations o ON org_roles.org_id = o.id
-        WHERE o.id IS NOT NULL
+        WHERE o.id IS NOT NULL AND o.status = 'ACTIVE'
         ORDER BY 
           CASE WHEN org_roles.role = 'primary' THEN 0 ELSE 1 END,
           o.orgName ASC

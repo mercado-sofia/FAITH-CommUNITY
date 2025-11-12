@@ -61,9 +61,13 @@ export const submitVolunteer = async (req, res) => {
       return res.status(409).json({ error: 'You have already applied for this program' });
     }
 
-    // Verify the program exists, is approved, and accepts volunteers
+    // Verify the program exists, is approved, accepts volunteers, and organization is active
     const [programRows] = await db.execute(
-      'SELECT id, status FROM programs_projects WHERE id = ? AND status = "Upcoming" AND is_approved = TRUE AND accepts_volunteers = TRUE',
+      `SELECT p.id, p.status 
+       FROM programs_projects p
+       LEFT JOIN organizations o ON p.organization_id = o.id
+       WHERE p.id = ? AND p.status = "Upcoming" AND p.is_approved = TRUE 
+       AND p.accepts_volunteers = TRUE AND o.status = 'ACTIVE'`,
       [program_id]
     );
 
@@ -688,11 +692,12 @@ export const getApprovedUpcomingPrograms = async (req, res) => {
     let query, params;
     
     // Show all upcoming approved programs regardless of user application history
+    // Only show programs from active organizations
     query = `
       SELECT p.*, o.orgName, o.org as orgAcronym, o.logo as orgLogo
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
-      WHERE p.status = 'Upcoming' AND p.is_approved = 1
+      WHERE p.status = 'Upcoming' AND p.is_approved = 1 AND o.status = 'ACTIVE'
       ORDER BY p.title ASC
     `;
     params = [];

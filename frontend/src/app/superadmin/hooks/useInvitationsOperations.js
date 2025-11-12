@@ -72,10 +72,10 @@ export const useInvitationsOperations = () => {
   const handleDeactivateAdminFromInvitation = useCallback(async (id, refetchCallback) => {
     try {
       const result = await deactivateAdminFromInvitation(id).unwrap()
-      showSuccessModal(result.message || 'Admin deactivated successfully!')
+      showSuccessModal(result.message || 'Admin status updated successfully!')
       if (refetchCallback) refetchCallback()
     } catch (error) {
-      showSuccessModal('Failed to deactivate admin')
+      showSuccessModal('Failed to update admin status')
     }
   }, [deactivateAdminFromInvitation, showSuccessModal])
 

@@ -1,5 +1,6 @@
 //db table: admins
 import jwt from "jsonwebtoken"
+import db from "../../database.js"
 import { SessionSecurity } from "../../utils/sessionSecurity.js"
 import { getClientIpAddress } from "../../utils/ipAddressHelper.js"
 
@@ -36,6 +37,26 @@ export const verifyAdminToken = async (req, res, next) => {
       }
     } catch (sessionError) {
       // Continue with JWT verification only
+    }
+
+    // Check if admin account and organization are active
+    if (decoded.role === 'admin' && decoded.id) {
+      const [adminRows] = await db.execute(
+        `SELECT a.id, a.is_active, a.organization_id, o.status as org_status
+         FROM admins a
+         LEFT JOIN organizations o ON a.organization_id = o.id
+         WHERE a.id = ?`,
+        [decoded.id]
+      )
+
+      if (adminRows.length === 0 || !adminRows[0].is_active) {
+        return res.status(403).json({ error: "Admin account is inactive" })
+      }
+
+      // Check if organization is active (if admin has an organization)
+      if (adminRows[0].organization_id && adminRows[0].org_status !== 'ACTIVE') {
+        return res.status(403).json({ error: "Organization is inactive" })
+      }
     }
 
     req.admin = decoded

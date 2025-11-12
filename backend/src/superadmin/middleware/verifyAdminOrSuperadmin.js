@@ -1,10 +1,11 @@
 import jwt from "jsonwebtoken"
+import db from "../../database.js"
 
 // JWT secret via env
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
 
 // Middleware that accepts both admin and superadmin tokens
-export const verifyAdminOrSuperadmin = (req, res, next) => {
+export const verifyAdminOrSuperadmin = async (req, res, next) => {
   const authHeader = req.headers.authorization
   const token = authHeader && authHeader.split(" ")[1] // Bearer TOKEN
 
@@ -44,6 +45,26 @@ export const verifyAdminOrSuperadmin = (req, res, next) => {
     } 
     // Check if it's an admin token
     else if (decoded.role === "admin") {
+      // Check if admin account and organization are active
+      if (decoded.id) {
+        const [adminRows] = await db.execute(
+          `SELECT a.id, a.is_active, a.organization_id, o.status as org_status
+           FROM admins a
+           LEFT JOIN organizations o ON a.organization_id = o.id
+           WHERE a.id = ?`,
+          [decoded.id]
+        )
+
+        if (adminRows.length === 0 || !adminRows[0].is_active) {
+          return res.status(403).json({ error: "Admin account is inactive" })
+        }
+
+        // Check if organization is active (if admin has an organization)
+        if (adminRows[0].organization_id && adminRows[0].org_status !== 'ACTIVE') {
+          return res.status(403).json({ error: "Organization is inactive" })
+        }
+      }
+
       req.admin = decoded
       req.user = decoded
       req.userType = "admin"

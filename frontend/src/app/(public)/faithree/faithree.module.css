@@ -1196,7 +1196,7 @@
   }
   
   .floatingGround {
-    top: 50%;
+    top: 55%; /* Adjusted to avoid instruction container overlap */
   }
 }
 
@@ -1299,7 +1299,7 @@
   }
   
   .floatingGround {
-    top: 45%;
+    top: 52%; /* Adjusted to avoid instruction container overlap */
   }
   
   .toggleButton {
@@ -1407,6 +1407,10 @@
     top: 1rem;
     height: calc(100% - 4rem); /* Reduced height to avoid navbar overlap */
   }
+  
+  .floatingGround {
+    top: 54%; /* Adjusted to avoid instruction container overlap */
+  }
 }
 
 /* Landscape orientation on mobile */
@@ -1447,6 +1451,10 @@
   
   .modalContainer {
     height: calc(100% - 8rem); /* Reduced height to avoid navbar overlap */
+  }
+  
+  .floatingGround {
+    top: 52%; /* Adjusted to avoid instruction container overlap in landscape */
   }
 }
 
@@ -1498,5 +1506,9 @@
   
   .modalContainer {
     height: calc(100% - 7rem); /* Reduced height to avoid navbar overlap */
+  }
+  
+  .floatingGround {
+    top: 50%; /* Adjusted to avoid instruction container overlap in landscape */
   }
 }

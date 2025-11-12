@@ -12,46 +12,77 @@ export default function SubmissionModal({ data, onClose }) {
   const [programTitle, setProgramTitle] = useState(null);
   const [loadingProgram, setLoadingProgram] = useState(false);
 
-  // Fetch program title when program_id is available
+  // Fetch program title when program_id is available but program_title is not
   useEffect(() => {
     const fetchProgramTitle = async () => {
-      // Parse proposed_data to get program_id
+      if (data.section !== 'highlights') {
+        setProgramTitle(null);
+        setLoadingProgram(false);
+        return;
+      }
+
+      // Parse proposed_data to get program_id and program_title
       let programId = null;
+      let existingProgramTitle = null;
       try {
         const proposedData = typeof data.proposed_data === 'string' 
           ? JSON.parse(data.proposed_data) 
           : data.proposed_data;
         programId = proposedData?.program_id;
+        existingProgramTitle = proposedData?.program_title;
       } catch (e) {
         console.error('Error parsing proposed_data:', e);
+        setProgramTitle(null);
+        setLoadingProgram(false);
+        return;
       }
 
-      if (programId && data.section === 'highlights') {
-        setLoadingProgram(true);
-        try {
-          const token = getAdminTokenOrRedirect();
-          if (!token) return;
+      // If we already have a program_title, use it
+      if (existingProgramTitle) {
+        setProgramTitle(existingProgramTitle);
+        setLoadingProgram(false);
+        return;
+      }
 
-          const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/programs/${programId}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
+      // If no program_id, clear the title
+      if (!programId) {
+        setProgramTitle(null);
+        setLoadingProgram(false);
+        return;
+      }
 
-          if (response.ok) {
-            const result = await response.json();
-            if (result.data?.title) {
-              setProgramTitle(result.data.title);
-            } else if (result.title) {
-              setProgramTitle(result.title);
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching program title:', error);
-        } finally {
+      // Fetch program title from API
+      setLoadingProgram(true);
+      try {
+        const token = getAdminTokenOrRedirect();
+        if (!token) {
           setLoadingProgram(false);
+          return;
         }
+
+        const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/programs/single/${programId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data?.title) {
+            setProgramTitle(result.data.title);
+          } else if (result.data?.title) {
+            setProgramTitle(result.data.title);
+          } else if (result.title) {
+            setProgramTitle(result.title);
+          }
+        } else {
+          console.warn(`Failed to fetch program title: ${response.status} ${response.statusText}`);
+        }
+      } catch (error) {
+        console.error('Error fetching program title:', error);
+      } finally {
+        setLoadingProgram(false);
       }
     };
 
@@ -374,11 +405,7 @@ export default function SubmissionModal({ data, onClose }) {
                 <div className={styles.detailValue}>
                   {loadingProgram ? (
                     <span>Loading...</span>
-                  ) : programTitle ? (
-                    programTitle
-                  ) : (
-                    `Program #${dataObj.program_id}`
-                  )}
+                  ) : dataObj.program_title || programTitle || `Program #${dataObj.program_id}`}
                 </div>
               </div>
             )}

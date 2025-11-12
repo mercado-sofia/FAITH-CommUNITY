@@ -473,19 +473,6 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
               </p>
             </div>
 
-            {/* Associated Program - Full Width Below */}
-            {/* Always show the section - if no program, it will show "No program associated" */}
-            <div className={styles.descriptionSection}>
-              <h4 className={styles.sectionTitle}>Associated Program</h4>
-              <p className={styles.description}>
-                {loadingProgram ? (
-                  'Loading program information...'
-                ) : (
-                  highlight.program_title || programTitle || (highlight.program_id ? `Program #${highlight.program_id}` : 'No program associated')
-                )}
-              </p>
-            </div>
-
             {/* Media Gallery - Full Width Below - Show all media files */}
             {highlight.media && highlight.media.length > 0 && (
               <div className={styles.mediaGallerySection}>

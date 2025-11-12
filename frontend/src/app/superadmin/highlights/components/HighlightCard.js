@@ -6,7 +6,7 @@ import { formatDistanceToNow } from 'date-fns'
 import StarButton from './StarButton'
 import styles from './styles/HighlightCard.module.css'
 
-const HighlightCard = ({ highlight, onViewDetails }) => {
+const HighlightCard = ({ highlight, onViewDetails, searchQuery = '' }) => {
   const [imageError, setImageError] = useState(false)
 
   const formatDate = (dateString) => {
@@ -21,6 +21,122 @@ const HighlightCard = ({ highlight, onViewDetails }) => {
   const truncateText = (text, maxLength = 120) => {
     if (!text) return ''
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
+  }
+
+  // Function to highlight matching text sequences
+  const highlightText = (text, query) => {
+    if (!text || !query || !query.trim()) {
+      return text
+    }
+
+    const searchTerm = query.trim()
+    const searchWords = searchTerm.split(/\s+/).filter(word => word.length > 0)
+    
+    // If no search words, return original text
+    if (searchWords.length === 0) {
+      return text
+    }
+
+    // Convert text to string if needed
+    const textStr = String(text)
+    
+    // Collect all match positions for all search words
+    const allMatches = []
+    
+    searchWords.forEach(word => {
+      if (word.length > 0) {
+        const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        
+        // Find all matches at word boundaries (same logic as search)
+        const wordBoundaryPattern = new RegExp(`(^|\\b)${escapedWord}`, 'gi')
+        const wholeWordPattern = new RegExp(`\\b${escapedWord}\\b`, 'gi')
+        
+        // Check whole word matches
+        let match
+        while ((match = wholeWordPattern.exec(textStr)) !== null) {
+          allMatches.push({
+            start: match.index,
+            end: match.index + match[0].length,
+            word: word
+          })
+        }
+        
+        // Reset regex
+        wholeWordPattern.lastIndex = 0
+        
+        // Check word boundary matches (at start of word)
+        while ((match = wordBoundaryPattern.exec(textStr)) !== null) {
+          const matchStart = match.index + (match[1] ? match[1].length : 0)
+          const matchEnd = matchStart + word.length
+          
+          // Avoid duplicates
+          const isDuplicate = allMatches.some(m => 
+            m.start === matchStart && m.end === matchEnd
+          )
+          
+          if (!isDuplicate) {
+            allMatches.push({
+              start: matchStart,
+              end: matchEnd,
+              word: word
+            })
+          }
+        }
+      }
+    })
+    
+    // If no matches, return original text
+    if (allMatches.length === 0) {
+      return text
+    }
+    
+    // Sort matches by position
+    allMatches.sort((a, b) => a.start - b.start)
+    
+    // Merge overlapping matches
+    const mergedMatches = []
+    for (let i = 0; i < allMatches.length; i++) {
+      const current = allMatches[i]
+      if (mergedMatches.length === 0) {
+        mergedMatches.push(current)
+      } else {
+        const last = mergedMatches[mergedMatches.length - 1]
+        if (current.start <= last.end) {
+          // Overlapping - merge them
+          last.end = Math.max(last.end, current.end)
+        } else {
+          // Non-overlapping - add new match
+          mergedMatches.push(current)
+        }
+      }
+    }
+    
+    // Build React elements array
+    const parts = []
+    let lastIndex = 0
+    
+    mergedMatches.forEach(match => {
+      // Add text before match
+      if (match.start > lastIndex) {
+        parts.push(textStr.substring(lastIndex, match.start))
+      }
+      
+      // Add highlighted match
+      parts.push(
+        <mark key={`${match.start}-${match.end}`} className={styles.highlightedText}>
+          {textStr.substring(match.start, match.end)}
+        </mark>
+      )
+      
+      lastIndex = match.end
+    })
+    
+    // Add remaining text
+    if (lastIndex < textStr.length) {
+      parts.push(textStr.substring(lastIndex))
+    }
+    
+    return <>{parts}</>
   }
 
   const getImageUrl = () => {
@@ -181,21 +297,34 @@ const HighlightCard = ({ highlight, onViewDetails }) => {
       
       <div className={styles.cardContent}>
         <div className={styles.cardHeader}>
-          <h3 className={styles.cardTitle}>{highlight.title}</h3>
+          <h3 className={styles.cardTitle}>
+            {searchQuery ? highlightText(highlight.title, searchQuery) : highlight.title}
+          </h3>
         </div>
         
         {/* Associated Program - Display directly under title */}
         {(highlight.program_title || highlight.program_id) && (
           <p className={styles.cardProgram}>
             <span className={styles.programLabel}>Associated Program:</span>{' '}
-            {highlight.program_title || `Program ID: ${highlight.program_id}`}
+            {searchQuery && highlight.program_title 
+              ? highlightText(highlight.program_title, searchQuery)
+              : (highlight.program_title || `Program ID: ${highlight.program_id}`)
+            }
           </p>
         )}
         
-        <p className={styles.cardOrganization}>{highlight.organization_name || 'Unknown Organization'}</p>
+        <p className={styles.cardOrganization}>
+          {searchQuery 
+            ? highlightText(highlight.organization_name || 'Unknown Organization', searchQuery)
+            : (highlight.organization_name || 'Unknown Organization')
+          }
+        </p>
         
         <p className={styles.cardDescription}>
-          {truncateText(highlight.description)}
+          {searchQuery 
+            ? highlightText(truncateText(highlight.description), searchQuery)
+            : truncateText(highlight.description)
+          }
         </p>
         
         <div className={styles.cardFooter}>

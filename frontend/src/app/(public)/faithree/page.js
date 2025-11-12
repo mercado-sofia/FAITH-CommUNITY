@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { FiSun } from "react-icons/fi";
 import { IoRainyOutline } from "react-icons/io5";
 import styles from './faithree.module.css';
-import Highlights from './Highlights/highlights';
+// import Highlights from './Highlights/highlights';
 import { TreeModel, LoadingOverlay } from './components';
 
 // Check for reduced motion preference
@@ -369,7 +369,7 @@ function FAITHreePage() {
       {/* Toggle Buttons Container */}
       <div className={`${styles.toggleButtonsContainer} ${styles[`toggleButtons${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}>
         {/* Highlights Toggle Button */}
-        <div className={styles.toggleButtonContainer}>
+        {/* <div className={styles.toggleButtonContainer}>
           <button 
             className={styles.toggleButton}
             onClick={toggleContent}
@@ -388,7 +388,7 @@ function FAITHreePage() {
               </svg>
             </div>
           </button>
-        </div>
+        </div> */}
 
         {/* Organization Toggle Buttons */}
         {!isLoadingOrgs && organizations.length > 0 && (
@@ -433,7 +433,7 @@ function FAITHreePage() {
       </div>
       
       {/* Sliding Modal Container for Highlights */}
-      <div 
+      {/* <div 
         className={`${styles.modalContainer} ${isContentVisible ? styles.modalOpen : styles.modalClosed}`}
         aria-hidden={!isContentVisible}
         aria-modal={isContentVisible}
@@ -441,10 +441,10 @@ function FAITHreePage() {
         <div className={styles.modalContent}>
           <Highlights onClose={toggleContent} />
         </div>
-      </div>
+      </div> */}
 
       {/* Sliding Modal Container for Organization Highlights */}
-      <div 
+      {/* <div 
         className={`${styles.modalContainer} ${isOrgContentVisible ? styles.modalOpen : styles.modalClosed}`}
         aria-hidden={!isOrgContentVisible}
         aria-modal={isOrgContentVisible}
@@ -458,7 +458,7 @@ function FAITHreePage() {
             organizationId={selectedOrgId}
           />
         </div>
-      </div>
+      </div> */}
     </>
   );
 }

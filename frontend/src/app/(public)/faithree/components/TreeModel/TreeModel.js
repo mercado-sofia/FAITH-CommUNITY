@@ -105,19 +105,17 @@ function Star({ position, treePosition = [0, 0, 0], starId, onStarClick, onHover
 }
 
 // Cloud component - loads cloud models (static)
-function Cloud({ url, initialPosition = [0, 0, 0], scale = 1, isMobile = false }) {
+function Cloud({ url, initialPosition = [0, 0, 0], scale = 1 }) {
   const { scene } = useGLTF(url)
   
   const clonedScene = useMemo(() => {
     const cloned = scene.clone()
     
-    // Scale the cloud - increase scale on mobile
+    // Scale the cloud
     const box = new THREE.Box3().setFromObject(cloned)
     const size = box.getSize(new THREE.Vector3())
     const maxDim = Math.max(size.x, size.y, size.z)
-    // Increase cloud scale on mobile by 1.5x
-    const mobileMultiplier = isMobile ? 1.5 : 1
-    const cloudScale = (scale * 2.0 * mobileMultiplier) / maxDim
+    const cloudScale = (scale * 2.0) / maxDim
     cloned.scale.set(cloudScale, cloudScale, cloudScale)
     
     // Center the cloud
@@ -129,13 +127,13 @@ function Cloud({ url, initialPosition = [0, 0, 0], scale = 1, isMobile = false }
     )
     
     return cloned
-  }, [scene, initialPosition, scale, isMobile])
+  }, [scene, initialPosition, scale])
   
   return <primitive object={clonedScene} />
 }
 
 // Component to load and display the GLB model
-function Model({ url, treePosition = [0, 0, 0], theme = 'morning', isMobile = false }) {
+function Model({ url, treePosition = [0, 0, 0], theme = 'morning' }) {
   const { scene } = useGLTF(url)
   
   // Clone the scene to avoid mutating the original
@@ -188,12 +186,9 @@ function Model({ url, treePosition = [0, 0, 0], theme = 'morning', isMobile = fa
     -center.z + treePosition[2]
   )
   
-  // Scale to make it bigger - increased scale significantly, and even more on mobile
+  // Scale to make it bigger - increased scale significantly
   const maxDim = Math.max(size.x, size.y, size.z)
-  // Increase tree scale on mobile by 1.4x
-  const baseScale = 6.0
-  const mobileMultiplier = isMobile ? 1.4 : 1
-  const scale = (baseScale * mobileMultiplier) / maxDim
+  const scale = 6.0 / maxDim // Increased from 4.5 to 6.0 for even bigger tree
   clonedScene.scale.set(scale, scale, scale)
   
   // Rotate the tree to face the camera directly (front-on, symmetrical view)
@@ -420,6 +415,15 @@ export default function TreeModel({
 
   // State to track current tree position (updates in real-time)
   const [treePosition, setTreePosition] = useState(initialTreePosition)
+  const savedCamPos = getSavedCameraPosition()
+  const initialCamPos = savedCamPos 
+    ? [savedCamPos.x, savedCamPos.y, savedCamPos.z]
+    : [
+        initialTreePosition[0] + cameraOffset[0],
+        initialTreePosition[1] + cameraOffset[1],
+        initialTreePosition[2] + cameraOffset[2]
+      ]
+  const [cameraPosition, setCameraPosition] = useState(initialCamPos)
 
   // State for star modal
   const [selectedStarId, setSelectedStarId] = useState(null)
@@ -473,22 +477,13 @@ export default function TreeModel({
   // Handle position changes from controls
   const handlePositionChange = useCallback((newPosition) => {
     setTreePosition(newPosition)
-  }, [])
-
-  // Detect if device is mobile
-  const [isMobile, setIsMobile] = useState(false)
-
-  useEffect(() => {
-    const checkMobile = () => {
-      const isMobileDevice = window.innerWidth <= 768
-      setIsMobile(isMobileDevice)
-    }
-    
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
+    // Update camera position based on new tree position
+    setCameraPosition([
+      newPosition[0] + cameraOffset[0],
+      newPosition[1] + cameraOffset[1],
+      newPosition[2] + cameraOffset[2]
+    ])
+  }, [cameraOffset])
 
   // Calculate initial camera position - use saved position if available
   const savedPos = getSavedCameraPosition()
@@ -523,8 +518,8 @@ export default function TreeModel({
             <Environment preset={theme === 'morning' ? 'sunset' : 'city'} />
             
             {/* The 3D model - pass treePosition and theme to position it and apply color changes */}
-            {/* Key prop ensures component re-renders when model or mobile state changes */}
-            <Model key={`${modelPath}-${isMobile}`} url={modelPath} treePosition={treePosition} theme={theme} isMobile={isMobile} />
+            {/* Key prop ensures component re-renders when model changes */}
+            <Model key={modelPath} url={modelPath} treePosition={treePosition} theme={theme} />
             
             {/* Static clouds in the background - only in sunny mode */}
             {theme === 'morning' && (
@@ -532,23 +527,20 @@ export default function TreeModel({
                 {/* Cloud 1: Back left */}
                 <Cloud 
                   url="/models/clouds.glb" 
-                  initialPosition={[-3, 0.3, -4]} 
+                  initialPosition={[-3, 1, -4]} 
                   scale={1.2}
-                  isMobile={isMobile}
                 />
                 {/* Cloud 2: Front right */}
                 <Cloud 
                   url="/models/clouds.glb" 
-                  initialPosition={[3, 0.1, -2]} 
+                  initialPosition={[3, 0.8, -2]} 
                   scale={1.0}
-                  isMobile={isMobile}
                 />
                 {/* Cloud 3: Back center-right for balance */}
                 <Cloud 
                   url="/models/clouds 2.glb" 
-                  initialPosition={[-0.8, 1, -4]} 
+                  initialPosition={[-0.8, 1.5, -3]} 
                   scale={0.9}
-                  isMobile={isMobile}
                 />
               </>
             )}

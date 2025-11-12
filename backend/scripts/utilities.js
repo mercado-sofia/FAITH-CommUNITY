@@ -1,5 +1,6 @@
 import db from '../src/database.js';
 import bcrypt from 'bcrypt';
+import { LoginAttemptTracker } from '../src/utils/loginAttemptTracker.js';
 
 // Environment check
 const isProduction = process.env.NODE_ENV === 'production';
@@ -62,10 +63,20 @@ async function createSuperadmin() {
           WHERE id = 1
         `, [superadminEmail, hashedPassword]);
         
+        // Clear all failed login attempts for this email (allows immediate login after reset)
+        await LoginAttemptTracker.clearFailedAttempts(superadminEmail, '0.0.0.0', 'superadmin');
+        await LoginAttemptTracker.clearFailedAttempts(superadminEmail, '0.0.0.0', 'admin');
+        // Also clear by email only (all IPs) to be thorough
+        await db.execute(
+          'DELETE FROM login_attempts WHERE identifier = ? AND user_type IN (?, ?) AND attempt_type = ?',
+          [superadminEmail, 'superadmin', 'admin', 'failed']
+        );
+        
         console.log('✅ Superadmin account updated successfully!');
         console.log(`📧 Email: ${superadminEmail}`);
         console.log(`🔑 Password: ${superadminPassword}`);
         console.log('🌐 Login URL: http://localhost:3000/superadmin/login');
+        console.log('✅ All failed login attempts have been cleared. You can now log in immediately.');
       } else {
         console.log('✅ Superadmin account already exists!');
         console.log(`📧 Email: ${existingAccount.username}`);
@@ -110,10 +121,21 @@ async function resetSuperadminPassword() {
       WHERE id = 1
     `, [superadminEmail, hashedPassword]);
     
+    // Clear all failed login attempts for this email (allows immediate login after reset)
+    // Clear attempts for all user types (admin, superadmin) in case they tried wrong endpoint
+    await LoginAttemptTracker.clearFailedAttempts(superadminEmail, '0.0.0.0', 'superadmin');
+    await LoginAttemptTracker.clearFailedAttempts(superadminEmail, '0.0.0.0', 'admin');
+    // Also clear by email only (all IPs) to be thorough
+    await db.execute(
+      'DELETE FROM login_attempts WHERE identifier = ? AND user_type IN (?, ?) AND attempt_type = ?',
+      [superadminEmail, 'superadmin', 'admin', 'failed']
+    );
+    
     console.log('✅ Superadmin password reset successfully!');
     console.log(`📧 Email: ${superadminEmail}`);
     console.log(`🔑 Password: ${superadminPassword}`);
     console.log('🌐 Login URL: http://localhost:3000/superadmin/login');
+    console.log('✅ All failed login attempts have been cleared. You can now log in immediately.');
     
   } catch (error) {
     console.error('❌ Error resetting superadmin password:', error.message);

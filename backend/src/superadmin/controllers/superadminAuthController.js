@@ -905,10 +905,15 @@ export const initializeSuperadmin = async (req, res) => {
         [superadminEmail, hashedPassword]
       );
       
+      // Clear any existing failed login attempts for this email (allows immediate login)
+      const ipAddress = getClientIpAddress(req);
+      await LoginAttemptTracker.clearFailedAttempts(superadminEmail, ipAddress, 'superadmin');
+      await LoginAttemptTracker.clearFailedAttempts(superadminEmail, ipAddress, 'admin');
+      
       logInfo('Superadmin account created via initialization endpoint', {
         context: 'superadmin',
         email: superadminEmail,
-        ip: getClientIpAddress(req)
+        ip: ipAddress
       });
       
       res.json({
@@ -916,7 +921,8 @@ export const initializeSuperadmin = async (req, res) => {
         message: 'Superadmin account created successfully',
         email: superadminEmail,
         password: superadminPassword,
-        warning: 'Please change the password after first login!'
+        warning: 'Please change the password after first login!',
+        note: 'All failed login attempts have been cleared. You can now log in immediately.'
       });
     } else {
       // Update existing superadmin account
@@ -930,11 +936,22 @@ export const initializeSuperadmin = async (req, res) => {
         [superadminEmail, hashedPassword]
       );
       
+      // Clear all failed login attempts for this email (allows immediate login after reset)
+      // Clear attempts for all user types (admin, superadmin) in case they tried wrong endpoint
+      const ipAddress = getClientIpAddress(req);
+      await LoginAttemptTracker.clearFailedAttempts(superadminEmail, ipAddress, 'superadmin');
+      await LoginAttemptTracker.clearFailedAttempts(superadminEmail, ipAddress, 'admin');
+      // Also clear by IP only (in case email was different)
+      await db.execute(
+        'DELETE FROM login_attempts WHERE ip_address = ? AND user_type IN (?, ?) AND attempt_type = ?',
+        [ipAddress, 'superadmin', 'admin', 'failed']
+      );
+      
       logInfo('Superadmin account reset via initialization endpoint', {
         context: 'superadmin',
         email: superadminEmail,
         previousEmail: existingAccount.username,
-        ip: getClientIpAddress(req)
+        ip: ipAddress
       });
       
       res.json({
@@ -942,7 +959,8 @@ export const initializeSuperadmin = async (req, res) => {
         message: 'Superadmin account reset successfully',
         email: superadminEmail,
         password: superadminPassword,
-        warning: 'Please change the password after first login!'
+        warning: 'Please change the password after first login!',
+        note: 'All failed login attempts have been cleared. You can now log in immediately.'
       });
     }
   } catch (error) {

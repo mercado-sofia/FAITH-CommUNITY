@@ -188,10 +188,20 @@ export default function LoginPage() {
     clearAllSessionData()
 
     try {
-      // Only try one system at a time to avoid multiple failed attempts
-      // If we've tried a system before, stick with it to track attempts correctly per user type
-      // Otherwise, start with admin
-      const systemToTry = lastAttemptedSystem || "admin"
+      // Detect which system to try based on email or previous attempts
+      // If email matches superadmin email, try superadmin first
+      const superadminEmail = 'faithcommunityfaces@gmail.com'
+      let systemToTry = lastAttemptedSystem
+      
+      if (!systemToTry) {
+        // Auto-detect based on email
+        if (email.toLowerCase().trim() === superadminEmail.toLowerCase().trim()) {
+          systemToTry = "superadmin"
+        } else {
+          systemToTry = "admin" // Default to admin
+        }
+      }
+      
       let result = await attempt(systemToTry)
       let successfulSystem = null
       
@@ -295,6 +305,30 @@ export default function LoginPage() {
         setShowError(true)
         setFieldErrors({ email: "Please verify your email address", password: "Please verify your email address" })
       } else {
+        // If login failed and we haven't tried all systems yet, try fallback
+        const superadminEmail = 'faithcommunityfaces@gmail.com'
+        const isSuperadminEmail = email.toLowerCase().trim() === superadminEmail.toLowerCase().trim()
+        
+        // If we tried admin but email is superadmin, try superadmin
+        if (systemToTry === "admin" && isSuperadminEmail && !lastAttemptedSystem) {
+          setLastAttemptedSystem("superadmin")
+          // Retry with superadmin
+          const superadminResult = await attempt("superadmin")
+          if (superadminResult && superadminResult.ok) {
+            const superadminData = superadminResult.data
+            document.cookie = "userRole=superadmin; path=/; max-age=86400"
+            localStorage.setItem("superAdminToken", superadminData.token)
+            localStorage.setItem("superAdminData", JSON.stringify(superadminData.superadmin))
+            localStorage.setItem("token", superadminData.token)
+            localStorage.setItem("user", JSON.stringify(superadminData.superadmin))
+            localStorage.setItem("userRole", "superadmin")
+            dispatch(loginSuperAdmin({ token: superadminData.token, superadmin: superadminData.superadmin }))
+            setIsLoading(false)
+            window.location.href = "/superadmin"
+            return
+          }
+        }
+        
         const baseError = (data && data.error) || "Invalid email or password. Please check your credentials and try again."
         // Only show attempts info in error message if attempts > 3 (tracker will show separately)
         setErrorMessage(baseError)
@@ -331,8 +365,9 @@ export default function LoginPage() {
               autoComplete="off"
               value={email}
               onChange={(e) => {
-                setEmail(e.target.value)
-                // Clear last attempted system when email changes to allow trying different system
+                const newEmail = e.target.value
+                setEmail(newEmail)
+                // Clear last attempted system when email changes to allow auto-detection
                 if (lastAttemptedSystem) {
                   setLastAttemptedSystem(null)
                 }

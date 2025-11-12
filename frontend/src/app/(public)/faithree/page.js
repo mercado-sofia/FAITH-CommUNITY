@@ -391,7 +391,7 @@ function FAITHreePage() {
         </div> */}
 
         {/* Organization Toggle Buttons */}
-        {!isLoadingOrgs && organizations.length > 0 && (
+        {/* {!isLoadingOrgs && organizations.length > 0 && (
           <div className={styles.orgTogglesContainer}>
             {organizations.map((org, index) => (
               <div key={org.id || `org-${index}`} className={styles.orgToggleWrapper}>
@@ -429,7 +429,7 @@ function FAITHreePage() {
               </div>
             ))}
           </div>
-        )}
+        )} */}
       </div>
       
       {/* Sliding Modal Container for Highlights */}

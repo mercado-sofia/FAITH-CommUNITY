@@ -187,7 +187,7 @@ export default function BulkActionConfirmationModal({
             {isProcessing ? (
               <>
                 <FaSpinner className={styles.spinner} />
-                Processing...
+                {actionType === 'approve' ? 'Approving...' : actionType === 'reject' ? 'Rejecting...' : actionType === 'delete' ? 'Deleting...' : 'Processing...'}
               </>
             ) : (
               config.buttonText

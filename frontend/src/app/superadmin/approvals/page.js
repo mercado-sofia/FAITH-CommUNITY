@@ -992,7 +992,7 @@ export default function PendingApprovalsPage() {
     }
     
     setIsProcessing(true);
-    setShowIndividualModal(false);
+    // Keep modal open during processing to show loading state
     
     try {
       switch (pendingIndividualAction) {
@@ -1012,6 +1012,7 @@ export default function PendingApprovalsPage() {
       showSuccessModal('An error occurred: ' + (error.message || 'Unknown error'), 'error');
     } finally {
       setIsProcessing(false);
+      setShowIndividualModal(false); // Close modal after processing is complete
     }
   }, [selectedItemForAction, pendingIndividualAction, handleApprove, handleReject, showSuccessModal]);
 
@@ -1226,7 +1227,7 @@ export default function PendingApprovalsPage() {
     if (!pendingBulkAction || selectedItems.size === 0) return;
     
     setIsBulkActionLoading(true);
-    setShowBulkConfirmation(false);
+    // Keep modal open during processing to show loading state
     
     try {
       // Get current status info
@@ -1255,6 +1256,7 @@ export default function PendingApprovalsPage() {
           showSuccessModal('No pending items to process. Please select pending items.', 'error');
           setIsBulkActionLoading(false);
           setPendingBulkAction(null);
+          setShowBulkConfirmation(false);
           return;
         }
         
@@ -1276,6 +1278,7 @@ export default function PendingApprovalsPage() {
     } finally {
       setIsBulkActionLoading(false);
       setPendingBulkAction(null);
+      setShowBulkConfirmation(false); // Close modal after processing is complete
     }
   }, [pendingBulkAction, selectedItems, getSelectedItemsStatus, approvals, handleBulkApprove, handleBulkReject, showSuccessModal]);
 

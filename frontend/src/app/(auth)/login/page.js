@@ -10,6 +10,9 @@ import { AuthLeftPanel, ForgotPasswordModal, OtpInput, PasswordField } from "../
 import { postJson } from "../api/authClient"
 import { usePublicSiteName } from "@/app/(public)/hooks/usePublicData"
 
+// Superadmin email constant (must match backend)
+const SUPERADMIN_EMAIL = 'faithcommunityfaces@gmail.com'
+
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -190,12 +193,11 @@ export default function LoginPage() {
     try {
       // Detect which system to try based on email or previous attempts
       // If email matches superadmin email, try superadmin first
-      const superadminEmail = 'faithcommunityfaces@gmail.com'
       let systemToTry = lastAttemptedSystem
       
       if (!systemToTry) {
         // Auto-detect based on email
-        if (email.toLowerCase().trim() === superadminEmail.toLowerCase().trim()) {
+        if (email.toLowerCase().trim() === SUPERADMIN_EMAIL.toLowerCase().trim()) {
           systemToTry = "superadmin"
         } else {
           systemToTry = "admin" // Default to admin
@@ -306,8 +308,7 @@ export default function LoginPage() {
         setFieldErrors({ email: "Please verify your email address", password: "Please verify your email address" })
       } else {
         // If login failed and we haven't tried all systems yet, try fallback
-        const superadminEmail = 'faithcommunityfaces@gmail.com'
-        const isSuperadminEmail = email.toLowerCase().trim() === superadminEmail.toLowerCase().trim()
+        const isSuperadminEmail = email.toLowerCase().trim() === SUPERADMIN_EMAIL.toLowerCase().trim()
         
         // If we tried admin but email is superadmin, try superadmin
         if (systemToTry === "admin" && isSuperadminEmail && !lastAttemptedSystem) {

@@ -245,9 +245,22 @@ export const updateAdmin = async (req, res) => {
     let adminQuery, adminParams
 
     if (password && password.trim() !== "") {
-      if (password.length < 6) {
+      // Validate password requirements (matching frontend)
+      if (password.length < 8) {
         await connection.rollback()
-        return res.status(400).json({ error: "Password must be at least 6 characters long" })
+        return res.status(400).json({ error: "Password must be at least 8 characters long" })
+      }
+      if (!/(?=.*[a-z])/.test(password)) {
+        await connection.rollback()
+        return res.status(400).json({ error: "Password must contain at least one lowercase letter" })
+      }
+      if (!/(?=.*[A-Z])/.test(password)) {
+        await connection.rollback()
+        return res.status(400).json({ error: "Password must contain at least one uppercase letter" })
+      }
+      if (!/(?=.*\d)/.test(password)) {
+        await connection.rollback()
+        return res.status(400).json({ error: "Password must contain at least one number" })
       }
 
       const saltRounds = 10

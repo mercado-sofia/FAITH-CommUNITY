@@ -23,7 +23,6 @@ function FAITHreePage() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [nextTheme, setNextTheme] = useState(null);
   const [featuredHighlights, setFeaturedHighlights] = useState([]);
-  const [isLoadingHighlights, setIsLoadingHighlights] = useState(true);
   const [organizations, setOrganizations] = useState([]);
   const [isLoadingOrgs, setIsLoadingOrgs] = useState(true);
 
@@ -79,71 +78,33 @@ function FAITHreePage() {
     }, 1000);
   }, [isTransitioning, theme]);
 
-  // Optimized scroll handler with throttling and CSS variables
+  // Prevent page scrolling since everything is full-screen and fixed
   useEffect(() => {
-    let ticking = false;
-    let rafId = null;
-    
-    const handleScroll = () => {
-      if (!ticking) {
-        rafId = window.requestAnimationFrame(() => {
-          const scrollY = window.scrollY || window.pageYOffset || 0;
-          
-          // Update CSS variables directly for smoother performance
-          if (typeof document !== 'undefined') {
-            const root = document.documentElement;
-            root.style.setProperty('--scroll-y', `${scrollY}px`);
-            
-            // Calculate and set parallax values directly
-            const containerOffset = -scrollY * 1.2;
-            root.style.setProperty('--container-offset', `${containerOffset}px`);
-            
-            // Calculate welcome message opacity and scale
-            const fadeStart = 0;
-            const fadeEnd = 300;
-            const welcomeOpacity = scrollY <= fadeStart ? 1 : 
-              scrollY >= fadeEnd ? 0 : 
-              1 - (scrollY - fadeStart) / (fadeEnd - fadeStart);
-            root.style.setProperty('--welcome-opacity', welcomeOpacity);
-            
-            const zoomStart = 0;
-            const zoomEnd = 300;
-            const welcomeScale = scrollY <= zoomStart ? 1 : 
-              scrollY >= zoomEnd ? 0.5 : 
-              1 - ((scrollY - zoomStart) / (zoomEnd - zoomStart)) * 0.5;
-            root.style.setProperty('--welcome-scale', welcomeScale);
-          }
-          
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
+    if (typeof document === 'undefined' || !document.body) {
+      return;
+    }
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Initial call
+    // Lock body scroll
+    const originalOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
     
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    // Cleanup: restore scroll when component unmounts
     return () => {
-      window.removeEventListener('scroll', handleScroll, { passive: true });
-      if (rafId) {
-        window.cancelAnimationFrame(rafId);
-      }
+      document.body.style.overflow = originalOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
     };
   }, []);
-
-  // Note: Parallax calculations are now done directly in the scroll handler
-  // and applied via CSS variables for better performance
 
   // Fetch featured highlights from API
   useEffect(() => {
     const fetchFeaturedHighlights = async () => {
       try {
-        setIsLoadingHighlights(true);
-        
         // Check if we're in browser environment
         if (typeof window === 'undefined') {
           setFeaturedHighlights([]);
-          setIsLoadingHighlights(false);
           return;
         }
         
@@ -151,7 +112,6 @@ function FAITHreePage() {
         if (!API_BASE_URL) {
           console.error('API_BASE_URL is not set. Please configure NEXT_PUBLIC_API_URL environment variable.');
           setFeaturedHighlights([]);
-          setIsLoadingHighlights(false);
           return;
         }
         
@@ -177,8 +137,6 @@ function FAITHreePage() {
       } catch (error) {
         console.error('Error fetching featured highlights:', error);
         setFeaturedHighlights([]);
-      } finally {
-        setIsLoadingHighlights(false);
       }
     };
 
@@ -268,142 +226,114 @@ function FAITHreePage() {
 
   return (
     <>
-      {/* Welcome Message */}
+      {/* Full-screen FAITHree Environment */}
       <div 
-        className={styles.welcomeMessage}
-        style={{
-          opacity: 'var(--welcome-opacity, 1)',
-          transform: 'scale(var(--welcome-scale, 1))',
-        }}
-      >
-        <div className={styles.welcomeContent}>
-          <h1 className={styles.welcomeTitle}>Welcome to FAITHree</h1>
-          <p className={styles.welcomeSubtitle}>Explore stories that grow like a tree</p>
-        </div>
-      </div>
-
-      {/* Spacer to enable scrolling */}
-      <div className={styles.scrollSpacer} />
-
-      {/* First Section with Floating Ground */}
-      <div 
-        className={`${styles.faithreeContainer} ${styles[theme]} ${isTransitioning ? styles.transitioning : ''}`}
+        className={`${styles.faithreeContainer} ${isTransitioning ? styles.transitioning : ''}`}
         aria-label="FAITHree interactive environment"
-        style={{
-          transform: 'translateY(var(--container-offset, 0px))',
-        }}
       >
-        {/* Fixed dimension container for background and tree */}
-        <div className={styles.sceneContainer}>
-          {/* Loading Overlay */}
-          {isTransitioning && <LoadingOverlay nextTheme={nextTheme} />}
-          <div className={styles.firstSection}>
-            {/* Eco-themed background */}
-            <div className={styles.ecoBackground}>
-            {/* Sky with clouds */}
-            <div 
-              className={`${styles.sky} ${styles[`sky${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}
-              style={{
-                transition: prefersReducedMotion ? 'none' : 'background 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
-              }}
-            >
-              {/* Rain drops for rainy theme */}
-              {theme === 'rainy' && (
-                <div className={styles.rainContainer}>
-                  {rainDrops.map((drop) => (
-                    <div 
-                      key={drop.id}
-                      className={styles.raindrop}
-                      style={{
-                        left: `${drop.left}%`,
-                        animationDelay: `${drop.delay}s`,
-                        animationDuration: prefersReducedMotion ? '0.1s' : `${drop.duration}s`,
-                        width: `${drop.size}px`,
-                        height: `${15 + drop.size * 5}px`,
-                        '--speed': drop.speed
-                      }}
-                      aria-hidden="true"
-                    ></div>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            {/* Rolling hills - SVG paths */}
-            <div 
-              className={styles.hills}
-            >
-              <svg className={styles.hillsSvg} viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true">
-                {/* Back hill layer - deepest green */}
-                <path
-                  d="M0,50 L0,38 C8,35 16,32 24,34 C32,32 40,30 48,32 C56,30 64,28 72,30 C80,28 88,26 96,28 C98,27 100,28 100,30 L100,50 Z"
-                  fill={theme === 'rainy' ? "#2E5C3A" : "#7CB342"}
-                  opacity={theme === 'rainy' ? "0.7" : "0.9"}
-                  style={{
-                    transition: prefersReducedMotion ? 'none' : 'fill 0.6s ease, opacity 0.6s ease'
-                  }}
-                />
-                {/* Middle hill layer - medium green */}
-                <path
-                  d="M0,50 L0,32 C6,29 14,26 22,28 C30,26 38,24 46,26 C54,24 62,22 70,24 C78,22 86,20 94,22 C97,21 100,22 100,24 L100,50 Z"
-                  fill={theme === 'rainy' ? "#3D7047" : "#8BC34A"}
-                  opacity={theme === 'rainy' ? "0.75" : "0.95"}
-                  style={{
-                    transition: prefersReducedMotion ? 'none' : 'fill 0.6s ease, opacity 0.6s ease'
-                  }}
-                />
-                {/* Front hill layer - lightest green */}
-                <path
-                  d="M0,50 L0,26 C10,23 20,20 30,22 C40,20 50,18 60,20 C70,18 80,16 90,18 C95,17 100,18 100,20 L100,50 Z"
-                  fill={theme === 'rainy' ? "#4A7C56" : "#A5D6A7"}
-                  opacity="1"
-                  style={{
-                    transition: prefersReducedMotion ? 'none' : 'fill 0.6s ease, opacity 0.6s ease'
-                  }}
-                />
-              </svg>
-            </div>
-            
-            
-            {/* 3D Tree Model */}
-            <div 
-              className={styles.floatingGround}
-            >
-              <div className={styles.tree3D}>
-                <TreeModel 
-                  theme={theme} 
-                  treePosition={[0, -1.8, 0]} 
-                  featuredHighlights={featuredHighlights}
-                />
+        {/* Loading Overlay */}
+        {isTransitioning && <LoadingOverlay nextTheme={nextTheme} />}
+        
+        {/* Eco-themed background */}
+        <div className={styles.ecoBackground}>
+          {/* Sky with clouds */}
+          <div 
+            className={`${styles.sky} ${styles[`sky${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}
+            style={{
+              transition: prefersReducedMotion ? 'none' : 'background 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}
+          >
+            {/* Rain drops for rainy theme */}
+            {theme === 'rainy' && (
+              <div className={styles.rainContainer}>
+                {rainDrops.map((drop) => (
+                  <div 
+                    key={drop.id}
+                    className={styles.raindrop}
+                    style={{
+                      left: `${drop.left}%`,
+                      animationDelay: `${drop.delay}s`,
+                      animationDuration: prefersReducedMotion ? '0.1s' : `${drop.duration}s`,
+                      width: `${drop.size}px`,
+                      height: `${15 + drop.size * 5}px`,
+                      '--speed': drop.speed
+                    }}
+                    aria-hidden="true"
+                  ></div>
+                ))}
               </div>
-            </div>
+            )}
           </div>
           
-          {/* Theme Toggle Button */}
-          <div className={styles.themeToggleContainer}>
-        <button 
-          className={`${styles.themeToggleButton} ${isTransitioning ? styles.disabled : ''}`}
-          onClick={toggleTheme}
-          disabled={isTransitioning}
-          title={`Switch to ${theme === 'morning' ? 'rainy' : 'morning'} theme`}
-          aria-label={`Switch to ${theme === 'morning' ? 'rainy' : 'morning'} theme`}
-          aria-pressed={theme === 'rainy'}
-        >
-          {theme === 'morning' ? (
-            <>
-              <FiSun className={styles.themeIcon} aria-hidden="true" />
-              <span>Sunny</span>
-            </>
-          ) : (
-            <>
-              <IoRainyOutline className={styles.themeIcon} aria-hidden="true" />
-              <span>Rainy</span>
-            </>
-          )}
-        </button>
+          {/* Rolling hills - SVG paths */}
+          <div className={styles.hills}>
+            <svg className={styles.hillsSvg} viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true">
+              {/* Back hill layer - deepest green */}
+              <path
+                d="M0,50 L0,38 C8,35 16,32 24,34 C32,32 40,30 48,32 C56,30 64,28 72,30 C80,28 88,26 96,28 C98,27 100,28 100,30 L100,50 Z"
+                fill={theme === 'rainy' ? "#2E5C3A" : "#7CB342"}
+                opacity={theme === 'rainy' ? "0.7" : "0.9"}
+                style={{
+                  transition: prefersReducedMotion ? 'none' : 'fill 0.6s ease, opacity 0.6s ease'
+                }}
+              />
+              {/* Middle hill layer - medium green */}
+              <path
+                d="M0,50 L0,32 C6,29 14,26 22,28 C30,26 38,24 46,26 C54,24 62,22 70,24 C78,22 86,20 94,22 C97,21 100,22 100,24 L100,50 Z"
+                fill={theme === 'rainy' ? "#3D7047" : "#8BC34A"}
+                opacity={theme === 'rainy' ? "0.75" : "0.95"}
+                style={{
+                  transition: prefersReducedMotion ? 'none' : 'fill 0.6s ease, opacity 0.6s ease'
+                }}
+              />
+              {/* Front hill layer - lightest green */}
+              <path
+                d="M0,50 L0,26 C10,23 20,20 30,22 C40,20 50,18 60,20 C70,18 80,16 90,18 C95,17 100,18 100,20 L100,50 Z"
+                fill={theme === 'rainy' ? "#4A7C56" : "#A5D6A7"}
+                opacity="1"
+                style={{
+                  transition: prefersReducedMotion ? 'none' : 'fill 0.6s ease, opacity 0.6s ease'
+                }}
+              />
+            </svg>
+          </div>
+        </div>
+        
+        {/* 3D Tree Model */}
+        <div className={styles.floatingGround}>
+          <div className={styles.tree3D}>
+            <TreeModel 
+              theme={theme} 
+              treePosition={[0, -1.8, 0]} 
+              featuredHighlights={featuredHighlights}
+            />
+          </div>
+        </div>
+        
+        {/* Theme Toggle Button */}
+        <div className={styles.themeToggleContainer}>
+          <button 
+            className={`${styles.themeToggleButton} ${isTransitioning ? styles.disabled : ''}`}
+            onClick={toggleTheme}
+            disabled={isTransitioning}
+            title={`Switch to ${theme === 'morning' ? 'rainy' : 'morning'} theme`}
+            aria-label={`Switch to ${theme === 'morning' ? 'rainy' : 'morning'} theme`}
+            aria-pressed={theme === 'rainy'}
+          >
+            {theme === 'morning' ? (
+              <>
+                <FiSun className={styles.themeIcon} aria-hidden="true" />
+                <span>Sunny</span>
+              </>
+            ) : (
+              <>
+                <IoRainyOutline className={styles.themeIcon} aria-hidden="true" />
+                <span>Rainy</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
-        </div>
-        </div>
       
       {/* Toggle Buttons Container */}
       <div className={styles.toggleButtonsContainer}>
@@ -498,8 +428,6 @@ function FAITHreePage() {
           />
         </div>
       </div>
-      </div>
-      
     </>
   );
 }

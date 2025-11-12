@@ -159,7 +159,7 @@ export default function ViewDetailsModal({ highlight, onClose }) {
     };
 
     fetchProgramTitle();
-  }, [highlight?.program_id, highlight?.program_title]);
+  }, [highlight?.program_id, highlight?.program_title, highlight?.title]);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'No date';

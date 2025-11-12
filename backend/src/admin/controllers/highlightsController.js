@@ -605,8 +605,13 @@ export const getApprovedHighlights = async (req, res) => {
         o.logo as organization_logo${programIdSelect}${programTitleSelect}
       FROM admin_highlights h
       LEFT JOIN organizations o ON h.organization_id = o.id
+      LEFT JOIN admins a ON h.created_by = a.id
       ${programJoin}
       WHERE h.status = 'approved'
+        AND o.id IS NOT NULL
+        AND o.status = 'ACTIVE'
+        AND a.id IS NOT NULL
+        AND a.is_active = TRUE
       ORDER BY h.created_at DESC
     `;
     
@@ -681,8 +686,13 @@ export const getFeaturedHighlights = async (req, res) => {
       FROM featured_highlights fh
       INNER JOIN admin_highlights h ON fh.highlight_id = h.id
       LEFT JOIN organizations o ON h.organization_id = o.id
+      LEFT JOIN admins a ON h.created_by = a.id
       ${programJoin}
       WHERE h.status = 'approved'
+        AND o.id IS NOT NULL
+        AND o.status = 'ACTIVE'
+        AND a.id IS NOT NULL
+        AND a.is_active = TRUE
       ORDER BY fh.display_order ASC
       LIMIT 8
     `;

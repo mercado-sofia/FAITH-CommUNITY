@@ -7,6 +7,7 @@ import { ConfirmationModal, SuccessModal, ErrorBoundary } from '@/components';
 import { SkeletonLoader } from '../components';
 import { SearchAndFilterControls, HighlightCard, ViewDetailsModal, HighlightForm } from './components';
 import { getAdminTokenOrRedirect, handleApiError, API_CONFIG, TIMEOUTS } from '../utils';
+import { useAdminPrograms } from '../hooks/useAdminData';
 import styles from './highlights.module.css';
 
 export default function AdminHighlightsPage() {
@@ -27,6 +28,14 @@ export default function AdminHighlightsPage() {
   // Filter and search states
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
+  const [programFilter, setProgramFilter] = useState(searchParams.get('program') || 'All');
+
+  // Fetch programs for filter
+  const { 
+    programs: programsData = [], 
+    isLoading: programsLoading,
+    error: programsError 
+  } = useAdminPrograms();
 
   // Show skeleton immediately on first load, then show content when data is ready
   const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
@@ -53,10 +62,12 @@ export default function AdminHighlightsPage() {
   useEffect(() => {
     const search = searchParams.get('search') || '';
     const sort = searchParams.get('sort') || 'newest';
+    const program = searchParams.get('program') || 'All';
     
     if (search !== searchQuery) setSearchQuery(search);
     if (sort !== sortBy) setSortBy(sort);
-  }, [searchParams, searchQuery, sortBy]);
+    if (program !== programFilter) setProgramFilter(program);
+  }, [searchParams, searchQuery, sortBy, programFilter]);
 
   // Load highlights data
   const loadHighlights = useCallback(async (isRefresh = false) => {
@@ -144,16 +155,25 @@ export default function AdminHighlightsPage() {
 
   // Handle filter change
   const handleFilterChange = useCallback((filterType, value) => {
+    const params = new URLSearchParams(searchParams);
+    
     if (filterType === 'sort') {
       setSortBy(value);
-      const params = new URLSearchParams(searchParams);
       if (value !== 'newest') {
         params.set('sort', value);
       } else {
         params.delete('sort');
       }
-      router.replace(`/admin/highlights?${params.toString()}`);
+    } else if (filterType === 'program') {
+      setProgramFilter(value);
+      if (value !== 'All') {
+        params.set('program', value);
+      } else {
+        params.delete('program');
+      }
     }
+    
+    router.replace(`/admin/highlights?${params.toString()}`);
   }, [searchParams, router]);
 
   // Filter and sort highlights - only show approved highlights
@@ -168,6 +188,14 @@ export default function AdminHighlightsPage() {
 
     // Filter to only show approved highlights (similar to programs page)
     let filtered = uniqueHighlights.filter(highlight => highlight.status === 'approved');
+
+    // Apply program filter
+    if (programFilter !== 'All') {
+      filtered = filtered.filter(highlight => 
+        highlight.program_title === programFilter || 
+        highlight.program_id?.toString() === programFilter
+      );
+    }
 
     // Apply search filter
     if (searchQuery.trim()) {
@@ -193,7 +221,7 @@ export default function AdminHighlightsPage() {
     });
 
     return sorted;
-  }, [highlights, searchQuery, sortBy]);
+  }, [highlights, searchQuery, sortBy, programFilter]);
 
   // Handle create highlight
   const handleCreateHighlight = useCallback(() => {
@@ -411,8 +439,11 @@ export default function AdminHighlightsPage() {
           <SearchAndFilterControls
             searchQuery={searchQuery}
             sortBy={sortBy}
+            programFilter={programFilter}
             onSearchChange={handleSearchChange}
             onFilterChange={handleFilterChange}
+            programs={programsData}
+            programsLoading={programsLoading}
             totalCount={highlights?.filter(h => h.status === 'approved')?.length || 0}
             filteredCount={filteredAndSortedHighlights()?.length || 0}
           />

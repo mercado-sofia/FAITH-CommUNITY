@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FiSearch, FiChevronDown, FiX } from 'react-icons/fi';
 import { BsSortUp, BsSortDown } from 'react-icons/bs';
 import styles from './SearchAndFilterControls.module.css';
@@ -8,8 +8,11 @@ import styles from './SearchAndFilterControls.module.css';
 export default function SearchAndFilterControls({
   searchQuery,
   sortBy,
+  programFilter = 'All',
   onSearchChange,
   onFilterChange,
+  programs = [],
+  programsLoading = false,
   totalCount,
   filteredCount,
   isRefreshing = false
@@ -21,9 +24,20 @@ export default function SearchAndFilterControls({
     setShowDropdown(showDropdown === type ? null : type);
   };
 
+  const handleClickOutside = (e) => {
+    if (!e.target.closest(`.${styles.dropdownWrapper}`)) {
+      setShowDropdown(null);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <div className={styles.controlsRow}>
-      {/* Search and Sort on the left */}
+      {/* Search, Program Filter, and Sort in one row */}
       <div className={styles.filtersRow}>
         {/* Search input */}
         <div className={styles.searchInputContainer}>
@@ -46,6 +60,44 @@ export default function SearchAndFilterControls({
             }} />
           ) : (
             <FiSearch className={styles.searchIcon} onClick={() => onSearchChange(localQuery)} />
+          )}
+        </div>
+
+        {/* Program filter */}
+        <div className={styles.dropdownWrapper}>
+          <div
+            className={`${styles.programDropdown} ${showDropdown === "program" ? styles.open : ""}`}
+            onClick={() => toggleDropdown("program")}
+          >
+            <span className={styles.programLabel}>Program:</span>
+            <span className={styles.programValue}>
+              {programsLoading ? "Loading..." : programFilter}
+            </span>
+            <FiChevronDown className={styles.icon} />
+          </div>
+          {showDropdown === "program" && (
+            <ul className={styles.options}>
+              <li key="all" onClick={() => {
+                onFilterChange('program', 'All');
+                setShowDropdown(null);
+              }}>
+                All
+              </li>
+              {programsLoading ? (
+                <li style={{ color: '#666', fontStyle: 'italic' }}>Loading programs...</li>
+              ) : programs.length === 0 ? (
+                <li style={{ color: '#666', fontStyle: 'italic' }}>No programs found</li>
+              ) : (
+                programs.map((program) => (
+                  <li key={program.id} onClick={() => {
+                    onFilterChange('program', program.title);
+                    setShowDropdown(null);
+                  }}>
+                    {program.title}
+                  </li>
+                ))
+              )}
+            </ul>
           )}
         </div>
 

@@ -350,7 +350,7 @@ function FAITHreePage() {
           </button>
           {/* Click Me Button - Beside Theme Toggle (Desktop) */}
           <button
-            className={styles.instructionToggleButton}
+            className={`${styles.instructionToggleButton} ${styles[`toggleButtons${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}
             onClick={() => setIsInstructionOpen(!isInstructionOpen)}
             aria-label={isInstructionOpen ? 'Close instructions' : 'Open instructions'}
             aria-expanded={isInstructionOpen}
@@ -363,7 +363,7 @@ function FAITHreePage() {
         {/* Click Me Button - Top Left (Mobile) */}
         <div className={`${styles.instructionToggleContainer} ${styles[`toggleButtons${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}>
           <button
-            className={styles.instructionToggleButton}
+            className={`${styles.instructionToggleButton} ${styles[`toggleButtons${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}
             onClick={() => setIsInstructionOpen(!isInstructionOpen)}
             aria-label={isInstructionOpen ? 'Close instructions' : 'Open instructions'}
             aria-expanded={isInstructionOpen}

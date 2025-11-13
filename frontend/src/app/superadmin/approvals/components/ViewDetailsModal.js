@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FaTimes, FaEye, FaExpand, FaChevronLeft, FaChevronRight, FaFile } from 'react-icons/fa';
-import { getProgramImageUrl } from '@/utils/uploadPaths';
+import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
 import { formatDateTime } from '../../../../utils/dateUtils';
 import { getStatusBadgeConfig } from '@/utils/collaborationStatusUtils';
 import logger from '@/utils/logger';
@@ -199,18 +199,56 @@ const ViewDetailsModal = ({
         <div className={styles.modalBody}>
           {/* Basic submission info */}
           <div className={styles.submissionInfo}>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Section:</span>
+            <div className={styles.infoItem}>
+              <span className={styles.infoLabel}>Section</span>
               <span className={styles.infoValue}>{getSectionDisplayName(submissionData.section)}</span>
             </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Submitted By:</span>
-              <span className={styles.infoValue}>
-                {submissionData.orgName || submissionData.organization_acronym || submissionData.org || 'Unknown Organization'}
-              </span>
+            <div className={styles.infoItem}>
+              <span className={styles.infoLabel}>Submitted By</span>
+              <div className={styles.orgValueContainer}>
+                {submissionData.organization_logo ? (() => {
+                  const logoUrl = getOrganizationImageUrl(submissionData.organization_logo, 'logo');
+                  if (logoUrl && logoUrl !== 'ORGANIZATION_LOGO_UNAVAILABLE') {
+                    return (
+                      <div className={styles.orgLogoWrapper}>
+                        <Image
+                          src={logoUrl}
+                          alt={`${submissionData.orgName || submissionData.organization_acronym || submissionData.org || 'Organization'} logo`}
+                          width={24}
+                          height={24}
+                          className={styles.orgLogo}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            if (e.target.nextSibling) {
+                              e.target.nextSibling.style.display = 'flex';
+                            }
+                          }}
+                        />
+                        <div 
+                          className={styles.orgLogoPlaceholder}
+                          style={{ display: 'none' }}
+                        >
+                          {(submissionData.organization_acronym || submissionData.org || '?').charAt(0).toUpperCase()}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })() : null}
+                {!submissionData.organization_logo && (
+                  <div className={styles.orgLogoWrapper}>
+                    <div className={styles.orgLogoPlaceholder}>
+                      {(submissionData.organization_acronym || submissionData.org || '?').charAt(0).toUpperCase()}
+                    </div>
+                  </div>
+                )}
+                <span className={styles.infoValue}>
+                  {submissionData.orgName || submissionData.organization_acronym || submissionData.org || 'Unknown Organization'}
+                </span>
+              </div>
             </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Date:</span>
+            <div className={styles.infoItem}>
+              <span className={styles.infoLabel}>Date</span>
               <span className={styles.infoValue}>{formatDateTime(submissionData.submitted_at)}</span>
             </div>
           </div>
@@ -707,12 +745,6 @@ const ViewDetailsModal = ({
                 </button>
               </>
             )}
-            <button 
-              onClick={onClose}
-              className={styles.modalCloseFooterBtn}
-            >
-              Close
-            </button>
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { FiStar } from 'react-icons/fi'
 import styles from './styles/FeatureConfirmationModal.module.css'

@@ -231,7 +231,6 @@ export default function SuperAdminNotificationsPage() {
               className={styles.selectAllBtn}
               onClick={handleSelectAll}
             >
-              <PiChecksBold size={16} />
               {(() => {
                 if (!sampleNotificationsData?.notifications) return 'Select All';
                 const notifications = sampleNotificationsData.notifications;

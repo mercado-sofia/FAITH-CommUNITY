@@ -56,12 +56,19 @@ export const getAdminHighlights = async (req, res) => {
     const [rows] = await promisePool.execute(query, [orgId]);
     
     // Parse JSON media_files and format the data
-    const highlights = rows.map(highlight => ({
-      ...highlight,
-      media: safeParseJSON(highlight.media_files, []),
-      program_id: hasProgramIdColumn ? (highlight.program_id || null) : null,
-      program_title: hasProgramIdColumn ? (highlight.program_title || null) : null
-    }));
+    const highlights = rows.map(highlight => {
+      // Ensure program_id is properly handled (don't use || null as it converts 0 to null)
+      const programId = hasProgramIdColumn 
+        ? (highlight.program_id !== null && highlight.program_id !== undefined ? highlight.program_id : null)
+        : null;
+      
+      return {
+        ...highlight,
+        media: safeParseJSON(highlight.media_files, []),
+        program_id: programId,
+        program_title: hasProgramIdColumn ? (highlight.program_title || null) : null
+      };
+    });
     
     res.json({ highlights });
   } catch (error) {
@@ -112,10 +119,15 @@ export const getHighlightById = async (req, res) => {
       return res.status(404).json({ error: 'Highlight not found' });
     }
     
+    // Ensure program_id is properly handled (don't use || null as it converts 0 to null)
+    const programId = hasProgramIdColumn 
+      ? (rows[0].program_id !== null && rows[0].program_id !== undefined ? rows[0].program_id : null)
+      : null;
+    
     const highlight = {
       ...rows[0],
       media: safeParseJSON(rows[0].media_files, []),
-      program_id: hasProgramIdColumn ? (rows[0].program_id || null) : null,
+      program_id: programId,
       program_title: hasProgramIdColumn ? (rows[0].program_title || null) : null
     };
     
@@ -229,9 +241,15 @@ export const updateHighlight = async (req, res) => {
       return res.status(400).json({ error: 'Title and description are required' });
     }
     
-    // Validate program_id is required
-    if (!program_id) {
+    // Validate program_id is required and is a valid positive integer
+    if (!program_id || program_id === null || program_id === undefined) {
       return res.status(400).json({ error: 'Associated Program is required' });
+    }
+    
+    // Ensure program_id is a valid positive integer
+    const programIdNum = parseInt(program_id, 10);
+    if (isNaN(programIdNum) || programIdNum <= 0) {
+      return res.status(400).json({ error: 'Invalid program ID. Must be a positive integer.' });
     }
     
     // Validate ID parameter
@@ -270,8 +288,11 @@ export const updateHighlight = async (req, res) => {
     
     const mediaFilesJson = JSON.stringify(media);
     
+    // Ensure program_id is a number for the database
+    const programIdForDb = hasProgramIdColumn ? programIdNum : null;
+    
     const updateParams = hasProgramIdColumn
-      ? [title, description, mediaFilesJson, program_id || null, id, orgId]
+      ? [title, description, mediaFilesJson, programIdForDb, id, orgId]
       : [title, description, mediaFilesJson, id, orgId];
     
     await connection.execute(updateQuery, updateParams);
@@ -318,7 +339,11 @@ export const updateHighlight = async (req, res) => {
     });
   } catch (error) {
     await connection.rollback();
-    res.status(500).json({ error: 'Failed to update highlight' });
+    console.error('Error updating highlight:', error);
+    res.status(500).json({ 
+      error: 'Failed to update highlight',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   } finally {
     connection.release();
   }
@@ -494,17 +519,6 @@ export const getAllHighlightsForApproval = async (req, res) => {
     
     const [rows] = await promisePool.execute(query, queryParams);
     
-    // Debug: Log query and sample data
-    if (rows.length > 0) {
-      console.log('getAllHighlightsForApproval - Sample row:', {
-        id: rows[0].id,
-        title: rows[0].title,
-        program_id: rows[0].program_id,
-        program_title: rows[0].program_title,
-        hasProgramIdColumn
-      });
-    }
-    
     // Parse JSON media_files and format the data
     const highlights = rows.map(highlight => ({
       ...highlight,
@@ -616,17 +630,6 @@ export const getApprovedHighlights = async (req, res) => {
     `;
     
     const [rows] = await promisePool.execute(query);
-    
-    // Debug: Log query and sample data
-    if (rows.length > 0) {
-      console.log('getApprovedHighlights - Sample row:', {
-        id: rows[0].id,
-        title: rows[0].title,
-        program_id: rows[0].program_id,
-        program_title: rows[0].program_title,
-        hasProgramIdColumn
-      });
-    }
     
     // Parse JSON media_files and format the data
     const highlights = rows.map(highlight => {

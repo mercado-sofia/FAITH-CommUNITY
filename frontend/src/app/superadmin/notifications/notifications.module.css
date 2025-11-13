@@ -123,7 +123,7 @@
 
 .selectAllBtn {
   background: transparent;
-  color: #10c4a6;
+  color: #000;
   border: none;
   padding: 0.75rem 0;
   margin-left: 8px;
@@ -139,7 +139,7 @@
 }
 
 .selectAllBtn:hover {
-  color: #0ea5e9;
+  color: #333;
 }
 
 .markAllReadBtn {

@@ -2,7 +2,8 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { FaSpinner, FaTimes, FaUpload, FaImage, FaVideo, FaFile, FaEye, FaExclamationTriangle, FaCheckCircle, FaChevronDown } from 'react-icons/fa';
+import { FaSpinner, FaTimes, FaImage, FaVideo, FaFile, FaEye, FaExclamationTriangle, FaCheckCircle, FaChevronDown } from 'react-icons/fa';
+import { LuUpload } from 'react-icons/lu';
 import { getProgramStatusByDates } from '@/utils/programStatusUtils';
 import { getAdminTokenOrRedirect, API_CONFIG } from '../../../utils';
 import styles from './HighlightForm.module.css';
@@ -121,10 +122,26 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
         // In edit mode, if the highlight's associated program is not in the filtered list,
         // include it anyway so the dropdown can show the current selection
         if (isEditMode && highlight && highlight.program_id) {
-          const associatedProgram = programsData.find(p => p.id === highlight.program_id);
-          if (associatedProgram && !eligiblePrograms.find(p => p.id === associatedProgram.id)) {
-            // Add the associated program even if it doesn't meet the filter criteria
-            eligiblePrograms = [associatedProgram, ...eligiblePrograms];
+          // Convert highlight.program_id to number for comparison
+          const highlightProgramId = typeof highlight.program_id === 'string' 
+            ? parseInt(highlight.program_id, 10) 
+            : highlight.program_id;
+          
+          // Find the associated program using loose comparison to handle type mismatches
+          const associatedProgram = programsData.find(p => Number(p.id) === Number(highlightProgramId));
+          
+          if (associatedProgram) {
+            // Check if it's already in eligiblePrograms using loose comparison
+            const isAlreadyIncluded = eligiblePrograms.some(p => Number(p.id) === Number(associatedProgram.id));
+            
+            if (!isAlreadyIncluded) {
+              // Add the associated program at the beginning even if it doesn't meet the filter criteria
+              eligiblePrograms = [associatedProgram, ...eligiblePrograms];
+            } else {
+              // If already included, move it to the top for better visibility
+              eligiblePrograms = eligiblePrograms.filter(p => Number(p.id) !== Number(associatedProgram.id));
+              eligiblePrograms = [associatedProgram, ...eligiblePrograms];
+            }
           }
         }
         
@@ -167,6 +184,27 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
     // Clear any existing errors when switching modes
     setErrors({});
   }, [isEditMode, highlight]);
+
+  // Re-initialize program_id when programs are loaded in edit mode
+  // This ensures the dropdown shows the correct value even if programs loaded after form data
+  useEffect(() => {
+    if (isEditMode && highlight && !isLoadingPrograms && programs.length > 0) {
+      const programId = highlight.program_id 
+        ? (typeof highlight.program_id === 'string' ? parseInt(highlight.program_id, 10) : highlight.program_id)
+        : null;
+      
+      // Update program_id if it exists and is different from current, or if current is null/undefined
+      setFormData(prev => {
+        if (programId !== null && programId !== undefined && prev.program_id !== programId) {
+          return {
+            ...prev,
+            program_id: programId
+          };
+        }
+        return prev;
+      });
+    }
+  }, [isEditMode, highlight, isLoadingPrograms, programs.length]); // highlight is needed because it's used in the condition
 
   // Handle input changes
   const handleInputChange = useCallback((field, value) => {
@@ -490,8 +528,15 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
     setIsSubmitting(true);
     
     try {
-      await onSubmit(formData);
+      // Ensure program_id is properly formatted before submission
+      const submissionData = {
+        ...formData,
+        program_id: formData.program_id != null ? Number(formData.program_id) : null
+      };
+      
+      await onSubmit(submissionData);
     } catch (error) {
+      console.error('Error submitting highlight form:', error);
       // Handle error silently
     } finally {
       setIsSubmitting(false);
@@ -529,11 +574,11 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
                   <>
                     <CustomDropdown
                       options={programs.map(program => ({
-                        value: program.id,
+                        value: Number(program.id), // Ensure value is always a number
                         label: program.title || `Program #${program.id}`
                       }))}
-                      value={formData.program_id ? Number(formData.program_id) : ''}
-                      onChange={(value) => handleInputChange('program_id', value ? parseInt(value, 10) : null)}
+                      value={formData.program_id != null ? Number(formData.program_id) : ''}
+                      onChange={(value) => handleInputChange('program_id', value != null && value !== '' ? parseInt(value, 10) : null)}
                       disabled={isSubmitting}
                       placeholder="Select a program"
                       error={errors.program_id}
@@ -629,31 +674,31 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
                 onDrop={handleImageDrop}
               >
                 <div className={styles.uploadContent}>
-                  <FaImage className={styles.uploadIcon} />
-                  <p className={styles.uploadText}>
-                    Choose images or drag & drop them here
-                  </p>
-                  <p className={styles.uploadSubtext}>
-                    Images in JPG, PNG, GIF, or WebP format
-                  </p>
                   <button
                     type="button"
                     className={styles.uploadButton}
                     onClick={() => imageInputRef.current?.click()}
                     disabled={isSubmitting}
                   >
-                    Select Images
+                    <LuUpload className={styles.uploadIcon} />
+                    Upload
                   </button>
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageInputChange}
+                    className={styles.hiddenInput}
+                    disabled={isSubmitting}
+                  />
+                  <p className={styles.uploadText}>
+                    Choose images or drag & drop it here.
+                  </p>
+                  <p className={styles.uploadSubtext}>
+                    JPG, JPEG, PNG and WEBP. Max 20 MB.
+                  </p>
                 </div>
-                <input
-                  ref={imageInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageInputChange}
-                  className={styles.fileInput}
-                  disabled={isSubmitting}
-                />
               </div>
             </div>
 
@@ -668,31 +713,31 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
                 onDrop={handleVideoDrop}
               >
                 <div className={styles.uploadContent}>
-                  <FaVideo className={styles.uploadIcon} />
-                  <p className={styles.uploadText}>
-                    Choose videos or drag & drop them here
-                  </p>
-                  <p className={styles.uploadSubtext}>
-                    Videos minimum 5MB in MP4, AVI, MOV, WMV, FLV, or WebM format
-                  </p>
                   <button
                     type="button"
                     className={styles.uploadButton}
                     onClick={() => videoInputRef.current?.click()}
                     disabled={isSubmitting}
                   >
-                    Select Videos
+                    <LuUpload className={styles.uploadIcon} />
+                    Upload
                   </button>
+                  <input
+                    ref={videoInputRef}
+                    type="file"
+                    multiple
+                    accept="video/*"
+                    onChange={handleVideoInputChange}
+                    className={styles.hiddenInput}
+                    disabled={isSubmitting}
+                  />
+                  <p className={styles.uploadText}>
+                    Choose videos or drag & drop it here.
+                  </p>
+                  <p className={styles.uploadSubtext}>
+                    MP4, AVI, MOV, WMV, FLV, and WebM. Min 5 MB.
+                  </p>
                 </div>
-                <input
-                  ref={videoInputRef}
-                  type="file"
-                  multiple
-                  accept="video/*"
-                  onChange={handleVideoInputChange}
-                  className={styles.fileInput}
-                  disabled={isSubmitting}
-                />
               </div>
             </div>
 

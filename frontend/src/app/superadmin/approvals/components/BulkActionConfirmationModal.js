@@ -16,6 +16,7 @@ export default function BulkActionConfirmationModal({
   isProcessing = false
 }) {
   const [rejectComment, setRejectComment] = useState('');
+  const [commentError, setCommentError] = useState('');
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -32,8 +33,16 @@ export default function BulkActionConfirmationModal({
   useEffect(() => {
     if (!isOpen) {
       setRejectComment('');
+      setCommentError('');
     }
   }, [isOpen]);
+
+  // Clear error when user starts typing
+  useEffect(() => {
+    if (rejectComment.trim() && commentError) {
+      setCommentError('');
+    }
+  }, [rejectComment, commentError]);
 
   if (!isOpen) return null;
 
@@ -100,17 +109,15 @@ export default function BulkActionConfirmationModal({
   if (!config) return null;
 
   const handleConfirm = (e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
+    e.preventDefault();
+    e.stopPropagation();
     
     if (isProcessing) {
       return; // Prevent double-clicks
     }
     
     if (actionType === 'reject' && !rejectComment.trim()) {
-      // Validation handled by form state
+      setCommentError('Reason for rejection is required');
       return;
     }
     
@@ -123,7 +130,12 @@ export default function BulkActionConfirmationModal({
     <div className={styles.overlay}>
       <div className={styles.modal}>
         <div className={styles.header}>
-          <h2 className={styles.title}>{config.title}</h2>
+          <div className={styles.titleContainer}>
+            <div className={`${styles.warningIcon} ${styles[`warningIcon${actionType ? actionType.charAt(0).toUpperCase() + actionType.slice(1) : ''}`]}`}>
+              <FiAlertTriangle />
+            </div>
+            <h2 className={styles.title}>{config.title}</h2>
+          </div>
           <button 
             className={styles.closeBtn}
             onClick={onCancel}
@@ -134,14 +146,9 @@ export default function BulkActionConfirmationModal({
         </div>
 
         <div className={styles.content}>
-          <div className={styles.warningSection}>
-            <div className={styles.warningIcon}>
-              <FiAlertTriangle />
-            </div>
-            <div className={styles.warningText}>
-              <p className={styles.message}>{config.message}</p>
-              <p className={styles.details}>{config.details}</p>
-            </div>
+          <div className={styles.warningText}>
+            <p className={styles.message}>{config.message}</p>
+            <p className={styles.details}>{config.details}</p>
           </div>
 
           {config.showComment && (
@@ -154,10 +161,15 @@ export default function BulkActionConfirmationModal({
                 value={rejectComment}
                 onChange={(e) => setRejectComment(e.target.value)}
                 placeholder="Please provide a reason for rejecting these approvals..."
-                className={styles.commentInput}
+                className={`${styles.commentInput} ${commentError ? styles.commentInputError : ''}`}
                 rows={3}
                 disabled={isProcessing}
               />
+              {commentError && (
+                <div className={styles.commentError}>
+                  {commentError}
+                </div>
+              )}
             </div>
           )}
 

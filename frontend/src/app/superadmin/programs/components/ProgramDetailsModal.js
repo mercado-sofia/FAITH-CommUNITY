@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding, FaHistory, FaInfoCircle, FaUser, FaClock } from 'react-icons/fa'
+import { FaTimes, FaTag, FaCalendar, FaEye, FaBuilding, FaHistory, FaInfoCircle, FaClock } from 'react-icons/fa'
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths'
 import { getProgramStatusByDates } from '@/utils/programStatusUtils'
 import { useGetProgramByIdQuery } from '@/rtk/superadmin/programsApi'
@@ -172,7 +172,7 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
               onClick={() => setActiveTab('activity')}
             >
               <FaHistory className={styles.tabIcon} />
-              Activity Tracker
+              Activity
             </button>
           </div>
 
@@ -349,50 +349,38 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
           {/* Activity Tracker Tab */}
           {activeTab === 'activity' && (
             <div className={styles.activityTrackerContent}>
-              <h3 className={styles.activityTrackerTitle}>Activity History</h3>
+              <h3 className={styles.activityTrackerTitle}>History</h3>
               
               <div className={styles.activityList}>
                 {/* Created Activity */}
                 {programData.created_at && (
-                  <>
-                    <div className={styles.activityItem}>
-                      <div className={styles.activityIcon}>
-                        <FaClock />
+                  <div className={styles.activityItem}>
+                    <div className={styles.activityIcon}>
+                      <FaClock />
+                    </div>
+                    <div className={styles.activityContent}>
+                      <div className={styles.activityHeader}>
+                        <span className={styles.activityAction}>Program Created</span>
+                        <span className={styles.activityDate}>
+                          {formatDateTime(programData.created_at)}
+                        </span>
                       </div>
-                      <div className={styles.activityContent}>
-                        <div className={styles.activityHeader}>
-                          <span className={styles.activityAction}>Program Created</span>
-                          <span className={styles.activityDate}>
-                            {formatDateTime(programData.created_at)}
+                      {/* Submitted By Information */}
+                      <div className={styles.activityDetails}>
+                        <div className={styles.activityDetailRow}>
+                          <span className={styles.activityDetailLabel}>Submitted by:</span>
+                          <span className={styles.activityDetailValue}>
+                            {programData.submitted_by_name && programData.submitted_by_name.trim() 
+                              ? programData.submitted_by_name 
+                              : 'Not specified'}
+                            {programData.submitted_by_role && programData.submitted_by_role.trim() && (
+                              <span className={styles.activityRole}> ({programData.submitted_by_role})</span>
+                            )}
                           </span>
                         </div>
                       </div>
                     </div>
-
-                    {/* Submitted By Information */}
-                    <div className={styles.activityItem}>
-                      <div className={styles.activityIcon}>
-                        <FaUser />
-                      </div>
-                      <div className={styles.activityContent}>
-                        <div className={styles.activityHeader}>
-                          <span className={styles.activityAction}>Submitted by</span>
-                        </div>
-                        <div className={styles.activityDetails}>
-                          <div className={styles.activityDetailRow}>
-                            <span className={styles.activityDetailValue}>
-                              {programData.submitted_by_name && programData.submitted_by_name.trim() 
-                                ? programData.submitted_by_name 
-                                : 'Not specified'}
-                              {programData.submitted_by_role && programData.submitted_by_role.trim() && (
-                                <span className={styles.activityRole}> ({programData.submitted_by_role})</span>
-                              )}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </>
+                  </div>
                 )}
 
                 {/* Updated Activity - Only show if program has been updated AND has edited_by data */}
@@ -417,45 +405,33 @@ const ProgramDetailsModal = ({ program, isOpen, onClose }) => {
                   // Only show if program has been updated AND has edited_by data
                   if (hasBeenUpdated && hasEditedByData) {
                     return (
-                      <>
-                        <div className={styles.activityItem}>
-                          <div className={styles.activityIcon}>
-                            <FaClock />
+                      <div className={styles.activityItem}>
+                        <div className={styles.activityIcon}>
+                          <FaClock />
+                        </div>
+                        <div className={styles.activityContent}>
+                          <div className={styles.activityHeader}>
+                            <span className={styles.activityAction}>Program Updated</span>
+                            <span className={styles.activityDate}>
+                              {formatDateTime(programData.updated_at)}
+                            </span>
                           </div>
-                          <div className={styles.activityContent}>
-                            <div className={styles.activityHeader}>
-                              <span className={styles.activityAction}>Program Updated</span>
-                              <span className={styles.activityDate}>
-                                {formatDateTime(programData.updated_at)}
+                          {/* Updated By Information - Only show if edited_by_name exists */}
+                          <div className={styles.activityDetails}>
+                            <div className={styles.activityDetailRow}>
+                              <span className={styles.activityDetailLabel}>Updated by:</span>
+                              <span className={styles.activityDetailValue}>
+                                {programData.edited_by_name.trim()}
+                                {programData.edited_by_role && 
+                                 typeof programData.edited_by_role === 'string' &&
+                                 programData.edited_by_role.trim() !== '' && (
+                                  <span className={styles.activityRole}> ({programData.edited_by_role.trim()})</span>
+                                )}
                               </span>
                             </div>
                           </div>
                         </div>
-
-                        {/* Updated By Information - Only show if edited_by_name exists */}
-                        <div className={styles.activityItem}>
-                          <div className={styles.activityIcon}>
-                            <FaUser />
-                          </div>
-                          <div className={styles.activityContent}>
-                            <div className={styles.activityHeader}>
-                              <span className={styles.activityAction}>Updated by</span>
-                            </div>
-                            <div className={styles.activityDetails}>
-                              <div className={styles.activityDetailRow}>
-                                <span className={styles.activityDetailValue}>
-                                  {programData.edited_by_name.trim()}
-                                  {programData.edited_by_role && 
-                                   typeof programData.edited_by_role === 'string' &&
-                                   programData.edited_by_role.trim() !== '' && (
-                                    <span className={styles.activityRole}> ({programData.edited_by_role.trim()})</span>
-                                  )}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </>
+                      </div>
                     );
                   }
                   return null;

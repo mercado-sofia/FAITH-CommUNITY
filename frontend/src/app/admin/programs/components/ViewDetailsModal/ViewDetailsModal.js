@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { FaTimes, FaCalendar, FaEye, FaUsers, FaExclamationTriangle, FaCheck, FaBuilding, FaClock, FaInfoCircle } from 'react-icons/fa';
+import { FaTimes, FaCalendar, FaEye, FaUsers, FaExclamationTriangle, FaCheck, FaBuilding, FaClock, FaInfoCircle, FaHistory } from 'react-icons/fa';
 import { hasActiveCollaborations as checkHasActiveCollaborations, getActiveCollaborators } from '@/utils/collaborationStatusUtils';
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
-import { formatProgramDates, formatDateShort } from '@/utils/dateUtils.js';
+import { formatProgramDates, formatDateShort, formatDateTime } from '@/utils/dateUtils.js';
 import { getStatusDisplayText } from '@/utils/collaborationStatusUtils';
 import styles from './ViewDetailsModal.module.css';
 
@@ -16,8 +16,15 @@ const ViewDetailsModal = ({
   mode = 'view', // 'view' or 'collaboration'
   collaboration = null
 }) => {
+  // State for tabs
+  const [activeTab, setActiveTab] = useState('details');
   // State for collaboration mode
   const [imageError, setImageError] = useState(false);
+
+  // Reset tab when modal opens or program changes
+  useEffect(() => {
+    setActiveTab('details');
+  }, [program?.id, mode]);
 
   // Safety check for collaboration data in collaboration mode
   if (mode === 'collaboration' && !collaboration) {
@@ -128,7 +135,29 @@ const ViewDetailsModal = ({
         </div>
 
         <div className={styles.modalBody}>
-          <div className={styles.contentLayout}>
+          {/* Tabs - Only show in view mode */}
+          {mode === 'view' && (
+            <div className={styles.tabsContainer}>
+              <button
+                className={`${styles.tab} ${activeTab === 'details' ? styles.activeTab : ''}`}
+                onClick={() => setActiveTab('details')}
+              >
+                <FaInfoCircle className={styles.tabIcon} />
+                Details
+              </button>
+              <button
+                className={`${styles.tab} ${activeTab === 'activity' ? styles.activeTab : ''}`}
+                onClick={() => setActiveTab('activity')}
+              >
+                <FaHistory className={styles.tabIcon} />
+                Activity
+              </button>
+            </div>
+          )}
+
+          {/* Tab Content */}
+          {activeTab === 'details' && (
+            <div className={styles.contentLayout}>
             {/* Top Section - Image and Program Info Side by Side */}
             <div className={styles.topSection}>
               {/* Left - Program Image */}
@@ -488,24 +517,125 @@ const ViewDetailsModal = ({
                 </div>
               </div>
             )}
-          </div>
 
-          {/* Additional Images - Full Width Below - only show in view mode */}
-          {mode === 'view' && data.additional_images && data.additional_images.length > 0 && (
-            <div className={styles.additionalImagesSection}>
-              <h4 className={styles.sectionTitle}>Additional Images</h4>
-              <div className={styles.additionalImagesGrid}>
-                {data.additional_images.map((imagePath, index) => (
-                  <div key={index} className={styles.additionalImageContainer}>
-                    <Image
-                      src={getProgramImageUrl(imagePath, 'additional')}
-                      alt={`Additional ${index + 1}`}
-                      className={styles.additionalImage}
-                      width={200}
-                      height={150}
-                    />
+            {/* Additional Images - Full Width Below - only show in view mode */}
+            {mode === 'view' && data.additional_images && data.additional_images.length > 0 && (
+              <div className={styles.additionalImagesSection}>
+                <h4 className={styles.sectionTitle}>Additional Images</h4>
+                <div className={styles.additionalImagesGrid}>
+                  {data.additional_images.map((imagePath, index) => (
+                    <div key={index} className={styles.additionalImageContainer}>
+                      <Image
+                        src={getProgramImageUrl(imagePath, 'additional')}
+                        alt={`Additional ${index + 1}`}
+                        className={styles.additionalImage}
+                        width={200}
+                        height={150}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          )}
+
+          {/* Activity Tracker Tab - Only show in view mode */}
+          {mode === 'view' && activeTab === 'activity' && (
+            <div className={styles.activityTrackerContent}>
+              <h3 className={styles.activityTrackerTitle}>History</h3>
+              
+              <div className={styles.activityList}>
+                {/* Created Activity */}
+                {data.created_at && (
+                  <div className={styles.activityItem}>
+                    <div className={styles.activityIcon}>
+                      <FaClock />
+                    </div>
+                    <div className={styles.activityContent}>
+                      <div className={styles.activityHeader}>
+                        <span className={styles.activityAction}>Program Created</span>
+                        <span className={styles.activityDate}>
+                          {formatDateTime(data.created_at)}
+                        </span>
+                      </div>
+                      {/* Submitted By Information */}
+                      {data.submitted_by_name && (
+                        <div className={styles.activityDetails}>
+                          <div className={styles.activityDetailRow}>
+                            <span className={styles.activityDetailLabel}>Submitted by:</span>
+                            <span className={styles.activityDetailValue}>
+                              {data.submitted_by_name.trim() || 'Not specified'}
+                              {data.submitted_by_role && data.submitted_by_role.trim() && (
+                                <span className={styles.activityRole}> ({data.submitted_by_role})</span>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                ))}
+                )}
+
+                {/* Updated Activity - Only show if program has been updated AND has edited_by data */}
+                {(() => {
+                  // Check if edited_by_name exists and has real data
+                  const hasEditedByData = data.edited_by_name && 
+                    typeof data.edited_by_name === 'string' &&
+                    data.edited_by_name.trim() !== '' &&
+                    data.edited_by_name.trim().toLowerCase() !== 'not specified';
+                  
+                  // Check if program has been updated
+                  const hasBeenUpdated = data.updated_at && 
+                    data.created_at && 
+                    (() => {
+                      const updatedTime = new Date(data.updated_at).getTime();
+                      const createdTime = new Date(data.created_at).getTime();
+                      return (updatedTime - createdTime) >= 1000;
+                    })();
+                  
+                  // Only show if program has been updated AND has edited_by data
+                  if (hasBeenUpdated && hasEditedByData) {
+                    return (
+                      <div className={styles.activityItem}>
+                        <div className={styles.activityIcon}>
+                          <FaClock />
+                        </div>
+                        <div className={styles.activityContent}>
+                          <div className={styles.activityHeader}>
+                            <span className={styles.activityAction}>Program Updated</span>
+                            <span className={styles.activityDate}>
+                              {formatDateTime(data.updated_at)}
+                            </span>
+                          </div>
+                          {/* Updated By Information */}
+                          <div className={styles.activityDetails}>
+                            <div className={styles.activityDetailRow}>
+                              <span className={styles.activityDetailLabel}>Updated by:</span>
+                              <span className={styles.activityDetailValue}>
+                                {data.edited_by_name.trim()}
+                                {data.edited_by_role && 
+                                 typeof data.edited_by_role === 'string' &&
+                                 data.edited_by_role.trim() !== '' && (
+                                  <span className={styles.activityRole}> ({data.edited_by_role.trim()})</span>
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {/* No activity message */}
+                {!data.created_at && !data.updated_at && (
+                  <div className={styles.noActivity}>
+                    <FaHistory className={styles.noActivityIcon} />
+                    <p>No activity history available</p>
+                  </div>
+                )}
               </div>
             </div>
           )}

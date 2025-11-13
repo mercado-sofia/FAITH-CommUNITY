@@ -494,7 +494,7 @@
   margin: 0 auto;
   max-width: 90%;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 2px solid rgba(155, 206, 181, 0.5);
+  border: 4px solid rgba(155, 206, 181, 0.5);
 }
 
 .descriptionText {
@@ -528,6 +528,16 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.mainVideo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background-color: #000;
 }
 
 /* Navigation Arrows */
@@ -637,17 +647,61 @@
   object-fit: cover;
 }
 
+.thumbnailVideo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background-color: #000;
+  pointer-events: none;
+}
+
+.thumbnailVideo::-webkit-media-controls {
+  display: none !important;
+}
+
+.thumbnailVideo::-webkit-media-controls-enclosure {
+  display: none !important;
+}
+
+.videoIndicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 24px;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.videoIndicator svg {
+  width: 12px;
+  height: 12px;
+  margin-left: 2px; /* Slight offset to center the play icon visually */
+}
+
 /* Program Title Container */
 .programTitleContainer {
-  background: linear-gradient(135deg, rgba(5, 150, 105, 0.08) 0%, rgba(16, 185, 129, 0.06) 50%, rgba(34, 197, 94, 0.08) 100%);
+  background: linear-gradient(135deg, rgba(5, 150, 105, 0.15) 0%, rgba(16, 185, 129, 0.12) 50%, rgba(34, 197, 94, 0.15) 100%);
   border: 2px solid rgba(5, 150, 105, 0.25);
-  border-radius: 12px;
+  border-radius: 50px;
   padding: 1rem 1.5rem;
   margin: 0 auto;
   max-width: 90%;
   text-align: center;
   box-shadow: 0 2px 8px rgba(5, 150, 105, 0.1);
   backdrop-filter: blur(4px);
+  overflow: hidden;
+  position: relative;
 }
 
 .programTitleText {
@@ -678,6 +732,62 @@
   font-size: 0.95rem;
   font-family: var(--font-inter), 'Inter', sans-serif;
   flex-wrap: wrap;
+}
+
+/* Special styling for program item */
+.programItem {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem; /* Add more space below program details */
+}
+
+.programItem .metaValue {
+  margin-left: 0;
+  padding-left: 0.75rem;
+  border-left: 2px solid rgba(59, 130, 246, 0.2);
+  font-size: 18px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 50%, #93c5fd 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: #3b82f6; /* Fallback for browsers that don't support background-clip */
+}
+
+/* Ensure gradient is visible for program value */
+@supports (-webkit-background-clip: text) {
+  .programItem .metaValue {
+    color: transparent;
+  }
+}
+
+/* Program Label - Styled Design */
+.programLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.08) 100%);
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #3b82f6;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+}
+
+.programLabel .metaIcon {
+  color: #3b82f6;
+  width: 18px;
+  height: 18px;
+}
+
+.programLabel .metaLabel {
+  color: #3b82f6;
+  min-width: auto;
+  font-weight: 600;
+  font-size: 0.95rem;
 }
 
 /* Special styling for organization item */
@@ -853,6 +963,11 @@
     font-size: 0.9rem;
   }
   
+  .programLabel {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+  }
+  
   .organizationLabel {
     font-size: 0.85rem;
     padding: 0.4rem 0.6rem;
@@ -961,6 +1076,16 @@
   
   .sectionTitle {
     font-size: 0.75rem;
+  }
+  
+  .programLabel {
+    font-size: 0.8rem;
+    padding: 0.35rem 0.5rem;
+  }
+  
+  .programLabel .metaIcon {
+    width: 16px;
+    height: 16px;
   }
   
   .organizationLabel {

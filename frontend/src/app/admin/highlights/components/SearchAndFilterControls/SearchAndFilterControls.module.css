@@ -38,9 +38,48 @@
   user-select: none;
 }
 
+.programLabel {
+  color: #9ca3af;
+  font-weight: 400;
+  margin-right: 0.25rem;
+}
+
+.programValue {
+  color: #000;
+  font-weight: 500;
+}
+
+/* Wider dropdown specifically for programs filter */
+.programDropdown {
+  background: #fff;
+  padding: 0.5rem 0.85rem 0.5rem 1rem;
+  min-width: auto;
+  width: auto;
+  max-width: 400px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  color: #000;
+  border: 1px solid #e5e5e5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease-in-out;
+  user-select: none;
+  white-space: nowrap;
+}
+
 .icon {
   margin-left: 8px;
   color: #9ca3af;
+  transition: transform 0.2s ease;
+}
+
+.dropdown.open .icon,
+.programDropdown.open .icon {
+  transform: rotate(180deg);
 }
 
 .options {

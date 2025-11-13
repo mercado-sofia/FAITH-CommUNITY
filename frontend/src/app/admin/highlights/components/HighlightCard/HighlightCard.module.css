@@ -6,6 +6,9 @@
   overflow: hidden;
   transition: all 0.2s ease;
   border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .card:hover {
@@ -68,6 +71,10 @@
 /* Content Section */
 .content {
   padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .header {
@@ -128,12 +135,14 @@
   line-height: 1.5;
   margin: 0 0 1rem 0;
   font-family: var(--font-inter);
+  flex: 1;
 }
 
 /* Footer */
 .footer {
   border-top: 1px solid #f3f4f6;
   padding-top: 0.75rem;
+  margin-top: auto;
 }
 
 .meta {

@@ -7,6 +7,8 @@ import { clearAuthImmediate, USER_TYPES } from "../../utils/authService";
 import { Sidebar, superadminNavLinks, TopBar } from "@/components";
 import { Loader, DynamicFavicon } from "@/components";
 import { FiSmartphone } from 'react-icons/fi';
+import ToastContainer from "./components/ToastContainer";
+import { useAcceptedInvitationsToast } from "./hooks/useAcceptedInvitationsToast";
 import styles from "./styles/layout.module.css"
 
 // Mobile restriction component
@@ -65,6 +67,9 @@ function SuperAdminLayoutContent({ children }) {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  
+  // Check for accepted invitations and show toast notifications
+  useAcceptedInvitationsToast();
 
   // Check for mobile device
   useEffect(() => {
@@ -199,6 +204,7 @@ function SuperAdminLayoutContent({ children }) {
     <>
       {/* Dynamic Favicon - optimized to prevent navigation delays */}
       <DynamicFavicon />
+      <ToastContainer />
       <div className={styles.superAdminLayout}>
         <Sidebar 
           userType={USER_TYPES.SUPERADMIN}

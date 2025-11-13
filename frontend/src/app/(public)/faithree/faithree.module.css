@@ -750,7 +750,10 @@
     0 4px 16px rgba(76, 175, 80, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 1rem;
   font-weight: 600;
   color: #2e7d32;
@@ -942,6 +945,8 @@
 .instructionToggleText {
   font-weight: 600;
   font-size: 0.9rem;
+  color: inherit; /* Inherit color from button */
+  transition: color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .instructionToggleIcon {
@@ -953,6 +958,13 @@
   flex-shrink: 0;
   color: inherit;
   transition: transform 0.3s ease, color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Ensure icon color updates automatically in rainy mode */
+.toggleButtonsRainy .instructionToggleIcon,
+.instructionToggleButton.toggleButtonsRainy .instructionToggleIcon {
+  color: #87CEEB;
+  transition: color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .instructionToggleIcon svg {
@@ -1116,18 +1128,29 @@
 
 /* Rainy theme styles for toggle button */
 .toggleButtonsRainy .instructionToggleButton,
-.instructionRainy .instructionToggleButton {
-  background: linear-gradient(135deg, rgba(30, 52, 73, 0.95) 0%, rgba(20, 84, 126, 0.9) 100%);
-  border: 2px solid rgba(135, 206, 250, 0.3);
-  color: #E0F6FF;
+.toggleButtonsRainy .instructionToggleContainer .instructionToggleButton,
+.instructionToggleButton.toggleButtonsRainy {
+  background: linear-gradient(135deg, rgba(30, 52, 73, 0.95) 0%, rgba(20, 84, 126, 0.9) 100%) !important;
+  border: 2px solid rgba(135, 206, 250, 0.3) !important;
+  color: #E0F6FF !important;
   box-shadow: 
     0 8px 24px rgba(0, 0, 0, 0.3),
     0 4px 12px rgba(20, 84, 126, 0.25),
-    inset 0 1px 0 rgba(135, 206, 250, 0.2);
+    inset 0 1px 0 rgba(135, 206, 250, 0.2) !important;
+  transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Ensure text is white in rainy mode */
+.toggleButtonsRainy .instructionToggleText,
+.instructionToggleButton.toggleButtonsRainy .instructionToggleText {
+  color: #E0F6FF;
 }
 
 .toggleButtonsRainy .instructionToggleButton:hover,
-.instructionRainy .instructionToggleButton:hover {
+.instructionToggleButton.toggleButtonsRainy:hover {
   background: linear-gradient(135deg, rgba(30, 52, 73, 1) 0%, rgba(20, 84, 126, 0.95) 100%);
   border-color: rgba(135, 206, 250, 0.5);
   box-shadow: 
@@ -1157,10 +1180,6 @@
 }
 
 .toggleButtonsRainy .themeIcon {
-  color: #87CEEB;
-}
-
-.instructionRainy .instructionToggleIcon {
   color: #87CEEB;
 }
 
@@ -1368,30 +1387,6 @@
     transform: translateY(0);
   }
   
-  /* Rainy theme styles for mobile Click Me button */
-  .toggleButtonsRainy .instructionToggleContainer .instructionToggleButton {
-    background: linear-gradient(135deg, rgba(30, 52, 73, 0.95) 0%, rgba(20, 84, 126, 0.9) 100%);
-    border: 2px solid rgba(135, 206, 250, 0.3);
-    color: #E0F6FF;
-    box-shadow: 
-      0 8px 24px rgba(0, 0, 0, 0.3),
-      0 4px 12px rgba(20, 84, 126, 0.25),
-      inset 0 1px 0 rgba(135, 206, 250, 0.2);
-  }
-  
-  .toggleButtonsRainy .instructionToggleContainer .instructionToggleButton:hover {
-    background: linear-gradient(135deg, rgba(30, 52, 73, 1) 0%, rgba(20, 84, 126, 0.95) 100%);
-    border-color: rgba(135, 206, 250, 0.5);
-    box-shadow: 
-      0 12px 32px rgba(0, 0, 0, 0.4),
-      0 6px 16px rgba(20, 84, 126, 0.35),
-      inset 0 1px 0 rgba(135, 206, 250, 0.3);
-  }
-  
-  .toggleButtonsRainy .instructionToggleContainer .instructionToggleIcon {
-    color: #87CEEB;
-  }
-  
   /* Show icon on mobile */
   .instructionToggleIcon {
     display: flex;
@@ -1518,30 +1513,6 @@
     font-size: 0.85rem;
     width: fit-content;
     min-width: fit-content;
-  }
-  
-  /* Rainy theme styles for mobile Click Me button (480px) */
-  .toggleButtonsRainy .instructionToggleContainer .instructionToggleButton {
-    background: linear-gradient(135deg, rgba(30, 52, 73, 0.95) 0%, rgba(20, 84, 126, 0.9) 100%);
-    border: 2px solid rgba(135, 206, 250, 0.3);
-    color: #E0F6FF;
-    box-shadow: 
-      0 8px 24px rgba(0, 0, 0, 0.3),
-      0 4px 12px rgba(20, 84, 126, 0.25),
-      inset 0 1px 0 rgba(135, 206, 250, 0.2);
-  }
-  
-  .toggleButtonsRainy .instructionToggleContainer .instructionToggleButton:hover {
-    background: linear-gradient(135deg, rgba(30, 52, 73, 1) 0%, rgba(20, 84, 126, 0.95) 100%);
-    border-color: rgba(135, 206, 250, 0.5);
-    box-shadow: 
-      0 12px 32px rgba(0, 0, 0, 0.4),
-      0 6px 16px rgba(20, 84, 126, 0.35),
-      inset 0 1px 0 rgba(135, 206, 250, 0.3);
-  }
-  
-  .toggleButtonsRainy .instructionToggleContainer .instructionToggleIcon {
-    color: #87CEEB;
   }
   
   /* Theme toggle at top right */
@@ -1698,30 +1669,6 @@
     font-size: 0.8rem;
     width: fit-content;
     min-width: fit-content;
-  }
-  
-  /* Rainy theme styles for mobile Click Me button (360px) */
-  .toggleButtonsRainy .instructionToggleContainer .instructionToggleButton {
-    background: linear-gradient(135deg, rgba(30, 52, 73, 0.95) 0%, rgba(20, 84, 126, 0.9) 100%);
-    border: 2px solid rgba(135, 206, 250, 0.3);
-    color: #E0F6FF;
-    box-shadow: 
-      0 8px 24px rgba(0, 0, 0, 0.3),
-      0 4px 12px rgba(20, 84, 126, 0.25),
-      inset 0 1px 0 rgba(135, 206, 250, 0.2);
-  }
-  
-  .toggleButtonsRainy .instructionToggleContainer .instructionToggleButton:hover {
-    background: linear-gradient(135deg, rgba(30, 52, 73, 1) 0%, rgba(20, 84, 126, 0.95) 100%);
-    border-color: rgba(135, 206, 250, 0.5);
-    box-shadow: 
-      0 12px 32px rgba(0, 0, 0, 0.4),
-      0 6px 16px rgba(20, 84, 126, 0.35),
-      inset 0 1px 0 rgba(135, 206, 250, 0.3);
-  }
-  
-  .toggleButtonsRainy .instructionToggleContainer .instructionToggleIcon {
-    color: #87CEEB;
   }
   
   /* Theme toggle at top right */

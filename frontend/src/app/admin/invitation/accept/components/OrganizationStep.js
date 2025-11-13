@@ -42,7 +42,7 @@ const LogoUpload = ({
               className={styles.fileInput}
             />
             <label htmlFor="logo" className={styles.uploadButton}>
-              Upload
+              <span>Upload</span>
             </label>
             {logoPreview && (
               <button

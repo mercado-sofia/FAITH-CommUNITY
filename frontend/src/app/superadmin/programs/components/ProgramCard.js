@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react'
 import Image from 'next/image'
 import { getProgramImageUrl } from '@/utils/uploadPaths'
 import { formatProgramDatesForCard } from '@/utils/dateUtils.js'

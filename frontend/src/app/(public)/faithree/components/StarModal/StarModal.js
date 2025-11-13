@@ -13,6 +13,7 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
   const modalContentRef = useRef(null)
   const scrollTimeoutRef = useRef(null)
   const isScrollingRef = useRef(false)
+  const videoRef = useRef(null)
 
   // Optimize scrolling performance by pausing animations during scroll
   const handleScroll = useCallback(() => {
@@ -55,6 +56,11 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
       }
     } else {
       setIsVisible(false)
+      // Pause video when modal closes
+      if (videoRef.current) {
+        videoRef.current.pause()
+        videoRef.current.currentTime = 0
+      }
       if (typeof document !== 'undefined' && document.body) {
         document.body.style.overflow = 'auto'
       }
@@ -81,6 +87,15 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
     }
   }, [isOpen, handleScroll])
 
+  // Handle video cleanup when media index changes
+  useEffect(() => {
+    // When index changes, pause and reset any previously playing video
+    if (videoRef.current) {
+      videoRef.current.pause()
+      videoRef.current.currentTime = 0
+    }
+  }, [currentImageIndex])
+
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
       onClose()
@@ -104,6 +119,11 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
 
   const handlePreviousImage = (e) => {
     e.stopPropagation()
+    // Pause current video if playing
+    if (videoRef.current) {
+      videoRef.current.pause()
+      videoRef.current.currentTime = 0
+    }
     if (highlight?.media && highlight.media.length > 1) {
       setCurrentImageIndex((prev) => (prev === 0 ? highlight.media.length - 1 : prev - 1))
     }
@@ -111,13 +131,41 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
 
   const handleNextImage = (e) => {
     e.stopPropagation()
+    // Pause current video if playing
+    if (videoRef.current) {
+      videoRef.current.pause()
+      videoRef.current.currentTime = 0
+    }
     if (highlight?.media && highlight.media.length > 1) {
       setCurrentImageIndex((prev) => (prev === highlight.media.length - 1 ? 0 : prev + 1))
     }
   }
 
   const handleThumbnailClick = (index) => {
+    // Pause current video if playing
+    if (videoRef.current) {
+      videoRef.current.pause()
+      videoRef.current.currentTime = 0
+    }
     setCurrentImageIndex(index)
+  }
+
+  // Helper function to detect if a media item is a video
+  const isVideo = (mediaItem) => {
+    if (!mediaItem) return false
+    const mediaUrl = mediaItem.url || mediaItem.filename || ''
+    return mediaItem.type === 'video' || 
+           mediaItem.mimetype?.startsWith('video/') ||
+           /\.(mp4|avi|mov|wmv|flv|webm|mkv)$/i.test(mediaUrl)
+  }
+
+  // Helper function to detect if a media item is an image
+  const isImage = (mediaItem) => {
+    if (!mediaItem) return false
+    const mediaUrl = mediaItem.url || mediaItem.filename || ''
+    return mediaItem.type === 'image' || 
+           mediaItem.mimetype?.startsWith('image/') ||
+           /\.(jpg|jpeg|png|gif|webp|svg|avif)$/i.test(mediaUrl)
   }
 
   if (!isOpen || typeof document === 'undefined' || !document.body) {
@@ -136,6 +184,12 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
         year: 'numeric' 
       })
     : ''
+
+  // Get current media item
+  const currentMedia = highlight.media && highlight.media[currentImageIndex]
+  const currentMediaUrl = currentMedia?.url || currentMedia?.filename
+  const currentIsVideo = currentMedia ? isVideo(currentMedia) : false
+  const currentIsImage = currentMedia ? isImage(currentMedia) : false
 
   const modalContent = (
     <div
@@ -203,22 +257,41 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
               <div className={styles.modalSection}>
                 <div className={styles.mediaGallery}>
                   <div className={styles.mainImageContainer}>
-                    {highlight.media[currentImageIndex] && highlight.media[currentImageIndex].url && (
-                      <Image
-                        src={highlight.media[currentImageIndex].url}
-                        alt={`${highlight.title || 'Highlight image'} - ${currentImageIndex + 1} of ${highlight.media.length}`}
-                        fill
-                        className={styles.mainImage}
-                        sizes="700px"
-                      />
+                    {currentMediaUrl && (
+                      <>
+                        {currentIsVideo ? (
+                          <video
+                            ref={videoRef}
+                            controls
+                            className={styles.mainVideo}
+                            preload="metadata"
+                            playsInline
+                            key={currentImageIndex} // Force re-render when changing videos
+                            onError={(e) => {
+                              console.error('Video playback error:', e)
+                            }}
+                          >
+                            <source src={currentMediaUrl} type={currentMedia.mimetype || 'video/mp4'} />
+                            Your browser does not support the video tag.
+                          </video>
+                        ) : currentIsImage ? (
+                          <Image
+                            src={currentMediaUrl}
+                            alt={`${highlight.title || 'Highlight media'} - ${currentImageIndex + 1} of ${highlight.media.length}`}
+                            fill
+                            className={styles.mainImage}
+                            sizes="700px"
+                          />
+                        ) : null}
+                      </>
                     )}
-                    {/* Navigation Arrows - Only show if more than 1 image */}
+                    {/* Navigation Arrows - Only show if more than 1 media item */}
                     {highlight.media.length > 1 && (
                       <>
                         <button
                           className={styles.navArrowLeft}
                           onClick={handlePreviousImage}
-                          aria-label="Previous image"
+                          aria-label="Previous media"
                         >
                           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -227,13 +300,13 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
                         <button
                           className={styles.navArrowRight}
                           onClick={handleNextImage}
-                          aria-label="Next image"
+                          aria-label="Next media"
                         >
                           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                         </button>
-                        {/* Image Counter */}
+                        {/* Media Counter */}
                         <div className={styles.imageCounter}>
                           {currentImageIndex + 1} / {highlight.media.length}
                         </div>
@@ -242,23 +315,44 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
                   </div>
                   {highlight.media.length > 1 && (
                     <div className={styles.thumbnailGrid}>
-                      {highlight.media.map((item, index) => (
-                        <div
-                          key={index}
-                          className={`${styles.thumbnail} ${currentImageIndex === index ? styles.thumbnailActive : ''}`}
-                          onClick={() => handleThumbnailClick(index)}
-                        >
-                          {item.url && (
-                            <Image
-                              src={item.url}
-                              alt={`Thumbnail ${index + 1}`}
-                              fill
-                              className={styles.thumbnailImage}
-                              sizes="70px"
-                            />
-                          )}
-                        </div>
-                      ))}
+                      {highlight.media.map((item, index) => {
+                        const itemUrl = item.url || item.filename
+                        const itemIsVideo = isVideo(item)
+                        const itemIsImage = isImage(item)
+                        
+                        return (
+                          <div
+                            key={index}
+                            className={`${styles.thumbnail} ${currentImageIndex === index ? styles.thumbnailActive : ''}`}
+                            onClick={() => handleThumbnailClick(index)}
+                          >
+                            {itemIsVideo && itemUrl ? (
+                              <>
+                                <video
+                                  className={styles.thumbnailVideo}
+                                  preload="metadata"
+                                  muted
+                                >
+                                  <source src={itemUrl} type={item.mimetype || 'video/mp4'} />
+                                </video>
+                                <div className={styles.videoIndicator}>
+                                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M8 5V19L19 12L8 5Z" fill="currentColor"/>
+                                  </svg>
+                                </div>
+                              </>
+                            ) : itemIsImage && itemUrl ? (
+                              <Image
+                                src={itemUrl}
+                                alt={`Thumbnail ${index + 1}`}
+                                fill
+                                className={styles.thumbnailImage}
+                                sizes="70px"
+                              />
+                            ) : null}
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
@@ -289,15 +383,6 @@ export default function StarModal({ isOpen, onClose, starId, featuredHighlights 
                       {highlight.organization_name}
                       {highlight.organization_acronym && ` (${highlight.organization_acronym})`}
                     </span>
-                  </div>
-                )}
-                {highlight.program_title && (
-                  <div className={styles.metaItem}>
-                    <svg className={styles.metaIcon} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M7 7H17M7 12H17M7 17H12M3 3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span className={styles.metaLabel}>Program:</span>
-                    <span className={styles.metaValue}>{highlight.program_title}</span>
                   </div>
                 )}
                 {formattedDate && (

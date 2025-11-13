@@ -49,27 +49,34 @@
 .header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
-  padding: 1.5rem 1.5rem 1rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 1.5rem 2rem 1rem 2rem;
+  border-bottom: none;
   position: relative;
 }
 
+.titleContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
 
 .title {
   font-size: 1.25rem;
   font-weight: 600;
   color: #000;
   margin: 0;
-  flex: 1;
 }
 
 .closeBtn {
   position: absolute;
   top: 1rem;
-  right: 1rem;
-  width: 32px;
-  height: 32px;
+  right: 1.4rem;
+  width: 34px;
+  height: 34px;
+  font-size: 15px;
   border: none;
   background: none;
   cursor: pointer;
@@ -93,24 +100,37 @@
 
 /* Content */
 .content {
-  padding: 1.5rem;
-}
-
-.warningSection {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  padding: 1.5rem 2rem;
 }
 
 .warningIcon {
-  color: #000;
-  font-size: 20px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  margin-top: 2px;
+  font-size: 15px;
+}
+
+.warningIconApprove {
+  background-color: #d1fae5;
+  color: #059669;
+}
+
+.warningIconReject {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.warningIconDelete {
+  background-color: #f3f4f6;
+  color: #6b7280;
 }
 
 .warningText {
-  flex: 1;
+  margin-bottom: 1.5rem;
 }
 
 .message {
@@ -164,6 +184,25 @@
   cursor: not-allowed;
 }
 
+.commentInputError {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.commentInputError:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.commentError {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 /* Destructive Warning */
 .destructiveWarning {
   background: #fef2f2;
@@ -180,8 +219,8 @@
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
-  padding: 1rem 1.5rem 1.5rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  padding: 1rem 2rem 1.5rem 2rem;
+  border-top: none;
 }
 
 .cancelBtn {

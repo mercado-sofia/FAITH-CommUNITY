@@ -1368,6 +1368,30 @@
     transform: translateY(0);
   }
   
+  /* Rainy theme styles for mobile Click Me button */
+  .toggleButtonsRainy .instructionToggleContainer .instructionToggleButton {
+    background: linear-gradient(135deg, rgba(30, 52, 73, 0.95) 0%, rgba(20, 84, 126, 0.9) 100%);
+    border: 2px solid rgba(135, 206, 250, 0.3);
+    color: #E0F6FF;
+    box-shadow: 
+      0 8px 24px rgba(0, 0, 0, 0.3),
+      0 4px 12px rgba(20, 84, 126, 0.25),
+      inset 0 1px 0 rgba(135, 206, 250, 0.2);
+  }
+  
+  .toggleButtonsRainy .instructionToggleContainer .instructionToggleButton:hover {
+    background: linear-gradient(135deg, rgba(30, 52, 73, 1) 0%, rgba(20, 84, 126, 0.95) 100%);
+    border-color: rgba(135, 206, 250, 0.5);
+    box-shadow: 
+      0 12px 32px rgba(0, 0, 0, 0.4),
+      0 6px 16px rgba(20, 84, 126, 0.35),
+      inset 0 1px 0 rgba(135, 206, 250, 0.3);
+  }
+  
+  .toggleButtonsRainy .instructionToggleContainer .instructionToggleIcon {
+    color: #87CEEB;
+  }
+  
   /* Show icon on mobile */
   .instructionToggleIcon {
     display: flex;
@@ -1494,6 +1518,30 @@
     font-size: 0.85rem;
     width: fit-content;
     min-width: fit-content;
+  }
+  
+  /* Rainy theme styles for mobile Click Me button (480px) */
+  .toggleButtonsRainy .instructionToggleContainer .instructionToggleButton {
+    background: linear-gradient(135deg, rgba(30, 52, 73, 0.95) 0%, rgba(20, 84, 126, 0.9) 100%);
+    border: 2px solid rgba(135, 206, 250, 0.3);
+    color: #E0F6FF;
+    box-shadow: 
+      0 8px 24px rgba(0, 0, 0, 0.3),
+      0 4px 12px rgba(20, 84, 126, 0.25),
+      inset 0 1px 0 rgba(135, 206, 250, 0.2);
+  }
+  
+  .toggleButtonsRainy .instructionToggleContainer .instructionToggleButton:hover {
+    background: linear-gradient(135deg, rgba(30, 52, 73, 1) 0%, rgba(20, 84, 126, 0.95) 100%);
+    border-color: rgba(135, 206, 250, 0.5);
+    box-shadow: 
+      0 12px 32px rgba(0, 0, 0, 0.4),
+      0 6px 16px rgba(20, 84, 126, 0.35),
+      inset 0 1px 0 rgba(135, 206, 250, 0.3);
+  }
+  
+  .toggleButtonsRainy .instructionToggleContainer .instructionToggleIcon {
+    color: #87CEEB;
   }
   
   /* Theme toggle at top right */
@@ -1650,6 +1698,30 @@
     font-size: 0.8rem;
     width: fit-content;
     min-width: fit-content;
+  }
+  
+  /* Rainy theme styles for mobile Click Me button (360px) */
+  .toggleButtonsRainy .instructionToggleContainer .instructionToggleButton {
+    background: linear-gradient(135deg, rgba(30, 52, 73, 0.95) 0%, rgba(20, 84, 126, 0.9) 100%);
+    border: 2px solid rgba(135, 206, 250, 0.3);
+    color: #E0F6FF;
+    box-shadow: 
+      0 8px 24px rgba(0, 0, 0, 0.3),
+      0 4px 12px rgba(20, 84, 126, 0.25),
+      inset 0 1px 0 rgba(135, 206, 250, 0.2);
+  }
+  
+  .toggleButtonsRainy .instructionToggleContainer .instructionToggleButton:hover {
+    background: linear-gradient(135deg, rgba(30, 52, 73, 1) 0%, rgba(20, 84, 126, 0.95) 100%);
+    border-color: rgba(135, 206, 250, 0.5);
+    box-shadow: 
+      0 12px 32px rgba(0, 0, 0, 0.4),
+      0 6px 16px rgba(20, 84, 126, 0.35),
+      inset 0 1px 0 rgba(135, 206, 250, 0.3);
+  }
+  
+  .toggleButtonsRainy .instructionToggleContainer .instructionToggleIcon {
+    color: #87CEEB;
   }
   
   /* Theme toggle at top right */

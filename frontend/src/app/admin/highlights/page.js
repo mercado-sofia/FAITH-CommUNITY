@@ -201,10 +201,37 @@ export default function AdminHighlightsPage() {
     setEditingHighlight(null);
   }, []);
 
-  // Handle edit highlight
-  const handleEditHighlight = useCallback((highlight) => {
-    setEditingHighlight(highlight);
-    setPageMode('edit');
+  // Handle edit highlight - fetch fresh data from API to ensure we have latest program_id
+  const handleEditHighlight = useCallback(async (highlight) => {
+    try {
+      // Fetch fresh highlight data from API to ensure we have the latest program_id
+      const token = getAdminTokenOrRedirect();
+      if (!token) {
+        throw new Error('No admin token found. Please log in again.');
+      }
+      
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/highlights/${highlight.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setEditingHighlight(data.highlight);
+        setPageMode('edit');
+      } else {
+        // If fetch fails, use the highlight from list as fallback
+        setEditingHighlight(highlight);
+        setPageMode('edit');
+      }
+    } catch (error) {
+      console.error('Error fetching highlight for edit:', error);
+      // On error, use the highlight from list as fallback
+      setEditingHighlight(highlight);
+      setPageMode('edit');
+    }
   }, []);
 
   // Handle view highlight details
@@ -291,11 +318,21 @@ export default function AdminHighlightsPage() {
       });
 
       if (!response.ok) {
+        // Try to get error details from response
+        let errorMessage = `Failed to ${isEdit ? 'update' : 'create'} highlight`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+          console.error('Highlight submission error:', errorData);
+        } catch (e) {
+          console.error('Highlight submission failed:', response.status, response.statusText);
+        }
+        
         const errorInfo = handleApiError({ status: response.status }, `highlights_${isEdit ? 'update' : 'create'}`, {
           redirectOnAuth: true,
           logError: true
         });
-        throw new Error(errorInfo.message);
+        throw new Error(errorInfo.message || errorMessage);
       }
 
       const result = await response.json();

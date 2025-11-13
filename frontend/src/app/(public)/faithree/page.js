@@ -361,7 +361,7 @@ function FAITHreePage() {
         </div>
 
         {/* Click Me Button - Top Left (Mobile) */}
-        <div className={styles.instructionToggleContainer}>
+        <div className={`${styles.instructionToggleContainer} ${styles[`toggleButtons${theme.charAt(0).toUpperCase() + theme.slice(1)}`]}`}>
           <button
             className={styles.instructionToggleButton}
             onClick={() => setIsInstructionOpen(!isInstructionOpen)}

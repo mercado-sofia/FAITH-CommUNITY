@@ -631,9 +631,21 @@ const runIncrementalMigrations = async (connection) => {
         await connection.query(`
           ALTER TABLE admin_highlights 
           ADD COLUMN program_id INT NULL,
-          ADD FOREIGN KEY (program_id) REFERENCES programs(id) ON DELETE SET NULL,
           ADD INDEX idx_program_id (program_id)
         `);
+        // Add foreign key separately to avoid issues if it already exists
+        try {
+          await connection.query(`
+            ALTER TABLE admin_highlights 
+            ADD FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE SET NULL
+          `);
+        } catch (fkError) {
+          // Foreign key might already exist or table might not exist yet, log but continue
+          logWarn('Could not add foreign key for program_id (may already exist)', { 
+            context: 'database', 
+            error: fkError.message 
+          });
+        }
       }
     } catch (programIdError) {
       // Column might already exist or other error - silently skip

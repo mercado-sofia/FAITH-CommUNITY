@@ -160,19 +160,6 @@ export default function LoginPage() {
     return ""
   }
 
-  const checkEmailExists = async (system) => {
-    switch (system) {
-      case "superadmin":
-        return await postJson('/api/superadmin/auth/check-email', { email })
-      case "admin":
-        return await postJson('/api/admins/check-email', { email })
-      case "user":
-        return await postJson('/api/users/check-email', { email })
-      default:
-        throw new Error("Unknown authentication system")
-    }
-  }
-
   const attempt = async (system) => {
     setLastAttemptedSystem(system)
     switch (system) {
@@ -204,88 +191,48 @@ export default function LoginPage() {
     clearAllSessionData()
 
     try {
-      // First, determine which system the email belongs to by checking all systems
-      // This ensures we only attempt login in the correct system, preventing attempt tracking across multiple systems
-      const isSuperadminEmail = email.toLowerCase().trim() === SUPERADMIN_EMAIL.toLowerCase().trim()
+      // Detect which system to try based on email or previous attempts
+      // If email matches superadmin email, try superadmin first
+      let systemToTry = lastAttemptedSystem
       
-      // Build list of systems to check in priority order
-      const systemsToCheck = []
-      if (isSuperadminEmail) {
-        systemsToCheck.push("superadmin", "admin", "user")
-      } else {
-        systemsToCheck.push("user", "admin", "superadmin")
-      }
-      
-      // Check which system the email exists in
-      let emailSystem = null
-      for (const system of systemsToCheck) {
-        const checkResult = await checkEmailExists(system)
-        if (checkResult && checkResult.ok && checkResult.data && checkResult.data.exists) {
-          emailSystem = system
-          break
+      if (!systemToTry) {
+        // Auto-detect based on email
+        if (email.toLowerCase().trim() === SUPERADMIN_EMAIL.toLowerCase().trim()) {
+          systemToTry = "superadmin"
+        } else {
+          systemToTry = "admin" // Default to admin
         }
       }
       
-      // If email doesn't exist in any system, show error without attempting login
-      if (!emailSystem) {
-        setErrorMessage("Invalid email or password. Please check your credentials and try again.")
-        setShowError(true)
-        setFieldErrors({ email: "Invalid email or password", password: "Invalid email or password" })
-        setIsLoading(false)
-        return
-      }
+      let result = await attempt(systemToTry)
+      let successfulSystem = null
       
-      // Now attempt login ONLY in the system where the email exists
-      // This ensures attempts are only tracked in the correct role system
-      const result = await attempt(emailSystem)
-      
-      // Check for rate limiting
-      if (result && result.status === 429) {
-        const rateLimitData = result.data || {}
-        const remainingSecs = rateLimitData.remainingSeconds || 300
-        const attempts = rateLimitData.attempts || 7
+      if (result.ok) {
+        successfulSystem = systemToTry
+        // Reset attempt tracking on success
+        setAttemptCount(0)
+        setRemainingAttempts(7)
+        setIsLockedOut(false)
+      } else if (result.status === 429) {
+        // Rate limit hit - don't try other systems
+        const data = result.data || {}
+        const remainingSecs = data.remainingSeconds || 300 // Default to 5 minutes
+        const attempts = data.attempts || 7
         
         setIsLockedOut(true)
         setLockoutSeconds(remainingSecs)
         setAttemptCount(attempts)
         setRemainingAttempts(0)
-        setErrorMessage(rateLimitData.error || `Too many failed login attempts. Please wait ${formatTimeRemaining(remainingSecs)} before trying again.`)
+        setErrorMessage(data.error || `Too many failed login attempts. Please wait ${formatTimeRemaining(remainingSecs)} before trying again.`)
         setShowError(true)
         setFieldErrors({ email: "Rate limit exceeded", password: "Rate limit exceeded" })
         setIsLoading(false)
         return
       }
-      
-      // If login succeeded, process it
+
       if (result && result.ok) {
         const data = result.data
-        
-        // Handle 2FA requirement for superadmin
-        if (emailSystem === "superadmin" && data && (data.requireTwoFA || /(2fa|two.?factor)/i.test(data.error || ""))) {
-          setNeedsOtp(true)
-          setLastAttemptedSystem("superadmin")
-          setErrorMessage("Enter the 6-digit code from your authenticator app.")
-          setShowError(true)
-          setIsLoading(false)
-          return
-        }
-        
-        // Handle email verification requirement for users
-        if (emailSystem === "user" && data?.requiresVerification) {
-          setErrorMessage("Please verify your email address before logging in. Check your email for a verification link.")
-          setShowError(true)
-          setFieldErrors({ email: "Please verify your email address", password: "Please verify your email address" })
-          setIsLoading(false)
-          return
-        }
-        
-        // Success! Store tokens and redirect
-        setLastAttemptedSystem(emailSystem)
-        setAttemptCount(0)
-        setRemainingAttempts(7)
-        setIsLockedOut(false)
-        
-        switch (emailSystem) {
+        switch (successfulSystem) {
           case "superadmin":
             document.cookie = "userRole=superadmin; path=/; max-age=86400"
             localStorage.setItem("superAdminToken", data.token)
@@ -294,49 +241,98 @@ export default function LoginPage() {
             localStorage.setItem("user", JSON.stringify(data.superadmin))
             localStorage.setItem("userRole", "superadmin")
             dispatch(loginSuperAdmin({ token: data.token, superadmin: data.superadmin }))
-            setIsLoading(false)
-            window.location.href = "/superadmin"
-            return
-            
+            break
           case "admin":
             localStorage.setItem("adminToken", data.token)
             localStorage.setItem("adminData", JSON.stringify(data.admin))
             document.cookie = "userRole=admin; path=/; max-age=86400"
-            localStorage.setItem("token", data.token)
-            localStorage.setItem("userRole", "admin")
             dispatch(loginAdmin({ token: data.token, admin: data.admin }))
-            setIsLoading(false)
-            window.location.href = "/admin"
-            return
-            
+            break
           case "user":
             localStorage.setItem("userToken", data.token)
             localStorage.setItem("userData", JSON.stringify(data.user))
             document.cookie = "userRole=user; path=/; max-age=86400"
-            localStorage.setItem("token", data.token)
+            localStorage.setItem("token", "user")
             localStorage.setItem("userRole", "user")
-            setIsLoading(false)
-            window.location.href = "/"
-            return
+            break
         }
+
+        setIsLoading(false)
+        window.location.href = successfulSystem === 'user' ? '/' : `/${successfulSystem}`
+        return
       }
-      
-      // If login failed, show error with attempt count from the correct system
-      if (result && result.data) {
-        const errorData = result.data
-        const errorMessage = errorData.error || "Invalid email or password. Please check your credentials and try again."
+
+      // Handle rate limiting (this should now be caught earlier in the logic above)
+      if (result && result.status === 429) {
+        const data = result.data || {}
+        const remainingSecs = data.remainingSeconds || 300
+        const attempts = data.attempts || 7
         
-        // Update attempt count from the response
-        if (errorData.attempts !== undefined) {
-          setAttemptCount(errorData.attempts)
-          setRemainingAttempts(errorData.remainingAttempts !== undefined ? errorData.remainingAttempts : Math.max(0, 7 - errorData.attempts))
+        setIsLockedOut(true)
+        setLockoutSeconds(remainingSecs)
+        setAttemptCount(attempts)
+        setRemainingAttempts(0)
+        setErrorMessage(data.error || `Too many failed login attempts. Please wait ${formatTimeRemaining(remainingSecs)} before trying again.`)
+        setShowError(true)
+        setFieldErrors({ email: "Rate limit exceeded", password: "Rate limit exceeded" })
+        setIsLoading(false)
+        return
+      }
+
+      if (result && result.error) {
+        setErrorMessage("Network error: Unable to connect to the server. Please check your internet connection and try again.")
+        setShowError(true)
+        setIsLoading(false)
+        return
+      }
+
+      const data = result?.data
+      // Handle 2FA requirement for superadmin accounts
+      if (data && (data.requireTwoFA || /(2fa|two.?factor)/i.test(data.error || "")) && lastAttemptedSystem === "superadmin") {
+        setNeedsOtp(true)
+        setErrorMessage("Enter the 6-digit code from your authenticator app.")
+        setShowError(true)
+        setIsLoading(false)
+        return
+      }
+
+      // Update attempt count from response if available
+      if (data?.attempts !== undefined) {
+        setAttemptCount(data.attempts)
+        setRemainingAttempts(data.remainingAttempts !== undefined ? data.remainingAttempts : Math.max(0, 7 - data.attempts))
+      }
+
+      if (successfulSystem === "user" && data?.requiresVerification) {
+        setErrorMessage("Please verify your email address before logging in. Check your email for a verification link.")
+        setShowError(true)
+        setFieldErrors({ email: "Please verify your email address", password: "Please verify your email address" })
+      } else {
+        // If login failed and we haven't tried all systems yet, try fallback
+        const isSuperadminEmail = email.toLowerCase().trim() === SUPERADMIN_EMAIL.toLowerCase().trim()
+        
+        // If we tried admin but email is superadmin, try superadmin
+        if (systemToTry === "admin" && isSuperadminEmail && !lastAttemptedSystem) {
+          setLastAttemptedSystem("superadmin")
+          // Retry with superadmin
+          const superadminResult = await attempt("superadmin")
+          if (superadminResult && superadminResult.ok) {
+            const superadminData = superadminResult.data
+            document.cookie = "userRole=superadmin; path=/; max-age=86400"
+            localStorage.setItem("superAdminToken", superadminData.token)
+            localStorage.setItem("superAdminData", JSON.stringify(superadminData.superadmin))
+            localStorage.setItem("token", superadminData.token)
+            localStorage.setItem("user", JSON.stringify(superadminData.superadmin))
+            localStorage.setItem("userRole", "superadmin")
+            dispatch(loginSuperAdmin({ token: superadminData.token, superadmin: superadminData.superadmin }))
+            setIsLoading(false)
+            window.location.href = "/superadmin"
+            return
+          }
         }
         
-        setErrorMessage(errorMessage)
-        setShowError(true)
-        setFieldErrors({ email: "Invalid email or password", password: "Invalid email or password" })
-      } else {
-        setErrorMessage("Invalid email or password. Please check your credentials and try again.")
+        const baseError = (data && data.error) || "Invalid email or password. Please check your credentials and try again."
+        // Only show attempts info in error message if attempts > 3 (tracker will show separately)
+        setErrorMessage(baseError)
         setShowError(true)
         setFieldErrors({ email: "Invalid email or password", password: "Invalid email or password" })
       }

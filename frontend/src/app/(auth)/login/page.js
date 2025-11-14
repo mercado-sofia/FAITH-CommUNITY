@@ -302,18 +302,75 @@ export default function LoginPage() {
         setRemainingAttempts(data.remainingAttempts !== undefined ? data.remainingAttempts : Math.max(0, 7 - data.attempts))
       }
 
-      if (successfulSystem === "user" && data?.requiresVerification) {
+      // Handle email verification requirement for user accounts
+      if (data?.requiresVerification) {
         setErrorMessage("Please verify your email address before logging in. Check your email for a verification link.")
         setShowError(true)
         setFieldErrors({ email: "Please verify your email address", password: "Please verify your email address" })
-      } else {
-        // If login failed and we haven't tried all systems yet, try fallback
-        const isSuperadminEmail = email.toLowerCase().trim() === SUPERADMIN_EMAIL.toLowerCase().trim()
+        setIsLoading(false)
+        return
+      }
+
+      // Handle inactive account
+      if (data?.accountInactive) {
+        setErrorMessage(data.error || "Your account has been deactivated. Please contact support for assistance.")
+        setShowError(true)
+        setFieldErrors({ email: "Account inactive", password: "Account inactive" })
+        setIsLoading(false)
+        return
+      }
+
+      // If login failed and we haven't tried all systems yet, try fallback
+      const isSuperadminEmail = email.toLowerCase().trim() === SUPERADMIN_EMAIL.toLowerCase().trim()
+      
+      // Try fallback systems in order: admin -> user -> superadmin
+      if (!result.ok && systemToTry === "admin" && !lastAttemptedSystem) {
+        // If admin failed, try user system
+        setLastAttemptedSystem("user")
+        const userResult = await attempt("user")
         
-        // If we tried admin but email is superadmin, try superadmin
-        if (systemToTry === "admin" && isSuperadminEmail && !lastAttemptedSystem) {
+        if (userResult && userResult.ok) {
+          const userData = userResult.data
+          // Handle email verification for user
+          if (userData.requiresVerification) {
+            setErrorMessage("Please verify your email address before logging in. Check your email for a verification link.")
+            setShowError(true)
+            setFieldErrors({ email: "Please verify your email address", password: "Please verify your email address" })
+            setIsLoading(false)
+            return
+          }
+          
+          localStorage.setItem("userToken", userData.token)
+          localStorage.setItem("userData", JSON.stringify(userData.user))
+          document.cookie = "userRole=user; path=/; max-age=86400"
+          localStorage.setItem("token", userData.token)
+          localStorage.setItem("userRole", "user")
+          setIsLoading(false)
+          window.location.href = "/"
+          return
+        }
+        
+        // If user login failed, check for email verification requirement
+        if (userResult && userResult.data?.requiresVerification) {
+          setErrorMessage("Please verify your email address before logging in. Check your email for a verification link.")
+          setShowError(true)
+          setFieldErrors({ email: "Please verify your email address", password: "Please verify your email address" })
+          setIsLoading(false)
+          return
+        }
+        
+        // If user login failed, check for inactive account
+        if (userResult && userResult.data?.accountInactive) {
+          setErrorMessage(userResult.data.error || "Your account has been deactivated. Please contact support for assistance.")
+          setShowError(true)
+          setFieldErrors({ email: "Account inactive", password: "Account inactive" })
+          setIsLoading(false)
+          return
+        }
+        
+        // If user also failed and email is superadmin, try superadmin
+        if (isSuperadminEmail) {
           setLastAttemptedSystem("superadmin")
-          // Retry with superadmin
           const superadminResult = await attempt("superadmin")
           if (superadminResult && superadminResult.ok) {
             const superadminData = superadminResult.data
@@ -330,8 +387,21 @@ export default function LoginPage() {
           }
         }
         
+        // If all fallbacks failed, show error from the last attempt (user system)
+        const errorData = userResult?.data || data
+        const baseError = (errorData && errorData.error) || "Invalid email or password. Please check your credentials and try again."
+        setErrorMessage(baseError)
+        setShowError(true)
+        setFieldErrors({ email: "Invalid email or password", password: "Invalid email or password" })
+      } else if (systemToTry === "user" && !result.ok) {
+        // If we directly tried user system and it failed, show the error
         const baseError = (data && data.error) || "Invalid email or password. Please check your credentials and try again."
-        // Only show attempts info in error message if attempts > 3 (tracker will show separately)
+        setErrorMessage(baseError)
+        setShowError(true)
+        setFieldErrors({ email: "Invalid email or password", password: "Invalid email or password" })
+      } else if (systemToTry === "admin" && !result.ok && lastAttemptedSystem) {
+        // If admin failed and we've already tried fallbacks, show error
+        const baseError = (data && data.error) || "Invalid email or password. Please check your credentials and try again."
         setErrorMessage(baseError)
         setShowError(true)
         setFieldErrors({ email: "Invalid email or password", password: "Invalid email or password" })

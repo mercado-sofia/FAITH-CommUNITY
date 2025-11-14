@@ -258,6 +258,16 @@ export const loginUser = async (req, res) => {
 
     const user = users[0];
 
+    // Check if account is active
+    if (user.is_active === 0 || user.is_active === false) {
+      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'user');
+      await SecurityMonitoring.logSecurityEvent('failed_login', 'warn', { email, reason: 'account_inactive' }, req);
+      return res.status(401).json({ 
+        error: 'Your account has been deactivated. Please contact support for assistance.',
+        accountInactive: true
+      });
+    }
+
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {

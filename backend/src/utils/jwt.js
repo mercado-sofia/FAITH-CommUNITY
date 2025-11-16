@@ -90,28 +90,53 @@ export function getAccessTokenCookieOptions(req = null) {
     });
   }
   
-  // IMPORTANT: For cross-origin cookies (localhost:3000 -> localhost:8080)
-  // Chrome allows SameSite=None with Secure=false for localhost, but it's not reliable
-  // Better approach: Use SameSite=Lax and ensure requests are same-site
-  // OR use a proxy to make requests same-origin
-  // For now, we'll use Lax which works for same-site navigation
-  const sameSiteValue = process.env.COOKIE_SAMESITE 
+  // CRITICAL: Detect cross-domain scenarios (e.g., Vercel frontend + Railway backend)
+  // For cross-domain, we MUST use SameSite=None with Secure=true
+  // For same-domain, we can use SameSite=Lax (more secure)
+  let sameSiteValue = process.env.COOKIE_SAMESITE 
     ? (process.env.COOKIE_SAMESITE).toLowerCase()
-    : "lax"; // Changed from "none" to "lax" - works better for localhost
+    : null; // Will be determined based on cross-domain detection
+  
+  // Detect if this is a cross-domain request
+  const isCrossDomain = req && req.headers && req.headers.origin && req.headers.host && 
+    req.headers.origin !== `https://${req.headers.host}` && 
+    req.headers.origin !== `http://${req.headers.host}`;
+  
+  // If not explicitly set, determine based on cross-domain detection
+  if (!sameSiteValue) {
+    if (isCrossDomain) {
+      // Cross-domain (e.g., Vercel -> Railway): MUST use None with Secure
+      sameSiteValue = "none";
+    } else if (isDevelopment) {
+      // Development same-domain: Use Lax (works for localhost)
+      sameSiteValue = "lax";
+    } else {
+      // Production same-domain: Use Lax (more secure)
+      sameSiteValue = "lax";
+    }
+  }
+  
+  // CRITICAL: If SameSite=None, Secure MUST be true (browser requirement)
+  // Override secure setting if SameSite=None is used
+  const mustBeSecure = sameSiteValue === "none" || process.env.NODE_ENV === "production";
   
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // false in dev (localhost), true in prod (HTTPS)
+    secure: mustBeSecure, // true for production or when SameSite=None
     sameSite: sameSiteValue,
     path: "/",
     maxAge: maxAgeMs, // Cookie maxAge is in MILLISECONDS for Express res.cookie()
   };
   
   // CRITICAL: Cookie domain handling for development vs production
+  // For cross-domain cookies, NEVER set domain attribute (browser handles it)
   // When behind a proxy (Next.js rewrites), we MUST set domain to 'localhost' (without port)
   // Otherwise Express defaults to request host (localhost:8080), which browser rejects
   // Setting domain: 'localhost' makes cookie work for both localhost:3000 and localhost:8080
-  if (process.env.COOKIE_DOMAIN) {
+  if (isCrossDomain) {
+    // Cross-domain: Don't set domain attribute - browser will use exact hostname
+    // This ensures cookies work correctly for cross-domain scenarios
+  } else if (process.env.COOKIE_DOMAIN) {
     // Explicit domain from env (production)
     cookieOptions.domain = process.env.COOKIE_DOMAIN;
   } else if (req && req.headers && req.headers['x-forwarded-host']) {
@@ -164,13 +189,16 @@ export function getAccessTokenCookieOptions(req = null) {
   }
   // Production without explicit domain or proxy - don't set domain (uses exact host)
   
-  // Final logging to verify cookie options are correct (development only)
-  if (isDevelopment) {
+  // Final logging to verify cookie options are correct (development or cross-domain)
+  if (isDevelopment || isCrossDomain) {
     console.log('[getAccessTokenCookieOptions] Final cookie options:', {
       ...cookieOptions,
       maxAge: cookieOptions.maxAge,
       maxAgeInSeconds: Math.floor(cookieOptions.maxAge / 1000),
-      domain: cookieOptions.domain
+      domain: cookieOptions.domain,
+      isCrossDomain,
+      origin: req?.headers?.origin,
+      host: req?.headers?.host
     });
   }
   
@@ -180,27 +208,55 @@ export function getAccessTokenCookieOptions(req = null) {
 export function getRefreshCookieOptions(req = null) {
   const isDevelopment = process.env.NODE_ENV !== "production";
   
-  // IMPORTANT: For cross-origin cookies (localhost:3000 -> localhost:8080)
-  // Use SameSite=Lax which works better for localhost
-  const sameSiteValue = process.env.COOKIE_SAMESITE 
+  // CRITICAL: Detect cross-domain scenarios (e.g., Vercel frontend + Railway backend)
+  // For cross-domain, we MUST use SameSite=None with Secure=true
+  // For same-domain, we can use SameSite=Lax (more secure)
+  let sameSiteValue = process.env.COOKIE_SAMESITE 
     ? (process.env.COOKIE_SAMESITE).toLowerCase()
-    : "lax"; // Changed from "none" to "lax" - works better for localhost
+    : null; // Will be determined based on cross-domain detection
+  
+  // Detect if this is a cross-domain request
+  const isCrossDomain = req && req.headers && req.headers.origin && req.headers.host && 
+    req.headers.origin !== `https://${req.headers.host}` && 
+    req.headers.origin !== `http://${req.headers.host}`;
+  
+  // If not explicitly set, determine based on cross-domain detection
+  if (!sameSiteValue) {
+    if (isCrossDomain) {
+      // Cross-domain (e.g., Vercel -> Railway): MUST use None with Secure
+      sameSiteValue = "none";
+    } else if (isDevelopment) {
+      // Development same-domain: Use Lax (works for localhost)
+      sameSiteValue = "lax";
+    } else {
+      // Production same-domain: Use Lax (more secure)
+      sameSiteValue = "lax";
+    }
+  }
+  
+  // CRITICAL: If SameSite=None, Secure MUST be true (browser requirement)
+  // Override secure setting if SameSite=None is used
+  const mustBeSecure = sameSiteValue === "none" || process.env.NODE_ENV === "production";
   
   // CRITICAL: Express res.cookie() maxAge is in MILLISECONDS, not seconds!
   // REFRESH_TOKEN_TTL_MS is already in milliseconds, so use it directly
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // false in dev (localhost), true in prod (HTTPS)
+    secure: mustBeSecure, // true for production or when SameSite=None
     sameSite: sameSiteValue,
     path: "/",
     maxAge: REFRESH_TOKEN_TTL_MS, // Already in milliseconds
   };
   
   // CRITICAL: Cookie domain handling for development vs production
+  // For cross-domain cookies, NEVER set domain attribute (browser handles it)
   // When behind a proxy (Next.js rewrites), we MUST set domain to 'localhost' (without port)
   // Otherwise Express defaults to request host (localhost:8080), which browser rejects
   // Setting domain: 'localhost' makes cookie work for both localhost:3000 and localhost:8080
-  if (process.env.COOKIE_DOMAIN) {
+  if (isCrossDomain) {
+    // Cross-domain: Don't set domain attribute - browser will use exact hostname
+    // This ensures cookies work correctly for cross-domain scenarios
+  } else if (process.env.COOKIE_DOMAIN) {
     // Explicit domain from env (production)
     cookieOptions.domain = process.env.COOKIE_DOMAIN;
   } else if (req && req.headers && req.headers['x-forwarded-host']) {

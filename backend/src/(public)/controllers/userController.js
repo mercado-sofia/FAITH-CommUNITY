@@ -1151,7 +1151,16 @@ export const refreshAccessToken = async (req, res) => {
       role: user.role // Return role so frontend knows which type
     })
   } catch (e) {
-    res.status(500).json({ error: 'Internal server error' })
+    console.error('[refreshAccessToken] Error refreshing token:', e);
+    console.error('[refreshAccessToken] Error details:', {
+      name: e.name,
+      message: e.message,
+      stack: e.stack?.split('\n').slice(0, 10).join('\n')
+    });
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? e.message : undefined
+    })
   }
 }
 

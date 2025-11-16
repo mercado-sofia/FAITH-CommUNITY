@@ -294,22 +294,23 @@ export default function AboutUsManagement({ showSuccessModal }) {
               showSuccessModal('Received invalid response from server. Please try again.');
             }
           } else {
-          let errorMessage = 'Failed to update about us content';
-          try {
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-              const errorData = await response.json();
-              errorMessage = errorData.message || errorData.error || errorMessage;
-              console.error('Update error response:', errorData);
-            } else {
+            let errorMessage = 'Failed to update about us content';
+            try {
+              const contentType = response.headers.get('content-type');
+              if (contentType && contentType.includes('application/json')) {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorData.error || errorMessage;
+                console.error('Update error response:', errorData);
+              } else {
+                errorMessage = response.statusText || `Server error (${response.status})`;
+                console.error('Non-JSON error response:', response.status, response.statusText);
+              }
+            } catch (e) {
               errorMessage = response.statusText || `Server error (${response.status})`;
-              console.error('Non-JSON error response:', response.status, response.statusText);
+              console.error('Error parsing error response:', e);
             }
-          } catch (e) {
-            errorMessage = response.statusText || `Server error (${response.status})`;
-            console.error('Error parsing error response:', e);
+            showSuccessModal(`${errorMessage} (Status: ${response.status})`);
           }
-          showSuccessModal(`${errorMessage} (Status: ${response.status})`);
         }
       } catch (error) {
         console.error('Update error:', error);

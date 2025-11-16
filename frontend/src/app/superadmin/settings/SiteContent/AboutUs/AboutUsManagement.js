@@ -183,20 +183,41 @@ export default function AboutUsManagement({ showSuccessModal }) {
           'superadmin'
         );
 
-        if (response && response.ok) {
-          const data = await response.json();
-          setAboutUsData(data.data);
-          setIsEditingAboutUs(false);
-          showSuccessModal('About us content updated successfully! The changes will be visible on the public site immediately.');
+        if (!response) {
+          // Response is null - likely redirected due to auth failure
+          showSuccessModal('Authentication failed. Please log in again.');
+          return;
+        }
+        
+        if (response.ok) {
+          try {
+            const data = await response.json();
+            if (data.success) {
+              setAboutUsData(data.data);
+              setIsEditingAboutUs(false);
+              showSuccessModal('About us content updated successfully! The changes will be visible on the public site immediately.');
+            } else {
+              showSuccessModal(data.message || 'Failed to update about us content');
+            }
+          } catch (parseError) {
+            console.error('Error parsing response:', parseError);
+            showSuccessModal('Received invalid response from server. Please try again.');
+          }
         } else {
           let errorMessage = 'Failed to update about us content';
           try {
-          const errorData = await response.json();
-            errorMessage = errorData.message || errorData.error || errorMessage;
-            console.error('Update error response:', errorData);
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const errorData = await response.json();
+              errorMessage = errorData.message || errorData.error || errorMessage;
+              console.error('Update error response:', errorData);
+            } else {
+              errorMessage = response.statusText || `Server error (${response.status})`;
+              console.error('Non-JSON error response:', response.status, response.statusText);
+            }
           } catch (e) {
             errorMessage = response.statusText || `Server error (${response.status})`;
-            console.error('Non-JSON error response:', response.status, response.statusText);
+            console.error('Error parsing error response:', e);
           }
           showSuccessModal(`${errorMessage} (Status: ${response.status})`);
         }
@@ -312,11 +333,41 @@ export default function AboutUsManagement({ showSuccessModal }) {
 
 
       if (response.ok) {
-        const data = await response.json();
-        return data.imageUrl; // Return the Cloudinary URL from the response
+        try {
+          const data = await response.json();
+          if (data.success && data.imageUrl) {
+            return data.imageUrl; // Return the Cloudinary URL from the response
+          } else {
+            throw new Error(data.message || 'Image uploaded but no URL returned');
+          }
+        } catch (parseError) {
+          console.error('Error parsing upload response:', parseError);
+          throw new Error('Received invalid response from server. Please try again.');
+        }
       } else {
-        // Handle 401 responses
-        if (response.status === 401) {
+        // Handle 401/403 responses - try token refresh
+        if (response.status === 401 || response.status === 403) {
+          try {
+            const { getValidAccessToken } = await import('@/utils/tokenRefresh');
+            const refreshed = await getValidAccessToken(true);
+            if (refreshed) {
+              // Retry upload with refreshed token
+              const retryResponse = await fetch(`${baseUrl}/api/superadmin/about-us/upload-image`, {
+                method: 'POST',
+                credentials: 'include',
+                body: formData,
+              });
+              
+              if (retryResponse.ok) {
+                const retryData = await retryResponse.json();
+                if (retryData.success && retryData.imageUrl) {
+                  return retryData.imageUrl;
+                }
+              }
+            }
+          } catch (refreshError) {
+            console.error('Token refresh failed during image upload:', refreshError);
+          }
           throw new Error('Authentication expired. Please log in again.');
         }
         
@@ -327,12 +378,18 @@ export default function AboutUsManagement({ showSuccessModal }) {
         
         let errorMessage = 'Failed to upload image';
         try {
-        const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
-          console.error('Upload error response:', errorData);
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+            console.error('Upload error response:', errorData);
+          } else {
+            errorMessage = response.statusText || `Server error (${response.status})`;
+            console.error('Non-JSON error response:', response.status, response.statusText);
+          }
         } catch (e) {
           errorMessage = response.statusText || `Server error (${response.status})`;
-          console.error('Non-JSON error response:', response.status, response.statusText);
+          console.error('Error parsing error response:', e);
         }
         throw new Error(`${errorMessage} (Status: ${response.status})`);
       }

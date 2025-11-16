@@ -99,9 +99,15 @@ export const updateAboutUs = async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating about us content:', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack?.split('\n').slice(0, 10).join('\n')
+    });
     res.status(500).json({ 
       success: false, 
-      message: 'Failed to update about us content' 
+      message: 'Failed to update about us content: ' + (error.message || 'Unknown error'),
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };

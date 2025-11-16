@@ -81,14 +81,18 @@ export const makeAuthenticatedRequest = async (url, options = {}, userType = 'ad
   if (response.status === 401 || response.status === 403) {
     // Check if it's a hardcoded token rejection
     try {
-      const errorData = await response.clone().json();
-      if (errorData.error && errorData.error.includes('Hardcoded token not allowed in production')) {
-        // Backend rejected hardcoded token in production - clear auth and redirect
-        clearAuthAndRedirect(userType);
-        return null;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await response.clone().json();
+        if (errorData.error && errorData.error.includes('Hardcoded token not allowed in production')) {
+          // Backend rejected hardcoded token in production - clear auth and redirect
+          clearAuthAndRedirect(userType);
+          return null;
+        }
       }
     } catch (e) {
       // If we can't parse the error, just treat it as a normal auth error
+      console.warn('[makeAuthenticatedRequest] Could not parse error response:', e);
     }
     
     // Try to refresh token (works for all roles now!)
@@ -97,7 +101,7 @@ export const makeAuthenticatedRequest = async (url, options = {}, userType = 'ad
       const refreshed = await getValidAccessToken(true);
       if (refreshed) {
         // Retry request - new token is in cookie
-        return fetch(url, {
+        const retryResponse = await fetch(url, {
           ...options,
           credentials: 'include',
           headers: {
@@ -105,19 +109,41 @@ export const makeAuthenticatedRequest = async (url, options = {}, userType = 'ad
             ...options.headers
           }
         });
+        
+        // Check if retry also failed
+        if (retryResponse.status === 401 || retryResponse.status === 403) {
+          clearAuthAndRedirect(userType);
+          return null;
+        }
+        
+        return retryResponse;
       }
     } catch (refreshError) {
       // Refresh failed
+      console.error('[makeAuthenticatedRequest] Token refresh failed:', refreshError);
     }
     
     clearAuthAndRedirect(userType);
     return null;
   }
   
-  // Check if response is JSON before parsing
-  const contentType = response.headers.get('content-type');
-  if (!contentType || !contentType.includes('application/json')) {
-    throw new Error('Server returned an invalid response. Please try again.');
+  // For non-2xx responses, try to get error message but don't fail if not JSON
+  if (!response.ok) {
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      // It's JSON, return as-is for caller to handle
+      return response;
+    } else {
+      // Not JSON - create a proper error response
+      console.error('[makeAuthenticatedRequest] Non-JSON error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url,
+        contentType
+      });
+      // Return response anyway - let caller handle it
+      return response;
+    }
   }
   
   return response;

@@ -143,31 +143,17 @@ export default function AboutUsManagement({ showSuccessModal }) {
       try {
         setIsUpdatingAboutUs(true);
         
-        let finalImageUrl = tempAboutUs.image_url;
-        
-        // Upload image if a new file is selected
-        if (selectedFile) {
-          try {
-            finalImageUrl = await handleImageUpload(selectedFile);
-            setSelectedFile(null); // Clear selected file after successful upload
-          } catch (error) {
-            console.error('Image upload error:', error);
-            let errorMessage = 'Failed to upload image';
-            
-            if (error.message) {
-              errorMessage = error.message;
-            } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-              errorMessage = `Network error: Cannot connect to backend. Please check:\n1. Backend is running\n2. NEXT_PUBLIC_API_URL is set correctly\n3. CORS is configured on backend`;
-            }
-            
-            showSuccessModal(errorMessage);
-            return;
-          }
-        }
-        
         const { API_BASE_URL } = await import('@/config/api');
         const baseUrl = API_BASE_URL || '';
-        const response = await makeAuthenticatedRequest(
+        
+        // CRITICAL: Save the record FIRST (creates it if it doesn't exist)
+        // This ensures the record exists before we try to upload an image
+        // Step 1: Save description and extension_categories first
+        // If there's a new file to upload, use null for image_url (will be updated after upload)
+        // Otherwise, use existing image_url
+        const initialImageUrl = selectedFile ? null : (tempAboutUs.image_url || null);
+        
+        const initialResponse = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/about-us`,
           {
             method: 'PUT',
@@ -177,33 +163,137 @@ export default function AboutUsManagement({ showSuccessModal }) {
             body: JSON.stringify({
               description: tempAboutUs.description?.trim() || null,
               extension_categories: tempAboutUs.extension_categories || [],
-              image_url: finalImageUrl || null
+              image_url: initialImageUrl
             }),
           },
           'superadmin'
         );
 
-        if (!response) {
-          // Response is null - likely redirected due to auth failure
+        if (!initialResponse) {
           showSuccessModal('Authentication failed. Please log in again.');
           return;
         }
         
-        if (response.ok) {
+        if (!initialResponse.ok) {
+          let errorMessage = 'Failed to save about us content';
           try {
-            const data = await response.json();
-            if (data.success) {
-              setAboutUsData(data.data);
-              setIsEditingAboutUs(false);
-              showSuccessModal('About us content updated successfully! The changes will be visible on the public site immediately.');
+            const contentType = initialResponse.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const errorData = await initialResponse.json();
+              errorMessage = errorData.message || errorData.error || errorMessage;
             } else {
-              showSuccessModal(data.message || 'Failed to update about us content');
+              errorMessage = initialResponse.statusText || `Server error (${initialResponse.status})`;
             }
-          } catch (parseError) {
-            console.error('Error parsing response:', parseError);
-            showSuccessModal('Received invalid response from server. Please try again.');
+          } catch (e) {
+            errorMessage = initialResponse.statusText || `Server error (${initialResponse.status})`;
           }
+          showSuccessModal(`${errorMessage} (Status: ${initialResponse.status})`);
+          return;
+        }
+        
+        // Parse initial response to get saved data
+        let savedData = null;
+        try {
+          const initialData = await initialResponse.json();
+          if (initialData.success && initialData.data) {
+            savedData = initialData.data;
+          }
+        } catch (e) {
+          console.error('Error parsing initial response:', e);
+        }
+        
+        // Step 2: Upload image if a new file is selected (record now exists)
+        let finalImageUrl = tempAboutUs.image_url;
+        if (selectedFile) {
+          try {
+            finalImageUrl = await handleImageUpload(selectedFile);
+            setSelectedFile(null); // Clear selected file after successful upload
+            
+            // Step 3: Update the record with the new image URL
+            const updateResponse = await makeAuthenticatedRequest(
+              `${baseUrl}/api/superadmin/about-us`,
+              {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  description: tempAboutUs.description?.trim() || null,
+                  extension_categories: tempAboutUs.extension_categories || [],
+                  image_url: finalImageUrl
+                }),
+              },
+              'superadmin'
+            );
+            
+            if (updateResponse && updateResponse.ok) {
+              try {
+                const updateData = await updateResponse.json();
+                if (updateData.success && updateData.data) {
+                  savedData = updateData.data;
+                }
+              } catch (e) {
+                console.error('Error parsing update response:', e);
+              }
+            } else {
+              // Image uploaded but failed to update record - still show success but warn
+              console.warn('Image uploaded but failed to update record with image URL');
+            }
+          } catch (error) {
+            console.error('Image upload error:', error);
+            // Image upload failed, but description was saved - show warning
+            let errorMessage = 'Content saved, but image upload failed: ';
+            if (error.message) {
+              errorMessage += error.message;
+            } else {
+              errorMessage += 'Unknown error';
+            }
+            // Still show success for saved content, but with warning
+            if (savedData) {
+              setAboutUsData(savedData);
+              setIsEditingAboutUs(false);
+              showSuccessModal(errorMessage);
+              return;
+            } else {
+              showSuccessModal(errorMessage);
+              return;
+            }
+          }
+        }
+        
+        // Step 4: Use saved data or fetch final data
+        if (savedData) {
+          setAboutUsData(savedData);
+          setIsEditingAboutUs(false);
+          showSuccessModal('About us content updated successfully! The changes will be visible on the public site immediately.');
         } else {
+          // Fallback: Get the final updated data
+          const response = await makeAuthenticatedRequest(
+            `${baseUrl}/api/superadmin/about-us`,
+            { method: 'GET' },
+            'superadmin'
+          );
+
+          if (!response) {
+            showSuccessModal('Authentication failed. Please log in again.');
+            return;
+          }
+          
+          if (response.ok) {
+            try {
+              const data = await response.json();
+              if (data.success && data.data) {
+                setAboutUsData(data.data);
+                setIsEditingAboutUs(false);
+                showSuccessModal('About us content updated successfully! The changes will be visible on the public site immediately.');
+              } else {
+                showSuccessModal(data.message || 'Failed to update about us content');
+              }
+            } catch (parseError) {
+              console.error('Error parsing response:', parseError);
+              showSuccessModal('Received invalid response from server. Please try again.');
+            }
+          } else {
           let errorMessage = 'Failed to update about us content';
           try {
             const contentType = response.headers.get('content-type');

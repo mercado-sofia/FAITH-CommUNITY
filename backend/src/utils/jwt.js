@@ -120,6 +120,23 @@ export function getAccessTokenCookieOptions(req = null) {
     const forwardedHost = req.headers['x-forwarded-host'];
     const hostParts = forwardedHost.split(':');
     cookieOptions.domain = hostParts[0]; // 'localhost' (without port)
+  } else if (req && req.headers && req.headers.host && !isDevelopment) {
+    // Production: Extract domain from host header (handles subdomains)
+    // For example: app.example.com -> .example.com (leading dot for subdomain support)
+    const host = req.headers.host;
+    const hostParts = host.split(':');
+    const hostname = hostParts[0];
+    
+    // If it's a subdomain (has dots), use the root domain with leading dot
+    // This allows cookies to work across subdomains
+    if (hostname.includes('.') && !hostname.startsWith('localhost')) {
+      const parts = hostname.split('.');
+      if (parts.length >= 2) {
+        // Use root domain (e.g., .example.com)
+        cookieOptions.domain = '.' + parts.slice(-2).join('.');
+      }
+    }
+    // For exact hostname or localhost, don't set domain (uses exact host)
   } else if (isDevelopment) {
     // Development without proxy - set domain to 'localhost' to work across ports
     cookieOptions.domain = 'localhost';
@@ -171,6 +188,23 @@ export function getRefreshCookieOptions(req = null) {
     const forwardedHost = req.headers['x-forwarded-host'];
     const hostParts = forwardedHost.split(':');
     cookieOptions.domain = hostParts[0]; // 'localhost' (without port)
+  } else if (req && req.headers && req.headers.host && !isDevelopment) {
+    // Production: Extract domain from host header (handles subdomains)
+    // For example: app.example.com -> .example.com (leading dot for subdomain support)
+    const host = req.headers.host;
+    const hostParts = host.split(':');
+    const hostname = hostParts[0];
+    
+    // If it's a subdomain (has dots), use the root domain with leading dot
+    // This allows cookies to work across subdomains
+    if (hostname.includes('.') && !hostname.startsWith('localhost')) {
+      const parts = hostname.split('.');
+      if (parts.length >= 2) {
+        // Use root domain (e.g., .example.com)
+        cookieOptions.domain = '.' + parts.slice(-2).join('.');
+      }
+    }
+    // For exact hostname or localhost, don't set domain (uses exact host)
   } else if (isDevelopment) {
     // Development without proxy - set domain to 'localhost' to work across ports
     cookieOptions.domain = 'localhost';
@@ -201,6 +235,22 @@ export function getClearCookieOptions(req = null) {
     const forwardedHost = req.headers['x-forwarded-host'];
     const hostParts = forwardedHost.split(':');
     clearOptions.domain = hostParts[0]; // Extract hostname without port
+  } else if (req && req.headers && req.headers.host && !isDevelopment) {
+    // Production: Extract domain from host header (handles subdomains)
+    // This matches the logic used when setting cookies
+    const host = req.headers.host;
+    const hostParts = host.split(':');
+    const hostname = hostParts[0];
+    
+    // If it's a subdomain (has dots), use the root domain with leading dot
+    if (hostname.includes('.') && !hostname.startsWith('localhost')) {
+      const parts = hostname.split('.');
+      if (parts.length >= 2) {
+        // Use root domain (e.g., .example.com)
+        clearOptions.domain = '.' + parts.slice(-2).join('.');
+      }
+    }
+    // For exact hostname or localhost, don't set domain (uses exact host)
   } else if (isDevelopment) {
     // Development without proxy - set domain to 'localhost' to work across ports
     clearOptions.domain = 'localhost';

@@ -1,4 +1,4 @@
-//db table: admins
+//db table: users (unified table for all roles)
 import db from "../../database.js"
 import * as bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
@@ -13,11 +13,11 @@ export const getAdminProfile = async (req, res) => {
     const adminId = req.admin.id
 
     const [rows] = await db.execute(
-      `SELECT a.id, a.email, a.is_active, a.organization_id, a.created_at, a.password_changed_at,
+      `SELECT u.id, u.email, u.is_active, u.organization_id, u.created_at, u.password_changed_at,
               o.org, o.orgName
-       FROM admins a
-       LEFT JOIN organizations o ON a.organization_id = o.id
-       WHERE a.id = ?`,
+       FROM users u
+       LEFT JOIN organizations o ON u.organization_id = o.id
+       WHERE u.id = ? AND u.role = 'admin'`,
       [adminId]
     )
 
@@ -51,7 +51,7 @@ export const updateAdminProfile = async (req, res) => {
 
     // Get current admin data to check if there are actual changes
     const [currentAdminRows] = await db.execute(
-      "SELECT email FROM admins WHERE id = ?",
+      "SELECT email FROM users WHERE id = ? AND role = 'admin'",
       [adminId]
     )
 
@@ -70,7 +70,7 @@ export const updateAdminProfile = async (req, res) => {
     // If there are changes, verify password first
     if (hasChanges) {
       const [adminRows] = await db.execute(
-        "SELECT password FROM admins WHERE id = ?",
+        "SELECT password_hash as password FROM users WHERE id = ? AND role = 'admin'",
         [adminId]
       )
 
@@ -84,9 +84,9 @@ export const updateAdminProfile = async (req, res) => {
       }
     }
 
-    // Check if email is already taken by another admin
+    // Check if email is already taken by another user
     const [existingAdmin] = await db.execute(
-      "SELECT id FROM admins WHERE email = ? AND id != ?",
+      "SELECT id FROM users WHERE email = ? AND id != ?",
       [email, adminId]
     )
 
@@ -96,7 +96,7 @@ export const updateAdminProfile = async (req, res) => {
 
     // Update admin email only
     await db.execute(
-      "UPDATE admins SET email = ? WHERE id = ?",
+      "UPDATE users SET email = ? WHERE id = ? AND role = 'admin'",
       [email, adminId]
     )
 
@@ -128,7 +128,7 @@ export const requestAdminEmailChange = async (req, res) => {
 
     // Get current admin data
     const [adminRows] = await db.execute(
-      "SELECT email, password FROM admins WHERE id = ?",
+      "SELECT email, password_hash as password FROM users WHERE id = ? AND role = 'admin'",
       [adminId]
     )
 
@@ -149,9 +149,9 @@ export const requestAdminEmailChange = async (req, res) => {
       return res.status(401).json({ error: "Invalid password" })
     }
 
-    // Check if email is already taken by another admin
+    // Check if email is already taken by another user
     const [existingAdmin] = await db.execute(
-      "SELECT id FROM admins WHERE email = ? AND id != ?",
+      "SELECT id FROM users WHERE email = ? AND id != ?",
       [newEmail, adminId]
     )
 
@@ -202,17 +202,17 @@ export const verifyAdminEmailChangeOTP = async (req, res) => {
 
     // Update email in database
     await db.execute(
-      "UPDATE admins SET email = ? WHERE id = ?",
+      "UPDATE users SET email = ? WHERE id = ? AND role = 'admin'",
       [verificationResult.newEmail, adminId]
     );
 
     // Get updated admin data for new token
     const [updatedAdminRows] = await db.execute(
-      `SELECT a.id, a.email, a.role, a.is_active, a.organization_id,
+      `SELECT u.id, u.email, u.role, u.is_active, u.organization_id,
               o.org, o.orgName, o.logo
-       FROM admins a
-       LEFT JOIN organizations o ON a.organization_id = o.id
-       WHERE a.id = ?`,
+       FROM users u
+       LEFT JOIN organizations o ON u.organization_id = o.id
+       WHERE u.id = ? AND u.role = 'admin'`,
       [adminId]
     );
 
@@ -303,7 +303,7 @@ export const updateAdminPassword = async (req, res) => {
 
     // Verify current password and get admin details
     const [adminRows] = await db.execute(
-      "SELECT password, email FROM admins WHERE id = ? AND is_active = TRUE",
+      "SELECT password_hash as password, email FROM users WHERE id = ? AND role = 'admin' AND is_active = TRUE",
       [adminId]
     )
 
@@ -322,9 +322,18 @@ export const updateAdminPassword = async (req, res) => {
 
     // Update password
     await db.execute(
-      "UPDATE admins SET password = ?, password_changed_at = NOW(), updated_at = NOW() WHERE id = ?",
+      "UPDATE users SET password_hash = ?, password_changed_at = NOW(), updated_at = NOW() WHERE id = ? AND role = 'admin'",
       [hashedPassword, adminId]
     )
+
+    // Revoke all existing refresh tokens and clear both cookies (security: force re-login)
+    try {
+      const { revokeAllUserRefreshTokens } = await import('../../utils/jwt.js');
+      await revokeAllUserRefreshTokens(adminId);
+    } catch {}
+    // Clear both cookies
+    res.clearCookie('access_token', { path: '/' });
+    res.clearCookie('refresh_token', { path: '/' });
 
     // Send password change notification
     try {
@@ -358,7 +367,7 @@ export const verifyPasswordForEmailChange = async (req, res) => {
     }
 
     const [adminRows] = await db.execute(
-      "SELECT password FROM admins WHERE id = ?",
+      "SELECT password_hash as password FROM users WHERE id = ? AND role = 'admin'",
       [adminId]
     )
 

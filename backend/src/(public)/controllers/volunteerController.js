@@ -141,7 +141,7 @@ export const submitVolunteer = async (req, res) => {
       
       // Find all admins of this organization
       const [adminRows] = await db.execute(
-        "SELECT id FROM admins WHERE organization_id = ?",
+        "SELECT id FROM users WHERE organization_id = ? AND role = 'admin'",
         [program.organization_id]
       );
 
@@ -243,25 +243,26 @@ export const getAllVolunteers = async (req, res) => {
         v.created_at,
         v.updated_at,
         u.id as user_id,
-        u.first_name,
-        u.last_name,
-        u.full_name,
+        up.first_name,
+        up.last_name,
+        CONCAT(up.first_name, ' ', up.last_name) as full_name,
         u.email,
-        u.contact_number,
-        u.gender,
-        u.address,
-        u.occupation,
-        u.citizenship,
-        u.birth_date,
-        u.profile_photo_url,
+        up.contact_number,
+        up.gender,
+        up.address,
+        up.occupation,
+        up.citizenship,
+        up.birth_date,
+        up.profile_photo_url,
         p.title as program_name,
         p.title as program_title,
         o.orgName as organization_name
        FROM volunteers v
        JOIN users u ON v.user_id = u.id
+       LEFT JOIN user_profiles up ON u.id = up.user_id
        LEFT JOIN programs_projects p ON v.program_id = p.id
        LEFT JOIN organizations o ON o.id = p.organization_id
-       WHERE u.is_active = 1
+       WHERE u.is_active = 1 AND u.role = 'user'
        ORDER BY v.created_at DESC`
     );
 
@@ -298,26 +299,27 @@ export const getVolunteersByOrganization = async (req, res) => {
         v.created_at,
         v.updated_at,
         u.id as user_id,
-        u.first_name,
-        u.last_name,
-        u.full_name,
+        up.first_name,
+        up.last_name,
+        CONCAT(up.first_name, ' ', up.last_name) as full_name,
         u.email,
-        u.contact_number,
-        u.gender,
-        u.address,
-        u.occupation,
-        u.citizenship,
-        u.birth_date,
-        u.profile_photo_url,
+        up.contact_number,
+        up.gender,
+        up.address,
+        up.occupation,
+        up.citizenship,
+        up.birth_date,
+        up.profile_photo_url,
         p.title as program_name,
         p.title as program_title,
         o.orgName as organization_name,
         o.id as organization_id
       FROM volunteers v
       JOIN users u ON v.user_id = u.id
+      LEFT JOIN user_profiles up ON u.id = up.user_id
       LEFT JOIN programs_projects p ON v.program_id = p.id
       LEFT JOIN organizations o ON o.id = p.organization_id
-      WHERE o.id = ? AND u.is_active = 1
+      WHERE o.id = ? AND u.is_active = 1 AND u.role = 'user'
       ORDER BY v.created_at DESC
     `, [orgId]);
 
@@ -350,9 +352,9 @@ export const getVolunteersByAdminOrg = async (req, res) => {
     
     // First get the admin's organization
     const [adminRows] = await db.execute(`
-      SELECT o.org, o.id as org_id FROM admins a
-      LEFT JOIN organizations o ON a.organization_id = o.id
-      WHERE a.id = ?
+      SELECT o.org, o.id as org_id FROM users u
+      LEFT JOIN organizations o ON u.organization_id = o.id
+      WHERE u.id = ? AND u.role = 'admin'
     `, [adminId]);
     
     if (adminRows.length === 0) {
@@ -375,26 +377,27 @@ export const getVolunteersByAdminOrg = async (req, res) => {
         v.created_at,
         v.updated_at,
         u.id as user_id,
-        u.first_name,
-        u.last_name,
-        u.full_name,
+        up.first_name,
+        up.last_name,
+        CONCAT(up.first_name, ' ', up.last_name) as full_name,
         u.email,
-        u.contact_number,
-        u.gender,
-        u.address,
-        u.occupation,
-        u.citizenship,
-        u.birth_date,
-        u.profile_photo_url,
+        up.contact_number,
+        up.gender,
+        up.address,
+        up.occupation,
+        up.citizenship,
+        up.birth_date,
+        up.profile_photo_url,
         p.title as program_name,
         p.title as program_title,
         o.orgName as organization_name,
         o.id as organization_id
       FROM volunteers v
       JOIN users u ON v.user_id = u.id
+      LEFT JOIN user_profiles up ON u.id = up.user_id
       LEFT JOIN programs_projects p ON v.program_id = p.id
       LEFT JOIN organizations o ON o.id = p.organization_id
-      WHERE o.org = ? AND u.is_active = 1
+      WHERE o.org = ? AND u.is_active = 1 AND u.role = 'user'
       ORDER BY v.created_at DESC
     `, [adminOrg]);
 
@@ -434,25 +437,26 @@ export const getVolunteerById = async (req, res) => {
         v.created_at,
         v.updated_at,
         u.id as user_id,
-        u.first_name,
-        u.last_name,
-        u.full_name,
+        up.first_name,
+        up.last_name,
+        CONCAT(up.first_name, ' ', up.last_name) as full_name,
         u.email,
-        u.contact_number,
-        u.gender,
-        u.address,
-        u.occupation,
-        u.citizenship,
-        u.birth_date,
-        u.profile_photo_url,
+        up.contact_number,
+        up.gender,
+        up.address,
+        up.occupation,
+        up.citizenship,
+        up.birth_date,
+        up.profile_photo_url,
         p.title as program_name,
         p.title as program_title,
         o.orgName as organization_name
        FROM volunteers v
        JOIN users u ON v.user_id = u.id
+       LEFT JOIN user_profiles up ON u.id = up.user_id
        LEFT JOIN programs_projects p ON v.program_id = p.id
        LEFT JOIN organizations o ON o.id = p.organization_id
-       WHERE v.id = ? AND u.is_active = 1`, 
+       WHERE v.id = ? AND u.is_active = 1 AND u.role = 'user'`, 
       [id]
     );
 
@@ -647,7 +651,7 @@ export const getVolunteersByProgram = async (req, res) => {
       FROM programs_projects p
       LEFT JOIN organizations o ON p.organization_id = o.id
       WHERE p.id = ? AND (
-        p.organization_id = (SELECT organization_id FROM admins WHERE id = ?)
+        p.organization_id = (SELECT organization_id FROM users WHERE id = ? AND role = 'admin')
         OR p.id IN (SELECT program_id FROM program_collaborations WHERE collaborator_admin_id = ? AND status = 'accepted')
       )
     `, [programId, currentAdminId, currentAdminId]);
@@ -671,25 +675,26 @@ export const getVolunteersByProgram = async (req, res) => {
         v.created_at,
         v.updated_at,
         u.id as user_id,
-        u.first_name,
-        u.last_name,
-        u.full_name,
+        up.first_name,
+        up.last_name,
+        CONCAT(up.first_name, ' ', up.last_name) as full_name,
         u.email,
-        u.contact_number,
-        u.gender,
-        u.address,
-        u.occupation,
-        u.citizenship,
-        u.birth_date,
-        u.profile_photo_url,
+        up.contact_number,
+        up.gender,
+        up.address,
+        up.occupation,
+        up.citizenship,
+        up.birth_date,
+        up.profile_photo_url,
         p.title as program_name,
         p.title as program_title,
         o.orgName as organization_name
       FROM volunteers v
       JOIN users u ON v.user_id = u.id
+      LEFT JOIN user_profiles up ON u.id = up.user_id
       LEFT JOIN programs_projects p ON v.program_id = p.id
       LEFT JOIN organizations o ON o.id = p.organization_id
-      WHERE v.program_id = ? AND u.is_active = 1
+      WHERE v.program_id = ? AND u.is_active = 1 AND u.role = 'user'
       ORDER BY v.created_at DESC
     `, [programId]);
 

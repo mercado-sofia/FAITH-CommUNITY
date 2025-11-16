@@ -232,33 +232,44 @@ export default function LoginPage() {
 
       if (result && result.ok) {
         const data = result.data
+        // Tokens are now in httpOnly cookies - don't store in localStorage!
+        // Only store non-sensitive user data
         switch (successfulSystem) {
           case "superadmin":
             document.cookie = "userRole=superadmin; path=/; max-age=86400"
-            localStorage.setItem("superAdminToken", data.token)
             localStorage.setItem("superAdminData", JSON.stringify(data.superadmin))
-            localStorage.setItem("token", data.token)
-            localStorage.setItem("user", JSON.stringify(data.superadmin))
-            localStorage.setItem("userRole", "superadmin")
-            dispatch(loginSuperAdmin({ token: data.token, superadmin: data.superadmin }))
+            // REMOVED: localStorage.setItem("superAdminToken", ...) - token is in httpOnly cookie
+            dispatch(loginSuperAdmin({ token: null, superadmin: data.superadmin })) // Token in cookie
             break
           case "admin":
-            localStorage.setItem("adminToken", data.token)
             localStorage.setItem("adminData", JSON.stringify(data.admin))
             document.cookie = "userRole=admin; path=/; max-age=86400"
-            dispatch(loginAdmin({ token: data.token, admin: data.admin }))
+            // REMOVED: localStorage.setItem("adminToken", ...) - token is in httpOnly cookie
+            dispatch(loginAdmin({ token: null, admin: data.admin })) // Token in cookie
             break
           case "user":
-            localStorage.setItem("userToken", data.token)
             localStorage.setItem("userData", JSON.stringify(data.user))
             document.cookie = "userRole=user; path=/; max-age=86400"
-            localStorage.setItem("token", "user")
-            localStorage.setItem("userRole", "user")
+            // REMOVED: localStorage.setItem("userToken", ...) - token is in httpOnly cookie
             break
         }
 
         setIsLoading(false)
+        
+        // Log successful login for debugging
+        console.log('[Login] Login successful for:', successfulSystem);
+        console.log('[Login] User data:', data);
+        console.log('[Login] Cookies before redirect:', document.cookie);
+        console.log('[Login] Response headers:', 'Check Network tab for Set-Cookie headers');
+        
+        // IMPORTANT: With Next.js rewrites, cookies are set by backend and forwarded through Next.js
+        // The delay ensures the browser has processed the Set-Cookie headers
+        // Check Application > Cookies in DevTools to verify cookies are set
+        setTimeout(() => {
+          console.log('[Login] Redirecting to:', successfulSystem === 'user' ? '/' : `/${successfulSystem}`);
+          console.log('[Login] After redirect, check if access_token and refresh_token cookies exist');
         window.location.href = successfulSystem === 'user' ? '/' : `/${successfulSystem}`
+        }, 1000) // Increased delay to 1 second to ensure cookies are fully set
         return
       }
 
@@ -340,11 +351,10 @@ export default function LoginPage() {
             return
           }
           
-          localStorage.setItem("userToken", userData.token)
+          // Tokens are now in httpOnly cookies - don't store in localStorage!
+          // Only store non-sensitive user data
           localStorage.setItem("userData", JSON.stringify(userData.user))
           document.cookie = "userRole=user; path=/; max-age=86400"
-          localStorage.setItem("token", userData.token)
-          localStorage.setItem("userRole", "user")
           setIsLoading(false)
           window.location.href = "/"
           return
@@ -375,12 +385,10 @@ export default function LoginPage() {
           if (superadminResult && superadminResult.ok) {
             const superadminData = superadminResult.data
             document.cookie = "userRole=superadmin; path=/; max-age=86400"
-            localStorage.setItem("superAdminToken", superadminData.token)
+            // Tokens are now in httpOnly cookies - don't store in localStorage!
+            // Only store non-sensitive user data
             localStorage.setItem("superAdminData", JSON.stringify(superadminData.superadmin))
-            localStorage.setItem("token", superadminData.token)
-            localStorage.setItem("user", JSON.stringify(superadminData.superadmin))
-            localStorage.setItem("userRole", "superadmin")
-            dispatch(loginSuperAdmin({ token: superadminData.token, superadmin: superadminData.superadmin }))
+            dispatch(loginSuperAdmin({ token: null, superadmin: superadminData.superadmin })) // Token in cookie
             setIsLoading(false)
             window.location.href = "/superadmin"
             return

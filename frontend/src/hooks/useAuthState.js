@@ -1,24 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { logout as authServiceLogout, USER_TYPES } from '@/utils/authService';
-import { getValidAccessToken, isTokenExpiredOrExpiringSoon } from '@/utils/tokenRefresh';
+import { getValidAccessToken } from '@/utils/tokenRefresh';
 
 export const useAuthState = () => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check if token is valid (not expired)
-  const isTokenValid = useCallback((token) => {
-    if (!token) return false;
-    
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.exp * 1000 > Date.now();
-    } catch (error) {
-      return false;
-    }
-  }, []);
-
-  // Initialize auth state from localStorage with automatic token refresh
+  // Initialize auth state - check auth via backend API (reads from httpOnly cookie)
   const initializeAuth = useCallback(async () => {
     try {
       // Check for window to avoid SSR errors
@@ -27,25 +15,18 @@ export const useAuthState = () => {
         return;
       }
       
-      let token = localStorage.getItem('userToken');
-      const storedUserData = localStorage.getItem('userData');
+      // Check authentication status from backend (reads from httpOnly cookie)
+      const { getCurrentUser } = await import('@/utils/authService');
+      const userData = await getCurrentUser();
       
-      // If token exists but is expired or expiring soon, try to refresh it
-      if (token && isTokenExpiredOrExpiringSoon(token)) {
-        const refreshedToken = await getValidAccessToken(true);
-        if (refreshedToken) {
-          token = refreshedToken;
-        }
-      }
-      
-      // Only proceed if we have both token and userData, and token is valid
-      if (token && storedUserData && storedUserData !== 'undefined' && storedUserData !== 'null' && isTokenValid(token)) {
-        const userData = JSON.parse(storedUserData);
+      if (userData) {
+        // Also store in localStorage for quick access (non-sensitive data only)
+        localStorage.setItem('userData', JSON.stringify(userData));
         setUser(userData);
       } else {
-        // Clear invalid data only if we have user-related data
-        if (token || (storedUserData && storedUserData !== 'undefined' && storedUserData !== 'null')) {
-          // Use centralized immediate cleanup for security
+        // Not authenticated - clear any stale data
+        const storedUserData = localStorage.getItem('userData');
+        if (storedUserData && storedUserData !== 'undefined' && storedUserData !== 'null') {
           const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
           clearAuthImmediate(USER_TYPES.PUBLIC);
         }
@@ -59,18 +40,19 @@ export const useAuthState = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [isTokenValid]);
+  }, []);
 
   // Check if user is authenticated
   const isAuthenticated = useCallback(() => {
     if (typeof window === 'undefined') return false;
-    return !!user && !!localStorage.getItem('userToken');
+    return !!user; // User data is set from backend auth check
   }, [user]);
 
-  // Get current token
+  // Get current token - tokens are in httpOnly cookies, not accessible to JS
   const getToken = useCallback(() => {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('userToken');
+    // Tokens are in httpOnly cookies - return null as they're not accessible to JavaScript
+    // This is intentional for security (XSS protection)
+    return null;
   }, []);
 
   // Logout function - now uses centralized auth service
@@ -93,7 +75,6 @@ export const useAuthState = () => {
     isLoading,
     isAuthenticated: isAuthenticated(),
     logout,
-    getToken,
-    isTokenValid
+    getToken
   };
 };

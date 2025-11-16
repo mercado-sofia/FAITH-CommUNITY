@@ -9,11 +9,11 @@ export const getAllAvailableAdmins = async (req, res) => {
     const currentAdminId = req.admin?.id || req.superadmin?.id;
     // Get all active admins except the current admin
     const [availableAdmins] = await db.execute(`
-      SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
-      FROM admins a
-      LEFT JOIN organizations o ON a.organization_id = o.id
-      WHERE a.is_active = TRUE 
-      AND a.id != ?
+      SELECT u.id, u.email, o.orgName as organization_name, o.org as organization_acronym
+      FROM users u
+      LEFT JOIN organizations o ON u.organization_id = o.id
+      WHERE u.role = 'admin' AND u.is_active = TRUE 
+      AND u.id != ?
       ORDER BY o.orgName ASC, a.email ASC
     `, [currentAdminId]);
 
@@ -41,28 +41,28 @@ export const getAvailableAdmins = async (req, res) => {
     if (programId && programId !== 'null') {
       // For existing programs, exclude already invited/accepted collaborators
       query = `
-        SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
-        FROM admins a
-        LEFT JOIN organizations o ON a.organization_id = o.id
-        WHERE a.is_active = TRUE 
-        AND a.id != ?
-        AND a.id NOT IN (
+        SELECT u.id, u.email, o.orgName as organization_name, o.org as organization_acronym
+        FROM users u
+        LEFT JOIN organizations o ON u.organization_id = o.id
+        WHERE u.role = 'admin' AND u.is_active = TRUE 
+        AND u.id != ?
+        AND u.id NOT IN (
           SELECT collaborator_admin_id 
           FROM program_collaborations 
           WHERE program_id = ? AND status IN ('accepted', 'declined')
         )
-        ORDER BY o.orgName ASC, a.email ASC
+        ORDER BY o.orgName ASC, u.email ASC
       `;
       params = [currentAdminId, programId];
     } else {
       // For new programs, just exclude current admin
       query = `
-        SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
-        FROM admins a
-        LEFT JOIN organizations o ON a.organization_id = o.id
-        WHERE a.is_active = TRUE 
-        AND a.id != ?
-        ORDER BY o.orgName ASC, a.email ASC
+        SELECT u.id, u.email, o.orgName as organization_name, o.org as organization_acronym
+        FROM users u
+        LEFT JOIN organizations o ON u.organization_id = o.id
+        WHERE u.role = 'admin' AND u.is_active = TRUE 
+        AND u.id != ?
+        ORDER BY o.orgName ASC, u.email ASC
       `;
       params = [currentAdminId];
     }
@@ -93,10 +93,10 @@ export const inviteCollaborator = async (req, res) => {
     // CRITICAL: Only allow inviting collaborators to APPROVED programs
     // Collaborators should NOT be invited until superadmin approves the program
     const [programRows] = await db.execute(`
-      SELECT p.id, p.title, p.organization_id, p.is_approved, a.organization_id as admin_org_id
+      SELECT p.id, p.title, p.organization_id, p.is_approved, u.organization_id as admin_org_id
       FROM programs_projects p
-      LEFT JOIN admins a ON a.id = ?
-      WHERE p.id = ? AND p.organization_id = a.organization_id AND p.is_approved = TRUE
+      LEFT JOIN users u ON u.id = ? AND u.role = 'admin'
+      WHERE p.id = ? AND p.organization_id = u.organization_id AND p.is_approved = TRUE
     `, [currentAdminId, programId]);
 
     if (programRows.length === 0) {
@@ -219,7 +219,7 @@ export const getProgramCollaborators = async (req, res) => {
       WHERE p.id = ? AND p.is_approved = TRUE 
       AND o.status = 'ACTIVE'
       AND (
-        p.organization_id = (SELECT organization_id FROM admins WHERE id = ?)
+        p.organization_id = (SELECT organization_id FROM users WHERE id = ? AND role = 'admin')
         OR p.id IN (SELECT program_id FROM program_collaborations WHERE collaborator_admin_id = ? AND status = 'accepted' AND program_id IS NOT NULL)
       )
     `, [programId, currentAdminId, currentAdminId]);
@@ -243,7 +243,7 @@ export const getProgramCollaborators = async (req, res) => {
         o.orgName as organization_name,
         o.org as organization_acronym
       FROM program_collaborations pc
-      LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+      LEFT JOIN users u ON pc.collaborator_admin_id = u.id AND u.role = 'admin'
       LEFT JOIN organizations o ON a.organization_id = o.id
       WHERE pc.program_id = ?
       ORDER BY pc.invited_at DESC
@@ -273,7 +273,7 @@ export const removeCollaborator = async (req, res) => {
       SELECT id, title, organization_id 
       FROM programs_projects 
       WHERE id = ? AND organization_id = (
-        SELECT organization_id FROM admins WHERE id = ?
+        SELECT organization_id FROM users WHERE id = ? AND role = 'admin'
       )
     `, [programId, currentAdminId]);
 
@@ -357,7 +357,7 @@ export const optOutCollaboration = async (req, res) => {
         o.orgName as admin_org_name
       FROM program_collaborations pc
       LEFT JOIN programs_projects pp ON pc.program_id = pp.id
-      LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+      LEFT JOIN users u ON pc.collaborator_admin_id = u.id AND u.role = 'admin'
       LEFT JOIN organizations o ON a.organization_id = o.id
       WHERE pc.id = ? AND pc.collaborator_admin_id = ? AND pc.status IN ('accepted', 'pending')
     `, [collaborationId, currentAdminId]);
@@ -443,7 +443,7 @@ export const getCollaborationRequests = async (req, res) => {
     
     // Get admin's organization
     const [adminRows] = await db.execute(`
-      SELECT organization_id, email FROM admins WHERE id = ?
+      SELECT organization_id, email FROM users WHERE id = ? AND role = 'admin'
     `, [currentAdminId]);
     
     if (adminRows.length === 0) {
@@ -508,9 +508,9 @@ export const getCollaborationRequests = async (req, res) => {
       INNER JOIN programs_projects p ON pc.program_id = p.id
       LEFT JOIN submissions s ON pc.submission_id = s.id
       LEFT JOIN organizations prog_org ON p.organization_id = prog_org.id
-      LEFT JOIN admins inviter ON pc.invited_by_admin_id = inviter.id
+      LEFT JOIN users inviter ON pc.invited_by_admin_id = inviter.id AND inviter.role = 'admin'
       LEFT JOIN organizations inviter_org ON inviter.organization_id = inviter_org.id
-      LEFT JOIN admins invitee ON pc.collaborator_admin_id = invitee.id
+      LEFT JOIN users invitee ON pc.collaborator_admin_id = invitee.id AND invitee.role = 'admin'
       LEFT JOIN organizations invitee_org ON invitee.organization_id = invitee_org.id
       WHERE (
         pc.collaborator_admin_id = ? 
@@ -553,9 +553,9 @@ export const getCollaborationRequests = async (req, res) => {
             ELSE 'unknown'
           END as request_type
         FROM program_collaborations pc
-        LEFT JOIN admins inviter ON pc.invited_by_admin_id = inviter.id
+        LEFT JOIN users inviter ON pc.invited_by_admin_id = inviter.id AND inviter.role = 'admin'
         LEFT JOIN organizations inviter_org ON inviter.organization_id = inviter_org.id
-        LEFT JOIN admins invitee ON pc.collaborator_admin_id = invitee.id
+        LEFT JOIN users invitee ON pc.collaborator_admin_id = invitee.id AND invitee.role = 'admin'
         LEFT JOIN organizations invitee_org ON invitee.organization_id = invitee_org.id
         WHERE (pc.program_id = ? OR pc.submission_id = ?)
         ORDER BY pc.invited_at DESC

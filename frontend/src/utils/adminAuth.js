@@ -4,8 +4,7 @@
  */
 
 import { clearAuthImmediate, USER_TYPES } from './authService';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from '@/config/api';
 
 /**
  * Clear all authentication data and redirect to login
@@ -59,6 +58,7 @@ export const getUserTypeFromToken = (token) => {
 
 /**
  * Make authenticated API request with automatic token validation
+ * Tokens are now in httpOnly cookies, so they're sent automatically
  */
 export const makeAuthenticatedRequest = async (url, options = {}, userType = 'admin') => {
   // Check for window to avoid SSR errors
@@ -66,32 +66,18 @@ export const makeAuthenticatedRequest = async (url, options = {}, userType = 'ad
     throw new Error('Cannot make authenticated request on server side');
   }
 
-  const tokenKey = userType === 'admin' ? 'adminToken' : 'superAdminToken';
-  const token = typeof window !== 'undefined' ? localStorage.getItem(tokenKey) : null;
-  
-  // Check if token exists
-  if (!token) {
-    clearAuthAndRedirect(userType);
-    return null;
-  }
-  
-  // Check if token is expired
-  if (isTokenExpired(token)) {
-    clearAuthAndRedirect(userType);
-    return null;
-  }
-  
-  // Make the request
+  // Make the request - tokens are in httpOnly cookies, sent automatically
   const response = await fetch(url, {
     ...options,
+    credentials: 'include', // CRITICAL: Include httpOnly cookies
     headers: {
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
       ...options.headers
+      // REMOVED: 'Authorization' header - cookies handle this now
     }
   });
   
-  // Handle 401/403 responses (token invalid/expired or hardcoded token rejected)
+  // Handle 401/403 responses - try refresh if possible
   if (response.status === 401 || response.status === 403) {
     // Check if it's a hardcoded token rejection
     try {
@@ -104,6 +90,26 @@ export const makeAuthenticatedRequest = async (url, options = {}, userType = 'ad
     } catch (e) {
       // If we can't parse the error, just treat it as a normal auth error
     }
+    
+    // Try to refresh token (works for all roles now!)
+    try {
+      const { getValidAccessToken } = await import('./tokenRefresh');
+      const refreshed = await getValidAccessToken(true);
+      if (refreshed) {
+        // Retry request - new token is in cookie
+        return fetch(url, {
+          ...options,
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+          }
+        });
+      }
+    } catch (refreshError) {
+      // Refresh failed
+    }
+    
     clearAuthAndRedirect(userType);
     return null;
   }
@@ -118,61 +124,35 @@ export const makeAuthenticatedRequest = async (url, options = {}, userType = 'ad
 };
 
 /**
- * Validate token and get user data
+ * Validate token and get user data (now uses httpOnly cookies)
  */
 export const validateTokenAndGetUser = async (userType = 'admin') => {
   // Check for window to avoid SSR errors
   if (typeof window === 'undefined') return null;
   
-  const tokenKey = userType === 'admin' ? 'adminToken' : 'superAdminToken';
   const dataKey = userType === 'admin' ? 'adminData' : 'superAdminData';
-  const token = localStorage.getItem(tokenKey);
-  const userData = localStorage.getItem(dataKey);
   
-  // Check if token exists
-  if (!token) {
-    clearAuthAndRedirect(userType);
-    return null;
-  }
-  
-  // Check if token is expired
-  if (isTokenExpired(token)) {
-    clearAuthAndRedirect(userType);
-    return null;
-  }
-  
-  // If we have user data, return it
-  if (userData) {
-    try {
-      return JSON.parse(userData);
-    } catch (error) {
-      // Invalid user data, will be refetched
-    }
-  }
-  
-  // If no user data, try to fetch it from the server
+  // Check auth status from backend (reads from httpOnly cookie)
   try {
-    // Safely get user data for superadmin profile URL
-    const storedData = localStorage.getItem(dataKey);
-    const userId = storedData ? JSON.parse(storedData)?.id : null;
+    const { getCurrentUser } = await import('./authService');
+    const userData = await getCurrentUser();
     
-    const profileUrl = userType === 'admin' 
-      ? `${API_BASE_URL}/api/admin/profile`
-      : `${API_BASE_URL}/api/superadmin/auth/profile/${userId}`;
-    
-    const response = await makeAuthenticatedRequest(profileUrl, { method: 'GET' }, userType);
-    if (!response) return null;
-    
-    const data = await response.json();
-    if (response.ok) {
-      // Store the updated user data (window check already done at function start)
-      localStorage.setItem(dataKey, JSON.stringify(data));
-      return data;
-    }
-  } catch (error) {
+    if (!userData || (userType === 'admin' && userData.role !== 'admin') || 
+        (userType === 'superadmin' && userData.role !== 'superadmin')) {
+    clearAuthAndRedirect(userType);
+    return null;
   }
   
-  return null;
+    // Store user data in localStorage for quick access (non-sensitive data only)
+    if (userData) {
+      localStorage.setItem(dataKey, JSON.stringify(userData));
+    }
+    
+    return userData;
+  } catch (error) {
+    clearAuthAndRedirect(userType);
+    return null;
+  }
 };
 
 /**
@@ -220,19 +200,26 @@ export const showAuthError = (message = 'Your session has expired. Please log in
 };
 
 /**
- * Check authentication status on page load
+ * Check authentication status on page load (now uses httpOnly cookies)
  */
-export const checkAuthStatus = (userType = 'admin') => {
+export const checkAuthStatus = async (userType = 'admin') => {
   // Check for window to avoid SSR errors
   if (typeof window === 'undefined') return false;
   
-  const tokenKey = userType === 'admin' ? 'adminToken' : 'superAdminToken';
-  const token = localStorage.getItem(tokenKey);
+  try {
+    // Check auth status from backend (reads from httpOnly cookie)
+    const { isAuthenticated, USER_TYPES } = await import('./authService');
+    const userTypeEnum = userType === 'admin' ? USER_TYPES.ADMIN : USER_TYPES.SUPERADMIN;
+    const authenticated = await isAuthenticated(userTypeEnum);
   
-  if (!token || isTokenExpired(token)) {
+    if (!authenticated) {
     clearAuthAndRedirect(userType);
     return false;
   }
   
   return true;
+  } catch (error) {
+    clearAuthAndRedirect(userType);
+    return false;
+  }
 };

@@ -79,12 +79,7 @@ const cleanupUnapprovedProgram = async (programId, submissionId) => {
 
 export const getPendingSubmissions = async (req, res) => {
   try {
-    // Optimized query to reduce memory usage:
-    // 1. First get IDs with minimal data to reduce sort memory
-    // 2. Then fetch full data for those IDs
-    // This approach uses less memory for sorting
-    
-    // Step 1: Get pending submission IDs with minimal sorting overhead
+    // Optimized query: get IDs first to reduce sort memory, then fetch full data
     const [idRows] = await db.execute(`
       SELECT s.id
       FROM submissions s 
@@ -110,7 +105,6 @@ export const getPendingSubmissions = async (req, res) => {
       LIMIT 10000
     `);
     
-    // Extract IDs
     const submissionIds = idRows.map(row => row.id);
     
     if (submissionIds.length === 0) {
@@ -120,8 +114,6 @@ export const getPendingSubmissions = async (req, res) => {
       });
     }
     
-    // Step 2: Fetch full data for the selected IDs
-    // Use placeholders to avoid SQL injection
     const placeholders = submissionIds.map(() => '?').join(',');
     const [rows] = await db.execute(`
       SELECT s.*, 
@@ -131,7 +123,7 @@ export const getPendingSubmissions = async (req, res) => {
              submitted_org.id as submitted_by_org_id
       FROM submissions s 
       LEFT JOIN organizations o ON o.id = s.organization_id 
-      LEFT JOIN admins submitted_admin ON s.submitted_by = submitted_admin.id 
+      LEFT JOIN users submitted_admin ON s.submitted_by = submitted_admin.id AND submitted_admin.role = 'admin' 
       LEFT JOIN organizations submitted_org ON submitted_admin.organization_id = submitted_org.id
       WHERE s.id IN (${placeholders})
       ORDER BY s.submitted_at DESC
@@ -159,7 +151,7 @@ export const getPendingSubmissions = async (req, res) => {
                 const placeholders = collaborators.map(() => '?').join(',');
                 const [collaboratorRows] = await db.execute(`
                   SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
-                  FROM admins a
+                  FROM users a
                   LEFT JOIN organizations o ON a.organization_id = o.id
                   WHERE a.id IN (${placeholders})
                 `, collaborators);
@@ -253,12 +245,7 @@ export const getPendingSubmissions = async (req, res) => {
 
 export const getAllSubmissions = async (req, res) => {
   try {
-    // Optimized query to reduce memory usage:
-    // 1. First get IDs with minimal data to reduce sort memory
-    // 2. Then fetch full data for those IDs
-    // This approach uses less memory for sorting
-    
-    // Step 1: Get submission IDs with minimal sorting overhead
+    // Optimized query: get IDs first to reduce sort memory, then fetch full data
     const [idRows] = await db.execute(`
       SELECT s.id
       FROM submissions s 
@@ -292,7 +279,6 @@ export const getAllSubmissions = async (req, res) => {
       LIMIT 10000
     `);
     
-    // Extract IDs
     const submissionIds = idRows.map(row => row.id);
     
     if (submissionIds.length === 0) {
@@ -302,8 +288,6 @@ export const getAllSubmissions = async (req, res) => {
       });
     }
     
-    // Step 2: Fetch full data for the selected IDs
-    // Use placeholders to avoid SQL injection
     const placeholders = submissionIds.map(() => '?').join(',');
     const [rows] = await db.execute(`
       SELECT s.*, 
@@ -313,7 +297,7 @@ export const getAllSubmissions = async (req, res) => {
              submitted_org.id as submitted_by_org_id
       FROM submissions s 
       LEFT JOIN organizations o ON o.id = s.organization_id 
-      LEFT JOIN admins submitted_admin ON s.submitted_by = submitted_admin.id 
+      LEFT JOIN users submitted_admin ON s.submitted_by = submitted_admin.id AND submitted_admin.role = 'admin' 
       LEFT JOIN organizations submitted_org ON submitted_admin.organization_id = submitted_org.id
       WHERE s.id IN (${placeholders})
       ORDER BY s.submitted_at DESC
@@ -341,7 +325,7 @@ export const getAllSubmissions = async (req, res) => {
                 const placeholders = collaborators.map(() => '?').join(',');
                 const [collaboratorRows] = await db.execute(`
                   SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
-                  FROM admins a
+                  FROM users a
                   LEFT JOIN organizations o ON a.organization_id = o.id
                   WHERE a.id IN (${placeholders})
                 `, collaborators);

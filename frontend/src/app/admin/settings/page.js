@@ -30,19 +30,35 @@ const getPasswordChangeTime = (effectiveAdminData) => {
     }
     
     const diffTime = Math.abs(now - changeDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffSeconds = Math.floor(diffTime / 1000);
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
 
-    if (diffDays === 0) return 'Today';
+    // Show minutes for changes less than 1 hour
+    if (diffMinutes < 1) return 'Just now';
+    if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
+    
+    // Show hours for changes less than 24 hours
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    
+    // Show days for changes less than 7 days
     if (diffDays === 1) return '1 day ago';
     if (diffDays < 7) return `${diffDays} days ago`;
+    
+    // Show weeks for changes less than 30 days
     if (diffDays < 30) {
       const weeks = Math.floor(diffDays / 7);
       return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
     }
+    
+    // Show months for changes less than 365 days
     if (diffDays < 365) {
       const months = Math.floor(diffDays / 30);
       return `${months} month${months > 1 ? 's' : ''} ago`;
     }
+    
+    // Show years for changes 365+ days
     const years = Math.floor(diffDays / 365);
     return `${years} year${years > 1 ? 's' : ''} ago`;
   } catch (error) {

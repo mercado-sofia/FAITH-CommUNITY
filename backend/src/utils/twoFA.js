@@ -7,13 +7,13 @@ import { authenticator } from "otplib";
 
 /**
  * Generate a new 2FA secret for a user
- * @param {string} username - The username/email of the user
+ * @param {string} email - The email of the user
  * @param {string} issuer - The issuer name (default: FAITH-CommUNITY)
  * @returns {Object} - Object containing secret and otpauth URL
  */
-export const generateTwoFASecret = (username, issuer = 'FAITH-CommUNITY') => {
+export const generateTwoFASecret = (email, issuer = 'FAITH-CommUNITY') => {
   const secret = authenticator.generateSecret();
-  const label = encodeURIComponent(`${issuer}:superadmin-${username}`);
+  const label = encodeURIComponent(`${issuer}:superadmin-${email}`);
   const encodedIssuer = encodeURIComponent(issuer);
   const otpauth = `otpauth://totp/${label}?secret=${secret}&issuer=${encodedIssuer}`;
   

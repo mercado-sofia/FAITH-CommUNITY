@@ -5,12 +5,10 @@ import {
   getSuperadminProfile,
   verifySuperadminPassword,
   updateSuperadminPassword,
-  // frontend/sofia branch
   forgotPasswordSuperadmin,
   resetPasswordSuperadmin,
   checkEmailSuperadmin,
   validateResetToken,
-  // main branch
   updateSuperadminEmail,
   requestSuperadminEmailChange,
   verifySuperadminEmailChangeOTP,
@@ -22,25 +20,24 @@ import {
 
 const router = express.Router()
 
-// ---------- Public auth endpoints ----------
-router.post("/login",        loginSuperadmin)
-router.post("/forgot-password",  forgotPasswordSuperadmin)
-router.post("/reset-password",   resetPasswordSuperadmin)
+// Public auth endpoints
+router.post("/login", loginSuperadmin)
+router.post("/forgot-password", forgotPasswordSuperadmin)
+router.post("/reset-password", resetPasswordSuperadmin)
 router.post("/validate-reset-token", validateResetToken)
-router.post("/check-email",   checkEmailSuperadmin)
-// Production initialization endpoint (protected by secret key)
-router.post("/initialize",   initializeSuperadmin)
+router.post("/check-email", checkEmailSuperadmin)
+router.post("/initialize", initializeSuperadmin)
 
-// ---------- Protected endpoints ----------
-router.get("/profile/:id",   verifySuperadminToken, getSuperadminProfile)
+// Protected endpoints
+router.get("/profile/:id", verifySuperadminToken, getSuperadminProfile)
 router.post("/verify-password/:id", verifySuperadminToken, verifySuperadminPassword)
 
-// Email change routes (secure flow with 2FA support)
+// Email change routes
 router.post("/email/request-change/:id", verifySuperadminToken, requestSuperadminEmailChange)
 router.post("/email/verify-otp/:id", verifySuperadminToken, verifySuperadminEmailChangeOTP)
 router.put("/email/:id", verifySuperadminToken, updateSuperadminEmail)
 
-router.put("/password/:id",  verifySuperadminToken, updateSuperadminPassword)
+router.put("/password/:id", verifySuperadminToken, updateSuperadminPassword)
 
 // 2FA routes
 router.post("/2fa/setup/:id", verifySuperadminToken, setupTwoFA)

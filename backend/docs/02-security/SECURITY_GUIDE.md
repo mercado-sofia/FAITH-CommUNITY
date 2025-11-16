@@ -100,8 +100,8 @@ All superadmin routes are protected with `verifySuperadminToken` middleware:
 ### Superadmin Account
 
 - **Single Account Enforcement**: Only one superadmin account can exist (ID = 1)
-- **Database Constraints**: Fixed ID constraint, CHECK constraint, triggers
-- **Initialization**: Can be reset via secure API endpoint with secret key
+- **Database Structure**: Stored in unified `users` table with `role = 'superadmin'`
+- **Initialization**: Automatically created on database initialization, can be reset via secure API endpoint with secret key
 - **Default Credentials**: `faithcommunityfaces@gmail.com` / `admin123` (must be changed immediately)
 
 ## Audit Logging

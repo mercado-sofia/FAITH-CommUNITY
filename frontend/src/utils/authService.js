@@ -3,9 +3,7 @@
  * Handles all authentication operations including logout for all user types
  */
 
-import { authenticatedFetch } from './apiClient';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from '@/config/api';
 
 /**
  * User types in the system
@@ -23,17 +21,14 @@ const AUTH_KEYS = {
   [USER_TYPES.PUBLIC]: {
     token: 'userToken',
     data: 'userData',
-    apiEndpoint: '/api/users/logout'
   },
   [USER_TYPES.ADMIN]: {
     token: 'adminToken',
     data: 'adminData',
-    apiEndpoint: null // Admin doesn't have logout API endpoint
   },
   [USER_TYPES.SUPERADMIN]: {
     token: 'superAdminToken',
     data: 'superAdminData',
-    apiEndpoint: null // Superadmin doesn't have logout API endpoint
   }
 };
 
@@ -67,7 +62,8 @@ export const clearAuthData = (userType = USER_TYPES.PUBLIC) => {
   // Clear common keys
   COMMON_KEYS.forEach(key => localStorage.removeItem(key));
   
-  // Clear cookies
+  // Clear cookies (userRole can be cleared client-side)
+  // Note: httpOnly cookies (access_token, refresh_token) can only be cleared by backend
   document.cookie = 'userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
   document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
 };
@@ -105,33 +101,7 @@ export const clearAuthImmediate = (userType = USER_TYPES.PUBLIC) => {
 };
 
 /**
- * Call logout API endpoint (only for public users)
- * Uses authenticatedFetch to handle automatic token refresh
- */
-const callLogoutAPI = async (userType) => {
-  // Check for window to avoid SSR errors
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  const authKeys = AUTH_KEYS[userType];
-  
-  if (!authKeys?.apiEndpoint) {
-    return; // No API endpoint for admin/superadmin
-  }
-  
-  try {
-    // Use authenticatedFetch which handles token refresh automatically
-    await authenticatedFetch(authKeys.apiEndpoint, {
-      method: 'POST',
-    }, 'user');
-  } catch (error) {
-    // Continue with client-side cleanup even if API fails
-  }
-};
-
-/**
- * Main logout function
+ * Main logout function - works for all roles (user, admin, superadmin)
  */
 export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
   const {
@@ -153,10 +123,21 @@ export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
       window.dispatchEvent(new CustomEvent('showLogoutLoader'));
     }
     
-    // Call logout API (best effort)
-    await callLogoutAPI(userType);
+    // Call logout API to clear httpOnly cookies (works for all roles now!)
+    try {
+      // Use unified logout endpoint - works for all roles
+      await fetch(`${API_BASE_URL}/api/users/logout`, {
+        method: 'POST',
+        credentials: 'include', // Include cookies to clear them
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      // Continue with cleanup even if logout endpoint fails
+    }
     
-    // Clear authentication data
+    // Clear authentication data from localStorage (user data only, tokens are in cookies)
     clearAuthData(userType);
     
     // Dispatch logout event for other components to listen
@@ -210,56 +191,133 @@ export const logout = async (userType = USER_TYPES.PUBLIC, options = {}) => {
 };
 
 /**
- * Check if user is authenticated
+ * Check if user is authenticated by calling backend
+ * This verifies the httpOnly cookie server-side (secure!)
  */
-export const isAuthenticated = (userType = USER_TYPES.PUBLIC) => {
+export const isAuthenticated = async (userType = USER_TYPES.PUBLIC) => {
   // Check for window to avoid SSR errors
   if (typeof window === 'undefined') return false;
   
-  const authKeys = AUTH_KEYS[userType];
-  if (!authKeys) return false;
-  
-  const token = localStorage.getItem(authKeys.token);
-  if (!token) return false;
-  
-  // Check if token is expired
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.exp * 1000 > Date.now();
+    const response = await fetch(`${API_BASE_URL}/api/users/auth/check`, {
+      method: 'GET',
+      credentials: 'include', // CRITICAL: Include cookies
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) return false;
+  
+    const data = await response.json();
+    
+    if (data.authenticated && data.needsRefresh) {
+      // Try to refresh token
+      const { getValidAccessToken } = await import('./tokenRefresh');
+      await getValidAccessToken(true);
+      // Retry check
+      const retryResponse = await fetch(`${API_BASE_URL}/api/users/auth/check`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      const retryData = await retryResponse.json();
+      return retryData.authenticated === true;
+    }
+    
+    return data.authenticated === true;
   } catch (error) {
     return false;
   }
 };
 
 /**
- * Get current user data
+ * Get current user data from backend (reads from httpOnly cookie)
  */
-export const getCurrentUser = (userType = USER_TYPES.PUBLIC) => {
+export const getCurrentUser = async (userType = USER_TYPES.PUBLIC) => {
   // Check for window to avoid SSR errors
   if (typeof window === 'undefined') return null;
   
-  const authKeys = AUTH_KEYS[userType];
-  if (!authKeys) return null;
-  
-  const userData = localStorage.getItem(authKeys.data);
-  if (!userData) return null;
-  
   try {
-    return JSON.parse(userData);
+    // Build URL - use relative path if API_BASE_URL is empty (rewrites enabled)
+    const authCheckUrl = API_BASE_URL ? `${API_BASE_URL}/api/users/auth/check` : '/api/users/auth/check';
+    console.log('[getCurrentUser] Checking auth status at:', authCheckUrl);
+    console.log('[getCurrentUser] API_BASE_URL:', API_BASE_URL);
+    console.log('[getCurrentUser] Current origin:', typeof window !== 'undefined' ? window.location.origin : 'N/A');
+    
+    const response = await fetch(authCheckUrl, {
+      method: 'GET',
+      credentials: 'include', // CRITICAL: Include httpOnly cookies
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    console.log('[getCurrentUser] Response status:', response.status, response.statusText);
+
+    if (!response.ok) {
+      console.error('[getCurrentUser] Auth check failed:', response.status, response.statusText);
+      return null;
+    }
+
+    const data = await response.json();
+    console.log('[getCurrentUser] Response data:', { 
+      authenticated: data.authenticated, 
+      hasUser: !!data.user,
+      userRole: data.user?.role,
+      needsRefresh: data.needsRefresh
+    });
+    
+    // If authenticated, return user data
+    if (data.authenticated && data.user) {
+      return data.user;
+    }
+    
+    // If not authenticated but can refresh, try refreshing
+    if (data.needsRefresh) {
+      console.log('[getCurrentUser] Token needs refresh, attempting refresh...');
+      const { refreshAccessToken } = await import('@/utils/tokenRefresh');
+      const refreshed = await refreshAccessToken();
+      
+      if (refreshed) {
+        console.log('[getCurrentUser] Token refreshed, retrying auth check...');
+        // Retry the auth check after refresh
+        const retryResponse = await fetch(`${API_BASE_URL}/api/users/auth/check`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (retryResponse.ok) {
+          const retryData = await retryResponse.json();
+          console.log('[getCurrentUser] Retry response:', { 
+            authenticated: retryData.authenticated, 
+            hasUser: !!retryData.user,
+            userRole: retryData.user?.role
+          });
+          if (retryData.authenticated && retryData.user) {
+            return retryData.user;
+          }
+        }
+      } else {
+        console.warn('[getCurrentUser] Token refresh failed');
+      }
+    }
+    
+    return null;
   } catch (error) {
+    console.error('[getCurrentUser] Error checking auth status:', error);
     return null;
   }
 };
 
 /**
  * Get current token
+ * Note: Tokens are now in httpOnly cookies and not accessible to JavaScript
+ * This function is kept for backward compatibility but returns null
  */
 export const getCurrentToken = (userType = USER_TYPES.PUBLIC) => {
-  // Check for window to avoid SSR errors
-  if (typeof window === 'undefined') return null;
-  
-  const authKeys = AUTH_KEYS[userType];
-  if (!authKeys) return null;
-  
-  return localStorage.getItem(authKeys.token);
+  // Tokens are in httpOnly cookies - not accessible to JavaScript (by design for security)
+  return null;
 };

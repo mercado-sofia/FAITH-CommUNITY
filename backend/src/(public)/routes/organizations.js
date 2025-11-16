@@ -3,7 +3,7 @@ import { getAllOrganizations, getHeroSection, getApprovedOrganizationAdvisers } 
 
 const router = express.Router();
 
-// GET all organizations from admins table
+// GET all organizations from users table
 router.get('/organizations', getAllOrganizations);
 
 // GET hero section data for public interface

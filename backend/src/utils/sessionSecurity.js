@@ -2,13 +2,11 @@ import crypto from "crypto"
 import db from "../database.js"
 
 export class SessionSecurity {
-  // Create session fingerprint from IP and User-Agent
   static createFingerprint(ipAddress, userAgent) {
     const data = `${ipAddress}:${userAgent || 'unknown'}`
     return crypto.createHash('sha256').update(data).digest('hex')
   }
   
-  // Store admin session with security binding
   static async createAdminSession(adminId, ipAddress, userAgent, token) {
     await this.ensureSessionTable()
     
@@ -22,7 +20,6 @@ export class SessionSecurity {
     )
   }
   
-  // Verify admin session security
   static async verifyAdminSession(token, ipAddress, userAgent) {
     const tokenHash = this.hashToken(token)
     const currentFingerprint = this.createFingerprint(ipAddress, userAgent)
@@ -39,9 +36,7 @@ export class SessionSecurity {
     
     const session = rows[0]
     
-    // Check fingerprint match
     if (session.fingerprint !== currentFingerprint) {
-      // Revoke suspicious session
       await this.revokeAdminSession(tokenHash)
       return { valid: false, reason: 'Session security violation - IP/UA mismatch' }
     }
@@ -49,7 +44,6 @@ export class SessionSecurity {
     return { valid: true, adminId: session.admin_id }
   }
   
-  // Revoke admin session
   static async revokeAdminSession(tokenHash) {
     await db.execute(
       'DELETE FROM admin_sessions WHERE token_hash = ?',
@@ -57,7 +51,6 @@ export class SessionSecurity {
     )
   }
   
-  // Revoke all sessions for admin
   static async revokeAllAdminSessions(adminId) {
     await db.execute(
       'DELETE FROM admin_sessions WHERE admin_id = ?',
@@ -65,17 +58,14 @@ export class SessionSecurity {
     )
   }
   
-  // Clean expired sessions
   static async cleanExpiredSessions() {
     await db.execute('DELETE FROM admin_sessions WHERE expires_at < NOW()')
   }
   
-  // Hash token for storage
   static hashToken(token) {
     return crypto.createHash('sha256').update(token).digest('hex')
   }
   
-  // Ensure session table exists
   static async ensureSessionTable() {
     try {
       await db.execute(`
@@ -91,7 +81,7 @@ export class SessionSecurity {
           INDEX idx_token (token_hash),
           INDEX idx_admin (admin_id),
           INDEX idx_expires (expires_at),
-          FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
+          FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE
         )
       `)
     } catch (error) {

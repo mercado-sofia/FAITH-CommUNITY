@@ -130,60 +130,69 @@ const testConnection = async (maxRetries = 3, delayMs = 2000) => {
   return false;
 };
 
+// Migration to unify users, admins, and superadmin tables
+// For fresh installs, this simply marks the migration as complete
+const migrateToUnifiedUsersTable = async (connection) => {
+  try {
+    // Check if migration has already been run
+    const [migrationCheck] = await connection.query(
+      'SELECT name FROM migrations WHERE name = "unified_users_table_migration"'
+    );
+    
+    if (migrationCheck.length > 0) {
+      logInfo('Unified users table migration already executed', { context: 'database' });
+      return;
+    }
+
+    // Check if unified users table already exists (with role column)
+    const [newUsersTableExists] = await connection.query(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'users' 
+      AND COLUMN_NAME = 'role'
+    `);
+
+    if (newUsersTableExists.length > 0) {
+      logInfo('Unified users table already exists, marking migration as complete', { context: 'database' });
+      await connection.query(
+        'INSERT INTO migrations (name) VALUES ("unified_users_table_migration")'
+      );
+      return;
+    }
+
+    // For fresh installs, tables are created in initializeDatabase
+    // If we reach here and tables don't exist, it means this is a fresh install
+    // Mark migration as complete - tables will be created in initializeDatabase
+    logInfo('Fresh install detected - unified users table will be created in initialization', { context: 'database' });
+    await connection.query(
+      'INSERT INTO migrations (name) VALUES ("unified_users_table_migration")'
+    );
+    return;
+
+    // Note: Old table migration logic removed - this is for fresh installs only
+    // If you need to migrate from old tables, use the SQL migration scripts in backend/scripts/migrations/
+
+  } catch (error) {
+    logError('Unified users table migration failed', error, { context: 'database' });
+    throw error;
+  }
+};
+
 // Incremental migrations for existing databases
+// Only runs data migrations and schema updates for existing data
 const runIncrementalMigrations = async (connection) => {
   try {
-    // Create program_post_act_reports table if it doesn't exist (for existing databases)
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS program_post_act_reports (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        program_id INT NOT NULL,
-        file_public_id VARCHAR(255) NOT NULL,
-        file_url VARCHAR(500) NOT NULL,
-        status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
-        uploaded_by_admin_id INT NULL,
-        reviewed_by_superadmin_id INT NULL,
-        reviewed_at TIMESTAMP NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE CASCADE,
-        FOREIGN KEY (uploaded_by_admin_id) REFERENCES admins(id) ON DELETE SET NULL,
-        INDEX idx_program_id (program_id),
-        INDEX idx_status (status),
-        INDEX idx_uploaded_by (uploaded_by_admin_id),
-        INDEX idx_reviewed_by (reviewed_by_superadmin_id),
-        INDEX idx_created_at (created_at)
-      )
-    `);
+    // Run unified users table migration first
+    await migrateToUnifiedUsersTable(connection);
 
-    // Migrate existing news data
-    await connection.query(`
-      UPDATE news 
-      SET slug = LOWER(REPLACE(REPLACE(REPLACE(REPLACE(title, ' ', '-'), '&', 'and'), '?', ''), '!', ''))
-      WHERE slug IS NULL OR slug = ''
-    `);
-    
-    // Generate excerpt from content
-    await connection.query(`
-      UPDATE news 
-      SET excerpt = CASE 
-          WHEN LENGTH(content) > 180 
-          THEN CONCAT(LEFT(content, 177), '...')
-          ELSE content
-      END
-      WHERE excerpt IS NULL OR excerpt = ''
-    `);
-    
-    await connection.query(`
-      UPDATE news 
-      SET published_at = COALESCE(date, created_at)
-      WHERE published_at IS NULL
-    `);
+    // ============================================
+    // DATA MIGRATIONS (only for existing data)
+    // ============================================
 
-
-    // Generate slugs for existing programs
+    // Generate slugs for existing programs that don't have them
     const [existingPrograms] = await connection.query(`
-      SELECT id, title FROM programs_projects WHERE slug IS NULL
+      SELECT id, title FROM programs_projects WHERE slug IS NULL OR slug = ''
     `);
     
     for (const program of existingPrograms) {
@@ -213,6 +222,30 @@ const runIncrementalMigrations = async (connection) => {
       `, [finalSlug, program.id]);
     }
 
+    // Generate slugs for existing news that don't have them
+    await connection.query(`
+      UPDATE news 
+      SET slug = LOWER(REPLACE(REPLACE(REPLACE(REPLACE(title, ' ', '-'), '&', 'and'), '?', ''), '!', ''))
+      WHERE slug IS NULL OR slug = ''
+    `);
+    
+    // Generate excerpt from content for existing news
+    await connection.query(`
+      UPDATE news 
+      SET excerpt = CASE 
+          WHEN LENGTH(content) > 180 
+          THEN CONCAT(LEFT(content, 177), '...')
+          ELSE content
+      END
+      WHERE excerpt IS NULL OR excerpt = ''
+    `);
+    
+    // Set published_at from date for existing news
+    await connection.query(`
+      UPDATE news 
+      SET published_at = COALESCE(date, created_at)
+      WHERE published_at IS NULL
+    `);
 
     // Link existing messages with users based on email
     await connection.query(`
@@ -229,7 +262,6 @@ const runIncrementalMigrations = async (connection) => {
       WHERE is_verified = 1 AND verified_at IS NULL
     `);
 
-
     // Update superadmin_notifications message_template
     await connection.query(`
       UPDATE superadmin_notifications 
@@ -237,197 +269,164 @@ const runIncrementalMigrations = async (connection) => {
       WHERE message_template IS NULL
     `);
 
-    // Handle superadmin password column migration
-    const [oldPasswordHashColumn] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'superadmin' 
-      AND COLUMN_NAME = 'password_hash'
-    `);
-    
-    if (oldPasswordHashColumn.length > 0) {
-      // Copy data from password_hash to password
-      await connection.query(`UPDATE superadmin SET password = password_hash WHERE password_hash IS NOT NULL`);
-      
-      // Drop the old password_hash column
-      await connection.query(`ALTER TABLE superadmin DROP COLUMN password_hash`);
-    }
+    // ============================================
+    // SCHEMA UPDATES (only for existing tables)
+    // ============================================
 
-    // Enforce single superadmin account constraint
+    // Add edited_by_name and edited_by_role columns to programs_projects if they don't exist
     try {
-      // Check if table exists and has AUTO_INCREMENT
-      const [columnInfo] = await connection.query(`
-        SELECT COLUMN_KEY, EXTRA, COLUMN_DEFAULT
+      const [editedNameColumns] = await connection.query(`
+        SELECT COLUMN_NAME 
         FROM INFORMATION_SCHEMA.COLUMNS 
-        WHERE TABLE_SCHEMA = DATABASE()
-        AND TABLE_NAME = 'superadmin' 
-        AND COLUMN_NAME = 'id'
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'programs_projects' 
+        AND COLUMN_NAME = 'edited_by_name'
       `);
       
-      if (columnInfo.length > 0 && columnInfo[0].EXTRA && columnInfo[0].EXTRA.includes('auto_increment')) {
-        // First, ensure we have at least one superadmin account (keep the first one)
-        const [existingSuperadmins] = await connection.query(`SELECT id FROM superadmin ORDER BY id LIMIT 1`);
-        
-        if (existingSuperadmins.length > 0) {
-          const keepId = existingSuperadmins[0].id;
-          
-          // Delete any superadmin accounts with id != keepId
-          if (keepId !== 1) {
-            // Update references in related tables before changing superadmin id
-            // Update superadmin_notifications table
-            try {
-              await connection.query(`
-                UPDATE superadmin_notifications 
-                SET superadmin_id = 1 
-                WHERE superadmin_id = ?
-              `, [keepId]);
-            } catch (err) {
-              // Table might not exist, ignore
-            }
-            
-            // Update program_post_act_reports table
-            try {
-              await connection.query(`
-                UPDATE program_post_act_reports 
-                SET reviewed_by_superadmin_id = 1 
-                WHERE reviewed_by_superadmin_id = ?
-              `, [keepId]);
-            } catch (err) {
-              // Table might not exist, ignore
-            }
-            
-            // Update audit_logs table (if it references superadmin)
-            try {
-              await connection.query(`
-                UPDATE audit_logs 
-                SET user_id = 1 
-                WHERE user_id = ? AND user_type = 'superadmin'
-              `, [keepId]);
-            } catch (err) {
-              // Table might not exist, ignore
-            }
-            
-            // Update the account we want to keep to id = 1
-            await connection.query(`UPDATE superadmin SET id = 1 WHERE id = ?`, [keepId]);
-          }
-          
-          // Delete any other superadmin accounts
-          await connection.query(`DELETE FROM superadmin WHERE id != 1`);
-        }
-        
-        // Remove AUTO_INCREMENT and set fixed ID
+      if (editedNameColumns.length === 0) {
         await connection.query(`
-          ALTER TABLE superadmin 
-          MODIFY COLUMN id INT NOT NULL DEFAULT 1
+          ALTER TABLE programs_projects 
+          ADD COLUMN edited_by_name VARCHAR(100) NULL
         `);
-        
-        // Try to add CHECK constraint (MySQL 8.0.16+)
-        try {
-          // First check if constraint already exists
-          const [constraints] = await connection.query(`
-            SELECT CONSTRAINT_NAME 
-            FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
-            WHERE TABLE_SCHEMA = DATABASE()
-            AND TABLE_NAME = 'superadmin' 
-            AND CONSTRAINT_NAME = 'chk_single_superadmin'
-          `);
+        logInfo('Added edited_by_name column to programs_projects table', { context: 'database' });
+      }
+    } catch (error) {
+      logError('Error adding edited_by_name column', error, { context: 'database' });
+    }
+
+    try {
+      const [editedRoleColumns] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'programs_projects' 
+        AND COLUMN_NAME = 'edited_by_role'
+      `);
+      
+      if (editedRoleColumns.length === 0) {
+        await connection.query(`
+          ALTER TABLE programs_projects 
+          ADD COLUMN edited_by_role VARCHAR(100) NULL
+        `);
+        logInfo('Added edited_by_role column to programs_projects table', { context: 'database' });
+      }
+    } catch (error) {
+      logError('Error adding edited_by_role column', error, { context: 'database' });
+    }
+
+    // Clean up old about_us heading column if it exists
+    try {
+      await connection.query(`ALTER TABLE about_us DROP COLUMN heading`);
+    } catch (err) {
+      // Column might not exist, ignore error
+    }
+
+    // Allow NULL content for mission_vision (for empty fields)
+    try {
+      await connection.query(`ALTER TABLE mission_vision MODIFY COLUMN content TEXT NULL`);
+    } catch (err) {
+      // Column might already be NULL, ignore error
+    }
+    
+    // Remove status column and index from mission_vision if they exist
+    try {
+      await connection.query(`ALTER TABLE mission_vision DROP INDEX idx_status`);
+    } catch (err) {
+      // Index might not exist, ignore error
+    }
+    try {
+      await connection.query(`ALTER TABLE mission_vision DROP COLUMN status`);
+    } catch (err) {
+      // Column might not exist, ignore error
+    }
+    
+    // Clean up duplicate mission/vision entries, keeping only the latest for each type
+    try {
+      const [allEntries] = await connection.query(`
+        SELECT * FROM mission_vision 
+        WHERE type IN ('mission', 'vision') 
+        ORDER BY type, id DESC
+      `);
+      
+      const entriesByType = {
+        mission: [],
+        vision: []
+      };
+      
+      allEntries.forEach(entry => {
+        if (entry.type === 'mission' || entry.type === 'vision') {
+          entriesByType[entry.type].push(entry);
+        }
+      });
+      
+      let deletedCount = 0;
+      
+      for (const [type, entries] of Object.entries(entriesByType)) {
+        if (entries.length > 1) {
+          const duplicates = entries.slice(1);
+          const duplicateIds = duplicates.map(entry => entry.id);
           
-          if (constraints.length === 0) {
-            await connection.query(`
-              ALTER TABLE superadmin 
-              ADD CONSTRAINT chk_single_superadmin CHECK (id = 1)
-            `);
+          if (duplicateIds.length > 0) {
+            await connection.query(
+              `DELETE FROM mission_vision WHERE id IN (${duplicateIds.map(() => '?').join(',')})`,
+              duplicateIds
+            );
+            deletedCount += duplicateIds.length;
+            logInfo(`Cleaned up ${duplicateIds.length} duplicate ${type} entries`, { context: 'database_migration', type });
           }
-        } catch (checkError) {
-          // CHECK constraint not supported (MySQL < 8.0.16), will use trigger instead
-          logInfo('CHECK constraint not supported, will use trigger for enforcement', { context: 'database', migration: 'superadmin_single_account' });
         }
       }
-    } catch (migrationError) {
-      logError('Superadmin single account migration failed', migrationError, { context: 'database', migration: 'superadmin_single_account' });
+      
+      if (deletedCount > 0) {
+        logInfo(`Mission/Vision cleanup: Removed ${deletedCount} duplicate entries`, { context: 'database_migration' });
+      }
+    } catch (err) {
+      logWarn('Warning: Could not clean up duplicate mission/vision entries', { context: 'database_migration', error: err.message });
     }
-
-    // Create trigger to prevent multiple superadmin accounts (fallback for older MySQL)
+    
+    // Clean up duplicate footer_content entries for contact information
     try {
-      // Drop existing trigger if it exists
-      await connection.query(`DROP TRIGGER IF EXISTS prevent_multiple_superadmin`);
-      
-      // Create trigger to enforce single superadmin
-      // Note: Using DELIMITER workaround for MySQL triggers
-      // We need to execute this as a single statement with proper delimiter handling
-      await connection.query(`
-        CREATE TRIGGER prevent_multiple_superadmin
-        BEFORE INSERT ON superadmin
-        FOR EACH ROW
-        BEGIN
-          DECLARE account_count INT DEFAULT 0;
-          SELECT COUNT(*) INTO account_count FROM superadmin;
-          IF account_count > 0 THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Only one superadmin account is allowed';
-          END IF;
-          SET NEW.id = 1;
-        END
+      const [allContactEntries] = await connection.query(`
+        SELECT * FROM footer_content 
+        WHERE section_type = 'contact' 
+        ORDER BY title, id DESC
       `);
-    } catch (triggerError) {
-      // Trigger creation failed, log but don't fail migration
-      // This is non-critical as CHECK constraint or application logic will handle it
-      logInfo('Trigger creation failed (non-critical)', { context: 'database', migration: 'superadmin_single_account', error: triggerError.message });
-    }
-
-    // Handle admins table password column migration
-    const [adminsColumns] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'admins' 
-      AND TABLE_SCHEMA = DATABASE()
-    `);
-    
-    const hasPassword = adminsColumns.some(col => col.COLUMN_NAME === 'password');
-    const hasPasswordHash = adminsColumns.some(col => col.COLUMN_NAME === 'password_hash');
-    const hasRole = adminsColumns.some(col => col.COLUMN_NAME === 'role');
-    
-    if (hasPasswordHash && !hasPassword) {
-      // Copy data from password_hash to password
-      await connection.query(`UPDATE admins SET password = password_hash WHERE password_hash IS NOT NULL`);
       
-      // Drop the old password_hash column
-      await connection.query(`ALTER TABLE admins DROP COLUMN password_hash`);
+      const entriesByTitle = {
+        phone: [],
+        email: []
+      };
+      
+      allContactEntries.forEach(entry => {
+        if (entry.title === 'phone' || entry.title === 'email') {
+          entriesByTitle[entry.title].push(entry);
+        }
+      });
+      
+      let deletedCount = 0;
+      
+      for (const [title, entries] of Object.entries(entriesByTitle)) {
+        if (entries.length > 1) {
+          const duplicates = entries.slice(1);
+          const duplicateIds = duplicates.map(entry => entry.id);
+          
+          if (duplicateIds.length > 0) {
+            await connection.query(
+              `DELETE FROM footer_content WHERE id IN (${duplicateIds.map(() => '?').join(',')})`,
+              duplicateIds
+            );
+            deletedCount += duplicateIds.length;
+            logInfo(`Cleaned up ${duplicateIds.length} duplicate ${title} contact entries`, { context: 'database_migration', title });
+          }
+        }
+      }
+      
+      if (deletedCount > 0) {
+        logInfo(`Footer Content cleanup: Removed ${deletedCount} duplicate contact entries`, { context: 'database_migration' });
+      }
+    } catch (err) {
+      logWarn('Warning: Could not clean up duplicate footer_content entries', { context: 'database_migration', error: err.message });
     }
-
-    // Remove role column from admins table if it exists
-    if (hasRole) {
-      await connection.query(`ALTER TABLE admins DROP COLUMN role`);
-    }
-
-    // Handle login_attempts table schema migration
-    const [oldColumns] = await connection.query(`
-      SELECT COLUMN_NAME 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'login_attempts' 
-      AND COLUMN_NAME = 'email'
-    `);
-    
-    if (oldColumns.length > 0) {
-      // Drop the old table and recreate with new schema
-      await connection.query(`DROP TABLE IF EXISTS login_attempts`);
-      await connection.query(`
-        CREATE TABLE login_attempts (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          identifier VARCHAR(255) NOT NULL,
-          ip_address VARCHAR(45) NULL,
-          attempt_type ENUM('failed', 'success') NOT NULL,
-          user_type ENUM('user', 'admin', 'superadmin') NOT NULL DEFAULT 'user',
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          INDEX idx_identifier (identifier),
-          INDEX idx_ip (ip_address),
-          INDEX idx_created (created_at),
-          INDEX idx_user_type (user_type),
-          INDEX idx_combined (identifier, ip_address, user_type, attempt_type)
-        )
-      `);
-    }
-
 
     // Update about_us extension_categories with proper structure
     const [aboutUsRows] = await connection.query(`
@@ -438,7 +437,6 @@ const runIncrementalMigrations = async (connection) => {
     
     if (aboutUsRows.length > 0) {
       for (const row of aboutUsRows) {
-        // typeCast already parses JSON, so check if it's already an object
         const categories = typeof row.extension_categories === 'string' 
           ? JSON.parse(row.extension_categories) 
           : row.extension_categories;
@@ -807,69 +805,8 @@ const runIncrementalMigrations = async (connection) => {
       // Silently skip if update fails
     }
 
-    // Auto-insert/update superadmin account (for existing databases)
-    try {
-      const superadminEmail = 'faithcommunityfaces@gmail.com';
-      const superadminPassword = 'admin123'; // Easy password as requested
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(superadminPassword, saltRounds);
-
-      // Check if superadmin exists
-      const [existingSuperadmin] = await connection.query(
-        'SELECT id, username, password FROM superadmin WHERE id = 1'
-      );
-
-      if (existingSuperadmin.length === 0) {
-        // Insert new superadmin account
-        await connection.query(
-          `INSERT INTO superadmin (id, username, password, password_changed_at) 
-           VALUES (1, ?, ?, NOW()) 
-           ON DUPLICATE KEY UPDATE username = ?, password = ?, password_changed_at = NOW()`,
-          [superadminEmail, hashedPassword, superadminEmail, hashedPassword]
-        );
-        logInfo('Superadmin account created successfully (migration)', { 
-          context: 'database', 
-          email: superadminEmail 
-        });
-      } else {
-        // Update existing superadmin if password is NULL or empty
-        const existing = existingSuperadmin[0];
-        if (!existing.password || existing.password.trim() === '') {
-          await connection.query(
-            `UPDATE superadmin 
-             SET username = ?, password = ?, password_changed_at = NOW() 
-             WHERE id = 1`,
-            [superadminEmail, hashedPassword]
-          );
-          logInfo('Superadmin account password updated successfully (migration)', { 
-            context: 'database', 
-            email: superadminEmail 
-          });
-        } else {
-          // Update username if it doesn't match (but keep existing password)
-          if (existing.username !== superadminEmail) {
-            await connection.query(
-              `UPDATE superadmin SET username = ? WHERE id = 1`,
-              [superadminEmail]
-            );
-            logInfo('Superadmin account username updated (migration)', { 
-              context: 'database', 
-              email: superadminEmail 
-            });
-          } else {
-            logInfo('Superadmin account already exists with password (migration)', { 
-              context: 'database', 
-              email: superadminEmail 
-            });
-          }
-        }
-      }
-    } catch (superadminError) {
-      // Log error but don't fail migration
-      logError('Failed to setup superadmin account (migration)', superadminError, { 
-        context: 'database' 
-      });
-    }
+    // Legacy superadmin initialization code removed - migration to unified users table is complete
+    // Superadmin initialization is now handled in the main initializeDatabase function
 
   } catch (error) {
     logError('Incremental migrations failed', error, { context: 'database' });
@@ -877,9 +814,7 @@ const runIncrementalMigrations = async (connection) => {
   }
 };
 
-// Initialize database function
 const initializeDatabase = async () => {
-  // Test connection first with retry logic
   logInfo('Testing database connection...', { context: 'database' });
   await testConnection();
   
@@ -888,7 +823,6 @@ const initializeDatabase = async () => {
   try {
     logInfo('Database connection acquired, starting initialization...', { context: 'database' });
 
-    // Create migrations table if it doesn't exist
     await connection.query(`
       CREATE TABLE IF NOT EXISTS migrations (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -898,14 +832,18 @@ const initializeDatabase = async () => {
       )
     `);
 
-    // Check if migrations have been executed
     const [executedMigrations] = await connection.query(
       'SELECT name FROM migrations WHERE name = "database_initialized"'
     );
 
     if (executedMigrations.length === 0) {
+      // ============================================
+      // FRESH INSTALL - CREATE ALL TABLES
+      // ============================================
 
-      // 1. Core Tables
+      // ============================================
+      // 1. CORE TABLES (Organizations & Users)
+      // ============================================
       await connection.query(`
         CREATE TABLE IF NOT EXISTS organizations (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -923,51 +861,57 @@ const initializeDatabase = async () => {
         )
       `);
 
+      // Create unified users table (core authentication for all roles)
       await connection.query(`
         CREATE TABLE IF NOT EXISTS users (
           id INT AUTO_INCREMENT PRIMARY KEY,
+          email VARCHAR(255) NOT NULL UNIQUE,
+          password_hash VARCHAR(255) NOT NULL,
+          role ENUM('user', 'admin', 'superadmin') NOT NULL,
+          is_active BOOLEAN DEFAULT TRUE,
+          email_verified BOOLEAN DEFAULT FALSE,
+          last_login TIMESTAMP NULL,
+          password_changed_at TIMESTAMP NULL,
+          verification_token VARCHAR(255) NULL,
+          verification_token_expires TIMESTAMP NULL,
+          organization_id INT NULL,
+          twofa_enabled BOOLEAN DEFAULT FALSE,
+          twofa_secret VARCHAR(255) NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL,
+          INDEX idx_email (email),
+          INDEX idx_role (role),
+          INDEX idx_organization_id (organization_id),
+          INDEX idx_is_active (is_active),
+          INDEX idx_email_verified (email_verified),
+          INDEX idx_verification_token (verification_token),
+          INDEX idx_created_at (created_at),
+          CONSTRAINT chk_admin_organization CHECK (
+            (role = 'admin' AND organization_id IS NOT NULL) OR (role != 'admin')
+          )
+        )
+      `);
+
+      // Create user_profiles table (extended profile for public users only)
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS user_profiles (
+          user_id INT PRIMARY KEY,
           first_name VARCHAR(100) NOT NULL,
           last_name VARCHAR(100) NOT NULL,
           full_name VARCHAR(200) GENERATED ALWAYS AS (CONCAT(first_name, ' ', last_name)) STORED,
-          email VARCHAR(255) NOT NULL UNIQUE,
-          password_hash VARCHAR(255) NOT NULL,
           contact_number VARCHAR(20) NOT NULL,
           gender ENUM('Male', 'Female', 'Other') NOT NULL,
           address TEXT NOT NULL,
           birth_date DATE NOT NULL,
-          occupation VARCHAR(255),
-          citizenship VARCHAR(100),
-          profile_photo_url VARCHAR(500),
-          newsletter_subscribed TINYINT(1) DEFAULT 0,
-          is_active TINYINT(1) DEFAULT 1,
-          email_verified TINYINT(1) DEFAULT 0,
-          verification_token VARCHAR(255) NULL,
-          verification_token_expires TIMESTAMP NULL,
-          last_login TIMESTAMP NULL,
+          occupation VARCHAR(255) NULL,
+          citizenship VARCHAR(100) NULL,
+          profile_photo_url VARCHAR(500) NULL,
+          newsletter_subscribed BOOLEAN DEFAULT FALSE,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_email (email),
-          INDEX idx_created_at (created_at),
-          INDEX idx_verification_token (verification_token),
-          INDEX idx_email_verified (email_verified),
-          INDEX idx_is_active (is_active)
-        )
-      `);
-
-      await connection.query(`
-        CREATE TABLE IF NOT EXISTS admins (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          email VARCHAR(255) NOT NULL UNIQUE,
-          password VARCHAR(255) NOT NULL,
-          organization_id INT NULL,
-          is_active BOOLEAN DEFAULT TRUE,
-          password_changed_at TIMESTAMP NULL DEFAULT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-          FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL,
-          INDEX idx_email (email),
-          INDEX idx_organization_id (organization_id),
-          INDEX idx_is_active (is_active)
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          INDEX idx_full_name (full_name)
         )
       `);
 
@@ -991,6 +935,8 @@ const initializeDatabase = async () => {
           manual_status_override BOOLEAN DEFAULT FALSE,
           submitted_by_name VARCHAR(100) NULL,
           submitted_by_role VARCHAR(100) NULL,
+          edited_by_name VARCHAR(100) NULL,
+          edited_by_role VARCHAR(100) NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
@@ -1018,7 +964,8 @@ const initializeDatabase = async () => {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE CASCADE,
-          FOREIGN KEY (uploaded_by_admin_id) REFERENCES admins(id) ON DELETE SET NULL,
+          FOREIGN KEY (uploaded_by_admin_id) REFERENCES users(id) ON DELETE SET NULL,
+          FOREIGN KEY (reviewed_by_superadmin_id) REFERENCES users(id) ON DELETE SET NULL,
           INDEX idx_program_id (program_id),
           INDEX idx_status (status),
           INDEX idx_uploaded_by (uploaded_by_admin_id),
@@ -1026,92 +973,6 @@ const initializeDatabase = async () => {
           INDEX idx_created_at (created_at)
         )
       `);
-
-      // Add submitted_by_name and submitted_by_role columns if they don't exist (migration for existing databases)
-      try {
-        // Check if submitted_by_name column exists
-        const [nameColumns] = await connection.query(`
-          SELECT COLUMN_NAME 
-          FROM INFORMATION_SCHEMA.COLUMNS 
-          WHERE TABLE_SCHEMA = DATABASE() 
-          AND TABLE_NAME = 'programs_projects' 
-          AND COLUMN_NAME = 'submitted_by_name'
-        `);
-        
-        if (nameColumns.length === 0) {
-          await connection.query(`
-            ALTER TABLE programs_projects 
-            ADD COLUMN submitted_by_name VARCHAR(100) NULL
-          `);
-          logInfo('Added submitted_by_name column to programs_projects table', { context: 'database' });
-        }
-      } catch (error) {
-        logError('Error adding submitted_by_name column', error, { context: 'database' });
-      }
-
-      try {
-        // Check if submitted_by_role column exists
-        const [roleColumns] = await connection.query(`
-          SELECT COLUMN_NAME 
-          FROM INFORMATION_SCHEMA.COLUMNS 
-          WHERE TABLE_SCHEMA = DATABASE() 
-          AND TABLE_NAME = 'programs_projects' 
-          AND COLUMN_NAME = 'submitted_by_role'
-        `);
-        
-        if (roleColumns.length === 0) {
-          await connection.query(`
-            ALTER TABLE programs_projects 
-            ADD COLUMN submitted_by_role VARCHAR(100) NULL
-          `);
-          logInfo('Added submitted_by_role column to programs_projects table', { context: 'database' });
-        }
-      } catch (error) {
-        logError('Error adding submitted_by_role column', error, { context: 'database' });
-      }
-
-      // Add edited_by_name and edited_by_role columns if they don't exist (migration for existing databases)
-      try {
-        // Check if edited_by_name column exists
-        const [editedNameColumns] = await connection.query(`
-          SELECT COLUMN_NAME 
-          FROM INFORMATION_SCHEMA.COLUMNS 
-          WHERE TABLE_SCHEMA = DATABASE() 
-          AND TABLE_NAME = 'programs_projects' 
-          AND COLUMN_NAME = 'edited_by_name'
-        `);
-        
-        if (editedNameColumns.length === 0) {
-          await connection.query(`
-            ALTER TABLE programs_projects 
-            ADD COLUMN edited_by_name VARCHAR(100) NULL
-          `);
-          logInfo('Added edited_by_name column to programs_projects table', { context: 'database' });
-        }
-      } catch (error) {
-        logError('Error adding edited_by_name column', error, { context: 'database' });
-      }
-
-      try {
-        // Check if edited_by_role column exists
-        const [editedRoleColumns] = await connection.query(`
-          SELECT COLUMN_NAME 
-          FROM INFORMATION_SCHEMA.COLUMNS 
-          WHERE TABLE_SCHEMA = DATABASE() 
-          AND TABLE_NAME = 'programs_projects' 
-          AND COLUMN_NAME = 'edited_by_role'
-        `);
-        
-        if (editedRoleColumns.length === 0) {
-          await connection.query(`
-            ALTER TABLE programs_projects 
-            ADD COLUMN edited_by_role VARCHAR(100) NULL
-          `);
-          logInfo('Added edited_by_role column to programs_projects table', { context: 'database' });
-        }
-      } catch (error) {
-        logError('Error adding edited_by_role column', error, { context: 'database' });
-      }
 
       await connection.query(`
         CREATE TABLE IF NOT EXISTS news (
@@ -1136,7 +997,9 @@ const initializeDatabase = async () => {
         )
       `);
 
-      // 2. Workflow Tables
+      // ============================================
+      // 2. WORKFLOW TABLES (Submissions & Notifications)
+      // ============================================
       await connection.query(`
         CREATE TABLE IF NOT EXISTS submissions (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1150,7 +1013,7 @@ const initializeDatabase = async () => {
           submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
-          FOREIGN KEY (submitted_by) REFERENCES admins(id) ON DELETE CASCADE,
+          FOREIGN KEY (submitted_by) REFERENCES users(id) ON DELETE CASCADE,
           INDEX idx_organization_status (organization_id, status),
           INDEX idx_submitted_by (submitted_by),
           INDEX idx_section (section)
@@ -1169,7 +1032,7 @@ const initializeDatabase = async () => {
           is_read BOOLEAN DEFAULT FALSE,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE,
+          FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE,
           INDEX idx_admin_read (admin_id, is_read),
           INDEX idx_created_at (created_at)
         )
@@ -1189,6 +1052,7 @@ const initializeDatabase = async () => {
           is_read TINYINT(1) DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (superadmin_id) REFERENCES users(id) ON DELETE CASCADE,
           FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL,
           INDEX idx_superadmin_read (superadmin_id, is_read),
           INDEX idx_created_at (created_at),
@@ -1228,7 +1092,9 @@ const initializeDatabase = async () => {
         )
       `);
 
-      // 3. Feature Tables
+      // ============================================
+      // 3. FEATURE TABLES (Volunteers, Messages, Subscribers, etc.)
+      // ============================================
       await connection.query(`
         CREATE TABLE IF NOT EXISTS volunteers (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1308,8 +1174,8 @@ const initializeDatabase = async () => {
           responded_at TIMESTAMP NULL,
           FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE CASCADE,
           FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE,
-          FOREIGN KEY (collaborator_admin_id) REFERENCES admins(id) ON DELETE CASCADE,
-          FOREIGN KEY (invited_by_admin_id) REFERENCES admins(id) ON DELETE CASCADE,
+          FOREIGN KEY (collaborator_admin_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (invited_by_admin_id) REFERENCES users(id) ON DELETE CASCADE,
           UNIQUE KEY unique_program_collaborator (program_id, collaborator_admin_id),
           UNIQUE KEY unique_submission_collaborator (submission_id, collaborator_admin_id),
           INDEX idx_collaborator_status (collaborator_admin_id, status),
@@ -1341,8 +1207,10 @@ const initializeDatabase = async () => {
         )
       `);
 
-      // 4. Content Tables
-          await connection.query(`
+      // ============================================
+      // 4. CONTENT TABLES (Advocacies, Competencies, Organization Heads, etc.)
+      // ============================================
+      await connection.query(`
         CREATE TABLE IF NOT EXISTS advocacies (
           id INT AUTO_INCREMENT PRIMARY KEY,
           organization_id INT NOT NULL,
@@ -1407,19 +1275,37 @@ const initializeDatabase = async () => {
           media_files JSON,
           status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
           organization_id INT NOT NULL,
+          program_id INT NULL,
           created_by INT NOT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
-          FOREIGN KEY (created_by) REFERENCES admins(id) ON DELETE CASCADE,
+          FOREIGN KEY (program_id) REFERENCES programs_projects(id) ON DELETE SET NULL,
+          FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
           INDEX idx_organization_id (organization_id),
+          INDEX idx_program_id (program_id),
           INDEX idx_created_by (created_by),
           INDEX idx_created_at (created_at),
           INDEX idx_status (status)
         )
       `);
 
-      // 5. UI Tables
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS featured_highlights (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          highlight_id INT NOT NULL,
+          display_order INT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (highlight_id) REFERENCES admin_highlights(id) ON DELETE CASCADE,
+          UNIQUE KEY unique_highlight (highlight_id),
+          INDEX idx_display_order (display_order)
+        )
+      `);
+
+      // ============================================
+      // 5. UI TABLES (Branding, Hero Section, Footer, etc.)
+      // ============================================
       await connection.query(`
         CREATE TABLE IF NOT EXISTS branding (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1497,13 +1383,6 @@ const initializeDatabase = async () => {
         )
       `);
       
-      // Migration: Remove heading column from about_us
-      try {
-        await connection.query(`ALTER TABLE about_us DROP COLUMN heading`);
-      } catch (err) {
-        // Column might not exist, ignore error
-      }
-
       await connection.query(`
         CREATE TABLE IF NOT EXISTS mission_vision (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1514,122 +1393,9 @@ const initializeDatabase = async () => {
         )
       `);
       
-      // Migration: Allow NULL content for mission_vision (for empty fields)
-      try {
-        await connection.query(`ALTER TABLE mission_vision MODIFY COLUMN content TEXT NULL`);
-      } catch (err) {
-        // Column might already be NULL, ignore error
-      }
-      
-      // Migration: Remove status column and index from mission_vision
-      try {
-        await connection.query(`ALTER TABLE mission_vision DROP INDEX idx_status`);
-      } catch (err) {
-        // Index might not exist, ignore error
-      }
-      try {
-        await connection.query(`ALTER TABLE mission_vision DROP COLUMN status`);
-      } catch (err) {
-        // Column might not exist, ignore error
-      }
-      
-      // Migration: Clean up duplicate mission/vision entries, keeping only the latest for each type
-      try {
-        // Get all entries grouped by type
-        const [allEntries] = await connection.query(`
-          SELECT * FROM mission_vision 
-          WHERE type IN ('mission', 'vision') 
-          ORDER BY type, id DESC
-        `);
-        
-        const entriesByType = {
-          mission: [],
-          vision: []
-        };
-        
-        allEntries.forEach(entry => {
-          if (entry.type === 'mission' || entry.type === 'vision') {
-            entriesByType[entry.type].push(entry);
-          }
-        });
-        
-        let deletedCount = 0;
-        
-        // For each type, keep only the latest entry (highest ID) and delete the rest
-        for (const [type, entries] of Object.entries(entriesByType)) {
-          if (entries.length > 1) {
-            // Keep the first entry (latest/highest ID), delete the rest
-            const duplicates = entries.slice(1);
-            const duplicateIds = duplicates.map(entry => entry.id);
-            
-            if (duplicateIds.length > 0) {
-              await connection.query(
-                `DELETE FROM mission_vision WHERE id IN (${duplicateIds.map(() => '?').join(',')})`,
-                duplicateIds
-              );
-              deletedCount += duplicateIds.length;
-              logInfo(`Cleaned up ${duplicateIds.length} duplicate ${type} entries`, { context: 'database_migration', type });
-            }
-          }
-        }
-        
-        if (deletedCount > 0) {
-          logInfo(`Mission/Vision cleanup: Removed ${deletedCount} duplicate entries`, { context: 'database_migration' });
-        }
-      } catch (err) {
-        // Log error but don't fail initialization
-        logWarn('Warning: Could not clean up duplicate mission/vision entries', { context: 'database_migration', error: err.message });
-      }
-      
-      // Migration: Clean up duplicate footer_content entries for contact information
-      try {
-        // Get all contact entries grouped by title (phone/email)
-        const [allContactEntries] = await connection.query(`
-          SELECT * FROM footer_content 
-          WHERE section_type = 'contact' 
-          ORDER BY title, id DESC
-        `);
-        
-        const entriesByTitle = {
-          phone: [],
-          email: []
-        };
-        
-        allContactEntries.forEach(entry => {
-          if (entry.title === 'phone' || entry.title === 'email') {
-            entriesByTitle[entry.title].push(entry);
-          }
-        });
-        
-        let deletedCount = 0;
-        
-        // For each title, keep only the latest entry (highest ID) and delete the rest
-        for (const [title, entries] of Object.entries(entriesByTitle)) {
-          if (entries.length > 1) {
-            // Keep the first entry (latest/highest ID), delete the rest
-            const duplicates = entries.slice(1);
-            const duplicateIds = duplicates.map(entry => entry.id);
-            
-            if (duplicateIds.length > 0) {
-              await connection.query(
-                `DELETE FROM footer_content WHERE id IN (${duplicateIds.map(() => '?').join(',')})`,
-                duplicateIds
-              );
-              deletedCount += duplicateIds.length;
-              logInfo(`Cleaned up ${duplicateIds.length} duplicate ${title} contact entries`, { context: 'database_migration', title });
-            }
-          }
-        }
-        
-        if (deletedCount > 0) {
-          logInfo(`Footer Content cleanup: Removed ${deletedCount} duplicate contact entries`, { context: 'database_migration' });
-        }
-      } catch (err) {
-        // Log error but don't fail initialization
-        logWarn('Warning: Could not clean up duplicate footer_content entries', { context: 'database_migration', error: err.message });
-      }
-      
-      // 6. Security Tables
+      // ============================================
+      // 6. SECURITY TABLES (Tokens, Sessions, Logs)
+      // ============================================
       await connection.query(`
         CREATE TABLE IF NOT EXISTS password_reset_tokens (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1676,38 +1442,21 @@ const initializeDatabase = async () => {
         )
       `);
 
-      await connection.query(`
-        CREATE TABLE IF NOT EXISTS superadmin (
-          id INT PRIMARY KEY DEFAULT 1,
-          username VARCHAR(100) NOT NULL UNIQUE,
-          password VARCHAR(255) NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          password_changed_at TIMESTAMP NULL DEFAULT NULL,
-          twofa_enabled TINYINT(1) DEFAULT 0,
-          twofa_secret VARCHAR(255) NULL,
-          INDEX idx_username (username)
-        )
-      `);
-
-      // Auto-insert/update superadmin account
       try {
         const superadminEmail = 'faithcommunityfaces@gmail.com';
-        const superadminPassword = 'admin123'; // Easy password as requested
+        const superadminPassword = 'admin123';
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(superadminPassword, saltRounds);
 
-        // Check if superadmin exists
         const [existingSuperadmin] = await connection.query(
-          'SELECT id, username, password FROM superadmin WHERE id = 1'
+          'SELECT id, email, password_hash FROM users WHERE id = 1 AND role = "superadmin"'
         );
 
         if (existingSuperadmin.length === 0) {
-          // Insert new superadmin account
           await connection.query(
-            `INSERT INTO superadmin (id, username, password, password_changed_at) 
-             VALUES (1, ?, ?, NOW()) 
-             ON DUPLICATE KEY UPDATE username = ?, password = ?, password_changed_at = NOW()`,
+            `INSERT INTO users (id, email, password_hash, role, password_changed_at, email_verified) 
+             VALUES (1, ?, ?, 'superadmin', NOW(), TRUE) 
+             ON DUPLICATE KEY UPDATE email = ?, password_hash = ?, role = 'superadmin', password_changed_at = NOW()`,
             [superadminEmail, hashedPassword, superadminEmail, hashedPassword]
           );
           logInfo('Superadmin account created successfully', { 
@@ -1715,12 +1464,11 @@ const initializeDatabase = async () => {
             email: superadminEmail 
           });
         } else {
-          // Update existing superadmin if password is NULL or empty
           const existing = existingSuperadmin[0];
-          if (!existing.password || existing.password.trim() === '') {
+          if (!existing.password_hash || existing.password_hash.trim() === '') {
             await connection.query(
-              `UPDATE superadmin 
-               SET username = ?, password = ?, password_changed_at = NOW() 
+              `UPDATE users 
+               SET email = ?, password_hash = ?, role = 'superadmin', password_changed_at = NOW() 
                WHERE id = 1`,
               [superadminEmail, hashedPassword]
             );
@@ -1729,13 +1477,13 @@ const initializeDatabase = async () => {
               email: superadminEmail 
             });
           } else {
-            // Update username if it doesn't match (but keep existing password)
-            if (existing.username !== superadminEmail) {
+            // Update email if it doesn't match (but keep existing password)
+            if (existing.email !== superadminEmail) {
               await connection.query(
-                `UPDATE superadmin SET username = ? WHERE id = 1`,
+                `UPDATE users SET email = ?, role = 'superadmin' WHERE id = 1`,
                 [superadminEmail]
               );
-              logInfo('Superadmin account username updated', { 
+              logInfo('Superadmin account email updated', { 
                 context: 'database', 
                 email: superadminEmail 
               });
@@ -1800,7 +1548,7 @@ const initializeDatabase = async () => {
           user_agent VARCHAR(500) NULL,
           expires_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE,
+          FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE,
           INDEX idx_admin_id (admin_id),
           INDEX idx_token_hash (token_hash),
           INDEX idx_fingerprint (fingerprint),
@@ -1827,7 +1575,37 @@ const initializeDatabase = async () => {
         )
       `);
 
-      // Insert default data for UI tables
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS step_up_challenges (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          admin_id INT NOT NULL,
+          token VARCHAR(64) UNIQUE NOT NULL,
+          action VARCHAR(100) NOT NULL,
+          ip_address VARCHAR(45) NOT NULL,
+          expires_at TIMESTAMP NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_token (token),
+          INDEX idx_admin (admin_id),
+          INDEX idx_expires (expires_at),
+          FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS mfa_backup_codes (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          admin_id INT NOT NULL,
+          code_hash VARCHAR(255) NOT NULL,
+          created_at TIMESTAMP NOT NULL,
+          used_at TIMESTAMP NULL,
+          INDEX idx_admin (admin_id),
+          FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+
+      // ============================================
+      // 7. DEFAULT DATA (Initial records)
+      // ============================================
       await connection.query(`
         INSERT IGNORE INTO branding (logo_url, name_url, favicon_url) 
         VALUES (NULL, NULL, NULL)
@@ -1858,123 +1636,6 @@ const initializeDatabase = async () => {
 
       // Extension categories (about_us) - no auto-insert, let users add them manually
       // Removed auto-insert to allow empty values initially
-      
-      // Handle existing data migrations for news table
-      const [existingNews] = await connection.query(`
-        SELECT COUNT(*) as count FROM news WHERE slug IS NULL OR slug = ''
-      `);
-      
-      if (existingNews[0].count > 0) {
-        // Set slug from title for existing records
-        await connection.query(`
-          UPDATE news 
-          SET slug = LOWER(REPLACE(REPLACE(REPLACE(REPLACE(title, ' ', '-'), '&', 'and'), '?', ''), '!', ''))
-          WHERE slug IS NULL OR slug = ''
-        `);
-        
-        // Set content from description for existing records
-        await connection.query(`
-          UPDATE news 
-          SET content = description
-          WHERE (content IS NULL OR content = '') AND description IS NOT NULL
-        `);
-        
-        // Generate basic excerpt from description for existing records
-        await connection.query(`
-          UPDATE news 
-          SET excerpt = CASE 
-              WHEN LENGTH(description) > 180 
-              THEN CONCAT(LEFT(description, 177), '...')
-              ELSE description
-          END
-          WHERE excerpt IS NULL OR excerpt = ''
-        `);
-        
-        // Set published_at from date for existing records
-        await connection.query(`
-          UPDATE news 
-          SET published_at = COALESCE(date, created_at)
-          WHERE published_at IS NULL
-        `);
-
-        // Clean up slug duplicates by appending ID
-        // Use a simpler approach to avoid MySQL subquery limitations
-        try {
-          const [duplicateSlugs] = await connection.query(`
-            SELECT slug, COUNT(*) as count 
-            FROM news 
-            GROUP BY slug 
-            HAVING count > 1
-          `);
-          
-          for (const dup of duplicateSlugs) {
-            const [records] = await connection.query(`
-              SELECT id FROM news WHERE slug = ? ORDER BY id ASC
-            `, [dup.slug]);
-            
-            // Keep first record, update the rest
-            for (let i = 1; i < records.length; i++) {
-              await connection.query(`
-                UPDATE news SET slug = CONCAT(?, '-', id) WHERE id = ?
-              `, [dup.slug, records[i].id]);
-            }
-          }
-        } catch (slugError) {
-          // Slug cleanup failed, log but don't fail migration
-          logInfo('Slug duplicate cleanup failed (non-critical)', { context: 'database', error: slugError.message });
-        }
-
-        // Remove description column after data migration
-        await connection.query(`ALTER TABLE news DROP COLUMN description`);
-      }
-
-      // Handle existing programs slug generation
-      const [existingPrograms] = await connection.query(`
-        SELECT id, title FROM programs_projects WHERE slug IS NULL
-      `);
-      
-      for (const program of existingPrograms) {
-        const slug = program.title
-          .toLowerCase()
-          .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
-          .replace(/\s+/g, '-') // Replace spaces with hyphens
-          .replace(/-+/g, '-') // Replace multiple hyphens with single
-          .trim('-'); // Remove leading/trailing hyphens
-        
-        // Ensure uniqueness by appending ID if needed
-        let finalSlug = slug;
-        let counter = 1;
-        while (true) {
-          const [existingSlug] = await connection.query(`
-            SELECT id FROM programs_projects WHERE slug = ? AND id != ?
-          `, [finalSlug, program.id]);
-          
-          if (existingSlug.length === 0) {
-            break;
-          }
-          finalSlug = `${slug}-${counter}`;
-          counter++;
-        }
-        
-        await connection.query(`
-          UPDATE programs_projects SET slug = ? WHERE id = ?
-        `, [finalSlug, program.id]);
-      }
-
-      // Handle existing messages user linking
-      await connection.query(`
-        UPDATE messages m 
-        JOIN users u ON m.sender_email = u.email 
-        SET m.user_id = u.id 
-        WHERE m.user_id IS NULL
-      `);
-
-      // Handle existing subscribers verification fix
-      await connection.query(`
-        UPDATE subscribers 
-        SET is_verified = 0 
-        WHERE is_verified = 1 AND verified_at IS NULL
-      `);
 
       // Record migration as executed
       await connection.query(

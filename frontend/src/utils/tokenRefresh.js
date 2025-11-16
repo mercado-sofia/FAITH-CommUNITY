@@ -29,13 +29,14 @@ export const isTokenExpiredOrExpiringSoon = (token, bufferSeconds = 60) => {
 
 /**
  * Refresh access token using refresh token cookie
- * @returns {Promise<string|null>} - New access token or null if refresh failed
+ * Tokens are now stored in httpOnly cookies, so we just need to call the endpoint
+ * @returns {Promise<boolean>} - True if refresh succeeded, false otherwise
  */
 export const refreshAccessToken = async () => {
   try {
     // Check for window to avoid SSR errors
     if (typeof window === 'undefined') {
-      return null;
+      return false;
     }
 
     const response = await fetch(`${API_BASE_URL}/api/users/refresh`, {
@@ -48,47 +49,58 @@ export const refreshAccessToken = async () => {
 
     if (!response.ok) {
       // Refresh token is invalid or expired
-      return null;
+      return false;
     }
 
-    const data = await response.json();
-    
-    if (data.token) {
-      // Update localStorage with new access token
-      localStorage.setItem('userToken', data.token);
-      return data.token;
-    }
-
-    return null;
+    // Token is now in httpOnly cookie, no need to store in localStorage
+    return true;
   } catch (error) {
     console.error('Error refreshing token:', error);
-    return null;
+    return false;
   }
 };
 
 /**
- * Get current access token, refreshing if needed
+ * Get valid access token, refreshing if needed
+ * Since tokens are in httpOnly cookies, we just check auth status via API
  * @param {boolean} forceRefresh - Force refresh even if token is still valid
- * @returns {Promise<string|null>} - Valid access token or null
+ * @returns {Promise<boolean>} - True if token is valid/refreshed, false otherwise
  */
 export const getValidAccessToken = async (forceRefresh = false) => {
   // Check for window to avoid SSR errors
   if (typeof window === 'undefined') {
-    return null;
+    return false;
   }
 
-  const currentToken = localStorage.getItem('userToken');
+  // Check auth status from backend (reads from httpOnly cookie)
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/users/auth/check`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   
-  if (!currentToken) {
-    return null;
+    if (!response.ok) {
+      return false;
+    }
+
+    const data = await response.json();
+    
+    if (data.authenticated) {
+      return true;
   }
 
-  // Check if token needs refresh
-  if (forceRefresh || isTokenExpiredOrExpiringSoon(currentToken)) {
-    const newToken = await refreshAccessToken();
-    return newToken || currentToken; // Return new token or fallback to current
-  }
+    // If not authenticated but can refresh, try refresh
+    if (data.needsRefresh || forceRefresh) {
+      return await refreshAccessToken();
+    }
 
-  return currentToken;
+    return false;
+  } catch (error) {
+    console.error('Error checking auth status:', error);
+    return false;
+  }
 };
 

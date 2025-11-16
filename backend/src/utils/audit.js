@@ -10,7 +10,6 @@ const logger = pino({
   }
 })
 
-// Input validation functions
 function validateAuditInput(userId, action, details) {
   if (!userId || typeof userId !== 'number' || userId <= 0) {
     logger.warn({
@@ -104,7 +103,6 @@ export async function ensureAuditTable() {
 
 export async function logAdminAction(adminId, action, details, req) {
   try {
-    // Validate input parameters
     if (!validateAuditInput(adminId, action, details)) {
       return false;
     }
@@ -147,7 +145,6 @@ export async function logAdminAction(adminId, action, details, req) {
 
 export async function logSuperadminAction(superadminId, action, details, req) {
   try {
-    // Validate input parameters
     if (!validateAuditInput(superadminId, action, details)) {
       return false;
     }

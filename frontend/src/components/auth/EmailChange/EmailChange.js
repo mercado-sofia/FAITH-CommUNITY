@@ -56,7 +56,7 @@ export default function EmailChange({
   // Get current email based on user type
   const getCurrentEmail = () => {
     if (userType === 'superadmin') {
-      return currentUser?.email || currentUser?.username || '';
+      return currentUser?.email || '';
     }
     return currentEmail || '';
   };

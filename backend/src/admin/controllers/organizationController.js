@@ -50,7 +50,7 @@ export const getOrganizationByName = async (req, res) => {
     const [orgRows] = await db.execute(
       `SELECT o.*, a.email 
        FROM organizations o
-       LEFT JOIN admins a ON a.organization_id = o.id AND a.is_active = TRUE
+       LEFT JOIN users a ON a.organization_id = o.id AND a.role = 'admin' AND a.is_active = TRUE
        WHERE o.org = ? AND o.status = 'ACTIVE' LIMIT 1`,
       [org_name]
     )
@@ -101,7 +101,7 @@ export const getOrganizationByName = async (req, res) => {
         org: org.org, // From organizations table
         orgName: org.orgName, // From organizations table
         logo: logoUrl, // Use the constructed logo URL
-        email: org.email, // Email from admins table
+        email: org.email, // Email from users table
         // Fix: Return single strings instead of arrays, normalized to handle JSON objects
         advocacies: advocacies.length > 0 ? normalizeTextData(advocacies[0].advocacy) : "",
         competencies: competencies.length > 0 ? normalizeTextData(competencies[0].competency) : "",
@@ -321,7 +321,7 @@ export const getOrganizationById = async (req, res) => {
     const [orgRows] = await db.execute(
       `SELECT o.*, a.email 
        FROM organizations o
-       LEFT JOIN admins a ON a.organization_id = o.id AND a.is_active = TRUE
+       LEFT JOIN users a ON a.organization_id = o.id AND a.role = 'admin' AND a.is_active = TRUE
        WHERE o.id = ? AND o.status = 'ACTIVE' LIMIT 1`,
       [id]
     )

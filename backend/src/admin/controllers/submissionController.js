@@ -191,7 +191,7 @@ export const submitChanges = async (req, res) => {
     const insertedSubmissions = await Promise.all(insertPromises)
 
     // Get superadmin ID for notifications (assuming there's only one superadmin)
-    const [superadminRows] = await db.execute("SELECT id FROM superadmin LIMIT 1")
+    const [superadminRows] = await db.execute("SELECT id FROM users WHERE role = 'superadmin' LIMIT 1")
     const superadminId = superadminRows.length > 0 ? superadminRows[0].id : null
 
     // Create superadmin notifications for each submission
@@ -363,7 +363,7 @@ export const getSubmissionsByOrg = async (req, res) => {
     const [rows] = await db.execute(
       `SELECT s.*, o.orgName as submitted_by_name 
        FROM submissions s 
-       LEFT JOIN admins a ON s.submitted_by = a.id 
+       LEFT JOIN users a ON s.submitted_by = a.id AND a.role = 'admin' 
        LEFT JOIN organizations o ON a.organization_id = o.id
        WHERE s.organization_id = ? 
        ORDER BY s.submitted_at DESC`,
@@ -399,7 +399,7 @@ export const getSubmissionsByOrg = async (req, res) => {
             const placeholders = collaboratorIds.map(() => '?').join(',');
             const [collaboratorRows] = await db.execute(`
               SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
-              FROM admins a
+              FROM users a
               LEFT JOIN organizations o ON a.organization_id = o.id
               WHERE a.id IN (${placeholders})
             `, collaboratorIds);
@@ -680,7 +680,7 @@ export const getSubmissionById = async (req, res) => {
                 const placeholders = collaborators.map(() => '?').join(',');
                 const [collaboratorRows] = await db.execute(`
                   SELECT a.id, a.email, o.orgName as organization_name, o.org as organization_acronym
-                  FROM admins a
+                  FROM users a
                   LEFT JOIN organizations o ON a.organization_id = o.id
                   WHERE a.id IN (${placeholders})
                 `, collaborators);

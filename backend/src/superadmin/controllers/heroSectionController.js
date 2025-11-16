@@ -6,13 +6,9 @@ import {
 } from '../../utils/cloudinaryConfig.js';
 import { uploadSingleToCloudinary } from '../../utils/cloudinaryUpload.js';
 
-// Get hero section data
 export const getHeroSection = async (req, res) => {
   try {
-    // Get main hero section data
     const [heroRows] = await db.query('SELECT * FROM hero_section ORDER BY id DESC LIMIT 1');
-    
-    // Get hero section images
     const [imageRows] = await db.query('SELECT * FROM hero_section_images ORDER BY display_order ASC');
     
     if (heroRows.length === 0) {
@@ -24,7 +20,6 @@ export const getHeroSection = async (req, res) => {
 
     const heroData = heroRows[0];
     
-    // Format images data to match frontend expectations
     const images = imageRows.map(row => ({
       id: row.image_id,
       url: row.image_url,
@@ -51,7 +46,6 @@ export const getHeroSection = async (req, res) => {
   }
 };
 
-// Update hero section text content
 export const updateHeroSectionText = async (req, res) => {
   try {
     const { field, value } = req.body;
@@ -70,18 +64,15 @@ export const updateHeroSectionText = async (req, res) => {
       });
     }
 
-    // Check if hero section record exists
     const [existingRows] = await db.query('SELECT * FROM hero_section ORDER BY id DESC LIMIT 1');
     
     if (existingRows.length === 0) {
-      // Create new hero section record
       await db.query(
         'INSERT INTO hero_section (tag, heading) VALUES (?, ?)',
         [field === 'tag' ? value : 'Welcome to FAITH CommUNITY', 
          field === 'heading' ? value : 'A Unified Platform for Community Extension Programs']
       );
     } else {
-      // Update existing hero section record
       const updateQuery = field === 'tag' 
         ? 'UPDATE hero_section SET tag = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
         : 'UPDATE hero_section SET heading = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
@@ -89,7 +80,6 @@ export const updateHeroSectionText = async (req, res) => {
       await db.query(updateQuery, [value, existingRows[0].id]);
     }
 
-    // Fetch updated hero section data
     const [updatedRows] = await db.query('SELECT * FROM hero_section ORDER BY id DESC LIMIT 1');
 
     res.json({
@@ -107,7 +97,6 @@ export const updateHeroSectionText = async (req, res) => {
   }
 };
 
-// Update hero section image text content
 export const updateHeroSectionImageText = async (req, res) => {
   try {
     const { imageId, field, value } = req.body;
@@ -126,7 +115,6 @@ export const updateHeroSectionImageText = async (req, res) => {
       });
     }
 
-    // Check if image record exists
     const [existingRows] = await db.query('SELECT * FROM hero_section_images WHERE image_id = ?', [imageId]);
     
     if (existingRows.length === 0) {
@@ -136,7 +124,6 @@ export const updateHeroSectionImageText = async (req, res) => {
       });
     }
 
-    // Update image text
     const updateQuery = field === 'heading' 
       ? 'UPDATE hero_section_images SET heading = ?, updated_at = CURRENT_TIMESTAMP WHERE image_id = ?'
       : 'UPDATE hero_section_images SET subheading = ?, updated_at = CURRENT_TIMESTAMP WHERE image_id = ?';
@@ -159,7 +146,6 @@ export const updateHeroSectionImageText = async (req, res) => {
   }
 };
 
-// Upload hero section video
 export const uploadHeroSectionVideo = async (req, res) => {
   try {
     if (!req.file) {
@@ -169,7 +155,6 @@ export const uploadHeroSectionVideo = async (req, res) => {
       });
     }
 
-    // Upload to Cloudinary
     const uploadResult = await uploadSingleToCloudinary(
       req.file, 
       CLOUDINARY_FOLDERS.BRANDING, // Using branding folder for now, can create a separate hero folder later
@@ -178,7 +163,6 @@ export const uploadHeroSectionVideo = async (req, res) => {
 
     const videoUrl = uploadResult.url;
 
-    // Update hero section with new video URL
     const [existingRows] = await db.query('SELECT * FROM hero_section ORDER BY id DESC LIMIT 1');
     
     if (existingRows.length === 0) {
@@ -187,7 +171,6 @@ export const uploadHeroSectionVideo = async (req, res) => {
         ['Welcome to FAITH CommUNITY', 'A Unified Platform for Community Extension Programs', videoUrl, 'upload']
       );
     } else {
-      // Delete old video from Cloudinary if it exists
       if (existingRows[0].video_url) {
         const oldPublicId = extractPublicIdFromUrl(existingRows[0].video_url);
         if (oldPublicId) {
@@ -227,7 +210,6 @@ export const uploadHeroSectionVideo = async (req, res) => {
   }
 };
 
-// Upload hero section image
 export const uploadHeroSectionImage = async (req, res) => {
   try {
     if (!req.file) {
@@ -246,7 +228,6 @@ export const uploadHeroSectionImage = async (req, res) => {
       });
     }
 
-    // Upload to Cloudinary
     const uploadResult = await uploadSingleToCloudinary(
       req.file, 
       CLOUDINARY_FOLDERS.BRANDING, // Using branding folder for now, can create a separate hero folder later
@@ -255,7 +236,6 @@ export const uploadHeroSectionImage = async (req, res) => {
 
     const imageUrl = uploadResult.url;
 
-    // Check if image record exists
     const [existingRows] = await db.query('SELECT * FROM hero_section_images WHERE image_id = ?', [imageId]);
     
     if (existingRows.length === 0) {
@@ -265,7 +245,6 @@ export const uploadHeroSectionImage = async (req, res) => {
       });
     }
 
-    // Delete old image from Cloudinary if it exists
     if (existingRows[0].image_url) {
       const oldPublicId = extractPublicIdFromUrl(existingRows[0].image_url);
       if (oldPublicId) {
@@ -276,7 +255,6 @@ export const uploadHeroSectionImage = async (req, res) => {
       }
     }
     
-    // Update image URL
     await db.query(
       'UPDATE hero_section_images SET image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE image_id = ?',
       [imageUrl, imageId]
@@ -305,7 +283,6 @@ export const uploadHeroSectionImage = async (req, res) => {
   }
 };
 
-// Delete hero section video
 export const deleteHeroSectionVideo = async (req, res) => {
   try {
     const [existingRows] = await db.query('SELECT * FROM hero_section ORDER BY id DESC LIMIT 1');
@@ -317,7 +294,6 @@ export const deleteHeroSectionVideo = async (req, res) => {
       });
     }
 
-    // Delete from Cloudinary
     const publicId = extractPublicIdFromUrl(existingRows[0].video_url);
     if (publicId) {
       try {
@@ -326,7 +302,6 @@ export const deleteHeroSectionVideo = async (req, res) => {
       }
     }
 
-    // Update database
     await db.query(
       'UPDATE hero_section SET video_url = NULL, video_link = NULL, video_type = "upload", updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       [existingRows[0].id]
@@ -344,7 +319,6 @@ export const deleteHeroSectionVideo = async (req, res) => {
   }
 };
 
-// Update hero section video link
 export const updateHeroSectionVideoLink = async (req, res) => {
   try {
     const { video_link, video_type } = req.body;
@@ -363,7 +337,6 @@ export const updateHeroSectionVideoLink = async (req, res) => {
       });
     }
 
-    // Validate and convert video link format for common platforms
     let processedVideoLink = video_link;
     if (video_type === 'link') {
       const videoLinkRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be|vimeo\.com|dailymotion\.com|twitch\.tv|facebook\.com|instagram\.com|tiktok\.com)/i;
@@ -374,7 +347,6 @@ export const updateHeroSectionVideoLink = async (req, res) => {
         });
       }
 
-      // Convert YouTube watch URLs to embed URLs
       if (video_link.includes('youtube.com/watch')) {
         const videoId = video_link.match(/[?&]v=([^&]+)/);
         if (videoId) {
@@ -386,7 +358,6 @@ export const updateHeroSectionVideoLink = async (req, res) => {
           processedVideoLink = `https://www.youtube.com/embed/${videoId[1]}`;
         }
       }
-      // Convert Vimeo URLs to embed format
       else if (video_link.includes('vimeo.com/')) {
         const videoId = video_link.match(/vimeo\.com\/(\d+)/);
         if (videoId) {
@@ -395,17 +366,14 @@ export const updateHeroSectionVideoLink = async (req, res) => {
       }
     }
 
-    // Check if hero section record exists
     const [existingRows] = await db.query('SELECT * FROM hero_section ORDER BY id DESC LIMIT 1');
     
     if (existingRows.length === 0) {
-      // Create new hero section record
       await db.query(
         'INSERT INTO hero_section (tag, heading, video_link, video_type) VALUES (?, ?, ?, ?)',
         ['Welcome to FAITH CommUNITY', 'A Unified Platform for Community Extension Programs', processedVideoLink, video_type]
       );
     } else {
-      // Update existing hero section record
       await db.query(
         'UPDATE hero_section SET video_link = ?, video_type = ?, video_url = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
         [processedVideoLink, video_type, existingRows[0].id]
@@ -428,12 +396,10 @@ export const updateHeroSectionVideoLink = async (req, res) => {
   }
 };
 
-// Update entire hero section (bulk update)
 export const updateHeroSection = async (req, res) => {
   try {
     const { tag, heading, video_url, video_link, video_type, images } = req.body;
 
-    // Validate required fields
     if (!tag || !heading) {
       return res.status(400).json({ 
         success: false, 
@@ -441,19 +407,16 @@ export const updateHeroSection = async (req, res) => {
       });
     }
 
-    // Check if hero section record exists
     const [existingRows] = await db.query('SELECT * FROM hero_section ORDER BY id DESC LIMIT 1');
     
     let heroId;
     if (existingRows.length === 0) {
-      // Create new hero section record
       const [insertResult] = await db.query(
         'INSERT INTO hero_section (tag, heading, video_url, video_link, video_type) VALUES (?, ?, ?, ?, ?)',
         [tag, heading, video_url || null, video_link || null, video_type || 'upload']
       );
       heroId = insertResult.insertId;
     } else {
-      // Update existing hero section record
       heroId = existingRows[0].id;
       await db.query(
         'UPDATE hero_section SET tag = ?, heading = ?, video_url = ?, video_link = ?, video_type = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
@@ -461,21 +424,17 @@ export const updateHeroSection = async (req, res) => {
       );
     }
 
-    // Update images if provided
     if (images && Array.isArray(images)) {
       for (const image of images) {
         if (image.id && (image.heading !== undefined || image.subheading !== undefined)) {
-          // Check if image record exists
           const [imageRows] = await db.query('SELECT * FROM hero_section_images WHERE image_id = ?', [image.id]);
           
           if (imageRows.length === 0) {
-            // Create new image record
             await db.query(
               'INSERT INTO hero_section_images (image_id, heading, subheading, display_order) VALUES (?, ?, ?, ?)',
               [image.id, image.heading || '', image.subheading || '', image.id]
             );
           } else {
-            // Update existing image record
             const updateFields = [];
             const updateValues = [];
             
@@ -502,7 +461,6 @@ export const updateHeroSection = async (req, res) => {
       }
     }
 
-    // Fetch updated hero section data
     const [updatedHeroRows] = await db.query('SELECT * FROM hero_section WHERE id = ?', [heroId]);
     const [updatedImageRows] = await db.query('SELECT * FROM hero_section_images ORDER BY display_order ASC');
     
@@ -534,7 +492,6 @@ export const updateHeroSection = async (req, res) => {
   }
 };
 
-// Delete hero section image
 export const deleteHeroSectionImage = async (req, res) => {
   try {
     const { imageId } = req.params;
@@ -555,7 +512,6 @@ export const deleteHeroSectionImage = async (req, res) => {
       });
     }
 
-    // Delete from Cloudinary if image exists
     if (existingRows[0].image_url) {
       const publicId = extractPublicIdFromUrl(existingRows[0].image_url);
       if (publicId) {
@@ -566,7 +522,6 @@ export const deleteHeroSectionImage = async (req, res) => {
       }
     }
 
-    // Update database - set image_url to NULL but keep the record
     await db.query(
       'UPDATE hero_section_images SET image_url = NULL, updated_at = CURRENT_TIMESTAMP WHERE image_id = ?',
       [imageId]

@@ -121,20 +121,41 @@ export function getAccessTokenCookieOptions(req = null) {
     const hostParts = forwardedHost.split(':');
     cookieOptions.domain = hostParts[0]; // 'localhost' (without port)
   } else if (req && req.headers && req.headers.host && !isDevelopment) {
-    // Production: Extract domain from host header (handles subdomains)
-    // For example: app.example.com -> .example.com (leading dot for subdomain support)
+    // Production: Handle domain extraction carefully
+    // CRITICAL: For Vercel and similar platforms, don't set domain attribute
+    // Setting domain incorrectly causes cookies to be inaccessible
     const host = req.headers.host;
     const hostParts = host.split(':');
     const hostname = hostParts[0];
     
-    // If it's a subdomain (has dots), use the root domain with leading dot
-    // This allows cookies to work across subdomains
+    // Only set domain for true subdomains (e.g., app.example.com -> .example.com)
+    // Do NOT set domain for:
+    // - Vercel domains (e.g., faith-community.vercel.app)
+    // - Multi-part domains (e.g., example.co.uk)
+    // - Exact hostnames (let browser use exact match)
     if (hostname.includes('.') && !hostname.startsWith('localhost')) {
       const parts = hostname.split('.');
-      if (parts.length >= 2) {
-        // Use root domain (e.g., .example.com)
-        cookieOptions.domain = '.' + parts.slice(-2).join('.');
+      
+      // Platform domains: vercel.app, netlify.app, github.io, etc.
+      const isPlatformDomain = hostname.endsWith('.vercel.app') || 
+                               hostname.endsWith('.netlify.app') || 
+                               hostname.endsWith('.github.io') ||
+                               hostname.endsWith('.railway.app') ||
+                               hostname.endsWith('.render.com');
+      
+      // For platform domains, don't set domain attribute (use exact hostname)
+      // This ensures cookies work correctly for Vercel, Netlify, etc.
+      if (!isPlatformDomain) {
+        // For true subdomains (3+ parts): app.example.com -> .example.com
+        if (parts.length >= 3) {
+          cookieOptions.domain = '.' + parts.slice(-2).join('.');
+        } 
+        // For 2-part domains: example.com -> .example.com (allows subdomains)
+        else if (parts.length === 2) {
+          cookieOptions.domain = '.' + parts.join('.');
+        }
       }
+      // For platform domains, don't set domain - browser uses exact hostname match
     }
     // For exact hostname or localhost, don't set domain (uses exact host)
   } else if (isDevelopment) {
@@ -189,20 +210,41 @@ export function getRefreshCookieOptions(req = null) {
     const hostParts = forwardedHost.split(':');
     cookieOptions.domain = hostParts[0]; // 'localhost' (without port)
   } else if (req && req.headers && req.headers.host && !isDevelopment) {
-    // Production: Extract domain from host header (handles subdomains)
-    // For example: app.example.com -> .example.com (leading dot for subdomain support)
+    // Production: Handle domain extraction carefully
+    // CRITICAL: For Vercel and similar platforms, don't set domain attribute
+    // Setting domain incorrectly causes cookies to be inaccessible
     const host = req.headers.host;
     const hostParts = host.split(':');
     const hostname = hostParts[0];
     
-    // If it's a subdomain (has dots), use the root domain with leading dot
-    // This allows cookies to work across subdomains
+    // Only set domain for true subdomains (e.g., app.example.com -> .example.com)
+    // Do NOT set domain for:
+    // - Vercel domains (e.g., faith-community.vercel.app)
+    // - Multi-part domains (e.g., example.co.uk)
+    // - Exact hostnames (let browser use exact match)
     if (hostname.includes('.') && !hostname.startsWith('localhost')) {
       const parts = hostname.split('.');
-      if (parts.length >= 2) {
-        // Use root domain (e.g., .example.com)
-        cookieOptions.domain = '.' + parts.slice(-2).join('.');
+      
+      // Platform domains: vercel.app, netlify.app, github.io, etc.
+      const isPlatformDomain = hostname.endsWith('.vercel.app') || 
+                               hostname.endsWith('.netlify.app') || 
+                               hostname.endsWith('.github.io') ||
+                               hostname.endsWith('.railway.app') ||
+                               hostname.endsWith('.render.com');
+      
+      // For platform domains, don't set domain attribute (use exact hostname)
+      // This ensures cookies work correctly for Vercel, Netlify, etc.
+      if (!isPlatformDomain) {
+        // For true subdomains (3+ parts): app.example.com -> .example.com
+        if (parts.length >= 3) {
+          cookieOptions.domain = '.' + parts.slice(-2).join('.');
+        } 
+        // For 2-part domains: example.com -> .example.com (allows subdomains)
+        else if (parts.length === 2) {
+          cookieOptions.domain = '.' + parts.join('.');
+        }
       }
+      // For platform domains, don't set domain - browser uses exact hostname match
     }
     // For exact hostname or localhost, don't set domain (uses exact host)
   } else if (isDevelopment) {
@@ -236,19 +278,37 @@ export function getClearCookieOptions(req = null) {
     const hostParts = forwardedHost.split(':');
     clearOptions.domain = hostParts[0]; // Extract hostname without port
   } else if (req && req.headers && req.headers.host && !isDevelopment) {
-    // Production: Extract domain from host header (handles subdomains)
-    // This matches the logic used when setting cookies
+    // Production: Handle domain extraction carefully (matches cookie setting logic)
+    // CRITICAL: For Vercel and similar platforms, don't set domain attribute
     const host = req.headers.host;
     const hostParts = host.split(':');
     const hostname = hostParts[0];
     
-    // If it's a subdomain (has dots), use the root domain with leading dot
+    // Only set domain for true subdomains (e.g., app.example.com -> .example.com)
+    // Do NOT set domain for platform domains or multi-part domains
     if (hostname.includes('.') && !hostname.startsWith('localhost')) {
       const parts = hostname.split('.');
-      if (parts.length >= 2) {
-        // Use root domain (e.g., .example.com)
-        clearOptions.domain = '.' + parts.slice(-2).join('.');
+      
+      // Platform domains: vercel.app, netlify.app, github.io, etc.
+      const isPlatformDomain = hostname.endsWith('.vercel.app') || 
+                               hostname.endsWith('.netlify.app') || 
+                               hostname.endsWith('.github.io') ||
+                               hostname.endsWith('.railway.app') ||
+                               hostname.endsWith('.render.com');
+      
+      // For platform domains, don't set domain attribute (matches cookie setting logic)
+      if (!isPlatformDomain) {
+        // For true subdomains (3+ parts): app.example.com -> .example.com
+        if (parts.length >= 3) {
+          clearOptions.domain = '.' + parts.slice(-2).join('.');
+        } 
+        // For 2-part domains: example.com -> .example.com
+        else if (parts.length === 2) {
+          clearOptions.domain = '.' + parts.join('.');
+        }
       }
+      // For platform domains, don't set domain - matches cookie setting logic
+      // For all other cases, don't set domain (matches cookie setting logic)
     }
     // For exact hostname or localhost, don't set domain (uses exact host)
   } else if (isDevelopment) {

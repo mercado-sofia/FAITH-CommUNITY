@@ -76,7 +76,8 @@ export default function AboutUsManagement({ showSuccessModal }) {
   useEffect(() => {
     const loadAboutUsData = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const { API_BASE_URL } = await import('@/config/api');
+        const baseUrl = API_BASE_URL || '';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/about-us`,
           { method: 'GET' },
@@ -164,7 +165,8 @@ export default function AboutUsManagement({ showSuccessModal }) {
           }
         }
         
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const { API_BASE_URL } = await import('@/config/api');
+        const baseUrl = API_BASE_URL || '';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/about-us`,
           {
@@ -297,21 +299,14 @@ export default function AboutUsManagement({ showSuccessModal }) {
       const formData = new FormData();
       formData.append('image', file);
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      
-      // Get the token for manual request
-      const token = localStorage.getItem('superAdminToken');
-      if (!token) {
-        showSuccessModal('Authentication required. Please log in again.');
-        return null;
-      }
-
+      const { API_BASE_URL } = await import('@/config/api');
+      const baseUrl = API_BASE_URL || '';
+      // No need to check token - cookies handle authentication
 
       const response = await fetch(`${baseUrl}/api/superadmin/about-us/upload-image`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        // Don't set Content-Type - browser will set it with boundary for FormData
         body: formData,
       });
 
@@ -373,7 +368,8 @@ export default function AboutUsManagement({ showSuccessModal }) {
   const handleDeleteImageConfirm = async () => {
       try {
         setIsDeletingImage(true);
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const { API_BASE_URL } = await import('@/config/api');
+        const baseUrl = API_BASE_URL || '';
         
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/about-us/image`,

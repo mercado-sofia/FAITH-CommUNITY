@@ -20,8 +20,11 @@ export const useInvitationSubmission = (API_BASE_URL) => {
         formData.append('logo', form.logo)
         
         try {
-          const uploadResponse = await fetch(`${API_BASE_URL}/api/upload/public/organization-logo`, {
+          const { API_BASE_URL } = await import('@/config/api');
+          const uploadResponse = await fetch(`${API_BASE_URL || ''}/api/upload/public/organization-logo`, {
             method: "POST",
+            credentials: 'include', // CRITICAL: Include httpOnly cookies
+            // Don't set Content-Type - browser will set it with boundary for FormData
             body: formData,
           })
           
@@ -35,7 +38,8 @@ export const useInvitationSubmission = (API_BASE_URL) => {
             } catch (parseError) {
               uploadError = { error: `Upload failed with status ${uploadResponse.status}` }
             }
-            logger.apiError(`${API_BASE_URL}/api/upload/public/organization-logo`, new Error(uploadError.error), { 
+            const { API_BASE_URL } = await import('@/config/api');
+            logger.apiError(`${API_BASE_URL || ''}/api/upload/public/organization-logo`, new Error(uploadError.error), { 
               status: uploadResponse.status,
               fileName: form.logo.name
             })
@@ -43,7 +47,8 @@ export const useInvitationSubmission = (API_BASE_URL) => {
           }
         } catch (uploadErr) {
           if (uploadErr.name === 'TypeError' && uploadErr.message.includes('fetch')) {
-            logger.apiError(`${API_BASE_URL}/api/upload/public/organization-logo`, uploadErr, { 
+            const { API_BASE_URL } = await import('@/config/api');
+            logger.apiError(`${API_BASE_URL || ''}/api/upload/public/organization-logo`, uploadErr, { 
               context: 'network_error',
               fileName: form.logo.name
             })
@@ -66,8 +71,10 @@ export const useInvitationSubmission = (API_BASE_URL) => {
       }
       
 
-      const response = await fetch(`${API_BASE_URL}/api/invitations/accept`, {
+      const { API_BASE_URL } = await import('@/config/api');
+      const response = await fetch(`${API_BASE_URL || ''}/api/invitations/accept`, {
         method: "POST",
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
           "Content-Type": "application/json",
         },
@@ -78,7 +85,8 @@ export const useInvitationSubmission = (API_BASE_URL) => {
       try {
         data = await response.json()
       } catch (parseError) {
-        logger.apiError(`${API_BASE_URL}/api/invitations/accept`, parseError, { 
+        const { API_BASE_URL } = await import('@/config/api');
+        logger.apiError(`${API_BASE_URL || ''}/api/invitations/accept`, parseError, { 
           status: response.status,
           context: 'json_parse_error'
         })
@@ -89,19 +97,27 @@ export const useInvitationSubmission = (API_BASE_URL) => {
         
         // Fetch organization data to get the org acronym
         try {
-          const orgResponse = await fetch(`${API_BASE_URL}/api/organization/org/${form.org}`)
+          const { API_BASE_URL } = await import('@/config/api');
+          const orgResponse = await fetch(`${API_BASE_URL || ''}/api/organization/org/${form.org}`, {
+            credentials: 'include', // CRITICAL: Include httpOnly cookies
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          })
           if (orgResponse.ok) {
             const orgData = await orgResponse.json()
           }
         } catch (orgError) {
-          logger.apiError(`${API_BASE_URL}/api/organization/org/${form.org}`, orgError, {
+          const { API_BASE_URL } = await import('@/config/api');
+          logger.apiError(`${API_BASE_URL || ''}/api/organization/org/${form.org}`, orgError, {
             context: 'fetch_organization_after_creation'
           })
         }
         
         setSuccess("Account created successfully! You can now log in.")
       } else {
-        logger.apiError(`${API_BASE_URL}/api/invitations/accept`, new Error(data.error), { 
+        const { API_BASE_URL } = await import('@/config/api');
+        logger.apiError(`${API_BASE_URL || ''}/api/invitations/accept`, new Error(data.error), { 
           status: response.status,
           org: form.org,
           token: token.substring(0, 8) + '...'
@@ -109,7 +125,8 @@ export const useInvitationSubmission = (API_BASE_URL) => {
         setError(data.error || "Failed to create account")
       }
     } catch (err) {
-      logger.apiError(`${API_BASE_URL}/api/invitations/accept`, err, { 
+      const { API_BASE_URL } = await import('@/config/api');
+      logger.apiError(`${API_BASE_URL || ''}/api/invitations/accept`, err, { 
         context: 'invitation_acceptance',
         org: form.org,
         token: token.substring(0, 8) + '...'

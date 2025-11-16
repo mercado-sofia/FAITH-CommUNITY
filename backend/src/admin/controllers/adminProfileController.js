@@ -331,9 +331,11 @@ export const updateAdminPassword = async (req, res) => {
       const { revokeAllUserRefreshTokens } = await import('../../utils/jwt.js');
       await revokeAllUserRefreshTokens(adminId);
     } catch {}
-    // Clear both cookies
-    res.clearCookie('access_token', { path: '/' });
-    res.clearCookie('refresh_token', { path: '/' });
+    // Clear both cookies using the same domain logic as cookie setting
+    const { getClearCookieOptions } = await import('../../utils/jwt.js');
+    const clearCookieOptions = getClearCookieOptions(req);
+    res.clearCookie('access_token', clearCookieOptions);
+    res.clearCookie('refresh_token', clearCookieOptions);
 
     // Send password change notification
     try {

@@ -1,18 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getAdminTokenOrRedirect, API_CONFIG } from '../../utils';
+import { API_CONFIG } from '../../utils';
 
 // Fetch collaboration requests
 const fetchCollaborationRequests = async () => {
-  const token = getAdminTokenOrRedirect();
-  if (!token) {
-    return []; // Redirect handled by getAdminTokenOrRedirect
-  }
-
   try {
-    const response = await fetch(`${API_CONFIG.BASE_URL}/api/collaborations/collaboration-requests`, {
+    const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/collaborations/collaboration-requests`, {
+      credentials: 'include', // CRITICAL: Include httpOnly cookies
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        // No Authorization header needed - httpOnly cookies handle authentication
       }
     });
 
@@ -30,17 +26,13 @@ const fetchCollaborationRequests = async () => {
 
 // Accept collaboration request
 const acceptCollaborationRequest = async (collaborationId) => {
-  const token = getAdminTokenOrRedirect();
-  if (!token) {
-    throw new Error('Authentication required');
-  }
-
   try {
-    const response = await fetch(`${API_CONFIG.BASE_URL}/api/collaborations/collaborations/${collaborationId}/accept`, {
+    const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/collaborations/collaborations/${collaborationId}/accept`, {
       method: 'PUT',
+      credentials: 'include', // CRITICAL: Include httpOnly cookies
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        // No Authorization header needed - httpOnly cookies handle authentication
       }
     });
 
@@ -58,17 +50,13 @@ const acceptCollaborationRequest = async (collaborationId) => {
 
 // Decline collaboration request
 const declineCollaborationRequest = async (collaborationId) => {
-  const token = getAdminTokenOrRedirect();
-  if (!token) {
-    throw new Error('Authentication required');
-  }
-
   try {
-    const response = await fetch(`${API_CONFIG.BASE_URL}/api/collaborations/collaborations/${collaborationId}/decline`, {
+    const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/collaborations/collaborations/${collaborationId}/decline`, {
       method: 'PUT',
+      credentials: 'include', // CRITICAL: Include httpOnly cookies
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        // No Authorization header needed - httpOnly cookies handle authentication
       }
     });
 

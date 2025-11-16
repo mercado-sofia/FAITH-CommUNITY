@@ -22,10 +22,13 @@ export default function TwoFAModal({
 
   const checkTwoFAStatus = useCallback(async () => {
     try {
-      const token = localStorage.getItem('superAdminToken');
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const response = await fetch(`${baseUrl}/api/superadmin/auth/profile/${currentUser.id}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
+      const { API_BASE_URL } = await import('@/config/api');
+      const response = await fetch(`${API_BASE_URL || ''}/api/superadmin/auth/profile/${currentUser.id}`, {
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        headers: {
+          'Content-Type': 'application/json',
+          // No Authorization header needed - httpOnly cookies handle authentication
+        },
       });
       if (response.ok) {
         // Check if response is JSON before parsing
@@ -78,11 +81,14 @@ export default function TwoFAModal({
     setLoading(true);
     setMessage("");
     try {
-      const token = localStorage.getItem('superAdminToken');
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const resp = await fetch(`${baseUrl}/api/superadmin/auth/2fa/setup/${currentUser.id}`, {
+      const { API_BASE_URL } = await import('@/config/api');
+      const resp = await fetch(`${API_BASE_URL || ''}/api/superadmin/auth/2fa/setup/${currentUser.id}`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        headers: {
+          'Content-Type': 'application/json',
+          // No Authorization header needed - httpOnly cookies handle authentication
+        },
       });
       
       // Check if response is JSON before parsing
@@ -113,13 +119,13 @@ export default function TwoFAModal({
     setLoading(true);
     setMessage("");
     try {
-      const authToken = localStorage.getItem('superAdminToken');
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const resp = await fetch(`${baseUrl}/api/superadmin/auth/2fa/verify/${currentUser.id}`, {
+      const { API_BASE_URL } = await import('@/config/api');
+      const resp = await fetch(`${API_BASE_URL || ''}/api/superadmin/auth/2fa/verify/${currentUser.id}`, {
         method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        headers: {
+          'Content-Type': 'application/json',
+          // No Authorization header needed - httpOnly cookies handle authentication
         },
         body: JSON.stringify({ token })
       });
@@ -146,11 +152,14 @@ export default function TwoFAModal({
     setLoading(true);
     setMessage("");
     try {
-      const token = localStorage.getItem('superAdminToken');
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const resp = await fetch(`${baseUrl}/api/superadmin/auth/2fa/disable/${currentUser.id}`, {
+      const { API_BASE_URL } = await import('@/config/api');
+      const resp = await fetch(`${API_BASE_URL || ''}/api/superadmin/auth/2fa/disable/${currentUser.id}`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        headers: {
+          'Content-Type': 'application/json',
+          // No Authorization header needed - httpOnly cookies handle authentication
+        },
       });
       
       // Check if response is JSON before parsing

@@ -3,13 +3,14 @@
 import { useEffect, useRef } from 'react';
 import useSWR from 'swr';
 import logger from '../../utils/logger';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from '@/config/api';
 
 // Simple fetcher for public branding API with improved error handling
 const fetcher = async (url) => {
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      credentials: 'include', // CRITICAL: Include httpOnly cookies
+    });
     if (!response.ok) {
       const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
       error.status = response.status;

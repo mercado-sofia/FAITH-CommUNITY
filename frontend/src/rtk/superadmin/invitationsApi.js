@@ -1,26 +1,25 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
+import { API_BASE_URL } from "@/config/api"
+
+// Get base URL - empty string in development (uses Next.js rewrites for same-origin requests)
+const getBaseUrl = () => {
+  // In development, use empty string for relative paths (Next.js rewrites handle /api/*)
+  if (process.env.NODE_ENV === 'development') {
+    return '';
+  }
+  // In production, use the API_BASE_URL if available
+  const base = API_BASE_URL || '';
+  return base;
+};
 
 export const invitationsApi = createApi({
   reducerPath: "invitationsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/invitations`,
-    prepareHeaders: (headers, { getState }) => {
+    baseUrl: getBaseUrl(),
+    credentials: 'include', // CRITICAL: Include httpOnly cookies for authentication
+    prepareHeaders: (headers) => {
       headers.set("Content-Type", "application/json")
-
-      // Add JWT token for authentication - check for both admin and superadmin tokens
-      // Check for window to avoid SSR errors
-      const adminToken = getState().admin?.token || (typeof window !== 'undefined' ? localStorage.getItem("adminToken") : null)
-      const superadminToken = getState().superadmin?.token || (typeof window !== 'undefined' ? localStorage.getItem("superAdminToken") : null)
-      
-      // Use superadmin token if available, otherwise use admin token
-      const token = superadminToken || adminToken
-      
-      // Send token to backend - let backend handle validation
-      // Backend will reject hardcoded tokens in production with 403
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`)
-      }
-
+      // No Authorization header needed - httpOnly cookies handle authentication
       return headers
     },
   }),
@@ -29,7 +28,7 @@ export const invitationsApi = createApi({
     // Send invitation
     sendInvitation: builder.mutation({
       query: ({ email }) => ({
-        url: "/send",
+        url: "/api/invitations/send",
         method: "POST",
         body: { email },
       }),
@@ -38,14 +37,14 @@ export const invitationsApi = createApi({
 
     // Get all invitations
     getAllInvitations: builder.query({
-      query: () => "/",
+      query: () => "/api/invitations",
       providesTags: ["Invitation"],
     }),
 
     // Cancel invitation
     cancelInvitation: builder.mutation({
       query: (id) => ({
-        url: `/cancel/${id}`,
+        url: `/api/invitations/cancel/${id}`,
         method: "PUT",
       }),
       invalidatesTags: ["Invitation"],
@@ -54,7 +53,7 @@ export const invitationsApi = createApi({
     // Delete invitation
     deleteInvitation: builder.mutation({
       query: (id) => ({
-        url: `/${id}`,
+        url: `/api/invitations/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: ["Invitation"],
@@ -63,7 +62,7 @@ export const invitationsApi = createApi({
     // Deactivate admin from invitation
     deactivateAdminFromInvitation: builder.mutation({
       query: (id) => ({
-        url: `/deactivate/${id}`,
+        url: `/api/invitations/deactivate/${id}`,
         method: "PUT",
       }),
       invalidatesTags: ["Invitation"],
@@ -71,13 +70,13 @@ export const invitationsApi = createApi({
 
     // Validate invitation token (public endpoint)
     validateInvitationToken: builder.query({
-      query: (token) => `/validate/${token}`,
+      query: (token) => `/api/invitations/validate/${token}`,
     }),
 
     // Accept invitation (public endpoint)
     acceptInvitation: builder.mutation({
       query: (invitationData) => ({
-        url: "/accept",
+        url: "/api/invitations/accept",
         method: "POST",
         body: invitationData,
       }),

@@ -1,7 +1,6 @@
 import useSWR from 'swr';
 import logger from '@/utils/logger';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from '@/config/api';
 
 // Fetcher function for admin profile data (now uses httpOnly cookies)
 const adminProfileFetcher = async (url) => {
@@ -52,7 +51,7 @@ const adminProfileFetcher = async (url) => {
 // Custom hook for admin profile data
 export const useAdminProfile = () => {
   const { data, error, isLoading, mutate } = useSWR(
-    `${API_BASE_URL}/api/admin/profile`,
+    `${API_BASE_URL || ''}/api/admin/profile`,
     adminProfileFetcher,
     {
       revalidateOnFocus: false,
@@ -65,7 +64,7 @@ export const useAdminProfile = () => {
         return error.status !== 401 && error.status !== 404;
       },
       onError: (error) => {
-        logger.swrError(`${API_BASE_URL}/api/admin/profile`, error);
+        logger.swrError(`${API_BASE_URL || ''}/api/admin/profile`, error);
       }
     }
   );

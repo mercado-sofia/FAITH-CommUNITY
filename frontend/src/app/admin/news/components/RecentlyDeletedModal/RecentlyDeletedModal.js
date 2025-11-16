@@ -6,6 +6,7 @@ import { FiTrash2 } from 'react-icons/fi';
 import { formatDateShort } from '@/utils/dateUtils.js';
 import { ConfirmationModal } from '@/components';
 import styles from './RecentlyDeletedModal.module.css';
+import { API_BASE_URL } from '@/config/api';
 
 const RecentlyDeletedModal = ({ isOpen, onClose, orgId, onRestore, onPermanentDelete }) => {
   const [deletedNews, setDeletedNews] = useState([]);
@@ -17,22 +18,16 @@ const RecentlyDeletedModal = ({ isOpen, onClose, orgId, onRestore, onPermanentDe
   const [newsToDelete, setNewsToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
   const fetchDeletedNews = useCallback(async () => {
     setLoading(true);
     setError(null);
     
     try {
-      const adminToken = localStorage.getItem("adminToken");
-      if (!adminToken) {
-        setError('Authentication required. Please log in again.');
-        return;
-      }
-
-      const response = await fetch(`${API_BASE_URL}/api/news/deleted/${orgId}`, {
+      const response = await fetch(`${API_BASE_URL || ''}/api/news/deleted/${orgId}`, {
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
-          'Authorization': `Bearer ${adminToken}`
+          'Content-Type': 'application/json',
+          // No Authorization header needed - httpOnly cookies handle authentication
         }
       });
 
@@ -47,7 +42,7 @@ const RecentlyDeletedModal = ({ isOpen, onClose, orgId, onRestore, onPermanentDe
     } finally {
       setLoading(false);
     }
-  }, [orgId, API_BASE_URL]);
+  }, [orgId]);
 
   useEffect(() => {
     if (isOpen && orgId) {
@@ -58,16 +53,12 @@ const RecentlyDeletedModal = ({ isOpen, onClose, orgId, onRestore, onPermanentDe
   const handleRestore = async (newsId) => {
     setRestoringId(newsId);
     try {
-      const adminToken = localStorage.getItem("adminToken");
-      if (!adminToken) {
-        setError('Authentication required. Please log in again.');
-        return;
-      }
-
-      const response = await fetch(`${API_BASE_URL}/api/news/restore/${newsId}`, {
+      const response = await fetch(`${API_BASE_URL || ''}/api/news/restore/${newsId}`, {
         method: 'PATCH',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
-          'Authorization': `Bearer ${adminToken}`
+          'Content-Type': 'application/json',
+          // No Authorization header needed - httpOnly cookies handle authentication
         }
       });
 
@@ -98,16 +89,12 @@ const RecentlyDeletedModal = ({ isOpen, onClose, orgId, onRestore, onPermanentDe
     setDeletingId(newsToDelete.id);
     setIsDeleting(true);
     try {
-      const adminToken = localStorage.getItem("adminToken");
-      if (!adminToken) {
-        setError('Authentication required. Please log in again.');
-        return;
-      }
-
-      const response = await fetch(`${API_BASE_URL}/api/news/permanent/${newsToDelete.id}`, {
+      const response = await fetch(`${API_BASE_URL || ''}/api/news/permanent/${newsToDelete.id}`, {
         method: 'DELETE',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
-          'Authorization': `Bearer ${adminToken}`
+          'Content-Type': 'application/json',
+          // No Authorization header needed - httpOnly cookies handle authentication
         }
       });
 

@@ -18,18 +18,16 @@ export default function FeaturedProjects({ orgID }) {
     if (typeof window === 'undefined') return;
     
     const checkAuth = async () => {
-      const token = localStorage.getItem('userToken');
-      const storedUserData = localStorage.getItem('userData');
-      
-      if (token && storedUserData) {
-        try {
-          JSON.parse(storedUserData);
+      // Check authentication using the auth service instead of localStorage
+      try {
+        const { getCurrentUser } = await import('@/utils/authService');
+        const user = await getCurrentUser();
+        if (user) {
           setIsLoggedIn(true);
-        } catch (error) {
-          // Clear corrupted data using centralized cleanup
-          const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
-          clearAuthImmediate(USER_TYPES.PUBLIC);
         }
+      } catch (error) {
+        // User is not authenticated
+        setIsLoggedIn(false);
       }
     };
     

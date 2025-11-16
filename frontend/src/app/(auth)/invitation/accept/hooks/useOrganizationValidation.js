@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react"
 import logger from "@/utils/logger"
 
-export const useOrganizationValidation = (API_BASE_URL) => {
+export const useOrganizationValidation = () => {
   const [validationStatus, setValidationStatus] = useState({
     org: { isValidating: false, isValid: null, message: "" },
     orgName: { isValidating: false, isValid: null, message: "" }
@@ -25,7 +25,13 @@ export const useOrganizationValidation = (API_BASE_URL) => {
     }))
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/organization/check-acronym/${encodeURIComponent(acronym)}`)
+      const { API_BASE_URL } = await import('@/config/api');
+      const response = await fetch(`${API_BASE_URL || ''}/api/organization/check-acronym/${encodeURIComponent(acronym)}`, {
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
       const data = await response.json()
 
       if (response.ok) {
@@ -45,7 +51,8 @@ export const useOrganizationValidation = (API_BASE_URL) => {
         }))
       }
     } catch (err) {
-      logger.apiError(`${API_BASE_URL}/api/organization/check-acronym/${acronym}`, err, {
+      const { API_BASE_URL } = await import('@/config/api');
+      logger.apiError(`${API_BASE_URL || ''}/api/organization/check-acronym/${acronym}`, err, {
         context: 'check_acronym_validation'
       })
       setValidationStatus(prev => ({
@@ -53,7 +60,7 @@ export const useOrganizationValidation = (API_BASE_URL) => {
         org: { isValidating: false, isValid: null, message: "Network error - check your connection" }
       }))
     }
-  }, [API_BASE_URL])
+  }, [])
 
   // Function to check if organization name exists
   const checkOrgNameExists = useCallback(async (orgName) => {
@@ -71,7 +78,13 @@ export const useOrganizationValidation = (API_BASE_URL) => {
     }))
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/organization/check-name/${encodeURIComponent(orgName)}`)
+      const { API_BASE_URL } = await import('@/config/api');
+      const response = await fetch(`${API_BASE_URL || ''}/api/organization/check-name/${encodeURIComponent(orgName)}`, {
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
       const data = await response.json()
 
       if (response.ok) {
@@ -91,7 +104,8 @@ export const useOrganizationValidation = (API_BASE_URL) => {
         }))
       }
     } catch (err) {
-      logger.apiError(`${API_BASE_URL}/api/organization/check-name/${orgName}`, err, {
+      const { API_BASE_URL } = await import('@/config/api');
+      logger.apiError(`${API_BASE_URL || ''}/api/organization/check-name/${orgName}`, err, {
         context: 'check_name_validation'
       })
       setValidationStatus(prev => ({
@@ -99,7 +113,7 @@ export const useOrganizationValidation = (API_BASE_URL) => {
         orgName: { isValidating: false, isValid: null, message: "Network error - check your connection" }
       }))
     }
-  }, [API_BASE_URL])
+  }, [])
 
   // Debounced validation function
   const debouncedValidation = useCallback((fieldName, value, validationFn) => {

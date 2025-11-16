@@ -62,12 +62,6 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         return;
       }
       
-      // Get admin token for authentication
-      const token = getAdminTokenOrRedirect();
-      if (!token) {
-        return; // Redirect handled by getAdminTokenOrRedirect
-      }
-
       // Validate required fields
       if (!programData.title || !programData.description || !programData.category) {
         setSuccessModal({ 
@@ -122,11 +116,10 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
           const imageFormData = new FormData();
           imageFormData.append('file', programData.image);
           
-          const imageResponse = await fetch(`${API_CONFIG.BASE_URL}/api/upload?type=program`, {
+          const imageResponse = await fetch(`${API_CONFIG.BASE_URL || ''}/api/upload?type=program`, {
             method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
+            credentials: 'include', // CRITICAL: Include httpOnly cookies
+            // Don't set Content-Type - browser will set it with boundary for FormData
             body: imageFormData,
           });
           
@@ -163,11 +156,12 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         }]
       };
       
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/submissions`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/submissions`, {
         method: 'POST',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          // No Authorization header needed - httpOnly cookies handle authentication
         },
         body: JSON.stringify(submissionData),
       });
@@ -248,12 +242,6 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         return;
       }
 
-      // Get admin token for authentication
-      const token = getAdminTokenOrRedirect();
-      if (!token) {
-        return; // Redirect handled by getAdminTokenOrRedirect
-      }
-
       // Handle image upload if it's a File object
       let imageUrl = null;
       if (programData.image && programData.image instanceof File) {
@@ -261,11 +249,10 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
           const imageFormData = new FormData();
           imageFormData.append('file', programData.image);
           
-          const imageResponse = await fetch(`${API_CONFIG.BASE_URL}/api/upload?type=program`, {
+          const imageResponse = await fetch(`${API_CONFIG.BASE_URL || ''}/api/upload?type=program`, {
             method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
+            credentials: 'include', // CRITICAL: Include httpOnly cookies
+            // Don't set Content-Type - browser will set it with boundary for FormData
             body: imageFormData,
           });
           
@@ -333,11 +320,12 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
         additionalImages: programData.additionalImages || []
       };
 
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/programs/${editingProgram.id}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/admin/programs/${editingProgram.id}`, {
         method: 'PUT',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          // No Authorization header needed - httpOnly cookies handle authentication
         },
         body: JSON.stringify(updateData),
       });
@@ -393,12 +381,6 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
     }
 
     try {
-      // Get admin token for authentication
-      const token = getAdminTokenOrRedirect();
-      if (!token) {
-        return; // Redirect handled by getAdminTokenOrRedirect
-      }
-
       let effectiveFile = reportFile;
       if (!effectiveFile && typeof document !== 'undefined') {
         const input = document.querySelector('input[data-post-act-input="true"]');
@@ -419,11 +401,10 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       const formData = new FormData();
       formData.append('file', effectiveFile);
 
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/programs/${program.id}/post-act-report`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/admin/programs/${program.id}/post-act-report`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        // Don't set Content-Type - browser will set it with boundary for FormData
         body: formData
       });
 
@@ -484,12 +465,6 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       return;
     }
 
-    // Get admin token for authentication
-    const token = getAdminTokenOrRedirect();
-    if (!token) {
-      return; // Redirect handled by getAdminTokenOrRedirect
-    }
-
     // Store the original data for potential rollback
     let originalData = null;
     
@@ -515,11 +490,12 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
       }, { revalidate: false });
 
       // Make the API call
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/programs/${program.id}/mark-active`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/admin/programs/${program.id}/mark-active`, {
         method: 'PUT',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          // No Authorization header needed - httpOnly cookies handle authentication
         },
       });
 
@@ -577,16 +553,12 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
     
     setIsDeleting(true);
     try {
-      // Get admin token for authentication
-      const token = getAdminTokenOrRedirect();
-      if (!token) {
-        return; // Redirect handled by getAdminTokenOrRedirect
-      }
-
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/programs/${deletingProgram.id}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/admin/programs/${deletingProgram.id}`, {
         method: 'DELETE',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          // No Authorization header needed - httpOnly cookies handle authentication
         },
       });
 
@@ -642,17 +614,12 @@ export const useProgramsManagement = (currentAdmin, refreshPrograms, setSuccessM
     }
 
     try {
-      // Get admin token for authentication
-      const token = getAdminTokenOrRedirect();
-      if (!token) {
-        return; // Redirect handled by getAdminTokenOrRedirect
-      }
-
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/programs/${program.id}/toggle-volunteers`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/admin/programs/${program.id}/toggle-volunteers`, {
         method: 'PUT',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          // No Authorization header needed - httpOnly cookies handle authentication
         },
         body: JSON.stringify({ accepts_volunteers: acceptsVolunteers }),
       });

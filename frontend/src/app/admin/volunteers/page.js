@@ -136,16 +136,12 @@ export default function VolunteersPage() {
     }
 
     try {
-      const adminToken = getAdminTokenOrRedirect();
-      if (!adminToken) {
-        return; // Redirect handled by getAdminTokenOrRedirect
-      }
-
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/volunteers/${id}/status`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/volunteers/${id}/status`, {
         method: 'PUT',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
+          // No Authorization header needed - httpOnly cookies handle authentication
         },
         body: JSON.stringify({ status: newStatus })
       });
@@ -207,13 +203,14 @@ export default function VolunteersPage() {
         return; // Redirect handled by getAdminTokenOrRedirect
       }
 
-      const apiUrl = `${API_CONFIG.BASE_URL}/api/volunteers/${volunteer.id}/soft-delete`;
+      const apiUrl = `${API_CONFIG.BASE_URL || ''}/api/volunteers/${volunteer.id}/soft-delete`;
       
       const response = await fetch(apiUrl, {
         method: 'PUT',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
+          // No Authorization header needed - httpOnly cookies handle authentication
         }
       });
       
@@ -282,13 +279,14 @@ export default function VolunteersPage() {
 
       // Delete each volunteer
       const deletePromises = volunteerIds.map(async (volunteerId) => {
-        const apiUrl = `${API_CONFIG.BASE_URL}/api/volunteers/${volunteerId}/soft-delete`;
+        const apiUrl = `${API_CONFIG.BASE_URL || ''}/api/volunteers/${volunteerId}/soft-delete`;
         
         const response = await fetch(apiUrl, {
           method: 'PUT',
+          credentials: 'include', // CRITICAL: Include httpOnly cookies
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${adminToken}`
+            // No Authorization header needed - httpOnly cookies handle authentication
           }
         });
         

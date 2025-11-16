@@ -17,9 +17,8 @@ export function useAcceptedInvitationsToast() {
     // Only run on client side
     if (typeof window === 'undefined') return;
 
-    // Check if superadmin is authenticated
-    const token = localStorage.getItem('superAdminToken');
-    if (!token) return;
+    // No need to check token - RTK Query will handle authentication
+    // If not authenticated, the query will fail and we won't show toasts
 
     // Don't run if still loading or no invitations data
     if (isLoading || !invitations || !Array.isArray(invitations)) return;

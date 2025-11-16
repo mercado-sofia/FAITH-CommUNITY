@@ -1,17 +1,19 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '@/config/api';
 
+// Get base URL - empty string in development (uses Next.js rewrites for same-origin requests)
+const getBaseUrl = () => {
+  const base = API_BASE_URL || '';
+  return base ? base : ''; // Empty string = relative paths
+};
+
 export const inboxApi = createApi({
   reducerPath: 'inboxApi',
   baseQuery: fetchBaseQuery({ 
-    baseUrl: API_BASE_URL,
-    credentials: 'include',
+    baseUrl: getBaseUrl(),
+    credentials: 'include', // CRITICAL: Include httpOnly cookies for authentication
     prepareHeaders: (headers) => {
-      // Check for window to avoid SSR errors
-      const token = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
-      }
+      // No Authorization header needed - httpOnly cookies handle authentication
       return headers;
     },
   }),

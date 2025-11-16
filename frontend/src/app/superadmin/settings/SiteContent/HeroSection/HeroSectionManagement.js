@@ -45,12 +45,15 @@ export default function HeroSectionManagement({ showSuccessModal }) {
   // File selection states for batch upload
   const [selectedVideoFile, setSelectedVideoFile] = useState(null);
   const [selectedImageFiles, setSelectedImageFiles] = useState({});
+  // Track images that should be deleted (images that had URLs but are now removed)
+  const [imagesToDelete, setImagesToDelete] = useState(new Set());
 
   // Load hero data
   useEffect(() => {
     const loadHeroData = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const { API_BASE_URL } = await import('@/config/api');
+        const baseUrl = API_BASE_URL || '';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/hero-section`,
           { method: 'GET' },
@@ -120,7 +123,8 @@ export default function HeroSectionManagement({ showSuccessModal }) {
   const handleTextUpdate = async (field, value) => {
     try {
       setIsUpdating(true);
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const { API_BASE_URL } = await import('@/config/api');
+      const baseUrl = API_BASE_URL || '';
       const response = await makeAuthenticatedRequest(
         `${baseUrl}/api/superadmin/hero-section/text`,
         {
@@ -236,25 +240,17 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         formData.append('imageId', imageId);
       }
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const { API_BASE_URL } = await import('@/config/api');
+      const baseUrl = API_BASE_URL || '';
       
-      // Get the token for manual request
-      const token = localStorage.getItem('superAdminToken');
-      if (!token) {
-        showSuccessModal('Authentication required. Please log in again.');
-        return null;
-      }
-
       const endpoint = imageId 
         ? `${baseUrl}/api/superadmin/hero-section/upload-image`
         : `${baseUrl}/api/superadmin/hero-section/upload-${type}`;
 
-
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        // Don't set Content-Type - browser will set it with boundary for FormData
         body: formData,
       });
 
@@ -363,9 +359,48 @@ export default function HeroSectionManagement({ showSuccessModal }) {
   const handleDeleteConfirm = async () => {
     if (!deleteType) return;
     
+    // If in edit mode, just mark for deletion and update temp data
+    if (isEditingHero) {
+      if (deleteType.imageId) {
+        // Mark image for deletion
+        setImagesToDelete(prev => new Set(prev).add(deleteType.imageId));
+        // Remove from tempHeroData
+        setTempHeroData(prev => ({
+          ...prev,
+          images: prev.images.map(img => 
+            img.id === deleteType.imageId ? { ...img, url: null } : img
+          )
+        }));
+        // Clear any selected file for this image
+        setSelectedImageFiles(prev => {
+          const newFiles = { ...prev };
+          delete newFiles[deleteType.imageId];
+          return newFiles;
+        });
+        showSuccessModal('Image will be deleted when you save changes');
+      } else {
+        // Handle video deletion in edit mode
+        if (deleteType.type === 'video') {
+          setTempHeroData(prev => ({
+            ...prev,
+            video_url: null,
+            video_link: null,
+            video_type: 'upload'
+          }));
+          setSelectedVideoFile(null);
+          showSuccessModal('Video will be deleted when you save changes');
+        }
+      }
+      setShowDeleteModal(false);
+      setDeleteType(null);
+      return;
+    }
+    
+    // If not in edit mode, delete immediately
     try {
       setIsDeleting(true);
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const { API_BASE_URL } = await import('@/config/api');
+      const baseUrl = API_BASE_URL || '';
       const endpoint = deleteType.imageId 
         ? `${baseUrl}/api/superadmin/hero-section/image/${deleteType.imageId}`
         : `${baseUrl}/api/superadmin/hero-section/${deleteType.type}`;
@@ -463,6 +498,7 @@ export default function HeroSectionManagement({ showSuccessModal }) {
     setTempHeroData({});
     setSelectedVideoFile(null);
     setSelectedImageFiles({});
+    setImagesToDelete(new Set());
     setIsUploadingVideo(false);
   };
 
@@ -493,22 +529,65 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           finalHeroData.video_type = 'upload';
         }
         
-        // Upload images if selected
+        // First, delete images that were marked for deletion
+        const deletePromises = Array.from(imagesToDelete).map(async (imageId) => {
+          try {
+            const { API_BASE_URL } = await import('@/config/api');
+            const baseUrl = API_BASE_URL || '';
+            const endpoint = `${baseUrl}/api/superadmin/hero-section/image/${imageId}`;
+            
+            const response = await makeAuthenticatedRequest(
+              endpoint,
+              { method: 'DELETE' },
+              'superadmin'
+            );
+            
+            if (response && response.ok) {
+              // Remove from finalHeroData
+              finalHeroData.images = finalHeroData.images.map(img => 
+                img.id === imageId ? { ...img, url: null } : img
+              );
+            } else {
+              console.warn(`Failed to delete image ${imageId}, continuing with update`);
+            }
+          } catch (error) {
+            console.error(`Error deleting image ${imageId}:`, error);
+            // Continue with update even if deletion fails
+          }
+        });
+        
+        await Promise.all(deletePromises);
+        
+        // Upload new images (this will automatically replace old ones on the backend)
+        // Only upload images that have selected files
         for (const [imageId, file] of Object.entries(selectedImageFiles)) {
           try {
+            // The backend upload function will handle deleting the old image
             const imageUrl = await handleFileUpload(file, 'image', parseInt(imageId));
-            finalHeroData.images = finalHeroData.images.map(img => 
-              img.id === parseInt(imageId) ? { ...img, url: imageUrl } : img
-            );
+            if (imageUrl) {
+              finalHeroData.images = finalHeroData.images.map(img => 
+                img.id === parseInt(imageId) ? { ...img, url: imageUrl } : img
+              );
+              // Remove from imagesToDelete if it was there (since we're replacing, not deleting)
+              setImagesToDelete(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(parseInt(imageId));
+                return newSet;
+              });
+            }
           } catch (error) {
             showSuccessModal(`Failed to upload image ${imageId}. Please try again.`);
             return;
           }
         }
+        
+        // Clear selected files and deletion tracking
         setSelectedImageFiles({});
+        setImagesToDelete(new Set());
         
         // Save all hero data
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const { API_BASE_URL } = await import('@/config/api');
+        const baseUrl = API_BASE_URL || '';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/hero-section`,
           {
@@ -525,6 +604,7 @@ export default function HeroSectionManagement({ showSuccessModal }) {
           const data = await response.json();
           setHeroData(data.data);
           setIsEditingHero(false);
+          setTempHeroData({});
           showSuccessModal('Hero section updated successfully! The changes will be visible on the public site immediately.');
         } else {
           // Handle 401 responses
@@ -839,12 +919,12 @@ export default function HeroSectionManagement({ showSuccessModal }) {
         <div className={styles.imagesSection}>
           <h3>Banner Images</h3>
           <div className={styles.imagesGrid}>
-            {heroData.images.map((image, index) => (
+            {(isEditingHero ? tempHeroData.images : heroData.images || []).map((image, index) => (
               <div key={image.id} className={styles.imageItem}>
                 <div className={styles.itemHeader}>
                   <span className={styles.itemLabel}>Image {index + 1}</span>
                   <div className={styles.itemActions}>
-                    {isEditingHero && image.url && (
+                    {isEditingHero && image.url && !imagesToDelete.has(image.id) && (
                           <button 
                             className={styles.removeBtn}
                             onClick={() => handleFileDelete('image', image.id)}
@@ -864,39 +944,12 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                       const isFirst = index === 0;
                       const defaultImageSrc = isFirst ? "/samples/sample2.jpg" : index === 1 ? "/samples/sample8.jpg" : "/samples/sample3.jpeg";
                       
-                      if (image.url) {
-                        return (
-                          <div className={styles.preview}>
-                            <Image 
-                              src={getImageUrl(image.url, 'hero', 'images')} 
-                              alt={`Banner image ${index + 1}`} 
-                              width={200}
-                              height={150}
-                              unoptimized
-                              style={{ maxWidth: '100%', height: 'auto', objectFit: 'cover' }}
-                            />
-                            {/* Hover Overlay for Upload */}
-                            <div className={styles.imageOverlay}>
-                              <label htmlFor={`image-upload-${image.id}`} className={styles.uploadButton}>
-                                <FiUpload size={14} />
-                                {selectedImageFiles[image.id] ? 'Change Image' : 'Upload Image'}
-                              </label>
-                              <input
-                                type="file"
-                                id={`image-upload-${image.id}`}
-                                accept="image/*"
-                                onChange={(e) => {
-                                  if (e.target.files[0]) {
-                                    setSelectedImageFiles(prev => ({ ...prev, [image.id]: e.target.files[0] }));
-                                  }
-                                }}
-                                className={styles.fileInput}
-                                style={{ display: 'none' }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      } else if (selectedImageFiles[image.id]) {
+                      // Check if image is marked for deletion
+                      const isMarkedForDeletion = imagesToDelete.has(image.id);
+                      
+                      // Prioritize newly selected file over existing image URL
+                      // This ensures the new selection immediately replaces the old preview
+                      if (selectedImageFiles[image.id]) {
                         return (
                           <div className={styles.preview}>
                             <Image 
@@ -919,8 +972,66 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                                 accept="image/*"
                                 onChange={(e) => {
                                   if (e.target.files[0]) {
-                                    setSelectedImageFiles(prev => ({ ...prev, [image.id]: e.target.files[0] }));
+                                    const newFile = e.target.files[0];
+                                    // Set the new file - preview logic will prioritize this over image.url
+                                    setSelectedImageFiles(prev => ({ ...prev, [image.id]: newFile }));
+                                    // Clear deletion flag since we're replacing, not deleting
+                                    setImagesToDelete(prev => {
+                                      const newSet = new Set(prev);
+                                      newSet.delete(image.id);
+                                      return newSet;
+                                    });
+                                    // Don't clear the URL - let the preview logic handle it
+                                    // The selectedImageFiles check happens first, so new file will show
+                                    // Old URL will be replaced when we save
                                   }
+                                  // Reset input value to allow selecting the same file again
+                                  e.target.value = '';
+                                }}
+                                className={styles.fileInput}
+                                style={{ display: 'none' }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      } else if (image.url && !isMarkedForDeletion) {
+                        return (
+                          <div className={styles.preview}>
+                            <Image 
+                              src={getImageUrl(image.url, 'hero', 'images')} 
+                              alt={`Banner image ${index + 1}`} 
+                              width={200}
+                              height={150}
+                              unoptimized
+                              style={{ maxWidth: '100%', height: 'auto', objectFit: 'cover' }}
+                            />
+                            {/* Hover Overlay for Upload */}
+                            <div className={styles.imageOverlay}>
+                              <label htmlFor={`image-upload-${image.id}`} className={styles.uploadButton}>
+                                <FiUpload size={14} />
+                                Replace Image
+                              </label>
+                              <input
+                                type="file"
+                                id={`image-upload-${image.id}`}
+                                accept="image/*"
+                                onChange={(e) => {
+                                  if (e.target.files[0]) {
+                                    const newFile = e.target.files[0];
+                                    // Set the new file - preview logic will prioritize this over image.url
+                                    setSelectedImageFiles(prev => ({ ...prev, [image.id]: newFile }));
+                                    // Clear deletion flag since we're replacing, not deleting
+                                    setImagesToDelete(prev => {
+                                      const newSet = new Set(prev);
+                                      newSet.delete(image.id);
+                                      return newSet;
+                                    });
+                                    // Don't clear the URL - let the preview logic handle it
+                                    // The selectedImageFiles check happens first, so new file will show
+                                    // Old URL will be replaced when we save
+                                  }
+                                  // Reset input value to allow selecting the same file again
+                                  e.target.value = '';
                                 }}
                                 className={styles.fileInput}
                                 style={{ display: 'none' }}
@@ -954,8 +1065,21 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                                 accept="image/*"
                                 onChange={(e) => {
                                   if (e.target.files[0]) {
-                                    setSelectedImageFiles(prev => ({ ...prev, [image.id]: e.target.files[0] }));
+                                    const newFile = e.target.files[0];
+                                    // Set the new file - preview logic will prioritize this over image.url
+                                    setSelectedImageFiles(prev => ({ ...prev, [image.id]: newFile }));
+                                    // Clear deletion flag since we're replacing, not deleting
+                                    setImagesToDelete(prev => {
+                                      const newSet = new Set(prev);
+                                      newSet.delete(image.id);
+                                      return newSet;
+                                    });
+                                    // Don't clear the URL - let the preview logic handle it
+                                    // The selectedImageFiles check happens first, so new file will show
+                                    // Old URL will be replaced when we save
                                   }
+                                  // Reset input value to allow selecting the same file again
+                                  e.target.value = '';
                                 }}
                                 className={styles.fileInput}
                                 style={{ display: 'none' }}
@@ -1010,11 +1134,15 @@ export default function HeroSectionManagement({ showSuccessModal }) {
                           Image will be uploaded when you save changes
                         </span>
                         <button
-                          onClick={() => setSelectedImageFiles(prev => {
-                            const newFiles = { ...prev };
-                            delete newFiles[image.id];
-                            return newFiles;
-                          })}
+                          onClick={() => {
+                            setSelectedImageFiles(prev => {
+                              const newFiles = { ...prev };
+                              delete newFiles[image.id];
+                              return newFiles;
+                            });
+                            // If there was an original image, it will show again
+                            // If not, it will show the default
+                          }}
                           className={styles.cancelBtn}
                         >
                           Remove Selection

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { FiX, FiCalendar, FiImage, FiVideo, FiFile } from 'react-icons/fi';
 import { formatDistanceToNow } from 'date-fns';
 import styles from './ViewDetailsModal.module.css';
+import { API_BASE_URL } from '@/config/api';
 
 export default function ViewDetailsModal({ highlight, onClose }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -31,12 +32,6 @@ export default function ViewDetailsModal({ highlight, onClose }) {
         // Try to get program_id from submission if highlight doesn't have it
         setLoadingProgram(true);
         try {
-          const token = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-          if (!token) {
-            setLoadingProgram(false);
-            return;
-          }
-
           // Get organization acronym from admin data
           let orgAcronym = null;
           try {
@@ -55,11 +50,12 @@ export default function ViewDetailsModal({ highlight, onClose }) {
           }
 
           // Try to find submission for this highlight using the correct endpoint
-          const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/submissions/${orgAcronym}`;
+          const apiUrl = `${API_BASE_URL || ''}/api/submissions/${orgAcronym}`;
           const response = await fetch(apiUrl, {
+            credentials: 'include', // CRITICAL: Include httpOnly cookies
             headers: {
-              'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
+              // No Authorization header needed - httpOnly cookies handle authentication
             },
           });
 
@@ -95,11 +91,12 @@ export default function ViewDetailsModal({ highlight, onClose }) {
                 if (proposedData?.program_id) {
                   // Found program_id in submission, now fetch the program title
                   const programResponse = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admin/programs/single/${proposedData.program_id}`,
+                    `${API_BASE_URL || ''}/api/admin/programs/single/${proposedData.program_id}`,
                     {
+                      credentials: 'include', // CRITICAL: Include httpOnly cookies
                       headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
+                        // No Authorization header needed - httpOnly cookies handle authentication
                       },
                     }
                   );
@@ -129,17 +126,12 @@ export default function ViewDetailsModal({ highlight, onClose }) {
       // Fetch program title from API using program_id
       setLoadingProgram(true);
       try {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-        if (!token) {
-          setLoadingProgram(false);
-          return;
-        }
-
-        const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admin/programs/single/${highlight.program_id}`;
+        const apiUrl = `${API_BASE_URL || ''}/api/admin/programs/single/${highlight.program_id}`;
         const response = await fetch(apiUrl, {
+          credentials: 'include', // CRITICAL: Include httpOnly cookies
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
+            // No Authorization header needed - httpOnly cookies handle authentication
           },
         });
 

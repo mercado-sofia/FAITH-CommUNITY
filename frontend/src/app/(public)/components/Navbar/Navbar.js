@@ -148,7 +148,8 @@ export default function Navbar() {
             <span>Go To FAITH Colleges</span>
           </a>
           
-          {isAuthenticated ? (
+          {/* Only show user UI for regular users (not admin/superadmin) */}
+          {isAuthenticated && user && user.role?.toLowerCase() === 'user' ? (
             <>
               <Link 
                 href="/apply" 

@@ -54,15 +54,10 @@ export default function SubmissionModal({ data, onClose }) {
       // Fetch program title from API
       setLoadingProgram(true);
       try {
-        const token = getAdminTokenOrRedirect();
-        if (!token) {
-          setLoadingProgram(false);
-          return;
-        }
-
+        // No need to check token - cookies handle authentication
         const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/programs/single/${programId}`, {
+          credentials: 'include', // CRITICAL: Include httpOnly cookies
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });

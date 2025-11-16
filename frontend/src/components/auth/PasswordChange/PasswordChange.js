@@ -287,18 +287,18 @@ export default function PasswordChange({
     return Object.keys(newErrors).length === 0;
   };
 
-  const getApiEndpoint = () => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const getApiEndpoint = async () => {
+    const { API_BASE_URL } = await import('@/config/api');
     
     switch (userType) {
       case 'public':
-        return `${baseUrl}/api/users/password`;
+        return `${API_BASE_URL || ''}/api/users/password`;
       case 'admin':
-        return `${baseUrl}/api/admin/profile/password`;
+        return `${API_BASE_URL || ''}/api/admin/profile/password`;
       case 'superadmin':
-        return `${baseUrl}/api/superadmin/auth/password/${userId}`;
+        return `${API_BASE_URL || ''}/api/superadmin/auth/password/${userId}`;
       default:
-        return `${baseUrl}/api/users/password`;
+        return `${API_BASE_URL || ''}/api/users/password`;
     }
   };
 
@@ -306,22 +306,7 @@ export default function PasswordChange({
     const headers = {
       'Content-Type': 'application/json'
     };
-
-    switch (userType) {
-      case 'public':
-        const token = localStorage.getItem('userToken');
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-        break;
-      case 'admin':
-        const adminToken = localStorage.getItem('adminToken');
-        if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
-        break;
-      case 'superadmin':
-        const superAdminToken = localStorage.getItem('superAdminToken');
-        if (superAdminToken) headers['Authorization'] = `Bearer ${superAdminToken}`;
-        break;
-    }
-
+    // No Authorization header needed - httpOnly cookies handle authentication
     return headers;
   };
 
@@ -349,12 +334,13 @@ export default function PasswordChange({
           requestBody.otp = passwordData.otp;
         }
 
-        const apiEndpoint = getApiEndpoint();
+        const apiEndpoint = await getApiEndpoint();
         const headers = getAuthHeaders();
 
         // Update password
         const updateResponse = await fetch(apiEndpoint, {
           method: 'PUT',
+          credentials: 'include', // CRITICAL: Include httpOnly cookies
           headers: headers,
           body: JSON.stringify(requestBody)
         });

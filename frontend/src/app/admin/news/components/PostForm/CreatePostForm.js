@@ -7,6 +7,7 @@ import ContentEditor from '../ContentEditor/ContentEditor';
 import DatePickerPopover from '../DatePickerPopover/DatePickerPopover';
 import DOMPurify from 'dompurify';
 import { formatDateForInput, getCurrentDateISO } from '@/utils/dateUtils.js';
+import { API_BASE_URL } from '@/config/api';
 import styles from './CreatePostForm.module.css';
 
 const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData = null, isEditMode = false, existingNews = [] }) => {
@@ -47,8 +48,7 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
           setImagePreview(initialData.featured_image);
         } else {
           // For legacy local paths, construct the full URL
-          const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-          setImagePreview(`${API_BASE_URL}/${initialData.featured_image}`);
+          setImagePreview(`${API_BASE_URL || ''}/${initialData.featured_image}`);
         }
       }
     }

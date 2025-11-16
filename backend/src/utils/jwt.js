@@ -63,7 +63,7 @@ export async function findValidRefreshToken(token) {
   return rows[0] || null
 }
 
-export function getAccessTokenCookieOptions() {
+export function getAccessTokenCookieOptions(req = null) {
   // Convert ACCESS_TOKEN_TTL to seconds (e.g., "15m" = 900 seconds)
   const ttlMatch = ACCESS_TOKEN_TTL.match(/(\d+)([smhd])/);
   let seconds = 15 * 60; // Default 15 minutes
@@ -74,7 +74,21 @@ export function getAccessTokenCookieOptions() {
     seconds = unit === 's' ? value : unit === 'm' ? value * 60 : unit === 'h' ? value * 3600 : value * 86400;
   }
   
+  // CRITICAL: Express res.cookie() maxAge is in MILLISECONDS, not seconds!
+  // Convert seconds to milliseconds
+  const maxAgeMs = seconds * 1000;
+  
   const isDevelopment = process.env.NODE_ENV !== "production";
+  
+  // Debug logging (development only)
+  if (isDevelopment) {
+    console.log('[getAccessTokenCookieOptions] TTL calculation:', {
+      ACCESS_TOKEN_TTL,
+      ttlMatch,
+      calculatedSeconds: seconds,
+      maxAgeMs: maxAgeMs
+    });
+  }
   
   // IMPORTANT: For cross-origin cookies (localhost:3000 -> localhost:8080)
   // Chrome allows SameSite=None with Secure=false for localhost, but it's not reliable
@@ -90,23 +104,42 @@ export function getAccessTokenCookieOptions() {
     secure: process.env.NODE_ENV === "production", // false in dev (localhost), true in prod (HTTPS)
     sameSite: sameSiteValue,
     path: "/",
-    maxAge: seconds, // Cookie maxAge is in seconds
+    maxAge: maxAgeMs, // Cookie maxAge is in MILLISECONDS for Express res.cookie()
   };
   
-  // In development with Next.js rewrites, cookies are set by backend but forwarded through Next.js
-  // Don't set domain - let it default to the request origin
-  // This allows cookies to work when proxied through Next.js (localhost:3000)
+  // CRITICAL: Cookie domain handling for development vs production
+  // When behind a proxy (Next.js rewrites), we MUST set domain to 'localhost' (without port)
+  // Otherwise Express defaults to request host (localhost:8080), which browser rejects
+  // Setting domain: 'localhost' makes cookie work for both localhost:3000 and localhost:8080
   if (process.env.COOKIE_DOMAIN) {
+    // Explicit domain from env (production)
     cookieOptions.domain = process.env.COOKIE_DOMAIN;
-  } else if (process.env.NODE_ENV === "production") {
-    // In production, you might want to set domain for subdomain sharing
-    // But don't set it in dev to allow Next.js proxy to work
+  } else if (req && req.headers && req.headers['x-forwarded-host']) {
+    // Behind a proxy - extract hostname from forwarded host and set as domain
+    // This ensures cookie works for the frontend origin (localhost:3000)
+    const forwardedHost = req.headers['x-forwarded-host'];
+    const hostParts = forwardedHost.split(':');
+    cookieOptions.domain = hostParts[0]; // 'localhost' (without port)
+  } else if (isDevelopment) {
+    // Development without proxy - set domain to 'localhost' to work across ports
+    cookieOptions.domain = 'localhost';
+  }
+  // Production without explicit domain or proxy - don't set domain (uses exact host)
+  
+  // Final logging to verify cookie options are correct (development only)
+  if (isDevelopment) {
+    console.log('[getAccessTokenCookieOptions] Final cookie options:', {
+      ...cookieOptions,
+      maxAge: cookieOptions.maxAge,
+      maxAgeInSeconds: Math.floor(cookieOptions.maxAge / 1000),
+      domain: cookieOptions.domain
+    });
   }
   
   return cookieOptions;
 }
 
-export function getRefreshCookieOptions() {
+export function getRefreshCookieOptions(req = null) {
   const isDevelopment = process.env.NODE_ENV !== "production";
   
   // IMPORTANT: For cross-origin cookies (localhost:3000 -> localhost:8080)
@@ -115,25 +148,67 @@ export function getRefreshCookieOptions() {
     ? (process.env.COOKIE_SAMESITE).toLowerCase()
     : "lax"; // Changed from "none" to "lax" - works better for localhost
   
+  // CRITICAL: Express res.cookie() maxAge is in MILLISECONDS, not seconds!
+  // REFRESH_TOKEN_TTL_MS is already in milliseconds, so use it directly
   const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production", // false in dev (localhost), true in prod (HTTPS)
     sameSite: sameSiteValue,
     path: "/",
-    maxAge: Math.floor(REFRESH_TOKEN_TTL_MS / 1000), // Convert milliseconds to seconds
+    maxAge: REFRESH_TOKEN_TTL_MS, // Already in milliseconds
   };
   
-  // In development with Next.js rewrites, cookies are set by backend but forwarded through Next.js
-  // Don't set domain - let it default to the request origin
-  // This allows cookies to work when proxied through Next.js (localhost:3000)
+  // CRITICAL: Cookie domain handling for development vs production
+  // When behind a proxy (Next.js rewrites), we MUST set domain to 'localhost' (without port)
+  // Otherwise Express defaults to request host (localhost:8080), which browser rejects
+  // Setting domain: 'localhost' makes cookie work for both localhost:3000 and localhost:8080
   if (process.env.COOKIE_DOMAIN) {
+    // Explicit domain from env (production)
     cookieOptions.domain = process.env.COOKIE_DOMAIN;
-  } else if (process.env.NODE_ENV === "production") {
-    // In production, you might want to set domain for subdomain sharing
-    // But don't set it in dev to allow Next.js proxy to work
+  } else if (req && req.headers && req.headers['x-forwarded-host']) {
+    // Behind a proxy - extract hostname from forwarded host and set as domain
+    // This ensures cookie works for the frontend origin (localhost:3000)
+    const forwardedHost = req.headers['x-forwarded-host'];
+    const hostParts = forwardedHost.split(':');
+    cookieOptions.domain = hostParts[0]; // 'localhost' (without port)
+  } else if (isDevelopment) {
+    // Development without proxy - set domain to 'localhost' to work across ports
+    cookieOptions.domain = 'localhost';
   }
+  // Production without explicit domain or proxy - don't set domain (uses exact host)
   
   return cookieOptions;
+}
+
+/**
+ * Get cookie options for clearing cookies (logout, password change, etc.)
+ * Uses the same domain logic as getAccessTokenCookieOptions/getRefreshCookieOptions
+ * to ensure cookies can be properly cleared in all deployment scenarios.
+ * @param {Object} req - Express request object (optional)
+ * @returns {Object} Cookie options with path and domain (if needed)
+ */
+export function getClearCookieOptions(req = null) {
+  const isDevelopment = process.env.NODE_ENV !== "production";
+  const clearOptions = { path: '/' };
+  
+  // Use the same domain logic as cookie setting functions
+  if (process.env.COOKIE_DOMAIN) {
+    // Explicit domain from env (production)
+    clearOptions.domain = process.env.COOKIE_DOMAIN;
+  } else if (req && req.headers && req.headers['x-forwarded-host']) {
+    // Behind a proxy - extract hostname from forwarded host and set as domain
+    // This matches the logic used when setting cookies
+    const forwardedHost = req.headers['x-forwarded-host'];
+    const hostParts = forwardedHost.split(':');
+    clearOptions.domain = hostParts[0]; // Extract hostname without port
+  } else if (isDevelopment) {
+    // Development without proxy - set domain to 'localhost' to work across ports
+    clearOptions.domain = 'localhost';
+  }
+  // Production without explicit domain or proxy - don't set domain (uses exact host)
+  // This matches the cookie setting logic
+  
+  return clearOptions;
 }
 
 export default {
@@ -146,6 +221,7 @@ export default {
   findValidRefreshToken,
   getAccessTokenCookieOptions,
   getRefreshCookieOptions,
+  getClearCookieOptions,
 }
 
 

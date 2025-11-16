@@ -92,7 +92,8 @@ export default function FooterContentManagement({ showSuccessModal }) {
   useEffect(() => {
     const loadFooterData = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const { API_BASE_URL } = await import('@/config/api');
+        const baseUrl = API_BASE_URL || '';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/footer`,
           { method: 'GET' },
@@ -229,7 +230,8 @@ export default function FooterContentManagement({ showSuccessModal }) {
     // If not in edit mode, add directly to services via API
     try {
       setIsUpdatingFooter(true);
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const { API_BASE_URL } = await import('@/config/api');
+      const baseUrl = API_BASE_URL || '';
       const response = await makeAuthenticatedRequest(
         `${baseUrl}/api/superadmin/footer/services`,
         {
@@ -309,7 +311,8 @@ export default function FooterContentManagement({ showSuccessModal }) {
     // If not in edit mode, delete via API
     try {
       setIsDeleting(true);
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const { API_BASE_URL } = await import('@/config/api');
+      const baseUrl = API_BASE_URL || '';
       const response = await makeAuthenticatedRequest(
         `${baseUrl}/api/superadmin/footer/services/${serviceToDelete.id}`,
         { method: 'DELETE' },
@@ -372,7 +375,8 @@ export default function FooterContentManagement({ showSuccessModal }) {
   const handleFooterConfirm = async () => {
     try {
       setIsUpdatingFooter(true);
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const { API_BASE_URL } = await import('@/config/api');
+      const baseUrl = API_BASE_URL || '';
       let endpoint = '';
       let body = {};
 
@@ -569,7 +573,8 @@ export default function FooterContentManagement({ showSuccessModal }) {
   // Handle services update
   const handleServicesUpdate = async () => {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const { API_BASE_URL } = await import('@/config/api');
+      const baseUrl = API_BASE_URL || '';
       
       // Create new services (those with isNew flag or temp IDs)
       for (const tempService of tempServices) {

@@ -250,12 +250,20 @@ export const getCurrentUser = async (userType = USER_TYPES.PUBLIC) => {
       headers: {
         'Content-Type': 'application/json',
       },
+      // Add cache control to prevent stale responses
+      cache: 'no-store',
     });
 
     console.log('[getCurrentUser] Response status:', response.status, response.statusText);
 
     if (!response.ok) {
-      console.error('[getCurrentUser] Auth check failed:', response.status, response.statusText);
+      // If we get a 401, it might mean cookies aren't available yet (race condition)
+      // Return null and let the caller retry
+      if (response.status === 401) {
+        console.warn('[getCurrentUser] 401 Unauthorized - cookies may not be available yet');
+      } else {
+        console.error('[getCurrentUser] Auth check failed:', response.status, response.statusText);
+      }
       return null;
     }
 
@@ -280,13 +288,15 @@ export const getCurrentUser = async (userType = USER_TYPES.PUBLIC) => {
       
       if (refreshed) {
         console.log('[getCurrentUser] Token refreshed, retrying auth check...');
-        // Retry the auth check after refresh
-        const retryResponse = await fetch(`${API_BASE_URL}/api/users/auth/check`, {
+        // Retry the auth check after refresh - use same URL building logic
+        const retryUrl = API_BASE_URL ? `${API_BASE_URL}/api/users/auth/check` : '/api/users/auth/check';
+        const retryResponse = await fetch(retryUrl, {
           method: 'GET',
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },
+          cache: 'no-store',
         });
         
         if (retryResponse.ok) {
@@ -308,6 +318,7 @@ export const getCurrentUser = async (userType = USER_TYPES.PUBLIC) => {
     return null;
   } catch (error) {
     console.error('[getCurrentUser] Error checking auth status:', error);
+    // Don't throw - return null to allow retry
     return null;
   }
 };

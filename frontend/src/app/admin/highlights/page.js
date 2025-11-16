@@ -84,22 +84,20 @@ export default function AdminHighlightsPage() {
         throw new Error('Cannot fetch highlights on server side');
       }
       
-      // Get admin token using centralized utility
-      const token = getAdminTokenOrRedirect();
-      if (!token) {
-        throw new Error('No admin token found. Please log in again.');
-      }
-      
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/highlights`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/admin/highlights`, {
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
+          // No Authorization header needed - httpOnly cookies handle authentication
         },
       });
 
       if (!response.ok) {
+        // Only redirect on actual 401 authentication errors
+        // Other errors should be shown but not redirect
+        const shouldRedirect = response.status === 401;
         const errorInfo = handleApiError({ status: response.status }, 'highlights_fetch', {
-          redirectOnAuth: true,
+          redirectOnAuth: shouldRedirect,
           logError: true
         });
         throw new Error(errorInfo.message);
@@ -110,8 +108,15 @@ export default function AdminHighlightsPage() {
       
       setHighlights(highlightsData);
     } catch (err) {
+      // Only redirect on actual authentication errors, not network errors
+      // Check if it's a 401 or authentication-related error
+      const isAuthError = err.message?.includes('session') || 
+                         err.message?.includes('expired') ||
+                         err.message?.includes('authentication') ||
+                         (err.status === 401);
+      
       const errorInfo = handleApiError(err, 'highlights_load', {
-        redirectOnAuth: true,
+        redirectOnAuth: isAuthError,
         logError: true
       });
       setError(errorInfo.message);
@@ -124,9 +129,42 @@ export default function AdminHighlightsPage() {
     }
   }, []);
 
-  // Load highlights on component mount
+  // Load highlights on component mount - wait for admin auth to be ready
   useEffect(() => {
-    loadHighlights();
+    // Wait for adminData to be available in localStorage (set by layout after auth check)
+    const checkAndLoad = async () => {
+      // Give the layout time to initialize auth
+      let retries = 0;
+      const maxRetries = 10;
+      const retryDelay = 100; // 100ms between checks
+      
+      while (retries < maxRetries) {
+        const adminData = localStorage.getItem('adminData');
+        if (adminData) {
+          try {
+            const parsed = JSON.parse(adminData);
+            if (parsed && parsed.role === 'admin') {
+              // Admin is authenticated, safe to load highlights
+              loadHighlights();
+              return;
+            }
+          } catch (e) {
+            // Invalid data, break and try anyway
+            break;
+          }
+        }
+        
+        // Wait before next check
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        retries++;
+      }
+      
+      // If we've waited long enough, try loading anyway
+      // The API will return 401 if not authenticated, which will be handled
+      loadHighlights();
+    };
+    
+    checkAndLoad();
   }, [loadHighlights]);
 
   // Refresh data when page becomes visible (user switches back to tab)
@@ -233,15 +271,11 @@ export default function AdminHighlightsPage() {
   const handleEditHighlight = useCallback(async (highlight) => {
     try {
       // Fetch fresh highlight data from API to ensure we have the latest program_id
-      const token = getAdminTokenOrRedirect();
-      if (!token) {
-        throw new Error('No admin token found. Please log in again.');
-      }
-      
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/highlights/${highlight.id}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/admin/highlights/${highlight.id}`, {
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
+          // No Authorization header needed - httpOnly cookies handle authentication
         },
       });
       
@@ -279,22 +313,20 @@ export default function AdminHighlightsPage() {
     try {
       setIsDeleting(true);
       
-      const token = getAdminTokenOrRedirect();
-      if (!token) {
-        throw new Error('No admin token found. Please log in again.');
-      }
-      
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/highlights/${deletingHighlight.id}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/admin/highlights/${deletingHighlight.id}`, {
         method: 'DELETE',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
+          // No Authorization header needed - httpOnly cookies handle authentication
         },
       });
 
       if (!response.ok) {
+        // Only redirect on actual 401 authentication errors
+        const shouldRedirect = response.status === 401;
         const errorInfo = handleApiError({ status: response.status }, 'highlights_delete', {
-          redirectOnAuth: true,
+          redirectOnAuth: shouldRedirect,
           logError: true
         });
         throw new Error(errorInfo.message);
@@ -326,21 +358,17 @@ export default function AdminHighlightsPage() {
       const isEdit = pageMode === 'edit';
       
       const url = isEdit 
-        ? `${API_CONFIG.BASE_URL}/api/admin/highlights/${editingHighlight.id}`
-        : `${API_CONFIG.BASE_URL}/api/admin/highlights`;
+        ? `${API_CONFIG.BASE_URL || ''}/api/admin/highlights/${editingHighlight.id}`
+        : `${API_CONFIG.BASE_URL || ''}/api/admin/highlights`;
       
       const method = isEdit ? 'PUT' : 'POST';
 
-      const token = getAdminTokenOrRedirect();
-      if (!token) {
-        throw new Error('No admin token found. Please log in again.');
-      }
-
       const response = await fetch(url, {
         method,
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
+          // No Authorization header needed - httpOnly cookies handle authentication
         },
         body: JSON.stringify(formData),
       });
@@ -356,8 +384,10 @@ export default function AdminHighlightsPage() {
           console.error('Highlight submission failed:', response.status, response.statusText);
         }
         
+        // Only redirect on actual 401 authentication errors
+        const shouldRedirect = response.status === 401;
         const errorInfo = handleApiError({ status: response.status }, `highlights_${isEdit ? 'update' : 'create'}`, {
-          redirectOnAuth: true,
+          redirectOnAuth: shouldRedirect,
           logError: true
         });
         throw new Error(errorInfo.message || errorMessage);

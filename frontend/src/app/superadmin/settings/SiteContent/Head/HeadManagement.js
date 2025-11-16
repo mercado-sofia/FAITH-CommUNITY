@@ -30,7 +30,8 @@ export default function HeadManagement({ showSuccessModal }) {
   useEffect(() => {
     const loadHeadData = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const { API_BASE_URL } = await import('@/config/api');
+        const baseUrl = API_BASE_URL || '';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/heads-faces`,
           { method: 'GET' },
@@ -99,12 +100,9 @@ export default function HeadManagement({ showSuccessModal }) {
       const formData = new FormData();
       formData.append('image', file);
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const token = localStorage.getItem('superAdminToken');
-      
-      if (!token) {
-        throw new Error('Authentication required. Please log in again.');
-      }
+      const { API_BASE_URL } = await import('@/config/api');
+      const baseUrl = API_BASE_URL || '';
+      // No need to check token - cookies handle authentication
 
       const uploadUrl = `${baseUrl}/api/superadmin/heads-faces/upload-image`;
       console.log('Uploading to:', uploadUrl);
@@ -112,9 +110,8 @@ export default function HeadManagement({ showSuccessModal }) {
 
       const response = await fetch(uploadUrl, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        // Don't set Content-Type - browser will set it with boundary for FormData
         body: formData,
       });
 
@@ -186,7 +183,8 @@ export default function HeadManagement({ showSuccessModal }) {
         image_url: imageUrl
       };
       
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const { API_BASE_URL } = await import('@/config/api');
+      const baseUrl = API_BASE_URL || '';
       const response = await makeAuthenticatedRequest(
         `${baseUrl}/api/superadmin/heads-faces/manage`,
         {

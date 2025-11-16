@@ -13,8 +13,9 @@ export const useEmailChange = (userType) => {
   const [error, setError] = useState(null);
 
   // API endpoint configuration
-  const getApiEndpoints = (userType) => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const getApiEndpoints = async (userType) => {
+    const { API_BASE_URL } = await import('@/config/api');
+    const baseUrl = API_BASE_URL || '';
     
     switch (userType) {
       case 'public':
@@ -43,7 +44,7 @@ export const useEmailChange = (userType) => {
     setError(null);
 
     try {
-      const endpoints = getApiEndpoints(userType);
+      const endpoints = await getApiEndpoints(userType);
       let url, response;
 
       if (userType === 'public') {
@@ -112,7 +113,7 @@ export const useEmailChange = (userType) => {
     setError(null);
 
     try {
-      const endpoints = getApiEndpoints(userType);
+      const endpoints = await getApiEndpoints(userType);
       let url, response;
 
       if (userType === 'public') {

@@ -115,17 +115,22 @@ export const clearAdminAuth = () => {
 
 /**
  * Get admin token with automatic redirect on failure
- * @returns {string|null} The admin token or null (will redirect if not authenticated)
+ * Note: Since we're using httpOnly cookies, we don't actually need the token
+ * This function now just checks if admin is authenticated via adminData
+ * @returns {string|null} Returns a placeholder token string or null (will redirect if not authenticated)
  */
 export const getAdminTokenOrRedirect = () => {
-  const token = getAdminToken();
+  // Since we're using httpOnly cookies, check for adminData instead of token
+  // The actual authentication is handled by cookies sent with requests
   const data = getAdminData();
   
-  if (!token || !data) {
+  if (!data) {
     clearAuthAndRedirect('admin');
     return null;
   }
   
-  return token;
+  // Return a placeholder since we don't actually use the token anymore
+  // The real authentication is via httpOnly cookies
+  return 'cookie-based-auth';
 };
 

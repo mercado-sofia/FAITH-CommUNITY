@@ -176,16 +176,13 @@ export default function SubmissionsPage() {
         return;
       }
       
-      const adminToken = getAdminTokenOrRedirect();
-      if (!adminToken) {
-        return; // Redirect handled by getAdminTokenOrRedirect
-      }
-      
+      // No need to check token - cookies handle authentication
       const promises = pendingIds.map(id => 
         fetch(`${API_CONFIG.BASE_URL}/api/submissions/${id}`, { 
           method: 'DELETE',
+          credentials: 'include', // CRITICAL: Include httpOnly cookies
           headers: {
-            'Authorization': `Bearer ${adminToken}`
+            'Content-Type': 'application/json',
           }
         })
       );
@@ -201,16 +198,12 @@ export default function SubmissionsPage() {
 
   const handleBulkDelete = useCallback(async () => {
     try {
-      const adminToken = getAdminTokenOrRedirect();
-      if (!adminToken) {
-        return; // Redirect handled by getAdminTokenOrRedirect
-      }
-
+      // No need to check token - cookies handle authentication
       const response = await fetch(`${API_CONFIG.BASE_URL}/api/submissions/bulk-delete`, {
         method: 'POST',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
         },
         body: JSON.stringify({ ids: Array.from(selectedItems) })
       });

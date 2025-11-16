@@ -10,12 +10,15 @@ export const useNewsURL = () => {
   const searchParams = useSearchParams();
 
   // Initialize state from URL parameters
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('search') || '');
   const [sortBy, setSortBy] = useState(() => {
     const sortParam = searchParams.get('sort');
     return sortParam || 'newest';
   });
-  const [showCount, setShowCount] = useState(parseInt(searchParams.get('show')) || 10);
+  const [showCount, setShowCount] = useState(() => {
+    const showParam = searchParams.get('show');
+    return showParam ? parseInt(showParam, 10) : 10;
+  });
 
   // Function to update URL parameters
   const updateURLParams = useCallback((newParams) => {

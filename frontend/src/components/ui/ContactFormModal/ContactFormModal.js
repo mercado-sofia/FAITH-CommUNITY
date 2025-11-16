@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import logger from '@/utils/logger';
 import styles from './ContactFormModal.module.css';
+import { API_BASE_URL } from '@/config/api';
 
 const ContactFormModal = ({ isOpen, onClose, organizationName, organizationId, programTitle }) => {
   const [formData, setFormData] = useState({
@@ -37,8 +38,9 @@ const ContactFormModal = ({ isOpen, onClose, organizationName, organizationId, p
     setSubmitStatus(null);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/messages`, {
+      const response = await fetch(`${API_BASE_URL || ''}/api/messages`, {
         method: 'POST',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
           'Content-Type': 'application/json',
         },

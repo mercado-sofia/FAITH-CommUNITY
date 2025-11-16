@@ -24,9 +24,19 @@ const makeAuthenticatedRequest = async (url, options = {}, router = null) => {
     throw new Error('Cannot make authenticated request on server side');
   }
 
-  const token = localStorage.getItem('superAdminToken');
-  if (!token) {
-    // Use centralized immediate cleanup for security
+  // No need to check token - cookies handle authentication
+  const response = await fetch(url, {
+    ...options,
+    credentials: 'include', // CRITICAL: Include httpOnly cookies
+    headers: {
+      'Content-Type': 'application/json',
+      // No Authorization header needed - httpOnly cookies handle authentication
+      ...options.headers
+    }
+  });
+  
+  // Handle 401/403 - redirect to login if unauthorized
+  if (response.status === 401 || response.status === 403) {
     clearAuthImmediate(USER_TYPES.SUPERADMIN);
     if (router) {
       router.push('/login');
@@ -35,15 +45,6 @@ const makeAuthenticatedRequest = async (url, options = {}, router = null) => {
     }
     return null;
   }
-
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      ...options.headers
-    }
-  });
 
   // Check if response is JSON before parsing (only if content-type header exists)
   const contentType = response.headers.get('content-type');

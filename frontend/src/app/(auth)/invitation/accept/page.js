@@ -12,8 +12,8 @@ import { useInvitationValidation, useOrganizationValidation, useFormState, useIn
 import { LoadingState, InvitationState, StepIndicator, OrganizationStep, PasswordStep } from "./components"
 
 const AcceptInvitation = () => {
-  // API base URL with environment variable support
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+  // API base URL - will be imported dynamically in hooks
+  const API_BASE_URL = '' // Will be set from config in hooks
   
   const [token, setToken] = useState("")
   const [currentStep, setCurrentStep] = useState(1)
@@ -21,10 +21,10 @@ const AcceptInvitation = () => {
   const searchParams = useSearchParams()
 
   // Custom hooks
-  const { isValidating, error: validationError, success: validationSuccess, validateToken, setError: setValidationError, setSuccess: setValidationSuccess } = useInvitationValidation(API_BASE_URL)
-  const { validationStatus, checkOrgAcronymExists, checkOrgNameExists, debouncedValidation, clearValidationStatus } = useOrganizationValidation(API_BASE_URL)
+  const { isValidating, error: validationError, success: validationSuccess, validateToken, setError: setValidationError, setSuccess: setValidationSuccess } = useInvitationValidation()
+  const { validationStatus, checkOrgAcronymExists, checkOrgNameExists, debouncedValidation, clearValidationStatus } = useOrganizationValidation()
   const { form, logoPreview, showPassword, showConfirmPassword, passwordRequirements, fieldErrors, setForm, setFieldErrors, handleInputChange, handleLogoUpload, removeLogo, setShowPassword, setShowConfirmPassword } = useFormState()
-  const { isSubmitting, error: submissionError, success: submissionSuccess, submitInvitation, setError: setSubmissionError, setSuccess: setSubmissionSuccess } = useInvitationSubmission(API_BASE_URL)
+  const { isSubmitting, error: submissionError, success: submissionSuccess, submitInvitation, setError: setSubmissionError, setSuccess: setSubmissionSuccess } = useInvitationSubmission()
 
   useEffect(() => {
     const tokenParam = searchParams.get("token")

@@ -3,9 +3,11 @@
  * Centralized constants to avoid magic numbers and hardcoded values
  */
 
+import { API_BASE_URL } from '@/config/api';
+
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
+  BASE_URL: API_BASE_URL || '', // Use relative paths in development
   TIMEOUT: 30000, // 30 seconds
   RETRY_DELAY: 1000, // 1 second
   MAX_RETRIES: 3

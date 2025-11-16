@@ -26,20 +26,29 @@ const getApiBaseUrl = () => {
     return apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
   }
   
-  // In development, use relative path if Next.js rewrites are configured
+  // In development, ALWAYS use relative path to leverage Next.js rewrites
   // This makes requests same-origin, allowing cookies to work with SameSite=Lax
-  // If NEXT_PUBLIC_API_URL is set, use it (for cases where rewrites aren't used)
-  if (apiUrl && apiUrl.includes('localhost:8080')) {
-    // Use relative path to leverage Next.js rewrites (same-origin)
+  // CRITICAL: Cross-origin requests (localhost:3000 -> localhost:8080) don't send cookies
+  // even with credentials: 'include' when SameSite=Lax is used
+  // Using Next.js rewrites makes requests same-origin, so cookies work properly
+  if (process.env.NODE_ENV === 'development') {
+    // Check if Next.js rewrites are configured (they should be in next.config.js)
+    // Always use relative path in development to ensure cookies work
     return '';
   }
   
-  // Fallback to full URL if no rewrites
+  // Fallback (shouldn't reach here in normal operation)
   const devUrl = apiUrl || 'http://localhost:8080';
   return devUrl.endsWith('/') ? devUrl.slice(0, -1) : devUrl;
 };
 
 export const API_BASE_URL = getApiBaseUrl();
+
+// Log API configuration in development for debugging
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  console.log('[API Config] API_BASE_URL:', API_BASE_URL || '(empty - using relative paths with Next.js rewrites)');
+  console.log('[API Config] This ensures cookies work properly by making requests same-origin');
+}
 
 /**
  * Helper function to log errors in production

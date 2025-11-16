@@ -92,84 +92,92 @@ export default function MobileSidebar({
           <span>Go to FAITH Colleges</span>
         </a>
         
-        {!isAuthenticated && (
-          <Link 
-            href="/login" 
-            className={styles.navbarLoginBtn} 
-            onClick={toggleMenu}
-          >
-            Log In or Sign Up
-          </Link>
-        )}
-        
-        <Link 
-          href="/apply" 
-          className={styles.applyBtn} 
-          onClick={(e) => { handleApplyClick(e); toggleMenu(); }}
-          onMouseEnter={() => handleLinkHover('/apply')}
-        >
-          Apply
-        </Link>
-
-        {/* Mobile Profile Dropdown - Only for authenticated users */}
-        {isAuthenticated && (
-          <div className={styles.mobileProfileSection}>
-            <button 
-              className={styles.mobileProfileToggle}
-              onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+        {/* Only show user UI for regular users (not admin/superadmin) */}
+        {isAuthenticated && user && user.role?.toLowerCase() === 'user' ? (
+          <>
+            <Link 
+              href="/apply" 
+              className={styles.applyBtn}
+              onClick={(e) => {
+                handleApplyClick(e);
+                toggleMenu();
+              }}
             >
-              <div className={styles.mobileProfileIcon}>
-                {user?.profile_photo_url ? (
-                  <OptimizedImage
-                    src={getProfilePhotoUrl(user.profile_photo_url)}
-                    alt="Profile"
-                    width={32}
-                    height={32}
-                    className={styles.mobileProfileImage}
-                    fallbackIcon={FaUser}
-                  />
-                ) : (
-                  <FaUser className={styles.mobileProfileIconDefault} />
-                )}
-              </div>
-              <span className={styles.mobileProfileName}>
-                {user?.firstName} {user?.lastName}
-              </span>
-              {isProfileDropdownOpen ? (
-                <FaChevronDown className={styles.mobileProfileChevron} />
-              ) : (
-                <FaChevronRight className={styles.mobileProfileChevron} />
+              Apply
+            </Link>
+            {/* Profile section for mobile */}
+            <div className={styles.mobileProfileSection}>
+              <button 
+                className={styles.mobileProfileBtn}
+                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+              >
+                <div className={styles.mobileProfileIcon}>
+                  {user?.profile_photo_url ? (
+                    <OptimizedImage
+                      src={getProfilePhotoUrl(user.profile_photo_url)}
+                      alt="Profile"
+                      width={32}
+                      height={32}
+                      className={styles.mobileProfileImage}
+                    />
+                  ) : (
+                    <FaUser />
+                  )}
+                </div>
+                <span>{user?.firstName} {user?.lastName}</span>
+                <FaChevronDown className={isProfileDropdownOpen ? styles.rotate : ''} />
+              </button>
+              
+              {isProfileDropdownOpen && (
+                <div className={styles.mobileProfileDropdown}>
+                  <Link 
+                    href="/profile" 
+                    className={styles.mobileProfileItem}
+                    onClick={toggleMenu}
+                  >
+                    <FaCog />
+                    <span>Manage Account</span>
+                  </Link>
+                  <Link 
+                    href="/profile?tab=applications" 
+                    className={styles.mobileProfileItem}
+                    onClick={toggleMenu}
+                  >
+                    <FaClipboardList />
+                    <span>My Applications</span>
+                  </Link>
+                  <button 
+                    className={styles.mobileProfileItem}
+                    onClick={() => {
+                      onLogoutClick();
+                      toggleMenu();
+                    }}
+                  >
+                    <FaSignOutAlt />
+                    <span>Logout</span>
+                  </button>
+                </div>
               )}
-            </button>
-            
-            {isProfileDropdownOpen && (
-              <div className={styles.mobileProfileDropdown}>
-                <Link 
-                  href="/profile" 
-                  className={styles.mobileProfileLink}
-                  onClick={toggleMenu}
-                >
-                  <FaCog />
-                  <span>Manage Account</span>
-                </Link>
-                <Link 
-                  href="/profile?tab=applications" 
-                  className={styles.mobileProfileLink}
-                  onClick={toggleMenu}
-                >
-                  <FaClipboardList />
-                  <span>My Applications</span>
-                </Link>
-                <button 
-                  onClick={() => { onLogoutClick(); toggleMenu(); }} 
-                  className={styles.mobileLogoutBtn}
-                >
-                  <FaSignOutAlt />
-                  <span>Logout</span>
-                </button>
-              </div>
-            )}
-          </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <Link 
+              href="/login" 
+              className={styles.navbarLoginBtn} 
+              onClick={toggleMenu}
+            >
+              Log In or Sign Up
+            </Link>
+            <Link 
+              href="/apply" 
+              className={styles.applyBtn} 
+              onClick={(e) => { handleApplyClick(e); toggleMenu(); }}
+              onMouseEnter={() => handleLinkHover('/apply')}
+            >
+              Apply
+            </Link>
+          </>
         )}
       </div>
     </div>

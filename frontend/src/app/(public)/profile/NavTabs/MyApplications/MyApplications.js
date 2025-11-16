@@ -39,13 +39,7 @@ export default function MyApplications() {
 
   const fetchApplications = async () => {
     try {
-      const token = localStorage.getItem('userToken');
-      
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
-      
+      // No need to check token - cookies handle authentication
       const response = await makeAuthenticatedRequest('/api/users/applications', {
         method: 'GET'
       });

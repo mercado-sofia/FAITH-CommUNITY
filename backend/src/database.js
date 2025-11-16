@@ -886,10 +886,7 @@ const initializeDatabase = async () => {
           INDEX idx_is_active (is_active),
           INDEX idx_email_verified (email_verified),
           INDEX idx_verification_token (verification_token),
-          INDEX idx_created_at (created_at),
-          CONSTRAINT chk_admin_organization CHECK (
-            (role = 'admin' AND organization_id IS NOT NULL) OR (role != 'admin')
-          )
+          INDEX idx_created_at (created_at)
         )
       `);
 

@@ -504,7 +504,7 @@ export const getAllHighlightsForApproval = async (req, res) => {
         a.email as admin_email${programIdSelect}${programTitleSelect}
       FROM admin_highlights h
       LEFT JOIN organizations o ON h.organization_id = o.id
-      LEFT JOIN admins a ON h.created_by = a.id
+      LEFT JOIN users a ON h.created_by = a.id AND a.role = 'admin'
       ${programJoin}
     `;
     
@@ -619,7 +619,7 @@ export const getApprovedHighlights = async (req, res) => {
         o.logo as organization_logo${programIdSelect}${programTitleSelect}
       FROM admin_highlights h
       LEFT JOIN organizations o ON h.organization_id = o.id
-      LEFT JOIN admins a ON h.created_by = a.id
+      LEFT JOIN users a ON h.created_by = a.id AND a.role = 'admin'
       ${programJoin}
       WHERE h.status = 'approved'
         AND o.id IS NOT NULL
@@ -689,7 +689,7 @@ export const getFeaturedHighlights = async (req, res) => {
       FROM featured_highlights fh
       INNER JOIN admin_highlights h ON fh.highlight_id = h.id
       LEFT JOIN organizations o ON h.organization_id = o.id
-      LEFT JOIN admins a ON h.created_by = a.id
+      LEFT JOIN users a ON h.created_by = a.id AND a.role = 'admin'
       ${programJoin}
       WHERE h.status = 'approved'
         AND o.id IS NOT NULL

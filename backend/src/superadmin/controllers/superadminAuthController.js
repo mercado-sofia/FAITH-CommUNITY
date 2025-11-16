@@ -1,4 +1,3 @@
-// db table: superadmin
 import db from "../../database.js"
 import * as bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
@@ -8,28 +7,42 @@ import { getClientIpAddress } from "../../utils/ipAddressHelper.js"
 import { generateTwoFASecret, verifyTwoFAToken, generateTwoFAQRCode, generateSimpleQRCode, validateTwoFATokenFormat } from "../../utils/twoFA.js"
 import { logSuperadminAction } from "../../utils/audit.js"
 import { logError, logInfo } from "../../utils/logger.js"
+import {
+  signAccessToken,
+  issueRefreshToken,
+  getAccessTokenCookieOptions,
+  getRefreshCookieOptions,
+} from '../../utils/jwt.js';
 
-// JWT secret via env
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
 
 // -------------------- Auth: Login / Verify --------------------
 
-// Superadmin login endpoint
 export const loginSuperadmin = async (req, res) => {
   const { email, password, otp } = req.body
   const ipAddress = getClientIpAddress(req)
+
+  // Log incoming request for debugging
+  logInfo('Superadmin login attempt', { 
+    context: 'superadmin_auth', 
+    email: email,
+    hasPassword: !!password,
+    hasOtp: !!otp,
+    ipAddress 
+  });
 
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required" })
   }
 
+  const trimmedEmail = email.trim().toLowerCase();
+
   try {
-    // Check failed login attempts BEFORE attempting login
-    const failedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'superadmin');
+    const failedAttempts = await LoginAttemptTracker.getFailedAttempts(trimmedEmail, ipAddress, 'superadmin');
+    const maxAttempts = LoginAttemptTracker.getMaxAttempts();
     
-    // Block for 5 minutes after 7 failed attempts
-    if (failedAttempts >= 7) {
-      const remainingSeconds = await LoginAttemptTracker.getLockoutTimeRemaining(email, ipAddress, 'superadmin');
+    if (failedAttempts >= maxAttempts) {
+      const remainingSeconds = await LoginAttemptTracker.getLockoutTimeRemaining(trimmedEmail, ipAddress, 'superadmin');
       const remainingMinutes = Math.ceil(remainingSeconds / 60);
       
       return res.status(429).json({ 
@@ -37,35 +50,46 @@ export const loginSuperadmin = async (req, res) => {
         retryAfter: `${remainingMinutes} minutes`,
         remainingSeconds: remainingSeconds,
         attempts: failedAttempts,
-        maxAttempts: 7
+        maxAttempts: maxAttempts
       });
     }
     const [superadminRows] = await db.execute(
-      "SELECT id, username, password, twofa_enabled, twofa_secret, created_at, updated_at FROM superadmin WHERE username = ?",
-      [email],
+      "SELECT id, email, password_hash as password, twofa_enabled, twofa_secret, created_at, updated_at FROM users WHERE email = ? AND role = 'superadmin'",
+      [trimmedEmail],
     )
 
     if (superadminRows.length === 0) {
-      // Track failed attempt - superadmin not found
-      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'superadmin');
-      const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'superadmin');
+      logInfo('Superadmin login failed - not found', { 
+        context: 'superadmin_auth', 
+        email: trimmedEmail,
+        ipAddress 
+      });
+      await LoginAttemptTracker.trackFailedAttempt(trimmedEmail, ipAddress, 'superadmin');
+      const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(trimmedEmail, ipAddress, 'superadmin');
+      const maxAttempts = LoginAttemptTracker.getMaxAttempts();
       return res.status(401).json({ 
         error: "Invalid credentials",
         attempts: newFailedAttempts,
-        remainingAttempts: Math.max(0, 7 - newFailedAttempts)
+        remainingAttempts: Math.max(0, maxAttempts - newFailedAttempts)
       })
     }
 
     const superadmin = superadminRows[0]
     const isPasswordValid = await bcrypt.compare(password, superadmin.password)
     if (!isPasswordValid) {
-      // Track failed attempt - invalid password
-      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'superadmin');
-      const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'superadmin');
+      logInfo('Superadmin login failed - invalid password', { 
+        context: 'superadmin_auth', 
+        email: trimmedEmail,
+        superadminId: superadmin.id,
+        ipAddress 
+      });
+      await LoginAttemptTracker.trackFailedAttempt(trimmedEmail, ipAddress, 'superadmin');
+      const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(trimmedEmail, ipAddress, 'superadmin');
+      const maxAttempts = LoginAttemptTracker.getMaxAttempts();
       return res.status(401).json({ 
         error: "Invalid credentials",
         attempts: newFailedAttempts,
-        remainingAttempts: Math.max(0, 7 - newFailedAttempts)
+        remainingAttempts: Math.max(0, maxAttempts - newFailedAttempts)
       })
     }
 
@@ -86,63 +110,73 @@ export const loginSuperadmin = async (req, res) => {
     }
 
 
-    // Generate JWT token for all superadmin accounts
-    // In production, always use JWT tokens (never hardcoded tokens)
-    // In development, use hardcoded token for superadmin ID 1 for compatibility
+    // In production, always use JWT tokens. In development, use hardcoded token for superadmin ID 1
     const isProduction = process.env.NODE_ENV === "production";
-    const token = (!isProduction && superadmin.id === 1) 
+    const accessToken = (!isProduction && superadmin.id === 1) 
       ? "superadmin" 
-      : jwt.sign(
-          { id: superadmin.id, username: superadmin.username, role: "superadmin" },
-          JWT_SECRET,
-          { 
-            expiresIn: "30m",
-            issuer: process.env.JWT_ISS || "faith-community-api",
-            audience: process.env.JWT_AUD || "faith-community-client"
-          },
-        )
+      : signAccessToken({
+          id: superadmin.id,
+          email: superadmin.email,
+          role: "superadmin"
+        })
 
-    // Clear failed login attempts on successful login (reset counter)
-    await LoginAttemptTracker.clearFailedAttempts(email, ipAddress, 'superadmin');
+    // Issue refresh token (works for all roles with unified users table!)
+    const { token: refreshToken } = await issueRefreshToken(superadmin.id, {
+      userAgent: req.headers['user-agent'],
+      ipAddress: getClientIpAddress(req),
+    });
+
+    await LoginAttemptTracker.clearFailedAttempts(trimmedEmail, ipAddress, 'superadmin');
     
-    // Log superadmin login action
     await logSuperadminAction(superadmin.id, 'login', 'Superadmin logged in', req)
+    
+    // Set both tokens as httpOnly cookies (secure!)
+    res.cookie('access_token', accessToken, getAccessTokenCookieOptions())
+    res.cookie('refresh_token', refreshToken, getRefreshCookieOptions())
     
     res.json({
       message: "Login successful",
-      token,
       superadmin: {
         id: superadmin.id,
-        username: superadmin.username,
-        email: superadmin.username, // Using username as email for compatibility
+        email: superadmin.email,
         name: "Super Administrator",
         role: "superadmin",
       },
     })
   } catch (err) {
-    res.status(500).json({ error: "Internal server error during login" })
+    logError('Superadmin login error', err, { context: 'superadmin_auth', email: req.body?.email });
+    console.error('Superadmin login error details:', {
+      message: err.message,
+      code: err.code,
+      sqlState: err.sqlState,
+      sqlMessage: err.sqlMessage,
+      stack: err.stack
+    });
+    res.status(500).json({ 
+      error: "Internal server error during login",
+      message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    })
   }
 }
 
 // JWT verification middleware for superadmin
 export const verifySuperadminToken = (req, res, next) => {
-  const authHeader = req.headers.authorization
-  const token = authHeader && authHeader.split(" ")[1] // Bearer TOKEN
+  // Try cookie first (more secure), then header (for backward compatibility)
+  const token = req.cookies?.access_token || req.headers.authorization?.split(" ")[1]
 
   if (!token) {
     return res.status(401).json({ error: "Access token required" })
   }
 
   try {
-    // SECURITY: Hardcoded superadmin token for development/testing only
-    // Protected by production environment check - automatically disabled in production
+    // Hardcoded superadmin token for development/testing only (disabled in production)
     if (token === "superadmin") {
       if (process.env.NODE_ENV === "production") {
         return res.status(403).json({ error: "Hardcoded token not allowed in production" })
       }
       req.superadmin = {
         id: 1,
-        username: "superadmin@faith.com",
+        email: "superadmin@faith.com",
         role: "superadmin"
       }
       next()
@@ -170,11 +204,8 @@ export const getSuperadminProfile = async (req, res) => {
   }
 
   try {
-    // Ensure password_changed_at column exists
-    try { await db.execute(`ALTER TABLE superadmin ADD COLUMN password_changed_at TIMESTAMP NULL DEFAULT NULL`) } catch {}
-
     const [rows] = await db.execute(
-      "SELECT id, username, created_at, updated_at, password_changed_at FROM superadmin WHERE id = ?",
+      "SELECT id, email, created_at, updated_at, password_changed_at FROM users WHERE id = ? AND role = 'superadmin'",
       [id],
     )
 
@@ -185,8 +216,7 @@ export const getSuperadminProfile = async (req, res) => {
     const superadmin = rows[0]
     res.json({
       id: superadmin.id,
-      username: superadmin.username,
-      email: superadmin.username,
+      email: superadmin.email,
       name: "Super Administrator",
       role: "superadmin",
       created_at: superadmin.created_at,
@@ -215,7 +245,7 @@ export const verifySuperadminPassword = async (req, res) => {
   try {
     // Get superadmin data including hashed password
     const [superadminRows] = await db.execute(
-      "SELECT id, password FROM superadmin WHERE id = ?",
+      "SELECT id, password_hash as password FROM users WHERE id = ? AND role = 'superadmin'",
       [id]
     )
 
@@ -264,7 +294,7 @@ export const requestSuperadminEmailChange = async (req, res) => {
 
   try {
     const [superadminRows] = await db.execute(
-      "SELECT id, username, password FROM superadmin WHERE id = ?",
+      "SELECT id, email, password_hash as password FROM users WHERE id = ? AND role = 'superadmin'",
       [id]
     )
 
@@ -275,7 +305,7 @@ export const requestSuperadminEmailChange = async (req, res) => {
     const superadmin = superadminRows[0]
 
     // Check if new email is different from current email
-    if (newEmail === superadmin.username) {
+    if (newEmail === superadmin.email) {
       return res.status(400).json({ error: "New email must be different from current email" });
     }
 
@@ -286,9 +316,9 @@ export const requestSuperadminEmailChange = async (req, res) => {
     }
 
 
-    // Check if email is already taken by another superadmin
+    // Check if email is already taken by another user
     const [existingSuperadmin] = await db.execute(
-      "SELECT id FROM superadmin WHERE username = ? AND id != ?",
+      "SELECT id FROM users WHERE email = ? AND id != ?",
       [newEmail, id]
     )
 
@@ -303,7 +333,7 @@ export const requestSuperadminEmailChange = async (req, res) => {
       id, 
       'superadmin', 
       newEmail, 
-      superadmin.username, 
+      superadmin.email, 
       'Superadmin'
     );
 
@@ -343,7 +373,7 @@ export const verifySuperadminEmailChangeOTP = async (req, res) => {
 
     // Update email in database
     await db.execute(
-      "UPDATE superadmin SET username = ?, updated_at = NOW() WHERE id = ?",
+      "UPDATE users SET email = ?, updated_at = NOW() WHERE id = ? AND role = 'superadmin'",
       [verificationResult.newEmail, id]
     );
 
@@ -399,28 +429,8 @@ export const updateSuperadminPassword = async (req, res) => {
   }
 
   try {
-    // Ensure password_changed_at column exists
-    try { 
-      await db.execute(`ALTER TABLE superadmin ADD COLUMN password_changed_at TIMESTAMP NULL DEFAULT NULL`) 
-    } catch (alterError) {
-      // Column already exists, ignore error
-    }
-
-    // Ensure twofa_enabled and twofa_secret columns exist (handle both naming conventions)
-    try { 
-      await db.execute(`ALTER TABLE superadmin ADD COLUMN twofa_enabled TINYINT(1) DEFAULT 0`) 
-    } catch (alterError) {
-      // Column already exists, ignore error
-    }
-    
-    try { 
-      await db.execute(`ALTER TABLE superadmin ADD COLUMN twofa_secret VARCHAR(255) NULL`) 
-    } catch (alterError) {
-      // Column already exists, ignore error
-    }
-
     const [superadminRows] = await db.execute(
-      "SELECT id, password, username, twofa_enabled, twofa_secret FROM superadmin WHERE id = ?",
+      "SELECT id, password_hash as password, email, twofa_enabled, twofa_secret FROM users WHERE id = ? AND role = 'superadmin'",
       [id],
     )
 
@@ -454,16 +464,25 @@ export const updateSuperadminPassword = async (req, res) => {
     const saltRounds = 12
     const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds)
 
-    await db.execute("UPDATE superadmin SET password = ?, password_changed_at = NOW(), updated_at = NOW() WHERE id = ?", [
+    await db.execute("UPDATE users SET password_hash = ?, password_changed_at = NOW(), updated_at = NOW() WHERE id = ? AND role = 'superadmin'", [
       hashedNewPassword,
       id,
     ])
+
+    // Revoke all existing refresh tokens and clear both cookies (security: force re-login)
+    try {
+      const { revokeAllUserRefreshTokens } = await import('../../utils/jwt.js');
+      await revokeAllUserRefreshTokens(id);
+    } catch {}
+    // Clear both cookies
+    res.clearCookie('access_token', { path: '/' });
+    res.clearCookie('refresh_token', { path: '/' });
 
     // Send password change notification
     try {
       const { PasswordChangeNotification } = await import('../../utils/passwordChangeNotification.js');
       await PasswordChangeNotification.sendPasswordChangeNotification(
-        superadmin.username, 
+        superadmin.email, 
         null, 
         'superadmin'
       );
@@ -492,7 +511,7 @@ export const forgotPasswordSuperadmin = async (req, res) => {
 
   try {
     const [superadminRows] = await db.execute(
-      "SELECT id, username FROM superadmin WHERE username = ?",
+      "SELECT id, email FROM users WHERE email = ? AND role = 'superadmin'",
       [email],
     )
 
@@ -587,20 +606,8 @@ export const resetPasswordSuperadmin = async (req, res) => {
     const saltRounds = 10
     const hashedPassword = await bcrypt.hash(newPassword, saltRounds)
 
-    // Update superadmin (username is the email)
-    await db.execute("UPDATE superadmin SET password = ? WHERE username = ?", [
-      hashedPassword,
-      email,
-    ])
-
-    // Also update admins (if applicable)
-    await db.execute(
-      'UPDATE admins SET password = ? WHERE email = ? AND is_active = TRUE',
-      [hashedPassword, email],
-    )
-
-    // Also update users (if applicable)
-    await db.execute("UPDATE users SET password_hash = ? WHERE email = ?", [
+    // Update password in unified users table
+    await db.execute("UPDATE users SET password_hash = ?, password_changed_at = NOW() WHERE email = ?", [
       hashedPassword,
       email,
     ])
@@ -608,9 +615,9 @@ export const resetPasswordSuperadmin = async (req, res) => {
     // Consume token
     await db.execute("DELETE FROM password_reset_tokens WHERE token = ?", [token])
 
-    // Revoke any existing refresh tokens for this user across roles (if using shared refresh mechanism)
+    // Revoke any existing refresh tokens for this user
     try {
-      const [sa] = await db.execute('SELECT id FROM superadmin WHERE username = ? LIMIT 1', [email])
+      const [sa] = await db.execute('SELECT id FROM users WHERE email = ? AND role = \'superadmin\' LIMIT 1', [email])
       if (sa.length > 0) {
         await db.execute('UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = ?', [sa[0].id])
       }
@@ -678,7 +685,7 @@ export const checkEmailSuperadmin = async (req, res) => {
 
   try {
     const [superadminRows] = await db.execute(
-      "SELECT id FROM superadmin WHERE username = ?",
+      "SELECT id FROM users WHERE email = ? AND role = 'superadmin'",
       [email],
     )
 
@@ -714,20 +721,20 @@ export const updateSuperadminEmail = async (req, res) => {
   }
 
   try {
-    const [superadminRows] = await db.execute("SELECT id FROM superadmin WHERE id = ?", [id])
+    const [superadminRows] = await db.execute("SELECT id FROM users WHERE id = ? AND role = 'superadmin'", [id])
     if (superadminRows.length === 0) {
       return res.status(404).json({ error: "Superadmin not found" })
     }
 
     const [existingEmailRows] = await db.execute(
-      "SELECT id FROM superadmin WHERE username = ? AND id != ?",
+      "SELECT id FROM users WHERE email = ? AND id != ?",
       [newEmail, id],
     )
     if (existingEmailRows.length > 0) {
       return res.status(409).json({ error: "Email address is already in use" })
     }
 
-    await db.execute("UPDATE superadmin SET username = ?, updated_at = NOW() WHERE id = ?", [
+    await db.execute("UPDATE users SET email = ?, updated_at = NOW() WHERE id = ? AND role = 'superadmin'", [
       newEmail,
       id,
     ])
@@ -752,7 +759,7 @@ export const setupTwoFA = async (req, res) => {
     const { id } = req.params;
     
     // Check if superadmin exists
-    const [rows] = await db.execute('SELECT id, username FROM superadmin WHERE id = ?', [id]);
+    const [rows] = await db.execute('SELECT id, email FROM users WHERE id = ? AND role = \'superadmin\'', [id]);
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Superadmin not found' });
     }
@@ -760,13 +767,13 @@ export const setupTwoFA = async (req, res) => {
     const superadmin = rows[0];
     
     // Generate 2FA secret and otpauth URL
-    const { secret, otpauth } = generateTwoFASecret(superadmin.username);
+    const { secret, otpauth } = generateTwoFASecret(superadmin.email);
     
     // Generate QR code (optional - may fail without breaking the flow)
     const qrCodeDataUrl = await generateTwoFAQRCode(otpauth);
     
     // Store secret temporarily (will be enabled after verification)
-    await db.execute('UPDATE superadmin SET twofa_secret = ? WHERE id = ?', [secret, id]);
+    await db.execute('UPDATE users SET twofa_secret = ? WHERE id = ? AND role = \'superadmin\'', [secret, id]);
     
     res.json({
       success: true,
@@ -800,7 +807,7 @@ export const verifyTwoFA = async (req, res) => {
     }
     
     // Get superadmin and secret
-    const [rows] = await db.execute('SELECT id, twofa_secret FROM superadmin WHERE id = ?', [id]);
+    const [rows] = await db.execute('SELECT id, twofa_secret FROM users WHERE id = ? AND role = \'superadmin\'', [id]);
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Superadmin not found' });
     }
@@ -817,7 +824,7 @@ export const verifyTwoFA = async (req, res) => {
     }
     
     // Enable 2FA
-    await db.execute('UPDATE superadmin SET twofa_enabled = 1 WHERE id = ?', [id]);
+    await db.execute('UPDATE users SET twofa_enabled = 1 WHERE id = ? AND role = \'superadmin\'', [id]);
     
     res.json({
       success: true,
@@ -836,13 +843,13 @@ export const disableTwoFA = async (req, res) => {
     const { id } = req.params;
     
     // Check if superadmin exists
-    const [rows] = await db.execute('SELECT id FROM superadmin WHERE id = ?', [id]);
+    const [rows] = await db.execute('SELECT id FROM users WHERE id = ? AND role = \'superadmin\'', [id]);
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Superadmin not found' });
     }
     
     // Disable 2FA and clear secret
-    await db.execute('UPDATE superadmin SET twofa_enabled = 0, twofa_secret = NULL WHERE id = ?', [id]);
+    await db.execute('UPDATE users SET twofa_enabled = 0, twofa_secret = NULL WHERE id = ? AND role = \'superadmin\'', [id]);
     
     res.json({
       success: true,
@@ -853,11 +860,8 @@ export const disableTwoFA = async (req, res) => {
   }
 };
 
-// -------------------- Production Initialization Endpoint --------------------
-
 /**
  * Initialize/Reset superadmin account (Production only, protected by secret key)
- * This endpoint allows resetting the superadmin account in production when you can't log in
  * Usage: POST /api/superadmin/auth/initialize
  * Body: { secretKey: "your-secret-key" }
  */
@@ -865,7 +869,6 @@ export const initializeSuperadmin = async (req, res) => {
   try {
     const { secretKey } = req.body;
     
-    // Get the secret key from environment variable
     const requiredSecretKey = process.env.SUPERADMIN_INIT_SECRET || process.env.JWT_SECRET;
     
     if (!requiredSecretKey) {
@@ -875,7 +878,6 @@ export const initializeSuperadmin = async (req, res) => {
       });
     }
     
-    // Verify secret key
     if (!secretKey || secretKey !== requiredSecretKey) {
       logError('Invalid secret key for superadmin initialization', new Error('Unauthorized'), { 
         context: 'superadmin',
@@ -886,29 +888,24 @@ export const initializeSuperadmin = async (req, res) => {
       });
     }
     
-    // Initialize superadmin account with default credentials
     const superadminEmail = 'faithcommunityfaces@gmail.com';
     const superadminPassword = 'admin123';
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(superadminPassword, saltRounds);
     
-    // Check if superadmin exists
     const [existing] = await db.execute(
-      'SELECT id, username, password FROM superadmin WHERE id = 1'
+      'SELECT id, email, password_hash FROM users WHERE id = 1 AND role = \'superadmin\''
     );
     
     if (existing.length === 0) {
-      // Insert new superadmin account
       await db.execute(
-        `INSERT INTO superadmin (id, username, password, password_changed_at, twofa_enabled, twofa_secret, created_at, updated_at)
-         VALUES (1, ?, ?, NOW(), FALSE, NULL, NOW(), NOW())`,
+        `INSERT INTO users (id, email, password_hash, role, password_changed_at, twofa_enabled, twofa_secret, created_at, updated_at)
+         VALUES (1, ?, ?, 'superadmin', NOW(), FALSE, NULL, NOW(), NOW())`,
         [superadminEmail, hashedPassword]
       );
       
-      // Clear any existing failed login attempts for this email (allows immediate login)
       const ipAddress = getClientIpAddress(req);
       await LoginAttemptTracker.clearFailedAttempts(superadminEmail, ipAddress, 'superadmin');
-      await LoginAttemptTracker.clearFailedAttempts(superadminEmail, ipAddress, 'admin');
       
       logInfo('Superadmin account created via initialization endpoint', {
         context: 'superadmin',
@@ -925,32 +922,26 @@ export const initializeSuperadmin = async (req, res) => {
         note: 'All failed login attempts have been cleared. You can now log in immediately.'
       });
     } else {
-      // Update existing superadmin account
       const existingAccount = existing[0];
       
-      // Update password and email to ensure correct credentials
       await db.execute(
-        `UPDATE superadmin 
-         SET username = ?, password = ?, password_changed_at = NOW(), updated_at = NOW(), twofa_enabled = FALSE, twofa_secret = NULL
-         WHERE id = 1`,
+        `UPDATE users 
+         SET email = ?, password_hash = ?, password_changed_at = NOW(), updated_at = NOW(), twofa_enabled = FALSE, twofa_secret = NULL
+         WHERE id = 1 AND role = 'superadmin'`,
         [superadminEmail, hashedPassword]
       );
       
-      // Clear all failed login attempts for this email (allows immediate login after reset)
-      // Clear attempts for all user types (admin, superadmin) in case they tried wrong endpoint
       const ipAddress = getClientIpAddress(req);
       await LoginAttemptTracker.clearFailedAttempts(superadminEmail, ipAddress, 'superadmin');
-      await LoginAttemptTracker.clearFailedAttempts(superadminEmail, ipAddress, 'admin');
-      // Also clear by IP only (in case email was different)
       await db.execute(
-        'DELETE FROM login_attempts WHERE ip_address = ? AND user_type IN (?, ?) AND attempt_type = ?',
-        [ipAddress, 'superadmin', 'admin', 'failed']
+        'DELETE FROM login_attempts WHERE ip_address = ? AND attempt_type = ?',
+        [ipAddress, 'failed']
       );
       
       logInfo('Superadmin account reset via initialization endpoint', {
         context: 'superadmin',
         email: superadminEmail,
-        previousEmail: existingAccount.username,
+        previousEmail: existingAccount.email,
         ip: ipAddress
       });
       

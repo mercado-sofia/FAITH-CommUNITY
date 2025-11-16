@@ -102,79 +102,49 @@ function SuperAdminLayoutContent({ children }) {
           return;
         }
         
-        const token = localStorage.getItem('superAdminToken');
-        const superAdminData = localStorage.getItem('superAdminData');
-        const userRole = typeof document !== 'undefined' ? document.cookie.includes('userRole=superadmin') : false;
+        console.log('[Superadmin Layout] Initializing...');
+        console.log('[Superadmin Layout] Current cookies (visible):', document.cookie);
+        console.log('[Superadmin Layout] Note: httpOnly cookies (access_token, refresh_token) are not visible in document.cookie');
+        console.log('[Superadmin Layout] Check Application > Cookies in DevTools to see all cookies');
         
-        if (!token || !superAdminData || !userRole) {
-          // Use centralized immediate cleanup for security
-          clearAuthImmediate(USER_TYPES.SUPERADMIN);
-          window.location.href = '/login';
-          return;
-        }
-
-        // Validate token by making a test API call
-        // This will catch hardcoded tokens that are rejected in production
+        // Check auth status from backend (reads from httpOnly cookie)
         try {
-          const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-          let superadminId = null;
+          const { getCurrentUser } = await import('@/utils/authService');
+          console.log('[Superadmin Layout] Calling getCurrentUser...');
+          const userData = await getCurrentUser();
           
-          try {
-            const parsedData = JSON.parse(superAdminData);
-            superadminId = parsedData.id;
-          } catch (e) {
-            // Invalid JSON
+          console.log('[Superadmin Layout] Auth check result:', { 
+            hasUserData: !!userData, 
+            role: userData?.role,
+            userData: userData ? { id: userData.id, email: userData.email, role: userData.role } : null
+          });
+          
+          if (!userData || userData.role !== 'superadmin') {
+            console.warn('[Superadmin Layout] Auth check failed - redirecting to login', {
+              hasUserData: !!userData,
+              role: userData?.role,
+              expectedRole: 'superadmin'
+            });
             clearAuthImmediate(USER_TYPES.SUPERADMIN);
             window.location.href = '/login';
             return;
           }
 
-          if (!superadminId) {
+          // Store user data in localStorage for quick access (non-sensitive data only)
+          localStorage.setItem('superAdminData', JSON.stringify(userData));
+
+          // Set userRole cookie if not already set (for Next.js middleware in future)
+          if (typeof document !== 'undefined' && !document.cookie.includes('userRole=superadmin')) {
+            document.cookie = "userRole=superadmin; path=/; max-age=86400; SameSite=Lax";
+          }
+          
+          console.log('[Superadmin Layout] Auth check successful, superadmin authenticated');
+        } catch (error) {
+          console.error('[Superadmin Layout] Auth check error:', error);
+          // Auth check failed - redirect to login
             clearAuthImmediate(USER_TYPES.SUPERADMIN);
             window.location.href = '/login';
             return;
-          }
-
-          const testResponse = await fetch(
-            `${baseUrl}/api/superadmin/auth/profile/${superadminId}`,
-            {
-              method: 'GET',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
-
-          // If we get 401 or 403, token is invalid
-          if (testResponse.status === 401 || testResponse.status === 403) {
-            // Check if it's a hardcoded token rejection
-            try {
-              const errorData = await testResponse.json();
-              if (errorData.error && errorData.error.includes('Hardcoded token not allowed in production')) {
-                // Backend rejected hardcoded token - clear auth and redirect
-                clearAuthImmediate(USER_TYPES.SUPERADMIN);
-                window.location.href = '/login';
-                return;
-              }
-            } catch (e) {
-              // Can't parse error, treat as auth failure
-            }
-            clearAuthImmediate(USER_TYPES.SUPERADMIN);
-            window.location.href = '/login';
-            return;
-          }
-
-          // If response is not OK, token might be invalid
-          if (!testResponse.ok) {
-            clearAuthImmediate(USER_TYPES.SUPERADMIN);
-            window.location.href = '/login';
-            return;
-          }
-        } catch (apiError) {
-          // Network error or other issue - allow through but log it
-          console.warn('Token validation failed:', apiError);
-          // Don't block access on network errors - let individual pages handle it
         }
 
         setIsInitialLoading(false);

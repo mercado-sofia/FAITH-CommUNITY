@@ -1,10 +1,8 @@
-// db table: programs_projects
 import db from "../../database.js";
 import { sendToSubscribers } from './subscribersController.js';
 import { getOrganizationLogoUrl, getProgramImageUrl } from "../../utils/imageUrlUtils.js";
 import { calculateInitialStatusFromDates } from "../../utils/programStatusUtils.js";
 
-// ---------------- Helper: escape HTML ----------------
 function escapeHtml(str = "") {
   return String(str)
     .replaceAll("&", "&amp;")
@@ -12,10 +10,8 @@ function escapeHtml(str = "") {
     .replaceAll(">", "&gt;");
 }
 
-// Get programs for admin view (including collaboration data)
 export const getAdminPrograms = async (req, res) => {
   try {
-    // Handle both admin and superadmin tokens
     const currentAdminId = req.admin?.id || req.superadmin?.id;
     
     if (!currentAdminId) {
@@ -25,10 +21,8 @@ export const getAdminPrograms = async (req, res) => {
       });
     }
 
-    // Get programs where current admin is creator or collaborator
-    // First, get the admin's organization
     const [adminRows] = await db.execute(`
-      SELECT organization_id FROM admins WHERE id = ?
+      SELECT organization_id FROM users WHERE id = ? AND role = 'admin'
     `, [currentAdminId]);
     
     if (adminRows.length === 0) {
@@ -40,14 +34,13 @@ export const getAdminPrograms = async (req, res) => {
     
     const adminOrgId = adminRows[0].organization_id;
     
-    // Determine if post-act reports table exists to avoid SQL errors in environments without migration
+    // Check if post-act reports table exists to avoid SQL errors in environments without migration
     const [tableCheckRows] = await db.execute(
       `SELECT COUNT(*) as cnt FROM information_schema.tables 
         WHERE table_schema = DATABASE() AND table_name = 'program_post_act_reports'`
     );
     const hasPostActTable = tableCheckRows?.[0]?.cnt > 0;
 
-    // Build SELECT with optional flags depending on table availability
     const selectFlags = hasPostActTable
       ? `
         , EXISTS(SELECT 1 FROM program_post_act_reports r WHERE r.program_id = p.id AND r.status = 'pending') AS has_pending_post_act_report
@@ -82,9 +75,7 @@ export const getAdminPrograms = async (req, res) => {
 
     const [programRows] = await db.execute(baseQuery, [adminOrgId, currentAdminId]);
 
-    // Get collaboration data for each program
     const programsWithCollaboration = await Promise.all(programRows.map(async (program) => {
-      // Get multiple dates
       let multipleDates = [];
       if (program.event_start_date && program.event_end_date) {
         if (program.event_start_date === program.event_end_date) {
@@ -98,14 +89,12 @@ export const getAdminPrograms = async (req, res) => {
         multipleDates = dateRows.map(row => row.event_date);
       }
 
-      // Get additional images
       const [imageRows] = await db.execute(
         'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
         [program.id]
       );
       const additionalImages = imageRows.map(row => row.image_data);
 
-      // Get collaboration info for current admin
       const [collaborationRows] = await db.execute(`
         SELECT 
           pc.id as collaboration_id,
@@ -113,12 +102,11 @@ export const getAdminPrograms = async (req, res) => {
           a.email as collaborator_email,
           o.orgName as collaborator_org
         FROM program_collaborations pc
-        LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+        LEFT JOIN users a ON pc.collaborator_admin_id = a.id AND a.role = 'admin'
         LEFT JOIN organizations o ON a.organization_id = o.id
         WHERE pc.program_id = ? AND pc.collaborator_admin_id = ? AND o.status = 'ACTIVE'
       `, [program.id, currentAdminId]);
 
-      // Determine user's role in this program
       let userRole = 'creator';
       let collaborationStatus = null;
       
@@ -127,7 +115,7 @@ export const getAdminPrograms = async (req, res) => {
         collaborationStatus = collaborationRows[0].collaboration_status;
       }
 
-      // Get all collaborators for this program (excluding declined/opted-out ones and inactive organizations)
+      // Excluding declined/opted-out ones and inactive organizations
       const [allCollaborators] = await db.execute(`
         SELECT 
           a.id,
@@ -136,25 +124,20 @@ export const getAdminPrograms = async (req, res) => {
           o.org as organization_acronym,
           pc.status as collaboration_status
         FROM program_collaborations pc
-        LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+        LEFT JOIN users a ON pc.collaborator_admin_id = a.id AND a.role = 'admin'
         LEFT JOIN organizations o ON a.organization_id = o.id
         WHERE pc.program_id = ? AND pc.status IN ('accepted', 'pending') AND o.status = 'ACTIVE'
       `, [program.id]);
 
-      // For creators, determine overall collaboration status based on all collaborators
       if (userRole === 'creator' && program.is_collaborative) {
-        // Check if there are any pending collaborations
         const hasPending = allCollaborators.some(c => c.collaboration_status === 'pending');
         const hasAccepted = allCollaborators.some(c => c.collaboration_status === 'accepted');
         
         if (hasPending) {
-          // Some collaborators haven't responded yet
           collaborationStatus = 'pending';
         } else if (hasAccepted) {
-          // All collaborators have responded and at least one accepted
           collaborationStatus = 'accepted';
         } else {
-          // All declined (shouldn't happen if filtering correctly, but handle it)
           collaborationStatus = 'declined';
         }
       }
@@ -275,11 +258,9 @@ export const getProgramsByOrg = async (req, res) => {
       // If program has event_start_date and event_end_date, check if they're the same (single day)
       if (program.event_start_date && program.event_end_date) {
         if (program.event_start_date === program.event_end_date) {
-          // Single day program
           multipleDates = [program.event_start_date];
         }
       } else {
-        // Check for multiple dates in program_event_dates table
         const [dateRows] = await db.execute(
           'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
           [program.id]
@@ -287,7 +268,6 @@ export const getProgramsByOrg = async (req, res) => {
         multipleDates = dateRows.map(row => row.event_date);
       }
 
-      // Get additional images for this program
       const [imageRows] = await db.execute(
         'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
         [program.id]
@@ -362,11 +342,9 @@ export const getApprovedPrograms = async (req, res) => {
       // If program has event_start_date and event_end_date, check if they're the same (single day)
       if (program.event_start_date && program.event_end_date) {
         if (program.event_start_date === program.event_end_date) {
-          // Single day program
           multipleDates = [program.event_start_date];
         }
       } else {
-        // Check for multiple dates in program_event_dates table
         const [dateRows] = await db.execute(
           'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
           [program.id]
@@ -374,7 +352,6 @@ export const getApprovedPrograms = async (req, res) => {
         multipleDates = dateRows.map(row => row.event_date);
       }
 
-      // Get additional images for this program
       const [imageRows] = await db.execute(
         'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
         [program.id]
@@ -390,7 +367,7 @@ export const getApprovedPrograms = async (req, res) => {
             o.org as organization_acronym,
             o.logo as organization_logo
           FROM program_collaborations pc
-          LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+          LEFT JOIN users a ON pc.collaborator_admin_id = a.id AND a.role = 'admin'
           LEFT JOIN organizations o ON a.organization_id = o.id
           WHERE pc.program_id = ? AND pc.status = 'accepted' AND o.status = 'ACTIVE'
           ORDER BY o.orgName ASC
@@ -517,11 +494,9 @@ export const getApprovedProgramsByOrg = async (req, res) => {
       // If program has event_start_date and event_end_date, check if they're the same (single day)
       if (program.event_start_date && program.event_end_date) {
         if (program.event_start_date === program.event_end_date) {
-          // Single day program
           multipleDates = [program.event_start_date];
         }
       } else {
-        // Check for multiple dates in program_event_dates table
         const [dateRows] = await db.execute(
           'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
           [program.id]
@@ -529,7 +504,6 @@ export const getApprovedProgramsByOrg = async (req, res) => {
         multipleDates = dateRows.map(row => row.event_date);
       }
 
-      // Get additional images for this program
       const [imageRows] = await db.execute(
         'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
         [program.id]
@@ -1244,7 +1218,7 @@ export const getAllFeaturedPrograms = async (req, res) => {
                 -- Collaborator organizations (those who accepted collaboration)
                 SELECT o.id as org_id, 'collaborator' as role
                 FROM program_collaborations pc
-                LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+                LEFT JOIN users a ON pc.collaborator_admin_id = a.id AND a.role = 'admin'
                 LEFT JOIN organizations o ON a.organization_id = o.id
                 WHERE pc.program_id = ? AND pc.status = 'accepted'
               ) org_roles
@@ -1264,9 +1238,9 @@ export const getAllFeaturedPrograms = async (req, res) => {
                 if (collab.role === 'primary') {
                   // For primary, get the admin who created the program
                   const [adminRows] = await db.execute(`
-                    SELECT a.id, a.email
-                    FROM admins a
-                    WHERE a.organization_id = ? AND a.is_active = TRUE
+                    SELECT u.id, u.email
+                    FROM users u
+                    WHERE u.organization_id = ? AND u.role = 'admin' AND u.is_active = TRUE
                     LIMIT 1
                   `, [program.organization_id]);
                   return {
@@ -1284,7 +1258,7 @@ export const getAllFeaturedPrograms = async (req, res) => {
                   const [adminRows] = await db.execute(`
                     SELECT a.id, a.email
                     FROM program_collaborations pc
-                    LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+                    LEFT JOIN users a ON pc.collaborator_admin_id = a.id AND a.role = 'admin'
                     LEFT JOIN organizations o ON a.organization_id = o.id
                     WHERE pc.program_id = ? AND o.orgName = ? AND pc.status = 'accepted'
                     LIMIT 1
@@ -1400,11 +1374,9 @@ export const getFeaturedPrograms = async (req, res) => {
       // If program has event_start_date and event_end_date, check if they're the same (single day)
       if (program.event_start_date && program.event_end_date) {
         if (program.event_start_date === program.event_end_date) {
-          // Single day program
           multipleDates = [program.event_start_date];
         }
       } else {
-        // Check for multiple dates in program_event_dates table
         const [dateRows] = await db.execute(
           'SELECT event_date FROM program_event_dates WHERE program_id = ? ORDER BY event_date ASC',
           [program.id]
@@ -1412,7 +1384,6 @@ export const getFeaturedPrograms = async (req, res) => {
         multipleDates = dateRows.map(row => row.event_date);
       }
 
-      // Get additional images for this program
       const [imageRows] = await db.execute(
         'SELECT image_data FROM program_additional_images WHERE program_id = ? ORDER BY image_order ASC',
         [program.id]
@@ -1442,7 +1413,7 @@ export const getFeaturedPrograms = async (req, res) => {
             -- Collaborator organizations (those who accepted collaboration)
             SELECT o.id as org_id, 'collaborator' as role
             FROM program_collaborations pc
-            LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+            LEFT JOIN users a ON pc.collaborator_admin_id = a.id AND a.role = 'admin'
             LEFT JOIN organizations o ON a.organization_id = o.id
             WHERE pc.program_id = ? AND pc.status = 'accepted'
           ) org_roles
@@ -1592,7 +1563,7 @@ export const getProgramBySlug = async (req, res) => {
           o.org as organization_acronym,
           o.logo as organization_logo
         FROM program_collaborations pc
-        LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+        LEFT JOIN users a ON pc.collaborator_admin_id = a.id AND a.role = 'admin'
         LEFT JOIN organizations o ON a.organization_id = o.id
         WHERE pc.program_id = ? AND pc.status = 'accepted' AND o.status = 'ACTIVE'
         ORDER BY o.orgName ASC
@@ -1734,7 +1705,7 @@ export const addProgramProject = async (req, res) => {
 
   // Get the admin's organization ID
   const [adminRows] = await db.execute(`
-    SELECT organization_id FROM admins WHERE id = ?
+    SELECT organization_id FROM users WHERE id = ? AND role = 'admin'
   `, [currentAdminId]);
   
   if (adminRows.length === 0) {
@@ -1872,7 +1843,7 @@ export const addProgramProject = async (req, res) => {
       const SuperAdminNotificationController = (await import('../../superadmin/controllers/superadminNotificationController.js')).default;
       
       // Get superadmin ID
-      const [superadminRows] = await db.execute("SELECT id FROM superadmin LIMIT 1");
+      const [superadminRows] = await db.execute("SELECT id FROM users WHERE role = 'superadmin' LIMIT 1");
       const superadminId = superadminRows.length > 0 ? superadminRows[0].id : null;
       
       if (superadminId) {
@@ -2140,7 +2111,7 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
                   -- Collaborator organizations (those who accepted collaboration)
                   SELECT o.id as org_id, 'collaborator' as role
                   FROM program_collaborations pc
-                  LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+                  LEFT JOIN users a ON pc.collaborator_admin_id = a.id AND a.role = 'admin'
                   LEFT JOIN organizations o ON a.organization_id = o.id
                   WHERE pc.program_id = ? AND pc.status = 'accepted'
                 ) org_roles
@@ -2160,9 +2131,9 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
                   if (collab.role === 'primary') {
                     // For primary, get the admin who created the program
                     const [adminRows] = await db.execute(`
-                      SELECT a.id, a.email
-                      FROM admins a
-                      WHERE a.organization_id = ? AND a.is_active = TRUE
+                      SELECT u.id, u.email
+                      FROM users u
+                      WHERE u.organization_id = ? AND u.role = 'admin' AND u.is_active = TRUE
                       LIMIT 1
                     `, [program.organization_id]);
                     return {
@@ -2180,7 +2151,7 @@ export const getAllProgramsForSuperadmin = async (req, res) => {
                     const [adminRows] = await db.execute(`
                       SELECT a.id, a.email
                       FROM program_collaborations pc
-                      LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+                      LEFT JOIN users a ON pc.collaborator_admin_id = a.id AND a.role = 'admin'
                       LEFT JOIN organizations o ON a.organization_id = o.id
                       WHERE pc.program_id = ? AND o.orgName = ? AND pc.status = 'accepted'
                       LIMIT 1

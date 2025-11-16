@@ -1,4 +1,3 @@
-//db table: users, user_notifications
 import * as bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { getOrganizationLogoUrl } from '../../utils/imageUrlUtils.js';
@@ -9,6 +8,7 @@ import {
   findValidRefreshToken,
   revokeAllUserRefreshTokens,
   revokeRefreshToken,
+  getAccessTokenCookieOptions,
   getRefreshCookieOptions,
 } from '../../utils/jwt.js';
 import crypto from 'crypto';
@@ -54,32 +54,21 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ error: 'Invalid gender value' });
     }
 
-    // Check if email exists in admins table
-    const [existingAdmin] = await db.query(
-      'SELECT id FROM admins WHERE email = ?',
-      [email]
-    );
-    if (existingAdmin.length > 0) {
-      return res.status(409).json({ error: 'This email is already registered as an admin' });
-    }
-
-    // Check if email exists in superadmin table (username is used as email)
-    const [existingSuperadmin] = await db.query(
-      'SELECT id FROM superadmin WHERE username = ?',
-      [email]
-    );
-    if (existingSuperadmin.length > 0) {
-      return res.status(409).json({ error: 'This email is already registered as a superadmin' });
-    }
-
-    // Check if user already exists
-    const [existingUsers] = await db.query(
-      'SELECT id FROM users WHERE email = ?',
+    // Check if email already exists in unified users table
+    const [existingUser] = await db.query(
+      'SELECT id, role FROM users WHERE email = ?',
       [email]
     );
 
-    if (existingUsers.length > 0) {
-      return res.status(409).json({ error: 'User with this email already exists' });
+    if (existingUser.length > 0) {
+      const role = existingUser[0].role;
+      if (role === 'admin') {
+        return res.status(409).json({ error: 'This email is already registered as an admin' });
+      } else if (role === 'superadmin') {
+        return res.status(409).json({ error: 'This email is already registered as a superadmin' });
+      } else {
+        return res.status(409).json({ error: 'User with this email already exists' });
+      }
     }
 
     // Hash password
@@ -125,23 +114,29 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ error: 'Birth date is required' });
     }
 
-    // Generate verification token
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
 
-    // Insert new user with verification token
+    // Insert new user into unified users table with verification token
     const [result] = await db.query(
       `INSERT INTO users (
-        first_name, last_name, email, contact_number, gender, 
-        address, birth_date, password_hash, verification_token, 
-        verification_token_expires, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-      [firstName, lastName, email, contactNumber, gender, address, formattedBirthDate, hashedPassword, verificationToken, verificationExpires]
+        email, password_hash, role, verification_token, 
+        verification_token_expires, email_verified, created_at
+      ) VALUES (?, ?, 'user', ?, ?, FALSE, NOW())`,
+      [email, hashedPassword, verificationToken, verificationExpires]
     );
 
     const userId = result.insertId;
 
-    // Send verification email
+    // Insert profile data into user_profiles table
+    await db.query(
+      `INSERT INTO user_profiles (
+        user_id, first_name, last_name, contact_number, gender, 
+        address, birth_date, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [userId, firstName, lastName, contactNumber, gender, address, formattedBirthDate]
+    );
+
     try {
       const { sendMail } = await import('../../utils/mailer.js');
       
@@ -215,17 +210,15 @@ export const registerUser = async (req, res) => {
   }
 };
 
-// User login
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
     const ipAddress = getClientIpAddress(req);
 
-    // Check failed login attempts BEFORE attempting login
     const failedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'user');
+    const maxAttempts = LoginAttemptTracker.getMaxAttempts();
     
-    // Block for 5 minutes after 7 failed attempts
-    if (failedAttempts >= 7) {
+    if (failedAttempts >= maxAttempts) {
       const remainingSeconds = await LoginAttemptTracker.getLockoutTimeRemaining(email, ipAddress, 'user');
       const remainingMinutes = Math.ceil(remainingSeconds / 60);
       
@@ -234,31 +227,35 @@ export const loginUser = async (req, res) => {
         retryAfter: `${remainingMinutes} minutes`,
         remainingSeconds: remainingSeconds,
         attempts: failedAttempts,
-        maxAttempts: 7
+        maxAttempts: maxAttempts
       });
     }
 
-    // Find user by email
+    // Find user by email with profile data
     const [users] = await db.query(
-      'SELECT * FROM users WHERE email = ?',
+      `SELECT u.*, up.first_name, up.last_name, up.contact_number, up.gender, 
+              up.address, up.birth_date, up.occupation, up.citizenship, 
+              up.profile_photo_url, up.newsletter_subscribed
+       FROM users u
+       LEFT JOIN user_profiles up ON u.id = up.user_id
+       WHERE u.email = ? AND u.role = 'user'`,
       [email]
     );
 
     if (users.length === 0) {
-      // Track failed attempt - user not found
       await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'user');
       await SecurityMonitoring.logSecurityEvent('failed_login', 'warn', { email, reason: 'user_not_found' }, req);
       const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'user');
+      const maxAttempts = LoginAttemptTracker.getMaxAttempts();
       return res.status(401).json({ 
         error: 'Invalid email or password',
         attempts: newFailedAttempts,
-        remainingAttempts: Math.max(0, 7 - newFailedAttempts)
+        remainingAttempts: Math.max(0, maxAttempts - newFailedAttempts)
       });
     }
 
     const user = users[0];
 
-    // Check if account is active
     if (user.is_active === 0 || user.is_active === false) {
       await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'user');
       await SecurityMonitoring.logSecurityEvent('failed_login', 'warn', { email, reason: 'account_inactive' }, req);
@@ -268,17 +265,16 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
-      // Track failed attempt - invalid password
       await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'user');
       await SecurityMonitoring.logSecurityEvent('failed_login', 'warn', { email, reason: 'invalid_password' }, req);
       const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'user');
+      const maxAttempts = LoginAttemptTracker.getMaxAttempts();
       return res.status(401).json({ 
         error: 'Invalid email or password',
         attempts: newFailedAttempts,
-        remainingAttempts: Math.max(0, 7 - newFailedAttempts)
+        remainingAttempts: Math.max(0, maxAttempts - newFailedAttempts)
       });
     }
 
@@ -297,22 +293,22 @@ export const loginUser = async (req, res) => {
       ipAddress: getClientIpAddress(req),
     })
 
-    // Clear failed login attempts on successful login (reset counter)
     await LoginAttemptTracker.clearFailedAttempts(email, ipAddress, 'user');
     
-    // Log successful login
     await SecurityMonitoring.logSecurityEvent('successful_login', 'info', { email, userId: user.id }, req);
 
-    // Update last login
     await db.query(
       'UPDATE users SET last_login = NOW() WHERE id = ?',
       [user.id]
     );
 
+    // Set both tokens as httpOnly cookies (secure - not accessible to JavaScript)
+    res.cookie('access_token', accessToken, getAccessTokenCookieOptions())
     res.cookie('refresh_token', refreshToken, getRefreshCookieOptions())
+    
+    // Don't return token in response body - it's in httpOnly cookie now
     res.json({
       message: 'Login successful',
-      token: accessToken,
       user: {
         id: user.id,
         firstName: user.first_name,
@@ -330,7 +326,18 @@ export const loginUser = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    logError('Login error', error, { context: 'user_controller', email: req.body?.email });
+    console.error('Login error details:', {
+      message: error.message,
+      code: error.code,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage,
+      stack: error.stack
+    });
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -340,7 +347,12 @@ export const getUserProfile = async (req, res) => {
     const userId = req.user.id;
 
     const [users] = await db.query(
-      'SELECT * FROM users WHERE id = ?',
+      `SELECT u.*, up.first_name, up.last_name, up.contact_number, up.gender, 
+              up.address, up.birth_date, up.occupation, up.citizenship, 
+              up.profile_photo_url, up.newsletter_subscribed
+       FROM users u
+       LEFT JOIN user_profiles up ON u.id = up.user_id
+       WHERE u.id = ? AND u.role = 'user'`,
       [userId]
     );
 
@@ -365,6 +377,7 @@ export const getUserProfile = async (req, res) => {
         citizenship: user.citizenship,
         newsletterSubscribed: Boolean(user.newsletter_subscribed),
         createdAt: user.created_at,
+        passwordChangedAt: user.password_changed_at,
         lastLogin: user.last_login
       }
     });
@@ -389,14 +402,20 @@ export const updateUserProfile = async (req, res) => {
       citizenship
     } = req.body;
 
-    // Update user profile
+    // Update user profile in user_profiles table
     await db.query(
-      `UPDATE users SET 
+      `UPDATE user_profiles SET 
         first_name = ?, last_name = ?, contact_number = ?, 
         gender = ?, address = ?, birth_date = ?, 
         occupation = ?, citizenship = ?, updated_at = NOW()
-      WHERE id = ?`,
+      WHERE user_id = ?`,
       [firstName, lastName, contactNumber, gender, address, birthDate, occupation, citizenship, userId]
+    );
+
+    // Update users table updated_at
+    await db.query(
+      `UPDATE users SET updated_at = NOW() WHERE id = ?`,
+      [userId]
     );
 
     res.json({ message: 'Profile updated successfully' });
@@ -445,7 +464,10 @@ export const uploadProfilePhoto = async (req, res) => {
     let users;
     try {
       [users] = await db.query(
-        'SELECT * FROM users WHERE id = ?',
+        `SELECT u.*, up.profile_photo_url 
+         FROM users u
+         LEFT JOIN user_profiles up ON u.id = up.user_id
+         WHERE u.id = ? AND u.role = 'user'`,
         [userId]
       );
     } catch (dbError) {
@@ -483,11 +505,16 @@ export const uploadProfilePhoto = async (req, res) => {
 
     const profilePhotoUrl = uploadResult.url;
 
-    // Update user's profile_photo_url in database
+    // Update user's profile_photo_url in user_profiles table
     try {
       await db.query(
-        'UPDATE users SET profile_photo_url = ?, updated_at = NOW() WHERE id = ?',
+        'UPDATE user_profiles SET profile_photo_url = ?, updated_at = NOW() WHERE user_id = ?',
         [profilePhotoUrl, userId]
+      );
+      // Update users table updated_at
+      await db.query(
+        'UPDATE users SET updated_at = NOW() WHERE id = ?',
+        [userId]
       );
     } catch (dbError) {
       throw new Error(`Database update failed: ${dbError.message}`);
@@ -497,7 +524,12 @@ export const uploadProfilePhoto = async (req, res) => {
     let updatedUsers;
     try {
       [updatedUsers] = await db.query(
-        'SELECT * FROM users WHERE id = ?',
+        `SELECT u.*, up.first_name, up.last_name, up.contact_number, up.gender, 
+                up.address, up.birth_date, up.occupation, up.citizenship, 
+                up.profile_photo_url
+         FROM users u
+         LEFT JOIN user_profiles up ON u.id = up.user_id
+         WHERE u.id = ? AND u.role = 'user'`,
         [userId]
       );
     } catch (dbError) {
@@ -553,7 +585,10 @@ export const removeProfilePhoto = async (req, res) => {
     
     // Get current profile photo URL
     const [users] = await db.query(
-      'SELECT profile_photo_url FROM users WHERE id = ?',
+      `SELECT up.profile_photo_url 
+       FROM users u
+       LEFT JOIN user_profiles up ON u.id = up.user_id
+       WHERE u.id = ? AND u.role = 'user'`,
       [userId]
     );
     
@@ -576,15 +611,25 @@ export const removeProfilePhoto = async (req, res) => {
       }
     }
     
-    // Update user's profile_photo_url to null in database
+    // Update user's profile_photo_url to null in user_profiles table
     await db.query(
-      'UPDATE users SET profile_photo_url = NULL, updated_at = NOW() WHERE id = ?',
+      'UPDATE user_profiles SET profile_photo_url = NULL, updated_at = NOW() WHERE user_id = ?',
+      [userId]
+    );
+    // Update users table updated_at
+    await db.query(
+      'UPDATE users SET updated_at = NOW() WHERE id = ?',
       [userId]
     );
     
     // Get updated user data
     const [updatedUsers] = await db.query(
-      'SELECT * FROM users WHERE id = ?',
+      `SELECT u.*, up.first_name, up.last_name, up.contact_number, up.gender, 
+              up.address, up.birth_date, up.occupation, up.citizenship, 
+              up.profile_photo_url
+       FROM users u
+       LEFT JOIN user_profiles up ON u.id = up.user_id
+       WHERE u.id = ? AND u.role = 'user'`,
       [userId]
     );
     
@@ -631,7 +676,10 @@ export const requestEmailChange = async (req, res) => {
 
     // Get current user data
     const [users] = await db.query(
-      'SELECT email, password_hash, first_name, last_name FROM users WHERE id = ?',
+      `SELECT u.email, u.password_hash, up.first_name, up.last_name 
+       FROM users u
+       LEFT JOIN user_profiles up ON u.id = up.user_id
+       WHERE u.id = ? AND u.role = 'user'`,
       [userId]
     );
 
@@ -792,7 +840,10 @@ export const changePassword = async (req, res) => {
 
     // Get current password hash and user details
     const [users] = await db.query(
-      'SELECT password_hash, email, first_name, last_name FROM users WHERE id = ? AND is_active = 1',
+      `SELECT u.password_hash, u.email, up.first_name, up.last_name 
+       FROM users u
+       LEFT JOIN user_profiles up ON u.id = up.user_id
+       WHERE u.id = ? AND u.is_active = 1 AND u.role = 'user'`,
       [userId]
     );
 
@@ -812,17 +863,17 @@ export const changePassword = async (req, res) => {
 
     // Update password
     await db.query(
-      'UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?',
+      'UPDATE users SET password_hash = ?, password_changed_at = NOW(), updated_at = NOW() WHERE id = ?',
       [hashedNewPassword, userId]
     );
 
-    // Revoke all existing refresh tokens and clear cookie
+    // Revoke all existing refresh tokens and clear both cookies
     try {
       await revokeAllUserRefreshTokens(userId)
     } catch {}
-    if (res.clearCookie) {
+    // Clear both cookies
+    res.clearCookie('access_token', { path: '/' })
       res.clearCookie('refresh_token', { path: '/' })
-    }
 
     // Send password change notification
     try {
@@ -852,7 +903,10 @@ export const subscribeToNewsletter = async (req, res) => {
 
     // Get user details
     const [users] = await db.query(
-      'SELECT email, newsletter_subscribed FROM users WHERE id = ?',
+      `SELECT u.email, up.newsletter_subscribed 
+       FROM users u
+       LEFT JOIN user_profiles up ON u.id = up.user_id
+       WHERE u.id = ? AND u.role = 'user'`,
       [userId]
     );
 
@@ -866,9 +920,14 @@ export const subscribeToNewsletter = async (req, res) => {
       return res.status(400).json({ error: 'You are already subscribed to the newsletter' });
     }
 
-    // Update user's newsletter subscription status
+    // Update user's newsletter subscription status in user_profiles table
     await db.query(
-      'UPDATE users SET newsletter_subscribed = 1, updated_at = NOW() WHERE id = ?',
+      'UPDATE user_profiles SET newsletter_subscribed = 1, updated_at = NOW() WHERE user_id = ?',
+      [userId]
+    );
+    // Update users table updated_at
+    await db.query(
+      'UPDATE users SET updated_at = NOW() WHERE id = ?',
       [userId]
     );
 
@@ -904,7 +963,10 @@ export const unsubscribeFromNewsletter = async (req, res) => {
 
     // Get user details
     const [users] = await db.query(
-      'SELECT email, newsletter_subscribed FROM users WHERE id = ?',
+      `SELECT u.email, up.newsletter_subscribed 
+       FROM users u
+       LEFT JOIN user_profiles up ON u.id = up.user_id
+       WHERE u.id = ? AND u.role = 'user'`,
       [userId]
     );
 
@@ -918,9 +980,14 @@ export const unsubscribeFromNewsletter = async (req, res) => {
       return res.status(400).json({ error: 'You are not subscribed to the newsletter' });
     }
 
-    // Update user's newsletter subscription status
+    // Update user's newsletter subscription status in user_profiles table
     await db.query(
-      'UPDATE users SET newsletter_subscribed = 0, updated_at = NOW() WHERE id = ?',
+      'UPDATE user_profiles SET newsletter_subscribed = 0, updated_at = NOW() WHERE user_id = ?',
+      [userId]
+    );
+    // Update users table updated_at
+    await db.query(
+      'UPDATE users SET updated_at = NOW() WHERE id = ?',
       [userId]
     );
 
@@ -946,7 +1013,10 @@ export const getNewsletterStatus = async (req, res) => {
     const userId = req.user.id;
 
     const [users] = await db.query(
-      'SELECT newsletter_subscribed FROM users WHERE id = ?',
+      `SELECT up.newsletter_subscribed 
+       FROM users u
+       LEFT JOIN user_profiles up ON u.id = up.user_id
+       WHERE u.id = ? AND u.role = 'user'`,
       [userId]
     );
 
@@ -963,14 +1033,12 @@ export const getNewsletterStatus = async (req, res) => {
   }
 };
 
-// User logout
+// Unified logout - works for all roles (user, admin, superadmin)
 export const logoutUser = async (req, res) => {
   try {
-    // In a stateless JWT system, logout is typically handled client-side
-    // by removing the token from storage. However, we can log the logout
-    // and update the last_login timestamp if needed.
+    // Get user from token (works for all roles with unified users table)
+    const userId = req.user?.id || req.admin?.id || req.superadmin?.id;
     
-    const userId = req.user?.id;
     if (userId) {
       // Update last login timestamp (optional)
       await db.query(
@@ -983,8 +1051,11 @@ export const logoutUser = async (req, res) => {
     const presented = req.cookies?.refresh_token
     if (presented) {
       await revokeRefreshToken(presented)
-      res.clearCookie('refresh_token', { path: '/' })
     }
+
+    // Clear both cookies (works for all roles)
+    res.clearCookie('access_token', { path: '/' })
+    res.clearCookie('refresh_token', { path: '/' })
 
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
@@ -992,7 +1063,7 @@ export const logoutUser = async (req, res) => {
   }
 };
 
-// Refresh access token
+// Unified refresh access token - works for all roles (user, admin, superadmin)
 export const refreshAccessToken = async (req, res) => {
   try {
     const presented = req.cookies?.refresh_token
@@ -1001,17 +1072,53 @@ export const refreshAccessToken = async (req, res) => {
     const record = await findValidRefreshToken(presented)
     if (!record) return res.status(401).json({ error: 'Invalid or expired refresh token' })
 
-    const [users] = await db.query('SELECT id, email FROM users WHERE id = ?', [record.user_id])
+    // Get user from unified users table - works for all roles!
+    const [users] = await db.query(
+      'SELECT id, email, role, organization_id FROM users WHERE id = ?',
+      [record.user_id]
+    )
+    
     if (users.length === 0) return res.status(401).json({ error: 'User not found' })
 
-    // Rotate refresh token and issue new access
+    const user = users[0]
+
+    // Rotate refresh token
     const { token: newRefresh } = await rotateRefreshToken(presented, record.user_id, {
       userAgent: req.headers['user-agent'],
       ipAddress: getClientIpAddress(req),
     })
-    const accessToken = signAccessToken({ id: record.user_id, email: users[0].email, role: 'user' })
+
+    // Generate access token based on role (unified approach!)
+    let accessTokenPayload = {
+      id: user.id,
+      email: user.email,
+      role: user.role
+    }
+
+    // Add role-specific fields
+    if (user.role === 'admin' && user.organization_id) {
+      // Get admin organization details
+      const [orgs] = await db.query(
+        'SELECT org, orgName, logo FROM organizations WHERE id = ?',
+        [user.organization_id]
+      )
+      if (orgs.length > 0) {
+        accessTokenPayload.organization_id = user.organization_id
+        accessTokenPayload.org = orgs[0].org
+        accessTokenPayload.orgName = orgs[0].orgName
+      }
+    }
+
+    const accessToken = signAccessToken(accessTokenPayload)
+
+    // Set both new tokens as httpOnly cookies
+    res.cookie('access_token', accessToken, getAccessTokenCookieOptions())
     res.cookie('refresh_token', newRefresh, getRefreshCookieOptions())
-    res.json({ token: accessToken })
+    
+    res.json({ 
+      message: 'Token refreshed successfully',
+      role: user.role // Return role so frontend knows which type
+    })
   } catch (e) {
     res.status(500).json({ error: 'Internal server error' })
   }
@@ -1028,7 +1135,7 @@ export const verifyEmail = async (req, res) => {
 
     // Find user with this verification token
     const [users] = await db.query(
-      'SELECT id, email, verification_token, verification_token_expires FROM users WHERE verification_token = ?',
+      'SELECT id, email, verification_token, verification_token_expires FROM users WHERE verification_token = ? AND role = \'user\'',
       [token]
     );
 
@@ -1070,7 +1177,10 @@ export const resendVerificationEmail = async (req, res) => {
 
     // Find user by email
     const [users] = await db.query(
-      'SELECT id, first_name, email, email_verified FROM users WHERE email = ?',
+      `SELECT u.id, up.first_name, u.email, u.email_verified 
+       FROM users u
+       LEFT JOIN user_profiles up ON u.id = up.user_id
+       WHERE u.email = ? AND u.role = 'user'`,
       [email]
     );
 
@@ -1094,7 +1204,6 @@ export const resendVerificationEmail = async (req, res) => {
       [verificationToken, verificationExpires, user.id]
     );
 
-    // Send verification email
     try {
       const { sendMail } = await import('../../utils/mailer.js');
       
@@ -1133,10 +1242,245 @@ export const resendVerificationEmail = async (req, res) => {
   }
 };
 
+// Check authentication status (for frontend to verify if user is logged in)
+// Works for all roles (user, admin, superadmin) using unified users table
+export const checkAuthStatus = async (req, res) => {
+  try {
+    // Debug: Log cookie presence
+    const hasAccessCookie = !!req.cookies?.access_token;
+    const hasRefreshCookie = !!req.cookies?.refresh_token;
+    const cookieNames = req.cookies ? Object.keys(req.cookies) : [];
+    const allCookies = req.cookies || {};
+    
+    console.log('[checkAuthStatus] Request received', {
+      hasAccessCookie,
+      hasRefreshCookie,
+      cookieNames,
+      allCookies: Object.keys(allCookies),
+      hasAuthHeader: !!req.headers.authorization,
+      origin: req.headers.origin,
+      referer: req.headers.referer
+    });
+    
+    const token = req.cookies?.access_token || req.headers.authorization?.split(' ')[1];
+    
+    if (!token) {
+      // Debug logging
+      console.log('[checkAuthStatus] No token found', {
+        hasAccessCookie,
+        hasRefreshCookie,
+        cookieNames,
+        hasAuthHeader: !!req.headers.authorization,
+        cookiesReceived: Object.keys(allCookies)
+      });
+      return res.json({ authenticated: false });
+    }
+
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'change-me-in-env', {
+        issuer: process.env.JWT_ISS || 'faith-community-api',
+        audience: process.env.JWT_AUD || 'faith-community-client'
+      });
+      
+      console.log('[checkAuthStatus] Token decoded successfully:', { 
+        id: decoded.id, 
+        email: decoded.email, 
+        role: decoded.role 
+      });
+      
+      // Get user from unified table
+      const [users] = await db.query(
+        'SELECT id, email, role, organization_id FROM users WHERE id = ?',
+        [decoded.id]
+      );
+
+      console.log('[checkAuthStatus] Database query result:', { 
+        userCount: users.length,
+        user: users[0] ? { id: users[0].id, email: users[0].email, role: users[0].role } : null
+      });
+
+      if (users.length === 0) {
+        console.log('[checkAuthStatus] User not found in database for id:', decoded.id);
+        return res.json({ authenticated: false });
+      }
+
+      const user = users[0];
+      let userData = { id: user.id, email: user.email, role: user.role };
+      
+      console.log('[checkAuthStatus] User data prepared:', userData);
+
+      // Get role-specific data
+      if (user.role === 'user') {
+        const [profiles] = await db.query(
+          `SELECT first_name, last_name, contact_number, gender, address, 
+                  birth_date, occupation, citizenship, profile_photo_url, newsletter_subscribed
+           FROM user_profiles WHERE user_id = ?`,
+          [user.id]
+        );
+        if (profiles.length > 0) {
+          const p = profiles[0];
+          userData = {
+            ...userData,
+            firstName: p.first_name,
+            lastName: p.last_name,
+            contactNumber: p.contact_number,
+            gender: p.gender,
+            address: p.address,
+            birthDate: p.birth_date,
+            occupation: p.occupation,
+            citizenship: p.citizenship,
+            profile_photo_url: p.profile_photo_url,
+            newsletterSubscribed: Boolean(p.newsletter_subscribed)
+          };
+        }
+      } else if (user.role === 'admin' && user.organization_id) {
+        const [orgs] = await db.query(
+          'SELECT org, orgName, logo FROM organizations WHERE id = ?',
+          [user.organization_id]
+        );
+        if (orgs.length > 0) {
+          userData = {
+            ...userData,
+            organization_id: user.organization_id,
+            org: orgs[0].org,
+            orgName: orgs[0].orgName,
+            logo: orgs[0].logo
+          };
+        }
+      }
+      
+      console.log('[checkAuthStatus] Returning authenticated user:', { 
+        authenticated: true, 
+        role: userData.role,
+        hasOrgData: !!userData.organization_id
+      });
+      
+      return res.json({
+        authenticated: true,
+        user: userData
+      });
+    } catch (error) {
+      // Token invalid or expired - try to refresh automatically
+      console.log('[checkAuthStatus] Token verification failed:', error.name, error.message);
+      const refreshToken = req.cookies?.refresh_token;
+      if (refreshToken) {
+        try {
+          const record = await findValidRefreshToken(refreshToken);
+          if (record) {
+            // Get user from unified table
+            const [users] = await db.query(
+              'SELECT id, email, role, organization_id FROM users WHERE id = ?',
+              [record.user_id]
+            );
+            
+            if (users.length > 0) {
+              const user = users[0];
+              
+              // Rotate refresh token
+              const { token: newRefresh } = await rotateRefreshToken(refreshToken, record.user_id, {
+                userAgent: req.headers['user-agent'],
+                ipAddress: getClientIpAddress(req),
+              });
+              
+              // Generate new access token
+              let accessTokenPayload = {
+                id: user.id,
+                email: user.email,
+                role: user.role
+              };
+              
+              // Add role-specific fields
+              if (user.role === 'admin' && user.organization_id) {
+                const [orgs] = await db.query(
+                  'SELECT org, orgName, logo FROM organizations WHERE id = ?',
+                  [user.organization_id]
+                );
+                if (orgs.length > 0) {
+                  accessTokenPayload.organization_id = user.organization_id;
+                  accessTokenPayload.org = orgs[0].org;
+                  accessTokenPayload.orgName = orgs[0].orgName;
+                }
+              }
+              
+              const accessToken = signAccessToken(accessTokenPayload);
+              
+              // Set both new tokens as httpOnly cookies
+              res.cookie('access_token', accessToken, getAccessTokenCookieOptions());
+              res.cookie('refresh_token', newRefresh, getRefreshCookieOptions());
+              
+              // Get user data (same logic as above)
+              let userData = { id: user.id, email: user.email, role: user.role };
+              
+              if (user.role === 'user') {
+                const [profiles] = await db.query(
+                  `SELECT first_name, last_name, contact_number, gender, address, 
+                          birth_date, occupation, citizenship, profile_photo_url, newsletter_subscribed
+                   FROM user_profiles WHERE user_id = ?`,
+                  [user.id]
+                );
+                if (profiles.length > 0) {
+                  const p = profiles[0];
+                  userData = {
+                    ...userData,
+                    firstName: p.first_name,
+                    lastName: p.last_name,
+                    contactNumber: p.contact_number,
+                    gender: p.gender,
+                    address: p.address,
+                    birthDate: p.birth_date,
+                    occupation: p.occupation,
+                    citizenship: p.citizenship,
+                    profile_photo_url: p.profile_photo_url,
+                    newsletterSubscribed: Boolean(p.newsletter_subscribed)
+                  };
+                }
+              } else if (user.role === 'admin' && user.organization_id) {
+                const [orgs] = await db.query(
+                  'SELECT org, orgName, logo FROM organizations WHERE id = ?',
+                  [user.organization_id]
+                );
+                if (orgs.length > 0) {
+                  userData = {
+                    ...userData,
+                    organization_id: user.organization_id,
+                    org: orgs[0].org,
+                    orgName: orgs[0].orgName,
+                    logo: orgs[0].logo
+                  };
+                }
+              }
+              
+              return res.json({
+                authenticated: true,
+                user: userData
+              });
+            }
+          }
+        } catch (refreshError) {
+          // Refresh failed - return not authenticated
+          console.error('[checkAuthStatus] Token refresh error:', refreshError);
+        }
+      }
+      console.log('[checkAuthStatus] No valid refresh token, returning not authenticated');
+      return res.json({ authenticated: false });
+    }
+  } catch (error) {
+    console.error('[checkAuthStatus] Error in checkAuthStatus:', error);
+    console.error('[checkAuthStatus] Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack?.split('\n').slice(0, 5).join('\n')
+    });
+    return res.json({ authenticated: false, error: error.message });
+  }
+};
+
 // Verify JWT token middleware
 export const verifyToken = async (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    // Try cookie first (more secure), then header (for backward compatibility)
+    const token = req.cookies?.access_token || req.headers.authorization?.split(' ')[1];
+    
     if (!token) {
       return res.status(401).json({ error: 'Access token required' });
     }
@@ -1145,7 +1489,15 @@ export const verifyToken = async (req, res, next) => {
       issuer: process.env.JWT_ISS || 'faith-community-api',
       audience: process.env.JWT_AUD || 'faith-community-client'
     });
+    
+    // Set user based on role (unified approach!)
     req.user = decoded;
+    if (decoded.role === 'admin') {
+      req.admin = decoded;
+    } else if (decoded.role === 'superadmin') {
+      req.superadmin = decoded;
+    }
+    
     next();
 
   } catch (error) {
@@ -1326,9 +1678,9 @@ export const forgotPasswordUser = async (req, res) => {
   }
 
   try {
-    // Check if user exists with this email
+    // Check if user exists with this email (only for role='user')
     const [userRows] = await db.query(
-      'SELECT id, email FROM users WHERE email = ?',
+      'SELECT id, email FROM users WHERE email = ? AND role = \'user\'',
       [email]
     )
 
@@ -1415,21 +1767,9 @@ export const resetPasswordUser = async (req, res) => {
     const saltRounds = 10
     const hashedPassword = await bcrypt.hash(newPassword, saltRounds)
 
-    // Update user password
+    // Update user password in unified users table (only for role='user')
     await db.execute(
-      'UPDATE users SET password_hash = ? WHERE email = ?',
-      [hashedPassword, tokenData.email]
-    )
-
-    // Also update admin password if email exists there
-    await db.execute(
-      'UPDATE admins SET password = ? WHERE email = ? AND is_active = TRUE',
-      [hashedPassword, tokenData.email]
-    )
-
-    // Also update superadmin password if email exists there
-    await db.execute(
-      'UPDATE superadmin SET password = ? WHERE username = ?',
+      'UPDATE users SET password_hash = ?, password_changed_at = NOW() WHERE email = ? AND role = \'user\'',
       [hashedPassword, tokenData.email]
     )
 

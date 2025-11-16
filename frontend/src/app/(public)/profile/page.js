@@ -88,22 +88,27 @@ export default function ProfilePage() {
     // Check for window to avoid SSR errors
     if (typeof window === 'undefined') return;
 
-    const token = localStorage.getItem('userToken');
-    const storedUserData = localStorage.getItem('userData');
-    
-    if (!token || !storedUserData) {
+    const checkAuth = async () => {
+      try {
+        // Check auth status from backend (reads from httpOnly cookie)
+        const { getCurrentUser } = await import('@/utils/authService');
+        const userData = await getCurrentUser();
+        
+        if (userData && userData.role === 'user') {
+          setUserData(userData);
+          // Also store in localStorage for quick access (non-sensitive data only)
+          localStorage.setItem('userData', JSON.stringify(userData));
+        } else {
+          // Not authenticated - redirect to login
       router.push('/login');
-      return;
     }
-
-    try {
-      const user = JSON.parse(storedUserData);
-      setUserData(user);
     } catch (error) {
-      showError('Invalid user data. Please log in again.');
+        showError('Authentication failed. Please log in again.');
       router.push('/login');
-      return;
     }
+    };
+
+    checkAuth();
   }, [pageReady, router, showError]);
 
 

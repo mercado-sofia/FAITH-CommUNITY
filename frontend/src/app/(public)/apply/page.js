@@ -39,21 +39,19 @@ export default function ApplyPage() {
     if (typeof window === 'undefined') return;
     
     const checkAuth = async () => {
-      const token = localStorage.getItem('userToken');
-      const storedUserData = localStorage.getItem('userData');
+      try {
+        // Check auth status from backend (reads from httpOnly cookie)
+        const { getCurrentUser } = await import('@/utils/authService');
+        const userData = await getCurrentUser();
       
-      if (token && storedUserData) {
-        try {
-          JSON.parse(storedUserData);
+        if (userData && userData.role === 'user') {
           setIsLoggedIn(true);
-        } catch (error) {
-          // Clear corrupted data using centralized cleanup
-          const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
-          clearAuthImmediate(USER_TYPES.PUBLIC);
+        } else {
+          // Show login modal for non-authenticated users
           setShowLoginModal(true);
         }
-      } else {
-        // Show login modal for non-authenticated users
+      } catch (error) {
+        // Show login modal on error
         setShowLoginModal(true);
       }
     };

@@ -2,7 +2,7 @@ import db from '../../database.js';
 import { uploadSingleToCloudinary } from '../../utils/cloudinaryUpload.js';
 import { deleteFromCloudinary, extractPublicIdFromUrl } from '../../utils/cloudinaryConfig.js';
 
-// Helper function to safely parse JSON (typeCast already parses JSON columns, so check if it's already an object)
+// Helper: typeCast already parses JSON columns, so check if it's already an object
 const safeParseJSON = (value) => {
   if (!value) return null;
   if (typeof value === 'object') return value; // Already parsed by typeCast
@@ -10,13 +10,12 @@ const safeParseJSON = (value) => {
   return value;
 };
 
-// Get about us content
 export const getAboutUs = async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM about_us ORDER BY id DESC LIMIT 1');
     
     if (rows.length === 0) {
-      // Return empty data instead of 404 - fields can be empty
+      // Return empty data instead of 404 (fields can be empty)
       return res.json({
         success: true,
         data: {
@@ -27,7 +26,6 @@ export const getAboutUs = async (req, res) => {
       });
     }
 
-    // Parse JSON fields
     const aboutUsData = {
       ...rows[0],
       extension_categories: safeParseJSON(rows[0].extension_categories) || []
@@ -46,13 +44,11 @@ export const getAboutUs = async (req, res) => {
   }
 };
 
-// Update about us content - all fields optional
+// All fields optional
 export const updateAboutUs = async (req, res) => {
   try {
     const { description, extension_categories, image_url } = req.body;
 
-    // All fields are optional - no validation required
-    // Validate extension categories structure if provided
     if (extension_categories && !Array.isArray(extension_categories)) {
       return res.status(400).json({ 
         success: false, 
@@ -60,7 +56,6 @@ export const updateAboutUs = async (req, res) => {
       });
     }
 
-    // Validate each extension category if provided
     if (extension_categories && extension_categories.length > 0) {
     for (const category of extension_categories) {
       if (!category.name || category.name.trim() === '') {
@@ -72,7 +67,6 @@ export const updateAboutUs = async (req, res) => {
       }
     }
 
-    // Check if about us record exists
     const [existingRows] = await db.query('SELECT * FROM about_us ORDER BY id DESC LIMIT 1');
     
     let result;
@@ -80,23 +74,19 @@ export const updateAboutUs = async (req, res) => {
     const categoriesValue = extension_categories && extension_categories.length > 0 ? JSON.stringify(extension_categories) : JSON.stringify([]);
     
     if (existingRows.length === 0) {
-      // Create new about us record - all fields optional
       [result] = await db.query(
         'INSERT INTO about_us (description, extension_categories, image_url) VALUES (?, ?, ?)',
         [descriptionValue, categoriesValue, image_url || null]
       );
     } else {
-      // Update existing about us record - all fields optional
       [result] = await db.query(
         'UPDATE about_us SET description = ?, extension_categories = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
         [descriptionValue, categoriesValue, image_url || null, existingRows[0].id]
       );
     }
 
-    // Fetch updated about us data
     const [updatedRows] = await db.query('SELECT * FROM about_us ORDER BY id DESC LIMIT 1');
     
-    // Parse JSON fields
     const aboutUsData = {
       ...updatedRows[0],
       extension_categories: safeParseJSON(updatedRows[0].extension_categories) || []
@@ -116,7 +106,6 @@ export const updateAboutUs = async (req, res) => {
   }
 };
 
-// Add extension category
 export const addExtensionCategory = async (req, res) => {
   try {
     const { name, color } = req.body;
@@ -128,7 +117,6 @@ export const addExtensionCategory = async (req, res) => {
       });
     }
 
-    // Get current about us data
     const [existingRows] = await db.query('SELECT * FROM about_us ORDER BY id DESC LIMIT 1');
     
     if (existingRows.length === 0) {
@@ -138,10 +126,8 @@ export const addExtensionCategory = async (req, res) => {
       });
     }
 
-    // Parse existing extension categories (typeCast already parses JSON, so use helper)
     const currentCategories = safeParseJSON(existingRows[0].extension_categories) || [];
 
-    // Check if category already exists
     const categoryExists = currentCategories.some(cat => 
       cat.name.toLowerCase() === name.trim().toLowerCase()
     );
@@ -153,7 +139,6 @@ export const addExtensionCategory = async (req, res) => {
       });
     }
 
-    // Add new category
     const newCategory = {
       name: name.trim(),
       color: color || 'green'
@@ -161,13 +146,11 @@ export const addExtensionCategory = async (req, res) => {
 
     currentCategories.push(newCategory);
 
-    // Update database
     await db.query(
       'UPDATE about_us SET extension_categories = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       [JSON.stringify(currentCategories), existingRows[0].id]
     );
 
-    // Fetch updated data
     const [updatedRows] = await db.query('SELECT * FROM about_us ORDER BY id DESC LIMIT 1');
     
     const aboutUsData = {
@@ -189,7 +172,6 @@ export const addExtensionCategory = async (req, res) => {
   }
 };
 
-// Update extension category
 export const updateExtensionCategory = async (req, res) => {
   try {
     const { categoryIndex } = req.params;
@@ -230,19 +212,16 @@ export const updateExtensionCategory = async (req, res) => {
       });
     }
 
-    // Update category
     currentCategories[index] = {
       name: name.trim(),
       color: color || currentCategories[index].color
     };
 
-    // Update database
     await db.query(
       'UPDATE about_us SET extension_categories = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       [JSON.stringify(currentCategories), existingRows[0].id]
     );
 
-    // Fetch updated data
     const [updatedRows] = await db.query('SELECT * FROM about_us ORDER BY id DESC LIMIT 1');
     
     const aboutUsData = {
@@ -264,7 +243,6 @@ export const updateExtensionCategory = async (req, res) => {
   }
 };
 
-// Delete extension category
 export const deleteExtensionCategory = async (req, res) => {
   try {
     const { categoryIndex } = req.params;
@@ -297,18 +275,13 @@ export const deleteExtensionCategory = async (req, res) => {
       });
     }
 
-    // Allow deleting all categories - no minimum required
-
-    // Remove category
     currentCategories.splice(index, 1);
 
-    // Update database
     await db.query(
       'UPDATE about_us SET extension_categories = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       [JSON.stringify(currentCategories), existingRows[0].id]
     );
 
-    // Fetch updated data
     const [updatedRows] = await db.query('SELECT * FROM about_us ORDER BY id DESC LIMIT 1');
     
     const aboutUsData = {
@@ -330,7 +303,6 @@ export const deleteExtensionCategory = async (req, res) => {
   }
 };
 
-// Upload about us image
 export const uploadAboutUsImage = async (req, res) => {
   try {
     if (!req.file) {
@@ -340,14 +312,12 @@ export const uploadAboutUsImage = async (req, res) => {
       });
     }
 
-    // Upload to Cloudinary
     const uploadResult = await uploadSingleToCloudinary(
       req.file, 
       'faith-community/about-us',
       { prefix: 'about_us_' }
     );
 
-    // Get current about us data
     const [existingRows] = await db.query('SELECT * FROM about_us ORDER BY id DESC LIMIT 1');
     
     if (existingRows.length === 0) {
@@ -357,17 +327,14 @@ export const uploadAboutUsImage = async (req, res) => {
         message: 'About us content not found. Please create about us content first before uploading an image.' 
       });
     } else {
-      // Update existing about us record with new image
       await db.query(
         'UPDATE about_us SET image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
         [uploadResult.url, existingRows[0].id]
       );
     }
 
-    // Fetch updated about us data
     const [updatedRows] = await db.query('SELECT * FROM about_us ORDER BY id DESC LIMIT 1');
     
-    // Parse JSON fields
     const aboutUsData = {
       ...updatedRows[0],
       extension_categories: safeParseJSON(updatedRows[0].extension_categories) || []
@@ -395,10 +362,8 @@ export const uploadAboutUsImage = async (req, res) => {
   }
 };
 
-// Delete about us image
 export const deleteAboutUsImage = async (req, res) => {
   try {
-    // Get current about us data
     const [existingRows] = await db.query('SELECT * FROM about_us ORDER BY id DESC LIMIT 1');
     
     if (existingRows.length === 0) {
@@ -415,7 +380,6 @@ export const deleteAboutUsImage = async (req, res) => {
       });
     }
 
-    // Delete from Cloudinary if image exists
     const publicId = extractPublicIdFromUrl(existingRows[0].image_url);
     if (publicId) {
       try {
@@ -424,7 +388,6 @@ export const deleteAboutUsImage = async (req, res) => {
       }
     }
 
-    // Update database - set image_url to NULL
     await db.query(
       'UPDATE about_us SET image_url = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       [existingRows[0].id]

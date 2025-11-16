@@ -1,6 +1,10 @@
 import { doubleCsrf } from "csrf-csrf"
 
-const sameSiteOpt = (process.env.COOKIE_SAMESITE || 'lax').toLowerCase()
+// Use SameSite=Lax for better cookie compatibility
+// With Next.js rewrites, requests are same-origin, so Lax works perfectly
+const sameSiteOpt = process.env.COOKIE_SAMESITE 
+  ? (process.env.COOKIE_SAMESITE).toLowerCase()
+  : "lax";
 
 export const {
   doubleCsrfProtection,
@@ -11,12 +15,10 @@ export const {
   cookieOptions: {
     httpOnly: true,
     sameSite: sameSiteOpt,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === 'production', // false in dev (localhost), true in prod (HTTPS)
     path: '/',
   },
   getTokenFromRequest: (req) => req.headers['x-csrf-token'],
 })
 
 export default { doubleCsrfProtection, generateCsrfToken }
-
-

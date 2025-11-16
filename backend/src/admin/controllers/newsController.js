@@ -75,7 +75,7 @@ export const createNews = async (req, res) => {
   }
 
   try {
-    // 1) Resolve organization (by numeric ID → by acronym → get from admins if needed)
+    // 1) Resolve organization (by numeric ID → by acronym → get from users table if needed)
     let [orgRows] = await db.execute(
       "SELECT id FROM organizations WHERE id = ?",
       [orgId]

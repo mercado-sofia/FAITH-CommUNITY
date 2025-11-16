@@ -13,9 +13,9 @@ export const notifyCollaboratorsOnApproval = async (programId, programTitle) => 
     
     // Get all collaborators for this program
     const [collaborators] = await db.execute(`
-      SELECT pc.collaborator_admin_id, a.email, a.first_name, a.last_name
+      SELECT pc.collaborator_admin_id, u.email
       FROM program_collaborations pc
-      LEFT JOIN admins a ON pc.collaborator_admin_id = a.id
+      LEFT JOIN users u ON pc.collaborator_admin_id = u.id AND u.role = 'admin'
       WHERE pc.program_id = ? AND pc.status = 'accepted'
     `, [programId]);
 

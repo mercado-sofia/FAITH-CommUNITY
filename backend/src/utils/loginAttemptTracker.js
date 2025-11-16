@@ -1,27 +1,32 @@
 import db from "../database.js"
 
-// Failed login attempt tracking - only tracks FAILED attempts
+// Configuration constants (OWASP/NIST recommend 5-10 attempts)
+const MAX_FAILED_ATTEMPTS = 8;
+const LOCKOUT_WINDOW_MINUTES = 5;
+const LOCKOUT_DURATION_MINUTES = 5;
+
 export class LoginAttemptTracker {
-  // Track failed login attempt (only called when login fails)
-  // Uses a transaction to prevent race conditions
-  static async trackFailedAttempt(identifier, ipAddress, userType = 'user') {
+  static getMaxAttempts() { return MAX_FAILED_ATTEMPTS; }
+  static getLockoutWindowMinutes() { return LOCKOUT_WINDOW_MINUTES; }
+  static getLockoutDurationMinutes() { return LOCKOUT_DURATION_MINUTES; }
+
+  // With unified users table: email is unique, so we track by email only (not by role)
+  // This prevents brute force across all endpoints. userType is only for audit logging.
+  static async trackFailedAttempt(identifier, ipAddress, userType = null) {
     await this.ensureAttemptsTable()
     
-    // Get connection from pool for transaction
     const connection = await db.getConnection();
     
     try {
       await connection.beginTransaction();
       
-      // Clean up old attempts (older than 5 minutes) - interstitial cleanup
       await connection.execute(
-        'DELETE FROM login_attempts WHERE created_at < DATE_SUB(NOW(), INTERVAL 5 MINUTE)'
+        `DELETE FROM login_attempts WHERE created_at < DATE_SUB(NOW(), INTERVAL ${LOCKOUT_WINDOW_MINUTES} MINUTE)`
       );
       
-      // Add new failed attempt atomically within transaction
       await connection.execute(
         'INSERT INTO login_attempts (identifier, ip_address, attempt_type, user_type) VALUES (?, ?, ?, ?)',
-        [identifier, ipAddress, 'failed', userType]
+        [identifier, ipAddress, 'failed', userType || 'user']
       );
       
       await connection.commit();
@@ -33,36 +38,28 @@ export class LoginAttemptTracker {
     }
   }
   
-  // Get failed login attempts count (only counts FAILED attempts)
-  // Counts attempts only for the specific identifier and user_type combination
-  // This ensures admin, user, and superadmin attempts are counted separately
-  static async getFailedAttempts(identifier, ipAddress, userType = 'user') {
+  // Counts by email only (not by role) - prevents brute force across all endpoints
+  static async getFailedAttempts(identifier, ipAddress = null, userType = null) {
     await this.ensureAttemptsTable()
     
-    // Use database time for more accurate timing - only count FAILED attempts
-    // Count only by identifier and user_type to ensure role-specific counting
     const [rows] = await db.execute(
-      'SELECT COUNT(*) as count FROM login_attempts WHERE identifier = ? AND attempt_type = ? AND user_type = ? AND created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)',
-      [identifier, 'failed', userType]
+      `SELECT COUNT(*) as count FROM login_attempts WHERE identifier = ? AND attempt_type = ? AND created_at > DATE_SUB(NOW(), INTERVAL ${LOCKOUT_WINDOW_MINUTES} MINUTE)`,
+      [identifier, 'failed']
     )
     
     return rows[0]?.count || 0
   }
 
-  // Get time remaining until lockout expires (in seconds)
-  // Calculates lockout time only for the specific identifier and user_type combination
-  static async getLockoutTimeRemaining(identifier, ipAddress, userType = 'user') {
+  static async getLockoutTimeRemaining(identifier, ipAddress = null, userType = null) {
     await this.ensureAttemptsTable()
     
-    // Use database TIMESTAMPDIFF for accurate time calculation (avoids JS Date/timezone issues)
-    // Calculate only by identifier and user_type to ensure role-specific lockout
     const [rows] = await db.execute(
       `SELECT 
-        TIMESTAMPDIFF(SECOND, NOW(), DATE_ADD(MIN(created_at), INTERVAL 5 MINUTE)) as remaining_seconds
+        TIMESTAMPDIFF(SECOND, NOW(), DATE_ADD(MIN(created_at), INTERVAL ${LOCKOUT_DURATION_MINUTES} MINUTE)) as remaining_seconds
        FROM login_attempts 
-       WHERE identifier = ? AND attempt_type = ? AND user_type = ? 
-       AND created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)`,
-      [identifier, 'failed', userType]
+       WHERE identifier = ? AND attempt_type = ? 
+       AND created_at > DATE_SUB(NOW(), INTERVAL ${LOCKOUT_WINDOW_MINUTES} MINUTE)`,
+      [identifier, 'failed']
     )
     
     if (!rows[0] || rows[0].remaining_seconds === null) {
@@ -72,12 +69,11 @@ export class LoginAttemptTracker {
     return Math.max(0, rows[0].remaining_seconds)
   }
   
-  // Clear all failed attempts (called on successful login to reset the counter)
-  // Clears attempts only for the specific identifier and user_type combination
-  static async clearFailedAttempts(identifier, ipAddress, userType = 'user') {
+  // Clears all attempts for this email (across all roles/endpoints)
+  static async clearFailedAttempts(identifier, ipAddress = null, userType = null) {
     await db.execute(
-      'DELETE FROM login_attempts WHERE identifier = ? AND user_type = ? AND attempt_type = ?',
-      [identifier, userType, 'failed']
+      'DELETE FROM login_attempts WHERE identifier = ? AND attempt_type = ?',
+      [identifier, 'failed']
     )
   }
   
@@ -99,13 +95,12 @@ export class LoginAttemptTracker {
         )
       `)
       
-      // Add user_type column if it doesn't exist (for existing tables)
       try {
         await db.execute(`ALTER TABLE login_attempts ADD COLUMN user_type ENUM('user', 'admin', 'superadmin') NOT NULL DEFAULT 'user'`)
         await db.execute(`ALTER TABLE login_attempts ADD INDEX idx_user_type (user_type)`)
         await db.execute(`ALTER TABLE login_attempts ADD INDEX idx_combined (identifier, ip_address, user_type, attempt_type)`)
       } catch (alterError) {
-        // Column might already exist, ignore error
+        // Column might already exist
       }
     } catch (error) {
       // Table might already exist

@@ -1,7 +1,6 @@
-// db table: faqs
 import db from "../../database.js"
 
-// Get all FAQs (for superadmin - includes inactive)
+// For superadmin - includes inactive
 export const getAllFaqs = async (req, res) => {
   try {
     const [rows] = await db.execute("SELECT * FROM faqs ORDER BY created_at DESC")
@@ -12,7 +11,7 @@ export const getAllFaqs = async (req, res) => {
   }
 }
 
-// Get active FAQs only (for public)
+// For public - active only
 export const getActiveFaqs = async (req, res) => {
   try {
     const [rows] = await db.execute("SELECT * FROM faqs WHERE status = 'active' ORDER BY created_at DESC")
@@ -23,7 +22,6 @@ export const getActiveFaqs = async (req, res) => {
   }
 }
 
-// Get FAQ by ID
 export const getFaqById = async (req, res) => {
   const { id } = req.params
 
@@ -45,7 +43,6 @@ export const getFaqById = async (req, res) => {
   }
 }
 
-// Create a new FAQ
 export const createFaq = async (req, res) => {
   const { question, answer, status = "active" } = req.body
 
@@ -83,7 +80,6 @@ export const createFaq = async (req, res) => {
   }
 }
 
-// Update FAQ
 export const updateFaq = async (req, res) => {
   const { id } = req.params
   const { question, answer, status } = req.body
@@ -133,7 +129,6 @@ export const updateFaq = async (req, res) => {
   }
 }
 
-// Delete FAQ (hard delete)
 export const deleteFaq = async (req, res) => {
   const { id } = req.params
 

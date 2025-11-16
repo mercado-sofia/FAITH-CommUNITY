@@ -77,13 +77,13 @@ class NotificationController {
           an.submission_id, 
           an.is_read, 
           an.created_at,
-          -- For message notifications, get sender name from users table
+          -- For message notifications, get sender name from user_profiles table
           -- Try to find user by user_id first, then by email if user_id is null or name is empty
           CASE 
             WHEN an.type = 'message' THEN
               COALESCE(
-                NULLIF(TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))), ''),
-                NULLIF(TRIM(CONCAT(COALESCE(u_by_email.first_name, ''), ' ', COALESCE(u_by_email.last_name, ''))), ''),
+                NULLIF(TRIM(CONCAT(COALESCE(up.first_name, ''), ' ', COALESCE(up.last_name, ''))), ''),
+                NULLIF(TRIM(CONCAT(COALESCE(up_by_email.first_name, ''), ' ', COALESCE(up_by_email.last_name, ''))), ''),
                 'Guest User'
               )
             ELSE NULL
@@ -92,8 +92,10 @@ class NotificationController {
           m.sender_email as message_sender_email
         FROM admin_notifications an
         LEFT JOIN messages m ON an.type = 'message' AND an.submission_id = m.id
-        LEFT JOIN users u ON m.user_id = u.id AND u.is_active = 1
-        LEFT JOIN users u_by_email ON an.type = 'message' AND m.sender_email IS NOT NULL AND LOWER(m.sender_email) = LOWER(u_by_email.email) AND u_by_email.is_active = 1
+        LEFT JOIN users u ON m.user_id = u.id AND u.is_active = 1 AND u.role = 'user'
+        LEFT JOIN user_profiles up ON u.id = up.user_id
+        LEFT JOIN users u_by_email ON an.type = 'message' AND m.sender_email IS NOT NULL AND LOWER(m.sender_email) = LOWER(u_by_email.email) AND u_by_email.is_active = 1 AND u_by_email.role = 'user'
+        LEFT JOIN user_profiles up_by_email ON u_by_email.id = up_by_email.user_id
         WHERE ${whereClause}
         ORDER BY an.created_at DESC 
         LIMIT ${limitNum} OFFSET ${offsetNum}

@@ -54,6 +54,24 @@ const nextConfig = {
     NEXT_FONT_GOOGLE_MOCKED_RESPONSES: process.env.NODE_ENV === 'development' ? '1' : '0',
   },
   
+  // API rewrites for development - proxy backend API to same-origin
+  // This allows cookies to work with SameSite=Lax in development
+  async rewrites() {
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    
+    // Only use rewrites in development when backend is on different port
+    if (process.env.NODE_ENV === 'development' && backendUrl.includes('localhost:8080')) {
+      return [
+        {
+          source: '/api/:path*',
+          destination: `${backendUrl}/api/:path*`,
+        },
+      ];
+    }
+    
+    return [];
+  },
+  
   // Security headers including Content Security Policy (CSP)
   async headers() {
     return [

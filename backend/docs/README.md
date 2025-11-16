@@ -26,7 +26,7 @@ Welcome to the FAITH CommUNITY backend documentation. This guide covers setup, s
 **FAITH CommUNITY Backend** is a Node.js/Express.js REST API that powers the volunteer management platform. It provides authentication, data management, file uploads, and email services.
 
 ### Key Features
-- **Multi-role Authentication**: Users, Admins, and Superadmin with JWT tokens
+- **Multi-role Authentication**: Unified user system with role-based access (user, admin, superadmin) using JWT tokens
 - **Secure Email System**: SMTP/SendGrid integration for transactional emails
 - **File Management**: Cloudinary integration for image and file uploads
 - **Audit Logging**: Comprehensive security event logging

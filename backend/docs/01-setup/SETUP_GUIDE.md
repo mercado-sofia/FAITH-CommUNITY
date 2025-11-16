@@ -181,6 +181,27 @@ See [Railway SendGrid Setup](../04-deployment/RAILWAY_SENDGRID_SETUP.md) for det
    ```
 3. The application will automatically create tables on first startup
 
+### Database Schema
+
+The system uses a **unified user authentication system**:
+
+- **`users` table**: Core authentication table for all user roles (user, admin, superadmin)
+  - Contains: `id`, `email`, `password_hash`, `role`, `is_active`, `email_verified`, `organization_id`, `twofa_enabled`, etc.
+  - All user types (public users, admins, superadmin) are stored in this single table
+  - Role is determined by the `role` enum column: `'user'`, `'admin'`, or `'superadmin'`
+
+- **`user_profiles` table**: Extended profile data for public users only
+  - Contains: `user_id`, `first_name`, `last_name`, `contact_number`, `gender`, `address`, `birth_date`, `profile_photo_url`, etc.
+  - Linked to `users` table via `user_id` foreign key
+  - Only public users (role = 'user') have entries in this table
+
+**Benefits of Unified Structure:**
+- ✅ Email uniqueness enforced at database level across all roles
+- ✅ Simplified authentication queries
+- ✅ Consistent password reset flow
+- ✅ Reduced code duplication
+- ✅ Better data integrity
+
 ### Production MySQL (Railway)
 
 For production deployment, Railway provides MySQL service. See [Railway Deployment Guide](../04-deployment/RAILWAY_DEPLOYMENT.md) for setup instructions.
@@ -277,4 +298,3 @@ If SMTP is configured, test the forgot password feature:
 - [Deployment Guide](../04-deployment/RAILWAY_DEPLOYMENT.md) - Deploy to production
 - [Security Review](../02-security/SECURITY_REVIEW.md) - Security best practices
 - [File Management](../03-file-management/CLOUDINARY_INTEGRATION_GUIDE.md) - File upload setup
-

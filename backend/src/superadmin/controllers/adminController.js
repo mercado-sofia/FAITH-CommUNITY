@@ -1,4 +1,4 @@
-// db table: admins
+// db table: users (unified table for all roles)
 import db from "../../database.js"
 import * as bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
@@ -8,6 +8,12 @@ import { SessionSecurity } from "../../utils/sessionSecurity.js"
 import { LoginAttemptTracker } from "../../utils/loginAttemptTracker.js"
 import { getClientIpAddress } from "../../utils/ipAddressHelper.js"
 import { logError } from "../../utils/logger.js"
+import {
+  signAccessToken,
+  issueRefreshToken,
+  getAccessTokenCookieOptions,
+  getRefreshCookieOptions,
+} from '../../utils/jwt.js';
 
 // JWT secret via env
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
@@ -22,11 +28,10 @@ export const loginAdmin = async (req, res) => {
   }
 
   try {
-    // Check failed login attempts BEFORE attempting login
     const failedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'admin');
+    const maxAttempts = LoginAttemptTracker.getMaxAttempts();
     
-    // Block for 5 minutes after 7 failed attempts
-    if (failedAttempts >= 7) {
+    if (failedAttempts >= maxAttempts) {
       const remainingSeconds = await LoginAttemptTracker.getLockoutTimeRemaining(email, ipAddress, 'admin');
       const remainingMinutes = Math.ceil(remainingSeconds / 60);
       
@@ -35,26 +40,26 @@ export const loginAdmin = async (req, res) => {
         retryAfter: `${remainingMinutes} minutes`,
         remainingSeconds: remainingSeconds,
         attempts: failedAttempts,
-        maxAttempts: 7
+        maxAttempts: maxAttempts
       });
     }
     const [adminRows] = await db.execute(
-      `SELECT a.id, a.email, a.password, a.is_active, a.organization_id,
+      `SELECT u.id, u.email, u.password_hash as password, u.is_active, u.organization_id,
               o.org, o.orgName, o.logo
-       FROM admins a
-       LEFT JOIN organizations o ON a.organization_id = o.id
-       WHERE a.email = ? AND a.is_active = TRUE`,
+       FROM users u
+       LEFT JOIN organizations o ON u.organization_id = o.id
+       WHERE u.email = ? AND u.role = 'admin' AND u.is_active = TRUE`,
       [email],
     )
 
     if (adminRows.length === 0) {
-      // Track failed attempt - admin not found or inactive
       await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'admin');
       const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'admin');
+      const maxAttempts = LoginAttemptTracker.getMaxAttempts();
       return res.status(401).json({ 
         error: "Invalid credentials or account inactive",
         attempts: newFailedAttempts,
-        remainingAttempts: Math.max(0, 7 - newFailedAttempts)
+        remainingAttempts: Math.max(0, maxAttempts - newFailedAttempts)
       })
     }
 
@@ -62,52 +67,50 @@ export const loginAdmin = async (req, res) => {
     const isPasswordValid = await bcrypt.compare(password, admin.password)
 
     if (!isPasswordValid) {
-      // Track failed attempt - invalid password
       await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'admin');
       const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'admin');
+      const maxAttempts = LoginAttemptTracker.getMaxAttempts();
       return res.status(401).json({ 
         error: "Invalid credentials",
         attempts: newFailedAttempts,
-        remainingAttempts: Math.max(0, 7 - newFailedAttempts)
+        remainingAttempts: Math.max(0, maxAttempts - newFailedAttempts)
       })
     }
 
     // MFA removed for admin accounts - only superadmin accounts use MFA
-    // Admin accounts rely on strong passwords and rate limiting for security
-
-    // Generate JWT token (shorter expiry)
-    const token = jwt.sign(
-      {
+    // Use unified signAccessToken function
+    const accessToken = signAccessToken({
         id: admin.id,
         email: admin.email,
-        role: 'admin', // Fixed role for all admins
+      role: 'admin',
         organization_id: admin.organization_id,
         org: admin.org,
         orgName: admin.orgName,
-      },
-      JWT_SECRET,
-      { 
-        expiresIn: "30m",
-        issuer: process.env.JWT_ISS || "faith-community-api",
-        audience: process.env.JWT_AUD || "faith-community-client"
-      },
-    )
+    })
 
-    // Create secure session with IP/UA binding
+    // Issue refresh token (works for all roles with unified users table!)
+    const { token: refreshToken } = await issueRefreshToken(admin.id, {
+      userAgent: req.headers['user-agent'],
+      ipAddress: getClientIpAddress(req),
+    });
+
     await SessionSecurity.createAdminSession(
       admin.id,
       getClientIpAddress(req),
       req.headers['user-agent'],
-      token
+      accessToken
     )
 
-    // Clear failed login attempts on successful login (reset counter)
     await LoginAttemptTracker.clearFailedAttempts(email, ipAddress, 'admin');
     
     await logAdminAction(admin.id, 'login', 'Admin logged in', req)
+    
+    // Set both tokens as httpOnly cookies (secure!)
+    res.cookie('access_token', accessToken, getAccessTokenCookieOptions())
+    res.cookie('refresh_token', refreshToken, getRefreshCookieOptions())
+    
     res.json({
       message: "Login successful",
-      token,
       admin: {
         id: admin.id,
         organization_id: admin.organization_id,
@@ -126,8 +129,8 @@ export const loginAdmin = async (req, res) => {
 
 // JWT verification middleware
 export const verifyAdminToken = (req, res, next) => {
-  const authHeader = req.headers.authorization
-  const token = authHeader && authHeader.split(" ")[1] // Bearer TOKEN
+  // Try cookie first (more secure), then header (for backward compatibility)
+  const token = req.cookies?.access_token || req.headers.authorization?.split(" ")[1]
 
   if (!token) {
     return res.status(401).json({ error: "Access token required" })
@@ -154,11 +157,12 @@ export const verifyAdminToken = (req, res, next) => {
 export const getAllAdmins = async (req, res) => {
   try {
     const [rows] = await db.execute(
-      `SELECT a.id, a.email, a.is_active, a.organization_id, a.created_at, a.password_changed_at,
+      `SELECT u.id, u.email, u.is_active, u.organization_id, u.created_at, u.password_changed_at,
               o.org, o.orgName, o.logo
-       FROM admins a
-       LEFT JOIN organizations o ON a.organization_id = o.id
-       ORDER BY a.created_at DESC`
+       FROM users u
+       LEFT JOIN organizations o ON u.organization_id = o.id
+       WHERE u.role = 'admin'
+       ORDER BY u.created_at DESC`
     )
     res.json(rows)
   } catch (err) {
@@ -175,11 +179,11 @@ export const getAdminById = async (req, res) => {
 
   try {
     const [rows] = await db.execute(
-      `SELECT a.id, a.email, a.is_active, a.organization_id, a.created_at, a.password_changed_at,
+      `SELECT u.id, u.email, u.is_active, u.organization_id, u.created_at, u.password_changed_at,
               o.org, o.orgName, o.logo
-       FROM admins a
-       LEFT JOIN organizations o ON a.organization_id = o.id
-       WHERE a.id = ?`,
+       FROM users u
+       LEFT JOIN organizations o ON u.organization_id = o.id
+       WHERE u.id = ? AND u.role = 'admin'`,
       [id],
     )
 
@@ -209,7 +213,7 @@ export const updateAdmin = async (req, res) => {
     await connection.beginTransaction()
 
     // Check if admin exists
-    const [existingAdmin] = await connection.execute("SELECT id, email, organization_id, is_active FROM admins WHERE id = ?", [id])
+    const [existingAdmin] = await connection.execute("SELECT id, email, organization_id, is_active FROM users WHERE id = ? AND role = 'admin'", [id])
 
     if (existingAdmin.length === 0) {
       await connection.rollback()
@@ -226,8 +230,8 @@ export const updateAdmin = async (req, res) => {
         return res.status(400).json({ error: "Invalid email format" })
       }
 
-      // Check if email is already taken by another admin
-      const [emailCheck] = await connection.execute("SELECT id FROM admins WHERE email = ? AND id != ?", [email, id])
+      // Check if email is already taken by another user
+      const [emailCheck] = await connection.execute("SELECT id FROM users WHERE email = ? AND id != ?", [email, id])
       if (emailCheck.length > 0) {
         await connection.rollback()
         return res.status(409).json({ error: "Email is already taken by another admin" })
@@ -266,10 +270,10 @@ export const updateAdmin = async (req, res) => {
       const saltRounds = 10
       const hashedPassword = await bcrypt.hash(password, saltRounds)
       
-      adminQuery = "UPDATE admins SET email = ?, password = ?, is_active = ? WHERE id = ?"
+      adminQuery = "UPDATE users SET email = ?, password_hash = ?, is_active = ?, password_changed_at = NOW() WHERE id = ? AND role = 'admin'"
       adminParams = [updateData.email, hashedPassword, updateData.is_active, id]
     } else {
-      adminQuery = "UPDATE admins SET email = ?, is_active = ? WHERE id = ?"
+      adminQuery = "UPDATE users SET email = ?, is_active = ? WHERE id = ? AND role = 'admin'"
       adminParams = [updateData.email, updateData.is_active, id]
     }
 
@@ -291,11 +295,11 @@ export const updateAdmin = async (req, res) => {
 
     // Get updated admin data with organization info
     const [updatedAdmin] = await db.execute(
-      `SELECT a.id, a.email, a.is_active, a.organization_id, a.created_at,
+      `SELECT u.id, u.email, u.is_active, u.organization_id, u.created_at,
               o.org, o.orgName
-       FROM admins a
-       LEFT JOIN organizations o ON a.organization_id = o.id
-       WHERE a.id = ?`,
+       FROM users u
+       LEFT JOIN organizations o ON u.organization_id = o.id
+       WHERE u.id = ? AND u.role = 'admin'`,
       [id]
     )
 
@@ -324,7 +328,7 @@ export const deactivateAdmin = async (req, res) => {
     await connection.beginTransaction()
 
     const [existingAdmin] = await connection.execute(
-      "SELECT id, is_active, organization_id FROM admins WHERE id = ?", 
+      "SELECT id, is_active, organization_id FROM users WHERE id = ? AND role = 'admin'", 
       [id]
     )
 
@@ -339,7 +343,7 @@ export const deactivateAdmin = async (req, res) => {
     const organizationId = existingAdmin[0].organization_id
 
     // Toggle is_active between TRUE and FALSE
-    await connection.execute(`UPDATE admins SET is_active = ? WHERE id = ?`, [newStatus, id])
+    await connection.execute(`UPDATE users SET is_active = ? WHERE id = ? AND role = 'admin'`, [newStatus, id])
 
     // If deactivating admin, also deactivate their organization
     if (!newStatus && organizationId) {
@@ -388,7 +392,7 @@ export const deleteAdmin = async (req, res) => {
 
     // Get admin details including organization_id
     const [existingAdmin] = await connection.execute(
-      "SELECT id, organization_id FROM admins WHERE id = ?", 
+      "SELECT id, organization_id FROM users WHERE id = ? AND role = 'admin'", 
       [id]
     )
 
@@ -401,13 +405,13 @@ export const deleteAdmin = async (req, res) => {
     const organizationId = admin.organization_id
 
     // Hard delete: permanently remove admin from database
-    await connection.execute('DELETE FROM admins WHERE id = ?', [id])
+    await connection.execute('DELETE FROM users WHERE id = ? AND role = \'admin\'', [id])
 
     // Handle organization cleanup
     if (organizationId) {
       // Check if there are other active admins for this organization
       const [otherAdmins] = await connection.execute(
-        "SELECT COUNT(*) as count FROM admins WHERE organization_id = ? AND is_active = TRUE",
+        "SELECT COUNT(*) as count FROM users WHERE organization_id = ? AND role = 'admin' AND is_active = TRUE",
         [organizationId]
       )
 
@@ -456,7 +460,7 @@ export const verifyPasswordForEmailChange = async (req, res) => {
   try {
     // Get admin data including hashed password
     const [adminRows] = await db.execute(
-      'SELECT id, password, is_active FROM admins WHERE id = ? AND is_active = TRUE',
+      'SELECT id, password_hash as password, is_active FROM users WHERE id = ? AND role = \'admin\' AND is_active = TRUE',
       [id]
     )
 
@@ -498,7 +502,7 @@ export const verifyPasswordForPasswordChange = async (req, res) => {
   try {
     // Get admin data including hashed password
     const [adminRows] = await db.execute(
-      'SELECT id, password, is_active FROM admins WHERE id = ? AND is_active = TRUE',
+      'SELECT id, password_hash as password, is_active FROM users WHERE id = ? AND role = \'admin\' AND is_active = TRUE',
       [id]
     )
 
@@ -535,7 +539,7 @@ export const forgotPassword = async (req, res) => {
   try {
     // Check if admin exists with this email
     const [adminRows] = await db.execute(
-      'SELECT id, email, organization_id FROM admins WHERE email = ? AND is_active = TRUE',
+      'SELECT id, email, organization_id FROM users WHERE email = ? AND role = \'admin\' AND is_active = TRUE',
       [email]
     )
 
@@ -627,21 +631,9 @@ export const resetPassword = async (req, res) => {
     const saltRounds = 10
     const hashedPassword = await bcrypt.hash(newPassword, saltRounds)
 
-    // Update admin password
+    // Update password in unified users table
     await db.execute(
-      'UPDATE admins SET password = ? WHERE email = ? AND is_active = TRUE',
-      [hashedPassword, tokenData.email]
-    )
-
-    // Also update superadmin password if email exists there
-    await db.execute(
-      'UPDATE superadmin SET password = ? WHERE username = ?',
-      [hashedPassword, tokenData.email]
-    )
-
-    // Also update user password if email exists there
-    await db.execute(
-      'UPDATE users SET password_hash = ? WHERE email = ?',
+      'UPDATE users SET password_hash = ?, password_changed_at = NOW() WHERE email = ?',
       [hashedPassword, tokenData.email]
     )
 
@@ -716,7 +708,7 @@ export const checkEmailAdmin = async (req, res) => {
 
   try {
     const [adminRows] = await db.execute(
-      'SELECT id FROM admins WHERE email = ? AND is_active = TRUE',
+      'SELECT id FROM users WHERE email = ? AND role = \'admin\' AND is_active = TRUE',
       [email]
     )
 

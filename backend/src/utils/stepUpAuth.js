@@ -22,9 +22,9 @@ export class StepUpAuth {
   // Verify step-up authentication
   static async verifyStepUpChallenge(token, password, adminId) {
     const [rows] = await db.execute(
-      `SELECT c.admin_id, c.action, a.password 
+      `SELECT c.admin_id, c.action, u.password_hash as password 
        FROM step_up_challenges c
-       JOIN admins a ON c.admin_id = a.id
+       JOIN users u ON c.admin_id = u.id AND u.role = 'admin'
        WHERE c.token = ? AND c.expires_at > NOW() AND c.admin_id = ?`,
       [token, adminId]
     )
@@ -85,7 +85,7 @@ export class StepUpAuth {
           INDEX idx_token (token),
           INDEX idx_admin (admin_id),
           INDEX idx_expires (expires_at),
-          FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
+          FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE
         )
       `)
     } catch (error) {

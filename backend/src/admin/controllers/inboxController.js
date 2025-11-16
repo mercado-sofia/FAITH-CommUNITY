@@ -65,14 +65,15 @@ export const getMessagesByOrg = async (req, res) => {
         m.*,
         o.orgName as organization_name, 
         o.org as organization_acronym,
-        u.full_name as sender_full_name,
-        u.first_name as sender_first_name,
-        u.last_name as sender_last_name,
+        CONCAT(COALESCE(up.first_name, ''), ' ', COALESCE(up.last_name, '')) as sender_full_name,
+        up.first_name as sender_first_name,
+        up.last_name as sender_last_name,
         u.email as user_email,
         COALESCE(u.email, m.sender_email) as sender_email
       FROM messages m
       LEFT JOIN organizations o ON m.organization_id = o.id
-      LEFT JOIN users u ON m.user_id = u.id
+      LEFT JOIN users u ON m.user_id = u.id AND u.role = 'user'
+      LEFT JOIN user_profiles up ON u.id = up.user_id
       WHERE m.organization_id = ?
     `;
     

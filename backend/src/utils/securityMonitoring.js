@@ -11,14 +11,13 @@ const logger = pino({
 })
 
 export class SecurityMonitoring {
-  // Track security events
   static async logSecurityEvent(type, severity, details, req = null) {
     await this.ensureSecurityLogsTable()
     
     const ipAddress = req ? getClientIpAddress(req) : null
     const userAgent = req?.headers?.['user-agent'] || null
-    const userId = req?.admin?.id || req?.user?.id || null
-    const userType = req?.admin ? 'admin' : req?.user ? 'user' : null
+    const userId = req?.superadmin?.id || req?.admin?.id || req?.user?.id || null
+    const userType = req?.superadmin ? 'superadmin' : req?.admin ? 'admin' : req?.user ? 'user' : null
     
     try {
       await db.execute(
@@ -27,7 +26,6 @@ export class SecurityMonitoring {
         [type, severity, JSON.stringify(details), userId, userType, ipAddress, userAgent]
       )
       
-      // Log to structured logger
       logger[severity]({
         event: 'security_event',
         type,
@@ -39,7 +37,6 @@ export class SecurityMonitoring {
         userAgent
       })
       
-      // Check if alert should be triggered
       await this.checkAlertThresholds(type, ipAddress, userId)
       
     } catch (error) {
@@ -47,7 +44,6 @@ export class SecurityMonitoring {
     }
   }
   
-  // Check for alert thresholds
   static async checkAlertThresholds(eventType, ipAddress, userId) {
     const now = new Date()
     const oneHour = new Date(now.getTime() - 60 * 60 * 1000)
@@ -100,11 +96,10 @@ export class SecurityMonitoring {
     }
   }
   
-  // Trigger security alert
   static async triggerAlert(alertType, details) {
     await this.ensureAlertsTable()
     
-    // Check if similar alert was already sent recently (avoid spam)
+    // Avoid spam: check if similar alert was already sent recently
     const recentAlert = await db.execute(
       `SELECT id FROM security_alerts 
        WHERE alert_type = ? AND details = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)`,
@@ -112,7 +107,7 @@ export class SecurityMonitoring {
     )
     
     if (recentAlert[0]?.length > 0) {
-      return // Don't spam alerts
+      return
     }
     
     await db.execute(
@@ -125,12 +120,8 @@ export class SecurityMonitoring {
       alertType,
       details
     })
-    
-    // In production, this would send notifications (email, Slack, etc.)
-    // Security alert logged
   }
   
-  // Get security metrics
   static async getSecurityMetrics(timeRange = '24h') {
     const timeMap = {
       '1h': 1,
@@ -165,7 +156,6 @@ export class SecurityMonitoring {
     }
   }
   
-  // Ensure security logs table
   static async ensureSecurityLogsTable() {
     try {
       await db.execute(`
@@ -190,7 +180,6 @@ export class SecurityMonitoring {
     }
   }
   
-  // Ensure security alerts table
   static async ensureAlertsTable() {
     try {
       await db.execute(`
@@ -213,10 +202,8 @@ export class SecurityMonitoring {
   }
 }
 
-// Middleware to log security events
 export const logSecurityEvent = (eventType, severity = 'info') => {
   return (req, res, next) => {
-    // Log the event after response
     res.on('finish', () => {
       SecurityMonitoring.logSecurityEvent(eventType, severity, {
         method: req.method,

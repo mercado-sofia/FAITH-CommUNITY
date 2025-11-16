@@ -71,7 +71,8 @@ FAITH CommUNITY is a full-stack volunteer management platform built with a moder
 │                    Database Layer (MySQL)                   │
 │  ┌────────────────────────────────────────────────────┐   │
 │  │  Core Tables                                         │   │
-│  │  - users, admins, superadmin                        │   │
+│  │  - users (unified: user, admin, superadmin roles)   │   │
+│  │  - user_profiles (public user profile data)         │   │
 │  │  - organizations, programs_projects                 │   │
 │  │  - submissions, admin_notifications                 │   │
 │  │  - volunteers, messages, subscribers               │   │

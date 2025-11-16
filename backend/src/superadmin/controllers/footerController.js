@@ -1,9 +1,7 @@
 import db from "../../database.js"
 
-// Get footer content
 export const getFooterContent = async (req, res) => {
   try {
-    // Get all footer content from database
     // For contact section, get only the latest entry for each title (phone/email) using subquery
     const [rows] = await db.query(`
       SELECT fc1.* 
@@ -21,7 +19,6 @@ export const getFooterContent = async (req, res) => {
       ORDER BY fc1.section_type, fc1.display_order, fc1.id DESC
     `);
 
-    // Organize data by section type
     const footerData = {
       contact: {},
       quickLinks: [],
@@ -33,7 +30,6 @@ export const getFooterContent = async (req, res) => {
     rows.forEach(row => {
       switch (row.section_type) {
         case 'contact':
-          // Only keep the latest entry for each contact type (phone/email)
           if (!footerData.contact[row.title] || 
               (footerData.contact[row.title].id && footerData.contact[row.title].id < row.id)) {
             footerData.contact[row.title] = {
@@ -74,7 +70,6 @@ export const getFooterContent = async (req, res) => {
       }
     });
 
-    // Sort social media by display order
     footerData.socialMedia.sort((a, b) => a.displayOrder - b.displayOrder);
 
     res.json({
@@ -91,32 +86,27 @@ export const getFooterContent = async (req, res) => {
   }
 }
 
-// Update contact information (UPSERT - create if doesn't exist, update if exists)
+// UPSERT: create if doesn't exist, update if exists
 export const updateContactInfo = async (req, res) => {
   try {
     const { phone, email } = req.body;
 
-    // Handle phone - UPSERT (allow null/empty values)
     if (phone !== undefined) {
       const phoneValue = phone && phone.trim() ? phone.trim() : null;
       
-      // Get all phone entries to find the latest and identify duplicates
       const [allPhoneEntries] = await db.query(
         'SELECT id FROM footer_content WHERE section_type = ? AND title = ? ORDER BY id DESC',
         ['contact', 'phone']
       );
 
       if (allPhoneEntries.length > 0) {
-        // Get the latest entry (highest ID)
         const latestPhone = allPhoneEntries[0];
         
-        // Update the latest phone entry
         await db.query(
           'UPDATE footer_content SET url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
           [phoneValue, latestPhone.id]
         );
         
-        // Delete all duplicate phone entries (keep only the latest)
         if (allPhoneEntries.length > 1) {
           const duplicateIds = allPhoneEntries.slice(1).map(entry => entry.id);
           if (duplicateIds.length > 0) {
@@ -128,7 +118,6 @@ export const updateContactInfo = async (req, res) => {
           }
         }
       } else {
-        // Create new phone entry
         await db.query(
           'INSERT INTO footer_content (section_type, title, url, display_order, is_active) VALUES (?, ?, ?, ?, 1)',
           ['contact', 'phone', phoneValue, 1]
@@ -136,27 +125,22 @@ export const updateContactInfo = async (req, res) => {
       }
     }
 
-    // Handle email - UPSERT (allow null/empty values)
     if (email !== undefined) {
       const emailValue = email && email.trim() ? email.trim() : null;
       
-      // Get all email entries to find the latest and identify duplicates
       const [allEmailEntries] = await db.query(
         'SELECT id FROM footer_content WHERE section_type = ? AND title = ? ORDER BY id DESC',
         ['contact', 'email']
       );
 
       if (allEmailEntries.length > 0) {
-        // Get the latest entry (highest ID)
         const latestEmail = allEmailEntries[0];
         
-        // Update the latest email entry
         await db.query(
           'UPDATE footer_content SET url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
           [emailValue, latestEmail.id]
         );
         
-        // Delete all duplicate email entries (keep only the latest)
         if (allEmailEntries.length > 1) {
           const duplicateIds = allEmailEntries.slice(1).map(entry => entry.id);
           if (duplicateIds.length > 0) {
@@ -168,7 +152,6 @@ export const updateContactInfo = async (req, res) => {
           }
         }
       } else {
-        // Create new email entry
         await db.query(
           'INSERT INTO footer_content (section_type, title, url, display_order, is_active) VALUES (?, ?, ?, ?, 1)',
           ['contact', 'email', emailValue, 2]
@@ -190,7 +173,6 @@ export const updateContactInfo = async (req, res) => {
   }
 };
 
-// Update social media URLs
 export const updateSocialMedia = async (req, res) => {
   try {
     const { socialMedia } = req.body;
@@ -202,34 +184,29 @@ export const updateSocialMedia = async (req, res) => {
       });
     }
 
-    // First, deactivate all existing social media entries
     await db.query(
       'UPDATE footer_content SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE section_type = ?',
       ['social_media']
     );
 
-    // Insert or update social media entries
     for (let i = 0; i < socialMedia.length; i++) {
       const { platform, url, icon } = socialMedia[i];
       
       if (!platform || !url) {
-        continue; // Skip invalid entries
+        continue;
       }
 
-      // Check if entry already exists
       const [existing] = await db.query(
         'SELECT id FROM footer_content WHERE section_type = ? AND title = ?',
         ['social_media', platform]
       );
 
       if (existing.length > 0) {
-        // Update existing entry
         await db.query(
           'UPDATE footer_content SET url = ?, icon = ?, is_active = 1, display_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
           [url, icon || '', i + 1, existing[0].id]
         );
       } else {
-        // Insert new entry
         await db.query(
           'INSERT INTO footer_content (section_type, title, url, icon, display_order, is_active) VALUES (?, ?, ?, ?, ?, 1)',
           ['social_media', platform, url, icon || '', i + 1]
@@ -251,7 +228,7 @@ export const updateSocialMedia = async (req, res) => {
   }
 };
 
-// Update copyright text (UPSERT - create if doesn't exist, update if exists)
+// UPSERT: create if doesn't exist, update if exists
 export const updateCopyright = async (req, res) => {
   try {
     const { content } = req.body;
@@ -263,13 +240,11 @@ export const updateCopyright = async (req, res) => {
     );
 
     if (existingCopyright.length > 0) {
-      // Update existing copyright
       await db.query(
         'UPDATE footer_content SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
         [contentValue, existingCopyright[0].id]
       );
     } else {
-      // Create new copyright entry
       await db.query(
         'INSERT INTO footer_content (section_type, title, content, display_order, is_active) VALUES (?, ?, ?, ?, 1)',
         ['copyright', 'copyright', contentValue, 1]
@@ -290,7 +265,6 @@ export const updateCopyright = async (req, res) => {
   }
 };
 
-// Get all services
 export const getServices = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -313,7 +287,6 @@ export const getServices = async (req, res) => {
   }
 };
 
-// Add new service
 export const addService = async (req, res) => {
   try {
     const { name } = req.body;
@@ -325,7 +298,6 @@ export const addService = async (req, res) => {
       });
     }
 
-    // Get the next display order
     const [maxOrder] = await db.query(`
       SELECT MAX(display_order) as max_order FROM footer_content 
       WHERE section_type = 'services'
@@ -353,7 +325,6 @@ export const addService = async (req, res) => {
   }
 };
 
-// Update service
 export const updateService = async (req, res) => {
   try {
     const { id } = req.params;
@@ -386,7 +357,6 @@ export const updateService = async (req, res) => {
   }
 };
 
-// Delete service
 export const deleteService = async (req, res) => {
   try {
     const { id } = req.params;

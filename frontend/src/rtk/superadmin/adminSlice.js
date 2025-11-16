@@ -24,7 +24,7 @@ const adminSlice = createSlice({
       state.isAuthenticated = true
       state.token = action.payload.token || "superadmin"
       state.admin = action.payload.superadmin || {
-        email: "superadmin@faith.com",
+        email: "faithcommunityfaces@gmail.com",
         role: "superadmin",
         org: "FAITH",
         orgName: "FAITH Community System",
@@ -105,20 +105,20 @@ const adminSlice = createSlice({
         }
       }
     },
-    // Initialize from localStorage
+    // Initialize from localStorage (tokens are now in httpOnly cookies, not localStorage)
     initializeAuth: (state) => {
       if (typeof window !== "undefined") {
-        const adminToken = localStorage.getItem("adminToken")
         const adminData = localStorage.getItem("adminData")
-        const superadminToken = localStorage.getItem("superAdminToken")
         const superadminData = localStorage.getItem("superAdminData")
-        const userRole = localStorage.getItem("userRole")
+        const userRole = typeof document !== 'undefined' ? 
+          (document.cookie.includes('userRole=superadmin') ? 'superadmin' : 
+           document.cookie.includes('userRole=admin') ? 'admin' : null) : null
 
-        // Check for superadmin authentication
-        if (userRole === "superadmin" && superadminToken && superadminData) {
+        // Check for superadmin authentication (token is in httpOnly cookie)
+        if (userRole === "superadmin" && superadminData) {
           try {
             state.isAuthenticated = true
-            state.token = superadminToken
+            state.token = null // Tokens are in httpOnly cookies, not accessible to JS
             state.admin = JSON.parse(superadminData)
             state.userType = "superadmin"
           } catch (error) {
@@ -129,10 +129,10 @@ const adminSlice = createSlice({
             state.userType = null
             state.error = "Invalid authentication data"
           }
-        } else if (adminToken && adminData) {
+        } else if (userRole === "admin" && adminData) {
           try {
             state.isAuthenticated = true
-            state.token = adminToken
+            state.token = null // Tokens are in httpOnly cookies, not accessible to JS
             state.admin = JSON.parse(adminData)
             state.userType = "admin"
           } catch (error) {
@@ -143,6 +143,12 @@ const adminSlice = createSlice({
             state.userType = null;
             state.error = "Invalid authentication data";
           }
+        } else {
+          // No valid authentication found
+          state.isAuthenticated = false
+          state.token = null
+          state.admin = null
+          state.userType = null
         }
       }
     },

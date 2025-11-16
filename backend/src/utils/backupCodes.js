@@ -86,7 +86,7 @@ export class BackupCodes {
           created_at TIMESTAMP NOT NULL,
           used_at TIMESTAMP NULL,
           INDEX idx_admin (admin_id),
-          FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
+          FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE
         )
       `)
     } catch (error) {

@@ -1,10 +1,18 @@
+import { API_BASE_URL } from '@/config/api';
+
 export function getBaseUrl() {
-	return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+	// Use centralized API_BASE_URL which handles rewrites correctly
+	return API_BASE_URL || '';
 }
 
 export async function postJson(path, body, options = {}) {
 	try {
-		const res = await fetch(`${getBaseUrl()}${path}`, {
+		// Use relative path if API_BASE_URL is empty (rewrites enabled)
+		// Otherwise use full URL
+		const baseUrl = getBaseUrl();
+		const url = baseUrl ? `${baseUrl}${path}` : path;
+		
+		const res = await fetch(url, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',

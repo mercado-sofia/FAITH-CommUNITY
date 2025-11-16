@@ -3,18 +3,7 @@ import logger from '@/utils/logger';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-// Safe localStorage access for SSR
-const getAdminToken = () => {
-  if (typeof window === 'undefined') return null;
-  try {
-    return localStorage.getItem("adminToken");
-  } catch (error) {
-    logger.error('Failed to access localStorage', error);
-    return null;
-  }
-};
-
-// Fetcher function for admin profile data
+// Fetcher function for admin profile data (now uses httpOnly cookies)
 const adminProfileFetcher = async (url) => {
   try {
     // Check if we're on the client side
@@ -22,17 +11,13 @@ const adminProfileFetcher = async (url) => {
       throw new Error('Cannot fetch on server side');
     }
 
-    const adminToken = getAdminToken();
-    
-    if (!adminToken) {
-      throw new Error('No admin token found. Please log in again.');
-    }
-    
+    // Tokens are in httpOnly cookies - sent automatically with credentials: 'include'
     const response = await fetch(url, {
       method: 'GET',
+      credentials: 'include', // CRITICAL: Include httpOnly cookies
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${adminToken}`
+        // No Authorization header needed - cookies handle this
       },
     });
 

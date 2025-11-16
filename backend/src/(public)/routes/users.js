@@ -30,6 +30,7 @@ import {
   validateResetToken,
   deleteAccount,
   refreshAccessToken,
+  checkAuthStatus,
   getUserApplications,
   getApplicationDetails,
   cancelApplication,
@@ -39,13 +40,11 @@ import {
 
 const router = express.Router();
 
-// Import Cloudinary upload configuration
 import { cloudinaryUploadConfigs } from '../../utils/cloudinaryUpload.js';
 
-// Use Cloudinary upload configuration for user profiles
 const upload = cloudinaryUploadConfigs.userProfile;
 
-// Public routes (no authentication required)
+// Public routes
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.post('/forgot-password', forgotPasswordUser);
@@ -55,35 +54,87 @@ router.post('/check-email', checkEmailUser);
 router.get('/verify-email', verifyEmail);
 router.post('/resend-verification', resendVerificationEmail);
 router.post('/refresh', doubleCsrfProtection, refreshAccessToken);
-
-// Protected routes (authentication required)
-router.post('/logout', verifyToken, logoutUser);
+router.get('/auth/check', checkAuthStatus); // Unified auth check for all roles
+// Test endpoint to verify database structure and cookie transmission
+router.get('/auth/test-db', async (req, res) => {
+  try {
+    const db = await import('../../database.js');
+    const [users] = await db.default.query('SELECT id, email, role FROM users LIMIT 1');
+    const [columns] = await db.default.query(`
+      SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'users' 
+      AND COLUMN_NAME IN ('id', 'email', 'role', 'organization_id')
+      ORDER BY ORDINAL_POSITION
+    `);
+    
+    // Check for superadmin user specifically
+    const [superadminUsers] = await db.default.query(
+      "SELECT id, email, role FROM users WHERE role = 'superadmin' LIMIT 1"
+    );
+    
+    res.json({ 
+      success: true, 
+      tableExists: true,
+      sampleUser: users[0] || null,
+      superadminUser: superadminUsers[0] || null,
+      columns: columns,
+      cookiesReceived: Object.keys(req.cookies || {}),
+      allCookies: req.cookies || {},
+      hasAccessCookie: !!req.cookies?.access_token,
+      hasRefreshCookie: !!req.cookies?.refresh_token,
+      requestHeaders: {
+        origin: req.headers.origin,
+        referer: req.headers.referer,
+        host: req.headers.host,
+        cookie: req.headers.cookie ? 'present' : 'missing'
+      }
+    });
+  } catch (error) {
+    res.json({ 
+      success: false, 
+      error: error.message,
+      cookiesReceived: Object.keys(req.cookies || {}),
+      allCookies: req.cookies || {},
+      hasAccessCookie: !!req.cookies?.access_token,
+      hasRefreshCookie: !!req.cookies?.refresh_token,
+      requestHeaders: {
+        origin: req.headers.origin,
+        referer: req.headers.referer,
+        host: req.headers.host,
+        cookie: req.headers.cookie ? 'present' : 'missing'
+      }
+    });
+  }
+});
+router.post('/logout', verifyToken, logoutUser); // Unified logout for all roles
 router.get('/profile', verifyToken, getUserProfile);
 
 router.put('/profile', verifyToken, updateUserProfile);
 router.post('/profile/photo', verifyToken, upload.single('profilePhoto'), uploadProfilePhoto);
 router.delete('/profile/photo', verifyToken, removeProfilePhoto);
 
-// Email change routes (secure flow)
+// Email change routes
 router.post('/email/request-change', verifyToken, requestEmailChange);
 router.post('/email/verify-otp', verifyToken, verifyEmailChangeOTP);
 
 router.put('/password', verifyToken, changePassword);
 router.post('/delete-account', verifyToken, deleteAccount);
 
-// Newsletter routes (authentication required)
+// Newsletter routes
 router.post('/newsletter/subscribe', verifyToken, subscribeToNewsletter);
 router.post('/newsletter/unsubscribe', verifyToken, unsubscribeFromNewsletter);
 router.get('/newsletter/status', verifyToken, getNewsletterStatus);
 
-// Notification routes (authentication required)
+// Notification routes
 router.get('/notifications', verifyToken, getUserNotifications);
 router.get('/notifications/unread-count', verifyToken, getUnreadNotificationCount);
 router.put('/notifications/:notificationId/read', verifyToken, markNotificationAsRead);
 router.put('/notifications/mark-all-read', verifyToken, markAllNotificationsAsRead);
 router.delete('/notifications/:notificationId', verifyToken, deleteNotification);
 
-// User applications routes (authentication required)
+// User applications routes
 router.get('/applications', verifyToken, getUserApplications);
 router.get('/applications/:id', verifyToken, getApplicationDetails);
 router.put('/applications/:id/cancel', verifyToken, cancelApplication);

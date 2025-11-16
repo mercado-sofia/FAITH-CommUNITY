@@ -26,7 +26,15 @@ const getApiBaseUrl = () => {
     return apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
   }
   
-  // In development, fallback to localhost
+  // In development, use relative path if Next.js rewrites are configured
+  // This makes requests same-origin, allowing cookies to work with SameSite=Lax
+  // If NEXT_PUBLIC_API_URL is set, use it (for cases where rewrites aren't used)
+  if (apiUrl && apiUrl.includes('localhost:8080')) {
+    // Use relative path to leverage Next.js rewrites (same-origin)
+    return '';
+  }
+  
+  // Fallback to full URL if no rewrites
   const devUrl = apiUrl || 'http://localhost:8080';
   return devUrl.endsWith('/') ? devUrl.slice(0, -1) : devUrl;
 };

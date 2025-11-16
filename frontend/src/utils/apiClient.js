@@ -4,13 +4,14 @@
  */
 
 import { API_BASE_URL } from '@/config/api';
-import { getValidAccessToken, isTokenExpiredOrExpiringSoon } from './tokenRefresh';
+import { getValidAccessToken } from './tokenRefresh';
 
 /**
  * Make authenticated API request with automatic token refresh
+ * Tokens are now in httpOnly cookies, so they're sent automatically
  * @param {string} url - API endpoint (relative or absolute)
  * @param {RequestInit} options - Fetch options
- * @param {string} userType - User type: 'user', 'admin', or 'superadmin'
+ * @param {string} userType - User type: 'user', 'admin', or 'superadmin' (for logging purposes)
  * @returns {Promise<Response>} - Fetch response
  */
 export const authenticatedFetch = async (url, options = {}, userType = 'user') => {
@@ -22,64 +23,26 @@ export const authenticatedFetch = async (url, options = {}, userType = 'user') =
   // Determine if this is a full URL or relative path
   const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
 
-  // Get token based on user type
-  let token = null;
-  let tokenKey = null;
-
-  switch (userType) {
-    case 'user':
-      tokenKey = 'userToken';
-      // For public users, use token refresh mechanism
-      token = await getValidAccessToken();
-      break;
-    case 'admin':
-      tokenKey = 'adminToken';
-      token = localStorage.getItem(tokenKey);
-      break;
-    case 'superadmin':
-      tokenKey = 'superAdminToken';
-      token = localStorage.getItem(tokenKey);
-      break;
-    default:
-      token = localStorage.getItem('userToken');
-  }
-
-  // Check if token exists
-  if (!token) {
-    throw new Error('No authentication token found');
-  }
-
-  // For admin/superadmin, check if token is expired
-  if (userType !== 'user' && isTokenExpiredOrExpiringSoon(token)) {
-    throw new Error('Token expired');
-  }
-
-  // Prepare headers
+  // Prepare headers - tokens are in httpOnly cookies, so no Authorization header needed!
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers,
   };
 
-  // Add authorization header
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  // Make the request
+  // Make the request - cookies are sent automatically with credentials: 'include'
   const response = await fetch(fullUrl, {
     ...options,
     headers,
-    credentials: 'include', // Important: Include cookies for refresh tokens
+    credentials: 'include', // CRITICAL: Include httpOnly cookies
   });
 
-  // Handle 401 Unauthorized - token might be expired
-  if (response.status === 401 && userType === 'user') {
-    // Try refreshing the token once
-    const newToken = await getValidAccessToken(true); // Force refresh
+  // Handle 401 Unauthorized - token might be expired, try refresh
+  if (response.status === 401) {
+    // Try refreshing the token (works for all roles now!)
+    const refreshed = await getValidAccessToken(true); // Force refresh
     
-    if (newToken) {
-      // Retry the request with new token
-      headers['Authorization'] = `Bearer ${newToken}`;
+    if (refreshed) {
+      // Retry the request - new token is in cookie
       return fetch(fullUrl, {
         ...options,
         headers,

@@ -12,14 +12,12 @@ import { uploadSingleToCloudinary } from '../../utils/cloudinaryUpload.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Get branding settings
 export const getBranding = async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM branding ORDER BY id DESC LIMIT 1');
     
     if (rows.length === 0) {
-      // For public endpoint, return success with null data instead of 404
-      // This allows the frontend to handle the case gracefully
+      // Return success with null data instead of 404 (allows frontend to handle gracefully)
       return res.json({ 
         success: true, 
         data: null,
@@ -40,30 +38,25 @@ export const getBranding = async (req, res) => {
   }
 };
 
-// Update branding settings
 export const updateBranding = async (req, res) => {
   try {
     const { logo_url, name_url, favicon_url } = req.body;
 
-    // Check if branding record exists
     const [existingRows] = await db.query('SELECT * FROM branding ORDER BY id DESC LIMIT 1');
     
     let result;
     if (existingRows.length === 0) {
-      // Create new branding record
       [result] = await db.query(
         'INSERT INTO branding (logo_url, name_url, favicon_url) VALUES (?, ?, ?)',
         [logo_url || null, name_url || null, favicon_url || null]
       );
     } else {
-      // Update existing branding record
       [result] = await db.query(
         'UPDATE branding SET logo_url = ?, name_url = ?, favicon_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
         [logo_url || null, name_url || null, favicon_url || null, existingRows[0].id]
       );
     }
 
-    // Fetch updated branding data
     const [updatedRows] = await db.query('SELECT * FROM branding ORDER BY id DESC LIMIT 1');
 
     res.json({
@@ -80,7 +73,6 @@ export const updateBranding = async (req, res) => {
   }
 };
 
-// Upload logo
 export const uploadLogo = async (req, res) => {
   try {
     if (!req.file) {
@@ -90,8 +82,6 @@ export const uploadLogo = async (req, res) => {
       });
     }
 
-
-    // Upload to Cloudinary
     const uploadResult = await uploadSingleToCloudinary(
       req.file, 
       CLOUDINARY_FOLDERS.BRANDING,
@@ -100,7 +90,6 @@ export const uploadLogo = async (req, res) => {
 
     const logoUrl = uploadResult.url;
 
-    // Update branding with new logo URL
     const [existingRows] = await db.query('SELECT * FROM branding ORDER BY id DESC LIMIT 1');
     
     if (existingRows.length === 0) {
@@ -109,7 +98,6 @@ export const uploadLogo = async (req, res) => {
         [logoUrl, null, null]
       );
     } else {
-      // Delete old logo from Cloudinary if it exists
       if (existingRows[0].logo_url) {
         const oldPublicId = extractPublicIdFromUrl(existingRows[0].logo_url);
         if (oldPublicId) {
@@ -149,7 +137,6 @@ export const uploadLogo = async (req, res) => {
   }
 };
 
-// Upload favicon
 export const uploadFavicon = async (req, res) => {
   try {
     if (!req.file) {
@@ -159,8 +146,6 @@ export const uploadFavicon = async (req, res) => {
       });
     }
 
-
-    // Upload to Cloudinary
     const uploadResult = await uploadSingleToCloudinary(
       req.file, 
       CLOUDINARY_FOLDERS.BRANDING,
@@ -169,7 +154,6 @@ export const uploadFavicon = async (req, res) => {
 
     const faviconUrl = uploadResult.url;
 
-    // Update branding with new favicon URL
     const [existingRows] = await db.query('SELECT * FROM branding ORDER BY id DESC LIMIT 1');
     
     if (existingRows.length === 0) {
@@ -178,7 +162,6 @@ export const uploadFavicon = async (req, res) => {
         [null, null, faviconUrl]
       );
     } else {
-      // Delete old favicon from Cloudinary if it exists
       if (existingRows[0].favicon_url) {
         const oldPublicId = extractPublicIdFromUrl(existingRows[0].favicon_url);
         if (oldPublicId) {
@@ -218,7 +201,6 @@ export const uploadFavicon = async (req, res) => {
   }
 };
 
-// Delete logo
 export const deleteLogo = async (req, res) => {
   try {
     const [existingRows] = await db.query('SELECT * FROM branding ORDER BY id DESC LIMIT 1');
@@ -230,7 +212,6 @@ export const deleteLogo = async (req, res) => {
       });
     }
 
-    // Delete logo from Cloudinary if it exists
     if (existingRows[0].logo_url) {
       const publicId = extractPublicIdFromUrl(existingRows[0].logo_url);
       if (publicId) {
@@ -241,7 +222,6 @@ export const deleteLogo = async (req, res) => {
       }
     }
 
-    // Update database
     await db.query(
       'UPDATE branding SET logo_url = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       [existingRows[0].id]
@@ -260,7 +240,6 @@ export const deleteLogo = async (req, res) => {
   }
 };
 
-// Delete favicon
 export const deleteFavicon = async (req, res) => {
   try {
     const [existingRows] = await db.query('SELECT * FROM branding ORDER BY id DESC LIMIT 1');
@@ -272,7 +251,6 @@ export const deleteFavicon = async (req, res) => {
       });
     }
 
-    // Delete favicon from Cloudinary if it exists
     if (existingRows[0].favicon_url) {
       const publicId = extractPublicIdFromUrl(existingRows[0].favicon_url);
       if (publicId) {
@@ -283,7 +261,6 @@ export const deleteFavicon = async (req, res) => {
       }
     }
 
-    // Update database
     await db.query(
       'UPDATE branding SET favicon_url = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       [existingRows[0].id]
@@ -302,7 +279,6 @@ export const deleteFavicon = async (req, res) => {
   }
 };
 
-// Upload name image
 export const uploadName = async (req, res) => {
   try {
     if (!req.file) {
@@ -312,8 +288,6 @@ export const uploadName = async (req, res) => {
       });
     }
 
-
-    // Upload to Cloudinary
     const uploadResult = await uploadSingleToCloudinary(
       req.file, 
       CLOUDINARY_FOLDERS.BRANDING,
@@ -322,7 +296,6 @@ export const uploadName = async (req, res) => {
 
     const nameUrl = uploadResult.url;
 
-    // Update branding with new name URL
     const [existingRows] = await db.query('SELECT * FROM branding ORDER BY id DESC LIMIT 1');
     
     if (existingRows.length === 0) {
@@ -331,7 +304,6 @@ export const uploadName = async (req, res) => {
         [null, nameUrl, null]
       );
     } else {
-      // Delete old name from Cloudinary if it exists
       if (existingRows[0].name_url) {
         const oldPublicId = extractPublicIdFromUrl(existingRows[0].name_url);
         if (oldPublicId) {
@@ -371,7 +343,6 @@ export const uploadName = async (req, res) => {
   }
 };
 
-// Delete name
 export const deleteName = async (req, res) => {
   try {
     const [existingRows] = await db.query('SELECT * FROM branding ORDER BY id DESC LIMIT 1');
@@ -383,7 +354,6 @@ export const deleteName = async (req, res) => {
       });
     }
 
-    // Delete name from Cloudinary if it exists
     if (existingRows[0].name_url) {
       const publicId = extractPublicIdFromUrl(existingRows[0].name_url);
       if (publicId) {
@@ -394,7 +364,6 @@ export const deleteName = async (req, res) => {
       }
     }
 
-    // Update database
     await db.query(
       'UPDATE branding SET name_url = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       [existingRows[0].id]
@@ -413,7 +382,6 @@ export const deleteName = async (req, res) => {
   }
 };
 
-// Get site name
 export const getSiteName = async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM site_name ORDER BY id DESC LIMIT 1');
@@ -438,7 +406,6 @@ export const getSiteName = async (req, res) => {
   }
 };
 
-// Update site name
 export const updateSiteName = async (req, res) => {
   try {
     const { site_name } = req.body;
@@ -450,25 +417,21 @@ export const updateSiteName = async (req, res) => {
       });
     }
 
-    // Check if site name record exists
     const [existingRows] = await db.query('SELECT * FROM site_name ORDER BY id DESC LIMIT 1');
     
     let result;
     if (existingRows.length === 0) {
-      // Create new site name record
       [result] = await db.query(
         'INSERT INTO site_name (site_name) VALUES (?)',
         [site_name.trim()]
       );
     } else {
-      // Update existing site name record
       [result] = await db.query(
         'UPDATE site_name SET site_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
         [site_name.trim(), existingRows[0].id]
       );
     }
 
-    // Fetch updated site name data
     const [updatedRows] = await db.query('SELECT * FROM site_name ORDER BY id DESC LIMIT 1');
 
     res.json({

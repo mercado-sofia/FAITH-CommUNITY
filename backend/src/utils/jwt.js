@@ -32,7 +32,6 @@ export async function issueRefreshToken(userId, { userAgent, ipAddress } = {}) {
 }
 
 export async function rotateRefreshToken(oldToken, userId, { userAgent, ipAddress } = {}) {
-  // Revoke old token and issue a new one atomically
   const connection = await db.getConnection?.() || null
   try {
     if (connection) await connection.beginTransaction()
@@ -64,14 +63,77 @@ export async function findValidRefreshToken(token) {
   return rows[0] || null
 }
 
-export function getRefreshCookieOptions() {
-  return {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: (process.env.COOKIE_SAMESITE || "lax").toLowerCase(),
-    path: "/",
-    maxAge: REFRESH_TOKEN_TTL_MS,
+export function getAccessTokenCookieOptions() {
+  // Convert ACCESS_TOKEN_TTL to seconds (e.g., "15m" = 900 seconds)
+  const ttlMatch = ACCESS_TOKEN_TTL.match(/(\d+)([smhd])/);
+  let seconds = 15 * 60; // Default 15 minutes
+  
+  if (ttlMatch) {
+    const value = parseInt(ttlMatch[1]);
+    const unit = ttlMatch[2];
+    seconds = unit === 's' ? value : unit === 'm' ? value * 60 : unit === 'h' ? value * 3600 : value * 86400;
   }
+  
+  const isDevelopment = process.env.NODE_ENV !== "production";
+  
+  // IMPORTANT: For cross-origin cookies (localhost:3000 -> localhost:8080)
+  // Chrome allows SameSite=None with Secure=false for localhost, but it's not reliable
+  // Better approach: Use SameSite=Lax and ensure requests are same-site
+  // OR use a proxy to make requests same-origin
+  // For now, we'll use Lax which works for same-site navigation
+  const sameSiteValue = process.env.COOKIE_SAMESITE 
+    ? (process.env.COOKIE_SAMESITE).toLowerCase()
+    : "lax"; // Changed from "none" to "lax" - works better for localhost
+  
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // false in dev (localhost), true in prod (HTTPS)
+    sameSite: sameSiteValue,
+    path: "/",
+    maxAge: seconds, // Cookie maxAge is in seconds
+  };
+  
+  // In development with Next.js rewrites, cookies are set by backend but forwarded through Next.js
+  // Don't set domain - let it default to the request origin
+  // This allows cookies to work when proxied through Next.js (localhost:3000)
+  if (process.env.COOKIE_DOMAIN) {
+    cookieOptions.domain = process.env.COOKIE_DOMAIN;
+  } else if (process.env.NODE_ENV === "production") {
+    // In production, you might want to set domain for subdomain sharing
+    // But don't set it in dev to allow Next.js proxy to work
+  }
+  
+  return cookieOptions;
+}
+
+export function getRefreshCookieOptions() {
+  const isDevelopment = process.env.NODE_ENV !== "production";
+  
+  // IMPORTANT: For cross-origin cookies (localhost:3000 -> localhost:8080)
+  // Use SameSite=Lax which works better for localhost
+  const sameSiteValue = process.env.COOKIE_SAMESITE 
+    ? (process.env.COOKIE_SAMESITE).toLowerCase()
+    : "lax"; // Changed from "none" to "lax" - works better for localhost
+  
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // false in dev (localhost), true in prod (HTTPS)
+    sameSite: sameSiteValue,
+    path: "/",
+    maxAge: Math.floor(REFRESH_TOKEN_TTL_MS / 1000), // Convert milliseconds to seconds
+  };
+  
+  // In development with Next.js rewrites, cookies are set by backend but forwarded through Next.js
+  // Don't set domain - let it default to the request origin
+  // This allows cookies to work when proxied through Next.js (localhost:3000)
+  if (process.env.COOKIE_DOMAIN) {
+    cookieOptions.domain = process.env.COOKIE_DOMAIN;
+  } else if (process.env.NODE_ENV === "production") {
+    // In production, you might want to set domain for subdomain sharing
+    // But don't set it in dev to allow Next.js proxy to work
+  }
+  
+  return cookieOptions;
 }
 
 export default {
@@ -82,6 +144,7 @@ export default {
   revokeAllUserRefreshTokens,
   revokeRefreshToken,
   findValidRefreshToken,
+  getAccessTokenCookieOptions,
   getRefreshCookieOptions,
 }
 

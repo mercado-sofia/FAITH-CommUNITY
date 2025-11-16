@@ -63,7 +63,10 @@ export const submitMessage = async (req, res) => {
     
     if (user_id) {
       const [userResult] = await db.execute(
-        "SELECT id, email, first_name, last_name FROM users WHERE id = ? AND is_active = 1",
+        `SELECT u.id, u.email, up.first_name, up.last_name 
+         FROM users u
+         LEFT JOIN user_profiles up ON u.id = up.user_id
+         WHERE u.id = ? AND u.is_active = 1 AND u.role = 'user'`,
         [user_id]
       );
       
@@ -87,7 +90,10 @@ export const submitMessage = async (req, res) => {
       // Try to find user by email (for registered users)
       // Use LOWER() for case-insensitive email matching
       [userByEmailResult] = await db.execute(
-        "SELECT id, email, first_name, last_name FROM users WHERE LOWER(email) = LOWER(?) AND is_active = 1",
+        `SELECT u.id, u.email, up.first_name, up.last_name 
+         FROM users u
+         LEFT JOIN user_profiles up ON u.id = up.user_id
+         WHERE LOWER(u.email) = LOWER(?) AND u.is_active = 1 AND u.role = 'user'`,
         [actualSenderEmail]
       );
       
@@ -119,7 +125,7 @@ export const submitMessage = async (req, res) => {
 
     // Find all admins associated with this organization
     const [adminResult] = await db.execute(
-      "SELECT id FROM admins WHERE organization_id = ?",
+      "SELECT id FROM users WHERE organization_id = ? AND role = 'admin'",
       [orgId]
     );
 
@@ -145,7 +151,10 @@ export const submitMessage = async (req, res) => {
         } else {
           // Otherwise, query for the name (shouldn't happen, but just in case)
           const [userNameResult] = await db.execute(
-            "SELECT first_name, last_name FROM users WHERE id = ?",
+            `SELECT up.first_name, up.last_name 
+             FROM users u
+             LEFT JOIN user_profiles up ON u.id = up.user_id
+             WHERE u.id = ? AND u.role = 'user'`,
             [actualUserId]
           );
           

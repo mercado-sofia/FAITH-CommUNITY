@@ -10,7 +10,7 @@ This feature allows general users (not admin or superadmin) to upload and change
 - **Authentication**: Required (JWT token)
 - **File Upload**: Uses Multer middleware with Cloudinary integration
 - **Storage**: Files are stored in Cloudinary under `faith-community/user-profiles/`
-- **Database**: Updates `profile_photo_url` column in `users` table with Cloudinary URL
+- **Database**: Updates `profile_photo_url` column in `user_profiles` table with Cloudinary URL (for public users)
 
 ### Frontend
 - **Location**: `/profile` page (general users only)
@@ -41,7 +41,9 @@ This feature allows general users (not admin or superadmin) to upload and change
 
 ### Database Schema
 ```sql
-ALTER TABLE users ADD COLUMN profile_photo_url VARCHAR(500);
+-- Profile photos are stored in user_profiles table (for public users)
+-- Column: profile_photo_url VARCHAR(500) in user_profiles table
+-- The user_profiles table is linked to users table via user_id foreign key
 ```
 
 ### Cloudinary Integration

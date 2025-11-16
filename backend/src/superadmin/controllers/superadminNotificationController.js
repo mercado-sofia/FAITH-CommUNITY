@@ -1,17 +1,13 @@
-//db table: superadmin_notifications
-
 import db from '../../database.js';
 import { getOrganizationLogoUrl } from '../../utils/imageUrlUtils.js';
 import { logError } from '../../utils/logger.js';
 
 class SuperAdminNotificationController {
-  // Get all notifications for a superadmin
   static async getNotifications(req, res) {
     try {
       const { superAdminId } = req.params;
       const { limit = 10, offset = 0 } = req.query;
 
-      // Validate superAdminId
       if (!superAdminId || isNaN(parseInt(superAdminId))) {
         return res.status(400).json({
           success: false,
@@ -19,7 +15,6 @@ class SuperAdminNotificationController {
         });
       }
 
-      // Validate and convert limit and offset to numbers
       const limitNum = parseInt(limit, 10);
       const offsetNum = parseInt(offset, 10);
       
@@ -37,16 +32,14 @@ class SuperAdminNotificationController {
         });
       }
 
-      // Get total count first
       const [countResult] = await db.execute(
         'SELECT COUNT(*) as total FROM superadmin_notifications WHERE superadmin_id = ?',
         [superAdminId]
       );
       const total = countResult[0].total;
 
-      // Get notifications with pagination and current organization data
-      // Note: MySQL2 has issues with LIMIT and OFFSET as placeholders, so we interpolate them directly
-      // This is safe because we've already validated limitNum and offsetNum are valid numbers
+      // MySQL2 has issues with LIMIT and OFFSET as placeholders, so we interpolate them directly
+      // Safe because limitNum and offsetNum are validated numbers
       const query = `
         SELECT 
           sn.id, 

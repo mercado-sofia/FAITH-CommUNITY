@@ -96,11 +96,6 @@ function AdminLayoutContent({ children }) {
         return;
       }
 
-      // Check if this is the invitation acceptance page - skip authentication
-      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin/invitation/accept')) {
-        setIsInitialLoading(false);
-        return;
-      }
 
       try {
         // Check for window to avoid SSR errors
@@ -109,12 +104,40 @@ function AdminLayoutContent({ children }) {
           return;
         }
         
-        const token = localStorage.getItem('adminToken');
-        const adminData = localStorage.getItem('adminData');
-        const userRole = typeof document !== 'undefined' ? document.cookie.includes('userRole=admin') : false;
-        
-        if (!token || !adminData || !userRole) {
-          // Use centralized immediate cleanup for security
+        // Check auth status from backend (reads from httpOnly cookie)
+        try {
+          const { getCurrentUser } = await import('@/utils/authService');
+          const userData = await getCurrentUser();
+          
+          console.log('[Admin Layout] Auth check result:', { 
+            hasUserData: !!userData, 
+            role: userData?.role,
+            userData: userData ? { id: userData.id, email: userData.email, role: userData.role } : null
+          });
+          
+          if (!userData || userData.role !== 'admin') {
+            console.warn('[Admin Layout] Auth check failed - redirecting to login', {
+              hasUserData: !!userData,
+              role: userData?.role,
+              expectedRole: 'admin'
+            });
+            clearAuthImmediate(USER_TYPES.ADMIN);
+            window.location.href = '/login';
+            return;
+          }
+          
+          // Store user data in localStorage for quick access (non-sensitive data only)
+          localStorage.setItem('adminData', JSON.stringify(userData));
+          
+          // Set userRole cookie if not already set (for Next.js middleware in future)
+          if (typeof document !== 'undefined' && !document.cookie.includes('userRole=admin')) {
+            document.cookie = "userRole=admin; path=/; max-age=86400; SameSite=Lax";
+          }
+          
+          console.log('[Admin Layout] Auth check successful, admin authenticated');
+        } catch (error) {
+          console.error('[Admin Layout] Auth check error:', error);
+          // Auth check failed - redirect to login
           clearAuthImmediate(USER_TYPES.ADMIN);
           window.location.href = '/login';
           return;
@@ -154,18 +177,6 @@ function AdminLayoutContent({ children }) {
     return <Loader />;
   }
 
-  // For invitation acceptance page, allow access on mobile and render without admin layout components
-  const isInvitationPage = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin/invitation/accept');
-  
-  if (isInvitationPage) {
-    return (
-      <div>
-        <ErrorBoundary>
-          {children}
-        </ErrorBoundary>
-      </div>
-    );
-  }
 
   // Show mobile restriction message for mobile devices
   if (isMobile) {

@@ -5,47 +5,13 @@ import { formatDateForAPI } from '@/utils/dateUtils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-// Safe localStorage access for SSR
-const getAdminToken = () => {
-  if (typeof window === 'undefined') return null;
-  try {
-    return localStorage.getItem("adminToken");
-  } catch (error) {
-    logger.error('Failed to access localStorage', error);
-    return null;
-  }
-};
-
-// Check if JWT token is expired
-const isTokenExpired = (token) => {
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    const currentTime = Date.now() / 1000;
-    return payload.exp < currentTime;
-  } catch (error) {
-    return true; // If we can't parse the token, consider it expired
-  }
-};
-
-// Check if user is authenticated (has valid token and data)
-const isAuthenticated = () => {
+// Check if user is authenticated (now uses httpOnly cookies via backend)
+const isAuthenticated = async () => {
   if (typeof window === 'undefined') return false;
   try {
-    const token = localStorage.getItem("adminToken");
-    const adminData = localStorage.getItem("adminData");
-    
-    // Check for token and admin data
-    if (!token || !adminData) return false;
-    
-    // Check if token is expired
-    if (isTokenExpired(token)) {
-      // Clear expired token
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('adminData');
-      return false;
-    }
-    
-    return true;
+    // Check auth status from backend (reads from httpOnly cookie)
+    const { isAuthenticated: checkAuth, USER_TYPES } = await import('@/utils/authService');
+    return await checkAuth(USER_TYPES.ADMIN);
   } catch (error) {
     return false;
   }
@@ -59,29 +25,13 @@ const adminFetcher = async (url) => {
       throw new Error('Cannot fetch on server side');
     }
 
-    const adminToken = getAdminToken();
-    
-    
-    if (!adminToken) {
-      const error = new Error('No admin token found. Please log in again.');
-      // Don't log this error as it's expected for unauthenticated users
-      throw error;
-    }
-    
-    // Check if token is expired
-    if (isTokenExpired(adminToken)) {
-      // Clear expired token
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('adminData');
-      const error = new Error('Your session has expired. Please log in again.');
-      throw error;
-    }
-    
+    // Tokens are in httpOnly cookies - sent automatically with credentials: 'include'
     const response = await fetch(url, {
       method: 'GET',
+      credentials: 'include', // CRITICAL: Include httpOnly cookies
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${adminToken}`
+        // No Authorization header needed - cookies handle this
       },
     });
 
@@ -91,16 +41,23 @@ const adminFetcher = async (url) => {
       // Handle specific error cases
       if (response.status === 401) {
         errorMessage = 'Your session has expired. Please log in again.';
-        // Clear invalid token
+        // Try to refresh token
         try {
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('adminToken');
-            localStorage.removeItem('adminData');
-            // Redirect to login page
+          const { getValidAccessToken } = await import('@/utils/tokenRefresh');
+          const refreshed = await getValidAccessToken(true);
+          if (!refreshed && typeof window !== 'undefined') {
+            // Refresh failed - redirect to login
+            const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
+            clearAuthImmediate(USER_TYPES.ADMIN);
             window.location.href = '/login';
           }
         } catch (e) {
-          // Ignore localStorage errors
+          // Refresh failed - redirect to login
+          if (typeof window !== 'undefined') {
+            const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
+            clearAuthImmediate(USER_TYPES.ADMIN);
+            window.location.href = '/login';
+          }
         }
       } else if (response.status === 403) {
         errorMessage = 'Access denied. You do not have permission to access this resource.';

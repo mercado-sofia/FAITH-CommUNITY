@@ -82,7 +82,7 @@ export const uploadPostActReport = async (req, res) => {
 
     // Notify superadmin about the new post act report submission
     try {
-      const [superadminRows] = await db.execute('SELECT id FROM superadmin LIMIT 1');
+      const [superadminRows] = await db.execute('SELECT id FROM users WHERE role = \'superadmin\' LIMIT 1');
       const superadminId = superadminRows.length > 0 ? superadminRows[0].id : null;
       if (superadminId) {
         // Get organization acronym for message context

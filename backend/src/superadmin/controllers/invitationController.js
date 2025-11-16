@@ -4,12 +4,10 @@ import * as bcrypt from "bcrypt"
 import { sendMail } from "../../utils/mailer.js"
 import { logSuperadminAction } from "../../utils/audit.js"
 
-// Generate secure invitation token
 const generateInvitationToken = () => {
   return crypto.randomBytes(32).toString('hex')
 }
 
-// Send invitation email
 const sendInvitationEmail = async (email, token) => {
   try {
     if (!process.env.FRONTEND_URL) {
@@ -17,7 +15,7 @@ const sendInvitationEmail = async (email, token) => {
       throw new Error('FRONTEND_URL not configured')
     }
 
-    const invitationLink = `${process.env.FRONTEND_URL}/admin/invitation/accept?token=${token}`
+    const invitationLink = `${process.env.FRONTEND_URL}/invitation/accept?token=${token}`
   
     await sendMail({
       to: email,
@@ -54,7 +52,6 @@ const sendInvitationEmail = async (email, token) => {
       console.error(`   → Failed command: ${error.command}`)
     }
     
-    // Return detailed error information
     const isSendGrid = process.env.SMTP_HOST?.trim()?.includes('sendgrid')
     const isTimeoutError = error.code === 'ETIMEDOUT' || 
                           error.message.includes('timeout') || 
@@ -112,25 +109,18 @@ export const sendInvitation = async (req, res) => {
   }
 
   try {
-    // Check if email exists in users table
-    const [existingUser] = await db.execute("SELECT id FROM users WHERE email = ?", [email])
-    if (existingUser.length > 0) {
-      return res.status(409).json({ error: "This email is already registered as a user" })
+    const [existingUserCheck] = await db.execute("SELECT id, role FROM users WHERE email = ?", [email])
+    if (existingUserCheck.length > 0) {
+      const role = existingUserCheck[0].role;
+      if (role === 'superadmin') {
+        return res.status(409).json({ error: "This email is already registered as a superadmin" })
+      } else if (role === 'admin') {
+        return res.status(409).json({ error: "Admin with this email already exists" })
+      } else {
+        return res.status(409).json({ error: "This email is already registered as a user" })
+      }
     }
 
-    // Check if email exists in superadmin table (username is used as email)
-    const [existingSuperadmin] = await db.execute("SELECT id FROM superadmin WHERE username = ?", [email])
-    if (existingSuperadmin.length > 0) {
-      return res.status(409).json({ error: "This email is already registered as a superadmin" })
-    }
-
-    // Check if admin with this email already exists
-    const [existingAdmin] = await db.execute("SELECT id FROM admins WHERE email = ?", [email])
-    if (existingAdmin.length > 0) {
-      return res.status(409).json({ error: "Admin with this email already exists" })
-    }
-
-    // Check if there's already a pending invitation for this email
     const [existingInvitation] = await db.execute(
       "SELECT id FROM admin_invitations WHERE email = ? AND status = 'pending' AND expires_at > NOW()",
       [email]
@@ -139,30 +129,24 @@ export const sendInvitation = async (req, res) => {
       return res.status(409).json({ error: "A pending invitation already exists for this email" })
     }
 
-    // Generate token and expiration (7 days from now)
     const token = generateInvitationToken()
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 7)
 
-    // Create invitation record
     await db.execute(
       "INSERT INTO admin_invitations (email, token, expires_at) VALUES (?, ?, ?)",
       [email, token, expiresAt]
     )
 
-    // Send invitation email
     const emailResult = await sendInvitationEmail(email, token)
     if (!emailResult.success) {
-      // If email fails, delete the invitation record
       await db.execute("DELETE FROM admin_invitations WHERE token = ?", [token])
-      // Return detailed error message to help with troubleshooting
       return res.status(500).json({ 
         error: emailResult.error || "Failed to send invitation email",
         details: emailResult.error || "Please check your SMTP configuration"
       })
     }
 
-    // Log superadmin action
     await logSuperadminAction(req.superadmin?.id, 'send_invitation', `Sent admin invitation to ${email}`, req)
 
     res.status(201).json({
@@ -175,12 +159,10 @@ export const sendInvitation = async (req, res) => {
   }
 }
 
-// Validate invitation token
 export const validateInvitationToken = async (req, res) => {
   const { token } = req.params
 
   try {
-    // First check if token exists at all
     const [allInvitations] = await db.execute(
       "SELECT * FROM admin_invitations WHERE token = ?",
       [token]
@@ -192,23 +174,19 @@ export const validateInvitationToken = async (req, res) => {
 
     const invitation = allInvitations[0]
 
-    // Check if admin with this email already exists (regardless of invitation status)
-    const [existingAdmin] = await db.execute("SELECT id FROM admins WHERE email = ?", [invitation.email])
+    const [existingAdmin] = await db.execute("SELECT id FROM users WHERE email = ? AND role = 'admin'", [invitation.email])
     if (existingAdmin.length > 0) {
       return res.status(410).json({ error: "Invitation has already been accepted" })
     }
 
-    // Check if invitation has already been accepted
     if (invitation.status === 'accepted') {
       return res.status(410).json({ error: "Invitation has already been accepted" })
     }
 
-    // Check if invitation is expired
     if (invitation.status === 'expired' || new Date() > new Date(invitation.expires_at)) {
       return res.status(404).json({ error: "Invitation has expired" })
     }
 
-    // Check if invitation is still pending and valid
     if (invitation.status === 'pending' && new Date() <= new Date(invitation.expires_at)) {
       res.json({
         valid: true,
@@ -223,7 +201,6 @@ export const validateInvitationToken = async (req, res) => {
   }
 }
 
-// Accept invitation and create admin account
 export const acceptInvitation = async (req, res) => {
   const { token, org, orgName, logo, password } = req.body
 
@@ -231,7 +208,6 @@ export const acceptInvitation = async (req, res) => {
     return res.status(400).json({ error: "All fields are required including logo" })
   }
 
-  // Validate password requirements (matching frontend)
   if (password.length < 8) {
     return res.status(400).json({ error: "Password must be at least 8 characters long" })
   }
@@ -250,7 +226,6 @@ export const acceptInvitation = async (req, res) => {
   try {
     await connection.beginTransaction()
 
-    // Validate invitation token
     const [invitations] = await connection.execute(
       "SELECT * FROM admin_invitations WHERE token = ? AND status = 'pending' AND expires_at > NOW()",
       [token]
@@ -264,7 +239,7 @@ export const acceptInvitation = async (req, res) => {
     const invitation = invitations[0]
 
     // Check if admin with this email already exists
-    const [existingAdmin] = await connection.execute("SELECT id FROM admins WHERE email = ?", [invitation.email])
+    const [existingAdmin] = await connection.execute("SELECT id FROM users WHERE email = ? AND role = 'admin'", [invitation.email])
     if (existingAdmin.length > 0) {
       await connection.rollback()
       return res.status(409).json({ error: "Admin with this email already exists" })
@@ -290,10 +265,10 @@ export const acceptInvitation = async (req, res) => {
 
     const organizationId = orgResult.insertId
 
-    // Create admin record
+    // Create admin record in unified users table
     const [adminResult] = await connection.execute(
-      `INSERT INTO admins (email, password, is_active, organization_id, created_at) 
-       VALUES (?, ?, TRUE, ?, NOW())`,
+      `INSERT INTO users (email, password_hash, role, is_active, organization_id, created_at) 
+       VALUES (?, ?, 'admin', TRUE, ?, NOW())`,
       [invitation.email, hashedPassword, organizationId]
     )
 
@@ -307,16 +282,16 @@ export const acceptInvitation = async (req, res) => {
 
     // Fetch the complete admin data with organization info
     const [adminWithOrg] = await connection.execute(
-      `SELECT a.id, a.email, a.is_active, a.organization_id, o.org, o.orgName
-       FROM admins a
-       LEFT JOIN organizations o ON a.organization_id = o.id
-       WHERE a.id = ?`,
+      `SELECT u.id, u.email, u.is_active, u.organization_id, o.org, o.orgName
+       FROM users u
+       LEFT JOIN organizations o ON u.organization_id = o.id
+       WHERE u.id = ? AND u.role = 'admin'`,
       [adminResult.insertId]
     )
 
     // Create notification for superadmin about new admin account
     try {
-      const [superadminRows] = await connection.execute("SELECT id FROM superadmin LIMIT 1")
+      const [superadminRows] = await connection.execute("SELECT id FROM users WHERE role = 'superadmin' LIMIT 1")
       if (superadminRows.length > 0) {
         const superadminId = superadminRows[0].id
         const { SuperAdminNotificationController } = await import('../superadminNotificationController.js')
@@ -366,13 +341,13 @@ export const getAllInvitations = async (req, res) => {
          ai.created_at, 
          ai.accepted_at, 
          ai.expires_at,
-         a.id as admin_id,
-         a.is_active as admin_is_active,
+         u.id as admin_id,
+         u.is_active as admin_is_active,
          o.org,
          o.orgName
        FROM admin_invitations ai
-       LEFT JOIN admins a ON ai.email = a.email AND ai.status = 'accepted'
-       LEFT JOIN organizations o ON a.organization_id = o.id
+       LEFT JOIN users u ON ai.email = u.email AND ai.status = 'accepted' AND u.role = 'admin'
+       LEFT JOIN organizations o ON u.organization_id = o.id
        ORDER BY ai.created_at DESC`
     )
     res.json(invitations)
@@ -410,9 +385,9 @@ export const deleteInvitation = async (req, res) => {
   try {
     // First, get the invitation details to check if there's an associated admin
     const [invitationRows] = await db.execute(
-      `SELECT ai.email, a.id as admin_id, a.is_active 
+      `SELECT ai.email, u.id as admin_id, u.is_active 
        FROM admin_invitations ai
-       LEFT JOIN admins a ON ai.email = a.email
+       LEFT JOIN users u ON ai.email = u.email AND u.role = 'admin'
        WHERE ai.id = ?`,
       [id]
     )
@@ -439,7 +414,7 @@ export const deleteInvitation = async (req, res) => {
       if (invitation.admin_id) {
         // Get admin details to check organization
         const [adminDetails] = await connection.execute(
-          "SELECT organization_id FROM admins WHERE id = ?",
+          "SELECT organization_id FROM users WHERE id = ? AND role = 'admin'",
           [invitation.admin_id]
         )
 
@@ -448,7 +423,7 @@ export const deleteInvitation = async (req, res) => {
 
           // Delete the admin account
           await connection.execute(
-            "DELETE FROM admins WHERE id = ?",
+            "DELETE FROM users WHERE id = ? AND role = 'admin'",
             [invitation.admin_id]
           )
 
@@ -456,7 +431,7 @@ export const deleteInvitation = async (req, res) => {
           if (organizationId) {
             // Check if there are other active admins for this organization
             const [otherAdmins] = await connection.execute(
-              "SELECT COUNT(*) as count FROM admins WHERE organization_id = ? AND is_active = TRUE",
+              "SELECT COUNT(*) as count FROM users WHERE organization_id = ? AND role = 'admin' AND is_active = TRUE",
               [organizationId]
             )
 
@@ -503,9 +478,9 @@ export const deactivateAdminFromInvitation = async (req, res) => {
 
     // Get the invitation and associated admin details
     const [invitationRows] = await connection.execute(
-      `SELECT ai.email, a.id as admin_id, a.is_active, a.organization_id 
+      `SELECT ai.email, u.id as admin_id, u.is_active, u.organization_id 
        FROM admin_invitations ai
-       LEFT JOIN admins a ON ai.email = a.email
+       LEFT JOIN users u ON ai.email = u.email AND u.role = 'admin'
        WHERE ai.id = ?`,
       [id]
     )
@@ -529,7 +504,7 @@ export const deactivateAdminFromInvitation = async (req, res) => {
 
     // Toggle admin account status
     await connection.execute(
-      "UPDATE admins SET is_active = ? WHERE id = ?",
+      "UPDATE users SET is_active = ? WHERE id = ? AND role = 'admin'",
       [newStatus, invitation.admin_id]
     )
 

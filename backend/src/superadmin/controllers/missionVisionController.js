@@ -1,7 +1,5 @@
-// db table: mission_vision
 import db from '../../database.js';
 
-// Helper to normalize type (database uses lowercase)
 const normalizeType = (type) => {
   if (!type) return null;
   const normalized = type.toLowerCase();
@@ -10,9 +8,7 @@ const normalizeType = (type) => {
 
 export const getMissionVision = async (req, res) => {
   try {
-    // Get the latest Mission and Vision (one of each type)
-    // Use subquery to get the latest entry for each type
-    // Handle both lowercase and capitalized types in database
+    // Get the latest Mission and Vision (one of each type) - handles both lowercase and capitalized types
     const [results] = await db.query(
       `SELECT mv1.* 
        FROM mission_vision mv1
@@ -25,8 +21,7 @@ export const getMissionVision = async (req, res) => {
        ORDER BY LOWER(mv1.type)`
     );
     
-    // Ensure we return exactly one Mission and one Vision
-    // Handle both lowercase and capitalized types
+    // Ensure we return exactly one Mission and one Vision (handles both lowercase and capitalized types)
     const mission = results.find(r => 
       r.type?.toLowerCase() === 'mission' || r.type === 'Mission' || r.type === 'mission'
     );
@@ -39,22 +34,21 @@ export const getMissionVision = async (req, res) => {
       response.push({ 
         ...mission, 
         type: 'Mission',
-        content: mission.content || null // Ensure content is included
+        content: mission.content || null
       });
     }
     if (vision) {
       response.push({ 
         ...vision, 
         type: 'Vision',
-        content: vision.content || null // Ensure content is included
+        content: vision.content || null
       });
     }
     
     res.status(200).json(response);
   } catch (err) {
     console.error('Error fetching mission/vision:', err);
-    // Return empty array instead of error to prevent frontend crashes
-    // This allows the frontend to handle empty state gracefully
+    // Return empty array to prevent frontend crashes (allows graceful empty state handling)
     res.status(200).json([]);
   }
 };
@@ -63,7 +57,6 @@ export const getMissionVision = async (req, res) => {
 export const upsertMissionVision = async (req, res) => {
   const { type, content } = req.body;
   try {
-    // Validate type is provided
     if (!type || (type !== 'Mission' && type !== 'Vision')) {
       return res.status(400).json({ 
         success: false,
@@ -71,7 +64,6 @@ export const upsertMissionVision = async (req, res) => {
       });
     }
     
-    // Normalize type to lowercase for database
     const normalizedType = normalizeType(type);
     if (!normalizedType) {
       return res.status(400).json({ 

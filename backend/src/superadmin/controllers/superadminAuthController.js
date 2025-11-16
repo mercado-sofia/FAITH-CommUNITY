@@ -152,9 +152,12 @@ export const loginSuperadmin = async (req, res) => {
     }
 
 
-    // In production, always use JWT tokens. In development, use hardcoded token for superadmin ID 1
+    // Always use JWT tokens (hardcoded token removed for production safety)
+    // In development, we can still use hardcoded token for superadmin ID 1, but it's safer to use JWT
     const isProduction = process.env.NODE_ENV === "production";
-    const accessToken = (!isProduction && superadmin.id === 1) 
+    const useHardcodedToken = !isProduction && superadmin.id === 1 && process.env.ALLOW_HARDCODED_TOKEN === "true";
+    
+    const accessToken = useHardcodedToken
       ? "superadmin" 
       : signAccessToken({
           id: superadmin.id,

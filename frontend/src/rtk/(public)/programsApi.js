@@ -1,11 +1,22 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
+import { API_BASE_URL } from '@/config/api';
+
+const getBaseUrl = () => {
+  // In development, use relative paths for Next.js rewrites
+  if (process.env.NODE_ENV === 'development') {
+    return '/api';
+  }
+  return `${API_BASE_URL || ''}/api`;
+};
 
 export const programsApi = createApi({
   reducerPath: "programsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api` : "http://localhost:8080/api",
+    baseUrl: getBaseUrl(),
+    credentials: 'include', // CRITICAL: Include httpOnly cookies
     prepareHeaders: (headers) => {
       headers.set("Content-Type", "application/json")
+      // No Authorization header needed - httpOnly cookies handle authentication
       return headers
     },
   }),

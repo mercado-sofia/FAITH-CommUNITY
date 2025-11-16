@@ -1,13 +1,195 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { FaTimes, FaEye, FaExpand, FaChevronLeft, FaChevronRight, FaFile } from 'react-icons/fa';
+import { FaTimes, FaEye, FaExpand, FaChevronLeft, FaChevronRight, FaFile, FaPlay } from 'react-icons/fa';
 import { getProgramImageUrl, getOrganizationImageUrl } from '@/utils/uploadPaths';
 import { formatDateTime } from '../../../../utils/dateUtils';
 import { getStatusBadgeConfig } from '@/utils/collaborationStatusUtils';
 import logger from '@/utils/logger';
 import styles from './styles/ViewDetailsModal.module.css';
 
+// Helper function to get proper video URL
+const getVideoUrl = (mediaPath) => {
+  if (!mediaPath) return null;
+  
+  // If it's already a full URL, return as is
+  if (typeof mediaPath === 'string' && (mediaPath.startsWith('http://') || mediaPath.startsWith('https://'))) {
+    // If it's a Cloudinary URL but using image/upload, convert to video/upload
+    if (mediaPath.includes('res.cloudinary.com') && mediaPath.includes('/image/upload/')) {
+      return mediaPath.replace('/image/upload/', '/video/upload/');
+    }
+    return mediaPath;
+  }
+  
+  // If it's a Cloudinary public_id, construct the video URL
+  if (typeof mediaPath === 'string' && mediaPath.includes('faith-community/')) {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'djty9l7zw';
+    // Use video/upload for videos instead of image/upload
+    return `https://res.cloudinary.com/${cloudName}/video/upload/${mediaPath}`;
+  }
+  
+  // Return as is if it's a valid string
+  return mediaPath || null;
+};
+
 // Note: advocacy and competency are no longer part of the approval workflow
+
+// Video Player Component with Play Button
+const VideoPlayer = ({ videoUrl, media, index }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const videoRef = useRef(null);
+
+  const handlePlayClick = () => {
+    if (!videoUrl) {
+      console.error('No video URL provided');
+      setHasError(true);
+      return;
+    }
+
+    console.log('Attempting to play video:', videoUrl);
+    console.log('Media info:', media);
+
+    // Set shouldLoad to true to render the video element
+    setShouldLoad(true);
+    setIsLoading(true);
+    
+    // Use useEffect-like approach with setTimeout to ensure the video element is rendered
+    setTimeout(() => {
+      if (videoRef.current) {
+        console.log('Video element found, loading video...');
+        videoRef.current.load();
+        videoRef.current.play()
+          .then(() => {
+            console.log('Video started playing successfully');
+            setIsLoading(false);
+            setIsPlaying(true);
+          })
+          .catch(err => {
+            console.error('Error playing video:', err);
+            console.error('Video element state:', {
+              networkState: videoRef.current.networkState,
+              readyState: videoRef.current.readyState,
+              error: videoRef.current.error
+            });
+            setIsLoading(false);
+            setHasError(true);
+          });
+      } else {
+        console.error('Video element not found after render');
+        setIsLoading(false);
+        setHasError(true);
+      }
+    }, 200);
+  };
+
+  const handleVideoError = (e) => {
+    console.error('Video playback error:', e);
+    const errorDetails = {
+      code: videoRef.current?.error?.code,
+      message: videoRef.current?.error?.message,
+      networkState: videoRef.current?.networkState,
+      readyState: videoRef.current?.readyState,
+      videoUrl: videoUrl
+    };
+    console.error('Video error details:', errorDetails);
+    setIsLoading(false);
+    setHasError(true);
+    setIsPlaying(false);
+    logger.error('Video playback failed', { videoUrl, media, errorDetails }, { context: 'ViewDetailsModal' });
+  };
+
+  const handleVideoLoaded = () => {
+    setHasError(false);
+    setIsLoading(false);
+  };
+
+  const handleVideoPlay = () => {
+    setIsPlaying(true);
+    setIsLoading(false);
+  };
+
+  const handleVideoPause = () => {
+    setIsPlaying(false);
+  };
+
+  const handleRetry = () => {
+    setHasError(false);
+    setIsPlaying(false);
+    setIsLoading(false);
+    setShouldLoad(false);
+    // Reset after a brief moment
+    setTimeout(() => {
+      handlePlayClick();
+    }, 100);
+  };
+
+  // Show placeholder if not loading, not playing, and no error
+  const showPlaceholder = !isLoading && !isPlaying && !hasError;
+  // Show video if it should be loaded and (playing or loading)
+  const showVideo = shouldLoad && (isPlaying || isLoading) && !hasError;
+
+  return (
+    <div className={styles.videoWrapper}>
+      {showPlaceholder && (
+        <div className={styles.videoPlaceholder} onClick={handlePlayClick}>
+          <div className={styles.playButtonOverlay}>
+            <FaPlay className={styles.playButtonIcon} />
+            <span className={styles.playButtonText}>Click to play video</span>
+          </div>
+        </div>
+      )}
+      {isLoading && !hasError && (
+        <div className={styles.videoLoading}>
+          <div className={styles.loadingSpinner}></div>
+          <span>Loading video...</span>
+        </div>
+      )}
+      {hasError && (
+        <div className={styles.videoError}>
+          <FaFile className={styles.fileIcon} />
+          <span>Unable to load video</span>
+          <div className={styles.errorDetails}>
+            {videoRef.current?.error && (
+              <span className={styles.errorMessage}>
+                {videoRef.current.error.code === 4 
+                  ? 'Video format not supported' 
+                  : videoRef.current.error.message || 'Video failed to load'}
+              </span>
+            )}
+          </div>
+          <button 
+            onClick={handleRetry}
+            className={styles.retryButton}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+      {shouldLoad && videoUrl && (
+        <video
+          ref={videoRef}
+          controls
+          className={styles.videoPlayer}
+          preload="none"
+          playsInline
+          onError={handleVideoError}
+          onLoadedData={handleVideoLoaded}
+          onCanPlay={handleVideoLoaded}
+          onPlay={handleVideoPlay}
+          onPause={handleVideoPause}
+          style={{ display: showVideo ? 'block' : 'none' }}
+        >
+          <source src={videoUrl} type={media.mimetype || 'video/mp4'} />
+          <source src={videoUrl} type="video/mp4" />
+          <source src={videoUrl} type="video/webm" />
+          Your browser does not support the video tag.
+        </video>
+      )}
+    </div>
+  );
+};
 
 const ViewDetailsModal = ({ 
   isOpen, 
@@ -98,19 +280,12 @@ const ViewDetailsModal = ({
       // Otherwise, fetch from API
       setLoadingProgram(true);
       try {
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-        const token = localStorage.getItem('superAdminToken');
-        
-        if (!token) {
-          logger.warn('No superadmin token found for fetching program title');
-          setLoadingProgram(false);
-          return;
-        }
-
-        const response = await fetch(`${API_BASE_URL}/api/projects/superadmin/${highlightsData.program_id}`, {
+        const { API_BASE_URL } = await import('@/config/api');
+        const response = await fetch(`${API_BASE_URL || ''}/api/projects/superadmin/${highlightsData.program_id}`, {
+          credentials: 'include', // CRITICAL: Include httpOnly cookies
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
+            // No Authorization header needed - httpOnly cookies handle authentication
           },
         });
 
@@ -486,7 +661,7 @@ const ViewDetailsModal = ({
                 {highlightsData && highlightsData.media_files && Array.isArray(highlightsData.media_files) && highlightsData.media_files.length > 0 ? (
                   <div className={styles.mediaContainer}>
                     {highlightsData.media_files.map((media, index) => {
-                      const mediaUrl = media.url || media.filename;
+                      const rawMediaUrl = media.url || media.filename;
                       const isVideo = media.type === 'video' || 
                                      media.mimetype?.startsWith('video/') ||
                                      /\.(mp4|avi|mov|wmv|flv|webm|mkv)$/i.test(media.filename || media.url || '');
@@ -494,20 +669,11 @@ const ViewDetailsModal = ({
                                      media.mimetype?.startsWith('image/') ||
                                      /\.(jpg|jpeg|png|gif|webp)$/i.test(media.filename || media.url || '');
                       
-                      if (isVideo && mediaUrl) {
-                        return (
-                          <div key={index} className={styles.videoWrapper}>
-                            <video
-                              controls
-                              className={styles.videoPlayer}
-                              preload="metadata"
-                            >
-                              <source src={mediaUrl} type={media.mimetype || 'video/mp4'} />
-                              Your browser does not support the video tag.
-                            </video>
-                          </div>
-                        );
-                      } else if (isImage && mediaUrl) {
+                      if (isVideo && rawMediaUrl) {
+                        const videoUrl = getVideoUrl(rawMediaUrl);
+                        return <VideoPlayer key={index} videoUrl={videoUrl} media={media} index={index} />;
+                      } else if (isImage && rawMediaUrl) {
+                        const mediaUrl = rawMediaUrl;
                         return (
                           <div 
                             key={index} 

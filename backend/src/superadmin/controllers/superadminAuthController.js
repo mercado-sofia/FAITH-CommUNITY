@@ -58,12 +58,26 @@ export const loginSuperadmin = async (req, res) => {
       [trimmedEmail],
     )
 
+    // Detailed logging for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[loginSuperadmin] Database query result:', {
+        trimmedEmail,
+        foundRows: superadminRows.length,
+        hasPassword: superadminRows.length > 0 ? !!superadminRows[0].password : false,
+        passwordLength: superadminRows.length > 0 && superadminRows[0].password ? superadminRows[0].password.length : 0,
+        inputPasswordLength: password ? password.length : 0
+      });
+    }
+
     if (superadminRows.length === 0) {
       logInfo('Superadmin login failed - not found', { 
         context: 'superadmin_auth', 
         email: trimmedEmail,
         ipAddress 
       });
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[loginSuperadmin] Superadmin not found for email:', trimmedEmail);
+      }
       await LoginAttemptTracker.trackFailedAttempt(trimmedEmail, ipAddress, 'superadmin');
       const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(trimmedEmail, ipAddress, 'superadmin');
       const maxAttempts = LoginAttemptTracker.getMaxAttempts();
@@ -75,7 +89,32 @@ export const loginSuperadmin = async (req, res) => {
     }
 
     const superadmin = superadminRows[0]
+    
+    // Check if password_hash is null or empty
+    if (!superadmin.password || superadmin.password.trim() === '') {
+      logError('Superadmin login failed - password_hash is null or empty', new Error('Password hash missing'), {
+        context: 'superadmin_auth',
+        email: trimmedEmail,
+        superadminId: superadmin.id
+      });
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[loginSuperadmin] Password hash is null or empty for superadmin ID:', superadmin.id);
+      }
+      return res.status(500).json({ 
+        error: "Account configuration error. Please contact support."
+      })
+    }
+    
     const isPasswordValid = await bcrypt.compare(password, superadmin.password)
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[loginSuperadmin] Password comparison result:', {
+        isValid: isPasswordValid,
+        inputPasswordLength: password ? password.length : 0,
+        hashLength: superadmin.password ? superadmin.password.length : 0
+      });
+    }
+    
     if (!isPasswordValid) {
       logInfo('Superadmin login failed - invalid password', { 
         context: 'superadmin_auth', 
@@ -83,6 +122,9 @@ export const loginSuperadmin = async (req, res) => {
         superadminId: superadmin.id,
         ipAddress 
       });
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[loginSuperadmin] Password comparison failed for superadmin ID:', superadmin.id);
+      }
       await LoginAttemptTracker.trackFailedAttempt(trimmedEmail, ipAddress, 'superadmin');
       const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(trimmedEmail, ipAddress, 'superadmin');
       const maxAttempts = LoginAttemptTracker.getMaxAttempts();
@@ -131,8 +173,9 @@ export const loginSuperadmin = async (req, res) => {
     await logSuperadminAction(superadmin.id, 'login', 'Superadmin logged in', req)
     
     // Set both tokens as httpOnly cookies (secure!)
-    res.cookie('access_token', accessToken, getAccessTokenCookieOptions())
-    res.cookie('refresh_token', refreshToken, getRefreshCookieOptions())
+    // Pass req to cookie options functions so they can use forwarded host for domain
+    res.cookie('access_token', accessToken, getAccessTokenCookieOptions(req))
+    res.cookie('refresh_token', refreshToken, getRefreshCookieOptions(req))
     
     res.json({
       message: "Login successful",
@@ -474,9 +517,11 @@ export const updateSuperadminPassword = async (req, res) => {
       const { revokeAllUserRefreshTokens } = await import('../../utils/jwt.js');
       await revokeAllUserRefreshTokens(id);
     } catch {}
-    // Clear both cookies
-    res.clearCookie('access_token', { path: '/' });
-    res.clearCookie('refresh_token', { path: '/' });
+    // Clear both cookies using the same domain logic as cookie setting
+    const { getClearCookieOptions } = await import('../../utils/jwt.js');
+    const clearCookieOptions = getClearCookieOptions(req);
+    res.clearCookie('access_token', clearCookieOptions);
+    res.clearCookie('refresh_token', clearCookieOptions);
 
     // Send password change notification
     try {

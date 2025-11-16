@@ -86,6 +86,7 @@ const nextConfig = {
               "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // Allow inline scripts for Next.js
               "style-src 'self' 'unsafe-inline'", // Allow inline styles
               "img-src 'self' data: https: blob:", // Allow images from various sources
+              "media-src 'self' https://res.cloudinary.com data: blob:", // Allow videos/audio from Cloudinary and other sources
               "font-src 'self' data: https:",
               "connect-src 'self' https: http: ws: wss:", // Allow API calls to backend
               "frame-src 'self' https://www.youtube.com https://player.vimeo.com https://youtube.com https://youtu.be",

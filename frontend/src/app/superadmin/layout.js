@@ -108,45 +108,68 @@ function SuperAdminLayoutContent({ children }) {
         console.log('[Superadmin Layout] Check Application > Cookies in DevTools to see all cookies');
         
         // Check auth status from backend (reads from httpOnly cookie)
-        try {
-          const { getCurrentUser } = await import('@/utils/authService');
-          console.log('[Superadmin Layout] Calling getCurrentUser...');
-          const userData = await getCurrentUser();
-          
-          console.log('[Superadmin Layout] Auth check result:', { 
-            hasUserData: !!userData, 
-            role: userData?.role,
-            userData: userData ? { id: userData.id, email: userData.email, role: userData.role } : null
-          });
-          
-          if (!userData || userData.role !== 'superadmin') {
-            console.warn('[Superadmin Layout] Auth check failed - redirecting to login', {
-              hasUserData: !!userData,
+        // Add retry mechanism to handle race condition where cookies might not be immediately available
+        const { getCurrentUser } = await import('@/utils/authService');
+        let userData = null;
+        let retryCount = 0;
+        const maxRetries = 3;
+        const retryDelay = 500; // 500ms between retries
+        
+        while (retryCount < maxRetries && !userData) {
+          try {
+            // On first attempt, wait a bit to ensure cookies are available after redirect
+            if (retryCount > 0) {
+              await new Promise(resolve => setTimeout(resolve, retryDelay));
+            }
+            
+            console.log(`[Superadmin Layout] Calling getCurrentUser (attempt ${retryCount + 1})...`);
+            userData = await getCurrentUser();
+            
+            console.log(`[Superadmin Layout] Auth check attempt ${retryCount + 1}:`, { 
+              hasUserData: !!userData, 
               role: userData?.role,
-              expectedRole: 'superadmin'
+              userData: userData ? { id: userData.id, email: userData.email, role: userData.role } : null
             });
-            clearAuthImmediate(USER_TYPES.SUPERADMIN);
-            window.location.href = '/login';
-            return;
+            
+            if (userData && userData.role === 'superadmin') {
+              break; // Success, exit retry loop
+            }
+            
+            retryCount++;
+          } catch (error) {
+            console.error(`[Superadmin Layout] Auth check error (attempt ${retryCount + 1}):`, error);
+            retryCount++;
+            
+            // If it's the last retry and still failing, break
+            if (retryCount >= maxRetries) {
+              break;
+            }
           }
-
-          // Store user data in localStorage for quick access (non-sensitive data only)
-          localStorage.setItem('superAdminData', JSON.stringify(userData));
-
-          // Set userRole cookie if not already set (for Next.js middleware in future)
-          if (typeof document !== 'undefined' && !document.cookie.includes('userRole=superadmin')) {
-            document.cookie = "userRole=superadmin; path=/; max-age=86400; SameSite=Lax";
-          }
-          
-          console.log('[Superadmin Layout] Auth check successful, superadmin authenticated');
-        } catch (error) {
-          console.error('[Superadmin Layout] Auth check error:', error);
-          // Auth check failed - redirect to login
-            clearAuthImmediate(USER_TYPES.SUPERADMIN);
-            window.location.href = '/login';
-            return;
+        }
+        
+        // Final check after all retries
+        if (!userData || userData.role !== 'superadmin') {
+          console.warn('[Superadmin Layout] Auth check failed after retries - redirecting to login', {
+            hasUserData: !!userData,
+            role: userData?.role,
+            expectedRole: 'superadmin',
+            retryCount
+          });
+          clearAuthImmediate(USER_TYPES.SUPERADMIN);
+          window.location.href = '/login';
+          return;
         }
 
+        // Store user data in localStorage for quick access (non-sensitive data only)
+        localStorage.setItem('superAdminData', JSON.stringify(userData));
+
+        // Set userRole cookie if not already set (for Next.js middleware in future)
+        if (typeof document !== 'undefined' && !document.cookie.includes('userRole=superadmin')) {
+          document.cookie = "userRole=superadmin; path=/; max-age=86400; SameSite=Lax";
+        }
+        
+        console.log('[Superadmin Layout] Auth check successful, superadmin authenticated');
+        
         setIsInitialLoading(false);
       } catch (error) {
         // Use centralized immediate cleanup for security

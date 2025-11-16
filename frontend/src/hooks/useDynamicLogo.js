@@ -20,8 +20,11 @@ export const useDynamicLogo = () => {
         setIsLoading(true)
         setError(null)
         
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-        const response = await fetch(`${baseUrl}/api/superadmin/branding/public`)
+        const { API_BASE_URL } = await import('@/config/api');
+        const baseUrl = API_BASE_URL || '';
+        const response = await fetch(`${baseUrl}/api/superadmin/branding/public`, {
+          credentials: 'include', // CRITICAL: Include httpOnly cookies
+        })
         
         if (!response.ok) {
           throw new Error(`Failed to fetch branding: ${response.status}`)

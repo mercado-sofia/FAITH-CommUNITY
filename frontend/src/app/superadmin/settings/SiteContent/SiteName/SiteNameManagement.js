@@ -20,7 +20,8 @@ export default function SiteNameManagement({ showSuccessModal }) {
   useEffect(() => {
     const loadSiteNameData = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const { API_BASE_URL } = await import('@/config/api');
+        const baseUrl = API_BASE_URL || '';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/branding/site-name`,
           { method: 'GET' },
@@ -77,7 +78,8 @@ export default function SiteNameManagement({ showSuccessModal }) {
   const handleSiteNameConfirm = async () => {
     try {
       setIsUpdatingSiteName(true);
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const { API_BASE_URL } = await import('@/config/api');
+      const baseUrl = API_BASE_URL || '';
       const response = await makeAuthenticatedRequest(
         `${baseUrl}/api/superadmin/branding/site-name`,
         {

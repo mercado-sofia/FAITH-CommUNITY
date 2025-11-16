@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { invalidateNewsCache } from '../../utils/cacheInvalidator';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from '@/config/api';
 
 /**
  * Custom hook for managing news CRUD operations
@@ -25,10 +24,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
     return errors;
   }, []);
 
-  // Helper function to get admin token
-  const getAdminToken = useCallback(() => {
-    return localStorage.getItem("adminToken");
-  }, []);
+  // No longer need getAdminToken - using httpOnly cookies
 
   // Helper function to create FormData
   const createFormData = useCallback((newsData) => {
@@ -64,18 +60,11 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
       }
 
       const formData = createFormData(newsData);
-      const adminToken = getAdminToken();
       
-      if (!adminToken) {
-        setSuccessModal({ isVisible: true, message: 'Authentication required. Please log in again.', type: 'error' });
-        return;
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/api/news/${orgId}`, {
+      const response = await fetch(`${API_BASE_URL || ''}/api/news/${orgId}`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
-        },
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        // Don't set Content-Type - browser will set it with boundary for FormData
         body: formData
       });
 
@@ -102,7 +91,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [orgId, validateNewsData, createFormData, getAdminToken, refreshNews, setSuccessModal]);
+  }, [orgId, validateNewsData, createFormData, refreshNews, setSuccessModal]);
 
   // Handle news update
   const handleUpdateNews = useCallback(async (newsData, editingNewsId) => {
@@ -121,18 +110,11 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
       }
 
       const formData = createFormData(newsData);
-      const adminToken = getAdminToken();
       
-      if (!adminToken) {
-        setSuccessModal({ isVisible: true, message: 'Authentication required. Please log in again.', type: 'error' });
-        return;
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/api/news/${editingNewsId}`, {
+      const response = await fetch(`${API_BASE_URL || ''}/api/news/${editingNewsId}`, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
-        },
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        // Don't set Content-Type - browser will set it with boundary for FormData
         body: formData
       });
 
@@ -159,24 +141,18 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateNewsData, createFormData, getAdminToken, refreshNews, setSuccessModal]);
+  }, [validateNewsData, createFormData, refreshNews, setSuccessModal]);
 
   // Handle single news deletion
   const handleDeleteNews = useCallback(async (newsId) => {
     setIsDeleting(true);
     try {
-      const adminToken = getAdminToken();
-      
-      if (!adminToken) {
-        setSuccessModal({ isVisible: true, message: 'Authentication required. Please log in again.', type: 'error' });
-        return;
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/api/news/${newsId}`, {
+      const response = await fetch(`${API_BASE_URL || ''}/api/news/${newsId}`, {
         method: 'DELETE',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
+          // No Authorization header needed - httpOnly cookies handle authentication
         },
       });
 
@@ -197,26 +173,20 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
     } finally {
       setIsDeleting(false);
     }
-  }, [getAdminToken, refreshNews, setSuccessModal]);
+  }, [refreshNews, setSuccessModal]);
 
   // Handle bulk news deletion
   const handleBulkDelete = useCallback(async (selectedNewsIds) => {
     setIsDeleting(true);
     try {
-      const adminToken = getAdminToken();
-      
-      if (!adminToken) {
-        setSuccessModal({ isVisible: true, message: 'Authentication required. Please log in again.', type: 'error' });
-        return;
-      }
-
       // Delete each selected news item
       const deletePromises = selectedNewsIds.map(newsId => 
-        fetch(`${API_BASE_URL}/api/news/${newsId}`, {
+        fetch(`${API_BASE_URL || ''}/api/news/${newsId}`, {
           method: 'DELETE',
+          credentials: 'include', // CRITICAL: Include httpOnly cookies
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${adminToken}`
+            // No Authorization header needed - httpOnly cookies handle authentication
           },
         })
       );
@@ -247,7 +217,7 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
     } finally {
       setIsDeleting(false);
     }
-  }, [getAdminToken, refreshNews, setSuccessModal]);
+  }, [refreshNews, setSuccessModal]);
 
   return {
     // State

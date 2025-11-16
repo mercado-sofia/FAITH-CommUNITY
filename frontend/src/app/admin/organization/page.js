@@ -407,16 +407,10 @@ export default function OrganizationPage() {
       formData.append("file", file);
       formData.append("uploadType", "organization-logo");
       
-      const adminToken = getAdminTokenOrRedirect();
-      if (!adminToken) {
-        return; // Redirect handled by getAdminTokenOrRedirect
-      }
-
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/upload`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/upload`, {
         method: "POST",
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
-        },
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        // Don't set Content-Type - browser will set it with boundary for FormData
         body: formData,
       });
       
@@ -534,16 +528,12 @@ export default function OrganizationPage() {
         status: "ACTIVE"
       };
 
-      const adminToken = getAdminTokenOrRedirect();
-      if (!adminToken) {
-        return; // Redirect handled by getAdminTokenOrRedirect
-      }
-
       const response = await fetch(url, {
         method,
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: { 
           "Content-Type": "application/json",
-          ...(adminToken && { 'Authorization': `Bearer ${adminToken}` })
+          // No Authorization header needed - httpOnly cookies handle authentication
         },
         body: JSON.stringify(requestBody)
       });
@@ -668,11 +658,12 @@ export default function OrganizationPage() {
         }
         
         // Use POST - backend handles both create and update
-        const response = await fetch(`${API_CONFIG.BASE_URL}/api/advocacies`, {
+        const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/advocacies`, {
           method: 'POST',
+          credentials: 'include', // CRITICAL: Include httpOnly cookies
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${adminToken}`
+            // No Authorization header needed - httpOnly cookies handle authentication
           },
           body: JSON.stringify({
             organization_id: orgId,
@@ -712,11 +703,12 @@ export default function OrganizationPage() {
         }
         
         // Use POST - backend handles both create and update
-        const response = await fetch(`${API_CONFIG.BASE_URL}/api/competencies`, {
+        const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/competencies`, {
           method: 'POST',
+          credentials: 'include', // CRITICAL: Include httpOnly cookies
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${adminToken}`
+            // No Authorization header needed - httpOnly cookies handle authentication
           },
           body: JSON.stringify({
             organization_id: orgId,
@@ -799,16 +791,12 @@ export default function OrganizationPage() {
         photo: newHeadData.photo && newHeadData.photo.startsWith('data:') ? null : newHeadData.photo
       };
       
-      const adminToken = getAdminTokenOrRedirect();
-      if (!adminToken) {
-        return; // Redirect handled by getAdminTokenOrRedirect
-      }
-      
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/heads`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/heads`, {
         method: 'POST',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
+          // No Authorization header needed - httpOnly cookies handle authentication
         },
         body: JSON.stringify({
           organization_id: orgId,
@@ -888,16 +876,12 @@ export default function OrganizationPage() {
         photo: updatedHead.photo && updatedHead.photo.startsWith('data:') ? null : updatedHead.photo
       };
       
-      const adminToken = getAdminTokenOrRedirect();
-      if (!adminToken) {
-        return; // Redirect handled by getAdminTokenOrRedirect
-      }
-      
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/heads/${updatedHead.id}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/heads/${updatedHead.id}`, {
         method: 'PUT',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
+          // No Authorization header needed - httpOnly cookies handle authentication
         },
         body: JSON.stringify({
           organization_id: orgId,
@@ -975,16 +959,12 @@ export default function OrganizationPage() {
         throw new Error('Invalid head data provided');
       }
       
-      const adminToken = getAdminTokenOrRedirect();
-      if (!adminToken) {
-        return; // Redirect handled by getAdminTokenOrRedirect
-      }
-
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/heads/${selectedHeadForDelete.id}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/heads/${selectedHeadForDelete.id}`, {
         method: 'DELETE',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
+          // No Authorization header needed - httpOnly cookies handle authentication
         }
       });
       
@@ -1040,16 +1020,12 @@ export default function OrganizationPage() {
     try {
       updateUiState({ saving: true });
       
-      const adminToken = getAdminTokenOrRedirect();
-      if (!adminToken) {
-        return; // Redirect handled by getAdminTokenOrRedirect
-      }
-      
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/heads/reorder`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/heads/reorder`, {
         method: 'PUT',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
+          // No Authorization header needed - httpOnly cookies handle authentication
         },
         body: JSON.stringify({ heads: reorderedHeads })
       });

@@ -1,15 +1,20 @@
 import { useState, useCallback } from "react"
 import logger from "@/utils/logger"
 
-export const useInvitationValidation = (API_BASE_URL) => {
+export const useInvitationValidation = () => {
   const [isValidating, setIsValidating] = useState(true)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
 
   const validateToken = useCallback(async (token) => {
     try {
-      
-      const response = await fetch(`${API_BASE_URL}/api/invitations/validate/${token}`)
+      const { API_BASE_URL } = await import('@/config/api');
+      const response = await fetch(`${API_BASE_URL || ''}/api/invitations/validate/${token}`, {
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
       const data = await response.json()
 
       if (response.ok) {
@@ -24,14 +29,15 @@ export const useInvitationValidation = (API_BASE_URL) => {
         setError(data.error || "Invalid or expired invitation token")
       }
     } catch (err) {
-      logger.apiError(`${API_BASE_URL}/api/invitations/validate/${token}`, err, { 
+      const { API_BASE_URL } = await import('@/config/api');
+      logger.apiError(`${API_BASE_URL || ''}/api/invitations/validate/${token}`, err, { 
         context: 'token_validation' 
       })
       setError("Failed to validate invitation token")
     } finally {
       setIsValidating(false)
     }
-  }, [API_BASE_URL])
+  }, [])
 
   return {
     isValidating,

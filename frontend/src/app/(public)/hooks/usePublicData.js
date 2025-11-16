@@ -1,8 +1,7 @@
 import useSWR from 'swr';
 import logger from '../../../utils/logger';
 import { swrConfig } from '../utils/swrConfig';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from '@/config/api';
 
 // Use the global fetcher from swrConfig
 const fetcher = swrConfig.fetcher;
@@ -10,7 +9,7 @@ const fetcher = swrConfig.fetcher;
 // Custom hook for public organization data (optimized for public pages)
 export const usePublicOrganizationData = (orgID) => {
   const { data, error, isLoading } = useSWR(
-    orgID ? `${API_BASE_URL}/api/organization/org/${orgID}` : null,
+    orgID ? `${API_BASE_URL || ''}/api/organization/org/${orgID}` : null,
     fetcher,
     {
       dedupingInterval: 60000, // Cache for 1 minute (to reflect admin changes quickly)
@@ -109,7 +108,7 @@ export const usePublicOrganizationData = (orgID) => {
 // Custom hook for public organizations list
 export const usePublicOrganizations = () => {
   const { data, error, isLoading } = useSWR(
-    `${API_BASE_URL}/api/organizations`,
+    `${API_BASE_URL || ''}/api/organizations`,
     fetcher,
     {
       dedupingInterval: 300000, // Cache for 5 minutes
@@ -138,7 +137,7 @@ export const usePublicOrganizations = () => {
 // Custom hook for public programs
 export const usePublicPrograms = (orgID) => {
   const { data, error, isLoading } = useSWR(
-    orgID ? `${API_BASE_URL}/api/programs/org/${orgID}` : `${API_BASE_URL}/api/programs`,
+    orgID ? `${API_BASE_URL || ''}/api/programs/org/${orgID}` : `${API_BASE_URL || ''}/api/programs`,
     fetcher,
     {
       revalidateOnFocus: false,
@@ -170,7 +169,7 @@ export const usePublicPrograms = (orgID) => {
 // Custom hook for public news/articles
 export const usePublicNews = () => {
   const { data, error, isLoading } = useSWR(
-    `${API_BASE_URL}/api/news`,
+    `${API_BASE_URL || ''}/api/news`,
     fetcher,
     {
       dedupingInterval: 60000, // Cache for 1 minute (news updates more frequently)
@@ -198,7 +197,7 @@ export const usePublicNews = () => {
 
 // Custom hook for single news article by slug
 export const usePublicNewsArticle = (slug) => {
-  const url = slug ? `${API_BASE_URL}/api/news/slug/${slug}` : null;
+  const url = slug ? `${API_BASE_URL || ''}/api/news/slug/${slug}` : null;
   
   const { data, error, isLoading } = useSWR(
     url,
@@ -234,7 +233,7 @@ export const usePublicNewsArticle = (slug) => {
 // Custom hook for FAQs
 export const usePublicFAQs = () => {
   const { data, error, isLoading } = useSWR(
-    `${API_BASE_URL}/api/faqs/active`,
+    `${API_BASE_URL || ''}/api/faqs/active`,
     fetcher,
     {
       revalidateOnFocus: false,
@@ -322,7 +321,7 @@ export const usePublicApprovedPrograms = () => {
   };
 
   const { data, error, isLoading } = useSWR(
-    `${API_BASE_URL}/api/programs/approved/upcoming`,
+    `${API_BASE_URL || ''}/api/programs/approved/upcoming`,
     authenticatedFetcher,
     {
       revalidateOnFocus: false,
@@ -353,7 +352,7 @@ export const usePublicApprovedPrograms = () => {
 // Custom hook for public branding data
 export const usePublicBranding = () => {
   const { data, error, isLoading } = useSWR(
-    `${API_BASE_URL}/api/superadmin/branding/public`,
+    `${API_BASE_URL || ''}/api/superadmin/branding/public`,
     fetcher,
     {
       dedupingInterval: 300000, // Cache for 5 minutes (branding doesn't change often)
@@ -392,7 +391,7 @@ export const usePublicBranding = () => {
 // Hook for fetching site name data
 export const usePublicSiteName = () => {
   const { data, error, isLoading } = useSWR(
-    `${API_BASE_URL}/api/superadmin/branding/site-name/public`,
+    `${API_BASE_URL || ''}/api/superadmin/branding/site-name/public`,
     fetcher,
     {
       revalidateOnFocus: false,
@@ -430,7 +429,7 @@ export const usePublicSiteName = () => {
 // Hook for fetching footer content data
 export const usePublicFooterContent = () => {
   const { data, error, isLoading } = useSWR(
-    `${API_BASE_URL}/api/superadmin/footer`,
+    `${API_BASE_URL || ''}/api/superadmin/footer`,
     fetcher,
     {
       revalidateOnFocus: false,
@@ -508,7 +507,7 @@ export const usePublicFooterContent = () => {
 // Hook for fetching hero section data
 export const usePublicHeroSection = () => {
   const { data, error, isLoading } = useSWR(
-    `${API_BASE_URL}/api/hero-section`,
+    `${API_BASE_URL || ''}/api/hero-section`,
     fetcher,
     {
       revalidateOnFocus: false,
@@ -566,7 +565,7 @@ export const usePublicHeroSection = () => {
 // Hook for fetching mission and vision data
 export const usePublicMissionVision = () => {
   const { data, error, isLoading } = useSWR(
-    `${API_BASE_URL}/api/mission-vision`,
+    `${API_BASE_URL || ''}/api/mission-vision`,
     fetcher,
     {
       revalidateOnFocus: false,
@@ -607,7 +606,7 @@ export const usePublicMissionVision = () => {
 // Hook for fetching about us data
 export const usePublicAboutUs = () => {
   const { data, error, isLoading } = useSWR(
-    `${API_BASE_URL}/api/superadmin/about-us/public`,
+    `${API_BASE_URL || ''}/api/superadmin/about-us/public`,
     async (url) => {
       try {
         const response = await fetch(url);
@@ -682,7 +681,7 @@ export const usePublicAboutUs = () => {
 // Custom hook for heads of FACES data (single head)
 export const usePublicHeadsFaces = () => {
   const { data, error, isLoading } = useSWR(
-    `${API_BASE_URL}/api/superadmin/heads-faces`,
+    `${API_BASE_URL || ''}/api/superadmin/heads-faces`,
     fetcher,
     {
       dedupingInterval: 60000, // Cache for 1 minute
@@ -714,7 +713,7 @@ export const usePublicHeadsFaces = () => {
 // Custom hook for approved organization advisers
 export const usePublicOrganizationAdvisers = () => {
   const { data, error, isLoading } = useSWR(
-    `${API_BASE_URL}/api/organization-advisers`,
+    `${API_BASE_URL || ''}/api/organization-advisers`,
     fetcher,
     {
       dedupingInterval: 300000, // Cache for 5 minutes

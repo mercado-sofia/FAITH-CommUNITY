@@ -63,19 +63,17 @@ export default function ProgramDetailsPage() {
     if (typeof window === 'undefined') return;
     
     const checkAuth = async () => {
-      const token = localStorage.getItem('userToken');
-      const storedUserData = localStorage.getItem('userData');
-      
-      if (token && storedUserData) {
-        try {
-          JSON.parse(storedUserData);
+      // Check authentication using the auth service instead of localStorage
+      try {
+        const { getCurrentUser } = await import('@/utils/authService');
+        const user = await getCurrentUser();
+        if (user) {
           setIsLoggedIn(true);
           fetchUserApplications();
-        } catch (error) {
-          // Clear corrupted data using centralized cleanup
-          const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
-          clearAuthImmediate(USER_TYPES.PUBLIC);
         }
+      } catch (error) {
+        // User is not authenticated
+        setIsLoggedIn(false);
       }
     };
     
@@ -85,17 +83,13 @@ export default function ProgramDetailsPage() {
   // Fetch user applications
   const fetchUserApplications = async () => {
     try {
-      const token = localStorage.getItem('userToken');
-      
-      if (!token) {
-        setUserApplications([]);
-        return;
-      }
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/users/applications`, {
+      // No need to check token - cookies handle authentication
+      const { API_BASE_URL } = await import('@/config/api');
+      const response = await fetch(`${API_BASE_URL || ''}/api/users/applications`, {
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          // No Authorization header needed - httpOnly cookies handle authentication
         }
       });
 
@@ -166,7 +160,13 @@ export default function ProgramDetailsPage() {
         // Fetch other programs from the same organization
         if (programData.organization_id) {
           try {
-            const otherResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/programs/org/${programData.organization_id}/other/${programData.id}`);
+            const { API_BASE_URL } = await import('@/config/api');
+            const otherResponse = await fetch(`${API_BASE_URL || ''}/api/programs/org/${programData.organization_id}/other/${programData.id}`, {
+              credentials: 'include', // CRITICAL: Include httpOnly cookies
+              headers: {
+                'Content-Type': 'application/json',
+              }
+            });
             if (otherResponse.ok) {
               try {
                 const otherResult = await otherResponse.json();
@@ -433,7 +433,7 @@ export default function ProgramDetailsPage() {
             href="/programs" 
             className={styles.breadcrumbLink}
           >
-            Programs and Services
+            Programs
           </Link>
           <span className={styles.breadcrumbSeparator}>›</span>
           <span className={styles.breadcrumbCurrent}>{program.title}</span>

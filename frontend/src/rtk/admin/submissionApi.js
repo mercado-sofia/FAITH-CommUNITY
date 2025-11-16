@@ -1,9 +1,17 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { API_BASE_URL } from "@/config/api"
+
+// Get base URL - empty string in development (uses Next.js rewrites for same-origin requests)
+const getBaseUrl = () => {
+  const base = API_BASE_URL || '';
+  return base ? `${base}/api/submissions/` : '/api/submissions/';
+};
 
 export const submissionApi = createApi({
   reducerPath: 'submissionApi',
   baseQuery: fetchBaseQuery({ 
-    baseUrl: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/submissions/`,
+    baseUrl: getBaseUrl(),
+    credentials: 'include', // CRITICAL: Include httpOnly cookies for authentication
     prepareHeaders: (headers) => {
       // Don't set Content-Type for FormData, let the browser handle it
       return headers;

@@ -10,6 +10,7 @@ import {
   revokeRefreshToken,
   getAccessTokenCookieOptions,
   getRefreshCookieOptions,
+  getClearCookieOptions,
 } from '../../utils/jwt.js';
 import crypto from 'crypto';
 import db from '../../database.js';
@@ -303,8 +304,33 @@ export const loginUser = async (req, res) => {
     );
 
     // Set both tokens as httpOnly cookies (secure - not accessible to JavaScript)
-    res.cookie('access_token', accessToken, getAccessTokenCookieOptions())
-    res.cookie('refresh_token', refreshToken, getRefreshCookieOptions())
+    // Pass req to cookie options functions so they can use forwarded host for domain
+    const accessCookieOptions = getAccessTokenCookieOptions(req);
+    const refreshCookieOptions = getRefreshCookieOptions(req);
+    
+    // Debug logging (development only)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[loginUser] Setting cookies:', {
+        accessTokenLength: accessToken.length,
+        refreshTokenLength: refreshToken.length,
+        accessCookieOptions,
+        refreshCookieOptions,
+        host: req.headers.host,
+        origin: req.headers.origin,
+        'x-forwarded-host': req.headers['x-forwarded-host']
+      });
+    }
+    
+    // Set both tokens as httpOnly cookies
+    // Express will automatically overwrite existing cookies with the same name
+    res.cookie('access_token', accessToken, accessCookieOptions)
+    res.cookie('refresh_token', refreshToken, refreshCookieOptions)
+    
+    // Log the actual Set-Cookie headers being sent (development only)
+    if (process.env.NODE_ENV === 'development') {
+      const setCookieHeaders = res.getHeader('Set-Cookie');
+      console.log('[loginUser] Set-Cookie headers being sent:', setCookieHeaders);
+    }
     
     // Don't return token in response body - it's in httpOnly cookie now
     res.json({
@@ -871,9 +897,10 @@ export const changePassword = async (req, res) => {
     try {
       await revokeAllUserRefreshTokens(userId)
     } catch {}
-    // Clear both cookies
-    res.clearCookie('access_token', { path: '/' })
-      res.clearCookie('refresh_token', { path: '/' })
+    // Clear both cookies using the same domain logic as cookie setting
+    const clearCookieOptions = getClearCookieOptions(req);
+    res.clearCookie('access_token', clearCookieOptions)
+    res.clearCookie('refresh_token', clearCookieOptions)
 
     // Send password change notification
     try {
@@ -1054,8 +1081,11 @@ export const logoutUser = async (req, res) => {
     }
 
     // Clear both cookies (works for all roles)
-    res.clearCookie('access_token', { path: '/' })
-    res.clearCookie('refresh_token', { path: '/' })
+    // IMPORTANT: Must specify same domain that was used to set the cookie
+    // Use the shared utility function that matches getAccessTokenCookieOptions/getRefreshCookieOptions
+    const clearCookieOptions = getClearCookieOptions(req);
+    res.clearCookie('access_token', clearCookieOptions)
+    res.clearCookie('refresh_token', clearCookieOptions)
 
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
@@ -1112,8 +1142,9 @@ export const refreshAccessToken = async (req, res) => {
     const accessToken = signAccessToken(accessTokenPayload)
 
     // Set both new tokens as httpOnly cookies
-    res.cookie('access_token', accessToken, getAccessTokenCookieOptions())
-    res.cookie('refresh_token', newRefresh, getRefreshCookieOptions())
+    // Pass req to cookie options functions so they can use forwarded host for domain
+    res.cookie('access_token', accessToken, getAccessTokenCookieOptions(req))
+    res.cookie('refresh_token', newRefresh, getRefreshCookieOptions(req))
     
     res.json({ 
       message: 'Token refreshed successfully',
@@ -1259,20 +1290,146 @@ export const checkAuthStatus = async (req, res) => {
       allCookies: Object.keys(allCookies),
       hasAuthHeader: !!req.headers.authorization,
       origin: req.headers.origin,
-      referer: req.headers.referer
+      referer: req.headers.referer,
+      host: req.headers.host,
+      'x-forwarded-host': req.headers['x-forwarded-host'],
+      'x-forwarded-proto': req.headers['x-forwarded-proto'],
+      cookieHeader: req.headers.cookie ? 'present' : 'missing'
     });
     
     const token = req.cookies?.access_token || req.headers.authorization?.split(' ')[1];
     
     if (!token) {
       // Debug logging
-      console.log('[checkAuthStatus] No token found', {
+      console.log('[checkAuthStatus] No access token found, attempting refresh', {
         hasAccessCookie,
         hasRefreshCookie,
         cookieNames,
         hasAuthHeader: !!req.headers.authorization,
         cookiesReceived: Object.keys(allCookies)
       });
+      
+      // If no access token but refresh token exists, try to refresh
+      const refreshToken = req.cookies?.refresh_token;
+      if (refreshToken) {
+        try {
+          const record = await findValidRefreshToken(refreshToken);
+          if (record) {
+            // Get user from unified table
+            const [users] = await db.query(
+              'SELECT id, email, role, organization_id FROM users WHERE id = ?',
+              [record.user_id]
+            );
+            
+            if (users.length > 0) {
+              const user = users[0];
+              
+              // Rotate refresh token
+              const { token: newRefresh } = await rotateRefreshToken(refreshToken, record.user_id, {
+                userAgent: req.headers['user-agent'],
+                ipAddress: getClientIpAddress(req),
+              });
+              
+              // Generate new access token
+              let accessTokenPayload = {
+                id: user.id,
+                email: user.email,
+                role: user.role
+              };
+              
+              // Add role-specific fields
+              if (user.role === 'admin' && user.organization_id) {
+                const [orgs] = await db.query(
+                  'SELECT org, orgName, logo FROM organizations WHERE id = ?',
+                  [user.organization_id]
+                );
+                if (orgs.length > 0) {
+                  accessTokenPayload.organization_id = user.organization_id;
+                  accessTokenPayload.org = orgs[0].org;
+                  accessTokenPayload.orgName = orgs[0].orgName;
+                }
+              }
+              
+              const accessToken = signAccessToken(accessTokenPayload);
+              
+              // Get cookie options and log them BEFORE setting cookies
+              const accessCookieOpts = getAccessTokenCookieOptions(req);
+              const refreshCookieOpts = getRefreshCookieOptions(req);
+              
+              // Debug logging (development only)
+              if (process.env.NODE_ENV === 'development') {
+                console.log('[checkAuthStatus] Cookie options BEFORE setting:', {
+                  accessCookieOpts,
+                  refreshCookieOpts,
+                  accessTokenLength: accessToken.length
+                });
+              }
+              
+              // Set both new tokens as httpOnly cookies
+              // Express will automatically overwrite existing cookies with the same name
+              res.cookie('access_token', accessToken, accessCookieOpts);
+              res.cookie('refresh_token', newRefresh, refreshCookieOpts);
+              
+              // Log the actual Set-Cookie headers being sent (development only)
+              if (process.env.NODE_ENV === 'development') {
+                const setCookieHeaders = res.getHeader('Set-Cookie');
+                console.log('[checkAuthStatus] Set-Cookie headers after refresh:', setCookieHeaders);
+              }
+              
+              // Get user data (same logic as below)
+              let userData = { id: user.id, email: user.email, role: user.role };
+              
+              if (user.role === 'user') {
+                const [profiles] = await db.query(
+                  `SELECT first_name, last_name, contact_number, gender, address, 
+                          birth_date, occupation, citizenship, profile_photo_url, newsletter_subscribed
+                   FROM user_profiles WHERE user_id = ?`,
+                  [user.id]
+                );
+                if (profiles.length > 0) {
+                  const p = profiles[0];
+                  userData = {
+                    ...userData,
+                    firstName: p.first_name,
+                    lastName: p.last_name,
+                    contactNumber: p.contact_number,
+                    gender: p.gender,
+                    address: p.address,
+                    birthDate: p.birth_date,
+                    occupation: p.occupation,
+                    citizenship: p.citizenship,
+                    profile_photo_url: p.profile_photo_url,
+                    newsletterSubscribed: Boolean(p.newsletter_subscribed)
+                  };
+                }
+              } else if (user.role === 'admin' && user.organization_id) {
+                const [orgs] = await db.query(
+                  'SELECT org, orgName, logo FROM organizations WHERE id = ?',
+                  [user.organization_id]
+                );
+                if (orgs.length > 0) {
+                  userData = {
+                    ...userData,
+                    organization_id: user.organization_id,
+                    org: orgs[0].org,
+                    orgName: orgs[0].orgName,
+                    logo: orgs[0].logo
+                  };
+                }
+              }
+              
+              console.log('[checkAuthStatus] Token refreshed successfully, returning authenticated user');
+              return res.json({
+                authenticated: true,
+                user: userData
+              });
+            }
+          }
+        } catch (refreshError) {
+          console.error('[checkAuthStatus] Token refresh error (no access token):', refreshError);
+        }
+      }
+      
       return res.json({ authenticated: false });
     }
 
@@ -1405,8 +1562,9 @@ export const checkAuthStatus = async (req, res) => {
               const accessToken = signAccessToken(accessTokenPayload);
               
               // Set both new tokens as httpOnly cookies
-              res.cookie('access_token', accessToken, getAccessTokenCookieOptions());
-              res.cookie('refresh_token', newRefresh, getRefreshCookieOptions());
+              // Pass req to cookie options functions so they can use forwarded host for domain
+              res.cookie('access_token', accessToken, getAccessTokenCookieOptions(req));
+              res.cookie('refresh_token', newRefresh, getRefreshCookieOptions(req));
               
               // Get user data (same logic as above)
               let userData = { id: user.id, email: user.email, role: user.role };

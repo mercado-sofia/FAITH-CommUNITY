@@ -151,8 +151,9 @@ export default function SettingsPage() {
       const emailChanged = emailData.email !== effectiveAdminData?.email;
       
       // Use authenticated request utility
+      const { API_BASE_URL } = await import('@/config/api');
       const response = await makeAuthenticatedRequest(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admin/profile`,
+        `${API_BASE_URL || ''}/api/admin/profile`,
         {
           method: 'PUT',
           body: JSON.stringify({

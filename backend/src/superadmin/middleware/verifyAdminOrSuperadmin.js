@@ -4,8 +4,8 @@ import db from "../../database.js"
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-env"
 
 export const verifyAdminOrSuperadmin = async (req, res, next) => {
-  const authHeader = req.headers.authorization
-  const token = authHeader && authHeader.split(" ")[1]
+  // Try cookie first (more secure), then header (for backward compatibility)
+  const token = req.cookies?.access_token || req.headers.authorization?.split(" ")[1]
 
   if (!token) {
     return res.status(401).json({ error: "Access token required" })

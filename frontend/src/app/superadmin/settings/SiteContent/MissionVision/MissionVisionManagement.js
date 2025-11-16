@@ -23,7 +23,8 @@ export default function MissionVisionManagement({ showSuccessModal }) {
   useEffect(() => {
     const loadMissionVisionData = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const { API_BASE_URL } = await import('@/config/api');
+        const baseUrl = API_BASE_URL || '';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/mission-vision`,
           { method: 'GET' },
@@ -35,8 +36,23 @@ export default function MissionVisionManagement({ showSuccessModal }) {
           console.log('Loaded mission/vision data:', data); // Debug log
           setMissionVisionData(data);
           
-          // Don't auto-populate form fields - keep them empty initially
-          // Data is loaded for reference only
+          // Populate form fields with current data from database
+          // This ensures superadmin sees what's currently displayed on the public site
+          const missionItem = data.find(item => 
+            item.type === 'Mission' || item.type?.toLowerCase() === 'mission'
+          );
+          const visionItem = data.find(item => 
+            item.type === 'Vision' || item.type?.toLowerCase() === 'vision'
+          );
+          
+          const currentMission = missionItem?.content || '';
+          const currentVision = visionItem?.content || '';
+          
+          // Set the state so it displays what's currently on the public site
+          setMission(currentMission);
+          setVision(currentVision);
+          setTempMission(currentMission);
+          setTempVision(currentVision);
         } else {
           console.error('Failed to load mission/vision: response not ok', response);
           if (response) {
@@ -113,7 +129,8 @@ export default function MissionVisionManagement({ showSuccessModal }) {
   const handleMissionVisionConfirm = async () => {
     try {
       setIsUpdating(true);
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const { API_BASE_URL } = await import('@/config/api');
+      const baseUrl = API_BASE_URL || '';
       
       // Normalize values for comparison (handle null/empty string)
       const normalizeValue = (val) => (val || '').trim();

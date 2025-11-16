@@ -37,9 +37,8 @@ import { createPortal } from "react-dom";
 import Toast from "../Toast/Toast";
 import { usePublicSiteName, usePublicFooterContent } from "../../hooks/usePublicData";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-  "http://localhost:8080";
+import { API_BASE_URL } from '@/config/api';
+const API_BASE = API_BASE_URL || '';
 
 // Social media platform mapping with icons
 const SOCIAL_PLATFORMS = {
@@ -97,25 +96,41 @@ export default function Footer() {
     if (typeof window === 'undefined') return;
     
     const checkAuth = async () => {
-      const token = localStorage.getItem('userToken');
-      const storedUserData = localStorage.getItem('userData');
-      
-      if (token && storedUserData) {
-        try {
-          const parsedUserData = JSON.parse(storedUserData);
-          setUserData(parsedUserData);
+      // Check authentication using the auth service instead of localStorage
+      try {
+        const { getCurrentUser } = await import('@/utils/authService');
+        const user = await getCurrentUser();
+        if (user) {
           setIsLoggedIn(true);
-          setNewsletterSubscribed(parsedUserData.newsletterSubscribed || false);
-        } catch (error) {
-          // Clear corrupted data using centralized cleanup
-          const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
-          clearAuthImmediate(USER_TYPES.PUBLIC);
+          setUserData(user);
+          // Check newsletter subscription status
+          checkNewsletterSubscription(user.id);
         }
+      } catch (error) {
+        // User is not authenticated
+        setIsLoggedIn(false);
       }
     };
     
     checkAuth();
   }, []);
+  
+  // Check newsletter subscription status for logged-in users
+  const checkNewsletterSubscription = async (userId) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/newsletter/status/${userId}`, {
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setNewsletterSubscribed(data.subscribed || false);
+      }
+    } catch (error) {
+      // Silently fail - subscription status is optional
+    }
+  };
+  
 
   // Handle apply link click
   const handleApplyClick = (e) => {
@@ -195,12 +210,12 @@ export default function Footer() {
     try {
       setSending(true);
 
-      const token = localStorage.getItem('userToken');
-      const res = await fetch(`${API_BASE}/api/users/newsletter/subscribe`, {
+      const res = await fetch(`${API_BASE || ''}/api/users/newsletter/subscribe`, {
         method: "POST",
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: { 
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          // No Authorization header needed - httpOnly cookies handle authentication
         }
       });
 
@@ -239,12 +254,12 @@ export default function Footer() {
     try {
       setSending(true);
 
-      const token = localStorage.getItem('userToken');
-      const res = await fetch(`${API_BASE}/api/users/newsletter/unsubscribe`, {
+      const res = await fetch(`${API_BASE || ''}/api/users/newsletter/unsubscribe`, {
         method: "POST",
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: { 
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          // No Authorization header needed - httpOnly cookies handle authentication
         }
       });
 

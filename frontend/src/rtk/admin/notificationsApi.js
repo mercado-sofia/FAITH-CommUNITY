@@ -3,7 +3,10 @@ import { API_BASE_URL } from '@/config/api';
 
 // Custom base query with error handling
 const baseQueryWithErrorHandling = async (args, api, extraOptions) => {
-  if (!API_BASE_URL) {
+  // Check if API_BASE_URL is configured
+  // Note: Empty string is valid in development (uses Next.js rewrites)
+  // Only check for undefined/null, not falsy values
+  if (API_BASE_URL === undefined || API_BASE_URL === null) {
     return {
       error: {
         status: 'CONFIG_ERROR',
@@ -15,20 +18,17 @@ const baseQueryWithErrorHandling = async (args, api, extraOptions) => {
     };
   }
   
+  // Get base URL - empty string in development (uses Next.js rewrites for same-origin requests)
+  const getBaseUrl = () => {
+    const base = API_BASE_URL || '';
+    return base ? `${base}/api/notifications` : '/api/notifications';
+  };
+
   const result = await fetchBaseQuery({
-    baseUrl: `${API_BASE_URL}/api/notifications`,
-    credentials: 'include',
-    prepareHeaders: (headers, { getState }) => {
-      // Check for window to avoid SSR errors
-      const token = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
-      } else {
-        // Log warning in development
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('[Notifications API] No adminToken found in localStorage');
-        }
-      }
+    baseUrl: getBaseUrl(),
+    credentials: 'include', // CRITICAL: Include httpOnly cookies for authentication
+    prepareHeaders: (headers) => {
+      // No Authorization header needed - httpOnly cookies handle authentication
       return headers;
     },
   })(args, api, extraOptions);

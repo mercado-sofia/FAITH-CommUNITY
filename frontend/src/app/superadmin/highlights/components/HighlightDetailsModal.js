@@ -106,17 +106,12 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
         // Try to get program_id from submission if highlight doesn't have it
         setLoadingProgram(true)
         try {
-          const token = typeof window !== 'undefined' ? localStorage.getItem('superAdminToken') : null
-          if (!token) {
-            setLoadingProgram(false)
-            return
-          }
-
+          const { API_BASE_URL } = await import('@/config/api');
           // Try to find submission for this highlight using the correct endpoint
-          const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/approvals`
+          const apiUrl = `${API_BASE_URL || ''}/api/approvals`
           const response = await fetch(apiUrl, {
+            credentials: 'include', // CRITICAL: Include httpOnly cookies
             headers: {
-              'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
           })
@@ -158,11 +153,12 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
                 
                 if (proposedData?.program_id) {
                   // Found program_id in submission, now fetch the program title
+                  const { API_BASE_URL } = await import('@/config/api');
                   const programResponse = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/projects/superadmin/${proposedData.program_id}`,
+                    `${API_BASE_URL || ''}/api/projects/superadmin/${proposedData.program_id}`,
                     {
+                      credentials: 'include', // CRITICAL: Include httpOnly cookies
                       headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
                       },
                     }
@@ -193,17 +189,11 @@ const HighlightDetailsModal = ({ highlight, isOpen, onClose }) => {
       // Fetch program title from API using program_id
       setLoadingProgram(true)
       try {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('superAdminToken') : null
-        if (!token) {
-          logger.warn('No superadmin token found for fetching program title')
-          setLoadingProgram(false)
-          return
-        }
-
-        const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/projects/superadmin/${highlight.program_id}`
+        const { API_BASE_URL } = await import('@/config/api');
+        const apiUrl = `${API_BASE_URL || ''}/api/projects/superadmin/${highlight.program_id}`
         const response = await fetch(apiUrl, {
+          credentials: 'include', // CRITICAL: Include httpOnly cookies
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         })

@@ -1,21 +1,17 @@
-import { getAdminTokenOrRedirect, API_CONFIG } from '../../utils';
+import { API_CONFIG } from '../../utils';
 
 // Fetch available admins for collaboration
 export const fetchAvailableAdmins = async (isEditMode = false, programId = null) => {
-  const token = getAdminTokenOrRedirect();
-  if (!token) {
-    return []; // Redirect handled by getAdminTokenOrRedirect
-  }
-
   try {
     const endpoint = isEditMode && programId
-      ? `${API_CONFIG.BASE_URL}/api/collaborations/programs/${programId}/available-admins`
-      : `${API_CONFIG.BASE_URL}/api/collaborations/available-admins`;
+      ? `${API_CONFIG.BASE_URL || ''}/api/collaborations/programs/${programId}/available-admins`
+      : `${API_CONFIG.BASE_URL || ''}/api/collaborations/available-admins`;
         
     const response = await fetch(endpoint, {
+      credentials: 'include', // CRITICAL: Include httpOnly cookies
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        // No Authorization header needed - httpOnly cookies handle authentication
       }
     });
 
@@ -38,17 +34,13 @@ export const fetchAvailableAdmins = async (isEditMode = false, programId = null)
 
 // Add collaborator to existing program
 export const addCollaboratorToProgram = async (programId, collaboratorAdminId) => {
-  const token = getAdminTokenOrRedirect();
-  if (!token) {
-    throw new Error('Authentication required');
-  }
-
   try {
-    const response = await fetch(`${API_CONFIG.BASE_URL}/api/collaborations/programs/${programId}/invite-collaborator`, {
+    const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/collaborations/programs/${programId}/invite-collaborator`, {
       method: 'POST',
+      credentials: 'include', // CRITICAL: Include httpOnly cookies
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        // No Authorization header needed - httpOnly cookies handle authentication
       },
       body: JSON.stringify({ collaboratorAdminId })
     });
@@ -79,16 +71,12 @@ export const addCollaboratorToProgram = async (programId, collaboratorAdminId) =
 
 // Fetch existing collaborators for a program
 export const fetchProgramCollaborators = async (programId) => {
-  const token = getAdminTokenOrRedirect();
-  if (!token) {
-    return []; // Redirect handled by getAdminTokenOrRedirect
-  }
-
   try {
-    const response = await fetch(`${API_CONFIG.BASE_URL}/api/collaborations/programs/${programId}/collaborators`, {
+    const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/collaborations/programs/${programId}/collaborators`, {
+      credentials: 'include', // CRITICAL: Include httpOnly cookies
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        // No Authorization header needed - httpOnly cookies handle authentication
       }
     });
 
@@ -118,17 +106,13 @@ export const fetchProgramCollaborators = async (programId) => {
 
 // Remove collaborator from program
 export const removeCollaboratorFromProgram = async (programId, adminId) => {
-  const token = getAdminTokenOrRedirect();
-  if (!token) {
-    throw new Error('Authentication required');
-  }
-
   try {
-    const response = await fetch(`${API_CONFIG.BASE_URL}/api/collaborations/programs/${programId}/collaborators/${adminId}`, {
+    const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/collaborations/programs/${programId}/collaborators/${adminId}`, {
       method: 'DELETE',
+      credentials: 'include', // CRITICAL: Include httpOnly cookies
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        // No Authorization header needed - httpOnly cookies handle authentication
       }
     });
 
@@ -158,17 +142,13 @@ export const removeCollaboratorFromProgram = async (programId, adminId) => {
 
 // Opt out of collaboration (for collaborators)
 export const optOutCollaboration = async (collaborationId) => {
-  const token = getAdminTokenOrRedirect();
-  if (!token) {
-    throw new Error('Authentication required');
-  }
-
   try {
-    const response = await fetch(`${API_CONFIG.BASE_URL}/api/collaborations/collaborations/${collaborationId}/opt-out`, {
+    const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/collaborations/collaborations/${collaborationId}/opt-out`, {
       method: 'PUT',
+      credentials: 'include', // CRITICAL: Include httpOnly cookies
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        // No Authorization header needed - httpOnly cookies handle authentication
       }
     });
 

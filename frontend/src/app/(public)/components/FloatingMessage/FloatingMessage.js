@@ -30,20 +30,18 @@ export default function FloatingMessage() {
     if (typeof window === 'undefined') return;
     
     const checkAuth = async () => {
-      const token = localStorage.getItem('userToken');
-      const storedUserData = localStorage.getItem('userData');
-      
-      if (token && storedUserData) {
-        try {
-          const user = JSON.parse(storedUserData);
+      // Check authentication using the auth service instead of localStorage
+      try {
+        const { getCurrentUser } = await import('@/utils/authService');
+        const user = await getCurrentUser();
+        if (user) {
           setUserData(user);
           setIsLoggedIn(true);
           setEmail(user.email); // Pre-fill email for logged-in users
-        } catch (error) {
-          // Clear corrupted data using centralized cleanup
-          const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
-          clearAuthImmediate(USER_TYPES.PUBLIC);
         }
+      } catch (error) {
+        // User is not authenticated
+        setIsLoggedIn(false);
       }
     };
     
@@ -183,8 +181,8 @@ export default function FloatingMessage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate email before submission
-    if (!email || !validateEmail(email)) {
+    // Validate email before submission (only for non-logged-in users)
+    if (!isLoggedIn && (!email || !validateEmail(email))) {
       setEmailError("Please enter a valid email address");
       return;
     }
@@ -201,7 +199,14 @@ export default function FloatingMessage() {
       return;
     }
 
+    // Validate organizations are loaded
+    if (!organizations || organizations.length === 0) {
+      setEmailError("Organizations are still loading. Please wait a moment and try again.");
+      return;
+    }
+
     setIsSubmitting(true);
+    setEmailError(""); // Clear previous errors
 
     try {
       // Find the selected organization by acronym
@@ -211,20 +216,41 @@ export default function FloatingMessage() {
         throw new Error("Selected organization not found");
       }
 
-      // Submit message with the numeric organization ID
-      const result = await submitMessage({
+      // Prepare message data
+      const messageData = {
         organization_id: selectedOrg.id, // This should be the numeric ID
-        sender_email: email,
+        sender_email: email || (isLoggedIn && userData ? userData.email : ''),
         sender_name: null, // Optional field
         message: message.trim(),
         user_id: isLoggedIn && userData ? userData.id : null // Include user_id if authenticated
-      }).unwrap();
+      };
+
+      // Log for debugging in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[FloatingMessage] Submitting message:', {
+          organization_id: messageData.organization_id,
+          sender_email: messageData.sender_email,
+          hasMessage: !!messageData.message,
+          user_id: messageData.user_id,
+          isLoggedIn
+        });
+      }
+
+      // Submit message with the numeric organization ID
+      const result = await submitMessage(messageData).unwrap();
+
+      // Log success in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[FloatingMessage] Message sent successfully:', result);
+      }
 
       // Show success message
       if (typeof window !== 'undefined' && window.showToast) {
         window.showToast("Message sent successfully!", "success", 4000);
       } else {
-        // Message sent successfully - handled by success state
+        // Fallback: show success in error field (temporary)
+        setEmailError("");
+        alert("Message sent successfully!");
       }
 
       // Clear message field and organization selection after successful submission
@@ -237,8 +263,11 @@ export default function FloatingMessage() {
         setEmail("");
       }
     } catch (error) {
+      // Log error for debugging
+      console.error('[FloatingMessage] Error sending message:', error);
+      
       // Show error message
-      const errorMessage = error?.data?.message || "Failed to send message. Please try again.";
+      const errorMessage = error?.data?.message || error?.data?.error || error?.message || "Failed to send message. Please try again.";
       if (typeof window !== 'undefined' && window.showToast) {
         window.showToast(errorMessage, "error", 4000);
       } else {

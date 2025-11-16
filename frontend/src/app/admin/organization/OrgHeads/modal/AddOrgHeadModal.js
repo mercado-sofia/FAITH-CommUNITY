@@ -147,16 +147,10 @@ export default function AddOrgHeadModal({
       formData.append('file', compressedFile)
       formData.append('uploadType', 'organization-head')
 
-      const adminToken = getAdminTokenOrRedirect();
-      if (!adminToken) {
-        return; // Redirect handled by getAdminTokenOrRedirect
-      }
-
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/upload`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL || ''}/api/upload`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
-        },
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        // Don't set Content-Type - browser will set it with boundary for FormData
         body: formData,
       })
 

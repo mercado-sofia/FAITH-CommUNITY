@@ -54,17 +54,13 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
   const fetchUserApplications = async () => {
     try {
       setApplicationsLoading(true);
-      const token = localStorage.getItem('userToken');
-      
-      if (!token) {
-        setUserApplications([]);
-        return;
-      }
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/users/applications`, {
+      // No need to check token - cookies handle authentication
+      const { API_BASE_URL } = await import('@/config/api');
+      const response = await fetch(`${API_BASE_URL || ''}/api/users/applications`, {
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          // No Authorization header needed - httpOnly cookies handle authentication
         }
       });
 
@@ -234,13 +230,13 @@ export default function SimplifiedVolunteerForm({ selectedProgramId, onProgramSe
         reason: formData.reason.trim()
       };
 
-      const userToken = localStorage.getItem('userToken');
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/apply`, {
+      const { API_BASE_URL } = await import('@/config/api');
+      const response = await fetch(`${API_BASE_URL || ''}/api/apply`, {
         method: "POST",
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${userToken}`
+          // No Authorization header needed - httpOnly cookies handle authentication
         },
         body: JSON.stringify(requestData),
       });

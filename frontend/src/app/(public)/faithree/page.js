@@ -14,7 +14,7 @@ const prefersReducedMotion = typeof window !== 'undefined'
   ? window.matchMedia('(prefers-reduced-motion: reduce)').matches 
   : false;
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from '@/config/api';
 
 function FAITHreePage() {
   const [isContentVisible, setIsContentVisible] = useState(false);
@@ -111,13 +111,20 @@ function FAITHreePage() {
         }
         
         // Fetch featured highlights from API
-        if (!API_BASE_URL) {
+        // Note: Empty string is valid in development (uses Next.js rewrites)
+        // Only check for undefined/null, not falsy values
+        if (API_BASE_URL === undefined || API_BASE_URL === null) {
           console.error('API_BASE_URL is not set. Please configure NEXT_PUBLIC_API_URL environment variable.');
           setFeaturedHighlights([]);
           return;
         }
         
-        const response = await fetch(`${API_BASE_URL}/api/highlights/public/featured`);
+        const response = await fetch(`${API_BASE_URL || ''}/api/highlights/public/featured`, {
+          credentials: 'include', // CRITICAL: Include httpOnly cookies
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
         
         if (!response.ok) {
           throw new Error(`Failed to fetch featured highlights: ${response.status} ${response.statusText}`);
@@ -163,14 +170,21 @@ function FAITHreePage() {
       try {
         setIsLoadingOrgs(true);
         
-        if (typeof window === 'undefined' || !API_BASE_URL) {
+        // Note: Empty string is valid in development (uses Next.js rewrites)
+        // Only check for undefined/null, not falsy values
+        if (typeof window === 'undefined' || (API_BASE_URL === undefined || API_BASE_URL === null)) {
           setOrganizations([]);
           setIsLoadingOrgs(false);
           return;
         }
         
         // Fetch approved highlights to extract unique organizations
-        const response = await fetch(`${API_BASE_URL}/api/highlights/public/approved`);
+        const response = await fetch(`${API_BASE_URL || ''}/api/highlights/public/approved`, {
+          credentials: 'include', // CRITICAL: Include httpOnly cookies
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
         
         if (!response.ok) {
           throw new Error(`Failed to fetch highlights: ${response.status}`);

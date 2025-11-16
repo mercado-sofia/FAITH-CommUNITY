@@ -16,19 +16,19 @@ export const makeAuthenticatedRequest = async (endpoint, options = {}) => {
 };
 
 // Legacy functions for backward compatibility
+// Note: These are deprecated - use authenticatedFetch instead which handles cookies automatically
 export const getAuthHeaders = () => {
-  // This is now handled by authenticatedFetch, but kept for compatibility
-  const token = localStorage.getItem('userToken');
+  // This is now handled by authenticatedFetch with httpOnly cookies, but kept for compatibility
   return {
-    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json'
+    // No Authorization header needed - httpOnly cookies handle authentication
   };
 };
 
 export const getAuthHeadersWithFormData = () => {
-  // This is now handled by authenticatedFetch, but kept for compatibility
-  const token = localStorage.getItem('userToken');
+  // This is now handled by authenticatedFetch with httpOnly cookies, but kept for compatibility
   return {
-    'Authorization': `Bearer ${token}`
+    // No Authorization header needed - httpOnly cookies handle authentication
+    // Don't set Content-Type - browser will set it with boundary for FormData
   };
 };

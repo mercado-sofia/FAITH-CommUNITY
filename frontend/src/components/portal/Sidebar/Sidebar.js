@@ -101,7 +101,8 @@ export default function Sidebar({
   useEffect(() => {
     const loadBrandingData = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const { API_BASE_URL } = await import('@/config/api');
+        const baseUrl = API_BASE_URL || '';
         
         if (userType === USER_TYPES.SUPERADMIN) {
           // Superadmin: try authenticated endpoint first, fallback to public
@@ -113,7 +114,9 @@ export default function Sidebar({
 
           // If authenticated request fails, fallback to public endpoint
           if (!response || !response.ok) {
-            response = await fetch(`${baseUrl}/api/superadmin/branding/public`);
+            response = await fetch(`${baseUrl}/api/superadmin/branding/public`, {
+              credentials: 'include', // CRITICAL: Include httpOnly cookies
+            });
           }
 
           if (response && response.ok) {

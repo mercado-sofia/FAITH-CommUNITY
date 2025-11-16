@@ -1,26 +1,20 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
+import { API_BASE_URL } from "@/config/api"
+
+// Get base URL - empty string in development (uses Next.js rewrites for same-origin requests)
+const getBaseUrl = () => {
+  const base = API_BASE_URL || '';
+  return base ? `${base}/api/faqs` : '/api/faqs';
+};
 
 export const faqApi = createApi({
   reducerPath: "faqApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/faqs`,
-    prepareHeaders: (headers, { getState }) => {
+    baseUrl: getBaseUrl(),
+    credentials: 'include', // CRITICAL: Include httpOnly cookies for authentication
+    prepareHeaders: (headers) => {
       headers.set("Content-Type", "application/json")
-
-      // Add JWT token for authentication - check for both admin and superadmin tokens
-      // Check for window to avoid SSR errors
-      const adminToken = getState().admin?.token || (typeof window !== 'undefined' ? localStorage.getItem("adminToken") : null)
-      const superadminToken = getState().superadmin?.token || (typeof window !== 'undefined' ? localStorage.getItem("superAdminToken") : null)
-      
-      // Use superadmin token if available, otherwise use admin token
-      const token = superadminToken || adminToken
-      
-      // Send token to backend - let backend handle validation
-      // Backend will reject hardcoded tokens in production with 403
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`)
-      }
-
+      // No Authorization header needed - httpOnly cookies handle authentication
       return headers
     },
   }),

@@ -459,9 +459,12 @@ const SuperadminHighlightsPage = () => {
     const fetchFeaturedHighlights = async () => {
       try {
         setIsLoadingFeatured(true)
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admin/highlights/featured`, {
+        const { API_BASE_URL } = await import('@/config/api');
+        const response = await fetch(`${API_BASE_URL || ''}/api/admin/highlights/featured`, {
+          credentials: 'include', // CRITICAL: Include httpOnly cookies
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('superAdminToken') || ''}`
+            'Content-Type': 'application/json',
+            // No Authorization header needed - httpOnly cookies handle authentication
           }
         })
         

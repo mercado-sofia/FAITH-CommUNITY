@@ -2,8 +2,7 @@ import useSWR from 'swr';
 import { useMemo } from 'react';
 import logger from '@/utils/logger';
 import { formatDateForAPI } from '@/utils/dateUtils';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from '@/config/api';
 
 // Check if user is authenticated (now uses httpOnly cookies via backend)
 const isAuthenticated = async () => {
@@ -201,6 +200,7 @@ export const useAdminVolunteers = (adminId) => {
 };
 
 // Custom fetcher for organization data
+// Uses httpOnly cookies for authentication (same as adminFetcher)
 const organizationFetcher = async (url) => {
   try {
     // Check if we're on the client side
@@ -208,19 +208,13 @@ const organizationFetcher = async (url) => {
       throw new Error('Cannot fetch on server side');
     }
 
-    const adminToken = getAdminToken();
-    
-    if (!adminToken) {
-      const error = new Error('No admin token found. Please log in again.');
-      logger.apiError(url, error, { type: 'auth_error', message: 'Missing admin token' });
-      throw error;
-    }
-    
+    // Tokens are in httpOnly cookies - sent automatically with credentials: 'include'
     const response = await fetch(url, {
       method: 'GET',
+      credentials: 'include', // CRITICAL: Include httpOnly cookies
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${adminToken}`
+        // No Authorization header needed - cookies handle this
       },
     });
 
@@ -229,13 +223,24 @@ const organizationFetcher = async (url) => {
       
       // Handle specific error cases
       if (response.status === 401) {
-        errorMessage = 'Authentication failed. Please log in again.';
-        // Clear invalid token
+        errorMessage = 'Your session has expired. Please log in again.';
+        // Try to refresh token
         try {
-          localStorage.removeItem('adminToken');
-          localStorage.removeItem('adminData');
+          const { getValidAccessToken } = await import('@/utils/tokenRefresh');
+          const refreshed = await getValidAccessToken(true);
+          if (!refreshed && typeof window !== 'undefined') {
+            // Refresh failed - redirect to login
+            const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
+            clearAuthImmediate(USER_TYPES.ADMIN);
+            window.location.href = '/login';
+          }
         } catch (e) {
-          // Ignore localStorage errors
+          // Refresh failed - redirect to login
+          if (typeof window !== 'undefined') {
+            const { clearAuthImmediate, USER_TYPES } = await import('@/utils/authService');
+            clearAuthImmediate(USER_TYPES.ADMIN);
+            window.location.href = '/login';
+          }
         }
       } else if (response.status === 403) {
         errorMessage = 'Access denied. You do not have permission to access this resource.';

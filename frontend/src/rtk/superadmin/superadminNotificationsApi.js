@@ -4,7 +4,9 @@ import { API_BASE_URL } from '@/config/api';
 // Production-ready baseQuery with proper error handling
 const baseQueryWithErrorHandling = async (args, api, extraOptions) => {
   // Check if API_BASE_URL is configured
-  if (!API_BASE_URL) {
+  // Note: Empty string is valid in development (uses Next.js rewrites)
+  // Only check for undefined/null, not falsy values
+  if (API_BASE_URL === undefined || API_BASE_URL === null) {
     return {
       error: {
         status: 'CONFIG_ERROR',
@@ -16,17 +18,17 @@ const baseQueryWithErrorHandling = async (args, api, extraOptions) => {
     };
   }
 
+  // Get base URL - empty string in development (uses Next.js rewrites for same-origin requests)
+  const getBaseUrl = () => {
+    const base = API_BASE_URL || '';
+    return base ? `${base}/api/superadmin/notifications` : '/api/superadmin/notifications';
+  };
+
   const result = await fetchBaseQuery({
-    baseUrl: `${API_BASE_URL}/api/superadmin/notifications`,
-    credentials: 'include',
-    prepareHeaders: (headers, { getState }) => {
-      // Check for window to avoid SSR errors
-      const token = typeof window !== 'undefined' ? localStorage.getItem('superAdminToken') : null;
-      // Send token to backend - let backend handle validation
-      // Backend will reject hardcoded tokens in production with 403
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
-      }
+    baseUrl: getBaseUrl(),
+    credentials: 'include', // CRITICAL: Include httpOnly cookies for authentication
+    prepareHeaders: (headers) => {
+      // No Authorization header needed - httpOnly cookies handle authentication
       return headers;
     },
   })(args, api, extraOptions);

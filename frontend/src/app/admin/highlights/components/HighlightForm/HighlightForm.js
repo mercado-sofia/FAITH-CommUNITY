@@ -7,8 +7,7 @@ import { LuUpload } from 'react-icons/lu';
 import { getProgramStatusByDates } from '@/utils/programStatusUtils';
 import { getAdminTokenOrRedirect, API_CONFIG } from '../../../utils';
 import styles from './HighlightForm.module.css';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from '@/config/api';
 
 // Custom Dropdown Component (similar to DateSelectionField)
 const CustomDropdown = ({ options, value, onChange, disabled, placeholder, error }) => {
@@ -90,20 +89,32 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
     const fetchPrograms = async () => {
       try {
         setIsLoadingPrograms(true);
-        const token = getAdminTokenOrRedirect();
-        if (!token) {
+        // Check if admin is authenticated (using httpOnly cookies)
+        const adminData = typeof window !== 'undefined' ? localStorage.getItem('adminData') : null;
+        if (!adminData) {
+          // Admin not authenticated, but don't redirect here - let the layout handle it
+          setIsLoadingPrograms(false);
           return;
         }
 
-        const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/programs`, {
+        const response = await fetch(`${API_BASE_URL || ''}/api/admin/programs`, {
+          credentials: 'include', // CRITICAL: Include httpOnly cookies
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
+            // No Authorization header needed - httpOnly cookies handle authentication
           },
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch programs');
+          // Only log error, don't redirect - let the layout handle auth errors
+          if (response.status === 401) {
+            console.error('Authentication failed while fetching programs');
+            // The layout will handle the redirect
+          } else {
+            console.error('Failed to fetch programs:', response.status);
+          }
+          setIsLoadingPrograms(false);
+          return;
         }
 
         const result = await response.json();
@@ -253,18 +264,12 @@ export default function HighlightForm({ mode = 'create', highlight = null, onCan
     formData.append('file', file);
     formData.append('uploadType', 'highlight');
     
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
-      throw new Error('No admin token found. Please log in again.');
-    }
-    
     try {
       // Send uploadType in query params for multer to use before parsing body
-      const response = await fetch(`${API_BASE_URL}/api/upload?type=highlight`, {
+      const response = await fetch(`${API_BASE_URL || ''}/api/upload?type=highlight`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        // Don't set Content-Type - browser will set it with boundary for FormData
         body: formData,
       });
 

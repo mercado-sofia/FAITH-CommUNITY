@@ -1,7 +1,6 @@
 // Global cache invalidation utility for SWR
 import { mutate } from 'swr';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from '@/config/api';
 
 /**
  * Invalidate specific SWR cache keys
@@ -20,20 +19,21 @@ export const invalidateCache = (keys) => {
  * This ensures both admin and public news views are updated
  */
 export const invalidateNewsCache = () => {
+  const base = API_BASE_URL || '';
   // Invalidate public news cache
-  invalidateCache(`${API_BASE_URL}/api/news`);
+  invalidateCache(`${base}/api/news`);
   
   // Invalidate organization-specific news caches
   // We'll invalidate common organization acronyms
   const commonOrgs = ['FACTS', 'FAHSS', 'FABCOMMS', 'FAIEES'];
   commonOrgs.forEach(org => {
-    invalidateCache(`${API_BASE_URL}/api/news/org/${org}`);
-    invalidateCache(`${API_BASE_URL}/api/news/approved/${org}`);
+    invalidateCache(`${base}/api/news/org/${org}`);
+    invalidateCache(`${base}/api/news/approved/${org}`);
   });
   
   // Invalidate admin news caches for all organizations
   commonOrgs.forEach(org => {
-    invalidateCache(`${API_BASE_URL}/api/news/org/${org}`);
+    invalidateCache(`${base}/api/news/org/${org}`);
   });
   
   // News cache invalidated
@@ -43,11 +43,12 @@ export const invalidateNewsCache = () => {
  * Invalidate organization-related caches
  */
 export const invalidateOrganizationCache = () => {
-  invalidateCache(`${API_BASE_URL}/api/organizations`);
-  invalidateCache(`${API_BASE_URL}/api/organization/org/FACTS`);
-  invalidateCache(`${API_BASE_URL}/api/organization/org/FAHSS`);
-  invalidateCache(`${API_BASE_URL}/api/organization/org/FABCOMMS`);
-  invalidateCache(`${API_BASE_URL}/api/organization/org/FAIEES`);
+  const base = API_BASE_URL || '';
+  invalidateCache(`${base}/api/organizations`);
+  invalidateCache(`${base}/api/organization/org/FACTS`);
+  invalidateCache(`${base}/api/organization/org/FAHSS`);
+  invalidateCache(`${base}/api/organization/org/FABCOMMS`);
+  invalidateCache(`${base}/api/organization/org/FAIEES`);
   
   // Organization cache invalidated
 };
@@ -56,14 +57,15 @@ export const invalidateOrganizationCache = () => {
  * Invalidate programs-related caches
  */
 export const invalidateProgramsCache = () => {
-  invalidateCache(`${API_BASE_URL}/api/programs`);
-  invalidateCache(`${API_BASE_URL}/api/programs/approved/upcoming`);
+  const base = API_BASE_URL || '';
+  invalidateCache(`${base}/api/programs`);
+  invalidateCache(`${base}/api/programs/approved/upcoming`);
   
   // Invalidate organization-specific program caches
   const commonOrgs = ['FACTS', 'FAHSS', 'FABCOMMS', 'FAIEES'];
   commonOrgs.forEach(org => {
-    invalidateCache(`${API_BASE_URL}/api/programs/org/${org}`);
-    invalidateCache(`${API_BASE_URL}/api/admin/programs/${org}`);
+    invalidateCache(`${base}/api/programs/org/${org}`);
+    invalidateCache(`${base}/api/admin/programs/${org}`);
   });
   
   // Programs cache invalidated

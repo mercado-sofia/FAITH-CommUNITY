@@ -28,7 +28,8 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
   useEffect(() => {
     const loadBrandingData = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const { API_BASE_URL } = await import('@/config/api');
+        const baseUrl = API_BASE_URL || '';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/branding`,
           { method: 'GET' },
@@ -55,14 +56,9 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
       const formData = new FormData();
       formData.append(type, file);
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      
-      // Get the token for manual request (to avoid Content-Type issues with FormData)
-      const token = localStorage.getItem('superAdminToken');
-      if (!token) {
-        showSuccessModal('Authentication required. Please log in again.');
-        return null;
-      }
+      const { API_BASE_URL } = await import('@/config/api');
+      const baseUrl = API_BASE_URL || '';
+      // No need to check token - cookies handle authentication
 
       const uploadUrl = `${baseUrl}/api/superadmin/branding/upload-${type}`;
       console.log('Uploading to:', uploadUrl);
@@ -70,10 +66,8 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
 
       const response = await fetch(uploadUrl, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          // Don't set Content-Type - let browser set it with boundary for FormData
-        },
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        // Don't set Content-Type - browser will set it with boundary for FormData
         body: formData,
       });
 
@@ -142,7 +136,8 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
     
     try {
       setIsDeleting(true);
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const { API_BASE_URL } = await import('@/config/api');
+      const baseUrl = API_BASE_URL || '';
       const response = await makeAuthenticatedRequest(
         `${baseUrl}/api/superadmin/branding/${deleteType}`,
         { method: 'DELETE' },
@@ -251,7 +246,8 @@ export default function BrandingManagementComponent({ showSuccessModal }) {
         setSelectedFiles({});
         
         // Save all branding data
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const { API_BASE_URL } = await import('@/config/api');
+        const baseUrl = API_BASE_URL || '';
         const response = await makeAuthenticatedRequest(
           `${baseUrl}/api/superadmin/branding`,
           {

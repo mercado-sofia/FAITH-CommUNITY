@@ -347,9 +347,10 @@ export default function SignupForm({ onRegistrationSuccess }) {
       const birthDateString = `${formData.birthYear}-${formattedMonth}-${formattedDay}`
       const birthDate = formatDateForAPI(birthDateString)
       
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-      const response = await fetch(`${API_BASE_URL}/api/users/register`, {
+      const { API_BASE_URL } = await import('@/config/api');
+      const response = await fetch(`${API_BASE_URL || ''}/api/users/register`, {
         method: "POST",
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
           "Content-Type": "application/json",
         },

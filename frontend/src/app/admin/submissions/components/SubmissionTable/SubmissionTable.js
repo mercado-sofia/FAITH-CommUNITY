@@ -6,8 +6,7 @@ import CancelConfirmationModal from '../modals/CancelConfirmationModal';
 import { ConfirmationModal } from '@/components';
 import { SuccessModal } from '@/components';
 import styles from './SubmissionTable.module.css';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { API_BASE_URL } from '@/config/api';
 
 export default function SubmissionTable({ 
   orgAcronym, 
@@ -64,10 +63,12 @@ export default function SubmissionTable({
   const handleCancel = async (id) => {
     setLoadingStates(prev => ({ ...prev, [`cancel-${id}`]: true }));
     try {
-      const response = await fetch(`${API_BASE_URL}/api/submissions/${id}`, { 
+      const response = await fetch(`${API_BASE_URL || ''}/api/submissions/${id}`, { 
         method: 'DELETE',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Content-Type': 'application/json',
+          // No Authorization header needed - httpOnly cookies handle authentication
         }
       });
       if (!response.ok) {
@@ -88,11 +89,12 @@ export default function SubmissionTable({
   const handleDelete = async (id) => {
     setLoadingStates(prev => ({ ...prev, [`delete-${id}`]: true }));
     try {
-      const response = await fetch(`${API_BASE_URL}/api/submissions/${id}`, {
+      const response = await fetch(`${API_BASE_URL || ''}/api/submissions/${id}`, {
         method: 'DELETE',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          // No Authorization header needed - httpOnly cookies handle authentication
         }
       });
       
@@ -131,10 +133,12 @@ export default function SubmissionTable({
       }
       
       const promises = pendingIds.map(id => 
-        fetch(`${API_BASE_URL}/api/submissions/${id}`, { 
+        fetch(`${API_BASE_URL || ''}/api/submissions/${id}`, { 
           method: 'DELETE',
+          credentials: 'include', // CRITICAL: Include httpOnly cookies
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+            'Content-Type': 'application/json',
+            // No Authorization header needed - httpOnly cookies handle authentication
           }
         })
       );
@@ -151,10 +155,12 @@ export default function SubmissionTable({
   const handleBulkDelete = async () => {
     try {
       const promises = Array.from(selectedItems).map(id => 
-        fetch(`${API_BASE_URL}/api/submissions/${id}`, { 
+        fetch(`${API_BASE_URL || ''}/api/submissions/${id}`, { 
           method: 'DELETE',
+          credentials: 'include', // CRITICAL: Include httpOnly cookies
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+            'Content-Type': 'application/json',
+            // No Authorization header needed - httpOnly cookies handle authentication
           }
         })
       );

@@ -49,9 +49,8 @@ export const createNews = async (req, res) => {
     }
   }
 
-  // Verify authentication
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+  // Verify authentication - Try cookie first (more secure), then header (for backward compatibility)
+  const token = req.cookies?.access_token || req.headers.authorization?.split(" ")[1];
 
   if (!token) {
     return res.status(401).json({ success: false, message: "Access token required" });
@@ -171,9 +170,8 @@ export const getNewsByOrg = async (req, res) => {
   
   // Getting news by organization
 
-  // Verify authentication
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+  // Verify authentication - Try cookie first (more secure), then header (for backward compatibility)
+  const token = req.cookies?.access_token || req.headers.authorization?.split(" ")[1];
 
   if (!token) {
     // No token provided
@@ -490,9 +488,8 @@ export const getNewsBySlug = async (req, res) => {
 export const deleteNewsSubmission = async (req, res) => {
   const { id } = req.params;
 
-  // Verify authentication
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+  // Verify authentication - Try cookie first (more secure), then header (for backward compatibility)
+  const token = req.cookies?.access_token || req.headers.authorization?.split(" ")[1];
 
   if (!token) {
     return res.status(401).json({ success: false, message: "Access token required" });
@@ -531,9 +528,8 @@ export const deleteNewsSubmission = async (req, res) => {
 export const getRecentlyDeletedNews = async (req, res) => {
   const { orgId } = req.params;
 
-  // Verify authentication
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+  // Verify authentication - Try cookie first (more secure), then header (for backward compatibility)
+  const token = req.cookies?.access_token || req.headers.authorization?.split(" ")[1];
 
   if (!token) {
     return res.status(401).json({ success: false, message: "Access token required" });
@@ -624,9 +620,8 @@ export const getRecentlyDeletedNews = async (req, res) => {
 export const restoreNews = async (req, res) => {
   const { id } = req.params;
 
-  // Verify authentication
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+  // Verify authentication - Try cookie first (more secure), then header (for backward compatibility)
+  const token = req.cookies?.access_token || req.headers.authorization?.split(" ")[1];
 
   if (!token) {
     return res.status(401).json({ success: false, message: "Access token required" });
@@ -664,9 +659,8 @@ export const restoreNews = async (req, res) => {
 export const permanentlyDeleteNews = async (req, res) => {
   const { id } = req.params;
 
-  // Verify authentication
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+  // Verify authentication - Try cookie first (more secure), then header (for backward compatibility)
+  const token = req.cookies?.access_token || req.headers.authorization?.split(" ")[1];
 
   if (!token) {
     return res.status(401).json({ success: false, message: "Access token required" });
@@ -741,9 +735,8 @@ export const updateNews = async (req, res) => {
     }
   }
 
-  // Verify authentication
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+  // Verify authentication - Try cookie first (more secure), then header (for backward compatibility)
+  const token = req.cookies?.access_token || req.headers.authorization?.split(" ")[1];
 
   if (!token) {
     return res.status(401).json({ success: false, message: "Access token required" });

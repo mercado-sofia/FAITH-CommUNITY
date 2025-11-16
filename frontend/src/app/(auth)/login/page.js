@@ -162,6 +162,15 @@ export default function LoginPage() {
 
   const attempt = async (system) => {
     setLastAttemptedSystem(system)
+    
+    // Log attempt for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Login] Attempting login for system:', system);
+      console.log('[Login] Email:', email);
+      console.log('[Login] Has password:', !!password);
+      console.log('[Login] Needs OTP:', needsOtp);
+    }
+    
     switch (system) {
       case "superadmin":
         return await postJson('/api/superadmin/auth/login', { email, password, otp: needsOtp ? otp : undefined })
@@ -206,6 +215,51 @@ export default function LoginPage() {
       
       let result = await attempt(systemToTry)
       let successfulSystem = null
+      
+      // Handle 401 errors - but don't return early if we should try fallback systems
+      // Only return early for 2FA requirements or if we've already tried all systems
+      if (result.status === 401 && result.data) {
+        const data = result.data;
+        
+        // Log for debugging
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[Login] 401 Unauthorized:', {
+            system: systemToTry,
+            error: data.error,
+            attempts: data.attempts,
+            remainingAttempts: data.remainingAttempts,
+            requireTwoFA: data.requireTwoFA,
+            lastAttemptedSystem: lastAttemptedSystem
+          });
+        }
+        
+        // Handle 2FA requirement - return early for this
+        if (data.requireTwoFA && systemToTry === "superadmin") {
+          setNeedsOtp(true);
+          setErrorMessage("Enter the 6-digit code from your authenticator app.");
+          setShowError(true);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Update attempt count
+        if (data.attempts !== undefined) {
+          setAttemptCount(data.attempts);
+          setRemainingAttempts(data.remainingAttempts !== undefined ? data.remainingAttempts : Math.max(0, 7 - data.attempts));
+        }
+        
+        // Don't return early here - let the fallback logic below handle trying other systems
+        // Only show error if we've already tried all systems or this is a retry
+        if (lastAttemptedSystem) {
+          // We've already tried a different system, so show error
+          const errorMsg = data.error || "Invalid credentials. Please check your email and password.";
+          setErrorMessage(errorMsg);
+          setShowError(true);
+          setIsLoading(false);
+          return;
+        }
+        // Otherwise, continue to fallback logic below
+      }
       
       if (result.ok) {
         successfulSystem = systemToTry
@@ -263,13 +317,42 @@ export default function LoginPage() {
         console.log('[Login] Response headers:', 'Check Network tab for Set-Cookie headers');
         
         // IMPORTANT: With Next.js rewrites, cookies are set by backend and forwarded through Next.js
-        // The delay ensures the browser has processed the Set-Cookie headers
-        // Check Application > Cookies in DevTools to verify cookies are set
+        // Use a longer delay and verify cookies are set before redirecting
+        // This ensures cookies are fully processed by the browser
+        const redirectDelay = 1500; // Increased to 1.5 seconds
+        const maxWaitTime = 3000; // Maximum wait time
+        const startTime = Date.now();
+        
+        const checkCookiesAndRedirect = () => {
+          const elapsed = Date.now() - startTime;
+          
+          // Check if cookies are available (we can't read httpOnly cookies, but we can check if refresh_token cookie exists via document.cookie)
+          // Note: httpOnly cookies won't show in document.cookie, but the browser should have them
+          // We'll rely on the delay and the retry mechanism in the layout
+          
+          if (elapsed >= redirectDelay) {
+            console.log('[Login] Redirecting to:', successfulSystem === 'user' ? '/' : `/${successfulSystem}`);
+            console.log('[Login] After redirect, check if access_token and refresh_token cookies exist');
+            // Use window.location.replace to avoid adding to history (prevents back button issues)
+            window.location.replace(successfulSystem === 'user' ? '/' : `/${successfulSystem}`);
+            return;
+          }
+          
+          // Continue waiting
+          setTimeout(checkCookiesAndRedirect, 100);
+        };
+        
+        // Start checking after initial delay
+        setTimeout(checkCookiesAndRedirect, redirectDelay);
+        
+        // Fallback: redirect anyway after max wait time
         setTimeout(() => {
-          console.log('[Login] Redirecting to:', successfulSystem === 'user' ? '/' : `/${successfulSystem}`);
-          console.log('[Login] After redirect, check if access_token and refresh_token cookies exist');
-        window.location.href = successfulSystem === 'user' ? '/' : `/${successfulSystem}`
-        }, 1000) // Increased delay to 1 second to ensure cookies are fully set
+          if (window.location.pathname === '/login') {
+            console.warn('[Login] Max wait time reached, forcing redirect');
+            window.location.replace(successfulSystem === 'user' ? '/' : `/${successfulSystem}`);
+          }
+        }, maxWaitTime);
+        
         return
       }
 
@@ -297,7 +380,35 @@ export default function LoginPage() {
         return
       }
 
+      // If we reach here, the login failed but wasn't handled above
+      // This handles cases where result.data might be null or empty
       const data = result?.data
+      
+      // Log the full result for debugging
+      if (process.env.NODE_ENV === 'development' && !result.ok) {
+        console.error('[Login] Login failed (unhandled):', {
+          status: result.status,
+          data: data,
+          system: systemToTry,
+          hasData: !!data,
+          dataKeys: data ? Object.keys(data) : []
+        });
+      }
+      
+      // Handle case where data is null or empty
+      if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
+        if (result.status === 401) {
+          setErrorMessage("Invalid credentials. Please check your email and password.")
+        } else if (result.status === 500) {
+          setErrorMessage("Server error. Please try again later.")
+        } else {
+          setErrorMessage(`Login failed with status ${result.status}. Please try again.`)
+        }
+        setShowError(true)
+        setIsLoading(false)
+        return
+      }
+      
       // Handle 2FA requirement for superadmin accounts
       if (data && (data.requireTwoFA || /(2fa|two.?factor)/i.test(data.error || "")) && lastAttemptedSystem === "superadmin") {
         setNeedsOtp(true)
@@ -334,10 +445,21 @@ export default function LoginPage() {
       // If login failed and we haven't tried all systems yet, try fallback
       const isSuperadminEmail = email.toLowerCase().trim() === SUPERADMIN_EMAIL.toLowerCase().trim()
       
+      // Track which systems we've tried in this login attempt
+      const systemsTried = [systemToTry]
+      
       // Try fallback systems in order: admin -> user -> superadmin
-      if (!result.ok && systemToTry === "admin" && !lastAttemptedSystem) {
+      // Only try fallbacks if:
+      // 1. The current attempt failed (not ok)
+      // 2. We haven't already tried user system
+      // 3. The current system is "admin" (default)
+      if (!result.ok && systemToTry === "admin" && !systemsTried.includes("user")) {
         // If admin failed, try user system
-        setLastAttemptedSystem("user")
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[Login] Admin login failed, trying user system as fallback');
+        }
+        setLastAttemptedSystem("admin") // Mark that we tried admin
+        systemsTried.push("user")
         const userResult = await attempt("user")
         
         if (userResult && userResult.ok) {
@@ -356,7 +478,15 @@ export default function LoginPage() {
           localStorage.setItem("userData", JSON.stringify(userData.user))
           document.cookie = "userRole=user; path=/; max-age=86400"
           setIsLoading(false)
-          window.location.href = "/"
+          
+          // Use same redirect logic as main success handler
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[Login] User login successful via fallback, redirecting to home');
+          }
+          // Use window.location.replace to avoid adding to history
+          setTimeout(() => {
+            window.location.replace("/")
+          }, 500)
           return
         }
         
@@ -379,8 +509,12 @@ export default function LoginPage() {
         }
         
         // If user also failed and email is superadmin, try superadmin
-        if (isSuperadminEmail) {
-          setLastAttemptedSystem("superadmin")
+        if (isSuperadminEmail && !systemsTried.includes("superadmin")) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[Login] User login also failed, trying superadmin as final fallback');
+          }
+          setLastAttemptedSystem("user") // Mark that we tried user
+          systemsTried.push("superadmin")
           const superadminResult = await attempt("superadmin")
           if (superadminResult && superadminResult.ok) {
             const superadminData = superadminResult.data
@@ -396,23 +530,33 @@ export default function LoginPage() {
         }
         
         // If all fallbacks failed, show error from the last attempt (user system)
-        const errorData = userResult?.data || data
+        const errorData = userResult?.data || result?.data || data
         const baseError = (errorData && errorData.error) || "Invalid email or password. Please check your credentials and try again."
         setErrorMessage(baseError)
         setShowError(true)
         setFieldErrors({ email: "Invalid email or password", password: "Invalid email or password" })
+        setIsLoading(false)
       } else if (systemToTry === "user" && !result.ok) {
         // If we directly tried user system and it failed, show the error
-        const baseError = (data && data.error) || "Invalid email or password. Please check your credentials and try again."
+        const baseError = (result?.data?.error || data?.error) || "Invalid email or password. Please check your credentials and try again."
         setErrorMessage(baseError)
         setShowError(true)
         setFieldErrors({ email: "Invalid email or password", password: "Invalid email or password" })
-      } else if (systemToTry === "admin" && !result.ok && lastAttemptedSystem) {
-        // If admin failed and we've already tried fallbacks, show error
-        const baseError = (data && data.error) || "Invalid email or password. Please check your credentials and try again."
+        setIsLoading(false)
+      } else if (!result.ok && lastAttemptedSystem) {
+        // If we've already tried fallbacks and still failed, show error
+        const baseError = (result?.data?.error || data?.error) || "Invalid email or password. Please check your credentials and try again."
         setErrorMessage(baseError)
         setShowError(true)
         setFieldErrors({ email: "Invalid email or password", password: "Invalid email or password" })
+        setIsLoading(false)
+      } else if (!result.ok) {
+        // Final fallback - show generic error
+        const baseError = (result?.data?.error || data?.error) || "Invalid email or password. Please check your credentials and try again."
+        setErrorMessage(baseError)
+        setShowError(true)
+        setFieldErrors({ email: "Invalid email or password", password: "Invalid email or password" })
+        setIsLoading(false)
       }
     } catch (error) {
       setErrorMessage("Network error. Please check your connection and try again.")

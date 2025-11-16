@@ -33,8 +33,13 @@ export default function VerifyEmail({ token }) {
 
   const verifyEmail = async (verificationToken) => {
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-      const response = await fetch(`${API_BASE_URL}/api/users/verify-email?token=${verificationToken}`)
+      const { API_BASE_URL } = await import('@/config/api');
+      const response = await fetch(`${API_BASE_URL || ''}/api/users/verify-email?token=${verificationToken}`, {
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
       const data = await response.json()
       
       if (response.ok) {
@@ -56,9 +61,10 @@ export default function VerifyEmail({ token }) {
     setResendMessage('')
 
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-      const response = await fetch(`${API_BASE_URL}/api/users/resend-verification`, {
+      const { API_BASE_URL } = await import('@/config/api');
+      const response = await fetch(`${API_BASE_URL || ''}/api/users/resend-verification`, {
         method: 'POST',
+        credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
           'Content-Type': 'application/json',
         },

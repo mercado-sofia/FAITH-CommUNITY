@@ -1,18 +1,25 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { API_BASE_URL } from '@/config/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const getBaseUrl = () => {
+  // In development, use relative paths for Next.js rewrites
+  if (process.env.NODE_ENV === 'development') {
+    return '/api';
+  }
+  return `${API_BASE_URL || ''}/api`;
+};
 
 export const messagesApi = createApi({
   reducerPath: 'messagesApi',
   baseQuery: fetchBaseQuery({ 
-    baseUrl: API_BASE_URL,
-    credentials: 'include'
+    baseUrl: getBaseUrl(),
+    credentials: 'include', // CRITICAL: Include httpOnly cookies
   }),
   tagTypes: ['Messages'],
   endpoints: (builder) => ({
     submitMessage: builder.mutation({
       query: (messageData) => ({
-        url: '/api/messages',
+        url: '/messages', // baseUrl already includes /api, so just use /messages
         method: 'POST',
         body: messageData,
         headers: {

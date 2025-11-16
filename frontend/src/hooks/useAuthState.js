@@ -20,9 +20,18 @@ export const useAuthState = () => {
       const userData = await getCurrentUser();
       
       if (userData) {
-        // Also store in localStorage for quick access (non-sensitive data only)
-        localStorage.setItem('userData', JSON.stringify(userData));
-        setUser(userData);
+        // Only set user if they are a regular user (not admin/superadmin)
+        // Admin/superadmin should be redirected by the public layout
+        const userRole = userData.role?.toLowerCase();
+        if (userRole === 'admin' || userRole === 'superadmin') {
+          // Admin/superadmin detected - don't set user state
+          // The public layout will redirect them
+          setUser(null);
+        } else {
+          // Regular user - store and set user data
+          localStorage.setItem('userData', JSON.stringify(userData));
+          setUser(userData);
+        }
       } else {
         // Not authenticated - clear any stale data
         const storedUserData = localStorage.getItem('userData');

@@ -8,7 +8,8 @@ import { FaRegCircleXmark } from 'react-icons/fa6';
 import { MdErrorOutline } from 'react-icons/md';
 import styles from './unsubscribePage.module.css';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:8080';
+import { API_BASE_URL } from '@/config/api';
+const API_BASE = API_BASE_URL || '';
 
 export default function NewsletterUnsubscribePage() {
   const { token } = useParams();
@@ -27,8 +28,9 @@ export default function NewsletterUnsubscribePage() {
 
     (async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/subscription/unsubscribe/${token}`, {
+        const res = await fetch(`${API_BASE || ''}/api/subscription/unsubscribe/${token}`, {
           method: 'GET',
+          credentials: 'include', // CRITICAL: Include httpOnly cookies
           headers: { 'Content-Type': 'application/json' },
           signal: ac.signal,
         });

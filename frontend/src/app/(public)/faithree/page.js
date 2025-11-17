@@ -106,27 +106,38 @@ function FAITHreePage() {
       try {
         // Check if we're in browser environment
         if (typeof window === 'undefined') {
+          console.warn('[FAITHree] Server-side render: Skipping featured highlights fetch');
           setFeaturedHighlights([]);
           return;
         }
         
-        // Fetch featured highlights from API
-        // Note: Empty string is valid in development (uses Next.js rewrites)
-        // Only check for undefined/null, not falsy values
-        if (API_BASE_URL === undefined || API_BASE_URL === null) {
-          console.error('API_BASE_URL is not set. Please configure NEXT_PUBLIC_API_URL environment variable.');
-          setFeaturedHighlights([]);
-          return;
-        }
+        // Dynamically import API_BASE_URL to ensure it's available
+        const { API_BASE_URL: dynamicApiUrl } = await import('@/config/api');
+        const baseUrl = dynamicApiUrl || '';
         
-        const response = await fetch(`${API_BASE_URL || ''}/api/highlights/public/featured`, {
+        // Log API configuration for debugging
+        console.log('[FAITHree] Fetching featured highlights:', {
+          API_BASE_URL: baseUrl || '(empty - using relative path)',
+          endpoint: `${baseUrl}/api/highlights/public/featured`,
+          isProduction: process.env.NODE_ENV === 'production'
+        });
+        
+        const response = await fetch(`${baseUrl}/api/highlights/public/featured`, {
           credentials: 'include', // CRITICAL: Include httpOnly cookies
           headers: {
             'Content-Type': 'application/json',
-          }
+          },
+          // Add timeout to prevent hanging requests
+          signal: AbortSignal.timeout(10000) // 10 second timeout
         });
         
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[FAITHree] API response error:', {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText
+          });
           throw new Error(`Failed to fetch featured highlights: ${response.status} ${response.statusText}`);
         }
         
@@ -137,14 +148,39 @@ function FAITHreePage() {
         // Limit to 8 just in case
         const orderedFeaturedHighlights = highlights.slice(0, 8);
         
-        console.log('Featured highlights loaded from API:', {
+        console.log('[FAITHree] Featured highlights loaded successfully:', {
           count: orderedFeaturedHighlights.length,
-          highlights: orderedFeaturedHighlights.map(h => ({ id: h.id, title: h.title, displayOrder: h.display_order }))
+          totalFromApi: highlights.length,
+          highlights: orderedFeaturedHighlights.map(h => ({ 
+            id: h.id, 
+            title: h.title, 
+            displayOrder: h.display_order 
+          }))
         });
+        
+        if (orderedFeaturedHighlights.length === 0) {
+          console.warn('[FAITHree] No featured highlights found. Stars will not be displayed. Make sure highlights are marked as featured in the superadmin panel.');
+        }
         
         setFeaturedHighlights(orderedFeaturedHighlights);
       } catch (error) {
-        console.error('Error fetching featured highlights:', error);
+        // Enhanced error logging
+        if (error.name === 'AbortError') {
+          console.error('[FAITHree] Request timeout: Featured highlights fetch took too long');
+        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          console.error('[FAITHree] Network error: Cannot connect to backend API', {
+            error: error.message,
+            API_BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'not set',
+            suggestion: 'Check if NEXT_PUBLIC_API_URL is set correctly in deployment environment'
+          });
+        } else {
+          console.error('[FAITHree] Error fetching featured highlights:', {
+            error: error.message,
+            stack: error.stack,
+            name: error.name
+          });
+        }
+        // Set empty array on error - stars won't show but page will still load
         setFeaturedHighlights([]);
       }
     };

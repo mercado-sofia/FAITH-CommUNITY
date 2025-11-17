@@ -702,6 +702,11 @@ export const getFeaturedHighlights = async (req, res) => {
     
     const [rows] = await promisePool.execute(query);
     
+    console.log('[getFeaturedHighlights] Query executed successfully:', {
+      rowCount: rows.length,
+      hasProgramIdColumn
+    });
+    
     const highlights = rows.map(highlight => ({
       ...highlight,
       media: safeParseJSON(highlight.media_files, []),
@@ -709,10 +714,26 @@ export const getFeaturedHighlights = async (req, res) => {
       program_title: hasProgramIdColumn ? (highlight.program_title || null) : null
     }));
     
+    console.log('[getFeaturedHighlights] Returning highlights:', {
+      count: highlights.length,
+      highlights: highlights.map(h => ({ 
+        id: h.id, 
+        title: h.title, 
+        displayOrder: h.display_order 
+      }))
+    });
+    
     res.json({ highlights });
   } catch (error) {
-    console.error('Error fetching featured highlights:', error);
-    res.status(500).json({ error: 'Failed to fetch featured highlights' });
+    console.error('[getFeaturedHighlights] Error fetching featured highlights:', {
+      error: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    res.status(500).json({ 
+      error: 'Failed to fetch featured highlights',
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 

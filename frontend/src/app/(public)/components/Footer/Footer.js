@@ -318,7 +318,7 @@ export default function Footer() {
       <div className={styles.footerContent}>
         <div className={styles.about}>
           <h3>{siteNameData?.site_name || 'FAITH CommUNITY'}</h3>
-          <p>Centralized Web-based platform for Community Extension Programs.</p>
+          <p>Centralized web-based platform for Community Extension Programs.</p>
           <div className={styles.contactInfo}>
             <div className={styles.contactItem}>
               <div className={`${styles.iconCircle} ${styles.phone}`}>

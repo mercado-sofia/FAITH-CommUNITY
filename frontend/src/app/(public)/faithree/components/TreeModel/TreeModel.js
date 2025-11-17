@@ -133,8 +133,19 @@ function Cloud({ url, initialPosition = [0, 0, 0], scale = 1 }) {
 }
 
 // Component to load and display the GLB model
-function Model({ url, treePosition = [0, 0, 0], theme = 'morning' }) {
+function Model({ url, treePosition = [0, 0, 0], theme = 'morning', onLoad = null }) {
   const { scene } = useGLTF(url)
+  
+  // Notify parent when model is loaded
+  useEffect(() => {
+    if (scene && onLoad) {
+      // Small delay to ensure everything is ready
+      const timer = setTimeout(() => {
+        onLoad()
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [scene, onLoad])
   
   // Clone the scene to avoid mutating the original
   const clonedScene = scene.clone()
@@ -391,7 +402,9 @@ export default function TreeModel({
   // Camera positioned to the right (positive X) while maintaining same Y elevation
   cameraOffset = [2.5, 2.2, 7.5],
   // Featured highlights from superadmin (ordered by display_order)
-  featuredHighlights = []
+  featuredHighlights = [],
+  // Callback when model is loaded
+  onLoad = null
 }) {
   // Debug: Log when featuredHighlights changes
   useEffect(() => {
@@ -448,6 +461,8 @@ export default function TreeModel({
   const [isModalOpen, setIsModalOpen] = useState(false)
   // State to track if any star is hovered (for cursor change)
   const [isStarHovered, setIsStarHovered] = useState(false)
+  // State to track if model is loaded
+  const [isModelLoaded, setIsModelLoaded] = useState(false)
 
   // Handle star click
   const handleStarClick = useCallback((starId) => {
@@ -492,6 +507,11 @@ export default function TreeModel({
     setTreePosition(initialTreePosition)
   }, [initialTreePosition])
 
+  // Reset loading state when theme changes (Model component will remount with new key)
+  useEffect(() => {
+    setIsModelLoaded(false)
+  }, [theme])
+
   // Handle position changes from controls
   const handlePositionChange = useCallback((newPosition) => {
     setTreePosition(newPosition)
@@ -502,6 +522,24 @@ export default function TreeModel({
       newPosition[2] + cameraOffset[2]
     ])
   }, [cameraOffset])
+
+  // Handle model load callback - memoized to prevent unnecessary re-renders
+  const handleModelLoadCallback = useCallback(() => {
+    if (!isModelLoaded) {
+      setIsModelLoaded(true)
+    }
+  }, [isModelLoaded])
+
+  // Notify parent when model is fully loaded (including clouds and stars)
+  useEffect(() => {
+    if (isModelLoaded && onLoad) {
+      // Additional delay to ensure everything is rendered (clouds, stars, etc.)
+      const timer = setTimeout(() => {
+        onLoad()
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [isModelLoaded, onLoad])
 
   // Calculate initial camera position - use saved position if available
   const savedPos = getSavedCameraPosition()
@@ -537,7 +575,13 @@ export default function TreeModel({
             
             {/* The 3D model - pass treePosition and theme to position it and apply color changes */}
             {/* Key prop ensures component re-renders when model changes */}
-            <Model key={modelPath} url={modelPath} treePosition={treePosition} theme={theme} />
+            <Model 
+              key={modelPath} 
+              url={modelPath} 
+              treePosition={treePosition} 
+              theme={theme}
+              onLoad={handleModelLoadCallback}
+            />
             
             {/* Static clouds in the background - only in sunny mode */}
             {theme === 'morning' && (

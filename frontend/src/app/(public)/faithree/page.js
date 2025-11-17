@@ -7,7 +7,7 @@ import { IoRainyOutline } from "react-icons/io5";
 import { LuMousePointerClick } from "react-icons/lu";
 import styles from './faithree.module.css';
 // import Highlights from './Highlights/highlights';
-import { TreeModel, LoadingOverlay } from './components';
+import { TreeModel, LoadingOverlay, PageLoadingOverlay } from './components';
 
 // Check for reduced motion preference
 const prefersReducedMotion = typeof window !== 'undefined' 
@@ -27,6 +27,7 @@ function FAITHreePage() {
   const [organizations, setOrganizations] = useState([]);
   const [isLoadingOrgs, setIsLoadingOrgs] = useState(true);
   const [isInstructionOpen, setIsInstructionOpen] = useState(false); // Mobile instruction toggle
+  const [isModelLoading, setIsModelLoading] = useState(true); // Track 3D model loading
 
   // Generate rain drops data once with more variety
   const rainDrops = useMemo(() => {
@@ -276,14 +277,22 @@ function FAITHreePage() {
     fetchOrganizations();
   }, []);
 
+  // Handle model loading completion
+  const handleModelLoad = useCallback(() => {
+    setIsModelLoading(false);
+  }, []);
+
   return (
     <>
+      {/* Page Loading Overlay - Shows while 3D models are loading */}
+      <PageLoadingOverlay isLoading={isModelLoading} />
+      
       {/* Full-screen FAITHree Environment */}
       <div 
         className={`${styles.faithreeContainer} ${isTransitioning ? styles.transitioning : ''}`}
         aria-label="FAITHree interactive environment"
       >
-        {/* Loading Overlay */}
+        {/* Theme Transition Loading Overlay */}
         {isTransitioning && <LoadingOverlay nextTheme={nextTheme} />}
         
         {/* Eco-themed background */}
@@ -372,6 +381,7 @@ function FAITHreePage() {
               theme={theme} 
               treePosition={[0, -1.8, 0]} 
               featuredHighlights={featuredHighlights}
+              onLoad={handleModelLoad}
             />
           </div>
         </div>

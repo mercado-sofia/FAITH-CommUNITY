@@ -2,6 +2,7 @@
 
 import { IoClose } from 'react-icons/io5';
 import { formatDateLong, formatDateTime } from '@/utils/dateUtils.js';
+import { API_BASE_URL } from '@/config/api';
 import Image from 'next/image';
 import DOMPurify from 'dompurify';
 import styles from './ViewDetailsModal.module.css';
@@ -46,7 +47,7 @@ const ViewDetailsModal = ({ news, onClose }) => {
       // Scheduled for future publication
       return {
         label: 'Scheduled For',
-        value: formatDate(publishedAt)
+        value: formatDateTimeDisplay(publishedAt)
       };
     } else {
       // Draft - show created date
@@ -65,7 +66,8 @@ const ViewDetailsModal = ({ news, onClose }) => {
     if (news.featured_image.startsWith('http')) {
       return news.featured_image;
     }
-    return `${process.env.NEXT_PUBLIC_API_BASE_URL || ''}/${news.featured_image}`;
+    // Use API_BASE_URL from config for consistency
+    return `${API_BASE_URL || ''}/${news.featured_image}`;
   };
 
   const featuredImageUrl = getFeaturedImageUrl();

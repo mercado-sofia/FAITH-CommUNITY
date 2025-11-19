@@ -11,6 +11,8 @@ import pino from "pino"
 import pinoHttp from "pino-http"
 import path from "path"
 import { fileURLToPath } from "url"
+import { createServer } from "http"
+import { initializeSocket } from "./src/utils/socket.js"
 
 // Import cleanup function for deleted news
 import cleanupDeletedNews from "./src/utils/cleanupDeletedNews.js"
@@ -25,6 +27,9 @@ const __dirname = path.dirname(__filename)
 // Initialize Express
 const app = express()
 const PORT = process.env.PORT || 8080
+
+// Create HTTP server for Socket.io
+const httpServer = createServer(app)
 
 // Trust proxy - Required when behind a reverse proxy (Railway, Heroku, etc.)
 // This allows Express to correctly identify client IPs from X-Forwarded-For headers
@@ -352,7 +357,10 @@ let scheduledNewsInterval = null;
 let initialCleanupTimeout = null;
 let initialScheduledNewsTimeout = null;
 
-app.listen(PORT, async () => {
+// Initialize Socket.io
+initializeSocket(httpServer);
+
+httpServer.listen(PORT, async () => {
   if (process.env.NODE_ENV === "development") {
     console.log(`Server running at http://localhost:${PORT}`)
   }

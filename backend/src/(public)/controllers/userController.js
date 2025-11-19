@@ -140,26 +140,50 @@ export const registerUser = async (req, res) => {
 
     try {
       const { sendMail } = await import('../../utils/mailer.js');
+      const { getSiteName } = await import('../../utils/siteName.js');
       
       const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/signup?token=${verificationToken}`;
+      const siteName = await getSiteName();
       
       await sendMail({
         to: email,
-        subject: "Verify Your Email - FAITH CommUNITY",
+        subject: `Verify Your Email - ${siteName}`,
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #1A685B;">Welcome to FAITH CommUNITY!</h2>
-            <p>Hello ${firstName},</p>
-            <p>Thank you for registering with FAITH CommUNITY. To complete your registration, please verify your email address by clicking the button below:</p>
-            <a href="${verificationLink}" style="display: inline-block; background: #1A685B; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;">Verify Email Address</a>
-            <p>Or copy and paste this link into your browser:</p>
-            <p style="word-break: break-all; color: #666;">${verificationLink}</p>
-            <p>This verification link will expire in 24 hours.</p>
-            <p>If you didn't create an account with FAITH CommUNITY, please ignore this email.</p>
-            <p>Best regards,<br>FAITH CommUNITY Team</p>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #1A685B 0%, #2D8F7F 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">${siteName}</h1>
+              <p style="color: #E8F5F3; margin: 10px 0 0 0;">Email Verification</p>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+              <h2 style="color: #1A685B; margin-top: 0;">Welcome to ${siteName}!</h2>
+              
+              <p>Hello ${firstName},</p>
+              
+              <p>Thank you for registering with ${siteName}. To complete your registration, please verify your email address by clicking the button below:</p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${verificationLink}" style="display: inline-block; background: #1A685B; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Verify Email Address</a>
+              </div>
+              
+              <p style="color: #666; font-size: 14px; margin-top: 20px;">Or copy and paste this link into your browser:</p>
+              <p style="word-break: break-all; color: #666; font-size: 13px; background: white; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6;">${verificationLink}</p>
+              
+              <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
+                <p style="margin: 0; color: #856404; font-size: 14px;"><strong>Important:</strong> This verification link will expire in 24 hours.</p>
+              </div>
+              
+              <p style="color: #666; font-size: 14px; margin-top: 30px;">
+                If you didn't create an account with ${siteName}, please ignore this email.
+              </p>
+              
+              <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                Best regards,<br><strong>${siteName} Team</strong>
+              </p>
+            </div>
           </div>
         `,
-        text: `Welcome to FAITH CommUNITY!\n\nHello ${firstName},\n\nThank you for registering with FAITH CommUNITY. To complete your registration, please verify your email address by visiting this link:\n\n${verificationLink}\n\nThis verification link will expire in 24 hours.\n\nIf you didn't create an account with FAITH CommUNITY, please ignore this email.\n\nBest regards,\nFAITH CommUNITY Team`
+        text: `Welcome to ${siteName}!\n\nHello ${firstName},\n\nThank you for registering with ${siteName}. To complete your registration, please verify your email address by visiting this link:\n\n${verificationLink}\n\nThis verification link will expire in 24 hours.\n\nIf you didn't create an account with ${siteName}, please ignore this email.\n\nBest regards,\n${siteName} Team`
       });
 
       res.status(201).json({
@@ -178,7 +202,9 @@ export const registerUser = async (req, res) => {
       });
 
     } catch (emailError) {
-      console.error('❌ Failed to send verification email:', emailError.message);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Failed to send verification email:', emailError.message);
+      }
       
       res.status(201).json({
         message: 'Registration successful! However, we could not send the verification email. Please contact support to verify your account.',
@@ -215,12 +241,13 @@ export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
     const ipAddress = getClientIpAddress(req);
+    const normalizedEmail = email?.trim().toLowerCase();
 
-    const failedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'user');
+    const failedAttempts = await LoginAttemptTracker.getFailedAttempts(normalizedEmail, ipAddress, 'user');
     const maxAttempts = LoginAttemptTracker.getMaxAttempts();
     
     if (failedAttempts >= maxAttempts) {
-      const remainingSeconds = await LoginAttemptTracker.getLockoutTimeRemaining(email, ipAddress, 'user');
+      const remainingSeconds = await LoginAttemptTracker.getLockoutTimeRemaining(normalizedEmail, ipAddress, 'user');
       const remainingMinutes = Math.ceil(remainingSeconds / 60);
       
       return res.status(429).json({ 
@@ -232,21 +259,21 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // Find user by email with profile data
+    // Find user by email with profile data (case-insensitive comparison)
     const [users] = await db.query(
       `SELECT u.*, up.first_name, up.last_name, up.contact_number, up.gender, 
               up.address, up.birth_date, up.occupation, up.citizenship, 
               up.profile_photo_url, up.newsletter_subscribed
        FROM users u
        LEFT JOIN user_profiles up ON u.id = up.user_id
-       WHERE u.email = ? AND u.role = 'user'`,
-      [email]
+       WHERE LOWER(u.email) = ? AND u.role = 'user'`,
+      [normalizedEmail]
     );
 
     if (users.length === 0) {
-      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'user');
-      await SecurityMonitoring.logSecurityEvent('failed_login', 'warn', { email, reason: 'user_not_found' }, req);
-      const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'user');
+      await LoginAttemptTracker.trackFailedAttempt(normalizedEmail, ipAddress, 'user');
+      await SecurityMonitoring.logSecurityEvent('failed_login', 'warn', { email: normalizedEmail, reason: 'user_not_found' }, req);
+      const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(normalizedEmail, ipAddress, 'user');
       const maxAttempts = LoginAttemptTracker.getMaxAttempts();
       return res.status(401).json({ 
         error: 'Invalid email or password',
@@ -258,8 +285,8 @@ export const loginUser = async (req, res) => {
     const user = users[0];
 
     if (user.is_active === 0 || user.is_active === false) {
-      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'user');
-      await SecurityMonitoring.logSecurityEvent('failed_login', 'warn', { email, reason: 'account_inactive' }, req);
+      await LoginAttemptTracker.trackFailedAttempt(normalizedEmail, ipAddress, 'user');
+      await SecurityMonitoring.logSecurityEvent('failed_login', 'warn', { email: normalizedEmail, reason: 'account_inactive' }, req);
       return res.status(401).json({ 
         error: 'Your account has been deactivated. Please contact support for assistance.',
         accountInactive: true
@@ -268,9 +295,9 @@ export const loginUser = async (req, res) => {
 
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
-      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'user');
-      await SecurityMonitoring.logSecurityEvent('failed_login', 'warn', { email, reason: 'invalid_password' }, req);
-      const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'user');
+      await LoginAttemptTracker.trackFailedAttempt(normalizedEmail, ipAddress, 'user');
+      await SecurityMonitoring.logSecurityEvent('failed_login', 'warn', { email: normalizedEmail, reason: 'invalid_password' }, req);
+      const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(normalizedEmail, ipAddress, 'user');
       const maxAttempts = LoginAttemptTracker.getMaxAttempts();
       return res.status(401).json({ 
         error: 'Invalid email or password',
@@ -294,9 +321,9 @@ export const loginUser = async (req, res) => {
       ipAddress: getClientIpAddress(req),
     })
 
-    await LoginAttemptTracker.clearFailedAttempts(email, ipAddress, 'user');
+    await LoginAttemptTracker.clearFailedAttempts(normalizedEmail, ipAddress, 'user');
     
-    await SecurityMonitoring.logSecurityEvent('successful_login', 'info', { email, userId: user.id }, req);
+    await SecurityMonitoring.logSecurityEvent('successful_login', 'info', { email: normalizedEmail, userId: user.id }, req);
 
     await db.query(
       'UPDATE users SET last_login = NOW() WHERE id = ?',
@@ -353,13 +380,15 @@ export const loginUser = async (req, res) => {
 
   } catch (error) {
     logError('Login error', error, { context: 'user_controller', email: req.body?.email });
-    console.error('Login error details:', {
-      message: error.message,
-      code: error.code,
-      sqlState: error.sqlState,
-      sqlMessage: error.sqlMessage,
-      stack: error.stack
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Login error details:', {
+        message: error.message,
+        code: error.code,
+        sqlState: error.sqlState,
+        sqlMessage: error.sqlMessage,
+        stack: error.stack
+      });
+    }
     res.status(500).json({ 
       error: 'Internal server error',
       message: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -1151,12 +1180,14 @@ export const refreshAccessToken = async (req, res) => {
       role: user.role // Return role so frontend knows which type
     })
   } catch (e) {
-    console.error('[refreshAccessToken] Error refreshing token:', e);
-    console.error('[refreshAccessToken] Error details:', {
-      name: e.name,
-      message: e.message,
-      stack: e.stack?.split('\n').slice(0, 10).join('\n')
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[refreshAccessToken] Error refreshing token:', e);
+      console.error('[refreshAccessToken] Error details:', {
+        name: e.name,
+        message: e.message,
+        stack: e.stack?.split('\n').slice(0, 10).join('\n')
+      });
+    }
     res.status(500).json({ 
       error: 'Internal server error',
       message: process.env.NODE_ENV === 'development' ? e.message : undefined
@@ -1246,26 +1277,50 @@ export const resendVerificationEmail = async (req, res) => {
 
     try {
       const { sendMail } = await import('../../utils/mailer.js');
+      const { getSiteName } = await import('../../utils/siteName.js');
       
       const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/signup?token=${verificationToken}`;
+      const siteName = await getSiteName();
       
       await sendMail({
         to: email,
-        subject: "Verify Your Email - FAITH CommUNITY",
+        subject: `Verify Your Email - ${siteName}`,
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #1A685B;">Verify Your Email - FAITH CommUNITY</h2>
-            <p>Hello ${user.first_name},</p>
-            <p>You requested a new verification email. Please verify your email address by clicking the button below:</p>
-            <a href="${verificationLink}" style="display: inline-block; background: #1A685B; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;">Verify Email Address</a>
-            <p>Or copy and paste this link into your browser:</p>
-            <p style="word-break: break-all; color: #666;">${verificationLink}</p>
-            <p>This verification link will expire in 24 hours.</p>
-            <p>If you didn't request this verification email, please ignore this message.</p>
-            <p>Best regards,<br>FAITH CommUNITY Team</p>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #1A685B 0%, #2D8F7F 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">${siteName}</h1>
+              <p style="color: #E8F5F3; margin: 10px 0 0 0;">Email Verification</p>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+              <h2 style="color: #1A685B; margin-top: 0;">Verify Your Email</h2>
+              
+              <p>Hello ${user.first_name},</p>
+              
+              <p>You requested a new verification email. Please verify your email address by clicking the button below:</p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${verificationLink}" style="display: inline-block; background: #1A685B; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Verify Email Address</a>
+              </div>
+              
+              <p style="color: #666; font-size: 14px; margin-top: 20px;">Or copy and paste this link into your browser:</p>
+              <p style="word-break: break-all; color: #666; font-size: 13px; background: white; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6;">${verificationLink}</p>
+              
+              <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
+                <p style="margin: 0; color: #856404; font-size: 14px;"><strong>Important:</strong> This verification link will expire in 24 hours.</p>
+              </div>
+              
+              <p style="color: #666; font-size: 14px; margin-top: 30px;">
+                If you didn't request this verification email, please ignore this message.
+              </p>
+              
+              <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                Best regards,<br><strong>${siteName} Team</strong>
+              </p>
+            </div>
           </div>
         `,
-        text: `Verify Your Email - FAITH CommUNITY\n\nHello ${user.first_name},\n\nYou requested a new verification email. Please verify your email address by visiting this link:\n\n${verificationLink}\n\nThis verification link will expire in 24 hours.\n\nIf you didn't request this verification email, please ignore this message.\n\nBest regards,\nFAITH CommUNITY Team`
+        text: `Verify Your Email - ${siteName}\n\nHello ${user.first_name},\n\nYou requested a new verification email. Please verify your email address by visiting this link:\n\n${verificationLink}\n\nThis verification link will expire in 24 hours.\n\nIf you didn't request this verification email, please ignore this message.\n\nBest regards,\n${siteName} Team`
       });
 
       res.json({ 
@@ -1286,37 +1341,9 @@ export const resendVerificationEmail = async (req, res) => {
 // Works for all roles (user, admin, superadmin) using unified users table
 export const checkAuthStatus = async (req, res) => {
   try {
-    // Debug: Log cookie presence
-    const hasAccessCookie = !!req.cookies?.access_token;
-    const hasRefreshCookie = !!req.cookies?.refresh_token;
-    const cookieNames = req.cookies ? Object.keys(req.cookies) : [];
-    const allCookies = req.cookies || {};
-    
-    console.log('[checkAuthStatus] Request received', {
-      hasAccessCookie,
-      hasRefreshCookie,
-      cookieNames,
-      allCookies: Object.keys(allCookies),
-      hasAuthHeader: !!req.headers.authorization,
-      origin: req.headers.origin,
-      referer: req.headers.referer,
-      host: req.headers.host,
-      'x-forwarded-host': req.headers['x-forwarded-host'],
-      'x-forwarded-proto': req.headers['x-forwarded-proto'],
-      cookieHeader: req.headers.cookie ? 'present' : 'missing'
-    });
-    
     const token = req.cookies?.access_token || req.headers.authorization?.split(' ')[1];
     
     if (!token) {
-      // Debug logging
-      console.log('[checkAuthStatus] No access token found, attempting refresh', {
-        hasAccessCookie,
-        hasRefreshCookie,
-        cookieNames,
-        hasAuthHeader: !!req.headers.authorization,
-        cookiesReceived: Object.keys(allCookies)
-      });
       
       // If no access token but refresh token exists, try to refresh
       const refreshToken = req.cookies?.refresh_token;
@@ -1427,7 +1454,6 @@ export const checkAuthStatus = async (req, res) => {
                 }
               }
               
-              console.log('[checkAuthStatus] Token refreshed successfully, returning authenticated user');
               return res.json({
                 authenticated: true,
                 user: userData
@@ -1435,7 +1461,9 @@ export const checkAuthStatus = async (req, res) => {
             }
           }
         } catch (refreshError) {
-          console.error('[checkAuthStatus] Token refresh error (no access token):', refreshError);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('[checkAuthStatus] Token refresh error (no access token):', refreshError);
+          }
         }
       }
       
@@ -1448,32 +1476,18 @@ export const checkAuthStatus = async (req, res) => {
         audience: process.env.JWT_AUD || 'faith-community-client'
       });
       
-      console.log('[checkAuthStatus] Token decoded successfully:', { 
-        id: decoded.id, 
-        email: decoded.email, 
-        role: decoded.role 
-      });
-      
       // Get user from unified table
       const [users] = await db.query(
         'SELECT id, email, role, organization_id FROM users WHERE id = ?',
         [decoded.id]
       );
 
-      console.log('[checkAuthStatus] Database query result:', { 
-        userCount: users.length,
-        user: users[0] ? { id: users[0].id, email: users[0].email, role: users[0].role } : null
-      });
-
       if (users.length === 0) {
-        console.log('[checkAuthStatus] User not found in database for id:', decoded.id);
         return res.json({ authenticated: false });
       }
 
       const user = users[0];
       let userData = { id: user.id, email: user.email, role: user.role };
-      
-      console.log('[checkAuthStatus] User data prepared:', userData);
 
       // Get role-specific data
       if (user.role === 'user') {
@@ -1515,19 +1529,12 @@ export const checkAuthStatus = async (req, res) => {
         }
       }
       
-      console.log('[checkAuthStatus] Returning authenticated user:', { 
-        authenticated: true, 
-        role: userData.role,
-        hasOrgData: !!userData.organization_id
-      });
-      
       return res.json({
         authenticated: true,
         user: userData
       });
     } catch (error) {
       // Token invalid or expired - try to refresh automatically
-      console.log('[checkAuthStatus] Token verification failed:', error.name, error.message);
       const refreshToken = req.cookies?.refresh_token;
       if (refreshToken) {
         try {
@@ -1625,19 +1632,22 @@ export const checkAuthStatus = async (req, res) => {
           }
         } catch (refreshError) {
           // Refresh failed - return not authenticated
-          console.error('[checkAuthStatus] Token refresh error:', refreshError);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('[checkAuthStatus] Token refresh error:', refreshError);
+          }
         }
       }
-      console.log('[checkAuthStatus] No valid refresh token, returning not authenticated');
       return res.json({ authenticated: false });
     }
   } catch (error) {
-    console.error('[checkAuthStatus] Error in checkAuthStatus:', error);
-    console.error('[checkAuthStatus] Error details:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack?.split('\n').slice(0, 5).join('\n')
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[checkAuthStatus] Error in checkAuthStatus:', error);
+      console.error('[checkAuthStatus] Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack?.split('\n').slice(0, 5).join('\n')
+      });
+    }
     return res.json({ authenticated: false, error: error.message });
   }
 };
@@ -1870,23 +1880,48 @@ export const forgotPasswordUser = async (req, res) => {
     const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}&type=user`
     
     const { sendMail } = await import('../../utils/mailer.js')
+    const { getSiteName } = await import('../../utils/siteName.js')
+    const siteName = await getSiteName()
     
     await sendMail({
       to: email,
-      subject: "Password Reset Request - FAITH CommUNITY",
+      subject: `Password Reset Request - ${siteName}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #1A685B;">Password Reset Request</h2>
-          <p>Hello,</p>
-          <p>You have requested to reset your password for your FAITH CommUNITY account.</p>
-          <p>Click the button below to reset your password:</p>
-          <a href="${resetLink}" style="display: inline-block; background: #1A685B; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;">Reset Password</a>
-          <p>This link will expire in 1 hour.</p>
-          <p>If you didn't request this password reset, please ignore this email.</p>
-          <p>Best regards,<br>FAITH CommUNITY Team</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #1A685B 0%, #2D8F7F 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">${siteName}</h1>
+            <p style="color: #E8F5F3; margin: 10px 0 0 0;">Password Reset Request</p>
+          </div>
+          
+          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #1A685B; margin-top: 0;">Password Reset Request</h2>
+            
+            <p>Hello,</p>
+            
+            <p>You have requested to reset your password for your ${siteName} account. Click the button below to reset your password:</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetLink}" style="display: inline-block; background: #1A685B; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Reset Password</a>
+            </div>
+            
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">Or copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; color: #666; font-size: 13px; background: white; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6;">${resetLink}</p>
+            
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0; color: #856404; font-size: 14px;"><strong>Important:</strong> This link will expire in 1 hour.</p>
+            </div>
+            
+            <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0; color: #721c24; font-size: 14px;"><strong>Security Notice:</strong> If you didn't request this password reset, please ignore this email.</p>
+            </div>
+            
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">
+              Best regards,<br><strong>${siteName} Team</strong>
+            </p>
+          </div>
         </div>
       `,
-      text: `Password Reset Request - FAITH CommUNITY\n\nHello,\n\nYou have requested to reset your password for your FAITH CommUNITY account.\n\nClick the following link to reset your password:\n${resetLink}\n\nThis link will expire in 1 hour.\n\nIf you didn't request this password reset, please ignore this email.\n\nBest regards,\nFAITH CommUNITY Team`
+      text: `Password Reset Request - ${siteName}\n\nHello,\n\nYou have requested to reset your password for your ${siteName} account.\n\nClick the following link to reset your password:\n${resetLink}\n\nThis link will expire in 1 hour.\n\nIf you didn't request this password reset, please ignore this email.\n\nBest regards,\n${siteName} Team`
     })
 
     res.json({ message: "If an account with that email exists, a password reset link has been sent." })
@@ -1948,21 +1983,41 @@ export const resetPasswordUser = async (req, res) => {
 
     // Send confirmation email
     const { sendMail } = await import('../../utils/mailer.js')
+    const { getSiteName } = await import('../../utils/siteName.js')
+    const siteName = await getSiteName()
     
     await sendMail({
       to: tokenData.email,
-      subject: "Password Successfully Reset - FAITH CommUNITY",
+      subject: `Password Successfully Reset - ${siteName}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #1A685B;">Password Successfully Reset</h2>
-          <p>Hello,</p>
-          <p>Your password has been successfully reset for your FAITH CommUNITY account.</p>
-          <p>You can now log in with your new password.</p>
-          <p>If you didn't request this password reset, please contact support immediately.</p>
-          <p>Best regards,<br>FAITH CommUNITY Team</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #1A685B 0%, #2D8F7F 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">${siteName}</h1>
+            <p style="color: #E8F5F3; margin: 10px 0 0 0;">Password Reset Confirmation</p>
+          </div>
+          
+          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #1A685B; margin-top: 0;">Password Successfully Reset</h2>
+            
+            <p>Hello,</p>
+            
+            <p>Your password has been successfully reset for your ${siteName} account. You can now log in with your new password.</p>
+            
+            <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0; color: #155724; font-size: 14px;"><strong>✓ Success:</strong> Your password has been changed. You may need to log in again on all devices where you're currently signed in.</p>
+            </div>
+            
+            <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0; color: #721c24; font-size: 14px;"><strong>Security Alert:</strong> If you didn't request this password reset, please contact our support team immediately as your account may be compromised.</p>
+            </div>
+            
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">
+              Best regards,<br><strong>${siteName} Team</strong>
+            </p>
+          </div>
         </div>
       `,
-      text: `Password Successfully Reset - FAITH CommUNITY\n\nHello,\n\nYour password has been successfully reset for your FAITH CommUNITY account.\n\nYou can now log in with your new password.\n\nIf you didn't request this password reset, please contact support immediately.\n\nBest regards,\nFAITH CommUNITY Team`
+      text: `Password Successfully Reset - ${siteName}\n\nHello,\n\nYour password has been successfully reset for your ${siteName} account.\n\nYou can now log in with your new password.\n\nIf you didn't request this password reset, please contact support immediately.\n\nBest regards,\n${siteName} Team`
     })
 
     res.json({ message: "Password has been successfully reset" })

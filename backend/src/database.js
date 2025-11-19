@@ -171,7 +171,7 @@ const migrateToUnifiedUsersTable = async (connection) => {
     return;
 
     // Note: Old table migration logic removed - this is for fresh installs only
-    // If you need to migrate from old tables, use the SQL migration scripts in backend/scripts/migrations/
+    // The unified users table structure is created automatically on database initialization
 
   } catch (error) {
     logError('Unified users table migration failed', error, { context: 'database' });
@@ -805,6 +805,48 @@ const runIncrementalMigrations = async (connection) => {
       // Silently skip if update fails
     }
 
+    // Add status column to news table if it doesn't exist (migration for existing databases)
+    try {
+      const [statusColumns] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'news' 
+        AND COLUMN_NAME = 'status'
+      `);
+      
+      if (statusColumns.length === 0) {
+        await connection.query(`
+          ALTER TABLE news 
+          ADD COLUMN status ENUM('draft', 'scheduled', 'published', 'archived') DEFAULT 'draft'
+        `);
+        
+        await connection.query(`
+          ALTER TABLE news 
+          ADD INDEX idx_news_status (status)
+        `);
+        
+        // Set status for existing news based on published_at
+        await connection.query(`
+          UPDATE news 
+          SET status = CASE 
+            WHEN published_at IS NULL THEN 'draft'
+            WHEN published_at > NOW() THEN 'scheduled'
+            WHEN is_deleted = TRUE THEN 'archived'
+            ELSE 'published'
+          END
+        `);
+        
+        logInfo('Added status column to news table', { context: 'database' });
+      }
+    } catch (statusError) {
+      // Column might already exist or other error - log but continue
+      logWarn('Status column migration for news table skipped or already exists', { 
+        context: 'database', 
+        error: statusError.message 
+      });
+    }
+
     // Legacy superadmin initialization code removed - migration to unified users table is complete
     // Superadmin initialization is now handled in the main initializeDatabase function
 
@@ -982,6 +1024,7 @@ const initializeDatabase = async () => {
           featured_image VARCHAR(500),
           date DATE,
           published_at DATETIME,
+          status ENUM('draft', 'scheduled', 'published', 'archived') DEFAULT 'draft',
           is_deleted BOOLEAN DEFAULT FALSE,
           deleted_at TIMESTAMP NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -990,9 +1033,47 @@ const initializeDatabase = async () => {
           INDEX idx_news_slug (slug),
           INDEX idx_news_published_at (published_at),
           INDEX idx_news_organization (organization_id),
-          INDEX idx_news_created_at (created_at)
+          INDEX idx_news_created_at (created_at),
+          INDEX idx_news_status (status)
         )
       `);
+
+      // Add status column migration for existing databases
+      try {
+        const [statusColumns] = await connection.query(`
+          SELECT COLUMN_NAME 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_SCHEMA = DATABASE() 
+          AND TABLE_NAME = 'news' 
+          AND COLUMN_NAME = 'status'
+        `);
+        
+        if (statusColumns.length === 0) {
+          await connection.query(`
+            ALTER TABLE news 
+            ADD COLUMN status ENUM('draft', 'scheduled', 'published', 'archived') DEFAULT 'draft'
+          `);
+          
+          await connection.query(`
+            ALTER TABLE news 
+            ADD INDEX idx_news_status (status)
+          `);
+          
+          // Set status for existing news based on published_at
+          await connection.query(`
+            UPDATE news 
+            SET status = CASE 
+              WHEN published_at IS NULL THEN 'draft'
+              WHEN published_at > NOW() THEN 'scheduled'
+              WHEN is_deleted = TRUE THEN 'archived'
+              ELSE 'published'
+            END
+          `);
+        }
+      } catch (statusError) {
+        // Column might already exist or other error - silently skip
+        logInfo('Status column migration skipped or already exists', { context: 'database' });
+      }
 
       // ============================================
       // 2. WORKFLOW TABLES (Submissions & Notifications)

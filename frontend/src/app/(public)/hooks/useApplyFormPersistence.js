@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
+import { isReturningFromLogin, clearReturningFromLogin } from '@/utils/redirectUtils';
 
 /**
  * Custom hook for form persistence in the apply section
@@ -20,6 +21,9 @@ export function useApplyFormPersistence(key, initialData) {
       const isPageRefresh = performance.navigation?.type === 1 || 
                            (window.performance && window.performance.getEntriesByType('navigation')[0]?.type === 'reload');
       
+      // Check if we're returning from a login redirect
+      const returningFromLogin = isReturningFromLogin();
+      
       if (isPageRefresh && isApplySection) {
         // This is a page refresh within apply section, load saved data
         try {
@@ -31,9 +35,25 @@ export function useApplyFormPersistence(key, initialData) {
         } catch (error) {
           localStorage.removeItem(key);
         }
-      } else if (!isPageRefresh && isInitialLoad.current) {
-        // This is initial navigation to apply section, clear any existing data
-        localStorage.removeItem(key);
+      } else if (!isPageRefresh && isInitialLoad.current && isApplySection) {
+        // This is initial navigation to apply section
+        if (returningFromLogin) {
+          // Coming back from login - preserve form data
+          try {
+            const savedData = localStorage.getItem(key);
+            if (savedData) {
+              const parsedData = JSON.parse(savedData);
+              setFormData(parsedData);
+            }
+          } catch (error) {
+            localStorage.removeItem(key);
+          }
+          // Clear the flag
+          clearReturningFromLogin();
+        } else {
+          // Normal navigation - clear any existing data
+          localStorage.removeItem(key);
+        }
       }
       
       isInitialLoad.current = false;

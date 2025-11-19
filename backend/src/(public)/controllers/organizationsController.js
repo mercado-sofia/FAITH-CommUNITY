@@ -4,7 +4,8 @@ import { getOrganizationLogoUrl } from '../../utils/imageUrlUtils.js';
 
 export const getAllOrganizations = async (req, res) => {
   try {
-    // Fetch organizations from organizations table where org and orgName are now stored
+    // Fetch only ACTIVE organizations with required fields
+    // This ensures inactive organizations don't appear on the public website
     const [rows] = await db.execute(`
       SELECT 
         o.id, 
@@ -13,7 +14,11 @@ export const getAllOrganizations = async (req, res) => {
         o.logo,
         o.org_color as color
       FROM organizations o
-      WHERE o.org IS NOT NULL AND o.org != '' AND o.orgName IS NOT NULL AND o.status = 'ACTIVE'
+      WHERE o.org IS NOT NULL 
+        AND o.org != '' 
+        AND o.orgName IS NOT NULL 
+        AND o.orgName != ''
+        AND o.status = 'ACTIVE'
       ORDER BY o.org ASC
     `);
 
@@ -21,19 +26,17 @@ export const getAllOrganizations = async (req, res) => {
     const formattedData = rows.map(row => {
       let logoUrl;
       if (row.logo) {
-        // If logo is stored as a filename, construct the proper URL
         logoUrl = getOrganizationLogoUrl(row.logo);
       } else {
-        // Fallback to expected logo path
         logoUrl = `/logo/${row.acronym.toLowerCase()}_logo.jpg`;
       }
       
       return {
-        id: row.id, // Use numeric ID for proper integration with news
-        acronym: row.acronym, // Organization acronym for display
-        name: row.name, // Full organization name for tooltips
+        id: row.id,
+        acronym: row.acronym,
+        name: row.name,
         logo: logoUrl,
-        color: row.color || null // Organization color
+        color: row.color || null
       };
     });
 
@@ -42,6 +45,9 @@ export const getAllOrganizations = async (req, res) => {
       data: formattedData
     });
   } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[getAllOrganizations] Error:', error);
+    }
     res.status(500).json({
       success: false,
       message: 'Failed to fetch organizations',

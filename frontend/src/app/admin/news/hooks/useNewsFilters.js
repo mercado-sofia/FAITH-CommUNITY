@@ -5,50 +5,55 @@ import { useMemo } from 'react';
  * @param {Array} news - Array of news items
  * @param {string} searchQuery - Search query string
  * @param {string} sortBy - Sort criteria ('newest', 'oldest', 'title')
+ * @param {string} statusFilter - Status filter ('all', 'draft', 'published', 'scheduled', 'archived')
  * @returns {object} Filtered and sorted news data
  */
-export const useNewsFilters = (news, searchQuery, sortBy) => {
-  // Filter news based on search query
+export const useNewsFilters = (news, searchQuery, sortBy, statusFilter = 'all') => {
+  // Filter news based on search query and status
   const filteredNews = useMemo(() => {
     if (!news || !Array.isArray(news)) return [];
     
     return news.filter(item => {
       if (!item || !item.title) return false;
       
+      // Status filter
+      const normalizedStatus = (item.status || 'draft').toLowerCase();
+      const normalizedFilter = statusFilter.toLowerCase();
+      const matchesStatus = normalizedFilter === 'all' || normalizedStatus === normalizedFilter;
+      
+      // Search filter
       const matchesSearch = !searchQuery || 
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()));
+        (item.excerpt && item.excerpt.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase())); // Backward compatibility
       
-      return matchesSearch;
+      return matchesStatus && matchesSearch;
     });
-  }, [news, searchQuery]);
+  }, [news, searchQuery, statusFilter]);
 
   // Sort filtered news
   const sortedNews = useMemo(() => {
     if (!filteredNews || filteredNews.length === 0) return [];
     
+    // Helper function to get date for sorting
+    const getDate = (item) => new Date(item.date || item.created_at || 0);
+    
     return [...filteredNews].sort((a, b) => {
       switch (sortBy.toLowerCase()) {
         case 'newest':
           // Sort by date field (newest first)
-          const dateA = a.date || a.created_at || new Date(0);
-          const dateB = b.date || b.created_at || new Date(0);
-          return new Date(dateB) - new Date(dateA);
+          return getDate(b) - getDate(a);
           
         case 'oldest':
           // Sort by date field (oldest first)
-          const dateAOld = a.date || a.created_at || new Date(0);
-          const dateBOld = b.date || b.created_at || new Date(0);
-          return new Date(dateAOld) - new Date(dateBOld);
+          return getDate(a) - getDate(b);
           
         case 'title':
           return (a.title || '').localeCompare(b.title || '');
           
         default:
           // Default to newest
-          const dateADef = a.date || a.created_at || new Date(0);
-          const dateBDef = b.date || b.created_at || new Date(0);
-          return new Date(dateBDef) - new Date(dateADef);
+          return getDate(b) - getDate(a);
       }
     });
   }, [filteredNews, sortBy]);

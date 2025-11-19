@@ -272,7 +272,7 @@ The application supports three types of users:
 - **CSRF Protection**: Double-submit cookie pattern
 - **Security Headers**: Helmet.js for security headers
 - **Audit Logging**: Comprehensive activity logging with structured logging
-- **Login Attempt Tracking**: Brute force protection (7 attempts = 5-minute lockout)
+- **Login Attempt Tracking**: Brute force protection (10 attempts = 5-minute lockout, warning at 7 attempts)
 - **Session Security**: Secure session management with JWT tokens
 - **Two-Factor Authentication (2FA)**: TOTP-based 2FA for superadmin accounts
 - **Secure Email Change**: Multi-step verification with OTP codes

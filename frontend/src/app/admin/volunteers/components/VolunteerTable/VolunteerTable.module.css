@@ -249,6 +249,7 @@
 
 .tableHeader th:nth-child(7) { /* Actions */
   width: 60px;
+  text-align: center;
 }
 
 .tableBody td {

@@ -29,8 +29,9 @@
 
 **Implementation Details:**
 - **Failed Attempt Tracking**: Tracks only failed login attempts
-- **Lockout Threshold**: 7 failed attempts within 5 minutes
+- **Lockout Threshold**: 10 failed attempts within 5 minutes
 - **Lockout Duration**: 5 minutes from first failed attempt
+- **Warning Threshold**: Red warning appears when 3 attempts remain (at 7 failed attempts)
 - **User Type Separation**: Separate tracking for user, admin, and superadmin
 - **IP-Based Tracking**: Tracks attempts by IP address and identifier
 - **Atomic Operations**: Uses database transactions to prevent race conditions

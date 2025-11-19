@@ -43,10 +43,11 @@ export default function BannerSection() {
             More People Who Want To <span className={styles.green}>Help</span> Each Other!
           </h2>
           <button className={styles.inviteBtn} onClick={() => {
-            if (!isLoggedIn) {
+            // Always navigate to /apply page
+            router.push("/apply");
+            // Show modal if not logged in
+            if (!isLoggedIn && typeof window !== 'undefined') {
               window.dispatchEvent(new CustomEvent('showLoginModal'));
-            } else {
-              router.push("/apply");
             }
           }}>
             Get Involved

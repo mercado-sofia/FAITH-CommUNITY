@@ -3,6 +3,7 @@ import crypto from "crypto"
 import * as bcrypt from "bcrypt"
 import { sendMail } from "../../utils/mailer.js"
 import { logSuperadminAction } from "../../utils/audit.js"
+import { getSiteName } from "../../utils/siteName.js"
 
 const generateInvitationToken = () => {
   return crypto.randomBytes(32).toString('hex')
@@ -16,28 +17,38 @@ const sendInvitationEmail = async (email, token) => {
     }
 
     const invitationLink = `${process.env.FRONTEND_URL}/invitation/accept?token=${token}`
+    const siteName = await getSiteName()
   
     await sendMail({
       to: email,
-      subject: 'Admin Invitation - FAITH-CommUNITY',
+      subject: `Admin Invitation - ${siteName}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Admin Invitation</h2>
-          <p>You have been invited to become an admin for FAITH-CommUNITY.</p>
-          <p>Click the button below to accept the invitation and set up your account:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${invitationLink}" 
-               style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
-              Accept Invitation
-            </a>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #1A685B 0%, #2D8F7F 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">${siteName}</h1>
+            <p style="color: #E8F5F3; margin: 10px 0 0 0;">Admin Invitation</p>
           </div>
-          <p style="color: #666; font-size: 14px;">
-            This invitation will expire in 7 days. If you didn't request this invitation, please ignore this email.
-          </p>
-          <p style="color: #666; font-size: 14px;">
-            If the button doesn't work, copy and paste this link into your browser:<br>
-            <a href="${invitationLink}">${invitationLink}</a>
-          </p>
+          
+          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #1A685B; margin-top: 0;">You've Been Invited!</h2>
+            
+            <p>You have been invited to become an admin for ${siteName}. Click the button below to accept the invitation and set up your account:</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${invitationLink}" style="display: inline-block; background: #1A685B; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Accept Invitation</a>
+            </div>
+            
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">If the button doesn't work, copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; color: #666; font-size: 13px; background: white; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6;">${invitationLink}</p>
+            
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0; color: #856404; font-size: 14px;"><strong>Important:</strong> This invitation will expire in 7 days. If you didn't request this invitation, please ignore this email.</p>
+            </div>
+            
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">
+              Best regards,<br><strong>${siteName} Team</strong>
+            </p>
+          </div>
         </div>
       `,
       text: `You have been invited to become an admin for FAITH-CommUNITY. Click this link to accept: ${invitationLink}`

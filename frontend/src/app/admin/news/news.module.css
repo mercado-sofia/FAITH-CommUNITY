@@ -1,6 +1,6 @@
 .container {
   padding: 0;
-  margin: 0 auto 2rem;
+  margin: 0 auto 1rem;
 }
 
 .headerTop h1 {
@@ -47,6 +47,9 @@
 
 .createPostHeader {
   margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .createPostHeader h1 {
@@ -55,6 +58,32 @@
   font-family: var(--font-poppins), sans-serif;
   color: #06100f;
   margin: 0;
+}
+
+.backLink {
+  background: none;
+  border: none;
+  color: #1CBFA4;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.2s ease;
+  width: fit-content;
+}
+
+.backLink:hover {
+  color: #1D9782;
+  text-decoration: underline;
+}
+
+.backLink:active {
+  color: #1a8b7a;
 }
 
 

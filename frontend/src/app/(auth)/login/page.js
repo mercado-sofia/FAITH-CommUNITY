@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useDispatch } from "react-redux"
 import { loginAdmin, loginSuperAdmin, logoutAdmin } from "../../../rtk/superadmin/adminSlice"
 import styles from "./login.module.css"
@@ -9,6 +9,10 @@ import { FaUser, FaSpinner } from "react-icons/fa"
 import { AuthLeftPanel, ForgotPasswordModal, OtpInput, PasswordField } from "../components"
 import { postJson } from "../api/authClient"
 import { usePublicSiteName } from "@/app/(public)/hooks/usePublicData"
+import { 
+  getRedirectUrlFromParams, 
+  prepareRedirectAfterLogin 
+} from "@/utils/redirectUtils"
 
 // Superadmin email constant (must match backend)
 const SUPERADMIN_EMAIL = 'faithcommunityfaces@gmail.com'
@@ -30,13 +34,30 @@ export default function LoginPage() {
   const [fieldErrors, setFieldErrors] = useState({})
   const [lastAttemptedSystem, setLastAttemptedSystem] = useState(null)
   const [attemptCount, setAttemptCount] = useState(0)
-  const [remainingAttempts, setRemainingAttempts] = useState(7)
+  const [remainingAttempts, setRemainingAttempts] = useState(10)
   const [lockoutSeconds, setLockoutSeconds] = useState(0)
   const [isLockedOut, setIsLockedOut] = useState(false)
   const router = useRouter()
   const dispatch = useDispatch()
+  const searchParams = useSearchParams()
   const { siteNameData } = usePublicSiteName()
   const siteName = siteNameData?.site_name || "FAITH CommUNITY"
+  
+  // Helper function to get redirect path and set persistence flag
+  const getRedirectPath = (system) => {
+    let redirectPath = system === 'user' ? '/' : `/${system}`;
+    
+    if (system === 'user') {
+      // getRedirectUrlFromParams already checks sessionStorage as fallback
+      const redirectUrl = getRedirectUrlFromParams(searchParams);
+      if (redirectUrl) {
+        // prepareRedirectAfterLogin sets flags and returns the redirectUrl
+        redirectPath = prepareRedirectAfterLogin(redirectUrl);
+      }
+    }
+    
+    return redirectPath;
+  };
 
   // Countdown timer for lockout
   useEffect(() => {
@@ -47,7 +68,7 @@ export default function LoginPage() {
             setIsLockedOut(false)
             setErrorMessage("")
             setAttemptCount(0)
-            setRemainingAttempts(7)
+            setRemainingAttempts(10)
             return 0
           }
           return prev - 1
@@ -245,7 +266,7 @@ export default function LoginPage() {
         // Update attempt count
         if (data.attempts !== undefined) {
           setAttemptCount(data.attempts);
-          setRemainingAttempts(data.remainingAttempts !== undefined ? data.remainingAttempts : Math.max(0, 7 - data.attempts));
+          setRemainingAttempts(data.remainingAttempts !== undefined ? data.remainingAttempts : Math.max(0, 10 - data.attempts));
         }
         
         // Don't return early here - let the fallback logic below handle trying other systems
@@ -265,13 +286,13 @@ export default function LoginPage() {
         successfulSystem = systemToTry
         // Reset attempt tracking on success
         setAttemptCount(0)
-        setRemainingAttempts(7)
+        setRemainingAttempts(10)
         setIsLockedOut(false)
       } else if (result.status === 429) {
         // Rate limit hit - don't try other systems
         const data = result.data || {}
-        const remainingSecs = data.remainingSeconds || 300 // Default to 5 minutes
-        const attempts = data.attempts || 7
+        const remainingSecs = data.remainingSeconds || 300 // Default to 5 minutes (300 seconds)
+        const attempts = data.attempts || 10 // When locked out, attempts should be 10
         
         setIsLockedOut(true)
         setLockoutSeconds(remainingSecs)
@@ -331,10 +352,12 @@ export default function LoginPage() {
           // We'll rely on the delay and the retry mechanism in the layout
           
           if (elapsed >= redirectDelay) {
-            console.log('[Login] Redirecting to:', successfulSystem === 'user' ? '/' : `/${successfulSystem}`);
+            const redirectPath = getRedirectPath(successfulSystem);
+            
+            console.log('[Login] Redirecting to:', redirectPath);
             console.log('[Login] After redirect, check if access_token and refresh_token cookies exist');
             // Use window.location.replace to avoid adding to history (prevents back button issues)
-            window.location.replace(successfulSystem === 'user' ? '/' : `/${successfulSystem}`);
+            window.location.replace(redirectPath);
             return;
           }
           
@@ -349,29 +372,16 @@ export default function LoginPage() {
         setTimeout(() => {
           if (window.location.pathname === '/login') {
             console.warn('[Login] Max wait time reached, forcing redirect');
-            window.location.replace(successfulSystem === 'user' ? '/' : `/${successfulSystem}`);
+            const redirectPath = getRedirectPath(successfulSystem);
+            window.location.replace(redirectPath);
           }
         }, maxWaitTime);
         
         return
       }
 
-      // Handle rate limiting (this should now be caught earlier in the logic above)
-      if (result && result.status === 429) {
-        const data = result.data || {}
-        const remainingSecs = data.remainingSeconds || 300
-        const attempts = data.attempts || 7
-        
-        setIsLockedOut(true)
-        setLockoutSeconds(remainingSecs)
-        setAttemptCount(attempts)
-        setRemainingAttempts(0)
-        setErrorMessage(data.error || `Too many failed login attempts. Please wait ${formatTimeRemaining(remainingSecs)} before trying again.`)
-        setShowError(true)
-        setFieldErrors({ email: "Rate limit exceeded", password: "Rate limit exceeded" })
-        setIsLoading(false)
-        return
-      }
+      // Note: 429 status is already handled earlier in the code (line 270-284)
+      // This block is unreachable but kept for safety
 
       if (result && result.error) {
         setErrorMessage("Network error: Unable to connect to the server. Please check your internet connection and try again.")
@@ -421,7 +431,7 @@ export default function LoginPage() {
       // Update attempt count from response if available
       if (data?.attempts !== undefined) {
         setAttemptCount(data.attempts)
-        setRemainingAttempts(data.remainingAttempts !== undefined ? data.remainingAttempts : Math.max(0, 7 - data.attempts))
+        setRemainingAttempts(data.remainingAttempts !== undefined ? data.remainingAttempts : Math.max(0, 10 - data.attempts))
       }
 
       // Handle email verification requirement for user accounts
@@ -480,12 +490,13 @@ export default function LoginPage() {
           setIsLoading(false)
           
           // Use same redirect logic as main success handler
+          const redirectPath = getRedirectPath('user');
           if (process.env.NODE_ENV === 'development') {
-            console.log('[Login] User login successful via fallback, redirecting to home');
+            console.log('[Login] User login successful via fallback, redirecting to:', redirectPath);
           }
           // Use window.location.replace to avoid adding to history
           setTimeout(() => {
-            window.location.replace("/")
+            window.location.replace(redirectPath)
           }, 500)
           return
         }
@@ -652,9 +663,9 @@ export default function LoginPage() {
                   Try again in: {formatTimeRemaining(lockoutSeconds)}
                 </p>
               )}
-              {!isLockedOut && attemptCount > 3 && (
+              {!isLockedOut && remainingAttempts <= 3 && remainingAttempts > 0 && (
                 <p className={styles.attemptInfo}>
-                  Failed login attempts: {attemptCount}/7 {remainingAttempts > 0 && `(${remainingAttempts} remaining)`}
+                  Failed login attempts: {attemptCount}/10 ({remainingAttempts} attempt{remainingAttempts !== 1 ? 's' : ''} remaining)
                 </p>
               )}
             </div>

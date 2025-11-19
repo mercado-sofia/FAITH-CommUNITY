@@ -21,8 +21,9 @@ The system tracks failed login attempts to prevent brute-force attacks.
 - ✅ IP address handling for proxy environments
 
 **Configuration:**
-- Maximum failed attempts: 7 per 5-minute window
-- Lockout duration: 15 minutes
+- Maximum failed attempts: 10 per 5-minute window
+- Lockout duration: 5 minutes
+- Warning threshold: Red warning appears at 7 attempts (3 remaining)
 - Automatic cleanup of expired attempts
 
 ### Multi-Factor Authentication (MFA)

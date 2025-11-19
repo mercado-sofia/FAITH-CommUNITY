@@ -247,7 +247,6 @@ export async function verifySMTPConnection(retries = 2) {
         console.warn('      • Skip verification in production: Set SMTP_SKIP_VERIFY=true in .env');
         console.warn('      • Check firewall/network isn\'t blocking SMTP ports');
         console.warn(`   → Or increase timeout: SMTP_VERIFICATION_TIMEOUT=120000 (current: ${verificationTimeout}ms)`);
-        console.warn('   → Run test script: node scripts/test-smtp.js');
       } else if (error.code === 'ECONNREFUSED' || error.message.includes('ECONNREFUSED')) {
         console.warn('   → Connection refused. Check:');
         console.warn('      • SMTP_HOST and SMTP_PORT are correct');

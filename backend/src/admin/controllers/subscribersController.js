@@ -3,6 +3,7 @@
 import crypto from "crypto";
 import db from "../../database.js";
 import { sendMail } from "../../utils/mailer.js";
+import { getSiteName } from "../../utils/siteName.js";
 
 const API_BASE = process.env.API_BASE_URL;
 const APP_BASE = process.env.APP_BASE_URL;
@@ -28,13 +29,35 @@ export async function subscribe(req, res) {
     const verifyUrl = `${API_BASE}/api/subscribers/verify?token=${verifyToken}`;
 
     try {
+      const siteName = await getSiteName();
       await sendMail({
         to: email,
-        subject: "Confirm your subscription — FAITH CommUNITY",
+        subject: `Confirm your subscription — ${siteName}`,
         html: `
-          <p>Hi! Please confirm your email to receive updates from FAITH CommUNITY.</p>
-          <p><a href="${verifyUrl}">Confirm my subscription</a></p>
-          <p>If you didn’t request this, you can ignore this email.</p>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #1A685B 0%, #2D8F7F 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">${siteName}</h1>
+              <p style="color: #E8F5F3; margin: 10px 0 0 0;">Newsletter Subscription</p>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+              <h2 style="color: #1A685B; margin-top: 0;">Confirm Your Subscription</h2>
+              
+              <p>Hi! Please confirm your email to receive updates from ${siteName}.</p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${verifyUrl}" style="display: inline-block; background: #1A685B; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Confirm My Subscription</a>
+              </div>
+              
+              <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                If you didn't request this, you can ignore this email.
+              </p>
+              
+              <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                Best regards,<br><strong>${siteName} Team</strong>
+              </p>
+            </div>
+          </div>
         `,
       });
     } catch (mailErr) {
@@ -118,6 +141,7 @@ export async function sendToSubscribers({ subject, html, text }) {
     return { total: 0, sent: 0, failedCount: 0, failed: [] };
   }
 
+  const siteName = await getSiteName();
   let sent = 0;
   const failed = [];
 
@@ -127,12 +151,27 @@ export async function sendToSubscribers({ subject, html, text }) {
         const unsubscribeUrl = `${API_BASE}/api/subscribers/unsubscribe?token=${unsubscribe_token}`;
         const baseHtml = html ?? `<p>${escapeHtml(text)}</p>`;
         const htmlWithFooter = `
-          ${baseHtml}
-          <hr />
-          <p style="font-size:12px;color:#666">
-            You’re receiving this because you subscribed to FAITH CommUNITY updates.
-            <a href="${unsubscribeUrl}">Unsubscribe</a>
-          </p>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #1A685B 0%, #2D8F7F 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">${siteName}</h1>
+              <p style="color: #E8F5F3; margin: 10px 0 0 0;">Newsletter Update</p>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+              ${baseHtml}
+              
+              <hr style="border: none; border-top: 1px solid #dee2e6; margin: 30px 0;" />
+              
+              <p style="font-size: 13px; color: #666; margin-top: 20px;">
+                You're receiving this because you subscribed to ${siteName} updates.
+                <a href="${unsubscribeUrl}" style="color: #1A685B; text-decoration: underline;">Unsubscribe</a>
+              </p>
+              
+              <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                Best regards,<br><strong>${siteName} Team</strong>
+              </p>
+            </div>
+          </div>
         `;
 
         await sendMail({

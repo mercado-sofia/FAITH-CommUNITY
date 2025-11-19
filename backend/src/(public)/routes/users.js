@@ -55,59 +55,6 @@ router.get('/verify-email', verifyEmail);
 router.post('/resend-verification', resendVerificationEmail);
 router.post('/refresh', doubleCsrfProtection, refreshAccessToken);
 router.get('/auth/check', checkAuthStatus); // Unified auth check for all roles
-// Test endpoint to verify database structure and cookie transmission
-router.get('/auth/test-db', async (req, res) => {
-  try {
-    const db = await import('../../database.js');
-    const [users] = await db.default.query('SELECT id, email, role FROM users LIMIT 1');
-    const [columns] = await db.default.query(`
-      SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_SCHEMA = DATABASE() 
-      AND TABLE_NAME = 'users' 
-      AND COLUMN_NAME IN ('id', 'email', 'role', 'organization_id')
-      ORDER BY ORDINAL_POSITION
-    `);
-    
-    // Check for superadmin user specifically
-    const [superadminUsers] = await db.default.query(
-      "SELECT id, email, role FROM users WHERE role = 'superadmin' LIMIT 1"
-    );
-    
-    res.json({ 
-      success: true, 
-      tableExists: true,
-      sampleUser: users[0] || null,
-      superadminUser: superadminUsers[0] || null,
-      columns: columns,
-      cookiesReceived: Object.keys(req.cookies || {}),
-      allCookies: req.cookies || {},
-      hasAccessCookie: !!req.cookies?.access_token,
-      hasRefreshCookie: !!req.cookies?.refresh_token,
-      requestHeaders: {
-        origin: req.headers.origin,
-        referer: req.headers.referer,
-        host: req.headers.host,
-        cookie: req.headers.cookie ? 'present' : 'missing'
-      }
-    });
-  } catch (error) {
-    res.json({ 
-      success: false, 
-      error: error.message,
-      cookiesReceived: Object.keys(req.cookies || {}),
-      allCookies: req.cookies || {},
-      hasAccessCookie: !!req.cookies?.access_token,
-      hasRefreshCookie: !!req.cookies?.refresh_token,
-      requestHeaders: {
-        origin: req.headers.origin,
-        referer: req.headers.referer,
-        host: req.headers.host,
-        cookie: req.headers.cookie ? 'present' : 'missing'
-      }
-    });
-  }
-});
 router.post('/logout', verifyToken, logoutUser); // Unified logout for all roles
 router.get('/profile', verifyToken, getUserProfile);
 

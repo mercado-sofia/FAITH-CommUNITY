@@ -1,6 +1,7 @@
 import db from "../database.js";
 import crypto from "crypto";
 import { sendMail } from "./mailer.js";
+import { getSiteName } from "./siteName.js";
 
 export class EmailChangeOTP {
   // Create email change OTP
@@ -101,11 +102,12 @@ export class EmailChangeOTP {
   // Send OTP email
   static async sendOTPEmail(email, otp, userName = null) {
     const displayName = userName || 'User';
+    const siteName = await getSiteName();
     
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #1A685B 0%, #2D8F7F 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">FAITH CommUNITY</h1>
+          <h1 style="color: white; margin: 0; font-size: 24px;">${siteName}</h1>
           <p style="color: #E8F5F3; margin: 10px 0 0 0;">Email Change Verification</p>
         </div>
         
@@ -126,18 +128,22 @@ export class EmailChangeOTP {
           </ul>
           
           <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
-            <p style="margin: 0; color: #856404;"><strong>Security Alert:</strong> If you didn't request this email change, please contact our support team immediately.</p>
+            <p style="margin: 0; color: #856404; font-size: 14px;"><strong>Security Alert:</strong> If you didn't request this email change, please contact our support team immediately.</p>
           </div>
           
           <p style="color: #666; font-size: 14px; margin-top: 30px;">
-            This email was sent because someone requested to change the email address associated with your FAITH CommUNITY account.
+            This email was sent because someone requested to change the email address associated with your ${siteName} account.
+          </p>
+          
+          <p style="color: #666; font-size: 14px; margin-top: 20px;">
+            Best regards,<br><strong>${siteName} Team</strong>
           </p>
         </div>
       </div>
     `;
 
     const text = `
-      FAITH CommUNITY - Email Change Verification
+      ${siteName} - Email Change Verification
       
       Hello ${displayName}!
       
@@ -152,12 +158,12 @@ export class EmailChangeOTP {
       
       Security Alert: If you didn't request this email change, please contact our support team immediately.
       
-      This email was sent because someone requested to change the email address associated with your FAITH CommUNITY account.
+      This email was sent because someone requested to change the email address associated with your ${siteName} account.
     `;
 
     await sendMail({
       to: email,
-      subject: 'Email Change Verification - FAITH CommUNITY',
+      subject: `Email Change Verification - ${siteName}`,
       html,
       text
     });
@@ -166,47 +172,52 @@ export class EmailChangeOTP {
   // Send security notification to current email
   static async sendSecurityNotification(currentEmail, newEmail, userName = null) {
     const displayName = userName || 'User';
+    const siteName = await getSiteName();
     
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">FAITH CommUNITY</h1>
-          <p style="color: #f8d7da; margin: 10px 0 0 0;">Security Alert</p>
+        <div style="background: linear-gradient(135deg, #1A685B 0%, #2D8F7F 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">${siteName}</h1>
+          <p style="color: #E8F5F3; margin: 10px 0 0 0;">Security Alert</p>
         </div>
         
         <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-          <h2 style="color: #dc3545; margin-top: 0;">Security Alert</h2>
+          <h2 style="color: #1A685B; margin-top: 0;">Security Alert</h2>
           
           <p>Hello ${displayName},</p>
           
-          <p>We're writing to inform you that a request has been made to change the email address associated with your FAITH CommUNITY account.</p>
+          <p>We're writing to inform you that a request has been made to change the email address associated with your ${siteName} account.</p>
           
-          <div style="background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin: 20px 0;">
-            <p style="margin: 0;"><strong>Current Email:</strong> ${currentEmail}</p>
-            <p style="margin: 10px 0 0 0;"><strong>Requested New Email:</strong> ${newEmail}</p>
+          <div style="background: white; border: 2px solid #1A685B; border-radius: 8px; padding: 20px; margin: 20px 0;">
+            <p style="margin: 0; color: #1A685B;"><strong>Current Email:</strong> ${currentEmail}</p>
+            <p style="margin: 10px 0 0 0; color: #1A685B;"><strong>Requested New Email:</strong> ${newEmail}</p>
           </div>
           
           <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
-            <p style="margin: 0; color: #856404;"><strong>Important:</strong> If you made this request, you can safely ignore this email. The change will only be completed after verification.</p>
+            <p style="margin: 0; color: #856404; font-size: 14px;"><strong>Important:</strong> If you made this request, you can safely ignore this email. The change will only be completed after verification.</p>
           </div>
           
           <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; padding: 15px; margin: 20px 0;">
-            <p style="margin: 0; color: #721c24;"><strong>Security Warning:</strong> If you did NOT request this email change, please contact our support team immediately as your account may be compromised.</p>
+            <p style="margin: 0; color: #721c24; font-size: 14px;"><strong>Security Warning:</strong> If you did NOT request this email change, please contact our support team immediately as your account may be compromised.</p>
           </div>
           
           <p style="color: #666; font-size: 14px; margin-top: 30px;">
-            This is an automated security notification from FAITH CommUNITY.
+            This is an automated security notification from ${siteName}.
+          </p>
+          
+          <p style="color: #666; font-size: 14px; margin-top: 20px;">
+            Best regards,<br><strong>${siteName} Team</strong>
           </p>
         </div>
       </div>
     `;
 
     const text = `
-      FAITH CommUNITY - Security Alert
+      ${siteName} - Security Alert
       
       Hello ${displayName},
       
-      We're writing to inform you that a request has been made to change the email address associated with your FAITH CommUNITY account.
+      We're writing to inform you that a request has been made to change the email address associated with your ${siteName} account.
       
       Current Email: ${currentEmail}
       Requested New Email: ${newEmail}
@@ -215,12 +226,12 @@ export class EmailChangeOTP {
       
       Security Warning: If you did NOT request this email change, please contact our support team immediately as your account may be compromised.
       
-      This is an automated security notification from FAITH CommUNITY.
+      This is an automated security notification from ${siteName}.
     `;
 
     await sendMail({
       to: currentEmail,
-      subject: 'Security Alert: Email Change Request - FAITH CommUNITY',
+      subject: `Security Alert: Email Change Request - ${siteName}`,
       html,
       text
     });

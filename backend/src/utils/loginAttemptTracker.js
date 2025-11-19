@@ -1,7 +1,7 @@
 import db from "../database.js"
 
 // Configuration constants (OWASP/NIST recommend 5-10 attempts)
-const MAX_FAILED_ATTEMPTS = 8;
+const MAX_FAILED_ATTEMPTS = 10;
 const LOCKOUT_WINDOW_MINUTES = 5;
 const LOCKOUT_DURATION_MINUTES = 5;
 
@@ -53,9 +53,11 @@ export class LoginAttemptTracker {
   static async getLockoutTimeRemaining(identifier, ipAddress = null, userType = null) {
     await this.ensureAttemptsTable()
     
+    // Calculate lockout time from the most recent failed attempt (when lockout was triggered)
+    // This ensures the 5-minute lockout starts from when the 10th attempt was made
     const [rows] = await db.execute(
       `SELECT 
-        TIMESTAMPDIFF(SECOND, NOW(), DATE_ADD(MIN(created_at), INTERVAL ${LOCKOUT_DURATION_MINUTES} MINUTE)) as remaining_seconds
+        TIMESTAMPDIFF(SECOND, NOW(), DATE_ADD(MAX(created_at), INTERVAL ${LOCKOUT_DURATION_MINUTES} MINUTE)) as remaining_seconds
        FROM login_attempts 
        WHERE identifier = ? AND attempt_type = ? 
        AND created_at > DATE_SUB(NOW(), INTERVAL ${LOCKOUT_WINDOW_MINUTES} MINUTE)`,

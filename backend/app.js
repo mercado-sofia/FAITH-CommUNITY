@@ -346,9 +346,11 @@ app.use((req, res) => {
 })
 
 // Start Server
-// Store interval reference for cleanup (important for graceful shutdown)
+// Store interval references for cleanup (important for graceful shutdown)
 let cleanupInterval = null;
+let scheduledNewsInterval = null;
 let initialCleanupTimeout = null;
+let initialScheduledNewsTimeout = null;
 
 app.listen(PORT, async () => {
   if (process.env.NODE_ENV === "development") {
@@ -454,7 +456,6 @@ app.listen(PORT, async () => {
             } else {
               console.warn('⚠️  SMTP verification failed - server is running but email features may not work');
               console.warn('   → To skip verification: Set SMTP_SKIP_VERIFY=true in .env');
-              console.warn('   → To test manually: Run node scripts/test-smtp.js');
               console.warn('   → Alternative: Use SendGrid API: Set USE_SENDGRID_API=true');
             }
           }).catch(() => {
@@ -496,6 +497,35 @@ app.listen(PORT, async () => {
       }
       initialCleanupTimeout = null;
     }, 2000); // 2 second delay to ensure database is fully initialized
+    
+    // Set up scheduled news auto-publish job (runs every 5 minutes)
+    // This automatically publishes scheduled news when their publish date/time arrives
+    // Import dynamically to avoid potential circular dependency issues
+    scheduledNewsInterval = setInterval(async () => {
+      try {
+        const { autoUpdateScheduledNews } = await import("./src/admin/controllers/newsController.js");
+        const result = await autoUpdateScheduledNews();
+        if (result.success && result.updatedCount > 0) {
+          console.log(`✅ Auto-published ${result.updatedCount} scheduled news item(s)`);
+        }
+      } catch (error) {
+        console.error('Error auto-publishing scheduled news:', error);
+      }
+    }, 5 * 60 * 1000); // 5 minutes in milliseconds
+    
+    // Run initial scheduled news check on server start (with delay to ensure DB is ready)
+    initialScheduledNewsTimeout = setTimeout(async () => {
+      try {
+        const { autoUpdateScheduledNews } = await import("./src/admin/controllers/newsController.js");
+        const result = await autoUpdateScheduledNews();
+        if (result.success && result.updatedCount > 0) {
+          console.log(`✅ Auto-published ${result.updatedCount} scheduled news item(s) on startup`);
+        }
+      } catch (error) {
+        console.error('Initial scheduled news check failed:', error);
+      }
+      initialScheduledNewsTimeout = null;
+    }, 3000); // 3 second delay to ensure database is fully initialized
   } else {
     // In serverless environments, cleanup should be triggered via:
     // - API endpoint (e.g., /api/admin/cleanup)
@@ -513,10 +543,22 @@ const gracefulShutdown = () => {
     cleanupInterval = null;
   }
   
+  // Clear scheduled news interval
+  if (scheduledNewsInterval) {
+    clearInterval(scheduledNewsInterval);
+    scheduledNewsInterval = null;
+  }
+  
   // Clear initial cleanup timeout
   if (initialCleanupTimeout) {
     clearTimeout(initialCleanupTimeout);
     initialCleanupTimeout = null;
+  }
+  
+  // Clear initial scheduled news timeout
+  if (initialScheduledNewsTimeout) {
+    clearTimeout(initialScheduledNewsTimeout);
+    initialScheduledNewsTimeout = null;
   }
   
   process.exit(0);

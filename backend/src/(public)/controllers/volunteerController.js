@@ -618,20 +618,6 @@ export const softDeleteVolunteer = async (req, res) => {
   }
 };
 
-// Test endpoints
-export const testGet = (req, res) => res.send("Hello from volunteer controller!");
-export const testPost = (req, res) => {
-  res.json({ success: true, message: "Test POST successful" });
-};
-export const testAuth = (req, res) => {
-  res.json({ 
-    success: true, 
-    message: "Auth test successful",
-    user: req.user,
-    hasToken: !!req.headers.authorization
-  });
-};
-
 // Get volunteers by program ID
 export const getVolunteersByProgram = async (req, res) => {
   try {

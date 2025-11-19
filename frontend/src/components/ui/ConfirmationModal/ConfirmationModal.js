@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { FiTrash2, FiX, FiUserX, FiUserCheck, FiEdit3 } from 'react-icons/fi'
+import { FiTrash2, FiX, FiUserX, FiUserCheck, FiEdit3, FiArchive, FiRotateCw } from 'react-icons/fi'
 import { FaSpinner } from 'react-icons/fa'
 import styles from './ConfirmationModal.module.css'
 
@@ -111,6 +111,20 @@ export default function ConfirmationModal({
           message: customMessage || `Are you sure you want to decline this ${itemType}?`,
           buttonText: getButtonText('Decline')
         }
+      case 'archive':
+        return {
+          icon: <FiArchive />,
+          title: `Archive ${capitalizedItemType}${itemName ? `: "${itemName}"` : ''}`,
+          message: customMessage || `Are you sure you want to archive this ${itemType}? This will remove it from the website display.`,
+          buttonText: getButtonText('Archive')
+        }
+      case 'unarchive':
+        return {
+          icon: <FiRotateCw />,
+          title: `Unarchive ${capitalizedItemType}${itemName ? `: "${itemName}"` : ''}`,
+          message: customMessage || `Are you sure you want to unarchive this ${itemType}? It will be restored and visible on the website again.`,
+          buttonText: getButtonText('Unarchive')
+        }
       default: // 'delete'
         return {
           icon: <FiTrash2 />,
@@ -155,10 +169,14 @@ export default function ConfirmationModal({
         <div className={styles.topRow}>
           <div className={
             actionType === 'activate' ? styles.activateIconContainer : 
+            actionType === 'archive' ? styles.archiveIconContainer :
+            actionType === 'unarchive' ? styles.unarchiveIconContainer :
             styles.trashIconContainer
           }>
             <div className={
               actionType === 'activate' ? styles.activateIconInner : 
+              actionType === 'archive' ? styles.archiveIconInner :
+              actionType === 'unarchive' ? styles.unarchiveIconInner :
               styles.trashIconInner
             }>
               {actionContent.icon}
@@ -208,6 +226,8 @@ export default function ConfirmationModal({
               actionType === 'activate' ? styles.activateBtn : 
               actionType === 'update' ? styles.updateBtn : 
               actionType === 'decline' ? styles.declineBtn :
+              actionType === 'archive' ? styles.archiveBtn :
+              actionType === 'unarchive' ? styles.unarchiveBtn :
               styles.deleteBtn
             }
             disabled={loading}

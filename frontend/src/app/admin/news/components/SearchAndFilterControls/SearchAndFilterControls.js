@@ -1,20 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiChevronDown, FiSearch, FiX, FiTrash2 } from 'react-icons/fi';
+import { FiChevronDown, FiSearch, FiX } from 'react-icons/fi';
 import { BsSortUp, BsSortDown } from 'react-icons/bs';
 import styles from './SearchAndFilterControls.module.css';
 
 const SearchAndFilterControls = ({
   searchQuery,
   sortBy,
+  statusFilter,
   showCount,
   onSearchChange,
   onSortChange,
-  onShowCountChange,
-  totalCount,
-  filteredCount,
-  onRecentlyDeletedClick
+  onStatusFilterChange,
+  onShowCountChange
 }) => {
   const [showDropdown, setShowDropdown] = useState(null);
   const [localQuery, setLocalQuery] = useState(searchQuery || '');
@@ -39,6 +38,13 @@ const SearchAndFilterControls = ({
   }, [searchQuery]);
 
   const showCountOptions = [5, 10, 15, 20];
+  const statusOptions = [
+    { value: 'all', label: 'All' },
+    { value: 'draft', label: 'Draft' },
+    { value: 'published', label: 'Published' },
+    { value: 'scheduled', label: 'Scheduled' },
+    { value: 'archived', label: 'Archived' }
+  ];
 
   return (
     <div className={styles.controlsRow}>
@@ -93,6 +99,35 @@ const SearchAndFilterControls = ({
           )}
         </div>
 
+        {/* Status Filter */}
+        <div className={styles.dropdownWrapper}>
+          <div
+            className={`${styles.dropdown} ${showDropdown === "status" ? styles.open : ""}`}
+            onClick={() => toggleDropdown("status")}
+          >
+            <span className={styles.statusLabel}>Status:</span>
+            <span className={styles.statusValue}>
+              {statusOptions.find(opt => opt.value === statusFilter)?.label || 'All'}
+            </span>
+            <FiChevronDown className={styles.icon} />
+          </div>
+          {showDropdown === "status" && (
+            <ul className={styles.options}>
+              {statusOptions.map((option) => (
+                <li 
+                  key={option.value} 
+                  onClick={() => {
+                    onStatusFilterChange(option.value);
+                    setShowDropdown(null);
+                  }}
+                >
+                  {option.label}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         {/* Sort Button */}
         <button
           className={styles.sortButton}
@@ -109,20 +144,6 @@ const SearchAndFilterControls = ({
           )}
         </button>
       </div>
-
-      {/* Recently Deleted Button */}
-      {onRecentlyDeletedClick && (
-        <div className={styles.recentlyDeletedWrapper}>
-          <button
-            className={styles.recentlyDeletedButton}
-            onClick={onRecentlyDeletedClick}
-            title="View recently deleted news items"
-          >
-            <FiTrash2 size={16} />
-            Recently Deleted
-          </button>
-        </div>
-      )}
     </div>
   );
 };

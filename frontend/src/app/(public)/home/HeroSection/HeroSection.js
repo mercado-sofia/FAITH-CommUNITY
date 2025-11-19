@@ -128,10 +128,11 @@ export default function HeroSection() {
                 <button
                   className={styles.ctaButton}
                   onClick={() => {
-                    if (!isLoggedIn) {
+                    // Always navigate to /apply page
+                    router.push("/apply");
+                    // Show modal if not logged in
+                    if (!isLoggedIn && typeof window !== 'undefined') {
                       window.dispatchEvent(new CustomEvent('showLoginModal'));
-                    } else {
-                      router.push("/apply");
                     }
                   }}
                 >

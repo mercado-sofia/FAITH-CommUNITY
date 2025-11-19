@@ -129,13 +129,17 @@ export default function NewsDetailPage({ params }) {
           
           <div className={styles.newsMetaInfo}>
             <div><em>Published:</em> {formatDate(news.published_at || news.date)}</div>
-            {news.updated_at && 
-             news.updated_at !== news.published_at && 
-             news.updated_at !== news.date && 
-             news.updated_at !== news.created_at && 
-             new Date(news.updated_at).getTime() !== new Date(news.published_at || news.date).getTime() && (
-              <div><em>Updated:</em> {formatDate(news.updated_at)}</div>
-            )}
+            {(() => {
+              // Get the most recent date (updated_at if it exists and is newer, otherwise published_at)
+              const publishedDate = new Date(news.published_at || news.date || 0);
+              const updatedDate = news.updated_at ? new Date(news.updated_at) : null;
+              
+              // Show "Last Updated" if there's an updated_at that's different from published_at
+              if (updatedDate && updatedDate.getTime() > publishedDate.getTime()) {
+                return <div><em>Last Updated:</em> {formatDate(news.updated_at)}</div>;
+              }
+              return null;
+            })()}
             <div><em>By:</em> {news.orgName || news.orgID || 'Unknown Organization'}</div>
           </div>
         </header>

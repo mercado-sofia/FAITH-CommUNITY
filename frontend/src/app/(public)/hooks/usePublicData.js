@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import useSWR from 'swr';
 import logger from '../../../utils/logger';
 import { swrConfig } from '../utils/swrConfig';
@@ -84,17 +85,18 @@ export const usePublicOrganizationData = (orgID) => {
   }
 
   // Transform data for public consumption with fallbacks
-  const organizationData = data?.data ? {
-    name: data.data.orgName || 'Organization Not Found',
-    acronym: data.data.org || orgID?.toUpperCase() || 'ORG',
-    description: data.data.description || '',
-    facebook: data.data.facebook || '',
-    email: data.data.email || '',
-    logo: data.data.logo || '/assets/icons/placeholder.svg',
-    advocacies: normalizeTextData(data.data.advocacies) || '', // Normalize to string
-    competencies: normalizeTextData(data.data.competencies) || '', // Normalize to string
-    heads: sortHeadsByOrder(data.data.heads || []), // Apply same sorting as admin section
-    featuredProjects: data.data.featuredProjects || [],
+  // Note: fetcher already unwraps { success: true, data: {...} } to just the data object
+  const organizationData = data ? {
+    name: data.orgName || 'Organization Not Found',
+    acronym: data.org || orgID?.toUpperCase() || 'ORG',
+    description: data.description || '',
+    facebook: data.facebook || '',
+    email: data.email || '',
+    logo: data.logo || '/assets/icons/placeholder.svg',
+    advocacies: normalizeTextData(data.advocacies) || '', // Normalize to string
+    competencies: normalizeTextData(data.competencies) || '', // Normalize to string
+    heads: sortHeadsByOrder(data.heads || []), // Apply same sorting as admin section
+    featuredProjects: data.featuredProjects || [],
   } : null;
 
   return {
@@ -128,7 +130,7 @@ export const usePublicOrganizations = () => {
   );
 
   return {
-    organizations: Array.isArray(data?.data) ? data.data : [],
+    organizations: Array.isArray(data) ? data : [],
     isLoading,
     error,
   };
@@ -159,8 +161,9 @@ export const usePublicPrograms = (orgID) => {
     }
   );
 
+  // Note: fetcher already unwraps { success: true, data: [...] } to just the array
   return {
-    programs: Array.isArray(data?.data) ? data.data : [],
+    programs: Array.isArray(data) ? data : [],
     isLoading,
     error,
   };
@@ -173,7 +176,16 @@ export const usePublicNews = () => {
     fetcher,
     {
       dedupingInterval: 60000, // Cache for 1 minute (news updates more frequently)
-      shouldRetryOnError: false, // Don't retry on error to prevent spam
+      shouldRetryOnError: (error) => {
+        // Don't retry on 4xx errors (client errors)
+        // Only retry on 5xx errors (server errors) or network errors
+        if (error?.status >= 400 && error?.status < 500) {
+          return false;
+        }
+        return true; // Retry on 5xx or network errors
+      },
+      errorRetryCount: 2,
+      errorRetryInterval: 2000,
       onError: (error) => {
         // Handle network errors with better context
         if (error?.isNetworkError) {
@@ -182,14 +194,40 @@ export const usePublicNews = () => {
             type: 'network_error'
           });
         } else {
-          logger.swrError(`${API_BASE_URL}/api/news`, error);
+          // Only log non-404 errors to reduce noise
+          if (error?.status !== 404) {
+            logger.swrError(`${API_BASE_URL}/api/news`, error);
+          }
         }
       }
     }
   );
 
+  // Handle different response formats
+  const news = useMemo(() => {
+    if (!data) return [];
+    
+    // If data is already an array, return it
+    if (Array.isArray(data)) {
+      return data;
+    }
+    
+    // If data has a data property that's an array
+    if (data && typeof data === 'object' && Array.isArray(data.data)) {
+      return data.data;
+    }
+    
+    // If data has a success property and data array
+    if (data && typeof data === 'object' && data.success && Array.isArray(data.data)) {
+      return data.data;
+    }
+    
+    // Fallback to empty array
+    return [];
+  }, [data]);
+
   return {
-    news: Array.isArray(data) ? data : [],
+    news,
     isLoading,
     error,
   };
@@ -283,7 +321,12 @@ export const usePublicApprovedPrograms = () => {
 
       // Parse JSON with error handling
       try {
-        return await response.json();
+        const result = await response.json();
+        // Unwrap { success: true, data: [...] } to just the data array
+        if (result && typeof result === 'object' && 'data' in result && 'success' in result) {
+          return result.data;
+        }
+        return result;
       } catch (parseError) {
         const error = new Error('Invalid JSON response from server');
         error.originalError = parseError;
@@ -342,8 +385,9 @@ export const usePublicApprovedPrograms = () => {
     }
   );
 
+  // Note: fetcher already unwraps { success: true, data: [...] } to just the array
   return {
-    programs: Array.isArray(data?.data) ? data.data : [],
+    programs: Array.isArray(data) ? data : [],
     isLoading,
     error,
   };
@@ -375,10 +419,11 @@ export const usePublicBranding = () => {
   );
 
   // Transform data for public consumption with fallbacks
-  const brandingData = data?.data ? {
-    logo_url: data.data.logo_url,
-    name_url: data.data.name_url,
-    favicon_url: data.data.favicon_url,
+  // Note: fetcher already unwraps { success: true, data: {...} } to just the data object
+  const brandingData = data ? {
+    logo_url: data.logo_url,
+    name_url: data.name_url,
+    favicon_url: data.favicon_url,
   } : null;
 
   return {
@@ -415,8 +460,9 @@ export const usePublicSiteName = () => {
   );
 
   // Transform data for public consumption with fallbacks
-  const siteNameData = data?.data ? {
-    site_name: data.data.site_name || 'FAITH CommUNITY',
+  // Note: fetcher already unwraps { success: true, data: {...} } to just the data object
+  const siteNameData = data ? {
+    site_name: data.site_name || 'FAITH CommUNITY',
   } : { site_name: 'FAITH CommUNITY' };
 
   return {
@@ -453,27 +499,28 @@ export const usePublicFooterContent = () => {
   );
 
   // Transform data for public consumption with fallbacks
-  const footerData = data?.data ? {
+  // Note: fetcher already unwraps { success: true, data: {...} } to just the data object
+  const footerData = data ? {
     contact: {
-      phone: data.data.contact?.phone?.url || '+163-3654-7896',
-      email: data.data.contact?.email?.url || 'info@faithcommunity.com'
+      phone: data.contact?.phone?.url || '+163-3654-7896',
+      email: data.contact?.email?.url || 'info@faithcommunity.com'
     },
-    quickLinks: data.data.quickLinks || [
+    quickLinks: data.quickLinks || [
       { name: "About Us", url: "/about" },
       { name: "Programs & Services", url: "/programs" },
       { name: "Faithree", url: "/faithree" },
       { name: "Apply Now", url: "/apply" },
       { name: "FAQs", url: "/faqs" }
     ],
-    services: data.data.services || [
+    services: data.services || [
       "Give Donation",
       "Education Support",
       "Food Support",
       "Health Support",
       "Our Campaign"
     ],
-    socialMedia: data.data.socialMedia || [],
-    copyright: data.data.copyright?.content || '© Copyright 2025 FAITH CommUNITY. All Rights Reserved.'
+    socialMedia: data.socialMedia || [],
+    copyright: data.copyright?.content || '© Copyright 2025 FAITH CommUNITY. All Rights Reserved.'
   } : {
     contact: {
       phone: '+163-3654-7896',
@@ -531,13 +578,14 @@ export const usePublicHeroSection = () => {
   );
 
   // Transform data for public consumption with fallbacks
-  const heroData = data?.data ? {
-    tag: data.data.tag || 'Welcome to FAITH CommUNITY',
-    heading: data.data.heading || 'A Unified Platform for Community Extension Programs',
-    video_url: data.data.video_url,
-    video_link: data.data.video_link,
-    video_type: data.data.video_type || 'upload',
-    images: data.data.images || [
+  // Note: fetcher already unwraps { success: true, data: {...} } to just the data object
+  const heroData = data ? {
+    tag: data.tag || 'Welcome to FAITH CommUNITY',
+    heading: data.heading || 'A Unified Platform for Community Extension Programs',
+    video_url: data.video_url,
+    video_link: data.video_link,
+    video_type: data.video_type || 'upload',
+    images: data.images || [
       { id: 1, url: null, heading: 'Inside the Initiative', subheading: 'Where Ideas Take Root' },
       { id: 2, url: null, heading: 'Collaboration', subheading: 'Working Together' },
       { id: 3, url: null, heading: 'Innovation', subheading: 'Building the Future' }
@@ -701,7 +749,8 @@ export const usePublicHeadsFaces = () => {
   );
 
   // Transform data for public consumption - now returns single head or null
-  const headsFacesData = data?.data && data.data.length > 0 ? data.data[0] : null;
+  // Note: fetcher already unwraps { success: true, data: [...] } to just the array
+  const headsFacesData = Array.isArray(data) && data.length > 0 ? data[0] : null;
 
   return {
     headsFacesData,
@@ -732,8 +781,9 @@ export const usePublicOrganizationAdvisers = () => {
     }
   );
 
+  // Note: fetcher already unwraps { success: true, data: [...] } to just the array
   return {
-    organizationAdvisers: data?.data || [],
+    organizationAdvisers: Array.isArray(data) ? data : [],
     isLoading,
     error,
   };

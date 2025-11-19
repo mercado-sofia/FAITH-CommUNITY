@@ -4,15 +4,48 @@ import db from '../database.js';
 /**
  * Cleanup function to permanently delete news items that have been
  * in the deleted state for more than 15 days
+ * NOTE: This only affects items with is_deleted = TRUE (old system).
+ * Items with status = 'archived' are NEVER automatically deleted and
+ * will remain in the archive indefinitely until manually deleted by admin.
  */
 export const cleanupDeletedNews = async () => {
   try {
+    // Check if status column exists
+    let statusColumnExists = false;
+    try {
+      const [columns] = await db.execute(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'news' 
+        AND COLUMN_NAME = 'status'
+      `);
+      statusColumnExists = columns.length > 0;
+    } catch (error) {
+      // If we can't check, assume it doesn't exist (backward compatibility)
+      statusColumnExists = false;
+    }
+
     // Delete news items that have been deleted for more than 15 days
-    const [result] = await db.execute(`
-      DELETE FROM news 
-      WHERE is_deleted = TRUE 
-      AND deleted_at < DATE_SUB(NOW(), INTERVAL 15 DAY)
-    `);
+    // IMPORTANT: Exclude archived items (status = 'archived') - they should never be auto-deleted
+    let query;
+    if (statusColumnExists) {
+      query = `
+        DELETE FROM news 
+        WHERE is_deleted = TRUE 
+        AND (status IS NULL OR status != 'archived')
+        AND deleted_at < DATE_SUB(NOW(), INTERVAL 15 DAY)
+      `;
+    } else {
+      // Fallback for old system without status column
+      query = `
+        DELETE FROM news 
+        WHERE is_deleted = TRUE 
+        AND deleted_at < DATE_SUB(NOW(), INTERVAL 15 DAY)
+      `;
+    }
+
+    const [result] = await db.execute(query);
 
     return {
       success: true,

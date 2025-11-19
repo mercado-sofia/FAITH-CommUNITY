@@ -1,33 +1,74 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { FiUpload } from 'react-icons/fi';
+import { FaCaretDown } from 'react-icons/fa6';
 import Image from 'next/image';
 import ContentEditor from '../ContentEditor/ContentEditor';
 import DatePickerPopover from '../DatePickerPopover/DatePickerPopover';
 import DOMPurify from 'dompurify';
-import { formatDateForInput, getCurrentDateISO } from '@/utils/dateUtils.js';
+import { formatDateTime, getRelativeTime } from '@/utils/dateUtils.js';
 import { API_BASE_URL } from '@/config/api';
 import styles from './CreatePostForm.module.css';
 
-const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData = null, isEditMode = false, existingNews = [] }) => {
-  const getCurrentLocalDate = () => {
-    return getCurrentDateISO();
-  };
-
+const CreatePostForm = ({ onSubmit, isSubmitting = false, initialData = null, isEditMode = false, existingNews = [], onCancel, headerTitle }) => {
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
     content: '',
     excerpt: '',
     featuredImage: null,
-    publishedAt: getCurrentLocalDate(),
+    publishedAt: null, // Don't initialize with date - let user choose when scheduling
+    status: 'draft',
+  });
+  
+  // Store read-only fields for edit mode
+  // Initialize with initialData if available to prevent flickering
+  const [readOnlyFields, setReadOnlyFields] = useState(() => {
+    if (isEditMode && initialData) {
+      const currentStatus = initialData.status || 'draft';
+      const hasPublishedAt = initialData.published_at || initialData.date;
+      const shouldShowPublishedDate = currentStatus === 'published' || 
+                                      (currentStatus === 'archived' && hasPublishedAt);
+      
+      return {
+        originalPublishedAt: shouldShowPublishedDate ? (initialData.published_at || initialData.date) : null,
+        updatedAt: initialData.updated_at || null,
+        status: currentStatus,
+        createdAt: initialData.created_at || null,
+      };
+    }
+    return {
+      originalPublishedAt: null,
+      updatedAt: null,
+      status: null,
+      createdAt: null,
+    };
   });
   
   const [errors, setErrors] = useState({});
   const [dragActive, setDragActive] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
   const [isCheckingTitle, setIsCheckingTitle] = useState(false);
+  const [submitAction, setSubmitAction] = useState(null); // 'draft', 'schedule', 'publish', or null
+  const [isValidating, setIsValidating] = useState(false); // Track validation state
+  const [publishActionType, setPublishActionType] = useState('publish'); // 'schedule' or 'publish' - default to publish
+  const [showPublishDropdown, setShowPublishDropdown] = useState(false);
+  const publishDropdownRef = useRef(null);
+  const submitActionRef = useRef(null); // Use ref to store action synchronously
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (publishDropdownRef.current && !publishDropdownRef.current.contains(event.target)) {
+        setShowPublishDropdown(false);
+      }
+    };
+    if (showPublishDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showPublishDropdown]);
 
   // Initialize form data when in edit mode
   useEffect(() => {
@@ -37,8 +78,25 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
         slug: initialData.slug || '',
         content: initialData.content || '',
         excerpt: initialData.excerpt || '',
-        featuredImage: null, // Don't pre-populate file input
-        publishedAt: formatDateForInput(initialData.published_at || initialData.date) || getCurrentLocalDate(),
+        featuredImage: null,
+        publishedAt: null,
+        status: 'draft',
+      });
+
+      // Store read-only fields (published_at is immutable, updated_at is auto-set)
+      // Only set originalPublishedAt if the news has actually been published (status = 'published')
+      // or if it was published before being archived (status = 'archived' but has published_at)
+      // Note: readOnlyFields is already initialized in useState, but we update here for consistency
+      const currentStatus = initialData.status || 'draft';
+      const hasPublishedAt = initialData.published_at || initialData.date;
+      const shouldShowPublishedDate = currentStatus === 'published' || 
+                                      (currentStatus === 'archived' && hasPublishedAt);
+      
+      setReadOnlyFields({
+        originalPublishedAt: shouldShowPublishedDate ? (initialData.published_at || initialData.date) : null,
+        updatedAt: initialData.updated_at || null,
+        status: currentStatus,
+        createdAt: initialData.created_at || null,
       });
 
       // Set image preview if there's an existing featured image
@@ -158,11 +216,9 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
 
     // Check for duplicate title when title changes (with debounce)
     if (field === 'title' && value && value.trim()) {
-      const timeoutId = setTimeout(() => {
+      setTimeout(() => {
         checkDuplicateTitle(value);
-      }, 500); // 500ms debounce
-      
-      return () => clearTimeout(timeoutId);
+      }, 500);
     }
   };
 
@@ -214,15 +270,74 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
   };
 
   // Validate form
-  const validateForm = async () => {
+  const validateForm = async (action = null) => {
     const newErrors = {};
+    const isDraft = action === 'draft';
+    const isSchedule = action === 'schedule';
+    const isPublish = action === 'publish';
     
+    // For draft saves, only validate title and slug (minimal requirements)
     if (!formData.title.trim()) newErrors.title = 'Title is required';
     if (!formData.slug.trim()) newErrors.slug = 'Slug is required';
-    if (!formData.content.trim()) newErrors.content = 'Content is required';
-    if (!formData.excerpt.trim()) newErrors.excerpt = 'Excerpt is required';
-    if (!formData.featuredImage && !imagePreview) newErrors.featuredImage = 'Featured image is required';
-    if (!formData.publishedAt) newErrors.publishedAt = 'Published date is required';
+    
+    // For schedule/publish, validate all required fields
+    if (!isDraft) {
+      if (!formData.content.trim()) newErrors.content = 'Content is required';
+      if (!formData.excerpt.trim()) newErrors.excerpt = 'Excerpt is required';
+      if (!formData.featuredImage && !imagePreview) newErrors.featuredImage = 'Featured image is required';
+      
+      // Only validate publishedAt on create (it's immutable in edit mode)
+      if (!isEditMode) {
+        // For schedule action, publishedAt is REQUIRED and must be in the future
+        if (isSchedule) {
+          if (!formData.publishedAt) {
+            newErrors.publishedAt = 'Please select a date and time for scheduling';
+          } else {
+            try {
+              // Parse the datetime string properly
+              let scheduledDateTime;
+              if (formData.publishedAt.includes('T')) {
+                // Parse ISO format: yyyy-MM-ddTHH:mm
+                const parts = formData.publishedAt.split('T');
+                if (parts.length === 2) {
+                  const [datePart, timePart] = parts;
+                  const [hours, minutes] = timePart.split(':').map(Number);
+                  const [year, month, day] = datePart.split('-').map(Number);
+                  
+                  // Create Date object using components to avoid timezone interpretation issues
+                  // This treats the datetime as local time, matching backend behavior
+                  scheduledDateTime = new Date(year, month - 1, day, hours, minutes || 0, 0);
+                } else {
+                  newErrors.publishedAt = 'Invalid date and time format';
+                  scheduledDateTime = null;
+                }
+              } else {
+                newErrors.publishedAt = 'Please select a date and time for scheduling';
+                scheduledDateTime = null;
+              }
+              
+              // Validate that scheduled date is valid and in the future
+              if (scheduledDateTime) {
+                if (isNaN(scheduledDateTime.getTime())) {
+                  newErrors.publishedAt = 'Invalid date and time format';
+                } else {
+                  const now = new Date();
+                  // Add 1 minute buffer to account for processing time
+                  const bufferTime = new Date(now.getTime() + 60000);
+                  if (scheduledDateTime <= bufferTime) {
+                    newErrors.publishedAt = 'Scheduled date and time must be at least 1 minute in the future';
+                  }
+                }
+              }
+            } catch (dateError) {
+              newErrors.publishedAt = 'Invalid date and time format. Please select a valid date and time.';
+            }
+          }
+        }
+        // For publish action, publishedAt is NOT required (will use current time)
+        // No validation needed for publish action
+      }
+    }
 
     // Check for duplicate title if not in edit mode
     if (formData.title.trim() && !isEditMode) {
@@ -236,18 +351,428 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
     return Object.keys(newErrors).length === 0;
   };
 
+  // Handle button click to set action and submit
+  const handleButtonClick = (action, e) => {
+    e.preventDefault();
+    
+    // Additional safety check: prevent schedule submission without date
+    if (action === 'schedule') {
+      if (!formData.publishedAt) {
+        setErrors(prev => ({
+          ...prev,
+          publishedAt: 'Please select a date and time for scheduling'
+        }));
+        // Scroll to error if needed
+        setTimeout(() => {
+          const errorElement = document.querySelector(`[data-field="publishedAt"]`) || 
+                             document.querySelector('.errorText');
+          if (errorElement) {
+            errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 100);
+        return;
+      }
+      
+      // Validate that the selected date is in the future
+      try {
+        let scheduledDateTime;
+        if (formData.publishedAt && formData.publishedAt.includes('T')) {
+          // Parse ISO format: yyyy-MM-ddTHH:mm
+          const parts = formData.publishedAt.split('T');
+          if (parts.length === 2) {
+            const [datePart, timePart] = parts;
+            const [hours, minutes] = timePart.split(':').map(Number);
+            const [year, month, day] = datePart.split('-').map(Number);
+            
+            // Create Date object using components to avoid timezone interpretation issues
+            scheduledDateTime = new Date(year, month - 1, day, hours, minutes || 0, 0);
+          } else {
+            setErrors(prev => ({
+              ...prev,
+              publishedAt: 'Invalid date and time format'
+            }));
+            return;
+          }
+        } else {
+          setErrors(prev => ({
+            ...prev,
+            publishedAt: 'Please select a date and time for scheduling'
+          }));
+          return;
+        }
+        
+        if (isNaN(scheduledDateTime.getTime())) {
+          setErrors(prev => ({
+            ...prev,
+            publishedAt: 'Invalid date and time format'
+          }));
+          return;
+        }
+        
+        const now = new Date();
+        const bufferTime = new Date(now.getTime() + 60000); // 1 minute buffer
+        if (scheduledDateTime <= bufferTime) {
+          setErrors(prev => ({
+            ...prev,
+            publishedAt: 'Scheduled date and time must be at least 1 minute in the future'
+          }));
+          return;
+        }
+      } catch (dateError) {
+        setErrors(prev => ({
+          ...prev,
+          publishedAt: 'Invalid date and time format. Please select a valid date and time.'
+        }));
+        return;
+      }
+    }
+    
+    // Store action in both state and ref (ref for synchronous access, state for UI updates)
+    submitActionRef.current = action;
+    setSubmitAction(action);
+    
+    // Trigger form submission - use setTimeout to ensure state is set
+    setTimeout(() => {
+      const form = e.target.closest('form');
+      if (form) {
+        form.requestSubmit();
+      }
+    }, 0);
+  };
+
+  // Helper function to normalize datetime format
+  const normalizeDateTime = (dateTimeString) => {
+    if (!dateTimeString) return null;
+    
+    // Remove timezone info if present at the end (Z, +HH:MM, -HH:MM)
+    // Only remove if it's at the end, not dashes in the date part
+    let cleanDateTime = dateTimeString.trim();
+    // Remove Z at the end
+    if (cleanDateTime.endsWith('Z')) {
+      cleanDateTime = cleanDateTime.slice(0, -1);
+    }
+    // Remove timezone offset at the end (+HH:MM or -HH:MM)
+    const timezoneMatch = cleanDateTime.match(/([+-]\d{2}:\d{2})$/);
+    if (timezoneMatch) {
+      cleanDateTime = cleanDateTime.slice(0, timezoneMatch.index);
+    }
+    cleanDateTime = cleanDateTime.trim();
+    
+    // Declare variables outside the if/else blocks to avoid const redeclaration issues
+    let datePart, timePart, timeParts, hours, minutes, seconds, hoursNum, minutesNum, secondsNum;
+    
+    // Check if it's ISO format (with T) or MySQL format (with space)
+    if (cleanDateTime.includes('T')) {
+      // ISO format: yyyy-MM-ddTHH:mm or yyyy-MM-ddTHH:mm:ss
+      [datePart, timePart] = cleanDateTime.split('T');
+      
+      // Validate date part
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+        throw new Error(`Invalid date format: ${datePart}`);
+      }
+      
+      // Normalize time part
+      timeParts = timePart.split(':');
+      if (timeParts.length < 2 || timeParts.length > 3) {
+        throw new Error(`Invalid time format: ${timePart}`);
+      }
+      
+      hours = timeParts[0].padStart(2, '0');
+      minutes = timeParts[1].padStart(2, '0');
+      seconds = timeParts.length === 3 ? timeParts[2].padStart(2, '0') : '00';
+      
+      // Validate time values
+      hoursNum = parseInt(hours, 10);
+      minutesNum = parseInt(minutes, 10);
+      secondsNum = parseInt(seconds, 10);
+      if (isNaN(hoursNum) || isNaN(minutesNum) || isNaN(secondsNum) ||
+          hoursNum < 0 || hoursNum > 23 || minutesNum < 0 || minutesNum > 59 || secondsNum < 0 || secondsNum > 59) {
+        throw new Error(`Invalid time values: ${hours}:${minutes}:${seconds}`);
+      }
+      
+      // Return ISO format: yyyy-MM-ddTHH:mm:ss (backend will convert to MySQL format)
+      return `${datePart}T${hours}:${minutes}:${seconds}`;
+    } else if (cleanDateTime.includes(' ')) {
+      // MySQL format: yyyy-MM-dd HH:mm:ss or yyyy-MM-dd HH:mm
+      [datePart, timePart] = cleanDateTime.split(' ');
+      
+      // Validate date part
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+        throw new Error(`Invalid date format: ${datePart}`);
+      }
+      
+      // Normalize time part
+      timeParts = timePart.split(':');
+      if (timeParts.length < 2 || timeParts.length > 3) {
+        throw new Error(`Invalid time format: ${timePart}`);
+      }
+      
+      hours = timeParts[0].padStart(2, '0');
+      minutes = timeParts[1].padStart(2, '0');
+      seconds = timeParts.length === 3 ? timeParts[2].padStart(2, '0') : '00';
+      
+      // Validate time values
+      hoursNum = parseInt(hours, 10);
+      minutesNum = parseInt(minutes, 10);
+      secondsNum = parseInt(seconds, 10);
+      if (isNaN(hoursNum) || isNaN(minutesNum) || isNaN(secondsNum) ||
+          hoursNum < 0 || hoursNum > 23 || minutesNum < 0 || minutesNum > 59 || secondsNum < 0 || secondsNum > 59) {
+        throw new Error(`Invalid time values: ${hours}:${minutes}:${seconds}`);
+      }
+      
+      // Convert MySQL format to ISO format
+      return `${datePart}T${hours}:${minutes}:${seconds}`;
+    } else {
+      throw new Error(`Invalid datetime format: ${dateTimeString}. Expected format: yyyy-MM-ddTHH:mm or yyyy-MM-dd HH:mm`);
+    }
+  };
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    const isValid = await validateForm();
-    if (!isValid) return;
+    // Get action from ref first (synchronous), then fall back to state, then default
+    // For edit mode: if published or archived, use 'save'; if draft/scheduled, require action like create mode
+    const isPublishedInEditMode = isEditMode && readOnlyFields.status === 'published';
+    const isArchivedInEditMode = isEditMode && readOnlyFields.status === 'archived';
+    const isReadOnlyStatusInEditMode = isPublishedInEditMode || isArchivedInEditMode;
+    const action = submitActionRef.current || submitAction || (isReadOnlyStatusInEditMode ? 'save' : (isEditMode ? null : 'publish'));
     
-    onSubmit(formData);
+    // Validate that we have an action for create mode or draft/scheduled edit mode
+    if ((!isEditMode || (isEditMode && !isReadOnlyStatusInEditMode)) && !action) {
+      setErrors(prev => ({
+        ...prev,
+        _general: 'Please select an action (Save as Draft, Publish Now, or Schedule)'
+      }));
+      setIsValidating(false);
+      return;
+    }
+    
+    // Set validating state to show loading indicator
+    setIsValidating(true);
+    
+    try {
+      // Validate form first
+      const isValid = await validateForm(action);
+      if (!isValid) {
+        setIsValidating(false);
+        return;
+      }
+    
+      // Convert date and time to datetime format for backend
+      const submitData = { ...formData };
+      
+      // Include action for create mode or edit mode for drafts/scheduled
+      if (!isEditMode || (isEditMode && !isReadOnlyStatusInEditMode)) {
+        // Ensure action is always set - this is required!
+        if (!action || (action !== 'draft' && action !== 'publish' && action !== 'schedule')) {
+          throw new Error(`Invalid action: ${action}. Action must be 'draft', 'publish', or 'schedule'.`);
+        }
+        submitData.action = action;
+        
+        if (action === 'draft') {
+          // For draft, set published_at to null
+          submitData.publishedAt = null;
+        } else if (action === 'publish') {
+          // For publish now, always use current datetime
+          // Format as ISO datetime string: yyyy-MM-ddTHH:mm:ss
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const day = String(now.getDate()).padStart(2, '0');
+          const hours = String(now.getHours()).padStart(2, '0');
+          const minutes = String(now.getMinutes()).padStart(2, '0');
+          const seconds = String(now.getSeconds()).padStart(2, '0');
+          submitData.publishedAt = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+        } else if (action === 'schedule') {
+          // For schedule, ensure we have a valid datetime
+          if (!submitData.publishedAt) {
+            throw new Error('Published date and time are required for scheduling');
+          }
+          
+          // Normalize the datetime format
+          try {
+            submitData.publishedAt = normalizeDateTime(submitData.publishedAt);
+            
+            // Validate that scheduled date is in the future
+            // Parse the datetime string to create Date object with components (avoiding timezone issues)
+            if (submitData.publishedAt.includes('T')) {
+              const parts = submitData.publishedAt.split('T');
+              if (parts.length === 2) {
+                const [datePart, timePart] = parts;
+                const [hours, minutes, seconds = '00'] = timePart.split(':').map(Number);
+                const [year, month, day] = datePart.split('-').map(Number);
+                const scheduledDate = new Date(year, month - 1, day, hours, minutes, seconds || 0);
+            const now = new Date();
+            if (scheduledDate <= now) {
+              throw new Error('Scheduled date and time must be in the future');
+                }
+              } else {
+                throw new Error('Invalid date and time format for scheduling');
+              }
+            } else {
+              throw new Error('Invalid date and time format for scheduling');
+            }
+          } catch (dateError) {
+            throw new Error(dateError.message || 'Invalid date and time format for scheduling');
+          }
+        }
+      } else {
+        // Edit mode for published or archived news - action is 'save', no published_at changes, status remains unchanged
+        submitData.action = 'save';
+      }
+      
+      // Clean up - remove any unused fields
+      
+      // Keep submitAction and isValidating set during submission so buttons show correct loading state
+      // Call onSubmit with the prepared data
+      await onSubmit(submitData);
+      
+      // Reset states after successful submission
+      setIsValidating(false);
+      submitActionRef.current = null;
+      setSubmitAction(null);
+    } catch (error) {
+      // Reset validating state on error
+      setIsValidating(false);
+      // Display error message to user
+      const errorMessage = error.message || 'An error occurred. Please try again.';
+      setErrors(prev => ({
+        ...prev,
+        publishedAt: errorMessage,
+        _general: errorMessage
+      }));
+      // Reset ref and state on error
+      submitActionRef.current = null;
+      setSubmitAction(null);
+      
+      // Scroll to error if needed
+      setTimeout(() => {
+        const errorElement = document.querySelector(`[data-field="publishedAt"]`) || 
+                           document.querySelector('.errorText') ||
+                           document.querySelector('[data-field="_general"]');
+        if (errorElement) {
+          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    }
   };
 
-  return (
-    <form onSubmit={handleSubmit} className={styles.form}>
+    return (
+    <form onSubmit={handleSubmit} className={styles.form} onKeyDown={(e) => {
+      // Prevent form submission on Enter key (user must click a button)
+      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+      }
+    }}>
+      {/* Header with Title and Action Buttons */}
+      <div className={styles.formHeader}>
+        <div className={styles.headerLeft}>
+          <button
+            type="button"
+            onClick={onCancel}
+            className={styles.backLink}
+          >
+            Go Back
+          </button>
+          <h1>{headerTitle || (isEditMode ? 'Edit Post' : 'Create New Post')}</h1>
+        </div>
+        <div className={styles.headerActions}>
+          {isEditMode && ((readOnlyFields.status === 'published' || initialData?.status === 'published') || 
+                          (readOnlyFields.status === 'archived' || initialData?.status === 'archived')) ? (
+            // Edit mode for published or archived news: Only Save Changes button (keeps current status)
+            <button
+              type="submit"
+              className={styles.saveButton}
+              disabled={isSubmitting}
+              onClick={(e) => handleButtonClick('save', e)}
+            >
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
+            </button>
+          ) : (
+            // Create mode: Draft button + Split button (Schedule/Publish with dropdown) - inline row
+            <>
+              <button
+                type="button"
+                onClick={(e) => handleButtonClick('draft', e)}
+                className={styles.draftButton}
+                disabled={isSubmitting || (isValidating && submitAction === 'draft')}
+              >
+                {(isSubmitting || (isValidating && submitAction === 'draft')) && submitAction === 'draft' ? 'Saving...' : 'Save as Draft'}
+              </button>
+              <div className={styles.splitButtonGroup} ref={publishDropdownRef}>
+                <button
+                  type="button"
+                  onClick={(e) => handleButtonClick(publishActionType, e)}
+                  className={styles.publishButton}
+                  disabled={
+                    isSubmitting || 
+                    (isValidating && submitAction === publishActionType) ||
+                    (publishActionType === 'schedule' && !formData.publishedAt) // Disable Schedule button if no date selected
+                  }
+                  title={publishActionType === 'schedule' && !formData.publishedAt ? 'Please select a date and time first' : ''}
+                >
+                  {(isSubmitting || (isValidating && submitAction === publishActionType)) && submitAction === publishActionType
+                    ? (publishActionType === 'publish' ? 'Publishing...' : 'Scheduling...')
+                    : (publishActionType === 'publish' ? 'Publish Now' : 'Schedule')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPublishDropdown(!showPublishDropdown)}
+                  className={`${publishActionType === 'publish' ? styles.publishDropdownButton : styles.scheduleDropdownButton} ${showPublishDropdown ? styles.dropdownOpen : ''}`}
+                  disabled={isSubmitting}
+                  aria-label="Choose publish action"
+                >
+                  <FaCaretDown />
+                </button>
+                {showPublishDropdown && (
+                  <div className={styles.publishDropdown}>
+                    <button
+                      type="button"
+                      className={`${styles.dropdownOption} ${publishActionType === 'schedule' ? styles.dropdownOptionActive : ''}`}
+                      onClick={() => {
+                        setPublishActionType('schedule');
+                        setShowPublishDropdown(false);
+                      }}
+                    >
+                      Schedule
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.dropdownOption} ${publishActionType === 'publish' ? styles.dropdownOptionActive : ''}`}
+                      onClick={() => {
+                        setPublishActionType('publish');
+                        // Clear scheduled date/time when switching to Publish Now
+                        // (Publish Now doesn't need a date - it uses current time)
+                        setFormData(prev => ({
+                          ...prev,
+                          publishedAt: null
+                        }));
+                        // Clear any errors related to publishedAt
+                        setErrors(prev => ({
+                          ...prev,
+                          publishedAt: ''
+                        }));
+                        setShowPublishDropdown(false);
+                      }}
+                    >
+                      Publish Now
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* General Error Display */}
+      {errors._general && (
+        <div className={styles.errorContainer} data-field="_general">
+          <span className={styles.errorText}>{errors._general}</span>
+        </div>
+      )}
+
       <div className={styles.formLayout}>
         {/* Left Panel - Main Container */}
         <div className={styles.leftContainer}>
@@ -328,33 +853,61 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
               {errors.excerpt && <span className={styles.errorText}>{errors.excerpt}</span>}
             </div>
           </div>
-
-          {/* Action Buttons */}
-          <div className={styles.actionButtons}>
-            <button
-              type="button"
-              onClick={onCancel}
-              className={styles.cancelButton}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className={styles.publishButton}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (isEditMode ? 'Saving...' : 'Publishing...') : (isEditMode ? 'Save Changes' : 'Publish')}
-            </button>
-          </div>
         </div>
 
         {/* Right Panel - Separate Containers */}
         <div className={styles.rightPanel}>
+          {/* Schedule Publish Date Container - Show when Schedule is selected (create mode or edit mode for drafts/scheduled, but not for published/archived) */}
+          {(!isEditMode || (isEditMode && readOnlyFields.status !== 'published' && readOnlyFields.status !== 'archived')) && publishActionType === 'schedule' && (
+            <div className={styles.container}>
+              <h3 className={styles.containerTitle}>
+                Schedule publish date
+              </h3>
+              <div style={{ position: 'relative' }}>
+                <DatePickerPopover
+                  value={formData.publishedAt || null}
+                  onChange={(value) => {
+                    // Value always includes time when showTime=true (format: yyyy-MM-ddTHH:mm)
+                    // Store the full datetime string in publishedAt
+                    setFormData(prev => ({
+                      ...prev,
+                      publishedAt: value || null
+                    }));
+                    // Clear any errors when date is selected
+                    if (value) {
+                      setErrors(prev => ({
+                        ...prev,
+                        publishedAt: ''
+                      }));
+                    }
+                  }}
+                  placeholder={errors.publishedAt ? "Date and time required" : "Select publish date & time"}
+                  showTime={true}
+                  minDate={(() => {
+                    // Set minDate to start of today to allow selecting today and future dates
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return today;
+                  })()}
+                />
+                {errors.publishedAt && (
+                  <span className={styles.errorText} data-field="publishedAt" style={{ display: 'block', marginTop: '8px' }}>
+                    {errors.publishedAt}
+                  </span>
+                )}
+                {!formData.publishedAt && !errors.publishedAt && (
+                  <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px', marginBottom: 0 }}>
+                    Please select a date and time to schedule this post
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Featured Image Container */}
           <div className={styles.container}>
             <h3 className={styles.containerTitle}>
-              Featured Image
+              Set Featured Image
             </h3>
             <div
               className={`${styles.uploadArea} ${dragActive ? styles.dragActive : ''} ${errors.featuredImage ? styles.uploadError : ''}`}
@@ -405,18 +958,48 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
             {errors.featuredImage && <span className={styles.errorText}>{errors.featuredImage}</span>}
           </div>
 
-          {/* Published At Container */}
-          <div className={styles.container}>
-            <h3 className={styles.containerTitle}>
-              Published at
-            </h3>
-            <DatePickerPopover
-              value={formData.publishedAt}
-              onChange={(value) => handleInputChange('publishedAt', value)}
-              placeholder="Select published date"
-            />
-            {errors.publishedAt && <span className={styles.errorText}>{errors.publishedAt}</span>}
-          </div>
+          {/* History/Activity Log - Show in edit mode only for published or archived news */}
+          {isEditMode && readOnlyFields.status && (readOnlyFields.status === 'published' || readOnlyFields.status === 'archived') && (
+            <div className={styles.container}>
+              <h3 className={styles.containerTitle}>
+                History
+              </h3>
+              <div className={styles.historyList}>
+                {/* Published - Only show if status is 'published' or was published before being archived */}
+                {readOnlyFields.originalPublishedAt && 
+                 (readOnlyFields.status === 'published' || 
+                  (readOnlyFields.status === 'archived' && readOnlyFields.originalPublishedAt)) && (
+                  <div className={styles.historyItem}>
+                    <div className={styles.historyDot}></div>
+                    <div className={styles.historyContent}>
+                      <div className={styles.historyLabel}>Published</div>
+                      <div className={styles.historyDate}>{formatDateTime(readOnlyFields.originalPublishedAt)}</div>
+                      <div className={styles.historyRelativeTime}>{getRelativeTime(readOnlyFields.originalPublishedAt)}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Last Updated */}
+                {readOnlyFields.updatedAt && (
+                  <div className={styles.historyItem}>
+                    <div className={styles.historyDot}></div>
+                    <div className={styles.historyContent}>
+                      <div className={styles.historyLabel}>Last Updated</div>
+                      <div className={styles.historyDate}>{formatDateTime(readOnlyFields.updatedAt)}</div>
+                      <div className={styles.historyRelativeTime}>{getRelativeTime(readOnlyFields.updatedAt)}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Show message if no history available */}
+                {!readOnlyFields.originalPublishedAt && !readOnlyFields.updatedAt && (
+                  <div className={styles.historyEmpty}>
+                    No history available
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </form>

@@ -25,13 +25,14 @@ export default function Navbar() {
   // Dropdowns
   const profileDropdown = useDropdown(false);
 
-  // Apply guard
+  // Apply handler - always navigate to /apply, show modal if not authenticated
   const handleApplyClick = (e) => {
     if (!isAuthenticated) {
-      e.preventDefault();
+      // Still navigate to /apply page, but show modal
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('showLoginModal'));
       }
+      // Don't prevent default - let the Link navigate to /apply
     }
   };
 

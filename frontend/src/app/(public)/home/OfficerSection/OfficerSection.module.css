@@ -1,6 +1,6 @@
 /* Clean Modern Adviser Section */
 .officerSection {
-  padding: 5rem 2rem;
+  padding: 2rem 2rem 5rem;
   background: #ffffff;
   position: relative;
   overflow: hidden;
@@ -154,7 +154,7 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .officerSection {
-    padding: 4rem 1rem 4rem;
+    padding: 2rem 1rem 4rem;
   }
 
   .officerHeading {

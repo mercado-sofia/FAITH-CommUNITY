@@ -27,12 +27,14 @@ export const loginAdmin = async (req, res) => {
     return res.status(400).json({ error: "Email and password are required" })
   }
 
+  const normalizedEmail = email.trim().toLowerCase();
+
   try {
-    const failedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'admin');
+    const failedAttempts = await LoginAttemptTracker.getFailedAttempts(normalizedEmail, ipAddress, 'admin');
     const maxAttempts = LoginAttemptTracker.getMaxAttempts();
     
     if (failedAttempts >= maxAttempts) {
-      const remainingSeconds = await LoginAttemptTracker.getLockoutTimeRemaining(email, ipAddress, 'admin');
+      const remainingSeconds = await LoginAttemptTracker.getLockoutTimeRemaining(normalizedEmail, ipAddress, 'admin');
       const remainingMinutes = Math.ceil(remainingSeconds / 60);
       
       return res.status(429).json({ 
@@ -48,13 +50,13 @@ export const loginAdmin = async (req, res) => {
               o.org, o.orgName, o.logo
        FROM users u
        LEFT JOIN organizations o ON u.organization_id = o.id
-       WHERE u.email = ? AND u.role = 'admin' AND u.is_active = TRUE`,
-      [email],
+       WHERE LOWER(u.email) = ? AND u.role = 'admin' AND u.is_active = TRUE`,
+      [normalizedEmail],
     )
 
     if (adminRows.length === 0) {
-      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'admin');
-      const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'admin');
+      await LoginAttemptTracker.trackFailedAttempt(normalizedEmail, ipAddress, 'admin');
+      const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(normalizedEmail, ipAddress, 'admin');
       const maxAttempts = LoginAttemptTracker.getMaxAttempts();
       return res.status(401).json({ 
         error: "Invalid credentials or account inactive",
@@ -67,8 +69,8 @@ export const loginAdmin = async (req, res) => {
     const isPasswordValid = await bcrypt.compare(password, admin.password)
 
     if (!isPasswordValid) {
-      await LoginAttemptTracker.trackFailedAttempt(email, ipAddress, 'admin');
-      const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(email, ipAddress, 'admin');
+      await LoginAttemptTracker.trackFailedAttempt(normalizedEmail, ipAddress, 'admin');
+      const newFailedAttempts = await LoginAttemptTracker.getFailedAttempts(normalizedEmail, ipAddress, 'admin');
       const maxAttempts = LoginAttemptTracker.getMaxAttempts();
       return res.status(401).json({ 
         error: "Invalid credentials",
@@ -101,7 +103,7 @@ export const loginAdmin = async (req, res) => {
       accessToken
     )
 
-    await LoginAttemptTracker.clearFailedAttempts(email, ipAddress, 'admin');
+    await LoginAttemptTracker.clearFailedAttempts(normalizedEmail, ipAddress, 'admin');
     
     await logAdminAction(admin.id, 'login', 'Admin logged in', req)
     
@@ -600,23 +602,48 @@ export const forgotPassword = async (req, res) => {
     const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}&type=admin`
     
     const { sendMail } = await import('../../utils/mailer.js')
+    const { getSiteName } = await import('../../utils/siteName.js')
+    const siteName = await getSiteName()
     
     await sendMail({
       to: email,
-      subject: "Password Reset Request - FAITH CommUNITY",
+      subject: `Password Reset Request - ${siteName}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #1A685B;">Password Reset Request</h2>
-          <p>Hello,</p>
-          <p>You have requested to reset your password for your FAITH CommUNITY admin account.</p>
-          <p>Click the button below to reset your password:</p>
-          <a href="${resetLink}" style="display: inline-block; background: #1A685B; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;">Reset Password</a>
-          <p>This link will expire in 1 hour.</p>
-          <p>If you didn't request this password reset, please ignore this email.</p>
-          <p>Best regards,<br>FAITH CommUNITY Team</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #1A685B 0%, #2D8F7F 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">${siteName}</h1>
+            <p style="color: #E8F5F3; margin: 10px 0 0 0;">Password Reset Request</p>
+          </div>
+          
+          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #1A685B; margin-top: 0;">Password Reset Request</h2>
+            
+            <p>Hello,</p>
+            
+            <p>You have requested to reset your password for your ${siteName} admin account. Click the button below to reset your password:</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetLink}" style="display: inline-block; background: #1A685B; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Reset Password</a>
+            </div>
+            
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">Or copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; color: #666; font-size: 13px; background: white; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6;">${resetLink}</p>
+            
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0; color: #856404; font-size: 14px;"><strong>Important:</strong> This link will expire in 1 hour.</p>
+            </div>
+            
+            <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0; color: #721c24; font-size: 14px;"><strong>Security Notice:</strong> If you didn't request this password reset, please ignore this email.</p>
+            </div>
+            
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">
+              Best regards,<br><strong>${siteName} Team</strong>
+            </p>
+          </div>
         </div>
       `,
-      text: `Password Reset Request - FAITH CommUNITY\n\nHello,\n\nYou have requested to reset your password for your FAITH CommUNITY admin account.\n\nClick the following link to reset your password:\n${resetLink}\n\nThis link will expire in 1 hour.\n\nIf you didn't request this password reset, please ignore this email.\n\nBest regards,\nFAITH CommUNITY Team`
+      text: `Password Reset Request - ${siteName}\n\nHello,\n\nYou have requested to reset your password for your ${siteName} admin account.\n\nClick the following link to reset your password:\n${resetLink}\n\nThis link will expire in 1 hour.\n\nIf you didn't request this password reset, please ignore this email.\n\nBest regards,\n${siteName} Team`
     })
 
     res.json({ message: "If an account with that email exists, a password reset link has been sent." })
@@ -678,21 +705,41 @@ export const resetPassword = async (req, res) => {
 
     // Send confirmation email
     const { sendMail } = await import('../../utils/mailer.js')
+    const { getSiteName } = await import('../../utils/siteName.js')
+    const siteName = await getSiteName()
     
     await sendMail({
       to: tokenData.email,
-      subject: "Password Successfully Reset - FAITH CommUNITY",
+      subject: `Password Successfully Reset - ${siteName}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #1A685B;">Password Successfully Reset</h2>
-          <p>Hello,</p>
-          <p>Your password has been successfully reset for your FAITH CommUNITY account.</p>
-          <p>You can now log in with your new password.</p>
-          <p>If you didn't request this password reset, please contact support immediately.</p>
-          <p>Best regards,<br>FAITH CommUNITY Team</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #1A685B 0%, #2D8F7F 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">${siteName}</h1>
+            <p style="color: #E8F5F3; margin: 10px 0 0 0;">Password Reset Confirmation</p>
+          </div>
+          
+          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #1A685B; margin-top: 0;">Password Successfully Reset</h2>
+            
+            <p>Hello,</p>
+            
+            <p>Your password has been successfully reset for your ${siteName} admin account. You can now log in with your new password.</p>
+            
+            <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0; color: #155724; font-size: 14px;"><strong>✓ Success:</strong> Your password has been changed. You may need to log in again on all devices where you're currently signed in.</p>
+            </div>
+            
+            <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0; color: #721c24; font-size: 14px;"><strong>Security Alert:</strong> If you didn't request this password reset, please contact our support team immediately as your account may be compromised.</p>
+            </div>
+            
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">
+              Best regards,<br><strong>${siteName} Team</strong>
+            </p>
+          </div>
         </div>
       `,
-      text: `Password Successfully Reset - FAITH CommUNITY\n\nHello,\n\nYour password has been successfully reset for your FAITH CommUNITY account.\n\nYou can now log in with your new password.\n\nIf you didn't request this password reset, please contact support immediately.\n\nBest regards,\nFAITH CommUNITY Team`
+      text: `Password Successfully Reset - ${siteName}\n\nHello,\n\nYour password has been successfully reset for your ${siteName} account.\n\nYou can now log in with your new password.\n\nIf you didn't request this password reset, please contact support immediately.\n\nBest regards,\n${siteName} Team`
     })
 
     res.json({ message: "Password has been successfully reset" })

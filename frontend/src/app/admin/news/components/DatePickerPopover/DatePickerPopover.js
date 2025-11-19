@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths, startOfWeek, endOfWeek, parse } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths, startOfWeek, endOfWeek, parse, isBefore, startOfDay } from 'date-fns';
 import { FaCalendarAlt, FaChevronLeft, FaChevronRight, FaChevronDown } from 'react-icons/fa';
 import styles from './DatePickerPopover.module.css';
 
@@ -58,19 +58,52 @@ function CustomDropdown({ value, options, onChange, placeholder, className, isYe
 }
 
 export default function DatePickerPopover({
-  value,                 // "yyyy-MM-dd" string
-  onChange,              // (val: "yyyy-MM-dd") => void
+  value,                 // "yyyy-MM-dd" or "yyyy-MM-ddTHH:mm" string
+  onChange,              // (val: "yyyy-MM-dd" or "yyyy-MM-ddTHH:mm") => void
   weekStartsOn = 0,      // 0=Sun, 1=Mon
   minYear = 2000,
   maxYear = 2050,
-  placeholder = "Select date"
+  placeholder = "Select date",
+  showTime = false,      // Enable time selection
+  minDate = null         // Minimum selectable date (null = no restriction)
 }) {
-  const toDate = (str) => str ? parse(str, "yyyy-MM-dd", new Date()) : null;
-  const selected = toDate(value);
+  // Parse value - could be date-only or datetime
+  const parseValue = (str) => {
+    if (!str) return null;
+    // Check if it includes time (T separator)
+    if (str.includes('T')) {
+      return new Date(str);
+    }
+    // Date only
+    return parse(str, "yyyy-MM-dd", new Date());
+  };
+  
+  const selected = parseValue(value);
   const [open, setOpen] = useState(false);
   const [viewMonth, setViewMonth] = useState(startOfMonth(selected ?? new Date()));
-  const [draft, setDraft] = useState(selected); // choose first, confirm later
+  const [draft, setDraft] = useState(selected ? new Date(selected) : null); // choose first, confirm later
+  const [draftTime, setDraftTime] = useState(() => {
+    if (selected) {
+      const hours = String(selected.getHours()).padStart(2, '0');
+      const minutes = String(selected.getMinutes()).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+    return '09:00'; // Default to 9:00 AM
+  });
   const wrapRef = useRef(null);
+
+  // Sync internal draft state with value prop changes
+  useEffect(() => {
+    const currentSelected = parseValue(value);
+    if (currentSelected) {
+      setDraft(new Date(currentSelected));
+      const hours = String(currentSelected.getHours()).padStart(2, '0');
+      const minutes = String(currentSelected.getMinutes()).padStart(2, '0');
+      setDraftTime(`${hours}:${minutes}`);
+    } else {
+      setDraft(null);
+    }
+  }, [value]); // Update when value prop changes
 
   // close on outside click / ESC
   useEffect(() => {
@@ -102,8 +135,50 @@ export default function DatePickerPopover({
 
   const handleConfirm = () => {
     if (!draft) return;
-    onChange?.(format(draft, "yyyy-MM-dd"));
+    
+    // Check if selected date is in the past (for scheduling)
+    if (minDate && isBefore(startOfDay(draft), startOfDay(minDate))) {
+      return; // Don't allow confirming past dates
+    }
+    
+    if (showTime) {
+      // Combine date and time
+      const [hours, minutes] = draftTime.split(':');
+      const draftDateTime = new Date(draft);
+      draftDateTime.setHours(parseInt(hours, 10));
+      draftDateTime.setMinutes(parseInt(minutes, 10));
+      draftDateTime.setSeconds(0);
+      
+      // Check if the combined datetime is in the past
+      if (minDate && isBefore(draftDateTime, new Date())) {
+        return; // Don't allow confirming past datetime
+      }
+      
+      // Format as datetime: yyyy-MM-ddTHH:mm
+      const year = draftDateTime.getFullYear();
+      const month = String(draftDateTime.getMonth() + 1).padStart(2, '0');
+      const day = String(draftDateTime.getDate()).padStart(2, '0');
+      const formattedTime = `${hours}:${minutes}`;
+      onChange?.(`${year}-${month}-${day}T${formattedTime}`);
+    } else {
+      // Date only
+      onChange?.(format(draft, "yyyy-MM-dd"));
+    }
     setOpen(false);
+  };
+
+  // Update draft when date changes to preserve time
+  const handleDateChange = (date) => {
+    if (showTime) {
+      // Preserve time when changing date
+      const newDate = new Date(date);
+      const [hours, minutes] = draftTime.split(':');
+      newDate.setHours(parseInt(hours, 10));
+      newDate.setMinutes(parseInt(minutes, 10));
+      setDraft(newDate);
+    } else {
+      setDraft(date);
+    }
   };
 
   return (
@@ -121,13 +196,19 @@ export default function DatePickerPopover({
           <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2"/>
           <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2"/>
         </svg>
-        <span>{selected ? format(selected, "MMM d, yyyy") : placeholder}</span>
+        <span>
+          {selected 
+            ? (showTime 
+                ? `${format(selected, "MMM d, yyyy")} at ${format(selected, "h:mm a")}`
+                : format(selected, "MMM d, yyyy"))
+            : placeholder}
+        </span>
       </button>
 
       {open && (
         <div role="dialog" className={styles.popover}>
           <div className={styles.titleRow}>
-            <h4 className={styles.heading}>Select Date</h4>
+            <h4 className={styles.heading}>{showTime ? 'Select Date & Time' : 'Select Date'}</h4>
           </div>
 
           <div className={styles.controls}>
@@ -171,6 +252,13 @@ export default function DatePickerPopover({
               const outside = !isSameMonth(d, viewMonth);
               const sel = draft && isSameDay(d, draft);
               const today = isToday(d);
+              // Check if date is in the past (disabled)
+              // Only disable dates that are strictly BEFORE minDate (not including today)
+              const minDateStart = minDate ? startOfDay(minDate) : null;
+              const dayStart = startOfDay(d);
+              const isPast = minDateStart ? isBefore(dayStart, minDateStart) : false;
+              const isDisabled = isPast && !outside;
+              
               return (
                 <button
                   key={d.toISOString()}
@@ -181,9 +269,13 @@ export default function DatePickerPopover({
                     sel ? styles.selected : ''
                   } ${
                     today ? styles.today : ''
+                  } ${
+                    isDisabled ? styles.disabled : ''
                   }`.trim()}
-                  onClick={() => setDraft(d)}
+                  onClick={() => !isDisabled && handleDateChange(d)}
+                  disabled={isDisabled}
                   aria-label={format(d, "PPP")}
+                  aria-disabled={isDisabled}
                 >
                   {format(d, "dd")}
                 </button>
@@ -191,8 +283,53 @@ export default function DatePickerPopover({
             })}
           </div>
 
+          {showTime && (
+            <div className={styles.timeSection}>
+              <label className={styles.timeLabel}>Time</label>
+              <input
+                type="time"
+                value={draftTime}
+                onChange={(e) => {
+                  setDraftTime(e.target.value);
+                  // Update draft to include new time
+                  if (draft) {
+                    const [hours, minutes] = e.target.value.split(':');
+                    const newDraft = new Date(draft);
+                    newDraft.setHours(parseInt(hours, 10));
+                    newDraft.setMinutes(parseInt(minutes, 10));
+                    setDraft(newDraft);
+                  }
+                }}
+                className={styles.timeInput}
+                step="60"
+                min={minDate && draft && isSameDay(draft, new Date()) ? format(new Date(), 'HH:mm') : undefined}
+              />
+              {minDate && draft && isSameDay(draft, new Date()) && (
+                <p className={styles.timeHint}>Please select a time in the future</p>
+              )}
+            </div>
+          )}
+
           <div className={styles.footer}>
-            <button type="button" className={styles.confirm} onClick={handleConfirm} disabled={!draft}>
+            <button 
+              type="button" 
+              className={styles.confirm} 
+              onClick={handleConfirm} 
+              disabled={(() => {
+                if (!draft) return true;
+                // Check if date is in the past
+                if (minDate && isBefore(startOfDay(draft), startOfDay(minDate))) return true;
+                // If showTime is enabled, check if datetime is in the past
+                if (showTime && minDate) {
+                  const [hours, minutes] = draftTime.split(':');
+                  const draftDateTime = new Date(draft);
+                  draftDateTime.setHours(parseInt(hours, 10));
+                  draftDateTime.setMinutes(parseInt(minutes, 10));
+                  if (isBefore(draftDateTime, new Date())) return true;
+                }
+                return false;
+              })()}
+            >
               Confirm
             </button>
           </div>

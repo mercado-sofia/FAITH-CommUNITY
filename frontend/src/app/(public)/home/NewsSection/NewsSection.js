@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import styles from './newsSection.module.css';
+import styles from './NewsSection.module.css';
 import { usePublicOrganizations, usePublicNews } from '../../hooks/usePublicData';
 import { formatDateLong } from '@/utils/dateUtils';
 import { getOrganizationImageUrl, isUnavailableImage } from '@/utils/uploadPaths';
@@ -22,15 +22,18 @@ export default function NewsSection() {
   const [isMobile, setIsMobile] = useState(false);
 
   // Use SWR hooks for data fetching
+  // Backend already filters to only ACTIVE organizations
   const { organizations: orgsData, isLoading: orgLoading } = usePublicOrganizations();
   const { news, isLoading: newsLoading } = usePublicNews();
 
   // Process organizations with latest news dates
   const organizations = useMemo(() => {
-    if (!orgsData.length) return [];
+    if (!orgsData || !Array.isArray(orgsData) || orgsData.length === 0) {
+      return [];
+    }
 
     // If no news data, return organizations as-is
-    if (!news.length) {
+    if (!news || !Array.isArray(news) || news.length === 0) {
       return orgsData;
     }
 
@@ -61,9 +64,7 @@ export default function NewsSection() {
     });
 
     // Sort organizations by latest announcement date (newest first)
-    const sortedOrgs = orgsWithLatestNews.sort((a, b) => b.latestNewsDate - a.latestNewsDate);
-    
-    return sortedOrgs;
+    return orgsWithLatestNews.sort((a, b) => b.latestNewsDate - a.latestNewsDate);
   }, [orgsData, news]);
 
   // Handle screen size detection for responsive display count
@@ -91,13 +92,16 @@ export default function NewsSection() {
     }
   }, [organizations]);
 
-
   const handleOrgClick = (orgObj) => {
     setSelectedOrg(orgObj);
   };
 
   // Filter news based on selected organization and sort by date (newest first)
   const filteredNews = useMemo(() => {
+    if (!news || !Array.isArray(news) || news.length === 0) {
+      return [];
+    }
+    
     if (!selectedOrg) {
       return [...news].sort((a, b) => {
         const dateA = new Date(a.published_at || a.date || a.created_at || 0);
@@ -209,10 +213,12 @@ export default function NewsSection() {
             onWheel={handleWheel}
           >
             {organizations.map((orgObj) => {
-               // Check if this organization is active by comparing with selectedOrg
-               const isActive = selectedOrg && selectedOrg.id === orgObj.id;
-               
-               return (
+              const isActive = selectedOrg && selectedOrg.id === orgObj.id;
+              const orgAcronym = orgObj.acronym || orgObj.org || '';
+              const orgName = orgObj.name || orgObj.orgName || '';
+              const displayText = orgAcronym || orgName;
+              
+              return (
                 <div
                   key={orgObj.id}
                   role="button"
@@ -222,6 +228,7 @@ export default function NewsSection() {
                   onClick={() => handleOrgClick(orgObj)}
                   onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && handleOrgClick(orgObj)}
                   className={`${styles.orgItem} ${isActive ? styles.active : ""}`}
+                  title={orgName}
                 >
                   {(() => {
                     const orgImageUrl = getOrganizationImageUrl(orgObj.logo, 'logo');
@@ -238,18 +245,17 @@ export default function NewsSection() {
                     return (
                       <Image
                         src={orgImageUrl}
-                        alt={`${orgObj.acronym || orgObj.name} logo`}
+                        alt={`${displayText} logo`}
                         width={30}
                         height={30}
                         className={styles.orgLogo}
                         onError={(e) => {
-                          // Use a default logo if the specific one doesn't exist
                           e.target.src = '/assets/icons/placeholder.svg';
                         }}
                       />
                     );
                   })()}
-                  <span>{orgObj.acronym || orgObj.name}</span>
+                  <span>{displayText}</span>
                 </div>
               );
             })}
@@ -259,12 +265,12 @@ export default function NewsSection() {
 
       <div className={styles.newsContainer}>
         <div className={styles.newsList}>
-                     {newsLoading ? (
-             <div className={styles.statusContainer}>
-               <div className={styles.spinner}></div>
-               <p>Loading news...</p>
-             </div>
-           ) : filteredNews.length === 0 ? (
+          {newsLoading ? (
+            <div className={styles.statusContainer}>
+              <div className={styles.spinner}></div>
+              <p>Loading news...</p>
+            </div>
+          ) : filteredNews.length === 0 ? (
             <div className={styles.statusContainer}>
               <p>No announcements yet</p>
             </div>

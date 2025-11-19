@@ -103,6 +103,7 @@ All API responses follow this structure:
 - **POST** `/api/users/login` - Login user
 - **POST** `/api/users/logout` - Logout user (requires auth)
 - **POST** `/api/users/refresh` - Refresh access token
+- **GET** `/api/users/auth/check` - Check authentication status (unified for all roles)
 - **POST** `/api/users/forgot-password` - Request password reset
 - **POST** `/api/users/reset-password` - Reset password with token
 - **POST** `/api/users/validate-reset-token` - Validate password reset token

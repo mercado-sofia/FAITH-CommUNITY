@@ -45,11 +45,14 @@ export default function OrgPage() {
   // Authentication state
   const { isAuthenticated } = useAuthState();
 
-  // Handle volunteer button click - same logic as Apply Now button
+  // Handle volunteer button click - always navigate to /apply, show modal if not authenticated
   const handleVolunteerClick = (e) => {
     if (!isAuthenticated) {
-      e.preventDefault();
-      window.dispatchEvent(new CustomEvent('showLoginModal'));
+      // Still navigate to /apply page, but show modal
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('showLoginModal'));
+      }
+      // Don't prevent default - let the Link navigate to /apply
     }
   };
 

@@ -310,7 +310,7 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
               <th>Program</th>
               <th>Date</th>
               <th>Status</th>
-              <th></th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody className={styles.tableBody}>

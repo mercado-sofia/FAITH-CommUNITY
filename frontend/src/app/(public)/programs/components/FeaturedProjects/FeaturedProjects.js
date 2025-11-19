@@ -60,12 +60,11 @@ export default function FeaturedProjects({ orgID }) {
         return;
       }
       
-      if (!isLoggedIn) {
-        // Show login modal for non-authenticated users
+      // Always navigate to /apply page (with program parameter)
+      router.push(`/apply?program=${program.id}`);
+      // Show modal if not logged in
+      if (!isLoggedIn && typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('showLoginModal'));
-      } else {
-        // Navigate to apply page with pre-selected program
-        router.push(`/apply?program=${program.id}`);
       }
     } else {
       // Default behavior - navigate to program details

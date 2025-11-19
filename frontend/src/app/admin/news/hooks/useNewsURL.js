@@ -15,6 +15,10 @@ export const useNewsURL = () => {
     const sortParam = searchParams.get('sort');
     return sortParam || 'newest';
   });
+  const [statusFilter, setStatusFilter] = useState(() => {
+    const statusParam = searchParams.get('status');
+    return statusParam || 'all';
+  });
   const [showCount, setShowCount] = useState(() => {
     const showParam = searchParams.get('show');
     return showParam ? parseInt(showParam, 10) : 10;
@@ -29,6 +33,7 @@ export const useNewsURL = () => {
       // Only add to URL if it's not the default value
       if (value && value !== '' && 
           !((key === 'sort' && value.toLowerCase() === 'newest') ||
+            (key === 'status' && value.toLowerCase() === 'all') ||
             (key === 'show' && value === '10'))) {
         current.set(key, value);
       } else {
@@ -52,6 +57,11 @@ export const useNewsURL = () => {
     updateURLParams({ sort: value.toLowerCase() });
   }, [updateURLParams]);
 
+  const handleStatusFilterChange = useCallback((value) => {
+    setStatusFilter(value);
+    updateURLParams({ status: value.toLowerCase() });
+  }, [updateURLParams]);
+
   const handleShowCountChange = useCallback((value) => {
     setShowCount(value);
     updateURLParams({ show: value.toString() });
@@ -61,8 +71,9 @@ export const useNewsURL = () => {
   const resetToDefaults = useCallback(() => {
     setSearchQuery('');
     setSortBy('newest');
+    setStatusFilter('all');
     setShowCount(10);
-    updateURLParams({ search: '', sort: 'newest', show: '10' });
+    updateURLParams({ search: '', sort: 'newest', status: 'all', show: '10' });
   }, [updateURLParams]);
 
   // Get current URL state
@@ -70,6 +81,7 @@ export const useNewsURL = () => {
     return {
       search: searchParams.get('search') || '',
       sort: searchParams.get('sort') || 'newest',
+      status: searchParams.get('status') || 'all',
       show: parseInt(searchParams.get('show')) || 10
     };
   }, [searchParams]);
@@ -78,11 +90,13 @@ export const useNewsURL = () => {
     // State
     searchQuery,
     sortBy,
+    statusFilter,
     showCount,
     
     // Handlers
     handleSearchChange,
     handleSortChange,
+    handleStatusFilterChange,
     handleShowCountChange,
     
     // Utilities
@@ -93,6 +107,7 @@ export const useNewsURL = () => {
     // Direct setters (for programmatic updates)
     setSearchQuery,
     setSortBy,
+    setStatusFilter,
     setShowCount
   };
 };

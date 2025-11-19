@@ -74,6 +74,29 @@
   font-size: 1.25rem;
 }
 
+.archiveIconContainer {
+  width: 56px;
+  height: 56px;
+  background-color: #E5E7EB;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.archiveIconInner {
+  width: 40px;
+  height: 40px;
+  background-color: #D1D5DB;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9CA3AF;
+  font-size: 1.25rem;
+}
+
 .closeBtn {
   background: none;
   border: none;
@@ -273,6 +296,93 @@
   opacity: 0.6;
 }
 
+.archiveBtn {
+  flex: 1;
+  background-color: #9CA3AF;
+  color: white;
+  border: 1px solid #9CA3AF;
+  box-shadow: 0 1px 2px 0 rgba(10, 13, 18, 0.05);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.archiveBtn:hover {
+  background-color: #6B7280;
+  border-color: #6B7280;
+}
+
+.archiveBtn:disabled {
+  background-color: #9ca3af;
+  border-color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.unarchiveIconContainer {
+  width: 56px;
+  height: 56px;
+  background-color: #E6F7F3;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.unarchiveIconInner {
+  width: 40px;
+  height: 40px;
+  background-color: #D1F2EB;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1bbca1;
+  font-size: 1.25rem;
+}
+
+.unarchiveBtn {
+  flex: 1;
+  background-color: #1bbca1;
+  color: white;
+  border: 1px solid #1bbca1;
+  box-shadow: 0 1px 2px 0 rgba(10, 13, 18, 0.05);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-inter);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.unarchiveBtn:hover {
+  background-color: #16a085;
+  border-color: #16a085;
+}
+
+.unarchiveBtn:disabled {
+  background-color: #9ca3af;
+  border-color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .cancelBtn:disabled {
   background-color: #f3f4f6;
   border-color: #d1d5db;
@@ -333,7 +443,9 @@
   
   .cancelBtn,
   .deleteBtn,
-  .declineBtn {
+  .declineBtn,
+  .archiveBtn,
+  .unarchiveBtn {
     width: 100%;
     justify-content: center;
   }

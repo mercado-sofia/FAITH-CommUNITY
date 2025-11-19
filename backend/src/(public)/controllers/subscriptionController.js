@@ -2,6 +2,7 @@
 import db from '../../database.js';
 import crypto from 'crypto';
 import { sendMail } from '../../utils/mailer.js';
+import { getSiteName } from '../../utils/siteName.js';
 
 /* ============================== Utils ============================== */
 const FRONTEND = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -12,29 +13,39 @@ const makeToken = (len = 32) => crypto.randomBytes(len).toString('hex');
 async function sendConfirmationEmail({ email, verifyToken, unsubscribeToken }) {
   const confirmUrl = `${FRONTEND}/newsletter/confirm/${verifyToken}`;
   const unsubscribeUrl = `${FRONTEND}/newsletter/unsubscribe/${unsubscribeToken}`;
+  const siteName = await getSiteName();
 
   const html = `
-    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
-      <div style="background:#1A685B;color:#fff;padding:18px 20px;border-radius:8px 8px 0 0;text-align:center;">
-        <h2 style="margin:0;">FAITH CommUNITY</h2>
-        <p style="margin:6px 0 0;opacity:.9;">Newsletter Confirmation</p>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #1A685B 0%, #2D8F7F 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">${siteName}</h1>
+        <p style="color: #E8F5F3; margin: 10px 0 0 0;">Newsletter Confirmation</p>
       </div>
-      <div style="background:#f8f9fa;padding:26px;border-radius:0 0 8px 8px;">
-        <p>Thanks for subscribing! Please confirm your email address:</p>
-        <p style="text-align:center;margin:22px 0;">
-          <a href="${confirmUrl}" style="background:#1A685B;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:700;">
-            Confirm Subscription
-          </a>
+      
+      <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+        <h2 style="color: #1A685B; margin-top: 0;">Thanks for Subscribing!</h2>
+        
+        <p>Please confirm your email address to complete your subscription to ${siteName} newsletter:</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${confirmUrl}" style="display: inline-block; background: #1A685B; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Confirm Subscription</a>
+        </div>
+        
+        <p style="color: #666; font-size: 14px; margin-top: 20px;">If the button doesn't work, copy and paste this link into your browser:</p>
+        <p style="word-break: break-all; color: #666; font-size: 13px; background: white; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6;">${confirmUrl}</p>
+        
+        <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
+          <p style="margin: 0; color: #856404; font-size: 14px;"><strong>Important:</strong> This confirmation link expires in ${VERIFY_TTL_HOURS} hours.</p>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #dee2e6; margin: 24px 0;">
+        
+        <p style="color: #666; font-size: 13px; margin-top: 20px;">
+          Didn't request this? You can <a href="${unsubscribeUrl}" style="color: #1A685B; text-decoration: underline;">unsubscribe here</a>.
         </p>
-        <p>If the button doesn't work, copy this link:<br>
-          <a href="${confirmUrl}">${confirmUrl}</a>
-        </p>
-        <hr style="border:none;border-top:1px solid #ddd;margin:24px 0;">
-        <p style="font-size:12px;color:#666">
-          Didn’t request this? You can <a href="${unsubscribeUrl}">unsubscribe here</a>.
-        </p>
-        <p style="font-size:12px;color:#666">
-          This link expires in ${VERIFY_TTL_HOURS} hours.
+        
+        <p style="color: #666; font-size: 14px; margin-top: 20px;">
+          Best regards,<br><strong>${siteName} Team</strong>
         </p>
       </div>
     </div>
@@ -42,7 +53,7 @@ async function sendConfirmationEmail({ email, verifyToken, unsubscribeToken }) {
 
   await sendMail({
     to: email,
-    subject: 'Confirm Your Newsletter Subscription - FAITH CommUNITY',
+    subject: `Confirm Your Newsletter Subscription - ${siteName}`,
     html,
   });
 }
@@ -189,23 +200,6 @@ export const getAllSubscriptions = async (_req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM subscribers ORDER BY created_at DESC');
     res.status(200).json(rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-
-export const fixSubscriptions = async (_req, res) => {
-  try {
-    const [bad1] = await db.execute(
-      'SELECT id FROM subscribers WHERE is_verified = 1 AND verified_at IS NULL'
-    );
-    if (bad1.length) {
-      await db.execute(
-        'UPDATE subscribers SET is_verified = 0 WHERE is_verified = 1 AND verified_at IS NULL'
-      );
-    }
-    res.json({ message: `Fixed ${bad1.length} records missing verified_at.` });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

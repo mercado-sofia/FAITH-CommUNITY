@@ -3,15 +3,20 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
+import { getStoredRedirectUrl } from '@/utils/redirectUtils';
 import styles from './GlobalLoginModal.module.css';
 
 export default function GlobalLoginModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [redirectUrl, setRedirectUrl] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
-    const handleShowModal = () => {
+    const handleShowModal = (event) => {
+      // Get redirect URL from event detail or sessionStorage
+      const url = event?.detail?.redirectUrl || getStoredRedirectUrl() || null;
+      setRedirectUrl(url);
       setIsOpen(true);
     };
 
@@ -39,12 +44,29 @@ export default function GlobalLoginModal() {
     }
   }, [isOpen]);
 
+  // Helper function to get redirect URL
+  const getRedirectUrl = () => {
+    return redirectUrl || getStoredRedirectUrl() || null;
+  };
+
   const handleLogin = () => {
-    router.push('/login');
+    // Pass redirect URL to login page
+    const url = getRedirectUrl();
+    if (url) {
+      router.push(`/login?redirect=${encodeURIComponent(url)}`);
+    } else {
+      router.push('/login');
+    }
   };
 
   const handleSignup = () => {
-    router.push('/signup');
+    // Pass redirect URL to signup page
+    const url = getRedirectUrl();
+    if (url) {
+      router.push(`/signup?redirect=${encodeURIComponent(url)}`);
+    } else {
+      router.push('/signup');
+    }
   };
 
   const handleClose = () => {

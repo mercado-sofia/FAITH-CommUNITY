@@ -7,9 +7,14 @@ import { useState, useCallback } from 'react';
 export const useNewsModals = () => {
   // Modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showRecentlyDeletedModal, setShowRecentlyDeletedModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
+  const [showUnarchiveModal, setShowUnarchiveModal] = useState(false);
+  const [viewingNews, setViewingNews] = useState(null);
   const [editingNews, setEditingNews] = useState(null);
   const [deletingNews, setDeletingNews] = useState(null);
+  const [archivingNews, setArchivingNews] = useState(null);
+  const [unarchivingNews, setUnarchivingNews] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
 
   // Page mode state
@@ -27,18 +32,59 @@ export const useNewsModals = () => {
     setShowDeleteModal(true);
   }, []);
 
+  // Handle view action
+  const handleView = useCallback((newsItem) => {
+    setViewingNews(newsItem);
+    setShowViewModal(true);
+  }, []);
+
+  // Handle close view modal
+  const handleCloseViewModal = useCallback(() => {
+    setShowViewModal(false);
+    setViewingNews(null);
+  }, []);
+
   // Handle bulk delete request
   const handleBulkDeleteRequest = useCallback((selectedNewsIds) => {
     setSelectedItems(selectedNewsIds);
     setShowDeleteModal(true);
   }, []);
 
+  // Handle archive action
+  const handleArchive = useCallback((newsItem) => {
+    setArchivingNews(newsItem);
+    setShowArchiveModal(true);
+  }, []);
+
+  // Handle close archive modal
+  const handleCloseArchiveModal = useCallback(() => {
+    setShowArchiveModal(false);
+    setArchivingNews(null);
+  }, []);
+
+  // Handle unarchive action
+  const handleUnarchive = useCallback((newsItem) => {
+    setUnarchivingNews(newsItem);
+    setShowUnarchiveModal(true);
+  }, []);
+
+  // Handle close unarchive modal
+  const handleCloseUnarchiveModal = useCallback(() => {
+    setShowUnarchiveModal(false);
+    setUnarchivingNews(null);
+  }, []);
+
   // Handle close all modals
   const handleCloseModals = useCallback(() => {
     setShowDeleteModal(false);
-    setShowRecentlyDeletedModal(false);
+    setShowViewModal(false);
+    setShowArchiveModal(false);
+    setShowUnarchiveModal(false);
+    setViewingNews(null);
     setEditingNews(null);
     setDeletingNews(null);
+    setArchivingNews(null);
+    setUnarchivingNews(null);
     setSelectedItems([]);
   }, []);
 
@@ -52,15 +98,6 @@ export const useNewsModals = () => {
   const handleListMode = useCallback(() => {
     setPageMode('list');
     setEditingNews(null);
-  }, []);
-
-  // Handle recently deleted modal
-  const handleShowRecentlyDeleted = useCallback(() => {
-    setShowRecentlyDeletedModal(true);
-  }, []);
-
-  const handleCloseRecentlyDeleted = useCallback(() => {
-    setShowRecentlyDeletedModal(false);
   }, []);
 
   // Handle delete modal
@@ -91,9 +128,14 @@ export const useNewsModals = () => {
   return {
     // Modal states
     showDeleteModal,
-    showRecentlyDeletedModal,
+    showViewModal,
+    showArchiveModal,
+    showUnarchiveModal,
+    viewingNews,
     editingNews,
     deletingNews,
+    archivingNews,
+    unarchivingNews,
     selectedItems,
     pageMode,
     isDeleteModalOpen,
@@ -101,12 +143,16 @@ export const useNewsModals = () => {
     // Modal handlers
     handleEdit,
     handleDelete,
+    handleView,
+    handleArchive,
+    handleUnarchive,
+    handleCloseViewModal,
+    handleCloseArchiveModal,
+    handleCloseUnarchiveModal,
     handleBulkDeleteRequest,
     handleCloseModals,
     handleCreateMode,
     handleListMode,
-    handleShowRecentlyDeleted,
-    handleCloseRecentlyDeleted,
     handleShowDeleteModal,
     handleCloseDeleteModal,
     

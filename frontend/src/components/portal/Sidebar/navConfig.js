@@ -66,6 +66,12 @@ export const adminNavLinks = [
   },
   // Management section
   {
+    href: '/admin/organization',
+    label: 'Organization',
+    icon: HiOfficeBuilding,
+    section: 'management'
+  },
+  {
     href: '/admin/volunteers',
     label: 'Volunteers',
     icon: FaUserCheck,
@@ -75,12 +81,6 @@ export const adminNavLinks = [
     href: '/admin/news',
     label: 'Announcements',
     icon: HiOutlineNewspaper,
-    section: 'management'
-  },
-  {
-    href: '/admin/organization',
-    label: 'Organization',
-    icon: HiOfficeBuilding,
     section: 'management'
   },
   {

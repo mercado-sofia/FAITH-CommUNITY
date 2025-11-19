@@ -14,7 +14,6 @@ import styles from './apply.module.css';
 export default function ApplyPage() {
   const [selectedProgramId, setSelectedProgramId] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const searchParams = useSearchParams();
   
   // Use persistence hook for selected program
@@ -34,7 +33,7 @@ export default function ApplyPage() {
     }
   }, [searchParams]);
 
-  // Check user authentication status
+  // Check user authentication status (for internal use, not for conditional rendering)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
@@ -47,33 +46,15 @@ export default function ApplyPage() {
         if (userData && userData.role === 'user') {
           setIsLoggedIn(true);
         } else {
-          // Show login modal for non-authenticated users
-          setShowLoginModal(true);
+          setIsLoggedIn(false);
         }
       } catch (error) {
-        // Show login modal on error
-        setShowLoginModal(true);
+        setIsLoggedIn(false);
       }
     };
     
     checkAuth();
   }, []);
-
-  // Show login modal when needed
-  useEffect(() => {
-    if (showLoginModal && typeof window !== 'undefined') {
-      try {
-        // Dispatch the event to show the login modal
-        window.dispatchEvent(new CustomEvent('showLoginModal'));
-        // Don't immediately set showLoginModal to false - let the modal handle its own state
-        // The modal will close itself when the user takes action
-      } catch (error) {
-        // Error dispatching login modal event - reset state
-        // Only reset if there was an error
-        setShowLoginModal(false);
-      }
-    }
-  }, [showLoginModal]);
 
   if (pageLoading || !pageReady) {
     return <Loader small centered />;
@@ -93,38 +74,25 @@ export default function ApplyPage() {
 
       <section aria-labelledby="apply-heading" className={styles.applySection}>
         <div className={styles.applyContainer}>
-          {isLoggedIn ? (
-            <div className={styles.twoPanelLayout}>
-              {/* Left Panel - Form */}
-              <div className={styles.leftPanel}>
-                <SimplifiedVolunteerForm 
-                  selectedProgramId={selectedProgramId}
-                  onProgramSelect={setSelectedProgram}
-                  onFormReset={clearSelectedProgram}
-                />
-              </div>
+          <div className={styles.twoPanelLayout}>
+            {/* Left Panel - Form */}
+            <div className={styles.leftPanel}>
+              <SimplifiedVolunteerForm 
+                selectedProgramId={selectedProgramId}
+                onProgramSelect={setSelectedProgram}
+                onFormReset={clearSelectedProgram}
+                isLoggedIn={isLoggedIn}
+              />
+            </div>
 
-              {/* Right Panel - Program Preview */}
-              <div className={styles.rightPanel}>
-                <ProgramPreview 
-                  selectedProgram={selectedProgram}
-                  isLoading={false}
-                />
-              </div>
+            {/* Right Panel - Program Preview */}
+            <div className={styles.rightPanel}>
+              <ProgramPreview 
+                selectedProgram={selectedProgram}
+                isLoading={false}
+              />
             </div>
-          ) : (
-            <div className={styles.loginPrompt}>
-              <h3 className={styles.loginPromptTitle}>
-                Please log in or create an account to apply for volunteer programs.
-              </h3>
-              <button 
-                onClick={() => setShowLoginModal(true)}
-                className={styles.loginButton}
-              >
-                Get Started
-              </button>
-            </div>
-          )}
+          </div>
         </div>
       </section>
 

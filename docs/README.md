@@ -15,6 +15,10 @@ The comprehensive system documentation is organized into separate files for bett
 5. **[Data Flow](./project-documentation/05-data-flow.md)** - Request/response flow and state management
 6. **[API Documentation](./project-documentation/06-api-documentation.md)** - Complete API endpoint reference
 7. **[Additional Notes](./project-documentation/07-additional-notes.md)** - Environment variables, deployment, and performance optimizations
+8. **[JWT Token Management Algorithms](./project-documentation/08-algorithms-jwt-token-management.md)** - JWT generation, refresh token rotation, and token management algorithms
+9. **[Security Algorithms](./project-documentation/09-algorithms-security.md)** - Brute force prevention, session security, CSRF protection, and rate limiting algorithms
+10. **[Authentication Algorithms](./project-documentation/10-algorithms-authentication.md)** - Two-factor authentication (TOTP), email OTP, backup codes, and password verification algorithms
+11. **[Algorithms Overview](./project-documentation/11-algorithms-overview.md)** - Quick reference guide for all algorithms (Final Defense Presentation)
 
 ### Component-Specific Documentation
 

@@ -1834,15 +1834,19 @@ export const deleteNotification = async (req, res) => {
 };
 
 // Helper function to create notification (used by other controllers)
-export const createUserNotification = async (userId, type, title, message) => {
+// Returns the notification ID if successful, null otherwise
+// Note: section and relatedId parameters are accepted for backward compatibility but not currently stored
+export const createUserNotification = async (userId, type, title, message, section = null, relatedId = null) => {
   try {
-    await db.query(
+    const [result] = await db.execute(
       `INSERT INTO user_notifications (user_id, type, title, message, created_at) 
        VALUES (?, ?, ?, ?, NOW())`,
       [userId, type, title, message]
     );
+    return result.insertId;
   } catch (error) {
-    // Error creating user notification
+    console.error('Error creating user notification:', error);
+    return null;
   }
 };
 

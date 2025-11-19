@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Inter, Poppins, Urbanist, Roboto } from "next/font/google";
 import { LoaderWrapper, DisableTabOnButtonsLinks, SWRProvider, ReduxProvider } from "@/components";
+import { SocketProvider } from "@/contexts/SocketContext";
 import '../utils/devTools';
 
 const inter = Inter({ 
@@ -44,8 +45,10 @@ export default function RootLayout({ children }) {
       <body className={inter.className}>
         <SWRProvider>
           <ReduxProvider>
-            <DisableTabOnButtonsLinks />
-            <LoaderWrapper>{children}</LoaderWrapper>
+            <SocketProvider>
+              <DisableTabOnButtonsLinks />
+              <LoaderWrapper>{children}</LoaderWrapper>
+            </SocketProvider>
           </ReduxProvider>
         </SWRProvider>
       </body>

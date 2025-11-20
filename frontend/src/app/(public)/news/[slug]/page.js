@@ -130,26 +130,22 @@ export default function NewsDetailPage({ params }) {
           <div className={styles.newsMetaInfo}>
             <div><em>Published:</em> {formatDate(news.published_at || news.date)}</div>
             {(() => {
-              // Only show "Last Updated" if updated_at exists and is meaningfully different from published_at
-              // This ensures we only show it when there was an actual content edit, not when status changed
-              if (!news.updated_at || !news.published_at) {
+              // Only show "Last Updated" if content_updated_at exists
+              // content_updated_at only tracks actual content edits (title, content, excerpt, featured_image)
+              // It does NOT update when status changes or published_at changes
+              if (!news.content_updated_at) {
                 return null;
               }
               
-              const publishedDate = new Date(news.published_at);
-              const updatedDate = new Date(news.updated_at);
+              const updatedDate = new Date(news.content_updated_at);
               
-              // Check if dates are valid
-              if (isNaN(publishedDate.getTime()) || isNaN(updatedDate.getTime())) {
+              // Check if date is valid
+              if (isNaN(updatedDate.getTime())) {
                 return null;
               }
               
-              // Only show if updated_at is significantly different from published_at (at least 5 seconds)
-              const timeDifference = updatedDate.getTime() - publishedDate.getTime();
-              if (timeDifference > 5000) { // 5 seconds threshold
-                return <div><em>Last Updated:</em> {formatDate(news.updated_at)}</div>;
-              }
-              return null;
+              // Show content_updated_at if it exists (it only exists when content was actually edited)
+              return <div><em>Last Updated:</em> {formatDate(news.content_updated_at)}</div>;
             })()}
             <div><em>By:</em> {news.orgName || news.orgID || 'Unknown Organization'}</div>
           </div>

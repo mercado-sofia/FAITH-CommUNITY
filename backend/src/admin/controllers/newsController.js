@@ -129,6 +129,7 @@ function mapNewsToResponse(n) {
     date: n.date || n.created_at || null,
     created_at: n.created_at || null,
     updated_at: n.updated_at || null,
+    content_updated_at: n.content_updated_at || null, // Only updated when content changes
     status: n.status || 'draft',
     organization_id: n.organization_id || null,
     orgID: n.orgAcronym || (n.organization_id ? `Org-${n.organization_id}` : 'Unknown'),
@@ -462,24 +463,24 @@ export const createNews = async (req, res) => {
       if (statusColumnExists) {
         if (normalizedAction === 'publish' && finalPublishedAt === null) {
           // Use NOW() for published_at when publishing immediately to sync with created_at
-          insertQuery = `INSERT INTO news (organization_id, title, slug, content, excerpt, featured_image, published_at, date, status, updated_at)
-                         VALUES (?, ?, ?, ?, ?, ?, NOW(), DATE(NOW()), ?, NULL)`;
+          insertQuery = `INSERT INTO news (organization_id, title, slug, content, excerpt, featured_image, published_at, date, status, updated_at, content_updated_at)
+                         VALUES (?, ?, ?, ?, ?, ?, NOW(), DATE(NOW()), ?, NULL, NULL)`;
           insertParams = [organization.id, title, slug, content || '', excerpt || '', featured_image, status];
         } else {
-          insertQuery = `INSERT INTO news (organization_id, title, slug, content, excerpt, featured_image, published_at, date, status, updated_at)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`;
+          insertQuery = `INSERT INTO news (organization_id, title, slug, content, excerpt, featured_image, published_at, date, status, updated_at, content_updated_at)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)`;
           insertParams = [organization.id, title, slug, content || '', excerpt || '', featured_image, finalPublishedAt, dateValue, status];
         }
       } else {
         // Fallback: insert without status column (status will be determined by published_at)
         if (normalizedAction === 'publish' && finalPublishedAt === null) {
           // Use NOW() for published_at when publishing immediately to sync with created_at
-          insertQuery = `INSERT INTO news (organization_id, title, slug, content, excerpt, featured_image, published_at, date, updated_at)
-                         VALUES (?, ?, ?, ?, ?, ?, NOW(), DATE(NOW()), NULL)`;
+          insertQuery = `INSERT INTO news (organization_id, title, slug, content, excerpt, featured_image, published_at, date, updated_at, content_updated_at)
+                         VALUES (?, ?, ?, ?, ?, ?, NOW(), DATE(NOW()), NULL, NULL)`;
           insertParams = [organization.id, title, slug, content || '', excerpt || '', featured_image];
         } else {
-          insertQuery = `INSERT INTO news (organization_id, title, slug, content, excerpt, featured_image, published_at, date, updated_at)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)`;
+          insertQuery = `INSERT INTO news (organization_id, title, slug, content, excerpt, featured_image, published_at, date, updated_at, content_updated_at)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)`;
           insertParams = [organization.id, title, slug, content || '', excerpt || '', featured_image, finalPublishedAt, dateValue];
         }
       }
@@ -528,15 +529,15 @@ export const createNews = async (req, res) => {
           if (normalizedAction === 'publish' && finalPublishedAt === null) {
             // Use NOW() for published_at when publishing immediately to sync with created_at
             [result] = await db.execute(
-              `INSERT INTO news (organization_id, title, slug, content, excerpt, featured_image, published_at, date, status, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, NOW(), DATE(NOW()), ?, NULL)`,
+              `INSERT INTO news (organization_id, title, slug, content, excerpt, featured_image, published_at, date, status, updated_at, content_updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, NOW(), DATE(NOW()), ?, NULL, NULL)`,
               [organization.id, title, slug, content || '', excerpt || '', featured_image, status]
             );
           } else {
             const dateValue = finalPublishedAt ? finalPublishedAt.split(' ')[0] : null;
             [result] = await db.execute(
-              `INSERT INTO news (organization_id, title, slug, content, excerpt, featured_image, published_at, date, status, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+              `INSERT INTO news (organization_id, title, slug, content, excerpt, featured_image, published_at, date, status, updated_at, content_updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)`,
               [organization.id, title, slug, content || '', excerpt || '', featured_image, finalPublishedAt, dateValue, status]
             );
           }
@@ -907,6 +908,7 @@ export const getApprovedNews = async (req, res) => {
               date: row?.date || row?.created_at || null,
               created_at: row?.created_at || null,
               updated_at: row?.updated_at || null,
+              content_updated_at: row?.content_updated_at || null,
               status: row?.status || 'published',
               organization_id: row?.organization_id || null,
               orgID: row?.orgAcronym || 'Unknown',
@@ -1739,32 +1741,32 @@ export const updateNews = async (req, res) => {
     }
     
     // Build UPDATE query
-    // Only update updated_at if there are actual content changes
-    // IMPORTANT: If we don't want to update updated_at, explicitly set it to itself to prevent
-    // MySQL's ON UPDATE CURRENT_TIMESTAMP from auto-updating it when status changes
+    // Use content_updated_at to track when actual content changes (title, content, excerpt, featured_image)
+    // This column is NOT affected by MySQL's ON UPDATE CURRENT_TIMESTAMP
+    // updated_at will still be auto-updated by MySQL for any change (for database tracking)
     let query, params;
-    const updateTimestampClause = shouldUpdateTimestamp 
-      ? ', updated_at = CURRENT_TIMESTAMP' 
-      : ', updated_at = updated_at'; // Preserve current value to prevent auto-update
+    const contentUpdatedAtClause = shouldUpdateTimestamp 
+      ? ', content_updated_at = CURRENT_TIMESTAMP' 
+      : ', content_updated_at = content_updated_at'; // Preserve current value
     
     if (statusColumnExists) {
       if (normalizedAction === 'publish' && finalPublishedAt === null && (currentStatus === 'draft' || currentStatus === 'scheduled')) {
         // Use NOW() for published_at when publishing immediately
-        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = NOW(), date = DATE(NOW()), status = ?${updateTimestampClause} WHERE id = ?`;
+        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = NOW(), date = DATE(NOW()), status = ?${contentUpdatedAtClause} WHERE id = ?`;
         params = [title, slug, content || '', excerpt || '', newStatus, id];
       } else {
         // For archive and other actions, use the preserved published_at value
         // Handle NULL values properly in SQL
-        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?, status = ?${updateTimestampClause} WHERE id = ?`;
+        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?, status = ?${contentUpdatedAtClause} WHERE id = ?`;
         params = [title, slug, content || '', excerpt || '', finalPublishedAt, dateValue, newStatus, id];
       }
     } else {
       // Fallback: without status column
       if (normalizedAction === 'publish' && finalPublishedAt === null && (currentStatus === 'draft' || currentStatus === 'scheduled')) {
-        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = NOW(), date = DATE(NOW())${updateTimestampClause} WHERE id = ?`;
+        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = NOW(), date = DATE(NOW())${contentUpdatedAtClause} WHERE id = ?`;
         params = [title, slug, content || '', excerpt || '', id];
       } else {
-        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?${updateTimestampClause} WHERE id = ?`;
+        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?${contentUpdatedAtClause} WHERE id = ?`;
         params = [title, slug, content || '', excerpt || '', finalPublishedAt, dateValue, id];
       }
     }
@@ -1814,10 +1816,10 @@ export const updateNews = async (req, res) => {
           // Retry the update with status column - use same logic as main query
           if (normalizedAction === 'publish' && finalPublishedAt === null && (currentStatus === 'draft' || currentStatus === 'scheduled')) {
             // Use NOW() for published_at when publishing immediately
-            query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = NOW(), date = DATE(NOW()), status = ?${updateTimestampClause} WHERE id = ?`;
+            query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = NOW(), date = DATE(NOW()), status = ?${contentUpdatedAtClause} WHERE id = ?`;
             params = [title, slug, content || '', excerpt || '', newStatus, id];
           } else {
-            query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?, status = ?${updateTimestampClause} WHERE id = ?`;
+            query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?, status = ?${contentUpdatedAtClause} WHERE id = ?`;
             params = [title, slug, content || '', excerpt || '', finalPublishedAt, dateValue, newStatus, id];
           }
           

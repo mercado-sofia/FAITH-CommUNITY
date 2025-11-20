@@ -36,14 +36,15 @@ const CreatePostForm = ({ onSubmit, isSubmitting = false, initialData = null, is
         // For published/archived news, published_at should always exist
         // Do NOT fall back to date field - published_at is the source of truth
         originalPublishedAt: shouldShowPublishedDate ? (initialData.published_at || null) : null,
-        updatedAt: initialData.updated_at || null,
+        // Use content_updated_at instead of updated_at - only tracks actual content edits
+        updatedAt: initialData.content_updated_at || null,
         status: currentStatus,
         createdAt: initialData.created_at || null,
       };
     }
     return {
       originalPublishedAt: null,
-      updatedAt: null,
+      updatedAt: null, // Will use content_updated_at when available
       status: null,
       createdAt: null,
     };
@@ -150,7 +151,8 @@ const CreatePostForm = ({ onSubmit, isSubmitting = false, initialData = null, is
         // For published/archived news, published_at should always exist
         // Do NOT fall back to date field - published_at is the source of truth
         originalPublishedAt: shouldShowPublishedDate ? (initialData.published_at || null) : null,
-        updatedAt: initialData.updated_at || null,
+        // Use content_updated_at instead of updated_at - only tracks actual content edits
+        updatedAt: initialData.content_updated_at || null,
         status: currentStatus,
         createdAt: initialData.created_at || null,
       });
@@ -1035,43 +1037,33 @@ const CreatePostForm = ({ onSubmit, isSubmitting = false, initialData = null, is
                   </div>
                 )}
 
-                {/* Last Updated - Only show if updatedAt is different from publishedAt (meaning there was an actual content edit after publication) */}
+                {/* Last Updated - Only show if content_updated_at exists (meaning there was an actual content edit) */}
                 {(() => {
-                  // Only show "Last Updated" if:
-                  // 1. updatedAt exists
-                  // 2. publishedAt exists (to compare against)
-                  // 3. updatedAt is meaningfully different from publishedAt (at least 5 seconds difference)
-                  //    This ensures we only show "Last Updated" when there was an actual content edit,
-                  //    not when status changed from scheduled to published (which shouldn't update updated_at anyway)
-                  if (!readOnlyFields.updatedAt || !readOnlyFields.originalPublishedAt) {
+                  // content_updated_at only exists when actual content was edited (title, content, excerpt, featured_image)
+                  // It does NOT update when status changes or published_at changes
+                  // So if it exists, we should show it
+                  if (!readOnlyFields.updatedAt) {
                     return null;
                   }
                   
-                  const publishedDate = new Date(readOnlyFields.originalPublishedAt);
                   const updatedDate = new Date(readOnlyFields.updatedAt);
                   
-                  // Check if dates are valid
-                  if (isNaN(publishedDate.getTime()) || isNaN(updatedDate.getTime())) {
+                  // Check if date is valid
+                  if (isNaN(updatedDate.getTime())) {
                     return null;
                   }
                   
-                  // Only show if updatedAt is significantly different from publishedAt (at least 5 seconds)
-                  // This threshold helps filter out cases where updated_at might have been set incorrectly
-                  // or when there are minor timestamp differences due to database operations
-                  const timeDifference = updatedDate.getTime() - publishedDate.getTime();
-                  if (timeDifference > 5000) { // 5 seconds threshold
-                    return (
-                      <div className={styles.historyItem}>
-                        <div className={styles.historyDot}></div>
-                        <div className={styles.historyContent}>
-                          <div className={styles.historyLabel}>Last Updated</div>
-                          <div className={styles.historyDate}>{formatDateTime(readOnlyFields.updatedAt)}</div>
-                          <div className={styles.historyRelativeTime}>{getRelativeTime(readOnlyFields.updatedAt)}</div>
-                        </div>
+                  // Show content_updated_at if it exists (it only exists when content was actually edited)
+                  return (
+                    <div className={styles.historyItem}>
+                      <div className={styles.historyDot}></div>
+                      <div className={styles.historyContent}>
+                        <div className={styles.historyLabel}>Last Updated</div>
+                        <div className={styles.historyDate}>{formatDateTime(readOnlyFields.updatedAt)}</div>
+                        <div className={styles.historyRelativeTime}>{getRelativeTime(readOnlyFields.updatedAt)}</div>
                       </div>
-                    );
-                  }
-                  return null;
+                    </div>
+                  );
                 })()}
 
                 {/* Show message if no history available */}

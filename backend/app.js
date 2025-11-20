@@ -578,7 +578,7 @@ const gracefulShutdown = (signal) => {
     httpServer.close(() => {
       console.log('HTTP server closed.');
       console.log('Graceful shutdown completed.');
-      process.exit(0);
+  process.exit(0);
     });
   };
   

@@ -847,6 +847,44 @@ const runIncrementalMigrations = async (connection) => {
       });
     }
 
+    // Add content_updated_at column to news table if it doesn't exist
+    // This column tracks when actual content (title, content, excerpt, featured_image) was last edited
+    // It does NOT update when status changes or published_at changes
+    try {
+      const [contentUpdatedColumns] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'news' 
+        AND COLUMN_NAME = 'content_updated_at'
+      `);
+      
+      if (contentUpdatedColumns.length === 0) {
+        await connection.query(`
+          ALTER TABLE news 
+          ADD COLUMN content_updated_at TIMESTAMP NULL DEFAULT NULL
+        `);
+        
+        // Initialize content_updated_at for existing news: set to updated_at if it exists and is different from created_at
+        // This preserves existing "last updated" information
+        await connection.query(`
+          UPDATE news 
+          SET content_updated_at = CASE 
+            WHEN updated_at IS NOT NULL AND updated_at != created_at THEN updated_at
+            ELSE NULL
+          END
+        `);
+        
+        logInfo('Added content_updated_at column to news table', { context: 'database' });
+      }
+    } catch (contentUpdatedError) {
+      // Column might already exist or other error - log but continue
+      logWarn('Content updated_at column migration for news table skipped or already exists', { 
+        context: 'database', 
+        error: contentUpdatedError.message 
+      });
+    }
+
     // Legacy superadmin initialization code removed - migration to unified users table is complete
     // Superadmin initialization is now handled in the main initializeDatabase function
 
@@ -1029,6 +1067,7 @@ const initializeDatabase = async () => {
           deleted_at TIMESTAMP NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+          content_updated_at TIMESTAMP NULL DEFAULT NULL,
           FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
           INDEX idx_news_slug (slug),
           INDEX idx_news_published_at (published_at),

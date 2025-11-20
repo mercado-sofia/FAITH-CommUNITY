@@ -12,7 +12,7 @@ import pinoHttp from "pino-http"
 import path from "path"
 import { fileURLToPath } from "url"
 import { createServer } from "http"
-import { initializeSocket } from "./src/utils/socket.js"
+import { initializeSocket, getSocketIO } from "./src/utils/socket.js"
 
 // Import cleanup function for deleted news
 import cleanupDeletedNews from "./src/utils/cleanupDeletedNews.js"
@@ -543,8 +543,10 @@ httpServer.listen(PORT, async () => {
 })
 
 // Graceful shutdown handler
-// Clean up intervals and timeouts on server shutdown
-const gracefulShutdown = () => {
+// Clean up intervals, timeouts, HTTP server, and Socket.io on server shutdown
+const gracefulShutdown = (signal) => {
+  console.log(`\n${signal} received. Starting graceful shutdown...`);
+  
   // Clear cleanup interval
   if (cleanupInterval) {
     clearInterval(cleanupInterval);
@@ -569,9 +571,46 @@ const gracefulShutdown = () => {
     initialScheduledNewsTimeout = null;
   }
   
-  process.exit(0);
+  // Helper function to close HTTP server
+  const closeHttpServer = () => {
+    // Close HTTP server (stop accepting new connections)
+    // Existing connections will be allowed to finish
+    httpServer.close(() => {
+      console.log('HTTP server closed.');
+      console.log('Graceful shutdown completed.');
+      process.exit(0);
+    });
+  };
+  
+  // Close Socket.io server first (disconnect all clients gracefully)
+  // Socket.io v4.8.1 close() returns a Promise, not accepting a callback
+  const io = getSocketIO();
+  if (io) {
+    console.log('Closing Socket.io server...');
+    // Use Promise-based API for Socket.io v4
+    io.close()
+      .then(() => {
+        console.log('Socket.io server closed.');
+        // After Socket.io is closed, close HTTP server
+        closeHttpServer();
+      })
+      .catch((error) => {
+        console.error('Error closing Socket.io server:', error);
+        // Continue with HTTP server closure even if Socket.io fails
+        closeHttpServer();
+      });
+  } else {
+    // If Socket.io is not initialized, close HTTP server directly
+    closeHttpServer();
+  }
+  
+  // Force shutdown after 10 seconds if graceful shutdown doesn't complete
+  setTimeout(() => {
+    console.error('Forced shutdown after timeout.');
+    process.exit(1);
+  }, 10000);
 };
 
 // Handle graceful shutdown signals
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

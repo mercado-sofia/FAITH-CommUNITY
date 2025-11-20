@@ -32,7 +32,10 @@ const CreatePostForm = ({ onSubmit, isSubmitting = false, initialData = null, is
                                       (currentStatus === 'archived' && hasPublishedAt);
       
       return {
-        originalPublishedAt: shouldShowPublishedDate ? (initialData.published_at || initialData.date) : null,
+        // Always use published_at (it has full datetime with time)
+        // For published/archived news, published_at should always exist
+        // Do NOT fall back to date field - published_at is the source of truth
+        originalPublishedAt: shouldShowPublishedDate ? (initialData.published_at || null) : null,
         updatedAt: initialData.updated_at || null,
         status: currentStatus,
         createdAt: initialData.created_at || null,
@@ -143,7 +146,10 @@ const CreatePostForm = ({ onSubmit, isSubmitting = false, initialData = null, is
                                       (currentStatus === 'archived' && hasPublishedAt);
       
       setReadOnlyFields({
-        originalPublishedAt: shouldShowPublishedDate ? (initialData.published_at || initialData.date) : null,
+        // Always use published_at (it has full datetime with time)
+        // For published/archived news, published_at should always exist
+        // Do NOT fall back to date field - published_at is the source of truth
+        originalPublishedAt: shouldShowPublishedDate ? (initialData.published_at || null) : null,
         updatedAt: initialData.updated_at || null,
         status: currentStatus,
         createdAt: initialData.created_at || null,
@@ -1029,17 +1035,44 @@ const CreatePostForm = ({ onSubmit, isSubmitting = false, initialData = null, is
                   </div>
                 )}
 
-                {/* Last Updated */}
-                {readOnlyFields.updatedAt && (
-                  <div className={styles.historyItem}>
-                    <div className={styles.historyDot}></div>
-                    <div className={styles.historyContent}>
-                      <div className={styles.historyLabel}>Last Updated</div>
-                      <div className={styles.historyDate}>{formatDateTime(readOnlyFields.updatedAt)}</div>
-                      <div className={styles.historyRelativeTime}>{getRelativeTime(readOnlyFields.updatedAt)}</div>
-                    </div>
-                  </div>
-                )}
+                {/* Last Updated - Only show if updatedAt is different from publishedAt (meaning there was an actual content edit after publication) */}
+                {(() => {
+                  // Only show "Last Updated" if:
+                  // 1. updatedAt exists
+                  // 2. publishedAt exists (to compare against)
+                  // 3. updatedAt is meaningfully different from publishedAt (at least 5 seconds difference)
+                  //    This ensures we only show "Last Updated" when there was an actual content edit,
+                  //    not when status changed from scheduled to published (which shouldn't update updated_at anyway)
+                  if (!readOnlyFields.updatedAt || !readOnlyFields.originalPublishedAt) {
+                    return null;
+                  }
+                  
+                  const publishedDate = new Date(readOnlyFields.originalPublishedAt);
+                  const updatedDate = new Date(readOnlyFields.updatedAt);
+                  
+                  // Check if dates are valid
+                  if (isNaN(publishedDate.getTime()) || isNaN(updatedDate.getTime())) {
+                    return null;
+                  }
+                  
+                  // Only show if updatedAt is significantly different from publishedAt (at least 5 seconds)
+                  // This threshold helps filter out cases where updated_at might have been set incorrectly
+                  // or when there are minor timestamp differences due to database operations
+                  const timeDifference = updatedDate.getTime() - publishedDate.getTime();
+                  if (timeDifference > 5000) { // 5 seconds threshold
+                    return (
+                      <div className={styles.historyItem}>
+                        <div className={styles.historyDot}></div>
+                        <div className={styles.historyContent}>
+                          <div className={styles.historyLabel}>Last Updated</div>
+                          <div className={styles.historyDate}>{formatDateTime(readOnlyFields.updatedAt)}</div>
+                          <div className={styles.historyRelativeTime}>{getRelativeTime(readOnlyFields.updatedAt)}</div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
 
                 {/* Show message if no history available */}
                 {!readOnlyFields.originalPublishedAt && !readOnlyFields.updatedAt && (

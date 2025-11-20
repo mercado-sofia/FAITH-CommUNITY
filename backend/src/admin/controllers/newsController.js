@@ -52,8 +52,10 @@ export async function autoUpdateScheduledNews(organizationId = null, slug = null
     // Note: MySQL DATETIME doesn't store timezone, so we assume it's in the server's timezone
     // The datetime stored should match the server's timezone context
     // Since we already checked statusColumnExists and returned early if false, we can use the status column query
+    // IMPORTANT: Do NOT update updated_at when auto-publishing scheduled news, as this is not a user edit
+    // Only update status - published_at remains the same (the scheduled time)
     let query = `UPDATE news 
-                 SET status = 'published', updated_at = CURRENT_TIMESTAMP 
+                 SET status = 'published' 
                  WHERE status = 'scheduled' 
                  AND published_at <= NOW()`;
     const params = [];
@@ -1602,8 +1604,11 @@ export const updateNews = async (req, res) => {
     // Check if status is actually changing (only if status column exists)
     const hasStatusChange = statusColumnExists && newStatus !== currentStatus;
     
-    // Only update updated_at if there are actual changes (content or status)
-    const shouldUpdateTimestamp = hasContentChanges || hasStatusChange;
+    // IMPORTANT: Only update updated_at if there are actual CONTENT changes
+    // Status changes (scheduled -> published, draft -> published, etc.) should NOT update updated_at
+    // Scheduling is just setting a publish time, not updating the news content
+    // Only actual edits to title, slug, content, excerpt, or featured_image should update updated_at
+    const shouldUpdateTimestamp = hasContentChanges;
 
     // Update news - published_at can be updated for drafts/scheduled when action is provided
     // For published/archived news, published_at is immutable (preserved from original publication)
@@ -1734,9 +1739,13 @@ export const updateNews = async (req, res) => {
     }
     
     // Build UPDATE query
-    // Only update updated_at if there are actual changes
+    // Only update updated_at if there are actual content changes
+    // IMPORTANT: If we don't want to update updated_at, explicitly set it to itself to prevent
+    // MySQL's ON UPDATE CURRENT_TIMESTAMP from auto-updating it when status changes
     let query, params;
-    const updateTimestampClause = shouldUpdateTimestamp ? ', updated_at = CURRENT_TIMESTAMP' : '';
+    const updateTimestampClause = shouldUpdateTimestamp 
+      ? ', updated_at = CURRENT_TIMESTAMP' 
+      : ', updated_at = updated_at'; // Preserve current value to prevent auto-update
     
     if (statusColumnExists) {
       if (normalizedAction === 'publish' && finalPublishedAt === null && (currentStatus === 'draft' || currentStatus === 'scheduled')) {

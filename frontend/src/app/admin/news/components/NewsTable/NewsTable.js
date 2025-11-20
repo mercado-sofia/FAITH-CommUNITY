@@ -316,7 +316,8 @@ export default function NewsTable({
                   <td style={{ color: "#8a919c", fontWeight: "400" }}>
                     {(() => {
                       const status = (newsItem.status || 'draft').toLowerCase();
-                      const publishedAt = newsItem.published_at || newsItem.date;
+                      // Always use published_at (not date field) - published_at is the source of truth
+                      const publishedAt = newsItem.published_at;
                       
                       if (status === 'published' || (status === 'archived' && publishedAt)) {
                         // Published or archived (was published before) - show published date

@@ -142,7 +142,9 @@ export const registerUser = async (req, res) => {
       const { sendMail } = await import('../../utils/mailer.js');
       const { getSiteName } = await import('../../utils/siteName.js');
       
-      const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/signup?token=${verificationToken}`;
+      // URL encode the token to ensure proper handling across all email clients and browsers
+      const encodedToken = encodeURIComponent(verificationToken);
+      const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/signup?token=${encodedToken}`;
       const siteName = await getSiteName();
       
       await sendMail({
@@ -1198,23 +1200,40 @@ export const refreshAccessToken = async (req, res) => {
 // Verify email address
 export const verifyEmail = async (req, res) => {
   try {
-    const { token } = req.query;
+    // Trim and validate token to handle any whitespace or encoding issues
+    const token = req.query?.token?.trim();
 
     if (!token) {
       return res.status(400).json({ error: 'Verification token is required' });
     }
 
+    // Validate token format (should be 64 hex characters from crypto.randomBytes(32))
+    if (!/^[a-f0-9]{64}$/i.test(token)) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Invalid token format:', { tokenLength: token.length, tokenPreview: token.substring(0, 10) + '...' });
+      }
+      return res.status(400).json({ error: 'Invalid verification token format' });
+    }
+
     // Find user with this verification token
     const [users] = await db.query(
-      'SELECT id, email, verification_token, verification_token_expires FROM users WHERE verification_token = ? AND role = \'user\'',
+      'SELECT id, email, verification_token, verification_token_expires, email_verified FROM users WHERE verification_token = ? AND role = \'user\'',
       [token]
     );
 
     if (users.length === 0) {
-      return res.status(400).json({ error: 'Invalid verification token' });
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Token not found in database:', { tokenLength: token.length, tokenPreview: token.substring(0, 10) + '...' });
+      }
+      return res.status(400).json({ error: 'Invalid verification token. The token may have already been used or does not exist.' });
     }
 
     const user = users[0];
+
+    // Check if email is already verified
+    if (user.email_verified) {
+      return res.status(400).json({ error: 'Email is already verified. You can log in to your account.' });
+    }
 
     // Check if token has expired
     if (new Date() > new Date(user.verification_token_expires)) {
@@ -1227,12 +1246,19 @@ export const verifyEmail = async (req, res) => {
       [user.id]
     );
 
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Email verified successfully for user:', user.email);
+    }
+
     res.json({ 
       message: 'Email verified successfully! You can now log in to your account.',
       verified: true 
     });
 
   } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('❌ Error verifying email:', error);
+    }
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -1279,7 +1305,9 @@ export const resendVerificationEmail = async (req, res) => {
       const { sendMail } = await import('../../utils/mailer.js');
       const { getSiteName } = await import('../../utils/siteName.js');
       
-      const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/signup?token=${verificationToken}`;
+      // URL encode the token to ensure proper handling across all email clients and browsers
+      const encodedToken = encodeURIComponent(verificationToken);
+      const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/signup?token=${encodedToken}`;
       const siteName = await getSiteName();
       
       await sendMail({

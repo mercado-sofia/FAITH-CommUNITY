@@ -11,7 +11,7 @@ export default function SignupPage() {
   
   const router = useRouter()
   const searchParams = useSearchParams()
-  const token = searchParams.get('token')
+  const token = searchParams.get('token')?.trim() || null
 
   // If there's a token in the URL, show verification page
   if (token) {

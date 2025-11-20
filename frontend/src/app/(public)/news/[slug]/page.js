@@ -137,13 +137,7 @@ export default function NewsDetailPage({ params }) {
                 return null;
               }
               
-              const updatedDate = new Date(news.content_updated_at);
-              
-              // Check if date is valid
-              if (isNaN(updatedDate.getTime())) {
-                return null;
-              }
-              
+              // formatDate will handle parsing correctly (uses formatDateLong which uses parseMySQLDateTime)
               // Show content_updated_at if it exists (it only exists when content was actually edited)
               return <div><em>Last Updated:</em> {formatDate(news.content_updated_at)}</div>;
             })()}

@@ -571,14 +571,24 @@ const gracefulShutdown = (signal) => {
     initialScheduledNewsTimeout = null;
   }
   
+  // Store forced shutdown timeout so we can clear it on successful shutdown
+  const forcedShutdownTimeout = setTimeout(() => {
+    console.error('Forced shutdown after timeout.');
+    process.exit(1);
+  }, 10000);
+  
   // Helper function to close HTTP server
   const closeHttpServer = () => {
+    // Clear the forced shutdown timeout before exiting successfully
+    // This prevents race condition where timeout could fire after process.exit(0)
+    clearTimeout(forcedShutdownTimeout);
+    
     // Close HTTP server (stop accepting new connections)
     // Existing connections will be allowed to finish
     httpServer.close(() => {
       console.log('HTTP server closed.');
       console.log('Graceful shutdown completed.');
-  process.exit(0);
+      process.exit(0);
     });
   };
   
@@ -603,12 +613,6 @@ const gracefulShutdown = (signal) => {
     // If Socket.io is not initialized, close HTTP server directly
     closeHttpServer();
   }
-  
-  // Force shutdown after 10 seconds if graceful shutdown doesn't complete
-  setTimeout(() => {
-    console.error('Forced shutdown after timeout.');
-    process.exit(1);
-  }, 10000);
 };
 
 // Handle graceful shutdown signals

@@ -156,18 +156,13 @@ const ViewDetailsModal = ({ news, onClose }) => {
               // Only show "Last Updated" if content_updated_at exists
               // content_updated_at only tracks actual content edits (title, content, excerpt, featured_image)
               // It does NOT update when status changes or published_at changes
+              // formatDateTimeDisplay will handle parsing and validation
               if (!news.content_updated_at) {
                 return null;
               }
               
-              const updatedDate = new Date(news.content_updated_at);
-              
-              // Check if date is valid
-              if (isNaN(updatedDate.getTime())) {
-                return null;
-              }
-              
               // Show content_updated_at if it exists (it only exists when content was actually edited)
+              // formatDateTimeDisplay uses parseMySQLDateTime which handles local time parsing correctly
               return (
                 <div className={styles.infoItem}>
                   <span className={styles.infoLabel}>Last Updated</span>

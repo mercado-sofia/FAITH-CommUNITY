@@ -11,13 +11,8 @@ import PaginationControls from "../../../components/PaginationControls/Paginatio
 import ViewDetailsModal from "../ViewDetailsModal/ViewDetailsModal"
 import { getProfilePhotoUrl } from "@/utils/uploadPaths"
 import { formatDateShort } from "@/utils/dateUtils"
+import { sanitizeInput } from "../../../utils"
 import styles from "./VolunteerTable.module.css"
-
-// Security utilities
-const sanitizeInput = (input) => {
-  if (typeof input !== 'string') return '';
-  return input.trim().replace(/[<>]/g, '').substring(0, 200); // Basic XSS protection + length limit
-};
 
 const validateVolunteerData = (volunteer) => {
   if (!volunteer || typeof volunteer !== 'object') return false;
@@ -72,7 +67,6 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
   const [selectedVolunteers, setSelectedVolunteers] = useState([])
   const [showBulkModal, setShowBulkModal] = useState(false)
   const [bulkAction, setBulkAction] = useState(null)
-
 
   // itemsPerPage is now passed as a prop with default value of 10
   const dropdownRefs = useRef({})
@@ -186,10 +180,6 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
     setBulkAction(null)
   }
 
-
-
-
-
   const cancelSelection = () => {
     setSelectedVolunteers([])
   }
@@ -234,7 +224,6 @@ export default function VolunteerTable({ volunteers, onStatusUpdate, onSoftDelet
   const selectedVolunteersData = volunteers.filter(volunteer => 
     selectedVolunteers.includes(volunteer.id)
   )
-  const selectedStatuses = selectedVolunteersData.map(volunteer => volunteer.status)
 
   // Define statuses that can be approved or declined (exclude Cancelled and Completed)
   const actionableStatuses = ['Pending', 'Approved', 'Declined']

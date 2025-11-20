@@ -1506,7 +1506,8 @@ export const updateNews = async (req, res) => {
     const statusColumnExists = await checkStatusColumnExists();
     
     // Get existing news to preserve published_at (immutable) and get current status and organization_id
-    let selectQuery = "SELECT id, published_at, organization_id";
+    // Also fetch all fields that can be updated to compare for changes
+    let selectQuery = "SELECT id, title, slug, content, excerpt, featured_image, published_at, organization_id";
     if (statusColumnExists) {
       selectQuery += ", status";
     }
@@ -1517,15 +1518,17 @@ export const updateNews = async (req, res) => {
       return res.status(404).json({ success: false, message: "News not found" });
     }
     
+    const existing = existingNews[0];
+    
     // published_at is immutable - use the original value, never update it
     // Convert to MySQL datetime format if it's in a different format
-    let originalPublishedAt = existingNews[0].published_at;
+    let originalPublishedAt = existing.published_at;
     // Use the date utility function to ensure proper MySQL format
     if (originalPublishedAt) {
       originalPublishedAt = formatTimestampForDB(originalPublishedAt);
     }
-    const currentStatus = statusColumnExists ? (existingNews[0].status || 'draft') : 'draft';
-    const organizationId = existingNews[0].organization_id;
+    const currentStatus = statusColumnExists ? (existing.status || 'draft') : 'draft';
+    const organizationId = existing.organization_id;
 
     // Check title uniqueness within the same organization (excluding current record)
     let titleCheckQuery;
@@ -1581,9 +1584,30 @@ export const updateNews = async (req, res) => {
     // When action is 'save' or null/undefined, status remains unchanged (handled by default above)
     // Note: For archived news, status is always preserved (no action changes it back)
 
+    // Check if there are actual changes to determine if updated_at should be updated
+    // Normalize values for comparison (handle null/undefined and trim strings)
+    const normalizeForComparison = (val) => {
+      if (val === null || val === undefined) return '';
+      if (typeof val === 'string') return val.trim();
+      return val;
+    };
+    
+    const hasContentChanges = 
+      normalizeForComparison(title) !== normalizeForComparison(existing.title) ||
+      normalizeForComparison(slug) !== normalizeForComparison(existing.slug) ||
+      normalizeForComparison(content) !== normalizeForComparison(existing.content) ||
+      normalizeForComparison(excerpt) !== normalizeForComparison(existing.excerpt) ||
+      (featured_image !== null && featured_image !== existing.featured_image);
+    
+    // Check if status is actually changing (only if status column exists)
+    const hasStatusChange = statusColumnExists && newStatus !== currentStatus;
+    
+    // Only update updated_at if there are actual changes (content or status)
+    const shouldUpdateTimestamp = hasContentChanges || hasStatusChange;
+
     // Update news - published_at can be updated for drafts/scheduled when action is provided
     // For published/archived news, published_at is immutable (preserved from original publication)
-    // updated_at is automatically set by database
+    // updated_at is only updated when there are actual changes
     // Note: date field is kept in sync with published_at (date portion only) for backward compatibility
     
     let finalPublishedAt = originalPublishedAt; // Default: keep existing published_at (already in MySQL format from formatTimestampForDB)
@@ -1710,26 +1734,28 @@ export const updateNews = async (req, res) => {
     }
     
     // Build UPDATE query
+    // Only update updated_at if there are actual changes
     let query, params;
+    const updateTimestampClause = shouldUpdateTimestamp ? ', updated_at = CURRENT_TIMESTAMP' : '';
     
     if (statusColumnExists) {
       if (normalizedAction === 'publish' && finalPublishedAt === null && (currentStatus === 'draft' || currentStatus === 'scheduled')) {
         // Use NOW() for published_at when publishing immediately
-        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = NOW(), date = DATE(NOW()), status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = NOW(), date = DATE(NOW()), status = ?${updateTimestampClause} WHERE id = ?`;
         params = [title, slug, content || '', excerpt || '', newStatus, id];
       } else {
         // For archive and other actions, use the preserved published_at value
         // Handle NULL values properly in SQL
-        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?, status = ?${updateTimestampClause} WHERE id = ?`;
         params = [title, slug, content || '', excerpt || '', finalPublishedAt, dateValue, newStatus, id];
       }
     } else {
       // Fallback: without status column
       if (normalizedAction === 'publish' && finalPublishedAt === null && (currentStatus === 'draft' || currentStatus === 'scheduled')) {
-        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = NOW(), date = DATE(NOW()), updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = NOW(), date = DATE(NOW())${updateTimestampClause} WHERE id = ?`;
         params = [title, slug, content || '', excerpt || '', id];
       } else {
-        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+        query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?${updateTimestampClause} WHERE id = ?`;
         params = [title, slug, content || '', excerpt || '', finalPublishedAt, dateValue, id];
       }
     }
@@ -1779,10 +1805,10 @@ export const updateNews = async (req, res) => {
           // Retry the update with status column - use same logic as main query
           if (normalizedAction === 'publish' && finalPublishedAt === null && (currentStatus === 'draft' || currentStatus === 'scheduled')) {
             // Use NOW() for published_at when publishing immediately
-            query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = NOW(), date = DATE(NOW()), status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+            query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = NOW(), date = DATE(NOW()), status = ?${updateTimestampClause} WHERE id = ?`;
             params = [title, slug, content || '', excerpt || '', newStatus, id];
           } else {
-            query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+            query = `UPDATE news SET title = ?, slug = ?, content = ?, excerpt = ?, published_at = ?, date = ?, status = ?${updateTimestampClause} WHERE id = ?`;
             params = [title, slug, content || '', excerpt || '', finalPublishedAt, dateValue, newStatus, id];
           }
           

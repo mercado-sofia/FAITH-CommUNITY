@@ -130,12 +130,23 @@ export default function NewsDetailPage({ params }) {
           <div className={styles.newsMetaInfo}>
             <div><em>Published:</em> {formatDate(news.published_at || news.date)}</div>
             {(() => {
-              // Get the most recent date (updated_at if it exists and is newer, otherwise published_at)
-              const publishedDate = new Date(news.published_at || news.date || 0);
-              const updatedDate = news.updated_at ? new Date(news.updated_at) : null;
+              // Only show "Last Updated" if updated_at exists and is meaningfully different from published_at
+              // This ensures we only show it when there was an actual content edit, not when status changed
+              if (!news.updated_at || !news.published_at) {
+                return null;
+              }
               
-              // Show "Last Updated" if there's an updated_at that's different from published_at
-              if (updatedDate && updatedDate.getTime() > publishedDate.getTime()) {
+              const publishedDate = new Date(news.published_at);
+              const updatedDate = new Date(news.updated_at);
+              
+              // Check if dates are valid
+              if (isNaN(publishedDate.getTime()) || isNaN(updatedDate.getTime())) {
+                return null;
+              }
+              
+              // Only show if updated_at is significantly different from published_at (at least 5 seconds)
+              const timeDifference = updatedDate.getTime() - publishedDate.getTime();
+              if (timeDifference > 5000) { // 5 seconds threshold
                 return <div><em>Last Updated:</em> {formatDate(news.updated_at)}</div>;
               }
               return null;

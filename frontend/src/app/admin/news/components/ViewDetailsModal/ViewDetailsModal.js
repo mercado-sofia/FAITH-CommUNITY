@@ -35,7 +35,8 @@ const ViewDetailsModal = ({ news, onClose }) => {
   // Determine what date label and value to show based on status
   const getDateInfo = () => {
     const status = (news.status || 'draft').toLowerCase();
-    const publishedAt = news.published_at || news.date;
+    // Always use published_at (not date field) - published_at is the source of truth
+    const publishedAt = news.published_at;
     
     if (status === 'published' || (status === 'archived' && publishedAt)) {
       // Published or archived (was published before)
@@ -151,12 +152,33 @@ const ViewDetailsModal = ({ news, onClose }) => {
                 <span className={styles.infoValue}>{formatDateTimeDisplay(news.created_at)}</span>
               </div>
             )}
-            {news.updated_at && (
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Last Updated</span>
-                <span className={styles.infoValue}>{formatDateTimeDisplay(news.updated_at)}</span>
-              </div>
-            )}
+            {(() => {
+              // Only show "Last Updated" if updated_at exists and is meaningfully different from published_at
+              // This ensures we only show it when there was an actual content edit, not when status changed
+              if (!news.updated_at || !news.published_at) {
+                return null;
+              }
+              
+              const publishedDate = new Date(news.published_at);
+              const updatedDate = new Date(news.updated_at);
+              
+              // Check if dates are valid
+              if (isNaN(publishedDate.getTime()) || isNaN(updatedDate.getTime())) {
+                return null;
+              }
+              
+              // Only show if updated_at is significantly different from published_at (at least 5 seconds)
+              const timeDifference = updatedDate.getTime() - publishedDate.getTime();
+              if (timeDifference > 5000) { // 5 seconds threshold
+                return (
+                  <div className={styles.infoItem}>
+                    <span className={styles.infoLabel}>Last Updated</span>
+                    <span className={styles.infoValue}>{formatDateTimeDisplay(news.updated_at)}</span>
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </div>
         </div>
       </div>

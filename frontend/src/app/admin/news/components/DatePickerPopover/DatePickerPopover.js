@@ -68,13 +68,33 @@ export default function DatePickerPopover({
   minDate = null         // Minimum selectable date (null = no restriction)
 }) {
   // Parse value - could be date-only or datetime
+  // IMPORTANT: Parse datetime strings as local time to avoid timezone conversion
+  // MySQL DATETIME is timezone-naive, so we treat it as local time
   const parseValue = (str) => {
     if (!str) return null;
+    
     // Check if it includes time (T separator)
     if (str.includes('T')) {
+      // Parse datetime string as local time (no timezone conversion)
+      // Format: yyyy-MM-ddTHH:mm or yyyy-MM-ddTHH:mm:ss
+      const match = str.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+      if (match) {
+        const [, year, month, day, hour, minute, second = '00'] = match;
+        // Create date in local time (month is 0-indexed in JavaScript Date)
+        return new Date(
+          parseInt(year, 10),
+          parseInt(month, 10) - 1,
+          parseInt(day, 10),
+          parseInt(hour, 10),
+          parseInt(minute, 10),
+          parseInt(second, 10)
+        );
+      }
+      // Fallback to standard parsing if format doesn't match
       return new Date(str);
     }
-    // Date only
+    
+    // Date only - use date-fns parse which handles local time correctly
     return parse(str, "yyyy-MM-dd", new Date());
   };
   

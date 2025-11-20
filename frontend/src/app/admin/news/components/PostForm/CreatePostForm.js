@@ -1041,19 +1041,13 @@ const CreatePostForm = ({ onSubmit, isSubmitting = false, initialData = null, is
                 {(() => {
                   // content_updated_at only exists when actual content was edited (title, content, excerpt, featured_image)
                   // It does NOT update when status changes or published_at changes
-                  // So if it exists, we should show it
+                  // formatDateTime will handle parsing and validation
                   if (!readOnlyFields.updatedAt) {
                     return null;
                   }
                   
-                  const updatedDate = new Date(readOnlyFields.updatedAt);
-                  
-                  // Check if date is valid
-                  if (isNaN(updatedDate.getTime())) {
-                    return null;
-                  }
-                  
                   // Show content_updated_at if it exists (it only exists when content was actually edited)
+                  // formatDateTime uses parseMySQLDateTime which handles local time parsing correctly
                   return (
                     <div className={styles.historyItem}>
                       <div className={styles.historyDot}></div>

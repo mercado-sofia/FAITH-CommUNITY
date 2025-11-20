@@ -69,9 +69,12 @@ export const formatDateForInput = (dateString) => {
 export const formatDateShort = (dateString) => {
   try {
     if (!dateString) return 'Not specified';
-    const date = new Date(dateString);
     
-    if (isNaN(date.getTime())) {
+    // Parse MySQL DATETIME as local time (no timezone conversion)
+    // Even though we only display the date part, we need to parse correctly to avoid timezone shifts
+    const date = parseMySQLDateTime(dateString);
+    
+    if (!date || isNaN(date.getTime())) {
       logger.warn('Invalid date string provided to formatDateShort', { dateString });
       return 'Invalid date';
     }
@@ -95,9 +98,12 @@ export const formatDateShort = (dateString) => {
 export const formatDateLong = (dateString) => {
   try {
     if (!dateString) return 'Not specified';
-    const date = new Date(dateString);
     
-    if (isNaN(date.getTime())) {
+    // Parse MySQL DATETIME as local time (no timezone conversion)
+    // Even though we only display the date part, we need to parse correctly to avoid timezone shifts
+    const date = parseMySQLDateTime(dateString);
+    
+    if (!date || isNaN(date.getTime())) {
       logger.warn('Invalid date string provided to formatDateLong', { dateString });
       return 'Invalid date';
     }
@@ -649,12 +655,57 @@ export const getRelativeTime = (dateString) => {
  * @param {string} dateString - Date string to format
  * @returns {string} Formatted date and time string
  */
+/**
+ * Parse MySQL DATETIME string as local time (no timezone conversion)
+ * MySQL DATETIME is timezone-naive, so we treat it as local time
+ * @param {string} dateString - MySQL DATETIME format: "YYYY-MM-DD HH:mm:ss" or ISO format
+ * @returns {Date} Date object in local time
+ */
+const parseMySQLDateTime = (dateString) => {
+  if (!dateString) return null;
+  
+  // Handle MySQL DATETIME format: "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DD HH:mm"
+  // Replace space with 'T' to make it ISO-like, but don't add timezone
+  let normalizedString = dateString.trim();
+  
+  // If it's already in ISO format with 'T', keep it but remove timezone
+  if (normalizedString.includes('T')) {
+    // Remove timezone suffix (Z, +HH:MM, -HH:MM)
+    normalizedString = normalizedString.replace(/Z$/, '');
+    normalizedString = normalizedString.replace(/[+-]\d{2}:\d{2}$/, '');
+  } else if (normalizedString.includes(' ')) {
+    // MySQL format: replace space with 'T'
+    normalizedString = normalizedString.replace(' ', 'T');
+  }
+  
+  // Parse components manually to avoid timezone conversion
+  // Format: YYYY-MM-DDTHH:mm:ss or YYYY-MM-DDTHH:mm
+  const match = normalizedString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (match) {
+    const [, year, month, day, hour, minute, second = '00'] = match;
+    // Create date in local time (month is 0-indexed in JavaScript Date)
+    return new Date(
+      parseInt(year, 10),
+      parseInt(month, 10) - 1,
+      parseInt(day, 10),
+      parseInt(hour, 10),
+      parseInt(minute, 10),
+      parseInt(second, 10)
+    );
+  }
+  
+  // Fallback to standard Date parsing
+  return new Date(dateString);
+};
+
 export const formatDateTime = (dateString) => {
   try {
     if (!dateString) return 'Not specified';
     
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
+    // Parse MySQL DATETIME as local time (no timezone conversion)
+    const date = parseMySQLDateTime(dateString);
+    
+    if (!date || isNaN(date.getTime())) {
       logger.warn('Invalid date string provided to formatDateTime', { dateString });
       return 'Invalid date';
     }

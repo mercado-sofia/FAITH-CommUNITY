@@ -36,11 +36,26 @@ export function initializeSocket(httpServer) {
 
   io = new Server(httpServer, {
     cors: {
-      origin: allowedOrigins,
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        // Check if origin is in allowed list
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        
+        // Log rejected origins for debugging
+        console.warn(`Socket.io CORS: Origin "${origin}" not allowed. Allowed origins:`, allowedOrigins);
+        return callback(new Error('Not allowed by CORS'));
+      },
       credentials: true,
-      methods: ['GET', 'POST']
+      methods: ['GET', 'POST'],
+      allowedHeaders: ['Content-Type', 'Authorization']
     },
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'],
+    // Allow cross-origin cookies for Vercel frontend
+    allowEIO3: true
   });
 
   // Middleware to authenticate socket connections using JWT from cookies
@@ -124,8 +139,17 @@ export function emitUserNotification(userId, notification) {
     return;
   }
 
-  io.to(`user:${userId}`).emit('notification', notification);
-  console.log(`Notification emitted to user ${userId}:`, notification.title);
+  const room = `user:${userId}`;
+  io.to(room).emit('notification', notification);
+  console.log(`📤 Notification emitted to room "${room}" for user ${userId}:`, notification.title);
+  
+  // Debug: Check if user is in the room
+  const socketsInRoom = io.sockets.adapter.rooms.get(room);
+  if (socketsInRoom) {
+    console.log(`   → User ${userId} has ${socketsInRoom.size} active socket connection(s)`);
+  } else {
+    console.warn(`   ⚠️  User ${userId} is not currently connected (no sockets in room "${room}")`);
+  }
 }
 
 /**

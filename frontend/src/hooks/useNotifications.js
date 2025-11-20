@@ -42,12 +42,20 @@ export const useNotifications = (isAuthenticated) => {
     }
 
     const handleNotification = (notification) => {
-      console.log('Real-time notification received:', notification);
+      console.log('🔔 Real-time notification received:', notification);
       
       // Refetch notifications to get the latest data from the server
       // This ensures we have the actual notification ID and all fields
       refetchNotifications();
       refetchUnreadCount();
+      
+      // Optional: Show a browser notification if permission is granted
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(notification.title, {
+          body: notification.message,
+          icon: '/assets/icons/favicon.ico'
+        });
+      }
     };
 
     socket.on('notification', handleNotification);
@@ -59,13 +67,16 @@ export const useNotifications = (isAuthenticated) => {
 
   // Handle notification click
   const handleNotificationClick = useCallback(async (notification) => {
-    if (!notification.isRead) {
+    // Check both isRead and is_read for compatibility
+    const isRead = notification.isRead || notification.is_read;
+    if (!isRead) {
       try {
         await markAsRead(notification.id);
         // Refetch data to update UI
         refetchNotifications();
         refetchUnreadCount();
       } catch (error) {
+        console.error('Error marking notification as read:', error);
       }
     }
   }, [markAsRead, refetchNotifications, refetchUnreadCount]);

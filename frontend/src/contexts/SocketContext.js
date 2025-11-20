@@ -8,19 +8,31 @@ const SocketContext = createContext(null);
 
 /**
  * Get Socket.io server URL
- * In development, use relative path (Next.js rewrites handle it)
- * In production, use the API_BASE_URL
+ * Socket.io needs to connect directly to the backend server
+ * In development, connect to localhost:8080 (backend port)
+ * In production (Vercel), use the Railway backend URL from API_BASE_URL
  */
 const getSocketUrl = () => {
   if (typeof window === 'undefined') return null;
   
-  // In development, use relative path (Next.js rewrites)
+  // In development, connect directly to backend server
   if (process.env.NODE_ENV === 'development') {
-    return window.location.origin;
+    // Check if API_BASE_URL is set (might be empty string for Next.js rewrites)
+    if (API_BASE_URL && API_BASE_URL.trim() !== '') {
+      return API_BASE_URL;
+    }
+    // Default to localhost:8080 for backend
+    return 'http://localhost:8080';
   }
   
-  // In production, use API_BASE_URL
-  return API_BASE_URL || window.location.origin;
+  // In production (Vercel), MUST use Railway backend URL
+  // API_BASE_URL should be set to Railway backend URL (e.g., https://your-backend.railway.app)
+  if (!API_BASE_URL || API_BASE_URL.trim() === '') {
+    console.error('❌ NEXT_PUBLIC_API_URL is not set! Socket.io cannot connect to backend.');
+    return null;
+  }
+  
+  return API_BASE_URL;
 };
 
 export function SocketProvider({ children }) {
@@ -48,20 +60,26 @@ export function SocketProvider({ children }) {
     }
 
     // Create socket connection
+    console.log('🔌 Attempting to connect to Socket.io server at:', socketUrl);
     const newSocket = io(socketUrl, {
       transports: ['websocket', 'polling'],
-      withCredentials: true,
+      withCredentials: true, // Required for cross-domain cookies (Vercel -> Railway)
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       reconnectionAttempts: 5,
+      // Add path if needed (default is /socket.io/)
+      path: '/socket.io/',
+      // Force polling first if websocket fails (useful for some network configurations)
+      upgrade: true,
+      rememberUpgrade: false,
     });
 
     socketRef.current = newSocket;
 
     // Connection event handlers
     newSocket.on('connect', () => {
-      console.log('Socket connected:', newSocket.id);
+      console.log('✅ Socket.io connected:', newSocket.id, 'to', socketUrl);
       setIsConnected(true);
       setConnectionError(null);
     });
@@ -78,7 +96,7 @@ export function SocketProvider({ children }) {
     });
 
     newSocket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
+      console.error('❌ Socket.io connection error:', error.message, 'URL:', socketUrl);
       setConnectionError(error.message);
       setIsConnected(false);
     });

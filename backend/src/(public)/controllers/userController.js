@@ -1845,7 +1845,9 @@ export const createUserNotification = async (userId, type, title, message, secti
     );
     return result.insertId;
   } catch (error) {
-    console.error('Error creating user notification:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error creating user notification:', error);
+    }
     return null;
   }
 };

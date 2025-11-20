@@ -6,7 +6,7 @@ import { formatDateShort } from '@/utils/dateUtils.js'
 import styles from './ViewDetailsModal.module.css'
 import { IoClose, IoPerson, IoMail, IoDocumentText } from "react-icons/io5"
 
-export default function VolunteerDetailModal({ app, onClose }) {
+export default function ViewDetailsModal({ app, onClose }) {
   const reasonTextareaRef = useRef(null)
 
   // Auto-resize textarea based on content

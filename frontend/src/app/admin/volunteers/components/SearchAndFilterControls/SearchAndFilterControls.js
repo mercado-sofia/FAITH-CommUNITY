@@ -3,13 +3,8 @@
 import { useState, useEffect } from "react"
 import { FiChevronDown, FiSearch, FiX } from "react-icons/fi"
 import { BsSortUp, BsSortDown } from "react-icons/bs"
+import { sanitizeInput } from "../../../utils"
 import styles from "./SearchAndFilterControls.module.css"
-
-// Input sanitization utility
-const sanitizeInput = (input) => {
-  if (typeof input !== 'string') return '';
-  return input.trim().replace(/[<>]/g, '').substring(0, 100); // Basic XSS protection + length limit
-};
 
 export default function SearchAndFilterControls({
   showCount,

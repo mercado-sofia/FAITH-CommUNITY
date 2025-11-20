@@ -52,7 +52,17 @@ const CreatePostForm = ({ onSubmit, isSubmitting = false, initialData = null, is
   const [isCheckingTitle, setIsCheckingTitle] = useState(false);
   const [submitAction, setSubmitAction] = useState(null); // 'draft', 'schedule', 'publish', or null
   const [isValidating, setIsValidating] = useState(false); // Track validation state
-  const [publishActionType, setPublishActionType] = useState('publish'); // 'schedule' or 'publish' - default to publish
+  // Initialize publishActionType based on initialData status if in edit mode
+  const [publishActionType, setPublishActionType] = useState(() => {
+    if (isEditMode && initialData) {
+      const status = (initialData.status || 'draft').toLowerCase();
+      // If editing scheduled news, default to 'schedule'
+      if (status === 'scheduled') {
+        return 'schedule';
+      }
+    }
+    return 'publish'; // Default to 'publish' for create mode or non-scheduled edit mode
+  });
   const [showPublishDropdown, setShowPublishDropdown] = useState(false);
   const publishDropdownRef = useRef(null);
   const submitActionRef = useRef(null); // Use ref to store action synchronously
@@ -70,24 +80,64 @@ const CreatePostForm = ({ onSubmit, isSubmitting = false, initialData = null, is
     }
   }, [showPublishDropdown]);
 
+  // Helper function to convert datetime to ISO format for DatePickerPopover
+  const convertToISOFormat = (dateTimeString) => {
+    if (!dateTimeString) return null;
+    
+    // Remove timezone info if present
+    let cleanDateTime = dateTimeString.trim();
+    if (cleanDateTime.endsWith('Z')) {
+      cleanDateTime = cleanDateTime.slice(0, -1);
+    }
+    const timezoneMatch = cleanDateTime.match(/([+-]\d{2}:\d{2})$/);
+    if (timezoneMatch) {
+      cleanDateTime = cleanDateTime.slice(0, timezoneMatch.index);
+    }
+    cleanDateTime = cleanDateTime.trim();
+    
+    // Convert MySQL format (yyyy-MM-dd HH:mm:ss) to ISO format (yyyy-MM-ddTHH:mm)
+    if (cleanDateTime.includes(' ')) {
+      return cleanDateTime.replace(' ', 'T').substring(0, 16); // Keep only date and time (HH:mm), remove seconds
+    }
+    // If already in ISO format, just ensure it's in the right format
+    if (cleanDateTime.includes('T')) {
+      return cleanDateTime.substring(0, 16); // Keep only date and time (HH:mm), remove seconds if present
+    }
+    return cleanDateTime;
+  };
+
   // Initialize form data when in edit mode
   useEffect(() => {
     if (isEditMode && initialData) {
+      const currentStatus = (initialData.status || 'draft').toLowerCase();
+      const publishedAt = initialData.published_at || initialData.date;
+      
+      // For scheduled news, convert the scheduled date/time to ISO format for DatePickerPopover
+      let publishedAtValue = null;
+      if (currentStatus === 'scheduled' && publishedAt) {
+        publishedAtValue = convertToISOFormat(publishedAt);
+      }
+      
       setFormData({
         title: initialData.title || '',
         slug: initialData.slug || '',
         content: initialData.content || '',
         excerpt: initialData.excerpt || '',
         featuredImage: null,
-        publishedAt: null,
+        publishedAt: publishedAtValue,
         status: 'draft',
       });
+      
+      // Set publishActionType to 'schedule' if editing scheduled news
+      if (currentStatus === 'scheduled') {
+        setPublishActionType('schedule');
+      }
 
       // Store read-only fields (published_at is immutable, updated_at is auto-set)
       // Only set originalPublishedAt if the news has actually been published (status = 'published')
       // or if it was published before being archived (status = 'archived' but has published_at)
       // Note: readOnlyFields is already initialized in useState, but we update here for consistency
-      const currentStatus = initialData.status || 'draft';
+      // Reuse currentStatus from above (line 112)
       const hasPublishedAt = initialData.published_at || initialData.date;
       const shouldShowPublishedDate = currentStatus === 'published' || 
                                       (currentStatus === 'archived' && hasPublishedAt);

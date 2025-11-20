@@ -5,58 +5,41 @@ import { FaBell, FaEnvelope, FaCheck } from 'react-icons/fa';
 import { FiTrash2 } from 'react-icons/fi';
 import { makeAuthenticatedRequest } from '../../utils/profileApi';
 import { getRelativeTime } from '@/utils/dateUtils';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useAuthState } from '@/hooks/useAuthState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import styles from './Notifications.module.css';
 
 export default function Notifications() {
-  const [notifications, setNotifications] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuthState();
+  const isAuthenticated = !!user;
+  
+  // Use the useNotifications hook for real-time updates
+  const {
+    notifications: hookNotifications,
+    notificationsLoading,
+    handleNotificationClick,
+    formatNotificationTime,
+    refetchNotifications
+  } = useNotifications(isAuthenticated);
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [notificationToDelete, setNotificationToDelete] = useState(null);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
-
-  const fetchNotifications = async () => {
-    try {
-      setError('');
-      const response = await makeAuthenticatedRequest('/api/users/notifications', {
-        method: 'GET'
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setNotifications(data.notifications || []);
-      } else {
-        setError('Failed to load notifications');
-      }
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-      setError('Failed to load notifications');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Use notifications from hook
+  const notifications = hookNotifications || [];
+  const isLoading = notificationsLoading;
 
   const markAsRead = async (notificationId) => {
     try {
-      const response = await makeAuthenticatedRequest(`/api/users/notifications/${notificationId}/read`, {
-        method: 'PUT'
-      });
-
-      if (response.ok) {
-        setNotifications(prev => 
-          prev.map(notif => 
-            notif.id === notificationId 
-              ? { ...notif, isRead: true }
-              : notif
-          )
-        );
+      // Use the hook's handleNotificationClick which handles marking as read
+      const notification = notifications.find(n => n.id === notificationId);
+      if (notification) {
+        await handleNotificationClick(notification);
       }
     } catch (error) {
-      // Handle error silently
+      console.error('Error marking notification as read:', error);
     }
   };
 
@@ -79,7 +62,8 @@ export default function Notifications() {
       });
 
       if (response.ok) {
-        setNotifications(prev => prev.filter(notif => notif.id !== notificationToDelete.id));
+        // Refetch notifications after deletion
+        refetchNotifications();
       }
     } catch (error) {
       // Handle error silently
@@ -112,7 +96,7 @@ export default function Notifications() {
         </div>
         <div className={styles.errorState}>
           <p>{error}</p>
-          <button onClick={fetchNotifications} className={styles.retryButton}>
+          <button onClick={() => refetchNotifications()} className={styles.retryButton}>
             Try Again
           </button>
         </div>
@@ -140,7 +124,7 @@ export default function Notifications() {
             {notifications.map((notification) => (
               <div 
                 key={notification.id} 
-                className={`${styles.notificationItem} ${notification.isRead ? styles.read : styles.unread}`}
+                className={`${styles.notificationItem} ${(notification.isRead || notification.is_read) ? styles.read : styles.unread}`}
               >
                 <div className={styles.notificationIcon}>
                   {notification.type === 'email' ? <FaEnvelope /> : <FaBell />}
@@ -149,11 +133,11 @@ export default function Notifications() {
                   <h4>{notification.title}</h4>
                   <p>{notification.message}</p>
                   <span className={styles.notificationDate}>
-                    {getRelativeTime(notification.createdAt || notification.created_at)}
+                    {formatNotificationTime(notification.createdAt || notification.created_at)}
                   </span>
                 </div>
                 <div className={styles.notificationActions}>
-                  {!notification.isRead && (
+                  {!(notification.isRead || notification.is_read) && (
                     <button
                       onClick={() => markAsRead(notification.id)}
                       className={styles.markReadButton}

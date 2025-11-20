@@ -13,6 +13,7 @@ import {
   restoreNews,
   permanentlyDeleteNews,
   updateNews,
+  autoUpdateScheduledNews,
 } from "../controllers/newsController.js";
 
 // Import Cloudinary upload configuration
@@ -100,6 +101,28 @@ router.get("/org/:orgId", getNewsByOrg);
 router.get("/archived/:orgId", getArchivedNews);
 router.patch("/restore/:id", restoreNews);
 router.delete("/permanent/:id", permanentlyDeleteNews);
+
+// Manual trigger for scheduled news check (for monitoring/debugging)
+// This endpoint allows manual checking of scheduled news without waiting for the 5-minute interval
+router.post("/check-scheduled", async (req, res) => {
+  try {
+    const result = await autoUpdateScheduledNews();
+    res.json({
+      success: result.success,
+      message: result.success 
+        ? `Checked scheduled news. ${result.updatedCount || 0} item(s) published.`
+        : 'Error checking scheduled news',
+      updatedCount: result.updatedCount || 0,
+      error: result.error || null
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check scheduled news',
+      error: error.message
+    });
+  }
+});
 
 // Get news by slug (must come before /:id route)
 router.get("/slug/:slug", getNewsBySlug);

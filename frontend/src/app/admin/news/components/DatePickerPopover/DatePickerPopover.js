@@ -163,7 +163,17 @@ export default function DatePickerPopover({
     
     if (showTime) {
       // Combine date and time
+      // IMPORTANT: Extract date components from the original draft (date only) to avoid timezone issues
+      // Then use the time string directly without Date object manipulation
       const [hours, minutes] = draftTime.split(':');
+      
+      // Get date components from the original draft date (before time manipulation)
+      // This avoids any timezone/DST issues that might occur with setHours/setMinutes
+      const year = draft.getFullYear();
+      const month = String(draft.getMonth() + 1).padStart(2, '0');
+      const day = String(draft.getDate()).padStart(2, '0');
+      
+      // Create a Date object for validation only (checking if it's in the past)
       const draftDateTime = new Date(draft);
       draftDateTime.setHours(parseInt(hours, 10));
       draftDateTime.setMinutes(parseInt(minutes, 10));
@@ -175,9 +185,8 @@ export default function DatePickerPopover({
       }
       
       // Format as datetime: yyyy-MM-ddTHH:mm
-      const year = draftDateTime.getFullYear();
-      const month = String(draftDateTime.getMonth() + 1).padStart(2, '0');
-      const day = String(draftDateTime.getDate()).padStart(2, '0');
+      // Use date components from original draft and time from draftTime string
+      // This ensures no timezone conversion happens
       const formattedTime = `${hours}:${minutes}`;
       onChange?.(`${year}-${month}-${day}T${formattedTime}`);
     } else {

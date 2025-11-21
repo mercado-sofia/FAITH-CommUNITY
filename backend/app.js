@@ -506,7 +506,7 @@ httpServer.listen(PORT, async () => {
       initialCleanupTimeout = null;
     }, 2000); // 2 second delay to ensure database is fully initialized
     
-    // Set up scheduled news auto-publish job (runs every 5 minutes)
+    // Set up scheduled news auto-publish job (runs every 1 minute for more responsive publishing)
     // This automatically publishes scheduled news when their publish date/time arrives
     // Import dynamically to avoid potential circular dependency issues
     scheduledNewsInterval = setInterval(async () => {
@@ -519,7 +519,7 @@ httpServer.listen(PORT, async () => {
       } catch (error) {
         console.error('Error auto-publishing scheduled news:', error);
       }
-    }, 5 * 60 * 1000); // 5 minutes in milliseconds
+    }, 60 * 1000); // 1 minute in milliseconds (changed from 5 minutes for more responsive publishing)
     
     // Run initial scheduled news check on server start (with delay to ensure DB is ready)
     initialScheduledNewsTimeout = setTimeout(async () => {

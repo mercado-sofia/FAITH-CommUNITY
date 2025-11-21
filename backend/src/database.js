@@ -827,11 +827,12 @@ const runIncrementalMigrations = async (connection) => {
         `);
         
         // Set status for existing news based on published_at
+        // Use TIMESTAMPDIFF for consistent comparison (same as autoUpdateScheduledNews)
         await connection.query(`
           UPDATE news 
           SET status = CASE 
             WHEN published_at IS NULL THEN 'draft'
-            WHEN published_at > NOW() THEN 'scheduled'
+            WHEN TIMESTAMPDIFF(SECOND, published_at, NOW()) < 0 THEN 'scheduled'
             WHEN is_deleted = TRUE THEN 'archived'
             ELSE 'published'
           END
@@ -1103,7 +1104,7 @@ const initializeDatabase = async () => {
             UPDATE news 
             SET status = CASE 
               WHEN published_at IS NULL THEN 'draft'
-              WHEN published_at > NOW() THEN 'scheduled'
+              WHEN TIMESTAMPDIFF(SECOND, published_at, NOW()) < 0 THEN 'scheduled'
               WHEN is_deleted = TRUE THEN 'archived'
               ELSE 'published'
             END

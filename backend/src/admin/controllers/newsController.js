@@ -48,16 +48,52 @@ export async function autoUpdateScheduledNews(organizationId = null, slug = null
       };
     }
     
+    // First, let's check what scheduled news items exist and their published_at values
+    // This helps with debugging timezone issues
+    let checkQuery = `SELECT id, title, published_at, NOW() as server_now, 
+                      TIMESTAMPDIFF(SECOND, published_at, NOW()) as seconds_diff
+                      FROM news 
+                      WHERE status = 'scheduled'`;
+    const checkParams = [];
+    
+    if (organizationId) {
+      checkQuery += ' AND organization_id = ?';
+      checkParams.push(organizationId);
+    }
+    
+    if (slug) {
+      checkQuery += ' AND slug = ?';
+      checkParams.push(slug);
+    }
+    
+    // Log scheduled items for debugging (always log, not just in development)
+    try {
+      const [scheduledItems] = await db.execute(checkQuery, checkParams);
+      if (scheduledItems.length > 0) {
+        console.log(`[autoUpdateScheduledNews] Found ${scheduledItems.length} scheduled news item(s)`);
+        if (process.env.NODE_ENV === 'development') {
+          scheduledItems.forEach(item => {
+            console.log(`  - ID: ${item.id}, Title: ${item.title}, Published At: ${item.published_at}, Server Now: ${item.server_now}, Diff (seconds): ${item.seconds_diff}`);
+          });
+        }
+      }
+    } catch (checkError) {
+      // Don't fail the whole operation if the check query fails
+      console.error('[autoUpdateScheduledNews] Error checking scheduled items:', checkError);
+    }
+    
     // Compare published_at with NOW() - both use the server's timezone
     // Note: MySQL DATETIME doesn't store timezone, so we assume it's in the server's timezone
     // The datetime stored should match the server's timezone context
     // Since we already checked statusColumnExists and returned early if false, we can use the status column query
     // IMPORTANT: Do NOT update updated_at when auto-publishing scheduled news, as this is not a user edit
     // Only update status - published_at remains the same (the scheduled time)
+    // Use TIMESTAMPDIFF for more explicit comparison to avoid any edge cases
     let query = `UPDATE news 
                  SET status = 'published' 
                  WHERE status = 'scheduled' 
-                 AND published_at <= NOW()`;
+                 AND published_at IS NOT NULL
+                 AND TIMESTAMPDIFF(SECOND, published_at, NOW()) >= 0`;
     const params = [];
     
     if (organizationId) {
@@ -72,9 +108,23 @@ export async function autoUpdateScheduledNews(organizationId = null, slug = null
     
     const [result] = await db.execute(query, params);
     
-    // Log successful updates for debugging (development only)
-    if (result.affectedRows > 0 && process.env.NODE_ENV === 'development') {
-      console.log(`[autoUpdateScheduledNews] Auto-published ${result.affectedRows} scheduled news item(s)`);
+    // Log successful updates for debugging
+    if (result.affectedRows > 0) {
+      const logMessage = `[autoUpdateScheduledNews] Auto-published ${result.affectedRows} scheduled news item(s)`;
+      console.log(logMessage);
+      if (process.env.NODE_ENV === 'development') {
+        // Also log which items were published
+        const [updatedItems] = await db.execute(
+          `SELECT id, title, published_at FROM news WHERE status = 'published' AND updated_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)`,
+          []
+        );
+        if (updatedItems.length > 0) {
+          console.log(`[autoUpdateScheduledNews] Recently published items:`, updatedItems);
+        }
+      }
+    } else if (process.env.NODE_ENV === 'development') {
+      // Log when no items were published (for debugging)
+      console.log(`[autoUpdateScheduledNews] No scheduled news items to publish at this time`);
     }
     
     return {
@@ -83,9 +133,7 @@ export async function autoUpdateScheduledNews(organizationId = null, slug = null
     };
   } catch (error) {
     // Log error but don't throw - this is a background operation
-    if (process.env.NODE_ENV === 'development') {
       console.error('[autoUpdateScheduledNews] Error auto-publishing scheduled news:', error);
-    }
     return {
       success: false,
       error: error.message
@@ -379,6 +427,16 @@ export const createNews = async (req, res) => {
           throw new Error(`Invalid date format after conversion: ${finalPublishedAt}`);
         }
         
+        // Log the datetime being stored for debugging (development only)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[createNews] Scheduling news with datetime:', {
+            input: normalizedPublishedAt,
+            stored: finalPublishedAt,
+            datePart,
+            timePart: `${hours}:${minutes}:${seconds}`
+          });
+        }
+        
         // Validate that scheduled date is in the future
         // Use MySQL's NOW() to compare in the same timezone context as the database
         // This ensures consistency with how auto-publish will work
@@ -387,8 +445,9 @@ export const createNews = async (req, res) => {
         const [year, month, day] = datePart.split('-').map(Number);
         const [hour, minute, second] = [hours, minutes, seconds].map(Number);
         
-        // Create a Date object in UTC to avoid timezone issues, then convert to local for comparison
+        // Create a Date object in local timezone (server timezone)
         // Since MySQL DATETIME is timezone-naive, we treat the input as server local time
+        // The Date constructor with individual components creates a Date in local timezone
         const scheduledDate = new Date(year, month - 1, day, hour, minute, second);
         
         // Check if date is valid
@@ -485,10 +544,44 @@ export const createNews = async (req, res) => {
         }
       }
       
+      // Log what's being inserted for debugging (development only)
+      if (process.env.NODE_ENV === 'development' && normalizedAction === 'schedule') {
+        console.log('[createNews] Inserting scheduled news:', {
+          insertQuery: insertQuery.substring(0, 100) + '...',
+          published_at: finalPublishedAt,
+          status: status,
+          params: insertParams.map((p, i) => {
+            // Hide sensitive data but show published_at
+            if (i === 6) return `published_at=${p}`; // published_at is typically at index 6
+            return typeof p === 'string' && p.length > 50 ? p.substring(0, 20) + '...' : p;
+          })
+        });
+      }
+      
       [result] = await db.execute(insertQuery, insertParams);
 
       if (result.affectedRows === 0) {
         return res.status(500).json({ success: false, message: "Failed to create news" });
+      }
+      
+      // Log what was actually stored (development only)
+      if (process.env.NODE_ENV === 'development' && normalizedAction === 'schedule' && result.insertId) {
+        try {
+          const [storedNews] = await db.execute(
+            'SELECT id, title, published_at, status FROM news WHERE id = ?',
+            [result.insertId]
+          );
+          if (storedNews.length > 0) {
+            console.log('[createNews] Stored news in database:', {
+              id: storedNews[0].id,
+              title: storedNews[0].title,
+              published_at: storedNews[0].published_at,
+              status: storedNews[0].status
+            });
+          }
+        } catch (logError) {
+          // Don't fail if logging fails
+        }
       }
     } catch (dbError) {
       if (process.env.NODE_ENV === 'development') {
@@ -821,12 +914,13 @@ export const getApprovedNews = async (req, res) => {
                  ORDER BY n.published_at DESC, n.created_at DESC`;
       } else {
         // Fallback: use published_at to determine published status
+        // Use TIMESTAMPDIFF for consistent comparison (same as autoUpdateScheduledNews)
         query = `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
                  FROM news n
                  INNER JOIN organizations o ON n.organization_id = o.id
                  WHERE n.is_deleted = FALSE 
                    AND n.published_at IS NOT NULL 
-                   AND n.published_at <= NOW()
+                   AND TIMESTAMPDIFF(SECOND, n.published_at, NOW()) >= 0
                    AND o.status = 'ACTIVE'
                  ORDER BY n.published_at DESC, n.created_at DESC`;
       }
@@ -854,7 +948,7 @@ export const getApprovedNews = async (req, res) => {
                                  INNER JOIN organizations o ON n.organization_id = o.id
                                  WHERE n.is_deleted = FALSE 
                                    AND n.published_at IS NOT NULL 
-                                   AND n.published_at <= NOW()
+                                   AND TIMESTAMPDIFF(SECOND, n.published_at, NOW()) >= 0
                                    AND o.status = 'ACTIVE'
                                  ORDER BY n.published_at DESC, n.created_at DESC`;
           const fallbackResult = await db.execute(fallbackQuery);
@@ -1022,13 +1116,14 @@ export const getApprovedNewsByOrg = async (req, res) => {
                    AND o.status = 'ACTIVE'
                  ORDER BY n.published_at DESC, n.created_at DESC`;
       } else {
+        // Use TIMESTAMPDIFF for consistent comparison (same as autoUpdateScheduledNews)
         query = `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
                  FROM news n
                  INNER JOIN organizations o ON n.organization_id = o.id
                  WHERE n.organization_id = ? 
                    AND n.is_deleted = FALSE 
                    AND n.published_at IS NOT NULL 
-                   AND n.published_at <= NOW()
+                   AND TIMESTAMPDIFF(SECOND, n.published_at, NOW()) >= 0
                    AND o.status = 'ACTIVE'
                  ORDER BY n.published_at DESC, n.created_at DESC`;
       }
@@ -1043,7 +1138,7 @@ export const getApprovedNewsByOrg = async (req, res) => {
                                WHERE n.organization_id = ? 
                                  AND n.is_deleted = FALSE 
                                  AND n.published_at IS NOT NULL 
-                                 AND n.published_at <= NOW()
+                                 AND TIMESTAMPDIFF(SECOND, n.published_at, NOW()) >= 0
                                  AND o.status = 'ACTIVE'
                                ORDER BY n.published_at DESC, n.created_at DESC`;
         [rows] = await db.execute(fallbackQuery, [organization.id]);
@@ -1120,12 +1215,13 @@ export const getNewsBySlug = async (req, res) => {
                  LEFT JOIN organizations o ON n.organization_id = o.id
                  WHERE n.slug = ? AND n.is_deleted = FALSE AND n.status = 'published'`;
       } else {
+        // Use TIMESTAMPDIFF for consistent comparison (same as autoUpdateScheduledNews)
         query = `SELECT n.*, o.org as orgAcronym, o.orgName, o.logo as orgLogo
                  FROM news n
                  LEFT JOIN organizations o ON n.organization_id = o.id
                  WHERE n.slug = ? AND n.is_deleted = FALSE 
                    AND n.published_at IS NOT NULL 
-                   AND n.published_at <= NOW()`;
+                   AND TIMESTAMPDIFF(SECOND, n.published_at, NOW()) >= 0`;
       }
       [rows] = await db.execute(query, [slug]);
     } catch (dbError) {
@@ -1137,7 +1233,7 @@ export const getNewsBySlug = async (req, res) => {
                                LEFT JOIN organizations o ON n.organization_id = o.id
                                WHERE n.slug = ? AND n.is_deleted = FALSE 
                                  AND n.published_at IS NOT NULL 
-                                 AND n.published_at <= NOW()`;
+                                 AND TIMESTAMPDIFF(SECOND, n.published_at, NOW()) >= 0`;
         [rows] = await db.execute(fallbackQuery, [slug]);
       } else {
         throw dbError;

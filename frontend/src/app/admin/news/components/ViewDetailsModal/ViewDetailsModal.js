@@ -29,7 +29,20 @@ const ViewDetailsModal = ({ news, onClose }) => {
 
   const formatDateTimeDisplay = (dateString) => {
     if (!dateString) return 'N/A';
-    return formatDateTime(dateString);
+    
+    // Debug logging (development only)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[ViewDetailsModal] formatDateTimeDisplay input:', dateString);
+    }
+    
+    const formatted = formatDateTime(dateString);
+    
+    // Debug logging (development only)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[ViewDetailsModal] formatDateTimeDisplay output:', formatted);
+    }
+    
+    return formatted;
   };
 
   // Determine what date label and value to show based on status
@@ -37,6 +50,15 @@ const ViewDetailsModal = ({ news, onClose }) => {
     const status = (news.status || 'draft').toLowerCase();
     // Always use published_at (not date field) - published_at is the source of truth
     const publishedAt = news.published_at;
+    
+    // Debug logging for scheduled news (development only)
+    if (process.env.NODE_ENV === 'development' && status === 'scheduled') {
+      console.log('[ViewDetailsModal] Scheduled news data:', {
+        status,
+        published_at: publishedAt,
+        raw_published_at: news.published_at
+      });
+    }
     
     if (status === 'published' || (status === 'archived' && publishedAt)) {
       // Published or archived (was published before)

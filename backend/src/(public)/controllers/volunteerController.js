@@ -143,6 +143,41 @@ export const submitVolunteer = async (req, res) => {
     if (programInfo.length > 0) {
       const program = programInfo[0];
       
+      // Create notification for the user who submitted the application
+      try {
+        const userNotificationTitle = "Application Submitted Successfully";
+        const userNotificationMessage = `Your volunteer application for "${program.program_title}" has been submitted successfully. We will review your application and notify you of the status soon.`;
+        
+        const userNotificationId = await createUserNotification(
+          user_id,
+          'volunteer_application',
+          userNotificationTitle,
+          userNotificationMessage,
+          'volunteers',
+          volunteerId
+        );
+
+        // Emit real-time notification to the user
+        if (userNotificationId) {
+          try {
+            emitUserNotification(user_id, {
+              id: userNotificationId,
+              type: 'volunteer_application',
+              title: userNotificationTitle,
+              message: userNotificationMessage,
+              isRead: false,
+              createdAt: new Date().toISOString()
+            });
+          } catch (socketError) {
+            console.error('Failed to emit real-time notification to user:', socketError);
+            // Don't throw - socket failure shouldn't block the application submission
+          }
+        }
+      } catch (userNotificationError) {
+        console.error('Failed to create user notification:', userNotificationError);
+        // Don't throw - notification failure shouldn't block the application submission
+      }
+      
       // Find all admins of this organization
       const [adminRows] = await db.execute(
         "SELECT id FROM users WHERE organization_id = ? AND role = 'admin'",

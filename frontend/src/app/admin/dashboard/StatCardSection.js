@@ -140,7 +140,7 @@ export default function StatCardSection() {
           programsActiveCount={isLoading ? "—" : activeProgramsCount}
         />
       </Link>
-      <Link href="/admin/programs?status=Completed" className={styles.cardWrapper}>
+      <Link href="/admin/programs?tab=completed" className={styles.cardWrapper}>
         <StatCard
           label="Completed Programs"
           count={isLoading ? "—" : completedProgramsCount}

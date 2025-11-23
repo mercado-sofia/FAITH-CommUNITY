@@ -8,7 +8,7 @@ import { formatDateShort } from '@/utils/dateUtils.js';
 import { SearchAndFilterControls, SubmissionTable, BulkActionsBar } from './components';
 import { PaginationControls, SkeletonLoader } from '../components';
 import { SuccessModal, ErrorBoundary } from '@/components';
-import { getAdminTokenOrRedirect, handleApiError, API_CONFIG, PAGINATION, TIMEOUTS } from '../utils';
+import { handleApiError, API_CONFIG, PAGINATION, TIMEOUTS } from '../utils';
 import styles from './submissions.module.css';
 
 // Track if submissions page has been visited
@@ -20,7 +20,6 @@ export default function SubmissionsPage() {
   const admin = useSelector((state) => state.admin.admin);
   const orgAcronym = admin?.org;
   const [pageReady, setPageReady] = useState(false);
-  const [isFirstVisit, setIsFirstVisit] = useState(!hasVisitedSubmissions);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(
@@ -55,7 +54,6 @@ export default function SubmissionsPage() {
     if (!loading && submissions.length >= 0) {
       setHasInitiallyLoaded(true);
       setPageReady(true);
-      setIsFirstVisit(false);
       hasVisitedSubmissions = true;
     }
   }, [loading, submissions.length]);

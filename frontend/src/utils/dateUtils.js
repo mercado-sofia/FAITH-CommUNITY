@@ -805,3 +805,71 @@ export const formatDateTime = (dateString) => {
     return 'Invalid date';
   }
 };
+
+/**
+ * Format time only for display (12-hour format with AM/PM)
+ * @param {string} dateString - Date string to format
+ * @returns {string} Formatted time string (e.g., "9:26 AM")
+ */
+export const formatTime = (dateString) => {
+  try {
+    if (!dateString) return 'Not specified';
+    
+    // Parse the date string directly without creating a Date object to avoid timezone conversion
+    // MySQL DATETIME format: "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DD HH:mm"
+    // Or ISO format: "YYYY-MM-DDTHH:mm:ss" or "YYYY-MM-DDTHH:mm"
+    let normalizedString = dateString.trim();
+    
+    // Remove timezone suffix if present (Z, +HH:MM, -HH:MM)
+    normalizedString = normalizedString.replace(/Z$/, '');
+    normalizedString = normalizedString.replace(/[+-]\d{2}:\d{2}$/, '');
+    
+    // Try to match both formats: ISO (with T) and MySQL (with space)
+    // First try ISO format: YYYY-MM-DDTHH:mm or YYYY-MM-DDTHH:mm:ss
+    let match = normalizedString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+    
+    // If no match, try MySQL format: YYYY-MM-DD HH:mm:ss or YYYY-MM-DD HH:mm
+    if (!match) {
+      match = normalizedString.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?/);
+    }
+    
+    if (!match) {
+      logger.warn('Invalid date string format in formatTime', { 
+        dateString, 
+        normalizedString,
+        hasT: normalizedString.includes('T'),
+        hasSpace: normalizedString.includes(' ')
+      });
+      return 'Invalid time';
+    }
+    
+    const [, , , , hour, minute] = match;
+    let hourNum = parseInt(hour, 10);
+    const minuteNum = parseInt(minute, 10);
+    
+    // Validate components
+    if (isNaN(hourNum) || isNaN(minuteNum)) {
+      logger.warn('Invalid time components in formatTime', { dateString, hour, minute });
+      return 'Invalid time';
+    }
+    
+    // Additional validation: ensure hour is 0-23 and minute is 0-59
+    if (hourNum < 0 || hourNum > 23 || minuteNum < 0 || minuteNum > 59) {
+      logger.warn('Invalid time values in formatTime', { dateString, hourNum, minuteNum });
+      return 'Invalid time';
+    }
+    
+    // Convert to 12-hour format
+    const ampm = hourNum >= 12 ? 'PM' : 'AM';
+    hourNum = hourNum % 12;
+    hourNum = hourNum === 0 ? 12 : hourNum; // the hour '0' should be '12'
+    
+    // Format minutes with leading zero
+    const minutesStr = minuteNum.toString().padStart(2, '0');
+    
+    return `${hourNum}:${minutesStr} ${ampm}`;
+  } catch (error) {
+    logger.error('Error in formatTime', error, { dateString });
+    return 'Invalid time';
+  }
+};

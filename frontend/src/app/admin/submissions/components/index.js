@@ -1,6 +1,4 @@
 export { default as BulkActionsBar } from './BulkActionsBar/BulkActionsBar'
-export { default as CancelConfirmationModal } from './modals/CancelConfirmationModal'
-export { default as ReEditModal } from './modals/ReEditModal'
 export { default as SearchAndFilterControls } from './SearchAndFilterControls/SearchAndFilterControls'
 export { default as SubmissionModal } from './modals/SubmissionModal'
 export { default as SubmissionTable } from './SubmissionTable/SubmissionTable'

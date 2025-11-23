@@ -33,10 +33,19 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
     formData.append('slug', newsData.slug.trim());
     formData.append('content', newsData.content.trim());
     formData.append('excerpt', newsData.excerpt.trim());
-    formData.append('published_at', newsData.publishedAt);
     
-    // Add featured image if provided
-    if (newsData.featuredImage) {
+    // Convert datetime-local format (YYYY-MM-DDTHH:mm) to MySQL datetime format (YYYY-MM-DD HH:mm:ss)
+    let publishedAt = newsData.publishedAt;
+    if (publishedAt && publishedAt.includes('T')) {
+      // Convert from datetime-local format to MySQL datetime format
+      const [datePart, timePart] = publishedAt.split('T');
+      publishedAt = `${datePart} ${timePart}:00`;
+    }
+    formData.append('published_at', publishedAt);
+    
+    // Add featured image if provided (new file upload)
+    // Note: If no new file is provided in edit mode, backend will preserve existing image
+    if (newsData.featuredImage && newsData.featuredImage instanceof File) {
       formData.append('featured_image', newsData.featuredImage);
     }
     
@@ -60,6 +69,16 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
       }
 
       const formData = createFormData(newsData);
+      
+      // Debug: Log FormData contents
+      console.log('[handleSubmitNews] FormData contents:');
+      for (let pair of formData.entries()) {
+        if (pair[1] instanceof File) {
+          console.log(`  ${pair[0]}: File(${pair[1].name}, ${pair[1].size} bytes, ${pair[1].type})`);
+        } else {
+          console.log(`  ${pair[0]}: ${pair[1]}`);
+        }
+      }
       
       const response = await fetch(`${API_BASE_URL || ''}/api/news/${orgId}`, {
         method: 'POST',
@@ -110,6 +129,16 @@ export const useNewsOperations = (orgId, refreshNews, setSuccessModal) => {
       }
 
       const formData = createFormData(newsData);
+      
+      // Debug: Log FormData contents
+      console.log('[handleUpdateNews] FormData contents:');
+      for (let pair of formData.entries()) {
+        if (pair[1] instanceof File) {
+          console.log(`  ${pair[0]}: File(${pair[1].name}, ${pair[1].size} bytes, ${pair[1].type})`);
+        } else {
+          console.log(`  ${pair[0]}: ${pair[1]}`);
+        }
+      }
       
       const response = await fetch(`${API_BASE_URL || ''}/api/news/${editingNewsId}`, {
         method: 'PUT',

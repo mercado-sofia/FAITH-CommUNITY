@@ -671,3 +671,87 @@ export const formatDateTime = (dateString) => {
     return 'Invalid date';
   }
 };
+
+/**
+ * Format datetime for HTML5 datetime-local input (YYYY-MM-DDTHH:mm)
+ * Uses local timezone to avoid date shifting issues
+ * @param {string} dateString - Date string in any valid format
+ * @returns {string} ISO datetime string (YYYY-MM-DDTHH:mm) or empty string
+ */
+export const formatDateTimeForInput = (dateString) => {
+  try {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    
+    // Validate the date
+    if (isNaN(date.getTime())) {
+      logger.warn('Invalid date string provided to formatDateTimeForInput', { dateString });
+      return '';
+    }
+    
+    // Use local timezone to avoid date shifting
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  } catch (error) {
+    logger.error('Error in formatDateTimeForInput', error, { dateString });
+    return '';
+  }
+};
+
+/**
+ * Get current datetime in ISO format (YYYY-MM-DDTHH:mm)
+ * Uses local timezone to avoid date shifting issues
+ * @returns {string} Current datetime in ISO format
+ */
+export const getCurrentDateTimeISO = () => {
+  try {
+    const now = new Date();
+    // Use local timezone to avoid date shifting issues
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  } catch (error) {
+    logger.error('Error in getCurrentDateTimeISO', error);
+    return '';
+  }
+};
+
+/**
+ * Format datetime for API requests (ISO format with time)
+ * Uses local timezone to avoid date shifting issues
+ * @param {string} dateString - Date string in any valid format
+ * @returns {string} ISO datetime string (YYYY-MM-DD HH:mm:ss) or empty string
+ */
+export const formatDateTimeForAPI = (dateString) => {
+  try {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    
+    if (isNaN(date.getTime())) {
+      logger.warn('Invalid date string provided to formatDateTimeForAPI', { dateString });
+      return '';
+    }
+    
+    // Use local timezone to avoid date shifting issues
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  } catch (error) {
+    logger.error('Error in formatDateTimeForAPI', error, { dateString });
+    return '';
+  }
+};

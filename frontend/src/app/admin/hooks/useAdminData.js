@@ -4,17 +4,8 @@ import logger from '@/utils/logger';
 import { formatDateForAPI } from '@/utils/dateUtils';
 import { API_BASE_URL } from '@/config/api';
 
-// Check if user is authenticated (now uses httpOnly cookies via backend)
-const isAuthenticated = async () => {
-  if (typeof window === 'undefined') return false;
-  try {
-    // Check auth status from backend (reads from httpOnly cookie)
-    const { isAuthenticated: checkAuth, USER_TYPES } = await import('@/utils/authService');
-    return await checkAuth(USER_TYPES.ADMIN);
-  } catch (error) {
-    return false;
-  }
-};
+// Note: Authentication is handled by the fetcher function via httpOnly cookies
+// We don't need to check authentication in guard clauses - the fetcher will handle 401/403 errors
 
 // Fetcher function for SWR with admin authentication and SSR safety
 const adminFetcher = async (url) => {
@@ -103,8 +94,9 @@ const adminFetcher = async (url) => {
 
 // Custom hook for admin submissions data
 export const useAdminSubmissions = (orgAcronym) => {
-  // Guard clause: only make API call if orgAcronym is valid and user is authenticated
-  const shouldFetch = orgAcronym && typeof orgAcronym === 'string' && orgAcronym.trim() !== '' && isAuthenticated();
+  // Guard clause: only make API call if orgAcronym is valid
+  // Authentication is handled by the fetcher function
+  const shouldFetch = orgAcronym && typeof orgAcronym === 'string' && orgAcronym.trim() !== '';
   
   const { data, error, isLoading, mutate } = useSWR(
     shouldFetch ? `${API_BASE_URL}/api/submissions/${orgAcronym}` : null,
@@ -116,8 +108,8 @@ export const useAdminSubmissions = (orgAcronym) => {
       errorRetryCount: 3,
       errorRetryInterval: 3000,
       shouldRetryOnError: (error) => {
-        // Don't retry on 401 (auth errors) or 404 (not found)
-        return error.status !== 401 && error.status !== 404;
+        // Don't retry on 401 (auth errors), 404 (not found), or 429 (rate limit)
+        return error.status !== 401 && error.status !== 404 && error.status !== 429;
       },
       onError: (error) => {
         if (orgAcronym) {
@@ -141,9 +133,10 @@ export const useAdminSubmissions = (orgAcronym) => {
 
 // Custom hook for admin volunteers data
 export const useAdminVolunteers = (adminId) => {
-  // Guard clause: only make API call if adminId is valid and user is authenticated
+  // Guard clause: only make API call if adminId is valid
+  // Authentication is handled by the fetcher function
   const adminIdStr = adminId ? String(adminId) : null;
-  const shouldFetch = adminIdStr && adminIdStr.trim() !== '' && isAuthenticated();
+  const shouldFetch = adminIdStr && adminIdStr.trim() !== '';
   
   const { data, error, isLoading, mutate } = useSWR(
     shouldFetch ? `${API_BASE_URL}/api/volunteers/admin/${adminIdStr}` : null,
@@ -156,8 +149,8 @@ export const useAdminVolunteers = (adminId) => {
       errorRetryInterval: 1000, // Faster retry interval
       keepPreviousData: true, // Keep previous data while loading new data
       shouldRetryOnError: (error) => {
-        // Don't retry on 401 (auth errors) or 404 (not found)
-        return error.status !== 401 && error.status !== 404;
+        // Don't retry on 401 (auth errors), 404 (not found), or 429 (rate limit)
+        return error.status !== 401 && error.status !== 404 && error.status !== 429;
       },
       onError: (error) => {
         if (adminIdStr) {
@@ -281,8 +274,9 @@ const organizationFetcher = async (url) => {
 
 // Custom hook for admin organization data by organization ID
 export const useAdminOrganization = (organizationId) => {
-  // Guard clause: only make API call if organizationId is valid and user is authenticated
-  const shouldFetch = organizationId && (typeof organizationId === 'number' || (typeof organizationId === 'string' && !isNaN(organizationId))) && isAuthenticated();
+  // Guard clause: only make API call if organizationId is valid
+  // Authentication is handled by the fetcher function
+  const shouldFetch = organizationId && (typeof organizationId === 'number' || (typeof organizationId === 'string' && !isNaN(organizationId)));
   
   const { data, error, isLoading, mutate } = useSWR(
     shouldFetch ? `${API_BASE_URL}/api/organization/${organizationId}` : null,
@@ -294,8 +288,8 @@ export const useAdminOrganization = (organizationId) => {
       errorRetryCount: 3,
       errorRetryInterval: 3000,
       shouldRetryOnError: (error) => {
-        // Don't retry on 401 (auth errors) or 404 (not found)
-        return error.status !== 401 && error.status !== 404;
+        // Don't retry on 401 (auth errors), 404 (not found), or 429 (rate limit)
+        return error.status !== 401 && error.status !== 404 && error.status !== 429;
       },
       onError: (error) => {
         if (organizationId) {
@@ -335,9 +329,9 @@ export const useAdminOrganization = (organizationId) => {
 
 // Custom hook for admin programs data
 export const useAdminPrograms = () => {
-  // Guard clause: only make API call if user is authenticated
-  const shouldFetch = isAuthenticated();
-  
+  // Always fetch - authentication is handled by the fetcher function
+  // Only skip on server side (handled by fetcher)
+  const shouldFetch = typeof window !== 'undefined';
   
   const { data, error, isLoading, mutate } = useSWR(
     shouldFetch ? `${API_BASE_URL}/api/admin/programs` : null,
@@ -349,14 +343,11 @@ export const useAdminPrograms = () => {
       errorRetryCount: 3,
       errorRetryInterval: 3000,
       shouldRetryOnError: (error) => {
-        // Don't retry on 401 (auth errors) or 404 (not found)
-        return error.status !== 401 && error.status !== 404;
+        // Don't retry on 401 (auth errors), 404 (not found), or 429 (rate limit)
+        return error.status !== 401 && error.status !== 404 && error.status !== 429;
       },
       onError: (error) => {
-        // Only log if user is authenticated (to avoid spam from unauthenticated users)
-        if (isAuthenticated()) {
-          logger.swrError(`${API_BASE_URL}/api/admin/programs`, error);
-        }
+        logger.swrError(`${API_BASE_URL}/api/admin/programs`, error);
       }
     }
   );
@@ -375,8 +366,9 @@ export const useAdminPrograms = () => {
 
 // Custom hook for admin news data
 export const useAdminNews = (orgAcronym) => {
-  // Guard clause: only make API call if orgAcronym is valid and user is authenticated
-  const shouldFetch = orgAcronym && typeof orgAcronym === 'string' && orgAcronym.trim() !== '' && isAuthenticated();
+  // Guard clause: only make API call if orgAcronym is valid
+  // Authentication is handled by the fetcher function
+  const shouldFetch = orgAcronym && typeof orgAcronym === 'string' && orgAcronym.trim() !== '';
   
   const { data, error, isLoading, mutate } = useSWR(
     shouldFetch ? `${API_BASE_URL}/api/news/org/${orgAcronym}` : null,
@@ -390,8 +382,8 @@ export const useAdminNews = (orgAcronym) => {
       errorRetryInterval: 2000, // Faster retry interval
       keepPreviousData: true, // Keep previous data while loading
       shouldRetryOnError: (error) => {
-        // Don't retry on 401 (auth errors), 404 (not found), or 403 (forbidden)
-        return error.status !== 401 && error.status !== 404 && error.status !== 403;
+        // Don't retry on 401 (auth errors), 404 (not found), 403 (forbidden), or 429 (rate limit)
+        return error.status !== 401 && error.status !== 404 && error.status !== 403 && error.status !== 429;
       },
       onError: (error) => {
         // Only log if orgAcronym is valid to avoid spam
@@ -430,8 +422,9 @@ export const useAdminNews = (orgAcronym) => {
 
 // Custom hook for admin advocacies data
 export const useAdminAdvocacies = (orgId) => {
-  // Guard clause: only make API call if orgId is valid and user is authenticated
-  const shouldFetch = orgId && isAuthenticated();
+  // Guard clause: only make API call if orgId is valid
+  // Authentication is handled by the fetcher function
+  const shouldFetch = orgId;
   
   const { data, error, isLoading, mutate } = useSWR(
     shouldFetch ? `${API_BASE_URL}/api/advocacies/${orgId}` : null,
@@ -443,8 +436,8 @@ export const useAdminAdvocacies = (orgId) => {
       errorRetryCount: 3,
       errorRetryInterval: 3000,
       shouldRetryOnError: (error) => {
-        // Don't retry on 401 (auth errors) or 404 (not found)
-        return error.status !== 401 && error.status !== 404;
+        // Don't retry on 401 (auth errors), 404 (not found), or 429 (rate limit)
+        return error.status !== 401 && error.status !== 404 && error.status !== 429;
       },
       onError: (error) => {
         if (orgId) {
@@ -468,8 +461,9 @@ export const useAdminAdvocacies = (orgId) => {
 
 // Custom hook for admin competencies data
 export const useAdminCompetencies = (orgId) => {
-  // Guard clause: only make API call if orgId is valid and user is authenticated
-  const shouldFetch = orgId && isAuthenticated();
+  // Guard clause: only make API call if orgId is valid
+  // Authentication is handled by the fetcher function
+  const shouldFetch = orgId;
   
   const { data, error, isLoading, mutate } = useSWR(
     shouldFetch ? `${API_BASE_URL}/api/competencies/${orgId}` : null,
@@ -481,8 +475,8 @@ export const useAdminCompetencies = (orgId) => {
       errorRetryCount: 3,
       errorRetryInterval: 3000,
       shouldRetryOnError: (error) => {
-        // Don't retry on 401 (auth errors) or 404 (not found)
-        return error.status !== 401 && error.status !== 404;
+        // Don't retry on 401 (auth errors), 404 (not found), or 429 (rate limit)
+        return error.status !== 401 && error.status !== 404 && error.status !== 429;
       },
       onError: (error) => {
         if (orgId) {
@@ -506,8 +500,9 @@ export const useAdminCompetencies = (orgId) => {
 
 // Custom hook for admin heads data
 export const useAdminHeads = (orgId) => {
-  // Guard clause: only make API call if orgId is valid and user is authenticated
-  const shouldFetch = orgId && isAuthenticated();
+  // Guard clause: only make API call if orgId is valid
+  // Authentication is handled by the fetcher function
+  const shouldFetch = orgId;
   
   const { data, error, isLoading, mutate } = useSWR(
     shouldFetch ? `${API_BASE_URL}/api/heads/${orgId}` : null,
@@ -519,8 +514,8 @@ export const useAdminHeads = (orgId) => {
       errorRetryCount: 3,
       errorRetryInterval: 3000,
       shouldRetryOnError: (error) => {
-        // Don't retry on 401 (auth errors) or 404 (not found)
-        return error.status !== 401 && error.status !== 404;
+        // Don't retry on 401 (auth errors), 404 (not found), or 429 (rate limit)
+        return error.status !== 401 && error.status !== 404 && error.status !== 429;
       },
       onError: (error) => {
         if (orgId) {
@@ -544,8 +539,9 @@ export const useAdminHeads = (orgId) => {
 
 // Custom hook for admin data by ID
 export const useAdminById = (adminId) => {
-  // Guard clause: only make API call if adminId is valid and user is authenticated
-  const shouldFetch = adminId && isAuthenticated();
+  // Guard clause: only make API call if adminId is valid
+  // Authentication is handled by the fetcher function
+  const shouldFetch = adminId;
   
   const { data, error, isLoading, mutate } = useSWR(
     shouldFetch ? `${API_BASE_URL}/api/admins/${adminId}` : null,
@@ -557,8 +553,8 @@ export const useAdminById = (adminId) => {
       errorRetryCount: 3,
       errorRetryInterval: 3000,
       shouldRetryOnError: (error) => {
-        // Don't retry on 401 (auth errors) or 404 (not found)
-        return error.status !== 401 && error.status !== 404;
+        // Don't retry on 401 (auth errors), 404 (not found), or 429 (rate limit)
+        return error.status !== 401 && error.status !== 404 && error.status !== 429;
       },
       onError: (error) => {
         if (adminId) {

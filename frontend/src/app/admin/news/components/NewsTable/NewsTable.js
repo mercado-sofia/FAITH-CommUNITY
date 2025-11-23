@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { IoCloseOutline } from "react-icons/io5"
 import { FiTrash2, FiX } from "react-icons/fi"
 import { FaEdit } from "react-icons/fa"
-import { formatDateLong } from '@/utils/dateUtils.js';
+import { formatDateLong, formatDateTime } from '@/utils/dateUtils.js';
 import PaginationControls from "../../../components/PaginationControls/PaginationControls"
 import styles from "./NewsTable.module.css"
 
@@ -23,6 +23,27 @@ const validateNewsData = (news) => {
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
   return formatDateLong(dateString);
+};
+
+const formatPublishedDate = (publishedAt, createdAt) => {
+  if (!publishedAt) return formatDate(createdAt);
+  
+  const publishedDate = new Date(publishedAt);
+  const now = new Date();
+  const isScheduled = publishedDate > now;
+  
+  if (isScheduled) {
+    return formatDateTime(publishedAt);
+  }
+  
+  return formatDateLong(publishedAt);
+};
+
+const isScheduled = (publishedAt) => {
+  if (!publishedAt) return false;
+  const publishedDate = new Date(publishedAt);
+  const now = new Date();
+  return publishedDate > now;
 };
 
 export default function NewsTable({ 
@@ -259,7 +280,14 @@ export default function NewsTable({
                     </div>
                   </td>
                   <td style={{ color: "#8a919c", fontWeight: "400" }}>
-                    {formatDate(newsItem.date || newsItem.created_at)}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span>{formatPublishedDate(newsItem.published_at, newsItem.date || newsItem.created_at)}</span>
+                      {isScheduled(newsItem.published_at) && (
+                        <span style={{ fontSize: '11px', color: '#1CBFA4', fontWeight: '600' }}>
+                          Scheduled
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <div className={styles.actionsCell}>

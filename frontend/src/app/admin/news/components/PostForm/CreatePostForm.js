@@ -4,15 +4,15 @@ import { useState, useCallback, useEffect } from 'react';
 import { FiUpload } from 'react-icons/fi';
 import Image from 'next/image';
 import ContentEditor from '../ContentEditor/ContentEditor';
-import DatePickerPopover from '../DatePickerPopover/DatePickerPopover';
+import DateTimePicker from '../DateTimePicker/DateTimePicker';
 import DOMPurify from 'dompurify';
-import { formatDateForInput, getCurrentDateISO } from '@/utils/dateUtils.js';
+import { formatDateTimeForInput, getCurrentDateTimeISO } from '@/utils/dateUtils.js';
 import { API_BASE_URL } from '@/config/api';
 import styles from './CreatePostForm.module.css';
 
 const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData = null, isEditMode = false, existingNews = [] }) => {
-  const getCurrentLocalDate = () => {
-    return getCurrentDateISO();
+  const getCurrentLocalDateTime = () => {
+    return getCurrentDateTimeISO();
   };
 
   const [formData, setFormData] = useState({
@@ -21,13 +21,14 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
     content: '',
     excerpt: '',
     featuredImage: null,
-    publishedAt: getCurrentLocalDate(),
+    publishedAt: getCurrentLocalDateTime(),
   });
   
   const [errors, setErrors] = useState({});
   const [dragActive, setDragActive] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
   const [isCheckingTitle, setIsCheckingTitle] = useState(false);
+  const [existingImageUrl, setExistingImageUrl] = useState(null); // Track existing image URL in edit mode
 
   // Initialize form data when in edit mode
   useEffect(() => {
@@ -38,18 +39,17 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
         content: initialData.content || '',
         excerpt: initialData.excerpt || '',
         featuredImage: null, // Don't pre-populate file input
-        publishedAt: formatDateForInput(initialData.published_at || initialData.date) || getCurrentLocalDate(),
+        publishedAt: formatDateTimeForInput(initialData.published_at || initialData.date) || getCurrentLocalDateTime(),
       });
 
       // Set image preview if there's an existing featured image
       if (initialData.featured_image) {
         // Check if it's already a full URL (Cloudinary or other)
-        if (initialData.featured_image.startsWith('http')) {
-          setImagePreview(initialData.featured_image);
-        } else {
-          // For legacy local paths, construct the full URL
-          setImagePreview(`${API_BASE_URL || ''}/${initialData.featured_image}`);
-        }
+        const imageUrl = initialData.featured_image.startsWith('http') 
+          ? initialData.featured_image 
+          : `${API_BASE_URL || ''}/${initialData.featured_image}`;
+        setImagePreview(imageUrl);
+        setExistingImageUrl(imageUrl); // Store existing image URL for reference
       }
     }
   }, [isEditMode, initialData]);
@@ -378,6 +378,7 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
                     onClick={() => {
                       setImagePreview(null);
                       setFormData(prev => ({ ...prev, featuredImage: null }));
+                      setExistingImageUrl(null); // Clear existing image URL when removed
                     }}
                     className={styles.removeImage}
                   >
@@ -408,12 +409,15 @@ const CreatePostForm = ({ onCancel, onSubmit, isSubmitting = false, initialData 
           {/* Published At Container */}
           <div className={styles.container}>
             <h3 className={styles.containerTitle}>
-              Published at
+              Schedule Publication
             </h3>
-            <DatePickerPopover
+            <p className={styles.helperText} style={{ fontSize: '12px', color: '#666', marginBottom: '8px' }}>
+              Select date and time when this post should be published. The post will only appear on the public portal at the scheduled time.
+            </p>
+            <DateTimePicker
               value={formData.publishedAt}
               onChange={(value) => handleInputChange('publishedAt', value)}
-              placeholder="Select published date"
+              placeholder="Select date and time"
             />
             {errors.publishedAt && <span className={styles.errorText}>{errors.publishedAt}</span>}
           </div>

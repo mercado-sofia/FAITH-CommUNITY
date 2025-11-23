@@ -146,8 +146,8 @@ function FAITHreePage() {
         const highlights = data.highlights || [];
         
         // API already returns highlights in order (by display_order)
-        // Limit to 8 just in case
-        const orderedFeaturedHighlights = highlights.slice(0, 8);
+        // Limit to 12 just in case
+        const orderedFeaturedHighlights = highlights.slice(0, 12);
         
         console.log('[FAITHree] Featured highlights loaded successfully:', {
           count: orderedFeaturedHighlights.length,

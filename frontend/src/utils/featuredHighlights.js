@@ -4,7 +4,7 @@
  */
 
 const STARRED_HIGHLIGHTS_KEY = 'superadmin_starred_highlights'
-const MAX_FEATURED_HIGHLIGHTS = 8
+const MAX_FEATURED_HIGHLIGHTS = 12
 
 /**
  * Get starred highlights as ordered array (preserves order)
@@ -50,7 +50,7 @@ export const isHighlightFeatured = (highlightId) => {
 
 /**
  * Get the maximum number of featured highlights allowed
- * @returns {number} Maximum featured highlights (8)
+ * @returns {number} Maximum featured highlights (12)
  */
 export const getMaxFeaturedHighlights = () => {
   return MAX_FEATURED_HIGHLIGHTS

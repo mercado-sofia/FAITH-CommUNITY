@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { FiTrash2, FiX, FiUserX, FiUserCheck, FiEdit3, FiArchive, FiRotateCw } from 'react-icons/fi'
+import { MdCancel } from 'react-icons/md'
 import { FaSpinner } from 'react-icons/fa'
 import styles from './ConfirmationModal.module.css'
 
@@ -75,10 +76,20 @@ export default function ConfirmationModal({
           buttonText: getButtonText('Update')
         }
       case 'cancel':
-        return {
-          icon: <FiX />,
-          title: `Cancel ${itemType === 'organization head' ? 'Org Head' : capitalizedItemType}${itemName && /\d/.test(itemName) ? `: ${itemName}` : ''}`,
-          message: `Are you sure you want to cancel ${(() => {
+        // Determine if we're dealing with multiple items (for submission-specific message)
+        const isMultiple = itemName && itemName.includes('s') && !itemName.includes('1 ');
+        const pronoun = isMultiple ? 'these' : 'this';
+        const itemTypePlural = isMultiple ? `${itemType}s` : itemType;
+        
+        // Use custom message if provided, otherwise use submission-specific message for submissions,
+        // or generic message for other item types
+        let cancelMessage;
+        if (customMessage) {
+          cancelMessage = customMessage;
+        } else if (itemType === 'submission' || itemType === 'submissions') {
+          cancelMessage = `Are you sure you want to cancel ${pronoun} ${itemTypePlural}? This will withdraw ${pronoun} ${itemTypePlural} from superadmin review.`;
+        } else {
+          cancelMessage = `Are you sure you want to cancel ${(() => {
             if (itemName && /\d/.test(itemName)) {
               const countMatch = itemName.match(/^(\d+)/);
               if (countMatch) {
@@ -101,8 +112,14 @@ export default function ConfirmationModal({
               }
             }
             return '';
-          })()}? This action cannot be undone.`,
-          buttonText: getButtonText('Cancel')
+          })()}? This action cannot be undone.`;
+        }
+        
+        return {
+          icon: <MdCancel />,
+          title: `Cancel ${itemType === 'organization head' ? 'Org Head' : capitalizedItemType}${itemName && /\d/.test(itemName) ? `: ${itemName}` : itemName ? `: ${itemName}` : ''}`,
+          message: cancelMessage,
+          buttonText: getButtonText('Yes')
         }
       case 'decline':
         return {
@@ -171,12 +188,14 @@ export default function ConfirmationModal({
             actionType === 'activate' ? styles.activateIconContainer : 
             actionType === 'archive' ? styles.archiveIconContainer :
             actionType === 'unarchive' ? styles.unarchiveIconContainer :
+            actionType === 'cancel' ? styles.cancelIconContainer :
             styles.trashIconContainer
           }>
             <div className={
               actionType === 'activate' ? styles.activateIconInner : 
               actionType === 'archive' ? styles.archiveIconInner :
               actionType === 'unarchive' ? styles.unarchiveIconInner :
+              actionType === 'cancel' ? styles.cancelIconInner :
               styles.trashIconInner
             }>
               {actionContent.icon}
@@ -212,7 +231,7 @@ export default function ConfirmationModal({
             className={styles.cancelBtn}
             disabled={loading}
           >
-            Cancel
+            {actionType === 'cancel' ? 'No' : 'Cancel'}
           </button>
           <button
             onClick={(e) => {
@@ -228,6 +247,7 @@ export default function ConfirmationModal({
               actionType === 'decline' ? styles.declineBtn :
               actionType === 'archive' ? styles.archiveBtn :
               actionType === 'unarchive' ? styles.unarchiveBtn :
+              actionType === 'cancel' ? styles.cancelConfirmBtn :
               styles.deleteBtn
             }
             disabled={loading}

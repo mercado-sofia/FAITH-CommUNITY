@@ -2,11 +2,9 @@ import { useEffect, useState, useRef } from 'react';
 import { HiOutlineDotsHorizontal } from 'react-icons/hi';
 import { formatDateShort, formatDateLong } from '@/utils/dateUtils.js';
 import SubmissionModal from '../modals/SubmissionModal';
-import CancelConfirmationModal from '../modals/CancelConfirmationModal';
-import { ConfirmationModal } from '@/components';
-import { SuccessModal } from '@/components';
+import { ConfirmationModal, SuccessModal } from '@/components';
 import styles from './SubmissionTable.module.css';
-import { API_BASE_URL } from '@/config/api';
+import { API_CONFIG } from '../../../utils';
 
 export default function SubmissionTable({ 
   orgAcronym, 
@@ -15,7 +13,7 @@ export default function SubmissionTable({
   onRefresh, 
   currentPage = 1,
   itemsPerPage = 10,
-  onPageChange = () => {},
+  onPageChange,
   selectedItems = new Set(),
   onSelectItems = () => {},
   onShowBulkActions = () => {}
@@ -65,7 +63,7 @@ export default function SubmissionTable({
   const handleCancel = async (id) => {
     setLoadingStates(prev => ({ ...prev, [`cancel-${id}`]: true }));
     try {
-      const response = await fetch(`${API_BASE_URL || ''}/api/submissions/${id}`, { 
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/submissions/${id}`, { 
         method: 'DELETE',
         credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
@@ -91,7 +89,7 @@ export default function SubmissionTable({
   const handleDelete = async (id) => {
     setLoadingStates(prev => ({ ...prev, [`delete-${id}`]: true }));
     try {
-      const response = await fetch(`${API_BASE_URL || ''}/api/submissions/${id}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/submissions/${id}`, {
         method: 'DELETE',
         credentials: 'include', // CRITICAL: Include httpOnly cookies
         headers: {
@@ -120,69 +118,6 @@ export default function SubmissionTable({
     }
   };
 
-  // Bulk actions handlers
-  const handleBulkCancel = async () => {
-    try {
-      // Only cancel pending submissions from the selected items
-      const pendingIds = Array.from(selectedItems).filter(id => {
-        const submission = submissions.find(s => s.id === id);
-        return submission && submission.status === 'pending';
-      });
-      
-      if (pendingIds.length === 0) {
-        showToast('No pending submissions selected to cancel.', 'warning');
-        return;
-      }
-      
-      const promises = pendingIds.map(id => 
-        fetch(`${API_BASE_URL || ''}/api/submissions/${id}`, { 
-          method: 'DELETE',
-          credentials: 'include', // CRITICAL: Include httpOnly cookies
-          headers: {
-            'Content-Type': 'application/json',
-            // No Authorization header needed - httpOnly cookies handle authentication
-          }
-        })
-      );
-      await Promise.all(promises);
-      if (onRefresh) onRefresh();
-      onSelectItems(new Set());
-      onShowBulkActions(false);
-      showToast('Submissions cancelled successfully!', 'success');
-    } catch (err) {
-      showToast('Failed to cancel some submissions', 'error');
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    try {
-      const promises = Array.from(selectedItems).map(id => 
-        fetch(`${API_BASE_URL || ''}/api/submissions/${id}`, { 
-          method: 'DELETE',
-          credentials: 'include', // CRITICAL: Include httpOnly cookies
-          headers: {
-            'Content-Type': 'application/json',
-            // No Authorization header needed - httpOnly cookies handle authentication
-          }
-        })
-      );
-      
-      const responses = await Promise.all(promises);
-      const failedResponses = responses.filter(response => !response.ok);
-      
-      if (failedResponses.length > 0) {
-        throw new Error(`${failedResponses.length} deletions failed`);
-      }
-      
-      // Refresh the submissions list
-      if (onRefresh) onRefresh();
-      onSelectItems(new Set());
-      onShowBulkActions(false);
-      showToast('Selected submissions deleted successfully!', 'success');
-    } catch (error) {
-      showToast(`Failed to delete some submissions: ${error.message}`, 'error');
-    }
-  };
 
   const allSelected = currentSubmissions.length > 0 && selectedItems.size === currentSubmissions.length;
 
@@ -368,7 +303,15 @@ export default function SubmissionTable({
         </table>
       )}
       {selected && <SubmissionModal data={selected} onClose={() => setSelected(null)} />}
-      {confirmId && <CancelConfirmationModal isOpen={!!confirmId} onConfirm={() => handleCancel(confirmId)} onCancel={() => setConfirmId(null)} />}
+      {confirmId && (
+        <ConfirmationModal
+          isOpen={!!confirmId}
+          itemType="submission"
+          actionType="cancel"
+          onConfirm={() => handleCancel(confirmId)}
+          onCancel={() => setConfirmId(null)}
+        />
+      )}
       {deleteId && (
         <ConfirmationModal
           isOpen={!!deleteId}
